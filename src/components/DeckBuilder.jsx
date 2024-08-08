@@ -21,28 +21,12 @@ export const DeckBuilder = ({ onExit }) => {
       
       if (error) throw error;
 
-      const cards = data.map((item, index) => ({
-        id: index + 1,
-        name: item.prompt.split(',')[0],
-        type: getCardType(item.prompt),
-        energyCost: Math.floor(Math.random() * 3) + 1,
-        effect: `${item.prompt.split(',')[0]} effect`,
-        imageUrl: item.url
-      }));
-
-      setAvailableCards(cards);
+      setAvailableCards(data);
     } catch (error) {
       console.error('Error fetching cards:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const getCardType = (prompt) => {
-    if (prompt.includes('Action')) return 'Action';
-    if (prompt.includes('Trap')) return 'Trap';
-    if (prompt.includes('Special')) return 'Special';
-    return 'Action';
   };
 
   const addCardToDeck = (card) => {
@@ -54,7 +38,7 @@ export const DeckBuilder = ({ onExit }) => {
   };
 
   const removeCardFromDeck = (cardId) => {
-    setDeck(deck.filter(card => card.id !== cardId));
+    setDeck(deck.filter(card => card.name !== cardId));
   };
 
   if (loading) {
@@ -70,13 +54,13 @@ export const DeckBuilder = ({ onExit }) => {
           <h3 className="text-xl font-bold mb-2">Available Cards</h3>
           <div className="grid grid-cols-2 gap-2">
             {availableCards.map((card) => (
-              <Card key={card.id} className="cursor-pointer hover:bg-gray-100" onClick={() => addCardToDeck(card)}>
+              <Card key={card.name} className="cursor-pointer hover:bg-gray-100" onClick={() => addCardToDeck(card)}>
                 <CardContent className="p-2">
-                  <img src={card.imageUrl} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
+                  <img src={card.url} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                   <p className="text-sm font-bold">{card.name}</p>
                   <p className="text-xs">{card.type}</p>
-                  <p className="text-xs">Cost: {card.energyCost}</p>
-                  <p className="text-xs">{card.effect}</p>
+                  <p className="text-xs">Cost: {card.energy_cost}</p>
+                  <p className="text-xs">{card.prompt}</p>
                 </CardContent>
               </Card>
             ))}
@@ -87,12 +71,12 @@ export const DeckBuilder = ({ onExit }) => {
           <h3 className="text-xl font-bold mb-2">Your Deck ({deck.length}/40)</h3>
           <div className="grid grid-cols-2 gap-2">
             {deck.map((card) => (
-              <Card key={card.id} className="cursor-pointer hover:bg-gray-100" onClick={() => removeCardFromDeck(card.id)}>
+              <Card key={card.name} className="cursor-pointer hover:bg-gray-100" onClick={() => removeCardFromDeck(card.name)}>
                 <CardContent className="p-2">
-                  <img src={card.imageUrl} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
+                  <img src={card.url} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                   <p className="text-sm font-bold">{card.name}</p>
                   <p className="text-xs">{card.type}</p>
-                  <p className="text-xs">Cost: {card.energyCost}</p>
+                  <p className="text-xs">Cost: {card.energy_cost}</p>
                 </CardContent>
               </Card>
             ))}
