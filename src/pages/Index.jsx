@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
+import { ImageGenerator } from '../components/ImageGenerator';
 
 const IndexContent = () => {
   const { session, loading, logout } = useSupabaseAuth();
-  const [gameState, setGameState] = useState('menu'); // 'menu', 'singlePlayer', 'multiplayer', 'deckBuilder'
+  const [gameState, setGameState] = useState('menu'); // 'menu', 'singlePlayer', 'multiplayer', 'deckBuilder', 'imageGenerator'
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -37,6 +38,7 @@ const IndexContent = () => {
       <Button onClick={() => setGameState('singlePlayer')} className="w-full">Single Player</Button>
       <Button onClick={() => setGameState('multiplayer')} className="w-full">Multiplayer</Button>
       <Button onClick={() => setGameState('deckBuilder')} className="w-full">Deck Builder</Button>
+      <Button onClick={() => setGameState('imageGenerator')} className="w-full">Image Generator</Button>
       <Button onClick={logout} variant="outline" className="w-full">Logout</Button>
     </div>
   );
@@ -53,6 +55,17 @@ const IndexContent = () => {
       )}
       {gameState === 'deckBuilder' && (
         <DeckBuilder onExit={() => setGameState('menu')} />
+      )}
+      {gameState === 'imageGenerator' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Image Generator</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ImageGenerator />
+            <Button onClick={() => setGameState('menu')} className="mt-4">Back to Menu</Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
