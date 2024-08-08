@@ -36,48 +36,49 @@ export const ImageGenerator = () => {
     }
   };
 
-  const generateImage = async (prompt) => {
+  const generateAllImages = async () => {
+    setLoading(true);
     try {
+      const prompts = CARD_TYPES.map(card => `${card.description}, cute cartoon style`);
       const response = await fetch("https://a.picoapps.xyz/boy-every", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({ prompts })
       });
       const data = await response.json();
       if (data.status === 'success') {
-        return data.imageUrl;
-      } else {
-        console.error('Error generating image:', data);
-        return null;
-      }
-    } catch (error) {
-      console.error('Error fetching image:', error);
-      return null;
-    }
-  };
+        const newImages = {};
+        data.imageUrls.forEach((url, index) => {
+          const card = CARD_TYPES[index];
+          newImages[card.name] = url;
+        });
+        setGeneratedImages(newImages);
 
-  const generateAllImages = async () => {
-    setLoading(true);
-    const newImages = {};
-    for (const card of CARD_TYPES) {
-      const imageUrl = await generateImage(`${card.description}, cute cartoon style`);
-      if (imageUrl) {
-        newImages[card.name] = imageUrl;
-        
-        // Store or update the image URL in the Supabase database
+        // Store or update the image URLs in the Supabase database
+        const upsertData = CARD_TYPES.map((card, index) => ({
+          name: card.name,
+          url: data.imageUrls[index],
+          prompt: card.description,
+          type: card.type,
+          energy_cost: card.energyCost
+        }));
         const { error } = await supabase
           .from('generated_images')
-          .upsert({ name: card.name, url: imageUrl, prompt: card.description, type: card.type, energy_cost: card.energyCost }, { onConflict: 'name' });
-        
+          .upsert(upsertData, { onConflict: 'name' });
+      
         if (error) {
-          console.error('Error storing image URL:', error);
+          console.error('Error storing image URLs:', error);
         }
+      } else {
+        console.error('Error generating images:', data);
       }
+    } catch (error) {
+      console.error('Error fetching images:', error);
+    } finally {
+      setLoading(false);
     }
-    setGeneratedImages(newImages);
-    setLoading(false);
   };
 
   return (
