@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { supabase } from '../integrations/supabase';
 
 export const ImageGenerator = () => {
   const [prompt, setPrompt] = useState('');
@@ -20,12 +21,21 @@ export const ImageGenerator = () => {
       const data = await response.json();
       if (data.status === 'success') {
         setImageUrl(data.imageUrl);
+        
+        // Store the image URL in the Supabase database
+        const { data: insertData, error } = await supabase
+          .from('generated_images')
+          .insert({ url: data.imageUrl, prompt: prompt });
+        
+        if (error) {
+          console.error('Error storing image URL:', error);
+        }
       } else {
         console.error('Error generating image:', data);
         alert('Failed to generate image. Please try again.');
       }
     } catch (error) {
-      console.log('Error fetching images:', error);
+      console.error('Error fetching images:', error);
       alert('Error fetching images. Please try again.');
     } finally {
       setLoading(false);
