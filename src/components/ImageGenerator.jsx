@@ -15,6 +15,7 @@ const CARD_TYPES = [
 export const ImageGenerator = ({ onComplete }) => {
   const [generatedImages, setGeneratedImages] = useState({});
   const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     fetchExistingImages();
@@ -44,53 +45,60 @@ export const ImageGenerator = ({ onComplete }) => {
 
   const generateAllImages = async () => {
     try {
-      const prompts = CARD_TYPES.map(card => `${card.description}, cute cartoon style`);
-      const response = await fetch("https://a.picoapps.xyz/boy-every", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ prompts })
-      });
-      const data = await response.json();
-      if (data.status === 'success') {
-        const newImages = {};
-        data.imageUrls.forEach((url, index) => {
-          const card = CARD_TYPES[index];
-          newImages[card.name] = url;
-        });
-        setGeneratedImages(newImages);
+      for (let i = 0; i < CARD_TYPES.length; i++) {
+        const card = CARD_TYPES[i];
+        if (!generatedImages[card.name]) {
+          const prompt = `${card.description}, cute cartoon style`;
+          const response = await fetch("https://a.picoapps.xyz/boy-every", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ prompts: [prompt] })
+          });
+          const data = await response.json();
+          if (data.status === 'success') {
+            const newImages = { ...generatedImages };
+            newImages[card.name] = data.imageUrls[0];
+            setGeneratedImages(newImages);
 
-        // Store or update the image URLs in the Supabase database
-        const upsertData = CARD_TYPES.map((card, index) => ({
-          name: card.name,
-          url: data.imageUrls[index],
-          prompt: card.description,
-          type: card.type,
-          energy_cost: card.energyCost
-        }));
-        const { error } = await supabase
-          .from('generated_images')
-          .upsert(upsertData, { onConflict: 'name' });
-      
-        if (error) {
-          console.error('Error storing image URLs:', error);
-        } else {
-          setLoading(false);
-          onComplete();
+            // Store or update the image URL in the Supabase database
+            const { error } = await supabase
+              .from('generated_images')
+              .upsert({
+                name: card.name,
+                url: data.imageUrls[0],
+                prompt: card.description,
+                type: card.type,
+                energy_cost: card.energyCost
+              }, { onConflict: 'name' });
+
+            if (error) {
+              console.error('Error storing image URL:', error);
+            }
+          } else {
+            console.error('Error generating image:', data);
+          }
         }
-      } else {
-        console.error('Error generating images:', data);
-        setLoading(false);
+        setProgress(((i + 1) / CARD_TYPES.length) * 100);
       }
+      setLoading(false);
+      onComplete();
     } catch (error) {
-      console.error('Error fetching images:', error);
+      console.error('Error generating images:', error);
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <div className="text-center">Generating images...</div>;
+    return (
+      <div className="text-center">
+        <p>Generating images... {Math.round(progress)}%</p>
+        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
+          <div className="bg-blue-600 h-2.5 rounded-full" style={{width: `${progress}%`}}></div>
+        </div>
+      </div>
+    );
   }
 
   return (

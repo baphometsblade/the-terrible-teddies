@@ -108,6 +108,11 @@ const IndexContent = () => {
             </CardContent>
           </Card>
         )}
+        {imagesGenerated && gameState === 'menu' && (
+          <div className="text-center text-green-600 mb-4">
+            All game assets have been generated successfully!
+          </div>
+        )}
       </div>
     </div>
   );
