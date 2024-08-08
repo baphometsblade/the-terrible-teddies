@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '../integrations/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, Zap, Heart } from 'lucide-react';
 
 export const GameBoard = ({ gameMode, onExit }) => {
   const [audioContext] = useState(() => new (window.AudioContext || window.webkitAudioContext)());
@@ -151,11 +152,14 @@ export const GameBoard = ({ gameMode, onExit }) => {
   return (
     <div className="game-board p-4 bg-gray-100 rounded-lg">
       <div className="game-board-container bg-gradient-to-b from-pink-100 to-purple-200 p-6 rounded-xl shadow-lg">
-        <div className="opponent-area mb-6">
+        <div className="opponent-area mb-6 bg-gradient-to-r from-red-100 to-pink-100 p-4 rounded-lg shadow-md">
           <h2 className="text-2xl font-bold text-purple-800 mb-2">Opponent's Terrible Teddy</h2>
-          <Progress value={(opponentHP / 30) * 100} className="w-full h-4 bg-red-200" />
-          <p className="text-sm mt-1 text-purple-700 font-semibold">HP: {opponentHP}/30</p>
-          <div className="flex space-x-2 mt-4">
+          <div className="flex items-center mb-2">
+            <Heart className="w-6 h-6 text-red-500 mr-2" />
+            <Progress value={(opponentHP / 30) * 100} className="w-full h-4 bg-red-200" />
+            <p className="text-sm ml-2 text-purple-700 font-semibold">{opponentHP}/30</p>
+          </div>
+          <div className="flex space-x-2 mt-4 justify-center">
             <AnimatePresence>
               {opponentHand.map((card, index) => (
                 <motion.div
@@ -165,23 +169,29 @@ export const GameBoard = ({ gameMode, onExit }) => {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Card className="w-16 h-24 bg-gradient-to-br from-red-300 to-pink-300 shadow-md"></Card>
+                  <Card className="w-16 h-24 bg-gradient-to-br from-red-300 to-pink-300 shadow-md transform hover:scale-105 transition-transform duration-200"></Card>
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
         </div>
 
-        <div className="game-info mb-6 bg-white p-4 rounded-lg shadow-md">
-          <p className="text-xl font-semibold text-purple-800">Current Turn: {currentTurn === 'player' ? 'Your' : 'Opponent\'s'} Turn</p>
-          <Progress value={(momentumGauge / 10) * 100} className="w-full h-4 mt-2 bg-blue-200" />
-          <p className="text-sm mt-1 text-purple-700 font-semibold">Momentum Gauge: {momentumGauge}/10</p>
+        <div className="game-info mb-6 bg-gradient-to-r from-blue-100 to-purple-100 p-4 rounded-lg shadow-md">
+          <p className="text-xl font-semibold text-purple-800 mb-2">Current Turn: {currentTurn === 'player' ? 'Your' : 'Opponent\'s'} Turn</p>
+          <div className="flex items-center">
+            <Zap className="w-6 h-6 text-yellow-500 mr-2" />
+            <Progress value={(momentumGauge / 10) * 100} className="w-full h-4 bg-blue-200" />
+            <p className="text-sm ml-2 text-purple-700 font-semibold">{momentumGauge}/10</p>
+          </div>
         </div>
 
-        <div className="player-area">
+        <div className="player-area bg-gradient-to-r from-green-100 to-blue-100 p-4 rounded-lg shadow-md">
           <h2 className="text-2xl font-bold text-purple-800 mb-2">Your Terrible Teddy</h2>
-          <Progress value={(playerHP / 30) * 100} className="w-full h-4 bg-green-200" />
-          <p className="text-sm mt-1 text-purple-700 font-semibold">HP: {playerHP}/30</p>
+          <div className="flex items-center mb-2">
+            <Shield className="w-6 h-6 text-green-500 mr-2" />
+            <Progress value={(playerHP / 30) * 100} className="w-full h-4 bg-green-200" />
+            <p className="text-sm ml-2 text-purple-700 font-semibold">{playerHP}/30</p>
+          </div>
           <div className="flex flex-wrap justify-center gap-4 mt-4">
             <AnimatePresence>
               {playerHand.map((card) => (

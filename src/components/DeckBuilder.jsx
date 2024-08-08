@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '../integrations/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Loader2 } from 'lucide-react';
 
 export const DeckBuilder = ({ onExit }) => {
   const [deck, setDeck] = useState([]);
@@ -43,7 +45,12 @@ export const DeckBuilder = ({ onExit }) => {
   };
 
   if (loading) {
-    return <div>Loading cards...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+        <span className="ml-2 text-lg text-purple-700">Loading cards...</span>
+      </div>
+    );
   }
 
   return (
@@ -110,12 +117,27 @@ export const DeckBuilder = ({ onExit }) => {
       </div>
 
       <div className="mt-8 text-center">
-        <Button 
-          onClick={onExit}
-          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105"
-        >
-          Save and Exit
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105"
+            >
+              Save and Exit
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to exit?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Your deck will be saved automatically. You can always come back to edit it later.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onExit}>Confirm</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
