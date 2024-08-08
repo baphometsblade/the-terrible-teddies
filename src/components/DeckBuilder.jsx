@@ -1,15 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { supabase } from '../integrations/supabase';
 
 export const DeckBuilder = ({ onExit }) => {
   const [deck, setDeck] = useState([]);
-  const [availableCards, setAvailableCards] = useState([
-    { id: 1, name: 'Pillow Fight', type: 'Action', energyCost: 2, effect: 'Deal 3 damage and make the opponent discard a card' },
-    { id: 2, name: 'Bear Trap', type: 'Trap', energyCost: 1, effect: 'Negate an attack and deal 2 damage back' },
-    { id: 3, name: 'Stuffing Surge', type: 'Special', energyCost: 3, effect: 'Heal 5 HP' },
-    // Add more cards here
-  ]);
+  const [availableCards, setAvailableCards] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCards();
+  }, []);
+
+  const fetchCards = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('generated_images')
+        .select('*');
+      
+      if (error) throw error;
+
+      const cards = data.map((item, index) => ({
+        id: index + 1,
+        name: item.prompt.split(',')[0],
+        type: getCardType(item.prompt),
+        energyCost: Math.floor(Math.random() * 3) + 1,
+        effect: `${item.prompt.split(',')[0]} effect`,
+        imageUrl: item.url
+      }));
+
+      setAvailableCards(cards);
+    } catch (error) {
+      console.error('Error fetching cards:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCardType = (prompt) => {
+    if (prompt.includes('Action')) return 'Action';
+    if (prompt.includes('Trap')) return 'Trap';
+    if (prompt.includes('Special')) return 'Special';
+    return 'Action';
+  };
 
   const addCardToDeck = (card) => {
     if (deck.length < 40) {
@@ -23,6 +57,10 @@ export const DeckBuilder = ({ onExit }) => {
     setDeck(deck.filter(card => card.id !== cardId));
   };
 
+  if (loading) {
+    return <div>Loading cards...</div>;
+  }
+
   return (
     <div className="deck-builder">
       <h2 className="text-2xl font-bold mb-4">Deck Builder</h2>
@@ -34,6 +72,7 @@ export const DeckBuilder = ({ onExit }) => {
             {availableCards.map((card) => (
               <Card key={card.id} className="cursor-pointer hover:bg-gray-100" onClick={() => addCardToDeck(card)}>
                 <CardContent className="p-2">
+                  <img src={card.imageUrl} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                   <p className="text-sm font-bold">{card.name}</p>
                   <p className="text-xs">{card.type}</p>
                   <p className="text-xs">Cost: {card.energyCost}</p>
@@ -50,6 +89,7 @@ export const DeckBuilder = ({ onExit }) => {
             {deck.map((card) => (
               <Card key={card.id} className="cursor-pointer hover:bg-gray-100" onClick={() => removeCardFromDeck(card.id)}>
                 <CardContent className="p-2">
+                  <img src={card.imageUrl} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                   <p className="text-sm font-bold">{card.name}</p>
                   <p className="text-xs">{card.type}</p>
                   <p className="text-xs">Cost: {card.energyCost}</p>
