@@ -12,9 +12,9 @@ const CARD_TYPES = [
   { name: 'Teddy Tantrum', type: 'Special', description: 'An angry teddy bear throwing a fit', energyCost: 3 },
 ];
 
-export const ImageGenerator = () => {
+export const ImageGenerator = ({ onComplete }) => {
   const [generatedImages, setGeneratedImages] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchExistingImages();
@@ -33,11 +33,16 @@ export const ImageGenerator = () => {
         images[item.name] = item.url;
       });
       setGeneratedImages(images);
+      if (Object.keys(images).length === CARD_TYPES.length) {
+        setLoading(false);
+        onComplete();
+      } else {
+        generateAllImages();
+      }
     }
   };
 
   const generateAllImages = async () => {
-    setLoading(true);
     try {
       const prompts = CARD_TYPES.map(card => `${card.description}, cute cartoon style`);
       const response = await fetch("https://a.picoapps.xyz/boy-every", {
@@ -70,22 +75,26 @@ export const ImageGenerator = () => {
       
         if (error) {
           console.error('Error storing image URLs:', error);
+        } else {
+          setLoading(false);
+          onComplete();
         }
       } else {
         console.error('Error generating images:', data);
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error fetching images:', error);
-    } finally {
       setLoading(false);
     }
   };
 
+  if (loading) {
+    return <div className="text-center">Generating images...</div>;
+  }
+
   return (
     <div className="space-y-4">
-      <Button onClick={generateAllImages} disabled={loading}>
-        {loading ? 'Generating...' : 'Regenerate All Images'}
-      </Button>
       <div className="grid grid-cols-2 gap-4">
         {CARD_TYPES.map((card) => (
           <Card key={card.name} className="overflow-hidden">
