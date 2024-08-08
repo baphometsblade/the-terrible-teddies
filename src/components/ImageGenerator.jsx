@@ -93,9 +93,10 @@ export const ImageGenerator = ({ onComplete }) => {
   if (loading) {
     return (
       <div className="text-center">
-        <p>Generating images... {Math.round(progress)}%</p>
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
+        <p className="text-lg font-semibold text-purple-700">Generating images... {Math.round(progress)}%</p>
         <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
-          <div className="bg-blue-600 h-2.5 rounded-full" style={{width: `${progress}%`}}></div>
+          <div className="bg-purple-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{width: `${progress}%`}}></div>
         </div>
       </div>
     );

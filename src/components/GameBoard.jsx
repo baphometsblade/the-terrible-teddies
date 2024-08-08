@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '../integrations/supabase';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const GameBoard = ({ gameMode, onExit }) => {
+  const [audioContext] = useState(() => new (window.AudioContext || window.webkitAudioContext)());
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [playerHP, setPlayerHP] = useState(30);
   const [opponentHP, setOpponentHP] = useState(30);
@@ -59,25 +61,43 @@ export const GameBoard = ({ gameMode, onExit }) => {
     return drawnCards;
   };
 
+  const playSound = useCallback((frequency, duration) => {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    oscillator.start();
+    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
+    oscillator.stop(audioContext.currentTime + duration);
+  }, [audioContext]);
+
   const playCard = (card) => {
     if (momentumGauge + card.energy_cost > 10) {
       alert("Not enough Momentum to play this card!");
+      playSound(200, 0.3); // Error sound
       return;
     }
     
     setMomentumGauge(momentumGauge + card.energy_cost);
     setPlayerHand(playerHand.filter(c => c.name !== card.name));
     
+    playSound(440, 0.2); // Card play sound
+    
     // Implement card effects here
     switch(card.type) {
       case 'Action':
         setOpponentHP(Math.max(0, opponentHP - card.energy_cost * 2));
+        playSound(330, 0.3); // Attack sound
         break;
       case 'Trap':
         // Trap effects will be handled when opponent attacks
+        playSound(550, 0.2); // Trap set sound
         break;
       case 'Special':
         setPlayerHP(Math.min(30, playerHP + card.energy_cost));
+        playSound(660, 0.3); // Heal sound
         break;
     }
     
@@ -85,6 +105,38 @@ export const GameBoard = ({ gameMode, onExit }) => {
       endTurn();
     }
   };
+
+  const aiTurn = useCallback(() => {
+    if (currentTurn === 'opponent' && gameMode === 'singlePlayer') {
+      setTimeout(() => {
+        const aiCard = opponentHand[Math.floor(Math.random() * opponentHand.length)];
+        setOpponentHand(opponentHand.filter(c => c.name !== aiCard.name));
+        
+        playSound(330, 0.2); // AI play sound
+        
+        switch(aiCard.type) {
+          case 'Action':
+            setPlayerHP(Math.max(0, playerHP - aiCard.energy_cost * 2));
+            playSound(220, 0.3); // AI attack sound
+            break;
+          case 'Trap':
+            // AI trap logic
+            playSound(440, 0.2); // AI trap set sound
+            break;
+          case 'Special':
+            setOpponentHP(Math.min(30, opponentHP + aiCard.energy_cost));
+            playSound(550, 0.3); // AI heal sound
+            break;
+        }
+        
+        endTurn();
+      }, 1000);
+    }
+  }, [currentTurn, gameMode, opponentHand, playerHP, opponentHP, endTurn, playSound]);
+
+  useEffect(() => {
+    aiTurn();
+  }, [currentTurn, aiTurn]);
 
   const endTurn = () => {
     setCurrentTurn(currentTurn === 'player' ? 'opponent' : 'player');
@@ -98,58 +150,85 @@ export const GameBoard = ({ gameMode, onExit }) => {
 
   return (
     <div className="game-board p-4 bg-gray-100 rounded-lg">
-      <div className="opponent-area mb-4">
-        <h2 className="text-xl font-bold">Opponent's Terrible Teddy</h2>
-        <Progress value={(opponentHP / 30) * 100} className="w-full mt-2" />
-        <p className="text-sm mt-1">HP: {opponentHP}/30</p>
-        <div className="flex space-x-2 mt-2">
-          {opponentHand.map((card, index) => (
-            <Card key={index} className="w-16 h-24 bg-red-200"></Card>
-          ))}
+      <div className="game-board-container bg-gradient-to-b from-pink-100 to-purple-200 p-6 rounded-xl shadow-lg">
+        <div className="opponent-area mb-6">
+          <h2 className="text-2xl font-bold text-purple-800 mb-2">Opponent's Terrible Teddy</h2>
+          <Progress value={(opponentHP / 30) * 100} className="w-full h-4 bg-red-200" />
+          <p className="text-sm mt-1 text-purple-700 font-semibold">HP: {opponentHP}/30</p>
+          <div className="flex space-x-2 mt-4">
+            <AnimatePresence>
+              {opponentHand.map((card, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card className="w-16 h-24 bg-gradient-to-br from-red-300 to-pink-300 shadow-md"></Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        <div className="game-info mb-6 bg-white p-4 rounded-lg shadow-md">
+          <p className="text-xl font-semibold text-purple-800">Current Turn: {currentTurn === 'player' ? 'Your' : 'Opponent\'s'} Turn</p>
+          <Progress value={(momentumGauge / 10) * 100} className="w-full h-4 mt-2 bg-blue-200" />
+          <p className="text-sm mt-1 text-purple-700 font-semibold">Momentum Gauge: {momentumGauge}/10</p>
+        </div>
+
+        <div className="player-area">
+          <h2 className="text-2xl font-bold text-purple-800 mb-2">Your Terrible Teddy</h2>
+          <Progress value={(playerHP / 30) * 100} className="w-full h-4 bg-green-200" />
+          <p className="text-sm mt-1 text-purple-700 font-semibold">HP: {playerHP}/30</p>
+          <div className="flex flex-wrap justify-center gap-4 mt-4">
+            <AnimatePresence>
+              {playerHand.map((card) => (
+                <motion.div
+                  key={card.name}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Card 
+                    className="w-32 h-48 cursor-pointer bg-gradient-to-br from-blue-100 to-purple-100 shadow-lg hover:shadow-xl transition-all duration-200" 
+                    onClick={() => playCard(card)}
+                  >
+                    <CardContent className="p-2 flex flex-col justify-between h-full">
+                      <div>
+                        <img src={card.url} alt={card.name} className="w-full h-20 object-cover mb-2 rounded" />
+                        <p className="text-sm font-bold text-purple-800">{card.name}</p>
+                        <p className="text-xs text-purple-600">{card.type}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-purple-700">Cost: {card.energy_cost}</p>
+                        <p className="text-xs italic text-purple-600">{card.prompt}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
-      <div className="game-info mb-4">
-        <p className="text-lg font-semibold">Current Turn: {currentTurn === 'player' ? 'Your' : 'Opponent\'s'} Turn</p>
-        <Progress value={(momentumGauge / 10) * 100} className="w-full mt-2" />
-        <p className="text-sm mt-1">Momentum Gauge: {momentumGauge}/10</p>
-      </div>
-
-      <div className="player-area">
-        <h2 className="text-xl font-bold">Your Terrible Teddy</h2>
-        <Progress value={(playerHP / 30) * 100} className="w-full mt-2" />
-        <p className="text-sm mt-1">HP: {playerHP}/30</p>
-        <div className="flex flex-wrap justify-center gap-2 mt-2">
-          {playerHand.map((card) => (
-            <Card key={card.name} className="w-24 h-36 cursor-pointer hover:bg-blue-100 transition-colors duration-200" onClick={() => playCard(card)}>
-              <CardContent className="p-2 flex flex-col justify-between h-full">
-                <div>
-                  <img src={card.url} alt={card.name} className="w-full h-16 object-cover mb-1 rounded" />
-                  <p className="text-xs font-bold">{card.name}</p>
-                  <p className="text-xs text-gray-600">{card.type}</p>
-                </div>
-                <div>
-                  <p className="text-xs">Cost: {card.energy_cost}</p>
-                  <p className="text-xs italic">{card.prompt}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4 space-x-2 flex justify-center">
+      <div className="mt-6 space-x-4 flex justify-center">
         <Button 
           onClick={endTurn} 
           disabled={currentTurn !== 'player'}
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           End Turn
         </Button>
         <Button 
           onClick={() => setShowExitConfirmation(true)} 
           variant="outline"
-          className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+          className="border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105"
         >
           Surrender
         </Button>
