@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useSupabaseAuth } from '../integrations/supabase/auth';
+import { SupabaseAuthProvider } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 
-const Index = () => {
+const IndexContent = () => {
   const { session, loading, logout } = useSupabaseAuth();
   const [gameState, setGameState] = useState('menu'); // 'menu', 'singlePlayer', 'multiplayer', 'deckBuilder'
 
@@ -56,5 +57,11 @@ const Index = () => {
     </div>
   );
 };
+
+const Index = () => (
+  <SupabaseAuthProvider>
+    <IndexContent />
+  </SupabaseAuthProvider>
+);
 
 export default Index;
