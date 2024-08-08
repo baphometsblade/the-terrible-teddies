@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '../integrations/supabase';
 
 export const GameBoard = ({ gameMode, onExit }) => {
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [playerHP, setPlayerHP] = useState(30);
   const [opponentHP, setOpponentHP] = useState(30);
   const [playerHand, setPlayerHand] = useState([]);
@@ -138,9 +139,43 @@ export const GameBoard = ({ gameMode, onExit }) => {
       </div>
 
       <div className="mt-4 space-x-2 flex justify-center">
-        <Button onClick={endTurn} disabled={currentTurn !== 'player'}>End Turn</Button>
-        <Button onClick={onExit} variant="outline">Surrender</Button>
+        <Button 
+          onClick={endTurn} 
+          disabled={currentTurn !== 'player'}
+          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+        >
+          End Turn
+        </Button>
+        <Button 
+          onClick={() => setShowExitConfirmation(true)} 
+          variant="outline"
+          className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+        >
+          Surrender
+        </Button>
       </div>
+
+      {showExitConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-xl">
+            <h3 className="text-xl font-bold mb-4">Are you sure you want to surrender?</h3>
+            <div className="flex justify-end space-x-4">
+              <Button 
+                onClick={() => setShowExitConfirmation(false)}
+                className="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded transition-colors duration-300"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={onExit}
+                className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition-colors duration-300"
+              >
+                Confirm Surrender
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

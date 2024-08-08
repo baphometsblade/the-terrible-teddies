@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { ImageGenerator } from '../components/ImageGenerator';
+import { TeddyBear } from 'lucide-react';
 
 const IndexContent = () => {
   const { session, loading: authLoading, logout } = useSupabaseAuth();
@@ -41,41 +42,73 @@ const IndexContent = () => {
   }
 
   const renderMenu = () => (
-    <div className="space-y-4">
-      <Button onClick={() => setGameState('singlePlayer')} className="w-full">Single Player</Button>
-      <Button onClick={() => setGameState('multiplayer')} className="w-full">Multiplayer</Button>
-      <Button onClick={() => setGameState('deckBuilder')} className="w-full">Deck Builder</Button>
-      <Button onClick={logout} variant="outline" className="w-full">Logout</Button>
+    <div className="space-y-6">
+      <Button 
+        onClick={() => setGameState('singlePlayer')} 
+        className="w-full text-lg py-6 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105"
+      >
+        Single Player
+      </Button>
+      <Button 
+        onClick={() => setGameState('multiplayer')} 
+        className="w-full text-lg py-6 bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105"
+      >
+        Multiplayer
+      </Button>
+      <Button 
+        onClick={() => setGameState('deckBuilder')} 
+        className="w-full text-lg py-6 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 transform hover:scale-105"
+      >
+        Deck Builder
+      </Button>
+      <Button 
+        onClick={logout} 
+        variant="outline" 
+        className="w-full text-lg py-6 border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300"
+      >
+        Logout
+      </Button>
     </div>
   );
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-4xl font-bold mb-8 text-center">Terrible Teddies</h1>
-      {gameState === 'loading' && <div className="text-center">Loading game assets...</div>}
-      {gameState === 'menu' && renderMenu()}
-      {(gameState === 'singlePlayer' || gameState === 'multiplayer') && (
-        <GameBoard
-          gameMode={gameState}
-          onExit={() => setGameState('menu')}
-        />
-      )}
-      {gameState === 'deckBuilder' && (
-        <DeckBuilder onExit={() => setGameState('menu')} />
-      )}
-      {gameState === 'imageGenerator' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Generating Game Assets</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ImageGenerator onComplete={() => {
-              setImagesGenerated(true);
-              setGameState('menu');
-            }} />
-          </CardContent>
-        </Card>
-      )}
+    <div className="min-h-screen bg-gradient-to-b from-pink-100 to-purple-200 flex items-center justify-center">
+      <div className="container mx-auto p-8 max-w-4xl bg-white rounded-lg shadow-xl">
+        <div className="flex items-center justify-center mb-8">
+          <TeddyBear className="w-12 h-12 text-pink-500 mr-4" />
+          <h1 className="text-5xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600">
+            Terrible Teddies
+          </h1>
+        </div>
+        {gameState === 'loading' && (
+          <div className="text-center text-2xl text-gray-600">
+            Loading game assets...
+          </div>
+        )}
+        {gameState === 'menu' && renderMenu()}
+        {(gameState === 'singlePlayer' || gameState === 'multiplayer') && (
+          <GameBoard
+            gameMode={gameState}
+            onExit={() => setGameState('menu')}
+          />
+        )}
+        {gameState === 'deckBuilder' && (
+          <DeckBuilder onExit={() => setGameState('menu')} />
+        )}
+        {gameState === 'imageGenerator' && (
+          <Card className="bg-gradient-to-r from-pink-100 to-purple-100">
+            <CardHeader>
+              <CardTitle className="text-2xl text-center text-purple-700">Generating Game Assets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ImageGenerator onComplete={() => {
+                setImagesGenerated(true);
+                setGameState('menu');
+              }} />
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };
