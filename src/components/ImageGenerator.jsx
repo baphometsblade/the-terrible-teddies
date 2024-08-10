@@ -58,26 +58,31 @@ export const ImageGenerator = ({ onComplete }) => {
           }, "*");
 
           // Listen for the response from the API
-          const handleMessage = (event) => {
+          const handleMessage = async (event) => {
             if (event.data && event.data.action === "imageGenerated") {
               const imageUrl = event.data.imageUrl;
               const newImages = { ...generatedImages };
               newImages[card.name] = imageUrl;
-            setGeneratedImages(newImages);
+              setGeneratedImages(newImages);
 
-            // Store or update the image URL in the Supabase database
-            const { error } = await supabase
-              .from('generated_images')
-              .upsert({
-                name: card.name,
-                url: data.images[0],
-                prompt: card.description,
-                type: card.type,
-                energy_cost: card.energyCost
-              }, { onConflict: 'name' });
+              // Store or update the image URL in the Supabase database
+              try {
+                const { error } = await supabase
+                  .from('generated_images')
+                  .upsert({
+                    name: card.name,
+                    url: imageUrl,
+                    prompt: card.description,
+                    type: card.type,
+                    energy_cost: card.energyCost
+                  }, { onConflict: 'name' });
 
-            if (error) {
-              console.error('Error storing image URL:', error);
+                if (error) {
+                  console.error('Error storing image URL:', error);
+                }
+              } catch (error) {
+                console.error('Error storing image URL:', error);
+              }
             }
           } else {
             console.error('Error generating image:', data);
