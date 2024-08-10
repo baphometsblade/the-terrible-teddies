@@ -13,7 +13,7 @@ const CARD_TYPES = [
   { name: 'Teddy Tantrum', type: 'Special', description: 'A cute cartoon angry teddy bear throwing a fit', energyCost: 3 },
 ];
 
-const AI_IMAGE_API_URL = 'https://api.aiimagegeneration.com/generate'; // Replace with actual API URL
+const OPENAI_API_URL = 'https://api.openai.com/v1/images/generations';
 
 export const ImageGenerator = ({ onComplete }) => {
   const [generatedImages, setGeneratedImages] = useState({});
@@ -52,22 +52,22 @@ export const ImageGenerator = ({ onComplete }) => {
         const card = CARD_TYPES[i];
         if (!generatedImages[card.name]) {
           const prompt = `${card.description}, in a cute cartoon style`;
-          const response = await fetch(AI_IMAGE_API_URL, {
+          const response = await fetch(OPENAI_API_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${import.meta.env.VITE_AI_IMAGE_API_KEY}`
+              "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
             },
             body: JSON.stringify({
               prompt: prompt,
-              model: "stable-diffusion", // or "dall-e" or "midjourney"
+              n: 1,
               size: "512x512"
             })
           });
           const data = await response.json();
-          if (data.url) {
+          if (data.data && data.data[0].url) {
             const newImages = { ...generatedImages };
-            newImages[card.name] = data.url;
+            newImages[card.name] = data.data[0].url;
             setGeneratedImages(newImages);
 
             // Store or update the image URL in the Supabase database
@@ -75,7 +75,7 @@ export const ImageGenerator = ({ onComplete }) => {
               .from('generated_images')
               .upsert({
                 name: card.name,
-                url: data.url,
+                url: data.data[0].url,
                 prompt: card.description,
                 type: card.type,
                 energy_cost: card.energyCost
