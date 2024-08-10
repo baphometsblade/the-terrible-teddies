@@ -4,7 +4,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '../integrations/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Zap, Heart } from 'lucide-react';
+import { Shield, Zap, Heart, Sword } from 'lucide-react';
+import { Toast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/use-toast';
 
 export const GameBoard = ({ gameMode, onExit }) => {
   const [audioContext] = useState(() => new (window.AudioContext || window.webkitAudioContext)());
@@ -18,6 +20,8 @@ export const GameBoard = ({ gameMode, onExit }) => {
   const [playerDeck, setPlayerDeck] = useState([]);
   const [opponentDeck, setOpponentDeck] = useState([]);
   const [allCards, setAllCards] = useState([]);
+  const [lastPlayedCard, setLastPlayedCard] = useState(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchCards();
@@ -76,29 +80,50 @@ export const GameBoard = ({ gameMode, onExit }) => {
 
   const playCard = (card) => {
     if (momentumGauge + card.energy_cost > 10) {
-      alert("Not enough Momentum to play this card!");
+      toast({
+        title: "Not enough Momentum!",
+        description: "You need more Momentum to play this card.",
+        variant: "destructive",
+      });
       playSound(200, 0.3); // Error sound
       return;
     }
     
     setMomentumGauge(momentumGauge + card.energy_cost);
     setPlayerHand(playerHand.filter(c => c.name !== card.name));
+    setLastPlayedCard(card);
     
     playSound(440, 0.2); // Card play sound
     
     // Implement card effects here
     switch(card.type) {
       case 'Action':
-        setOpponentHP(Math.max(0, opponentHP - card.energy_cost * 2));
+        const damage = card.energy_cost * 2;
+        setOpponentHP(Math.max(0, opponentHP - damage));
         playSound(330, 0.3); // Attack sound
+        toast({
+          title: "Attack!",
+          description: `${card.name} deals ${damage} damage to the opponent!`,
+          icon: <Sword className="h-4 w-4 text-red-500" />,
+        });
         break;
       case 'Trap':
-        // Trap effects will be handled when opponent attacks
         playSound(550, 0.2); // Trap set sound
+        toast({
+          title: "Trap Set!",
+          description: `${card.name} has been set. It will trigger on the opponent's turn.`,
+          icon: <Shield className="h-4 w-4 text-blue-500" />,
+        });
         break;
       case 'Special':
-        setPlayerHP(Math.min(30, playerHP + card.energy_cost));
+        const heal = card.energy_cost;
+        setPlayerHP(Math.min(30, playerHP + heal));
         playSound(660, 0.3); // Heal sound
+        toast({
+          title: "Special Effect!",
+          description: `${card.name} heals you for ${heal} HP!`,
+          icon: <Heart className="h-4 w-4 text-green-500" />,
+        });
         break;
     }
     
@@ -184,6 +209,30 @@ export const GameBoard = ({ gameMode, onExit }) => {
             <p className="text-sm ml-2 text-purple-700 font-semibold">{momentumGauge}/10</p>
           </div>
         </div>
+
+        {lastPlayedCard && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="last-played-card mb-6 bg-gradient-to-r from-yellow-100 to-orange-100 p-4 rounded-lg shadow-md"
+          >
+            <h3 className="text-lg font-semibold text-purple-800 mb-2">Last Played Card</h3>
+            <Card className="w-32 h-48 mx-auto bg-gradient-to-br from-yellow-200 to-orange-200 shadow-lg">
+              <CardContent className="p-2 flex flex-col justify-between h-full">
+                <div>
+                  <img src={lastPlayedCard.url} alt={lastPlayedCard.name} className="w-full h-20 object-cover mb-2 rounded" />
+                  <p className="text-sm font-bold text-purple-800">{lastPlayedCard.name}</p>
+                  <p className="text-xs text-purple-600">{lastPlayedCard.type}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-purple-700">Cost: {lastPlayedCard.energy_cost}</p>
+                  <p className="text-xs italic text-purple-600">{lastPlayedCard.prompt}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         <div className="player-area bg-gradient-to-r from-green-100 to-blue-100 p-4 rounded-lg shadow-md">
           <h2 className="text-2xl font-bold text-purple-800 mb-2">Your Terrible Teddy</h2>
