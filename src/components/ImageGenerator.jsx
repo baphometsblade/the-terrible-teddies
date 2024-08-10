@@ -50,22 +50,22 @@ export const ImageGenerator = ({ onComplete }) => {
         const card = CARD_TYPES[i];
         if (!generatedImages[card.name]) {
           const prompt = `${card.description}, cute cartoon style`;
-          const response = await fetch("https://api.openai.com/v1/images/generations", {
+          const response = await fetch("https://api.picoapps.xyz/imagine", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+              "Authorization": `Bearer ${import.meta.env.VITE_PICO_API_KEY}`
             },
             body: JSON.stringify({
               prompt: prompt,
-              n: 1,
-              size: "256x256"
+              style: "cute",
+              aspect_ratio: "1:1"
             })
           });
           const data = await response.json();
-          if (data.data && data.data[0].url) {
+          if (data.url) {
             const newImages = { ...generatedImages };
-            newImages[card.name] = data.data[0].url;
+            newImages[card.name] = data.url;
             setGeneratedImages(newImages);
 
             // Store or update the image URL in the Supabase database
@@ -73,7 +73,7 @@ export const ImageGenerator = ({ onComplete }) => {
               .from('generated_images')
               .upsert({
                 name: card.name,
-                url: data.data[0].url,
+                url: data.url,
                 prompt: card.description,
                 type: card.type,
                 energy_cost: card.energyCost
