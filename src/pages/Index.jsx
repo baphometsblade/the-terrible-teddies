@@ -16,9 +16,25 @@ const IndexContent = () => {
 
   useEffect(() => {
     if (!authLoading && session) {
-      setGameState('imageGenerator');
+      checkImagesGenerated();
     }
   }, [authLoading, session]);
+
+  const checkImagesGenerated = async () => {
+    const { data, error } = await supabase
+      .from('generated_images')
+      .select('name');
+    
+    if (error) {
+      console.error('Error checking generated images:', error);
+      setGameState('imageGenerator');
+    } else if (data.length === 6) { // Assuming we have 6 card types
+      setImagesGenerated(true);
+      setGameState('menu');
+    } else {
+      setGameState('imageGenerator');
+    }
+  };
 
   if (authLoading) {
     return (

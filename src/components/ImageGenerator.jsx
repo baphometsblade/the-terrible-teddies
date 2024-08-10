@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '../integrations/supabase';
+import { Loader2 } from 'lucide-react';
 
 const CARD_TYPES = [
   { name: 'Pillow Fight', type: 'Action', description: 'A teddy bear wielding a pillow as a weapon', energyCost: 2 },
@@ -49,17 +50,22 @@ export const ImageGenerator = ({ onComplete }) => {
         const card = CARD_TYPES[i];
         if (!generatedImages[card.name]) {
           const prompt = `${card.description}, cute cartoon style`;
-          const response = await fetch("https://a.picoapps.xyz/boy-every", {
+          const response = await fetch("https://api.openai.com/v1/images/generations", {
             method: "POST",
             headers: {
-              "Content-Type": "application/json"
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
             },
-            body: JSON.stringify({ prompts: [prompt] })
+            body: JSON.stringify({
+              prompt: prompt,
+              n: 1,
+              size: "256x256"
+            })
           });
           const data = await response.json();
-          if (data.status === 'success') {
+          if (data.data && data.data[0].url) {
             const newImages = { ...generatedImages };
-            newImages[card.name] = data.imageUrls[0];
+            newImages[card.name] = data.data[0].url;
             setGeneratedImages(newImages);
 
             // Store or update the image URL in the Supabase database
@@ -67,7 +73,7 @@ export const ImageGenerator = ({ onComplete }) => {
               .from('generated_images')
               .upsert({
                 name: card.name,
-                url: data.imageUrls[0],
+                url: data.data[0].url,
                 prompt: card.description,
                 type: card.type,
                 energy_cost: card.energyCost
@@ -93,7 +99,7 @@ export const ImageGenerator = ({ onComplete }) => {
   if (loading) {
     return (
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mb-4"></div>
+        <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
         <p className="text-lg font-semibold text-purple-700">Generating images... {Math.round(progress)}%</p>
         <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
           <div className="bg-purple-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{width: `${progress}%`}}></div>
