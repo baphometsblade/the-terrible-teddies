@@ -83,10 +83,15 @@ export const ImageGenerator = ({ onComplete }) => {
               } catch (error) {
                 console.error('Error storing image URL:', error);
               }
+            } else {
+              console.error('Error generating image:', event.data);
             }
-          } else {
-            console.error('Error generating image:', data);
-          }
+          };
+
+          window.addEventListener('message', handleMessage);
+          return () => {
+            window.removeEventListener('message', handleMessage);
+          };
         }
         setProgress(((i + 1) / CARD_TYPES.length) * 100);
       }
