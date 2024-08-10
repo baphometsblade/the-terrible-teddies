@@ -13,7 +13,7 @@ const CARD_TYPES = [
   { name: 'Teddy Tantrum', type: 'Special', description: 'A cute cartoon angry teddy bear throwing a fit', energyCost: 3 },
 ];
 
-const OPENAI_API_URL = 'https://api.openai.com/v1/images/generations';
+const PICO_API_URL = 'https://api.pico.tools/v1/collections/rnqvf/generate';
 
 export const ImageGenerator = ({ onComplete }) => {
   const [generatedImages, setGeneratedImages] = useState({});
@@ -52,22 +52,29 @@ export const ImageGenerator = ({ onComplete }) => {
         const card = CARD_TYPES[i];
         if (!generatedImages[card.name]) {
           const prompt = `${card.description}, in a cute cartoon style`;
-          const response = await fetch(OPENAI_API_URL, {
+          const response = await fetch(PICO_API_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
+              "x-api-key": import.meta.env.VITE_PICO_API_KEY
             },
             body: JSON.stringify({
               prompt: prompt,
-              n: 1,
-              size: "512x512"
+              negative_prompt: "realistic, photorealistic, human, person",
+              steps: 20,
+              width: 512,
+              height: 512,
+              number_of_images: 1,
+              guidance_scale: 7.5,
+              safety_checker: "yes",
+              seed: null,
+              style_preset: "anime"
             })
           });
           const data = await response.json();
-          if (data.data && data.data[0].url) {
+          if (data.images && data.images[0]) {
             const newImages = { ...generatedImages };
-            newImages[card.name] = data.data[0].url;
+            newImages[card.name] = data.images[0];
             setGeneratedImages(newImages);
 
             // Store or update the image URL in the Supabase database
@@ -75,7 +82,7 @@ export const ImageGenerator = ({ onComplete }) => {
               .from('generated_images')
               .upsert({
                 name: card.name,
-                url: data.data[0].url,
+                url: data.images[0],
                 prompt: card.description,
                 type: card.type,
                 energy_cost: card.energyCost
