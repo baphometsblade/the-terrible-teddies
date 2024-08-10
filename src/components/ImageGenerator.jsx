@@ -13,7 +13,7 @@ const CARD_TYPES = [
   { name: 'Teddy Tantrum', type: 'Special', description: 'A cute cartoon angry teddy bear throwing a fit', energyCost: 3 },
 ];
 
-const PICO_API_URL = 'https://api.pico.tools/v1/collections/rnqvf/generate';
+const PICO_API_URL = 'https://backend.buildpicoapps.com/aero/run/image-generation-api';
 
 export const ImageGenerator = ({ onComplete }) => {
   const [generatedImages, setGeneratedImages] = useState({});
@@ -52,29 +52,17 @@ export const ImageGenerator = ({ onComplete }) => {
         const card = CARD_TYPES[i];
         if (!generatedImages[card.name]) {
           const prompt = `${card.description}, in a cute cartoon style`;
-          const response = await fetch(PICO_API_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-api-key": import.meta.env.VITE_PICO_API_KEY
-            },
-            body: JSON.stringify({
-              prompt: prompt,
-              negative_prompt: "realistic, photorealistic, human, person",
-              steps: 20,
-              width: 512,
-              height: 512,
-              number_of_images: 1,
-              guidance_scale: 7.5,
-              safety_checker: "yes",
-              seed: null,
-              style_preset: "anime"
-            })
-          });
-          const data = await response.json();
-          if (data.images && data.images[0]) {
-            const newImages = { ...generatedImages };
-            newImages[card.name] = data.images[0];
+          window.postMessage({
+            action: "generateImage",
+            prompt: prompt
+          }, "*");
+
+          // Listen for the response from the API
+          const handleMessage = (event) => {
+            if (event.data && event.data.action === "imageGenerated") {
+              const imageUrl = event.data.imageUrl;
+              const newImages = { ...generatedImages };
+              newImages[card.name] = imageUrl;
             setGeneratedImages(newImages);
 
             // Store or update the image URL in the Supabase database
