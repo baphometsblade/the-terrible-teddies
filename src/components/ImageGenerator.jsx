@@ -5,12 +5,12 @@ import { supabase } from '../integrations/supabase';
 import { Loader2 } from 'lucide-react';
 
 const CARD_TYPES = [
-  { name: 'Pillow Fight', type: 'Action', description: 'A teddy bear wielding a pillow as a weapon', energyCost: 2 },
-  { name: 'Bear Trap', type: 'Trap', description: 'A cute teddy bear-themed trap', energyCost: 3 },
-  { name: 'Stuffing Surge', type: 'Special', description: 'A teddy bear glowing with magical energy', energyCost: 4 },
-  { name: 'Tickle Attack', type: 'Action', description: 'A mischievous teddy bear tickling another', energyCost: 1 },
-  { name: 'Sticky Honey', type: 'Trap', description: 'A teddy bear stuck in a pool of honey', energyCost: 2 },
-  { name: 'Teddy Tantrum', type: 'Special', description: 'An angry teddy bear throwing a fit', energyCost: 3 },
+  { name: 'Pillow Fight', type: 'Action', description: 'A cute cartoon teddy bear wielding a pillow as a weapon', energyCost: 2 },
+  { name: 'Bear Trap', type: 'Trap', description: 'A cute cartoon teddy bear-themed trap', energyCost: 3 },
+  { name: 'Stuffing Surge', type: 'Special', description: 'A cute cartoon teddy bear glowing with magical energy', energyCost: 4 },
+  { name: 'Tickle Attack', type: 'Action', description: 'A cute cartoon mischievous teddy bear tickling another', energyCost: 1 },
+  { name: 'Sticky Honey', type: 'Trap', description: 'A cute cartoon teddy bear stuck in a pool of honey', energyCost: 2 },
+  { name: 'Teddy Tantrum', type: 'Special', description: 'A cute cartoon angry teddy bear throwing a fit', energyCost: 3 },
 ];
 
 export const ImageGenerator = ({ onComplete }) => {
@@ -49,23 +49,23 @@ export const ImageGenerator = ({ onComplete }) => {
       for (let i = 0; i < CARD_TYPES.length; i++) {
         const card = CARD_TYPES[i];
         if (!generatedImages[card.name]) {
-          const prompt = `${card.description}, cute cartoon style`;
-          const response = await fetch("https://api.picoapps.xyz/imagine", {
+          const prompt = `${card.description}, in a cute cartoon style`;
+          const response = await fetch("https://api.openai.com/v1/images/generations", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${import.meta.env.VITE_PICO_API_KEY}`
+              "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
             },
             body: JSON.stringify({
               prompt: prompt,
-              style: "cute",
-              aspect_ratio: "1:1"
+              n: 1,
+              size: "512x512"
             })
           });
           const data = await response.json();
-          if (data.url) {
+          if (data.data && data.data[0].url) {
             const newImages = { ...generatedImages };
-            newImages[card.name] = data.url;
+            newImages[card.name] = data.data[0].url;
             setGeneratedImages(newImages);
 
             // Store or update the image URL in the Supabase database
@@ -73,7 +73,7 @@ export const ImageGenerator = ({ onComplete }) => {
               .from('generated_images')
               .upsert({
                 name: card.name,
-                url: data.url,
+                url: data.data[0].url,
                 prompt: card.description,
                 type: card.type,
                 energy_cost: card.energyCost
