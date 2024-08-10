@@ -5,12 +5,12 @@ import { supabase } from '../integrations/supabase';
 import { Loader2 } from 'lucide-react';
 
 const CARD_TYPES = [
-  { name: 'Pillow Fight', type: 'Action', description: 'A cute cartoon teddy bear wielding a pillow as a weapon', energyCost: 2 },
-  { name: 'Bear Trap', type: 'Trap', description: 'A cute cartoon teddy bear-themed trap', energyCost: 3 },
-  { name: 'Stuffing Surge', type: 'Special', description: 'A cute cartoon teddy bear glowing with magical energy', energyCost: 4 },
-  { name: 'Tickle Attack', type: 'Action', description: 'A cute cartoon mischievous teddy bear tickling another', energyCost: 1 },
-  { name: 'Sticky Honey', type: 'Trap', description: 'A cute cartoon teddy bear stuck in a pool of honey', energyCost: 2 },
-  { name: 'Teddy Tantrum', type: 'Special', description: 'A cute cartoon angry teddy bear throwing a fit', energyCost: 3 },
+  { name: 'Pillow Fight', type: 'Action', description: 'A cute cartoon teddy bear wielding a fluffy pillow as a weapon, ready for a playful battle', energyCost: 2 },
+  { name: 'Bear Trap', type: 'Trap', description: 'A cute cartoon teddy bear setting up a comical, oversized mousetrap with a cupcake as bait', energyCost: 3 },
+  { name: 'Stuffing Surge', type: 'Special', description: 'A cute cartoon teddy bear glowing with magical energy, surrounded by floating cotton stuffing', energyCost: 4 },
+  { name: 'Tickle Attack', type: 'Action', description: 'A cute cartoon mischievous teddy bear tickling another teddy bear who is laughing uncontrollably', energyCost: 1 },
+  { name: 'Sticky Honey', type: 'Trap', description: 'A cute cartoon teddy bear stuck in a pool of golden honey, looking adorably confused', energyCost: 2 },
+  { name: 'Teddy Tantrum', type: 'Special', description: 'A cute cartoon angry teddy bear throwing a comical fit, with stuffing flying everywhere', energyCost: 3 },
 ];
 
 const PICO_API_URL = 'https://backend.buildpicoapps.com/aero/run/image-generation-api';
@@ -51,7 +51,7 @@ export const ImageGenerator = ({ onComplete }) => {
       for (let i = 0; i < CARD_TYPES.length; i++) {
         const card = CARD_TYPES[i];
         if (!generatedImages[card.name]) {
-          const prompt = `${card.description}, in a cute cartoon style`;
+          const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
           window.postMessage({
             action: "generateImage",
             prompt: prompt
