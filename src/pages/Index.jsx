@@ -8,6 +8,7 @@ import { DeckBuilder } from '../components/DeckBuilder';
 import { ImageGenerator } from '../components/ImageGenerator';
 import { Loader2, Teddy } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '../integrations/supabase';
 
 const IndexContent = () => {
   const { session, loading: authLoading, logout } = useSupabaseAuth();

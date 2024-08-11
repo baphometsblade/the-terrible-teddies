@@ -52,46 +52,44 @@ export const ImageGenerator = ({ onComplete }) => {
         const card = CARD_TYPES[i];
         if (!generatedImages[card.name]) {
           const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
-          window.postMessage({
-            action: "generateImage",
-            prompt: prompt
-          }, "*");
+          const response = await fetch(PICO_API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_PICO_API_KEY}`
+            },
+            body: JSON.stringify({ prompt })
+          });
 
-          // Listen for the response from the API
-          const handleMessage = async (event) => {
-            if (event.data && event.data.action === "imageGenerated") {
-              const imageUrl = event.data.imageUrl;
-              const newImages = { ...generatedImages };
-              newImages[card.name] = imageUrl;
-              setGeneratedImages(newImages);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
 
-              // Store or update the image URL in the Supabase database
-              try {
-                const { error } = await supabase
-                  .from('generated_images')
-                  .upsert({
-                    name: card.name,
-                    url: imageUrl,
-                    prompt: card.description,
-                    type: card.type,
-                    energy_cost: card.energyCost
-                  }, { onConflict: 'name' });
+          const data = await response.json();
+          const imageUrl = data.image_url;
 
-                if (error) {
-                  console.error('Error storing image URL:', error);
-                }
-              } catch (error) {
-                console.error('Error storing image URL:', error);
-              }
-            } else {
-              console.error('Error generating image:', event.data);
+          const newImages = { ...generatedImages };
+          newImages[card.name] = imageUrl;
+          setGeneratedImages(newImages);
+
+          // Store or update the image URL in the Supabase database
+          try {
+            const { error } = await supabase
+              .from('generated_images')
+              .upsert({
+                name: card.name,
+                url: imageUrl,
+                prompt: card.description,
+                type: card.type,
+                energy_cost: card.energyCost
+              }, { onConflict: 'name' });
+
+            if (error) {
+              console.error('Error storing image URL:', error);
             }
-          };
-
-          window.addEventListener('message', handleMessage);
-          return () => {
-            window.removeEventListener('message', handleMessage);
-          };
+          } catch (error) {
+            console.error('Error storing image URL:', error);
+          }
         }
         setProgress(((i + 1) / CARD_TYPES.length) * 100);
       }
