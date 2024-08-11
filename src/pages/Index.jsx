@@ -33,6 +33,7 @@ const IndexContent = () => {
       setImagesGenerated(true);
       setGameState('menu');
     } else {
+      console.log('Not all images generated. Current count:', data.length);
       setGameState('imageGenerator');
     }
   };

@@ -14,6 +14,8 @@ const CARD_TYPES = [
 
 const PICO_API_URL = 'https://backend.buildpicoapps.com/aero/run/image-generation-api';
 
+const PICO_API_URL = 'https://backend.buildpicoapps.com/aero/run/image-generation-api';
+
 export const ImageGenerator = ({ onComplete }) => {
   const [generatedImages, setGeneratedImages] = useState({});
   const [loading, setLoading] = useState(true);
@@ -42,11 +44,11 @@ export const ImageGenerator = ({ onComplete }) => {
         onComplete();
       } else {
         // Some or all images need to be generated
-        generateMissingImages(data);
+        await generateMissingImages(data);
       }
     } catch (error) {
       console.error('Error checking existing images:', error);
-      generateAllImages();
+      await generateAllImages();
     }
   };
 
@@ -70,39 +72,44 @@ export const ImageGenerator = ({ onComplete }) => {
 
   const generateAndStoreImage = async (card) => {
     const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
-    const response = await fetch(PICO_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_PICO_API_KEY}`
-      },
-      body: JSON.stringify({ prompt })
-    });
+    try {
+      const response = await fetch(PICO_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_PICO_API_KEY}`
+        },
+        body: JSON.stringify({ prompt })
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-    const data = await response.json();
-    const imageUrl = data.image_url;
+      const data = await response.json();
+      const imageUrl = data.image_url;
 
-    const newImages = { ...generatedImages };
-    newImages[card.name] = imageUrl;
-    setGeneratedImages(newImages);
+      const newImages = { ...generatedImages };
+      newImages[card.name] = imageUrl;
+      setGeneratedImages(newImages);
 
-    // Store the image URL in the Supabase database
-    const { error } = await supabase
-      .from('generated_images')
-      .upsert({
-        name: card.name,
-        url: imageUrl,
-        prompt: card.description,
-        type: card.type,
-        energy_cost: card.energyCost
-      }, { onConflict: 'name' });
+      // Store the image URL in the Supabase database
+      const { error } = await supabase
+        .from('generated_images')
+        .upsert({
+          name: card.name,
+          url: imageUrl,
+          prompt: card.description,
+          type: card.type,
+          energy_cost: card.energyCost
+        }, { onConflict: 'name' });
 
-    if (error) {
-      console.error('Error storing image URL:', error);
+      if (error) {
+        console.error('Error storing image URL:', error);
+      }
+    } catch (error) {
+      console.error(`Error generating image for ${card.name}:`, error);
+      throw error;
     }
   };
 
@@ -116,7 +123,7 @@ export const ImageGenerator = ({ onComplete }) => {
       setLoading(false);
       onComplete();
     } catch (error) {
-      console.error('Error generating images:', error);
+      console.error('Error generating all images:', error);
       setLoading(false);
     }
   };
