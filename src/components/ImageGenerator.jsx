@@ -14,8 +14,6 @@ const CARD_TYPES = [
 
 const PICO_API_URL = 'https://backend.buildpicoapps.com/aero/run/image-generation-api';
 
-const PICO_API_URL = 'https://backend.buildpicoapps.com/aero/run/image-generation-api';
-
 export const ImageGenerator = ({ onComplete }) => {
   const [generatedImages, setGeneratedImages] = useState({});
   const [loading, setLoading] = useState(true);
