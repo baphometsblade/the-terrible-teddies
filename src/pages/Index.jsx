@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { ImageGenerator } from '../components/ImageGenerator';
-import { Loader2, TeddyBear } from 'lucide-react';
+import { Loader2, Bear } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
 
@@ -112,7 +112,7 @@ const IndexContent = () => {
     <div className="min-h-screen bg-gradient-to-b from-pink-100 to-purple-200 flex items-center justify-center">
       <div className="container mx-auto p-8 max-w-4xl bg-white rounded-lg shadow-xl">
         <div className="flex items-center justify-center mb-8">
-          <TeddyBear className="w-12 h-12 text-pink-500 mr-4" />
+          <Bear className="w-12 h-12 text-pink-500 mr-4" />
           <h1 className="text-5xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600">
             Terrible Teddies
           </h1>
