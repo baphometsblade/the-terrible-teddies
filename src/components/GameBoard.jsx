@@ -4,8 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '../integrations/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Zap, Heart, Sword } from 'lucide-react';
-import { Toast } from '@/components/ui/toast';
+import { Shield, Zap, Heart, Sword, Bear } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 export const GameBoard = ({ gameMode, onExit }) => {
@@ -21,6 +20,7 @@ export const GameBoard = ({ gameMode, onExit }) => {
   const [opponentDeck, setOpponentDeck] = useState([]);
   const [allCards, setAllCards] = useState([]);
   const [lastPlayedCard, setLastPlayedCard] = useState(null);
+  const [gameLog, setGameLog] = useState([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -96,22 +96,25 @@ export const GameBoard = ({ gameMode, onExit }) => {
     playSound(440, 0.2); // Card play sound
     
     // Implement card effects here
+    let effectDescription = '';
     switch(card.type) {
       case 'Action':
         const damage = card.energy_cost * 2;
         setOpponentHP(Math.max(0, opponentHP - damage));
         playSound(330, 0.3); // Attack sound
+        effectDescription = `${card.name} deals ${damage} damage to the opponent!`;
         toast({
           title: "Attack!",
-          description: `${card.name} deals ${damage} damage to the opponent!`,
+          description: effectDescription,
           icon: <Sword className="h-4 w-4 text-red-500" />,
         });
         break;
       case 'Trap':
         playSound(550, 0.2); // Trap set sound
+        effectDescription = `${card.name} has been set. It will trigger on the opponent's turn.`;
         toast({
           title: "Trap Set!",
-          description: `${card.name} has been set. It will trigger on the opponent's turn.`,
+          description: effectDescription,
           icon: <Shield className="h-4 w-4 text-blue-500" />,
         });
         break;
@@ -119,13 +122,16 @@ export const GameBoard = ({ gameMode, onExit }) => {
         const heal = card.energy_cost;
         setPlayerHP(Math.min(30, playerHP + heal));
         playSound(660, 0.3); // Heal sound
+        effectDescription = `${card.name} heals you for ${heal} HP!`;
         toast({
           title: "Special Effect!",
-          description: `${card.name} heals you for ${heal} HP!`,
+          description: effectDescription,
           icon: <Heart className="h-4 w-4 text-green-500" />,
         });
         break;
     }
+    
+    setGameLog(prevLog => [...prevLog, { player: 'You', action: effectDescription }]);
     
     if (momentumGauge + card.energy_cost >= 10) {
       endTurn();
@@ -210,29 +216,51 @@ export const GameBoard = ({ gameMode, onExit }) => {
           </div>
         </div>
 
-        {lastPlayedCard && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="last-played-card mb-6 bg-gradient-to-r from-yellow-100 to-orange-100 p-4 rounded-lg shadow-md"
-          >
-            <h3 className="text-lg font-semibold text-purple-800 mb-2">Last Played Card</h3>
-            <Card className="w-32 h-48 mx-auto bg-gradient-to-br from-yellow-200 to-orange-200 shadow-lg">
-              <CardContent className="p-2 flex flex-col justify-between h-full">
-                <div>
-                  <img src={lastPlayedCard.url} alt={lastPlayedCard.name} className="w-full h-20 object-cover mb-2 rounded" />
-                  <p className="text-sm font-bold text-purple-800">{lastPlayedCard.name}</p>
-                  <p className="text-xs text-purple-600">{lastPlayedCard.type}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-purple-700">Cost: {lastPlayedCard.energy_cost}</p>
-                  <p className="text-xs italic text-purple-600">{lastPlayedCard.prompt}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+        <div className="flex mb-6">
+          <div className="w-1/2 pr-2">
+            {lastPlayedCard && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="last-played-card bg-gradient-to-r from-yellow-100 to-orange-100 p-4 rounded-lg shadow-md"
+              >
+                <h3 className="text-lg font-semibold text-purple-800 mb-2">Last Played Card</h3>
+                <Card className="w-32 h-48 mx-auto bg-gradient-to-br from-yellow-200 to-orange-200 shadow-lg">
+                  <CardContent className="p-2 flex flex-col justify-between h-full">
+                    <div>
+                      <img src={lastPlayedCard.url} alt={lastPlayedCard.name} className="w-full h-20 object-cover mb-2 rounded" />
+                      <p className="text-sm font-bold text-purple-800">{lastPlayedCard.name}</p>
+                      <p className="text-xs text-purple-600">{lastPlayedCard.type}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-purple-700">Cost: {lastPlayedCard.energy_cost}</p>
+                      <p className="text-xs italic text-purple-600">{lastPlayedCard.prompt}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </div>
+          <div className="w-1/2 pl-2">
+            <div className="game-log bg-gradient-to-r from-indigo-100 to-blue-100 p-4 rounded-lg shadow-md h-64 overflow-y-auto">
+              <h3 className="text-lg font-semibold text-purple-800 mb-2">Game Log</h3>
+              <ul className="space-y-2">
+                {gameLog.map((log, index) => (
+                  <motion.li
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-sm text-purple-700"
+                  >
+                    <span className="font-semibold">{log.player}:</span> {log.action}
+                  </motion.li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
 
         <div className="player-area bg-gradient-to-r from-green-100 to-blue-100 p-4 rounded-lg shadow-md">
           <h2 className="text-2xl font-bold text-purple-800 mb-2">Your Terrible Teddy</h2>
