@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '../integrations/supabase';
 import { Loader2 } from 'lucide-react';
@@ -21,75 +20,51 @@ export const ImageGenerator = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    fetchExistingImages();
+    generateAllImages();
   }, []);
-
-  const fetchExistingImages = async () => {
-    const { data, error } = await supabase
-      .from('generated_images')
-      .select('*');
-    
-    if (error) {
-      console.error('Error fetching existing images:', error);
-    } else {
-      const images = {};
-      data.forEach(item => {
-        images[item.name] = item.url;
-      });
-      setGeneratedImages(images);
-      if (Object.keys(images).length === CARD_TYPES.length) {
-        setLoading(false);
-        onComplete();
-      } else {
-        generateAllImages();
-      }
-    }
-  };
 
   const generateAllImages = async () => {
     try {
       for (let i = 0; i < CARD_TYPES.length; i++) {
         const card = CARD_TYPES[i];
-        if (!generatedImages[card.name]) {
-          const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
-          const response = await fetch(PICO_API_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_PICO_API_KEY}`
-            },
-            body: JSON.stringify({ prompt })
-          });
+        const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
+        const response = await fetch(PICO_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_PICO_API_KEY}`
+          },
+          body: JSON.stringify({ prompt })
+        });
 
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-          const data = await response.json();
-          const imageUrl = data.image_url;
+        const data = await response.json();
+        const imageUrl = data.image_url;
 
-          const newImages = { ...generatedImages };
-          newImages[card.name] = imageUrl;
-          setGeneratedImages(newImages);
+        const newImages = { ...generatedImages };
+        newImages[card.name] = imageUrl;
+        setGeneratedImages(newImages);
 
-          // Store or update the image URL in the Supabase database
-          try {
-            const { error } = await supabase
-              .from('generated_images')
-              .upsert({
-                name: card.name,
-                url: imageUrl,
-                prompt: card.description,
-                type: card.type,
-                energy_cost: card.energyCost
-              }, { onConflict: 'name' });
+        // Store or update the image URL in the Supabase database
+        try {
+          const { error } = await supabase
+            .from('generated_images')
+            .upsert({
+              name: card.name,
+              url: imageUrl,
+              prompt: card.description,
+              type: card.type,
+              energy_cost: card.energyCost
+            }, { onConflict: 'name' });
 
-            if (error) {
-              console.error('Error storing image URL:', error);
-            }
-          } catch (error) {
+          if (error) {
             console.error('Error storing image URL:', error);
           }
+        } catch (error) {
+          console.error('Error storing image URL:', error);
         }
         setProgress(((i + 1) / CARD_TYPES.length) * 100);
       }
