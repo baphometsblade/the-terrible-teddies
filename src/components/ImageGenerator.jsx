@@ -20,52 +20,97 @@ export const ImageGenerator = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    generateAllImages();
+    checkExistingImages();
   }, []);
+
+  const checkExistingImages = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('generated_images')
+        .select('*');
+
+      if (error) throw error;
+
+      if (data.length === CARD_TYPES.length) {
+        // All images already exist
+        const imageMap = {};
+        data.forEach(item => {
+          imageMap[item.name] = item.url;
+        });
+        setGeneratedImages(imageMap);
+        setLoading(false);
+        onComplete();
+      } else {
+        // Some or all images need to be generated
+        generateMissingImages(data);
+      }
+    } catch (error) {
+      console.error('Error checking existing images:', error);
+      generateAllImages();
+    }
+  };
+
+  const generateMissingImages = async (existingImages) => {
+    const existingImageNames = existingImages.map(img => img.name);
+    const missingCards = CARD_TYPES.filter(card => !existingImageNames.includes(card.name));
+
+    try {
+      for (let i = 0; i < missingCards.length; i++) {
+        const card = missingCards[i];
+        await generateAndStoreImage(card);
+        setProgress(((existingImages.length + i + 1) / CARD_TYPES.length) * 100);
+      }
+      setLoading(false);
+      onComplete();
+    } catch (error) {
+      console.error('Error generating missing images:', error);
+      setLoading(false);
+    }
+  };
+
+  const generateAndStoreImage = async (card) => {
+    const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
+    const response = await fetch(PICO_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_PICO_API_KEY}`
+      },
+      body: JSON.stringify({ prompt })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const imageUrl = data.image_url;
+
+    const newImages = { ...generatedImages };
+    newImages[card.name] = imageUrl;
+    setGeneratedImages(newImages);
+
+    // Store the image URL in the Supabase database
+    const { error } = await supabase
+      .from('generated_images')
+      .upsert({
+        name: card.name,
+        url: imageUrl,
+        prompt: card.description,
+        type: card.type,
+        energy_cost: card.energyCost
+      }, { onConflict: 'name' });
+
+    if (error) {
+      console.error('Error storing image URL:', error);
+    }
+  };
 
   const generateAllImages = async () => {
     try {
       for (let i = 0; i < CARD_TYPES.length; i++) {
         const card = CARD_TYPES[i];
-        const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
-        const response = await fetch(PICO_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_PICO_API_KEY}`
-          },
-          body: JSON.stringify({ prompt })
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const imageUrl = data.image_url;
-
-        const newImages = { ...generatedImages };
-        newImages[card.name] = imageUrl;
-        setGeneratedImages(newImages);
-
-        // Store or update the image URL in the Supabase database
-        try {
-          const { error } = await supabase
-            .from('generated_images')
-            .upsert({
-              name: card.name,
-              url: imageUrl,
-              prompt: card.description,
-              type: card.type,
-              energy_cost: card.energyCost
-            }, { onConflict: 'name' });
-
-          if (error) {
-            console.error('Error storing image URL:', error);
-          }
-        } catch (error) {
-          console.error('Error storing image URL:', error);
-        }
+        await generateAndStoreImage(card);
         setProgress(((i + 1) / CARD_TYPES.length) * 100);
       }
       setLoading(false);
