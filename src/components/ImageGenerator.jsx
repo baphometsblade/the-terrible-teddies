@@ -20,53 +20,8 @@ export const ImageGenerator = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    checkExistingImages();
+    generateAllImages();
   }, []);
-
-  const checkExistingImages = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('generated_images')
-        .select('*');
-
-      if (error) throw error;
-
-      if (data.length === CARD_TYPES.length) {
-        // All images already exist
-        const imageMap = {};
-        data.forEach(item => {
-          imageMap[item.name] = item.url;
-        });
-        setGeneratedImages(imageMap);
-        setLoading(false);
-        onComplete();
-      } else {
-        // Some or all images need to be generated
-        await generateMissingImages(data);
-      }
-    } catch (error) {
-      console.error('Error checking existing images:', error);
-      await generateAllImages();
-    }
-  };
-
-  const generateMissingImages = async (existingImages) => {
-    const existingImageNames = existingImages.map(img => img.name);
-    const missingCards = CARD_TYPES.filter(card => !existingImageNames.includes(card.name));
-
-    try {
-      for (let i = 0; i < missingCards.length; i++) {
-        const card = missingCards[i];
-        await generateAndStoreImage(card);
-        setProgress(((existingImages.length + i + 1) / CARD_TYPES.length) * 100);
-      }
-      setLoading(false);
-      onComplete();
-    } catch (error) {
-      console.error('Error generating missing images:', error);
-      setLoading(false);
-    }
-  };
 
   const generateAndStoreImage = async (card) => {
     const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;

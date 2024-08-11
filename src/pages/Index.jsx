@@ -18,20 +18,7 @@ const IndexContent = () => {
   useEffect(() => {
     const checkImagesGenerated = async () => {
       if (!authLoading && session) {
-        const { data, error } = await supabase
-          .from('generated_images')
-          .select('name');
-        
-        if (error) {
-          console.error('Error checking generated images:', error);
-          setGameState('imageGenerator');
-        } else if (data.length === 6) { // Assuming we have 6 card types
-          setImagesGenerated(true);
-          setGameState('menu');
-        } else {
-          console.log('Not all images generated. Current count:', data.length);
-          setGameState('imageGenerator');
-        }
+        setGameState('imageGenerator');
       }
     };
 
