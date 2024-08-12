@@ -19,56 +19,53 @@ const fromSupabase = async (query) => {
 
 /* supabase integration types
 
-### tasks
+// EXAMPLE TYPES SECTION
+// DO NOT USE TYPESCRIPT
 
-| name       | type                        | format | required |
-|------------|---------------------------|--------|----------|
-| id         | int8                      | number | true     |
-| created_at | timestamp with time zone  | string | true     |
-| user_id    | uuid                      | string | true     |
-| title      | text                      | string | true     |
-| completed  | boolean                   | boolean| true     |
+### foos
 
+| name    | type | format | required |
+|---------|------|--------|----------|
+| id      | int8 | number | true     |
+| title   | text | string | true     |
+| date    | date | string | true     |
+
+### bars
+
+| name    | type | format | required |
+|---------|------|--------|----------|
+| id      | int8 | number | true     |
+| foo_id  | int8 | number | true     |  // foreign key to foos
+	
 */
 
-// Hooks for 'tasks' table
-export const useTasks = () => useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => fromSupabase(supabase.from('tasks').select('*').order('created_at', { ascending: false }))
-});
+// Example hook for models
 
-export const useAddTask = () => {
+export const useFoo = ()=> useQuery({
+    queryKey: ['foos'],
+    queryFn: fromSupabase(supabase.from('foos')),
+})
+export const useAddFoo = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (newTask) => fromSupabase(supabase.from('tasks').insert([newTask])),
-        onSuccess: () => {
-            queryClient.invalidateQueries('tasks');
+        mutationFn: (newFoo)=> fromSupabase(supabase.from('foos').insert([{ title: newFoo.title }])),
+        onSuccess: ()=> {
+            queryClient.invalidateQueries('foos');
         },
     });
 };
 
-export const useUpdateTask = () => {
+export const useBar = ()=> useQuery({
+    queryKey: ['bars'],
+    queryFn: fromSupabase(supabase.from('bars')),
+})
+export const useAddBar = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, ...updateData }) => fromSupabase(supabase.from('tasks').update(updateData).eq('id', id)),
-        onSuccess: () => {
-            queryClient.invalidateQueries('tasks');
+        mutationFn: (newBar)=> fromSupabase(supabase.from('bars').insert([{ foo_id: newBar.foo_id }])),
+        onSuccess: ()=> {
+            queryClient.invalidateQueries('bars');
         },
     });
 };
 
-export const useDeleteTask = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (id) => fromSupabase(supabase.from('tasks').delete().eq('id', id)),
-        onSuccess: () => {
-            queryClient.invalidateQueries('tasks');
-        },
-    });
-};
-
-export const useGetSingleTask = (id) => useQuery({
-    queryKey: ['tasks', id],
-    queryFn: () => fromSupabase(supabase.from('tasks').select('*').eq('id', id).single()),
-    enabled: !!id
-});
