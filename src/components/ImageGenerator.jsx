@@ -22,11 +22,10 @@ export const ImageGenerator = ({ onComplete }) => {
   const generateAndStoreImage = async (card) => {
     const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
     try {
-      const response = await fetch(PICO_API_URL, {
+      const response = await fetch(`${PICO_API_URL}?pk=${import.meta.env.VITE_PICO_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_PICO_API_KEY}`
         },
         body: JSON.stringify({ prompt })
       });
