@@ -3,6 +3,7 @@ import { supabase, SupabaseProvider } from './index.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { Button } from '@/components/ui/button';
 
 const SupabaseAuthContext = createContext();
 
@@ -60,11 +61,26 @@ export const useSupabaseAuth = () => {
   return useContext(SupabaseAuthContext);
 };
 
-export const SupabaseAuthUI = () => (
-  <Auth
-    supabaseClient={supabase}
-    appearance={{ theme: ThemeSupa }}
-    theme="default"
-    providers={[]}
-  />
-);
+export const SupabaseAuthUI = () => {
+  const { session } = useSupabaseAuth();
+
+  if (session) {
+    return (
+      <div className="text-center">
+        <p className="mb-4">You are already logged in.</p>
+        <Button onClick={() => window.location.href = '/'}>
+          Go to Home
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <Auth
+      supabaseClient={supabase}
+      appearance={{ theme: ThemeSupa }}
+      theme="default"
+      providers={[]}
+    />
+  );
+};

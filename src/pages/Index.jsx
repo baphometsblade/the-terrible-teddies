@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSupabaseAuth } from '../integrations/supabase/auth';
-import { SupabaseAuthProvider } from '../integrations/supabase/auth';
+import { useSupabaseAuth, SupabaseAuthProvider } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GameBoard } from '../components/GameBoard';
