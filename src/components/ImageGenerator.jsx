@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '../integrations/supabase';
 import { Loader2 } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
 
 const CARD_TYPES = [
   { name: 'Pillow Fight', type: 'Action', description: 'A cute cartoon teddy bear wielding a fluffy pillow as a weapon, ready for a playful battle', energyCost: 2 },
@@ -12,7 +13,7 @@ const CARD_TYPES = [
   { name: 'Teddy Tantrum', type: 'Special', description: 'A cute cartoon angry teddy bear throwing a comical fit, with stuffing flying everywhere', energyCost: 3 },
 ];
 
-const PICO_API_URL = 'https://backend.buildpicoapps.com/aero/run/image-generation-api';
+const PICO_API_URL = 'https://a.picoapps.xyz/entire-debate';
 
 export const ImageGenerator = ({ onComplete }) => {
   const [generatedImages, setGeneratedImages] = useState({});
@@ -22,7 +23,7 @@ export const ImageGenerator = ({ onComplete }) => {
   const generateAndStoreImage = async (card) => {
     const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
     try {
-      const response = await fetch(`${PICO_API_URL}?pk=${import.meta.env.VITE_PICO_API_KEY}`, {
+      const response = await fetch(PICO_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -35,7 +36,7 @@ export const ImageGenerator = ({ onComplete }) => {
       }
 
       const data = await response.json();
-      const imageUrl = data.image_url;
+      const imageUrl = data.output;
 
       const newImages = { ...generatedImages };
       newImages[card.name] = imageUrl;
@@ -77,6 +78,11 @@ export const ImageGenerator = ({ onComplete }) => {
       onComplete();
     } catch (error) {
       console.error('Error generating all images:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate images. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
