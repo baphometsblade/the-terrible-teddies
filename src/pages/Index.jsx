@@ -28,12 +28,8 @@ const IndexContent = () => {
           return;
         }
 
-        if (count === 0) {
-          setGameState('imageGenerator');
-        } else {
-          setImagesGenerated(true);
-          setGameState('menu');
-        }
+        setImagesGenerated(count > 0);
+        setGameState(count > 0 ? 'menu' : 'imageGenerator');
       }
     };
 
@@ -151,9 +147,10 @@ const IndexContent = () => {
               <CardTitle className="text-2xl text-center text-purple-700">Generate Game Assets</CardTitle>
             </CardHeader>
             <CardContent>
-              <ImageGenerator onComplete={() => {
+              <ImageGenerator onComplete={(generatedImages) => {
                 setImagesGenerated(true);
                 setGameState('menu');
+                // You can use generatedImages here if needed
               }} />
             </CardContent>
           </Card>

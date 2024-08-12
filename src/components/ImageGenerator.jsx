@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
-import { useGeneratedImages, useAddGeneratedImage, useCardImages, useAddCardImage } from '../integrations/supabase';
+import { useAddGeneratedImage, useAddCardImage } from '../integrations/supabase';
 
 const CARD_TYPES = [
   { name: 'Pillow Fight', type: 'Action', description: 'A cute cartoon teddy bear wielding a fluffy pillow as a weapon, ready for a playful battle', energyCost: 2 },
@@ -17,23 +17,10 @@ const CARD_TYPES = [
 const OPENAI_API_URL = 'https://api.openai.com/v1/images/generations';
 
 export const ImageGenerator = ({ onComplete }) => {
-  const [generatedImages, setGeneratedImages] = useState({});
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
-  const { data: existingImages, isLoading: isLoadingImages } = useGeneratedImages();
   const addGeneratedImage = useAddGeneratedImage();
-
-  useEffect(() => {
-    if (existingImages) {
-      const images = {};
-      existingImages.forEach(img => {
-        images[img.name] = img.url;
-      });
-      setGeneratedImages(images);
-    }
-  }, [existingImages]);
-
   const addCardImage = useAddCardImage();
 
   const generateAndStoreImage = async (card) => {
@@ -59,28 +46,25 @@ export const ImageGenerator = ({ onComplete }) => {
       const data = await response.json();
       const imageUrl = data.data[0].url;
 
-      const newImages = { ...generatedImages };
-      newImages[card.name] = imageUrl;
-      setGeneratedImages(newImages);
+      // Store the image URL in both tables
+      await Promise.all([
+        addCardImage.mutateAsync({
+          name: card.name,
+          url: imageUrl,
+          prompt: card.description,
+          type: card.type,
+          energy_cost: card.energyCost
+        }),
+        addGeneratedImage.mutateAsync({
+          name: card.name,
+          url: imageUrl,
+          prompt: card.description,
+          type: card.type,
+          energy_cost: card.energyCost
+        })
+      ]);
 
-      // Store the image URL in the card_images table
-      await addCardImage.mutateAsync({
-        name: card.name,
-        url: imageUrl,
-        prompt: card.description,
-        type: card.type,
-        energy_cost: card.energyCost
-      });
-
-      // Store the card data in the generated_images table
-      await addGeneratedImage.mutateAsync({
-        name: card.name,
-        url: imageUrl,
-        prompt: card.description,
-        type: card.type,
-        energy_cost: card.energyCost
-      });
-
+      return imageUrl;
     } catch (error) {
       console.error(`Error generating image for ${card.name}:`, error);
       throw error;
@@ -89,20 +73,21 @@ export const ImageGenerator = ({ onComplete }) => {
 
   const generateAllImages = async () => {
     setLoading(true);
+    const generatedImages = {};
     try {
-      const cardsToGenerate = CARD_TYPES.filter(card => !generatedImages[card.name]);
-
-      for (let i = 0; i < cardsToGenerate.length; i++) {
-        await generateAndStoreImage(cardsToGenerate[i]);
-        setProgress(((i + 1) / cardsToGenerate.length) * 100);
+      for (let i = 0; i < CARD_TYPES.length; i++) {
+        const card = CARD_TYPES[i];
+        const imageUrl = await generateAndStoreImage(card);
+        generatedImages[card.name] = imageUrl;
+        setProgress(((i + 1) / CARD_TYPES.length) * 100);
       }
       
       toast({
         title: "Success",
-        description: "All images have been generated successfully!",
+        description: "All images have been generated and stored successfully!",
         variant: "success",
       });
-      onComplete();
+      onComplete(generatedImages);
     } catch (error) {
       console.error('Error generating all images:', error);
       toast({
@@ -115,10 +100,6 @@ export const ImageGenerator = ({ onComplete }) => {
       setProgress(0);
     }
   };
-
-  if (isLoadingImages) {
-    return <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />;
-  }
 
   return (
     <div className="space-y-4">
@@ -145,11 +126,9 @@ export const ImageGenerator = ({ onComplete }) => {
               <h3 className="text-lg font-bold">{card.name}</h3>
               <p className="text-sm text-gray-600">{card.type}</p>
               <p className="text-sm text-gray-600">Energy Cost: {card.energyCost}</p>
-              {generatedImages[card.name] ? (
-                <img src={generatedImages[card.name]} alt={card.name} className="w-full h-48 object-cover mt-2 rounded-lg shadow-md" />
-              ) : (
-                <div className="w-full h-48 bg-gray-200 animate-pulse mt-2 rounded-lg"></div>
-              )}
+              <div className="w-full h-48 bg-gray-200 mt-2 rounded-lg flex items-center justify-center">
+                <p className="text-sm text-gray-500">Image will be generated</p>
+              </div>
               <p className="text-xs mt-2 italic">{card.description}</p>
             </CardContent>
           </Card>
