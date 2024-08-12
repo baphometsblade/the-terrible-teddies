@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '../integrations/supabase';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from '@/components/ui/button';
 
 const CARD_TYPES = [
   { name: 'Pillow Fight', type: 'Action', description: 'A cute cartoon teddy bear wielding a fluffy pillow as a weapon, ready for a playful battle', energyCost: 2 },
@@ -13,17 +14,35 @@ const CARD_TYPES = [
   { name: 'Teddy Tantrum', type: 'Special', description: 'A cute cartoon angry teddy bear throwing a comical fit, with stuffing flying everywhere', energyCost: 3 },
 ];
 
-const PICO_API_URL = 'https://api.openai.com/v1/images/generations';
+const OPENAI_API_URL = 'https://api.openai.com/v1/images/generations';
 
 export const ImageGenerator = ({ onComplete }) => {
   const [generatedImages, setGeneratedImages] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchExistingImages();
+  }, []);
+
+  const fetchExistingImages = async () => {
+    const { data, error } = await supabase.from('generated_images').select('*');
+    if (error) {
+      console.error('Error fetching existing images:', error);
+      return;
+    }
+    const images = {};
+    data.forEach(img => {
+      images[img.name] = img.url;
+    });
+    setGeneratedImages(images);
+  };
 
   const generateAndStoreImage = async (card) => {
     const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
     try {
-      const response = await fetch(PICO_API_URL, {
+      const response = await fetch(OPENAI_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,17 +89,18 @@ export const ImageGenerator = ({ onComplete }) => {
   const generateAllImages = async () => {
     setLoading(true);
     try {
-      const { data: existingImages, error } = await supabase.from('generated_images').select('name');
-      if (error) throw error;
-
-      const existingImageNames = new Set(existingImages.map(img => img.name));
-      const cardsToGenerate = CARD_TYPES.filter(card => !existingImageNames.has(card.name));
+      const cardsToGenerate = CARD_TYPES.filter(card => !generatedImages[card.name]);
 
       for (let i = 0; i < cardsToGenerate.length; i++) {
         await generateAndStoreImage(cardsToGenerate[i]);
         setProgress(((i + 1) / cardsToGenerate.length) * 100);
       }
       
+      toast({
+        title: "Success",
+        description: "All images have been generated successfully!",
+        variant: "success",
+      });
       onComplete();
     } catch (error) {
       console.error('Error generating all images:', error);
@@ -91,30 +111,19 @@ export const ImageGenerator = ({ onComplete }) => {
       });
     } finally {
       setLoading(false);
+      setProgress(0);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="text-center">
-        <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
-        <p className="text-lg font-semibold text-purple-700">Generating images... {Math.round(progress)}%</p>
-        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
-          <div className="bg-purple-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{width: `${progress}%`}}></div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      <button
+      <Button
         onClick={generateAllImages}
         className="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded hover:bg-purple-700 transition-colors duration-300"
         disabled={loading}
       >
         {loading ? 'Generating...' : 'Generate All Images'}
-      </button>
+      </Button>
       {loading && (
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
