@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { supabase } from '../integrations/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Zap, Heart, Sword, Bear } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useGeneratedImages } from '../integrations/supabase';
 
 export const GameBoard = ({ gameMode, onExit }) => {
   const [audioContext] = useState(() => new (window.AudioContext || window.webkitAudioContext)());
@@ -18,27 +18,16 @@ export const GameBoard = ({ gameMode, onExit }) => {
   const [currentTurn, setCurrentTurn] = useState('player');
   const [playerDeck, setPlayerDeck] = useState([]);
   const [opponentDeck, setOpponentDeck] = useState([]);
-  const [allCards, setAllCards] = useState([]);
   const [lastPlayedCard, setLastPlayedCard] = useState(null);
   const [gameLog, setGameLog] = useState([]);
   const { toast } = useToast();
+  const { data: allCards, isLoading: isLoadingCards } = useGeneratedImages();
 
   useEffect(() => {
-    fetchCards();
-  }, []);
-
-  const fetchCards = async () => {
-    const { data, error } = await supabase
-      .from('generated_images')
-      .select('*');
-    
-    if (error) {
-      console.error('Error fetching cards:', error);
-    } else {
-      setAllCards(data);
-      initializeGame(data);
+    if (allCards) {
+      initializeGame(allCards);
     }
-  };
+  }, [allCards]);
 
   const initializeGame = (cards) => {
     const shuffledCards = [...cards].sort(() => Math.random() - 0.5);
@@ -164,7 +153,7 @@ export const GameBoard = ({ gameMode, onExit }) => {
         endTurn();
       }, 1000);
     }
-  }, [currentTurn, gameMode, opponentHand, playerHP, opponentHP, endTurn, playSound]);
+  }, [currentTurn, gameMode, opponentHand, playerHP, opponentHP, playSound]);
 
   useEffect(() => {
     aiTurn();
@@ -179,6 +168,10 @@ export const GameBoard = ({ gameMode, onExit }) => {
       setOpponentHand([...opponentHand, ...drawCards(1, true)]);
     }
   };
+
+  if (isLoadingCards) {
+    return <div>Loading game...</div>;
+  }
 
   return (
     <div className="game-board p-4 bg-gray-100 rounded-lg">
