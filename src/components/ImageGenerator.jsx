@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { supabase } from '../integrations/supabase';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
+import { useGeneratedImages, useAddGeneratedImage } from '../integrations/supabase';
 
 const CARD_TYPES = [
   { name: 'Pillow Fight', type: 'Action', description: 'A cute cartoon teddy bear wielding a fluffy pillow as a weapon, ready for a playful battle', energyCost: 2 },
@@ -21,23 +21,18 @@ export const ImageGenerator = ({ onComplete }) => {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
+  const { data: existingImages, isLoading: isLoadingImages } = useGeneratedImages();
+  const addGeneratedImage = useAddGeneratedImage();
 
   useEffect(() => {
-    fetchExistingImages();
-  }, []);
-
-  const fetchExistingImages = async () => {
-    const { data, error } = await supabase.from('generated_images').select('*');
-    if (error) {
-      console.error('Error fetching existing images:', error);
-      return;
+    if (existingImages) {
+      const images = {};
+      existingImages.forEach(img => {
+        images[img.name] = img.url;
+      });
+      setGeneratedImages(images);
     }
-    const images = {};
-    data.forEach(img => {
-      images[img.name] = img.url;
-    });
-    setGeneratedImages(images);
-  };
+  }, [existingImages]);
 
   const generateAndStoreImage = async (card) => {
     const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
@@ -67,19 +62,14 @@ export const ImageGenerator = ({ onComplete }) => {
       setGeneratedImages(newImages);
 
       // Store the image URL in the Supabase database
-      const { error } = await supabase
-        .from('generated_images')
-        .upsert({
-          name: card.name,
-          url: imageUrl,
-          prompt: card.description,
-          type: card.type,
-          energy_cost: card.energyCost
-        }, { onConflict: 'name' });
+      await addGeneratedImage.mutateAsync({
+        name: card.name,
+        url: imageUrl,
+        prompt: card.description,
+        type: card.type,
+        energy_cost: card.energyCost
+      });
 
-      if (error) {
-        console.error('Error storing image URL:', error);
-      }
     } catch (error) {
       console.error(`Error generating image for ${card.name}:`, error);
       throw error;
@@ -114,6 +104,10 @@ export const ImageGenerator = ({ onComplete }) => {
       setProgress(0);
     }
   };
+
+  if (isLoadingImages) {
+    return <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />;
+  }
 
   return (
     <div className="space-y-4">
