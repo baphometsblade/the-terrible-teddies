@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { ImageGenerator } from '../components/ImageGenerator';
-import { Loader2, Bear } from 'lucide-react';
+import { Loader2, Bear, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const IndexContent = () => {
   const { session, loading: authLoading, logout } = useSupabaseAuth();
@@ -90,8 +91,9 @@ const IndexContent = () => {
       <Button 
         onClick={() => setGameState('multiplayer')} 
         className="w-full text-lg py-6 bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
+        disabled
       >
-        Multiplayer
+        Multiplayer (Coming Soon)
       </Button>
       <Button 
         onClick={() => setGameState('deckBuilder')} 
@@ -117,6 +119,16 @@ const IndexContent = () => {
           <h1 className="text-5xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600">
             Terrible Teddies
           </h1>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-6 h-6 text-purple-500 ml-4 cursor-pointer" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>A cute and cuddly card game where teddy bears battle it out!</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         {gameState === 'loading' && (
           <div className="text-center text-2xl text-gray-600">
