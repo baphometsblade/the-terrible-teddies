@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
-import { useGeneratedImages, useAddGeneratedImage } from '../integrations/supabase';
+import { useGeneratedImages, useAddGeneratedImage, useCardImages, useAddCardImage } from '../integrations/supabase';
 
 const CARD_TYPES = [
   { name: 'Pillow Fight', type: 'Action', description: 'A cute cartoon teddy bear wielding a fluffy pillow as a weapon, ready for a playful battle', energyCost: 2 },
@@ -34,6 +34,8 @@ export const ImageGenerator = ({ onComplete }) => {
     }
   }, [existingImages]);
 
+  const addCardImage = useAddCardImage();
+
   const generateAndStoreImage = async (card) => {
     const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
     try {
@@ -61,7 +63,16 @@ export const ImageGenerator = ({ onComplete }) => {
       newImages[card.name] = imageUrl;
       setGeneratedImages(newImages);
 
-      // Store the image URL in the Supabase database
+      // Store the image URL in the card_images table
+      await addCardImage.mutateAsync({
+        name: card.name,
+        url: imageUrl,
+        prompt: card.description,
+        type: card.type,
+        energy_cost: card.energyCost
+      });
+
+      // Store the card data in the generated_images table
       await addGeneratedImage.mutateAsync({
         name: card.name,
         url: imageUrl,

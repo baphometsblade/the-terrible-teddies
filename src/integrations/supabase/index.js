@@ -74,3 +74,20 @@ export const useDeleteGeneratedImage = () => {
         },
     });
 };
+
+// Hooks for card_images table
+
+export const useCardImages = () => useQuery({
+    queryKey: ['card_images'],
+    queryFn: () => fromSupabase(supabase.from('card_images').select('*')),
+});
+
+export const useAddCardImage = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (newImage) => fromSupabase(supabase.from('card_images').insert([newImage])),
+        onSuccess: () => {
+            queryClient.invalidateQueries('card_images');
+        },
+    });
+};
