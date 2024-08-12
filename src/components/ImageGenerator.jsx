@@ -13,7 +13,7 @@ const CARD_TYPES = [
   { name: 'Teddy Tantrum', type: 'Special', description: 'A cute cartoon angry teddy bear throwing a comical fit, with stuffing flying everywhere', energyCost: 3 },
 ];
 
-const PICO_API_URL = 'https://a.picoapps.xyz/entire-debate';
+const PICO_API_URL = 'https://api.openai.com/v1/images/generations';
 
 export const ImageGenerator = ({ onComplete }) => {
   const [generatedImages, setGeneratedImages] = useState({});
@@ -27,8 +27,13 @@ export const ImageGenerator = ({ onComplete }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
         },
-        body: JSON.stringify({ prompt })
+        body: JSON.stringify({
+          prompt: prompt,
+          n: 1,
+          size: "256x256"
+        })
       });
 
       if (!response.ok) {
@@ -36,7 +41,7 @@ export const ImageGenerator = ({ onComplete }) => {
       }
 
       const data = await response.json();
-      const imageUrl = data.output;
+      const imageUrl = data.data[0].url;
 
       const newImages = { ...generatedImages };
       newImages[card.name] = imageUrl;
@@ -65,16 +70,17 @@ export const ImageGenerator = ({ onComplete }) => {
   const generateAllImages = async () => {
     setLoading(true);
     try {
-      const existingImages = await supabase.from('generated_images').select('name');
-      const existingImageNames = new Set(existingImages.data.map(img => img.name));
+      const { data: existingImages, error } = await supabase.from('generated_images').select('name');
+      if (error) throw error;
 
-      for (let i = 0; i < CARD_TYPES.length; i++) {
-        const card = CARD_TYPES[i];
-        if (!existingImageNames.has(card.name)) {
-          await generateAndStoreImage(card);
-        }
-        setProgress(((i + 1) / CARD_TYPES.length) * 100);
+      const existingImageNames = new Set(existingImages.map(img => img.name));
+      const cardsToGenerate = CARD_TYPES.filter(card => !existingImageNames.has(card.name));
+
+      for (let i = 0; i < cardsToGenerate.length; i++) {
+        await generateAndStoreImage(cardsToGenerate[i]);
+        setProgress(((i + 1) / cardsToGenerate.length) * 100);
       }
+      
       onComplete();
     } catch (error) {
       console.error('Error generating all images:', error);

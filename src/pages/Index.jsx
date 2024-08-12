@@ -18,16 +18,16 @@ const IndexContent = () => {
   useEffect(() => {
     const checkImagesGenerated = async () => {
       if (!authLoading && session) {
-        const { data, error } = await supabase
+        const { count, error } = await supabase
           .from('generated_images')
-          .select('name');
+          .select('*', { count: 'exact', head: true });
         
         if (error) {
           console.error('Error checking generated images:', error);
           return;
         }
 
-        if (data.length === 0) {
+        if (count === 0) {
           setGameState('imageGenerator');
         } else {
           setImagesGenerated(true);
