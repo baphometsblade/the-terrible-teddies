@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '../integrations/supabase';
 import { Loader2 } from 'lucide-react';
@@ -18,10 +18,6 @@ export const ImageGenerator = ({ onComplete }) => {
   const [generatedImages, setGeneratedImages] = useState({});
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    generateAllImages();
-  }, []);
 
   const generateAndStoreImage = async (card) => {
     const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
@@ -67,16 +63,22 @@ export const ImageGenerator = ({ onComplete }) => {
   };
 
   const generateAllImages = async () => {
+    setLoading(true);
     try {
+      const existingImages = await supabase.from('generated_images').select('name');
+      const existingImageNames = new Set(existingImages.data.map(img => img.name));
+
       for (let i = 0; i < CARD_TYPES.length; i++) {
         const card = CARD_TYPES[i];
-        await generateAndStoreImage(card);
+        if (!existingImageNames.has(card.name)) {
+          await generateAndStoreImage(card);
+        }
         setProgress(((i + 1) / CARD_TYPES.length) * 100);
       }
-      setLoading(false);
       onComplete();
     } catch (error) {
       console.error('Error generating all images:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -95,6 +97,22 @@ export const ImageGenerator = ({ onComplete }) => {
 
   return (
     <div className="space-y-4">
+      <button
+        onClick={generateAllImages}
+        className="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded hover:bg-purple-700 transition-colors duration-300"
+        disabled={loading}
+      >
+        {loading ? 'Generating...' : 'Generate All Images'}
+      </button>
+      {loading && (
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
+          <p className="text-lg font-semibold text-purple-700">Generating images... {Math.round(progress)}%</p>
+          <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
+            <div className="bg-purple-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{width: `${progress}%`}}></div>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         {CARD_TYPES.map((card) => (
           <Card key={card.name} className="overflow-hidden">

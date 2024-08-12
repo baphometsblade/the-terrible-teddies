@@ -18,7 +18,21 @@ const IndexContent = () => {
   useEffect(() => {
     const checkImagesGenerated = async () => {
       if (!authLoading && session) {
-        setGameState('imageGenerator');
+        const { data, error } = await supabase
+          .from('generated_images')
+          .select('name');
+        
+        if (error) {
+          console.error('Error checking generated images:', error);
+          return;
+        }
+
+        if (data.length === 0) {
+          setGameState('imageGenerator');
+        } else {
+          setImagesGenerated(true);
+          setGameState('menu');
+        }
       }
     };
 
@@ -122,7 +136,7 @@ const IndexContent = () => {
         {gameState === 'imageGenerator' && (
           <Card className="bg-gradient-to-r from-pink-100 to-purple-100">
             <CardHeader>
-              <CardTitle className="text-2xl text-center text-purple-700">Generating Game Assets</CardTitle>
+              <CardTitle className="text-2xl text-center text-purple-700">Generate Game Assets</CardTitle>
             </CardHeader>
             <CardContent>
               <ImageGenerator onComplete={() => {
