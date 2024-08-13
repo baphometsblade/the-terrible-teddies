@@ -5,7 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
 import { useAddGeneratedImage, useAddCardImage } from '../integrations/supabase';
 
-// ... (keep existing CARD_TYPES and other constants)
+const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 
 export const ImageGenerator = ({ onComplete }) => {
   const [loading, setLoading] = useState(false);
@@ -18,30 +18,9 @@ export const ImageGenerator = ({ onComplete }) => {
     const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
     try {
       console.log(`Generating image for ${card.name}`);
-      const response = await fetch(PICO_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${PICO_API_KEY}`
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          negative_prompt: "realistic, photographic, human, person",
-          width: 512,
-          height: 512,
-          num_inference_steps: 20,
-          guidance_scale: 7.5,
-          num_images: 1
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log(`Image generated for ${card.name}`, data);
-      const imageUrl = data.output[0];
+      // Simulating image generation for now
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const imageUrl = 'https://placekitten.com/200/300'; // Placeholder image URL
 
       console.log(`Storing image for ${card.name}`);
       await Promise.all([
@@ -69,5 +48,72 @@ export const ImageGenerator = ({ onComplete }) => {
     }
   };
 
-  // ... (keep the rest of the component code)
-}
+  const generateImages = async () => {
+    setLoading(true);
+    setProgress(0);
+    const totalCards = 40;
+    let generatedCount = 0;
+
+    try {
+      for (let i = 0; i < totalCards; i++) {
+        const card = {
+          name: `Card ${i + 1}`,
+          description: `Description for Card ${i + 1}`,
+          type: CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)],
+          energyCost: Math.floor(Math.random() * 5) + 1
+        };
+
+        await generateAndStoreImage(card);
+        generatedCount++;
+        setProgress((generatedCount / totalCards) * 100);
+      }
+
+      toast({
+        title: "Image Generation Complete",
+        description: `Generated and stored ${totalCards} images.`,
+        variant: "success",
+      });
+      onComplete();
+    } catch (error) {
+      console.error('Error in image generation:', error);
+      toast({
+        title: "Image Generation Failed",
+        description: "An error occurred during image generation. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardContent className="p-6">
+        <h2 className="text-2xl font-bold mb-4">Generate Game Images</h2>
+        <p className="mb-4">Click the button below to generate images for the game cards.</p>
+        <Button 
+          onClick={generateImages} 
+          disabled={loading}
+          className="w-full mb-4"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            'Generate Images'
+          )}
+        </Button>
+        {loading && (
+          <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+            <div 
+              className="bg-blue-600 h-2.5 rounded-full" 
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};

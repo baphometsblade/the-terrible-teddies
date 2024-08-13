@@ -7,29 +7,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
 import { ImageGenerator } from '../components/ImageGenerator';
 
-const ErrorBoundary = ({ children }) => {
-  const [hasError, setHasError] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (hasError) {
-      console.error("Error caught by ErrorBoundary:", error);
-    }
-  }, [hasError, error]);
-
-  if (hasError) {
-    return (
-      <div className="text-center text-red-600">
-        <h2>Something went wrong.</h2>
-        <details style={{ whiteSpace: 'pre-wrap' }}>
-          {error && error.toString()}
-        </details>
-      </div>
-    );
-  }
-
-  return children;
-};
+// ... (keep existing code)
 
 const IndexContent = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
@@ -63,50 +41,12 @@ const IndexContent = () => {
     setGameState('menu');
   };
 
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-b from-pink-100 to-purple-200">
-        <Loader2 className="w-12 h-12 text-purple-600 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-b from-pink-100 to-purple-200">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Card className="w-[350px] shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-2xl text-center text-purple-700">Welcome to Terrible Teddies</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4 text-center">Please sign in to start your teddy adventure!</p>
-              <Button 
-                onClick={() => window.location.href = '/auth'} 
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105"
-              >
-                Sign In
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-    );
-  }
+  // ... (keep existing rendering logic)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-100 to-purple-200 flex items-center justify-center">
       <div className="container mx-auto p-8 max-w-4xl bg-white rounded-lg shadow-xl">
-        <div className="flex items-center justify-center mb-8">
-          <PawPrint className="w-12 h-12 text-pink-500 mr-4" />
-          <h1 className="text-5xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600">
-            Terrible Teddies
-          </h1>
-        </div>
+        {/* ... (keep existing header) */}
         {gameState === 'loading' && (
           <div className="text-center text-2xl text-gray-600">
             Loading game assets...
@@ -133,10 +73,4 @@ const IndexContent = () => {
   );
 };
 
-const Index = () => (
-  <ErrorBoundary>
-    <IndexContent />
-  </ErrorBoundary>
-);
-
-export default Index;
+// ... (keep existing export)
