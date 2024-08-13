@@ -4,47 +4,67 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '../integrations/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Loader2, Plus, Minus } from 'lucide-react';
+import { Loader2, Plus, Minus, Save } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
+import { useGeneratedImages, useUserDeck, useSaveUserDeck } from '../integrations/supabase';
 
 export const DeckBuilder = ({ onExit }) => {
   const [deck, setDeck] = useState([]);
-  const [availableCards, setAvailableCards] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: availableCards, isLoading } = useGeneratedImages();
+  const { data: userDeck } = useUserDeck();
+  const saveUserDeck = useSaveUserDeck();
+  const { toast } = useToast();
 
   useEffect(() => {
-    fetchCards();
-  }, []);
-
-  const fetchCards = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('generated_images')
-        .select('*');
-      
-      if (error) throw error;
-
-      setAvailableCards(data);
-    } catch (error) {
-      console.error('Error fetching cards:', error);
-    } finally {
-      setLoading(false);
+    if (userDeck) {
+      setDeck(userDeck);
     }
-  };
+  }, [userDeck]);
 
   const addCardToDeck = (card) => {
     if (deck.length < 40) {
       setDeck([...deck, card]);
     } else {
-      alert('Your deck is full! (40 cards maximum)');
+      toast({
+        title: "Deck Full",
+        description: "Your deck is full! (40 cards maximum)",
+        variant: "destructive",
+      });
     }
   };
 
   const removeCardFromDeck = (cardId) => {
-    setDeck(deck.filter(card => card.name !== cardId));
+    setDeck(deck.filter(card => card.id !== cardId));
   };
 
-  if (loading) {
+  const handleSaveDeck = async () => {
+    if (deck.length < 20) {
+      toast({
+        title: "Deck Too Small",
+        description: "Your deck must have at least 20 cards.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await saveUserDeck.mutateAsync(deck);
+      toast({
+        title: "Deck Saved",
+        description: "Your custom deck has been saved successfully!",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error('Error saving deck:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your deck. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
@@ -64,7 +84,7 @@ export const DeckBuilder = ({ onExit }) => {
             <AnimatePresence>
               {availableCards.map((card) => (
                 <motion.div
-                  key={card.name}
+                  key={card.id}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
@@ -102,7 +122,7 @@ export const DeckBuilder = ({ onExit }) => {
             <AnimatePresence>
               {deck.map((card) => (
                 <motion.div
-                  key={card.name}
+                  key={card.id}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
@@ -119,7 +139,7 @@ export const DeckBuilder = ({ onExit }) => {
                         <p className="text-xs text-gray-300">{card.type}</p>
                         <p className="text-xs text-gray-300">Cost: {card.energy_cost}</p>
                         <Button 
-                          onClick={() => removeCardFromDeck(card.name)} 
+                          onClick={() => removeCardFromDeck(card.id)} 
                           className="mt-2 bg-red-500 hover:bg-red-600 text-white"
                           size="sm"
                         >
@@ -135,25 +155,31 @@ export const DeckBuilder = ({ onExit }) => {
         </div>
       </div>
 
-      <div className="mt-8 text-center">
+      <div className="mt-8 text-center space-x-4">
+        <Button 
+          onClick={handleSaveDeck}
+          className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105"
+        >
+          <Save className="w-4 h-4 mr-2" /> Save Deck
+        </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button 
               className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105"
             >
-              Save and Exit
+              Exit
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent className="bg-gray-800 border border-gray-700">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-yellow-400">Are you sure you want to exit?</AlertDialogTitle>
               <AlertDialogDescription className="text-gray-300">
-                Your deck will be saved automatically. You can always come back to edit it later.
+                Your deck changes will be saved automatically. You can always come back to edit it later.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel className="bg-gray-700 text-gray-300 hover:bg-gray-600">Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={onExit} className="bg-yellow-400 text-gray-900 hover:bg-yellow-500">Confirm</AlertDialogAction>
+              <AlertDialogAction onClick={onExit} className="bg-yellow-400 text-gray-900 hover:bg-yellow-500">Confirm Exit</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
