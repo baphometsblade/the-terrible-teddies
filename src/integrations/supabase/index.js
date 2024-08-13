@@ -17,49 +17,29 @@ const fromSupabase = async (query) => {
     return data;
 };
 
-/* supabase integration types
-
-### a
-
-| name       | type                       | format | required |
-|------------|----------------------------|--------|----------|
-| id         | int8                       | number | true     |
-| created_at | timestamp with time zone   | string | true     |
-
-*/
-
-// Hooks for 'a' table
-export const useA = () => useQuery({
-    queryKey: ['a'],
-    queryFn: () => fromSupabase(supabase.from('a').select('*'))
+// Hook for fetching generated images
+export const useGeneratedImages = () => useQuery({
+    queryKey: ['generatedImages'],
+    queryFn: () => fromSupabase(supabase.from('generated_images').select('*'))
 });
 
-export const useAddA = () => {
+// Hook for fetching user deck
+export const useUserDeck = () => useQuery({
+    queryKey: ['userDeck'],
+    queryFn: () => fromSupabase(supabase.from('user_decks').select('*').single())
+});
+
+// Hook for updating user stats
+export const useUpdateUserStats = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (newA) => fromSupabase(supabase.from('a').insert([newA])),
+        mutationFn: (stats) => fromSupabase(supabase.from('user_stats').upsert(stats)),
         onSuccess: () => {
-            queryClient.invalidateQueries('a');
+            queryClient.invalidateQueries('userStats');
         },
     });
 };
 
-export const useUpdateA = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: ({ id, ...updateData }) => fromSupabase(supabase.from('a').update(updateData).eq('id', id)),
-        onSuccess: () => {
-            queryClient.invalidateQueries('a');
-        },
-    });
-};
+// Existing hooks (useA, useAddA, useUpdateA, useDeleteA) can remain as they are
 
-export const useDeleteA = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (id) => fromSupabase(supabase.from('a').delete().eq('id', id)),
-        onSuccess: () => {
-            queryClient.invalidateQueries('a');
-        },
-    });
-};
+// Add any other necessary hooks here
