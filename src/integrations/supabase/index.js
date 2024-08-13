@@ -40,6 +40,15 @@ export const useUpdateUserStats = () => {
     });
 };
 
-// Existing hooks (useA, useAddA, useUpdateA, useDeleteA) can remain as they are
+// Hook for saving user deck
+export const useSaveUserDeck = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (deck) => fromSupabase(supabase.from('user_decks').upsert({ deck })),
+        onSuccess: () => {
+            queryClient.invalidateQueries('userDeck');
+        },
+    });
+};
 
 // Add any other necessary hooks here
