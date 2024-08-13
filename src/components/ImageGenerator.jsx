@@ -15,7 +15,7 @@ export const ImageGenerator = ({ onComplete }) => {
 
   const generateAndStoreImage = async (card) => {
     try {
-      console.log(`Generating image for ${card.name}`);
+      console.log(`Generating image for ${card.name}`, card);
       const response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: {
@@ -29,8 +29,11 @@ export const ImageGenerator = ({ onComplete }) => {
         }),
       });
 
+      console.log('API Response:', response);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('API Error Data:', errorData);
         throw new Error(`API error: ${errorData.error || response.statusText}`);
       }
 
@@ -67,6 +70,7 @@ export const ImageGenerator = ({ onComplete }) => {
           energyCost: Math.floor(Math.random() * 5) + 1
         };
 
+        console.log(`Generating card ${i + 1}:`, card);
         await generateAndStoreImage(card);
         generatedCount++;
         setProgress((generatedCount / totalCards) * 100);
