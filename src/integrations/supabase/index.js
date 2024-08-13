@@ -23,5 +23,4 @@ export const useAddGeneratedImage = () => {
 };
 
 // ... (existing exports)
-export { useAddGeneratedImage };
-// Remove the duplicate export of useEvolveCard
+// Remove the duplicate exports
