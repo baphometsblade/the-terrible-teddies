@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { supabase } from '../integrations/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Loader2, Plus, Minus, Save } from 'lucide-react';
@@ -23,7 +22,16 @@ export const DeckBuilder = ({ onExit }) => {
 
   const addCardToDeck = (card) => {
     if (deck.length < 40) {
-      setDeck([...deck, card]);
+      const cardCount = deck.filter(c => c.id === card.id).length;
+      if (cardCount < 3) {
+        setDeck([...deck, card]);
+      } else {
+        toast({
+          title: "Card Limit Reached",
+          description: "You can only have 3 copies of a card in your deck.",
+          variant: "destructive",
+        });
+      }
     } else {
       toast({
         title: "Deck Full",
@@ -34,7 +42,12 @@ export const DeckBuilder = ({ onExit }) => {
   };
 
   const removeCardFromDeck = (cardId) => {
-    setDeck(deck.filter(card => card.id !== cardId));
+    const index = deck.findIndex(card => card.id === cardId);
+    if (index !== -1) {
+      const newDeck = [...deck];
+      newDeck.splice(index, 1);
+      setDeck(newDeck);
+    }
   };
 
   const handleSaveDeck = async () => {
@@ -62,6 +75,34 @@ export const DeckBuilder = ({ onExit }) => {
         variant: "destructive",
       });
     }
+  };
+
+  const getDeckStats = () => {
+    const stats = {
+      Action: 0,
+      Trap: 0,
+      Special: 0,
+      Defense: 0,
+      Boost: 0,
+    };
+    deck.forEach(card => {
+      stats[card.type]++;
+    });
+    return stats;
+  };
+
+  const renderDeckStats = () => {
+    const stats = getDeckStats();
+    return (
+      <div className="grid grid-cols-5 gap-2 mt-4">
+        {Object.entries(stats).map(([type, count]) => (
+          <div key={type} className="text-center">
+            <div className="text-sm font-bold">{type}</div>
+            <div className="text-lg">{count}</div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -118,11 +159,12 @@ export const DeckBuilder = ({ onExit }) => {
         
         <div className="bg-gray-800 p-4 rounded-lg shadow-md">
           <h3 className="text-2xl font-bold mb-4 text-yellow-400">Your Deck ({deck.length}/40)</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {renderDeckStats()}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
             <AnimatePresence>
-              {deck.map((card) => (
+              {deck.map((card, index) => (
                 <motion.div
-                  key={card.id}
+                  key={`${card.id}-${index}`}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
