@@ -12,4 +12,4 @@ export const useEvolveCard = () => {
 };
 
 // ... (existing exports)
-export { useEvolveCard };
+// Remove the duplicate export of useEvolveCard
