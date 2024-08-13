@@ -11,5 +11,17 @@ export const useEvolveCard = () => {
   });
 };
 
+// Hook for adding a generated image
+export const useAddGeneratedImage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (imageData) => fromSupabase(supabase.from('generated_images').insert(imageData)),
+    onSuccess: () => {
+      queryClient.invalidateQueries('generatedImages');
+    },
+  });
+};
+
 // ... (existing exports)
+export { useAddGeneratedImage };
 // Remove the duplicate export of useEvolveCard
