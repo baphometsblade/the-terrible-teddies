@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { useQuery, useMutation, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from "react";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_PROJECT_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY;
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
+import React from "react";
 export const queryClient = new QueryClient();
 export function SupabaseProvider({ children }) {
     return React.createElement(QueryClientProvider, { client: queryClient }, children);
@@ -17,52 +17,49 @@ const fromSupabase = async (query) => {
     return data;
 };
 
-export const useGeneratedImages = () => useQuery({
-    queryKey: ['generatedImages'],
-    queryFn: () => fromSupabase(supabase.from('generated_images').select('*')),
+/* supabase integration types
+
+### a
+
+| name       | type                       | format | required |
+|------------|----------------------------|--------|----------|
+| id         | int8                       | number | true     |
+| created_at | timestamp with time zone   | string | true     |
+
+*/
+
+// Hooks for 'a' table
+export const useA = () => useQuery({
+    queryKey: ['a'],
+    queryFn: () => fromSupabase(supabase.from('a').select('*'))
 });
 
-export const useUserDeck = () => useQuery({
-    queryKey: ['userDeck'],
-    queryFn: () => fromSupabase(supabase.from('user_decks').select('*').single()),
-});
-
-export const useSaveUserDeck = () => {
+export const useAddA = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (deck) => fromSupabase(supabase.from('user_decks').upsert({ deck }, { onConflict: 'user_id' })),
+        mutationFn: (newA) => fromSupabase(supabase.from('a').insert([newA])),
         onSuccess: () => {
-            queryClient.invalidateQueries('userDeck');
+            queryClient.invalidateQueries('a');
         },
     });
 };
 
-export const useUpdateUserStats = () => {
+export const useUpdateA = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (stats) => fromSupabase(supabase.from('user_stats').upsert(stats, { onConflict: 'user_id' })),
+        mutationFn: ({ id, ...updateData }) => fromSupabase(supabase.from('a').update(updateData).eq('id', id)),
         onSuccess: () => {
-            queryClient.invalidateQueries('userStats');
+            queryClient.invalidateQueries('a');
         },
     });
 };
 
-export const useAddGeneratedImage = () => {
+export const useDeleteA = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (imageData) => fromSupabase(supabase.from('generated_images').insert(imageData)),
+        mutationFn: (id) => fromSupabase(supabase.from('a').delete().eq('id', id)),
         onSuccess: () => {
-            queryClient.invalidateQueries('generatedImages');
-        },
-    });
-};
-
-export const useAddCardImage = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (cardData) => fromSupabase(supabase.from('card_images').insert(cardData)),
-        onSuccess: () => {
-            queryClient.invalidateQueries('cardImages');
+            queryClient.invalidateQueries('a');
         },
     });
 };
