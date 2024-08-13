@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { SupabaseProvider } from './auth'; // Import from the auth file
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_PROJECT_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY;
@@ -59,3 +60,6 @@ export const useSaveUserDeck = () => {
         },
     });
 };
+
+// Export the SupabaseProvider
+export { SupabaseProvider };
