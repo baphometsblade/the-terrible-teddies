@@ -17,9 +17,12 @@ const fromSupabase = async (query) => {
     return data;
 };
 
-// ... (keep existing code)
+// Add this new hook
+export const useGeneratedImages = () => useQuery({
+    queryKey: ['generatedImages'],
+    queryFn: () => fromSupabase(supabase.from('generated_images').select('*')),
+});
 
-// Add these new hooks
 export const useUserDeck = () => useQuery({
     queryKey: ['userDeck'],
     queryFn: () => fromSupabase(supabase.from('user_decks').select('*').single()),
