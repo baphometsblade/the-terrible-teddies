@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useSupabaseAuth, SupabaseAuthProvider } from '../integrations/supabase/auth';
+import { useSupabaseAuth } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, PawPrint } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
+import { ImageGenerator } from '../components/ImageGenerator';
 
 const ErrorBoundary = ({ children }) => {
   const [hasError, setHasError] = useState(false);
@@ -33,6 +34,7 @@ const ErrorBoundary = ({ children }) => {
 const IndexContent = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
+  const [imagesGenerated, setImagesGenerated] = useState(false);
 
   useEffect(() => {
     const checkImagesGenerated = async () => {
@@ -44,6 +46,7 @@ const IndexContent = () => {
           
           if (error) throw error;
 
+          setImagesGenerated(count > 0);
           setGameState(count > 0 ? 'menu' : 'imageGenerator');
         } catch (error) {
           console.error('Error checking generated images:', error);
@@ -54,6 +57,11 @@ const IndexContent = () => {
 
     checkImagesGenerated();
   }, [authLoading, session]);
+
+  const handleImageGenerationComplete = () => {
+    setImagesGenerated(true);
+    setGameState('menu');
+  };
 
   if (authLoading) {
     return (
@@ -110,8 +118,9 @@ const IndexContent = () => {
           </div>
         )}
         {gameState === 'imageGenerator' && (
-          <div className="text-center text-2xl text-gray-600">
-            Image generation required. Feature coming soon.
+          <div className="text-center">
+            <h2 className="text-2xl text-gray-600 mb-4">Image Generation Required</h2>
+            <ImageGenerator onComplete={handleImageGenerationComplete} />
           </div>
         )}
         {gameState === 'error' && (
@@ -126,9 +135,7 @@ const IndexContent = () => {
 
 const Index = () => (
   <ErrorBoundary>
-    <SupabaseAuthProvider>
-      <IndexContent />
-    </SupabaseAuthProvider>
+    <IndexContent />
   </ErrorBoundary>
 );
 
