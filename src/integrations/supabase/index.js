@@ -65,3 +65,14 @@ export const useAddCardImage = () => {
         },
     });
 };
+
+// Hook for saving user deck
+export const useSaveUserDeck = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (deck) => fromSupabase(supabase.from('user_decks').upsert({ deck })),
+        onSuccess: () => {
+            queryClient.invalidateQueries('userDeck');
+        },
+    });
+};
