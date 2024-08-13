@@ -20,7 +20,7 @@ export const ImageGenerator = ({ onComplete }) => {
       console.log(`Generating image for ${card.name}`);
       // Simulating image generation for now
       await new Promise(resolve => setTimeout(resolve, 1000));
-      const imageUrl = 'https://placekitten.com/200/300'; // Placeholder image URL
+      const imageUrl = `https://picsum.photos/200/300?random=${Math.random()}`; // Random placeholder image
 
       console.log(`Storing image for ${card.name}`);
       await Promise.all([
