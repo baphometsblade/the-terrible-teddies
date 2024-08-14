@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabaseAuth } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, PawPrint } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
@@ -125,8 +124,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-100 to-purple-200 flex items-center justify-center">
-      <div className="container mx-auto p-8 max-w-4xl bg-white rounded-lg shadow-xl">
+    <div className="min-h-screen bg-[url('/images/teddy-background.jpg')] bg-cover bg-center flex items-center justify-center">
+      <div className="container mx-auto p-8 max-w-4xl bg-white bg-opacity-90 rounded-lg shadow-xl">
         <header className="text-center mb-8">
           <motion.div
             initial={{ scale: 0 }}
