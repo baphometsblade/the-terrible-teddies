@@ -9,60 +9,73 @@ import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { useToast } from "@/components/ui/use-toast";
+import { useGeneratedImages } from '../integrations/supabase';
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
-  const [imagesGenerated, setImagesGenerated] = useState(false);
-  const { toast } = useToast();
   const [isPopulating, setIsPopulating] = useState(false);
+  const { toast } = useToast();
+  const { data: generatedImages, refetch } = useGeneratedImages();
 
   useEffect(() => {
-    const checkImagesGenerated = async () => {
-      if (!authLoading && session) {
-        try {
-          const { count, error } = await supabase
-            .from('generated_images')
-            .select('*', { count: 'exact', head: true });
-          
-          if (error) throw error;
+    if (!authLoading && session) {
+      checkAndPopulateDatabase();
+    } else if (!authLoading && !session) {
+      setGameState('auth');
+    }
+  }, [authLoading, session]);
 
-          setImagesGenerated(count > 0);
-          setGameState(count > 0 ? 'menu' : 'imageGenerator');
-        } catch (error) {
-          console.error('Error checking generated images:', error);
-          toast({
-            title: "Error",
-            description: "Failed to check generated images. Please try again.",
-            variant: "destructive",
-          });
-          setGameState('error');
-        }
-      } else if (!authLoading && !session) {
-        setGameState('auth');
+  const checkAndPopulateDatabase = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('generated_images')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) throw error;
+
+      console.log('Current image count:', count);
+
+      if (count === 0) {
+        await populateDatabase();
+      } else {
+        setGameState('menu');
       }
-    };
-
-    checkImagesGenerated();
-  }, [authLoading, session, toast]);
-
-  const handleImageGenerationComplete = () => {
-    setImagesGenerated(true);
-    setGameState('menu');
+    } catch (error) {
+      console.error('Error checking/populating database:', error);
+      toast({
+        title: "Error",
+        description: "Failed to check or populate the database. Please try again.",
+        variant: "destructive",
+      });
+      setGameState('error');
+    }
   };
 
   const populateDatabase = async () => {
     setIsPopulating(true);
     try {
-      const response = await fetch('/api/populate-db', { method: 'POST' });
-      if (!response.ok) throw new Error('Failed to populate database');
-      const data = await response.json();
+      const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
+      for (let i = 0; i < 40; i++) {
+        const card = {
+          name: `Card ${i + 1}`,
+          url: `https://picsum.photos/seed/${i}/200/300`,
+          prompt: `A cute teddy bear as a ${CARD_TYPES[i % CARD_TYPES.length]} card for a card game`,
+          type: CARD_TYPES[i % CARD_TYPES.length],
+          energy_cost: Math.floor(Math.random() * 5) + 1
+        };
+
+        const { error } = await supabase.from('generated_images').insert(card);
+        if (error) throw error;
+      }
+
+      console.log('Database populated successfully');
       toast({
         title: "Success",
-        description: data.message,
+        description: "Database populated with teddy cards!",
         variant: "success",
       });
-      setImagesGenerated(true);
+      await refetch();
       setGameState('menu');
     } catch (error) {
       console.error('Error populating database:', error);
@@ -92,27 +105,6 @@ const Index = () => {
             <SupabaseAuthUI />
           </div>
         );
-      case 'imageGenerator':
-        return (
-          <div className="text-center">
-            <h2 className="text-2xl text-gray-600 mb-4">Image Generation Required</h2>
-            <Button 
-              onClick={populateDatabase} 
-              disabled={isPopulating}
-              className="bg-purple-600 hover:bg-purple-700 text-white mb-4"
-            >
-              {isPopulating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Populating...
-                </>
-              ) : (
-                'Populate Database'
-              )}
-            </Button>
-            <ImageGenerator onComplete={handleImageGenerationComplete} />
-          </div>
-        );
       case 'menu':
         return (
           <div className="text-center">
@@ -131,6 +123,7 @@ const Index = () => {
                 Game Rules
               </Button>
             </div>
+            <p className="mt-4">Total Cards: {generatedImages ? generatedImages.length : 0}</p>
           </div>
         );
       case 'game':
@@ -178,6 +171,15 @@ const Index = () => {
           <p className="text-xl text-purple-600">The cutest card battle game!</p>
         </header>
         {renderContent()}
+        {gameState === 'menu' && (
+          <Button 
+            onClick={populateDatabase} 
+            disabled={isPopulating}
+            className="mt-4 bg-red-500 hover:bg-red-600 text-white"
+          >
+            {isPopulating ? 'Populating...' : 'Repopulate Database'}
+          </Button>
+        )}
       </div>
     </div>
   );
