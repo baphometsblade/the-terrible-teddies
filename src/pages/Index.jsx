@@ -3,7 +3,6 @@ import { useSupabaseAuth, SupabaseAuthUI } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
 import { Loader2, PawPrint } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { supabase } from '../integrations/supabase';
 import { ImageGenerator } from '../components/ImageGenerator';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
@@ -14,79 +13,33 @@ import { useGeneratedImages } from '../integrations/supabase';
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
-  const [isPopulating, setIsPopulating] = useState(false);
   const { toast } = useToast();
-  const { data: generatedImages, refetch } = useGeneratedImages();
+  const { data: generatedImages, isLoading: imagesLoading, error: imagesError } = useGeneratedImages();
 
   useEffect(() => {
     if (!authLoading && session) {
-      checkAndPopulateDatabase();
-    } else if (!authLoading && !session) {
-      setGameState('auth');
-    }
-  }, [authLoading, session]);
-
-  const checkAndPopulateDatabase = async () => {
-    try {
-      const { count, error } = await supabase
-        .from('generated_images')
-        .select('*', { count: 'exact', head: true });
-      
-      if (error) throw error;
-
-      console.log('Current image count:', count);
-
-      if (count === 0) {
-        await populateDatabase();
+      if (imagesLoading) {
+        setGameState('loading');
+      } else if (imagesError) {
+        console.error('Error loading images:', imagesError);
+        toast({
+          title: "Error",
+          description: "Failed to load images. Please try again.",
+          variant: "destructive",
+        });
+        setGameState('error');
+      } else if (!generatedImages || generatedImages.length === 0) {
+        setGameState('generate');
       } else {
         setGameState('menu');
       }
-    } catch (error) {
-      console.error('Error checking/populating database:', error);
-      toast({
-        title: "Error",
-        description: "Failed to check or populate the database. Please try again.",
-        variant: "destructive",
-      });
-      setGameState('error');
+    } else if (!authLoading && !session) {
+      setGameState('auth');
     }
-  };
+  }, [authLoading, session, imagesLoading, imagesError, generatedImages]);
 
-  const populateDatabase = async () => {
-    setIsPopulating(true);
-    try {
-      const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
-      for (let i = 0; i < 40; i++) {
-        const card = {
-          name: `Card ${i + 1}`,
-          url: `https://picsum.photos/seed/${i}/200/300`,
-          prompt: `A cute teddy bear as a ${CARD_TYPES[i % CARD_TYPES.length]} card for a card game`,
-          type: CARD_TYPES[i % CARD_TYPES.length],
-          energy_cost: Math.floor(Math.random() * 5) + 1
-        };
-
-        const { error } = await supabase.from('generated_images').insert(card);
-        if (error) throw error;
-      }
-
-      console.log('Database populated successfully');
-      toast({
-        title: "Success",
-        description: "Database populated with teddy cards!",
-        variant: "success",
-      });
-      await refetch();
-      setGameState('menu');
-    } catch (error) {
-      console.error('Error populating database:', error);
-      toast({
-        title: "Error",
-        description: "Failed to populate database. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsPopulating(false);
-    }
+  const handleGenerateComplete = () => {
+    setGameState('menu');
   };
 
   const renderContent = () => {
@@ -105,6 +58,8 @@ const Index = () => {
             <SupabaseAuthUI />
           </div>
         );
+      case 'generate':
+        return <ImageGenerator onComplete={handleGenerateComplete} />;
       case 'menu':
         return (
           <div className="text-center">
@@ -124,6 +79,12 @@ const Index = () => {
               </Button>
             </div>
             <p className="mt-4">Total Cards: {generatedImages ? generatedImages.length : 0}</p>
+            <Button 
+              onClick={() => setGameState('generate')} 
+              className="mt-4 bg-red-500 hover:bg-red-600 text-white"
+            >
+              Regenerate Images
+            </Button>
           </div>
         );
       case 'game':
@@ -171,15 +132,6 @@ const Index = () => {
           <p className="text-xl text-purple-600">The cutest card battle game!</p>
         </header>
         {renderContent()}
-        {gameState === 'menu' && (
-          <Button 
-            onClick={populateDatabase} 
-            disabled={isPopulating}
-            className="mt-4 bg-red-500 hover:bg-red-600 text-white"
-          >
-            {isPopulating ? 'Populating...' : 'Repopulate Database'}
-          </Button>
-        )}
       </div>
     </div>
   );
