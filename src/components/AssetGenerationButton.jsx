@@ -48,7 +48,7 @@ export const AssetGenerationButton = () => {
           Generating Assets...
         </>
       ) : (
-        'Generate Game Assets'
+        'Generate All Assets'
       )}
     </Button>
   );

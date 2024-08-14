@@ -7,6 +7,7 @@ import { ImageGenerator } from '../components/ImageGenerator';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
+import { AssetGenerationButton } from '../components/AssetGenerationButton';
 import { useToast } from "@/components/ui/use-toast";
 import { useGeneratedImages } from '../integrations/supabase';
 
@@ -79,12 +80,15 @@ const Index = () => {
               </Button>
             </div>
             <p className="mt-4">Total Cards: {generatedImages ? generatedImages.length : 0}</p>
-            <Button 
-              onClick={() => setGameState('generate')} 
-              className="mt-4 bg-red-500 hover:bg-red-600 text-white"
-            >
-              Regenerate Images
-            </Button>
+            <div className="mt-4 space-x-4">
+              <Button 
+                onClick={() => setGameState('generate')} 
+                className="bg-red-500 hover:bg-red-600 text-white"
+              >
+                Regenerate Images
+              </Button>
+              <AssetGenerationButton />
+            </div>
           </div>
         );
       case 'game':
