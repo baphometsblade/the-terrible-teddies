@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSupabaseAuth } from '../integrations/supabase/auth';
+import { useSupabaseAuth, SupabaseAuthUI } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
 import { Loader2, PawPrint } from 'lucide-react';
 import { motion } from 'framer-motion';

@@ -70,4 +70,4 @@ export const SupabaseAuthUI = () => {
 };
 
 // Export SupabaseAuthProvider as SupabaseProvider for consistency
-export { SupabaseAuthProvider as SupabaseProvider };
+export { SupabaseAuthProvider as SupabaseProvider, SupabaseAuthUI };
