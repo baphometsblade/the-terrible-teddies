@@ -15,6 +15,7 @@ const Index = () => {
   const [gameState, setGameState] = useState('loading');
   const [imagesGenerated, setImagesGenerated] = useState(false);
   const { toast } = useToast();
+  const [isPopulating, setIsPopulating] = useState(false);
 
   useEffect(() => {
     const checkImagesGenerated = async () => {
@@ -50,6 +51,31 @@ const Index = () => {
     setGameState('menu');
   };
 
+  const populateDatabase = async () => {
+    setIsPopulating(true);
+    try {
+      const response = await fetch('/api/populate-db', { method: 'POST' });
+      if (!response.ok) throw new Error('Failed to populate database');
+      const data = await response.json();
+      toast({
+        title: "Success",
+        description: data.message,
+        variant: "success",
+      });
+      setImagesGenerated(true);
+      setGameState('menu');
+    } catch (error) {
+      console.error('Error populating database:', error);
+      toast({
+        title: "Error",
+        description: "Failed to populate database. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPopulating(false);
+    }
+  };
+
   const renderContent = () => {
     switch (gameState) {
       case 'loading':
@@ -70,6 +96,20 @@ const Index = () => {
         return (
           <div className="text-center">
             <h2 className="text-2xl text-gray-600 mb-4">Image Generation Required</h2>
+            <Button 
+              onClick={populateDatabase} 
+              disabled={isPopulating}
+              className="bg-purple-600 hover:bg-purple-700 text-white mb-4"
+            >
+              {isPopulating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Populating...
+                </>
+              ) : (
+                'Populate Database'
+              )}
+            </Button>
             <ImageGenerator onComplete={handleImageGenerationComplete} />
           </div>
         );
