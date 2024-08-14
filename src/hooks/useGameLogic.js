@@ -22,6 +22,8 @@ export const useGameLogic = (gameMode) => {
   const [lastPlayedCard, setLastPlayedCard] = useState(null);
   const [gameLog, setGameLog] = useState([]);
   const [activeEffects, setActiveEffects] = useState({ player: [], opponent: [] });
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [winner, setWinner] = useState(null);
   const { toast } = useToast();
   const { data: allCards, isLoading: isLoadingCards } = useGeneratedImages();
 
@@ -202,6 +204,13 @@ export const useGameLogic = (gameMode) => {
     setActiveEffects(newActiveEffects);
   };
 
+  useEffect(() => {
+    if (playerHP <= 0 || opponentHP <= 0) {
+      setIsGameOver(true);
+      setWinner(playerHP > 0 ? 'player' : 'opponent');
+    }
+  }, [playerHP, opponentHP]);
+
   return {
     playerHP,
     opponentHP,
@@ -213,5 +222,9 @@ export const useGameLogic = (gameMode) => {
     gameLog,
     playCard,
     endTurn,
+    playerDeck,
+    opponentDeck,
+    isGameOver,
+    winner,
   };
 };
