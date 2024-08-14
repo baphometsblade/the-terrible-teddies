@@ -1,20 +1,22 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Loader2, Plus, Minus, Save } from 'lucide-react';
+import { Loader2, Plus, Minus, Save, Filter } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
-import { useGeneratedImages, useUserDeck, useSaveUserDeck, useEvolveCard } from '../integrations/supabase';
-import { CardEvolution } from './CardEvolution';
+import { useGeneratedImages, useUserDeck, useSaveUserDeck } from '../integrations/supabase';
 
 export const DeckBuilder = ({ onExit }) => {
   const [deck, setDeck] = useState([]);
-  const [selectedCard, setSelectedCard] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('name');
   const { data: availableCards, isLoading } = useGeneratedImages();
   const { data: userDeck } = useUserDeck();
   const saveUserDeck = useSaveUserDeck();
-  const evolveCard = useEvolveCard();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -22,6 +24,21 @@ export const DeckBuilder = ({ onExit }) => {
       setDeck(userDeck);
     }
   }, [userDeck]);
+
+  const filteredAndSortedCards = useMemo(() => {
+    if (!availableCards) return [];
+    return availableCards
+      .filter(card => 
+        card.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (typeFilter === 'All' || card.type === typeFilter)
+      )
+      .sort((a, b) => {
+        if (sortBy === 'name') return a.name.localeCompare(b.name);
+        if (sortBy === 'type') return a.type.localeCompare(b.type);
+        if (sortBy === 'energy') return a.energy_cost - b.energy_cost;
+        return 0;
+      });
+  }, [availableCards, searchTerm, typeFilter, sortBy]);
 
   const addCardToDeck = (card) => {
     if (deck.length < 40) {
@@ -121,12 +138,45 @@ export const DeckBuilder = ({ onExit }) => {
     <div className="deck-builder bg-gradient-to-r from-gray-900 to-gray-800 p-6 rounded-xl shadow-lg">
       <h2 className="text-3xl font-bold mb-6 text-center text-yellow-400">Deck Builder</h2>
       
+      <div className="flex mb-4 space-x-4">
+        <Input
+          type="text"
+          placeholder="Search cards..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-grow"
+        />
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All Types</SelectItem>
+            <SelectItem value="Action">Action</SelectItem>
+            <SelectItem value="Trap">Trap</SelectItem>
+            <SelectItem value="Special">Special</SelectItem>
+            <SelectItem value="Defense">Defense</SelectItem>
+            <SelectItem value="Boost">Boost</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name">Name</SelectItem>
+            <SelectItem value="type">Type</SelectItem>
+            <SelectItem value="energy">Energy Cost</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-gray-800 p-4 rounded-lg shadow-md">
           <h3 className="text-2xl font-bold mb-4 text-yellow-400">Available Cards</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <AnimatePresence>
-              {availableCards.map((card) => (
+              {filteredAndSortedCards.map((card) => (
                 <motion.div
                   key={card.id}
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -176,22 +226,15 @@ export const DeckBuilder = ({ onExit }) => {
                   transition={{ duration: 0.2 }}
                   className="relative group"
                 >
-                  <Card 
-                    className="cursor-pointer bg-gray-700 hover:shadow-lg transition-all duration-200 overflow-hidden"
-                    onClick={() => setSelectedCard(card)}
-                  >
+                  <Card className="cursor-pointer bg-gray-700 hover:shadow-lg transition-all duration-200 overflow-hidden">
                     <CardContent className="p-0 relative">
                       <img src={card.url} alt={card.name} className="w-full h-40 object-cover" />
                       <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-2">
                         <p className="text-sm font-bold text-yellow-400">{card.name}</p>
                         <p className="text-xs text-gray-300">{card.type}</p>
                         <p className="text-xs text-gray-300">Cost: {card.energy_cost}</p>
-                        <p className="text-xs text-gray-300">Level: {card.level || 1}</p>
                         <Button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeCardFromDeck(card.id);
-                          }} 
+                          onClick={() => removeCardFromDeck(card.id)} 
                           className="mt-2 bg-red-500 hover:bg-red-600 text-white"
                           size="sm"
                         >
