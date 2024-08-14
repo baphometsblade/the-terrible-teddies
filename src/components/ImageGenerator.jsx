@@ -14,6 +14,7 @@ export const ImageGenerator = ({ onComplete }) => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentImage, setCurrentImage] = useState(null);
   const [showAllTeddies, setShowAllTeddies] = useState(false);
 
   const generateImage = async (type, index) => {
@@ -32,14 +33,16 @@ export const ImageGenerator = ({ onComplete }) => {
 
       const data = await response.json();
 
-      await addGeneratedImage.mutateAsync({
+      const newImage = {
         name,
         url: data.imageUrl,
         prompt,
         type,
         energy_cost: energyCost
-      });
+      };
 
+      await addGeneratedImage.mutateAsync(newImage);
+      setCurrentImage(newImage);
       setProgress(prev => prev + (100 / 40));
     } catch (error) {
       console.error('Error generating image:', error);
@@ -54,6 +57,7 @@ export const ImageGenerator = ({ onComplete }) => {
   const handleGenerateImages = async () => {
     setIsGenerating(true);
     setProgress(0);
+    setCurrentImage(null);
     for (let typeIndex = 0; typeIndex < CARD_TYPES.length; typeIndex++) {
       for (let i = 0; i < 8; i++) {
         await generateImage(CARD_TYPES[typeIndex], i);
@@ -104,7 +108,15 @@ export const ImageGenerator = ({ onComplete }) => {
               )}
             </Button>
             {isGenerating && (
-              <Progress value={progress} className="mt-4" />
+              <>
+                <Progress value={progress} className="mt-4" />
+                {currentImage && (
+                  <div className="mt-4">
+                    <p>Currently generating: {currentImage.name}</p>
+                    <img src={currentImage.url} alt={currentImage.name} className="w-full h-auto mt-2" />
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
