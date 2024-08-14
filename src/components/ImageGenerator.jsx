@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from "@/components/ui/use-toast";
 import { useGeneratedImages, useAddGeneratedImage } from '../integrations/supabase';
 import { Loader2 } from 'lucide-react';
@@ -11,9 +12,11 @@ export const ImageGenerator = ({ onComplete }) => {
   const { data: generatedImages, isLoading, error, refetch } = useGeneratedImages();
   const addGeneratedImage = useAddGeneratedImage();
   const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [showAllTeddies, setShowAllTeddies] = useState(false);
 
   const generateImage = async (type, index) => {
-    console.log(`Generating image for ${type} Card ${index + 1}`);
     const name = `${type} Card ${index + 1}`;
     const prompt = `A cute teddy bear as a ${type} card for a card game`;
     const energyCost = Math.floor(Math.random() * 5) + 1;
@@ -28,7 +31,6 @@ export const ImageGenerator = ({ onComplete }) => {
       if (!response.ok) throw new Error('Failed to generate image');
 
       const data = await response.json();
-      console.log('Image generated:', data.imageUrl);
 
       await addGeneratedImage.mutateAsync({
         name,
@@ -38,10 +40,7 @@ export const ImageGenerator = ({ onComplete }) => {
         energy_cost: energyCost
       });
 
-      toast({
-        title: "Image Generated",
-        description: `Generated ${name}`,
-      });
+      setProgress(prev => prev + (100 / 40));
     } catch (error) {
       console.error('Error generating image:', error);
       toast({
@@ -53,13 +52,15 @@ export const ImageGenerator = ({ onComplete }) => {
   };
 
   const handleGenerateImages = async () => {
-    console.log('Generate Images button clicked');
+    setIsGenerating(true);
+    setProgress(0);
     for (let typeIndex = 0; typeIndex < CARD_TYPES.length; typeIndex++) {
       for (let i = 0; i < 8; i++) {
         await generateImage(CARD_TYPES[typeIndex], i);
       }
     }
     await refetch();
+    setIsGenerating(false);
     onComplete();
   };
 
@@ -71,25 +72,42 @@ export const ImageGenerator = ({ onComplete }) => {
     return <div>Error loading images: {error.message}</div>;
   }
 
-  if (generatedImages && generatedImages.length > 0) {
-    return <div>Images have already been generated. Total images: {generatedImages.length}</div>;
-  }
-
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardContent className="p-6">
         <h2 className="text-2xl font-bold mb-4">Generate Game Images</h2>
-        <p className="mb-4">No images found. Click the button below to generate 40 card images.</p>
-        <Button onClick={handleGenerateImages} disabled={addGeneratedImage.isLoading}>
-          {addGeneratedImage.isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            'Generate Images'
-          )}
-        </Button>
+        {generatedImages && generatedImages.length > 0 ? (
+          <div>
+            <p className="mb-4">Images have already been generated. Total images: {generatedImages.length}</p>
+            <Button onClick={() => setShowAllTeddies(!showAllTeddies)}>
+              {showAllTeddies ? 'Hide Teddies' : 'Show All Teddies'}
+            </Button>
+            {showAllTeddies && (
+              <div className="grid grid-cols-4 gap-2 mt-4">
+                {generatedImages.map((image, index) => (
+                  <img key={index} src={image.url} alt={image.name} className="w-full h-auto" />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <p className="mb-4">No images found. Click the button below to generate 40 card images.</p>
+            <Button onClick={handleGenerateImages} disabled={isGenerating}>
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                'Generate Images'
+              )}
+            </Button>
+            {isGenerating && (
+              <Progress value={progress} className="mt-4" />
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );
