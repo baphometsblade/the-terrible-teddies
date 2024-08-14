@@ -13,6 +13,7 @@ export const ImageGenerator = ({ onComplete }) => {
   const { toast } = useToast();
 
   const generateImage = async (type, index) => {
+    console.log(`Generating image for ${type} Card ${index + 1}`);
     const name = `${type} Card ${index + 1}`;
     const prompt = `A cute teddy bear as a ${type} card for a card game`;
     const energyCost = Math.floor(Math.random() * 5) + 1;
@@ -27,6 +28,8 @@ export const ImageGenerator = ({ onComplete }) => {
       if (!response.ok) throw new Error('Failed to generate image');
 
       const data = await response.json();
+      console.log('Image generated:', data.imageUrl);
+
       await addGeneratedImage.mutateAsync({
         name,
         url: data.imageUrl,
@@ -50,6 +53,7 @@ export const ImageGenerator = ({ onComplete }) => {
   };
 
   const handleGenerateImages = async () => {
+    console.log('Generate Images button clicked');
     for (let typeIndex = 0; typeIndex < CARD_TYPES.length; typeIndex++) {
       for (let i = 0; i < 8; i++) {
         await generateImage(CARD_TYPES[typeIndex], i);
