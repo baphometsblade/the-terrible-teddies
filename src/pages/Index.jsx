@@ -33,6 +33,7 @@ const Index = () => {
       } else if (generatedImages && generatedImages.length > 0) {
         setGameState('menu');
       } else {
+        console.error('No game assets found');
         toast({
           title: "Error",
           description: "No game assets found. Please contact support.",
