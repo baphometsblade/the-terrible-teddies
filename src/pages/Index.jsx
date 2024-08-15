@@ -125,7 +125,60 @@ const Index = () => {
     }
   };
 
-  // ... rest of the component code ...
+  const renderContent = () => {
+    switch (gameState) {
+      case 'loading':
+        return (
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p className="text-lg text-purple-700">Loading game assets...</p>
+          </div>
+        );
+      case 'auth':
+        return <SupabaseAuthUI />;
+      case 'menu':
+        return (
+          <div className="space-y-4">
+            <Button onClick={() => setGameState('game')} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+              Start Game
+            </Button>
+            <Button onClick={() => setGameState('deckBuilder')} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+              Deck Builder
+            </Button>
+            <Button onClick={() => setGameState('leaderboard')} className="w-full bg-green-600 hover:bg-green-700 text-white">
+              Leaderboard
+            </Button>
+          </div>
+        );
+      case 'game':
+        return <GameBoard gameMode="singlePlayer" onExit={() => setGameState('menu')} />;
+      case 'deckBuilder':
+        return <DeckBuilder onExit={() => setGameState('menu')} />;
+      case 'leaderboard':
+        return (
+          <>
+            <LeaderboardComponent />
+            <Button onClick={() => setGameState('menu')} className="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white">
+              Back to Menu
+            </Button>
+          </>
+        );
+      case 'error':
+        return (
+          <div className="text-center">
+            <p className="text-lg text-red-600 mb-4">Failed to load game assets</p>
+            <Button onClick={handleRetry} className="mr-2 bg-blue-600 hover:bg-blue-700 text-white">
+              <RefreshCw className="w-4 h-4 mr-2" /> Retry
+            </Button>
+            <Button onClick={generateInitialAssets} className="bg-green-600 hover:bg-green-700 text-white">
+              Generate Initial Assets
+            </Button>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-100 to-pink-200 flex items-center justify-center">
