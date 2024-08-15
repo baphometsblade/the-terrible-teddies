@@ -7,14 +7,13 @@ import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { useToast } from "@/components/ui/use-toast";
-import { useGeneratedImages, useAddGeneratedImage } from '../integrations/supabase';
+import { useGeneratedImages } from '../integrations/supabase';
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
   const { toast } = useToast();
   const { data: generatedImages, isLoading: imagesLoading, error: imagesError, refetch: refetchImages } = useGeneratedImages();
-  const addGeneratedImage = useAddGeneratedImage();
 
   useEffect(() => {
     if (!authLoading && session) {
@@ -71,33 +70,22 @@ const Index = () => {
   const generateInitialAssets = async () => {
     setGameState('loading');
     try {
-      const cardTypes = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
-      const totalCards = 40;
-      
-      for (let i = 0; i < totalCards; i++) {
-        const type = cardTypes[i % cardTypes.length];
-        const name = `${type} Card ${Math.floor(i / cardTypes.length) + 1}`;
-        const energyCost = Math.floor(Math.random() * 5) + 1;
-        const prompt = `A cute teddy bear as a ${type.toLowerCase()} card for a card game`;
-        
-        const newImage = {
-          name,
-          url: `https://via.placeholder.com/512x512.png?text=${encodeURIComponent(name)}`,
-          prompt,
-          type,
-          energy_cost: energyCost
-        };
-        
-        await addGeneratedImage.mutateAsync(newImage);
+      const response = await fetch('/api/generate-assets', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate assets');
       }
-      
-      await refetchImages();
+
+      const result = await response.json();
       toast({
         title: "Assets Generated",
-        description: "Initial game assets have been generated successfully.",
+        description: `Generated ${result.generatedCount} assets successfully.`,
         variant: "success",
         duration: 5000,
       });
+      await refetchImages();
       setGameState('menu');
     } catch (error) {
       console.error('Error generating initial assets:', error);
