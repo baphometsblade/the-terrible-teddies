@@ -28,7 +28,10 @@ const Index = () => {
           duration: 5000,
         });
         setGameState('error');
-      } else if (!generatedImages || generatedImages.length === 0) {
+      } else if (generatedImages && generatedImages.length > 0) {
+        console.log('Game assets loaded successfully');
+        setGameState('menu');
+      } else {
         console.warn('No game assets found');
         toast({
           title: "No Game Assets",
@@ -37,9 +40,6 @@ const Index = () => {
           duration: 5000,
         });
         setGameState('error');
-      } else {
-        console.log('Game assets loaded successfully');
-        setGameState('menu');
       }
     } else if (!authLoading && !session) {
       setGameState('auth');
@@ -60,6 +60,34 @@ const Index = () => {
       toast({
         title: "Error",
         description: "Failed to reload game assets. Please try again later.",
+        variant: "destructive",
+        duration: 5000,
+      });
+      setGameState('error');
+    }
+  };
+
+  const generateInitialAssets = async () => {
+    setGameState('loading');
+    try {
+      // This is a placeholder. In a real scenario, you'd call your backend to generate assets.
+      const response = await fetch('/api/generate-initial-assets', { method: 'POST' });
+      if (!response.ok) {
+        throw new Error('Failed to generate initial assets');
+      }
+      await refetchImages();
+      toast({
+        title: "Assets Generated",
+        description: "Initial game assets have been generated successfully.",
+        variant: "success",
+        duration: 5000,
+      });
+      setGameState('menu');
+    } catch (error) {
+      console.error('Error generating initial assets:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate initial assets. Please try again later.",
         variant: "destructive",
         duration: 5000,
       });
@@ -150,10 +178,16 @@ const Index = () => {
         return (
           <div className="text-center">
             <p className="text-2xl text-red-600 mb-4">An error occurred while loading the game.</p>
-            <Button onClick={handleRetry} className="bg-blue-500 hover:bg-blue-600 text-white">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Retry
-            </Button>
+            <div className="space-y-4">
+              <Button onClick={handleRetry} className="bg-blue-500 hover:bg-blue-600 text-white">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry Loading Assets
+              </Button>
+              <Button onClick={generateInitialAssets} className="bg-green-500 hover:bg-green-600 text-white">
+                <PawPrint className="w-4 h-4 mr-2" />
+                Generate Initial Assets
+              </Button>
+            </div>
           </div>
         );
       default:
