@@ -14,7 +14,32 @@ const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
   const { toast } = useToast();
-  const { data: generatedImages, isLoading: imagesLoading, error: imagesError } = useGeneratedImages();
+  const { data: generatedImages, isLoading: imagesLoading, error: imagesError, refetch: refetchImages } = useGeneratedImages();
+
+  const handleGenerateAssets = async () => {
+    try {
+      setGameState('loading');
+      const response = await fetch('/api/generate-assets', { method: 'POST' });
+      if (!response.ok) throw new Error('Failed to generate assets');
+      await refetchImages();
+      toast({
+        title: "Success",
+        description: "Assets generated successfully. Reloading game...",
+        variant: "success",
+        duration: 3000,
+      });
+      setGameState('menu');
+    } catch (error) {
+      console.error('Error generating assets:', error);
+      toast({
+        title: "Error",
+        description: `Failed to generate assets: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+      setGameState('error');
+    }
+  };
 
   useEffect(() => {
     if (!authLoading) {
@@ -26,18 +51,19 @@ const Index = () => {
         console.error('Error loading images:', imagesError);
         toast({
           title: "Error",
-          description: "Failed to load game assets. Please try again later.",
+          description: `Failed to load game assets: ${imagesError.message}`,
           variant: "destructive",
           duration: 5000,
         });
         setGameState('error');
       } else if (generatedImages && generatedImages.length > 0) {
+        console.log(`Loaded ${generatedImages.length} images successfully`);
         setGameState('menu');
       } else {
         console.error('No game assets found');
         toast({
           title: "Error",
-          description: "No game assets found. Please contact support.",
+          description: "No game assets found. Please run the asset generation script.",
           variant: "destructive",
           duration: 5000,
         });
@@ -93,7 +119,10 @@ const Index = () => {
         return (
           <div className="text-center">
             <p className="text-lg text-red-600 mb-4">Failed to load game assets</p>
-            <p className="text-sm text-gray-600 mb-4">Please try again later or contact support if the issue persists.</p>
+            <p className="text-sm text-gray-600 mb-4">Please try generating assets or contact support if the issue persists.</p>
+            <Button onClick={handleGenerateAssets} className="mt-4 bg-blue-500 hover:bg-blue-600 text-white">
+              Generate Assets
+            </Button>
           </div>
         );
       default:

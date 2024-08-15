@@ -21,14 +21,18 @@ export const useGeneratedImages = () => {
       console.log('Fetching generated images...');
       const { data, error } = await supabase
         .from('generated_images')
-        .select('*')
-        .limit(1);  // We only need to check if there's at least one record
+        .select('*');
       if (error) {
         console.error('Supabase error:', error);
         throw new Error(`Supabase error: ${error.message}`);
       }
       console.log('Fetched data:', data);
-      return data || []; // Return an empty array if no data
+      if (!data || data.length === 0) {
+        console.warn('No images found in the database');
+      } else {
+        console.log(`Found ${data.length} images`);
+      }
+      return data || [];
     },
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
