@@ -9,6 +9,7 @@ import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { TutorialComponent } from '../components/TutorialComponent';
 import { useToast } from "@/components/ui/use-toast";
 import { useGeneratedImages } from '../integrations/supabase';
+import { supabase } from '../integrations/supabase';
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
@@ -19,11 +20,24 @@ const Index = () => {
   const handleGenerateAssets = async () => {
     try {
       setGameState('loading');
-      const response = await fetch('https://lov-p-1db83e7a-8789-4219-a42f-bff44602358e.fly.dev/api/generate-assets', { method: 'POST' });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to generate assets: ${response.status} ${response.statusText}. ${errorText}`);
-      }
+      
+      // Generate dummy card data
+      const cardTypes = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
+      const dummyCards = Array.from({ length: 40 }, (_, i) => ({
+        name: `Card ${i + 1}`,
+        url: `https://picsum.photos/seed/${i + 1}/200/300`,
+        prompt: `A cute teddy bear for card ${i + 1}`,
+        type: cardTypes[Math.floor(Math.random() * cardTypes.length)],
+        energy_cost: Math.floor(Math.random() * 5) + 1
+      }));
+
+      // Insert dummy data into Supabase
+      const { data, error } = await supabase
+        .from('generated_images')
+        .insert(dummyCards);
+
+      if (error) throw error;
+
       await refetchImages();
       toast({
         title: "Success",
@@ -66,7 +80,7 @@ const Index = () => {
         console.error('No game assets found');
         toast({
           title: "Error",
-          description: "No game assets found. Please run the asset generation script.",
+          description: "No game assets found. Please generate assets.",
           variant: "destructive",
           duration: 5000,
         });
