@@ -19,17 +19,28 @@ export const useGeneratedImages = () => {
     queryKey: ['generatedImages'],
     queryFn: async () => {
       try {
+        console.log('Fetching generated images...');
         const { data, error } = await supabase.from('generated_images').select('*');
-        if (error) throw new Error(error.message);
-        if (!data || data.length === 0) throw new Error('No images found');
+        if (error) {
+          console.error('Supabase error:', error);
+          throw new Error(`Supabase error: ${error.message}`);
+        }
+        console.log('Fetched data:', data);
+        if (!data || data.length === 0) {
+          console.warn('No images found in the database');
+          throw new Error('No images found in the database');
+        }
         return data;
       } catch (error) {
-        console.error('Error fetching generated images:', error);
+        console.error('Error in useGeneratedImages:', error);
         throw error;
       }
     },
     retry: 3,
-    retryDelay: 1000,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    onError: (error) => {
+      console.error('Query error in useGeneratedImages:', error);
+    },
   });
 };
 

@@ -23,24 +23,49 @@ const Index = () => {
         console.error('Error loading images:', imagesError);
         toast({
           title: "Error",
-          description: "Failed to load game assets. Please try again.",
+          description: `Failed to load game assets: ${imagesError.message}`,
           variant: "destructive",
+          duration: 5000,
         });
         setGameState('error');
       } else if (!generatedImages || generatedImages.length === 0) {
+        console.warn('No game assets found');
         toast({
           title: "No Game Assets",
-          description: "No game assets found. Please contact support.",
-          variant: "destructive",
+          description: "No game assets found. The game may not be fully set up yet.",
+          variant: "warning",
+          duration: 5000,
         });
         setGameState('error');
       } else {
+        console.log('Game assets loaded successfully');
         setGameState('menu');
       }
     } else if (!authLoading && !session) {
       setGameState('auth');
     }
   }, [authLoading, session, imagesLoading, imagesError, generatedImages, toast]);
+
+  const handleRetry = async () => {
+    setGameState('loading');
+    try {
+      await refetchImages();
+      toast({
+        title: "Retrying",
+        description: "Attempting to reload game assets...",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error refetching images:', error);
+      toast({
+        title: "Error",
+        description: `Failed to reload game assets: ${error.message}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+      setGameState('error');
+    }
+  };
 
   const handleRetry = async () => {
     setGameState('loading');
