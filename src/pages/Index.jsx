@@ -17,52 +17,45 @@ const Index = () => {
   const { toast } = useToast();
   const { data: generatedImages, isLoading: imagesLoading, error: imagesError, refetch: refetchImages } = useGeneratedImages();
 
-  useEffect(() => {
-    console.log('Index component mounted');
-    console.log('Auth loading:', authLoading);
-    console.log('Session:', session);
-    console.log('Images loading:', imagesLoading);
-    console.log('Images error:', imagesError);
-    console.log('Generated images:', generatedImages);
-
-    if (!authLoading) {
-      if (!session) {
-        console.log('No session, setting game state to auth');
-        setGameState('auth');
-      } else if (imagesLoading) {
-        console.log('Images loading, setting game state to loading');
-        setGameState('loading');
-      } else if (imagesError) {
-        console.error('Error loading images:', imagesError);
-        setErrorDetails(imagesError.message || 'Unknown error occurred while loading images');
-        setGameState('error');
-      } else if (generatedImages && generatedImages.length > 0) {
-        console.log('Images loaded successfully, setting game state to menu');
-        setGameState('menu');
-      } else {
-        console.warn('No game assets found');
-        setErrorDetails('No game assets found. Please generate initial assets.');
-        setGameState('error');
-      }
-    }
-  }, [authLoading, session, imagesLoading, imagesError, generatedImages]);
-
-  const handleRetry = async () => {
-    console.log('Retrying to load game assets');
-    setGameState('loading');
+  const checkAndPopulateAssets = async () => {
     try {
-      await refetchImages();
-      toast({
-        title: "Retrying",
-        description: "Attempting to reload game assets...",
-        duration: 3000,
-      });
+      const { count, error } = await supabase
+        .from('generated_images')
+        .select('*', { count: 'exact', head: true });
+
+      if (error) throw error;
+
+      if (count === 0) {
+        await generateInitialAssets();
+      } else {
+        setGameState('menu');
+      }
     } catch (error) {
-      console.error('Error refetching images:', error);
-      setErrorDetails(error.message || 'Failed to reload game assets');
+      console.error('Error checking/populating assets:', error);
+      setErrorDetails(error.message);
       setGameState('error');
     }
   };
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      if (!authLoading) {
+        if (!session) {
+          setGameState('auth');
+        } else if (imagesLoading) {
+          setGameState('loading');
+        } else if (imagesError) {
+          console.error('Error loading images:', imagesError);
+          setErrorDetails(imagesError.message || 'Unknown error occurred while loading images');
+          setGameState('error');
+        } else {
+          await checkAndPopulateAssets();
+        }
+      }
+    };
+
+    initializeApp();
+  }, [authLoading, session, imagesLoading, imagesError, generatedImages]);
 
   const generateInitialAssets = async () => {
     console.log('Generating initial assets');
@@ -73,22 +66,9 @@ const Index = () => {
         name: `Card ${i + 1}`,
         url: `https://picsum.photos/seed/${i}/200/300`,
         type: cardTypes[Math.floor(Math.random() * cardTypes.length)],
-        energy_cost: Math.floor(Math.random() * 5) + 1,
         prompt: 'Cute teddy bear for card game',
       }));
 
-      console.log('Checking if generated_images table exists');
-      const { error: tableCheckError } = await supabase
-        .from('generated_images')
-        .select('id')
-        .limit(1);
-
-      if (tableCheckError) {
-        console.error('Error checking generated_images table:', tableCheckError);
-        throw new Error('The generated_images table does not exist or is not accessible.');
-      }
-
-      console.log('Inserting generated assets');
       const { data, error } = await supabase
         .from('generated_images')
         .insert(generatedAssets);
@@ -108,6 +88,23 @@ const Index = () => {
     } catch (error) {
       console.error('Error generating initial assets:', error);
       setErrorDetails(error.message || 'Failed to generate initial assets');
+      setGameState('error');
+    }
+  };
+
+  const handleRetry = async () => {
+    console.log('Retrying to load game assets');
+    setGameState('loading');
+    try {
+      await checkAndPopulateAssets();
+      toast({
+        title: "Retrying",
+        description: "Attempting to reload game assets...",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error retrying:', error);
+      setErrorDetails(error.message || 'Failed to reload game assets');
       setGameState('error');
     }
   };
