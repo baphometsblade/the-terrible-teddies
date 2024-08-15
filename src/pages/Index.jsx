@@ -8,6 +8,7 @@ import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { useToast } from "@/components/ui/use-toast";
 import { useGeneratedImages } from '../integrations/supabase';
+import { supabase } from '../integrations/supabase';
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
@@ -70,46 +71,26 @@ const Index = () => {
   const generateInitialAssets = async () => {
     setGameState('loading');
     try {
-      // Call Gitcode to generate assets
-      const response = await fetch('https://gitcode.com/api/generate-assets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.GITCODE_API_KEY}`,
-        },
-        body: JSON.stringify({
-          project: 'terrible-teddies',
-          assetType: 'card-images',
-          count: 40, // Generate 40 card images
-          prompt: 'Generate cute teddy bear images for a card game, each with unique characteristics and styles',
-        }),
-      });
+      // Simulating asset generation
+      const generatedAssets = Array.from({ length: 40 }, (_, i) => ({
+        name: `Card ${i + 1}`,
+        url: `https://picsum.photos/seed/${i}/200/300`, // Placeholder image URL
+        type: ['Action', 'Trap', 'Special', 'Defense', 'Boost'][Math.floor(Math.random() * 5)],
+        energy_cost: Math.floor(Math.random() * 5) + 1,
+        prompt: 'Cute teddy bear for card game',
+      }));
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to generate assets: ${errorData.message || response.statusText}`);
-      }
+      // Save the generated assets to Supabase
+      const { error } = await supabase.from('generated_images').insert(generatedAssets);
 
-      const result = await response.json();
+      if (error) throw error;
+
       toast({
         title: "Assets Generated",
-        description: `Generated ${result.generatedCount || result.assets.length} assets successfully.`,
+        description: `Generated ${generatedAssets.length} assets successfully.`,
         variant: "success",
         duration: 5000,
       });
-
-      // Save the generated assets to Supabase
-      const { error } = await supabase.from('generated_images').insert(
-        result.assets.map(asset => ({
-          name: asset.name,
-          url: asset.url,
-          type: asset.type || 'Action', // Default to 'Action' if type is not provided
-          energy_cost: Math.floor(Math.random() * 5) + 1, // Random energy cost between 1 and 5
-          prompt: asset.prompt || 'Cute teddy bear for card game',
-        }))
-      );
-
-      if (error) throw error;
 
       await refetchImages();
       setGameState('menu');
