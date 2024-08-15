@@ -71,17 +71,18 @@ const Index = () => {
   const generateInitialAssets = async () => {
     setGameState('loading');
     try {
-      // Simulating asset generation
+      const cardTypes = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
       const generatedAssets = Array.from({ length: 40 }, (_, i) => ({
         name: `Card ${i + 1}`,
-        url: `https://picsum.photos/seed/${i}/200/300`, // Placeholder image URL
-        type: ['Action', 'Trap', 'Special', 'Defense', 'Boost'][Math.floor(Math.random() * 5)],
+        url: `https://picsum.photos/seed/${i}/200/300`,
+        type: cardTypes[Math.floor(Math.random() * cardTypes.length)],
         energy_cost: Math.floor(Math.random() * 5) + 1,
         prompt: 'Cute teddy bear for card game',
       }));
 
-      // Save the generated assets to Supabase
-      const { error } = await supabase.from('generated_images').insert(generatedAssets);
+      const { data, error } = await supabase
+        .from('generated_images')
+        .insert(generatedAssets);
 
       if (error) throw error;
 
