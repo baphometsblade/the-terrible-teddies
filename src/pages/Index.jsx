@@ -80,6 +80,18 @@ const Index = () => {
         prompt: 'Cute teddy bear for card game',
       }));
 
+      // Check if the 'generated_images' table exists
+      const { error: tableCheckError } = await supabase
+        .from('generated_images')
+        .select('id')
+        .limit(1);
+
+      if (tableCheckError) {
+        console.error('Error checking generated_images table:', tableCheckError);
+        throw new Error('The generated_images table does not exist or is not accessible.');
+      }
+
+      // Insert the generated assets
       const { data, error } = await supabase
         .from('generated_images')
         .insert(generatedAssets);
@@ -99,7 +111,7 @@ const Index = () => {
       console.error('Error generating initial assets:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to generate initial assets. Please try again later.",
+        description: error.message || "Failed to generate initial assets. Please check your Supabase setup and try again.",
         variant: "destructive",
         duration: 5000,
       });
