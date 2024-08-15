@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from "@/components/ui/use-toast";
+import confetti from 'canvas-confetti';
 
 export const GameBoard = ({ gameMode, onExit }) => {
   const {
@@ -25,6 +26,13 @@ export const GameBoard = ({ gameMode, onExit }) => {
         description: `${winner === 'player' ? 'You win!' : 'You lose!'}`,
         duration: 5000,
       });
+      if (winner === 'player') {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
     }
   }, [isGameOver, winner, toast]);
 
@@ -88,6 +96,11 @@ export const GameBoard = ({ gameMode, onExit }) => {
         >
           <div className="bg-white p-6 rounded-lg shadow-xl text-center">
             <h2 className="text-2xl font-bold mb-4">{winner === 'player' ? 'You Win!' : 'You Lose!'}</h2>
+            <p className="mb-4">
+              {winner === 'player' 
+                ? 'Congratulations! You've defeated your opponent.' 
+                : 'Better luck next time! Keep practicing and improving your strategy.'}
+            </p>
             <Button onClick={onExit} className="mt-4">Back to Menu</Button>
           </div>
         </motion.div>

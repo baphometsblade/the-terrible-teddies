@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabaseAuth, SupabaseAuthUI } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
-import { Loader2, PawPrint } from 'lucide-react';
+import { Loader2, PawPrint, Info, Trophy, Book } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
+import { TutorialComponent } from '../components/TutorialComponent';
 import { useToast } from "@/components/ui/use-toast";
 import { useGeneratedImages } from '../integrations/supabase';
 
@@ -60,13 +61,16 @@ const Index = () => {
         return (
           <div className="space-y-4">
             <Button onClick={() => setGameState('game')} className="w-full bg-purple-600 hover:bg-purple-700 text-white">
-              Start Game
+              <PawPrint className="mr-2 h-4 w-4" /> Start Game
             </Button>
             <Button onClick={() => setGameState('deckBuilder')} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-              Deck Builder
+              <Book className="mr-2 h-4 w-4" /> Deck Builder
             </Button>
             <Button onClick={() => setGameState('leaderboard')} className="w-full bg-green-600 hover:bg-green-700 text-white">
-              Leaderboard
+              <Trophy className="mr-2 h-4 w-4" /> Leaderboard
+            </Button>
+            <Button onClick={() => setGameState('tutorial')} className="w-full bg-yellow-600 hover:bg-yellow-700 text-white">
+              <Info className="mr-2 h-4 w-4" /> Tutorial
             </Button>
           </div>
         );
@@ -83,6 +87,8 @@ const Index = () => {
             </Button>
           </>
         );
+      case 'tutorial':
+        return <TutorialComponent onExit={() => setGameState('menu')} />;
       case 'error':
         return (
           <div className="text-center">
