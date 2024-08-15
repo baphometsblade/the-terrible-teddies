@@ -27,8 +27,7 @@ export const useGeneratedImages = () => {
       console.log('Fetched data:', data);
       if (!data || data.length === 0) {
         console.warn('No images found in the database');
-        // Instead of returning an empty array, let's throw an error to trigger the error state
-        throw new Error('No images found in the database');
+        return []; // Return an empty array instead of throwing an error
       }
       return data;
     },

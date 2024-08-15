@@ -7,13 +7,14 @@ import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { useToast } from "@/components/ui/use-toast";
-import { useGeneratedImages } from '../integrations/supabase';
+import { useGeneratedImages, useAddGeneratedImage } from '../integrations/supabase';
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
   const { toast } = useToast();
   const { data: generatedImages, isLoading: imagesLoading, error: imagesError, refetch: refetchImages } = useGeneratedImages();
+  const addGeneratedImage = useAddGeneratedImage();
 
   useEffect(() => {
     if (!authLoading && session) {
@@ -35,7 +36,7 @@ const Index = () => {
         console.warn('No game assets found');
         toast({
           title: "No Game Assets",
-          description: "No game assets found. The game may not be fully set up yet.",
+          description: "No game assets found. Please generate initial assets.",
           variant: "warning",
           duration: 5000,
         });
@@ -59,7 +60,7 @@ const Index = () => {
       console.error('Error refetching images:', error);
       toast({
         title: "Error",
-        description: "Failed to reload game assets. Please try again later.",
+        description: "Failed to reload game assets. Please try generating initial assets.",
         variant: "destructive",
         duration: 5000,
       });
@@ -70,11 +71,26 @@ const Index = () => {
   const generateInitialAssets = async () => {
     setGameState('loading');
     try {
-      // This is a placeholder. In a real scenario, you'd call your backend to generate assets.
-      const response = await fetch('/api/generate-initial-assets', { method: 'POST' });
-      if (!response.ok) {
-        throw new Error('Failed to generate initial assets');
+      const cardTypes = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
+      const totalCards = 40;
+      
+      for (let i = 0; i < totalCards; i++) {
+        const type = cardTypes[i % cardTypes.length];
+        const name = `${type} Card ${Math.floor(i / cardTypes.length) + 1}`;
+        const energyCost = Math.floor(Math.random() * 5) + 1;
+        const prompt = `A cute teddy bear as a ${type.toLowerCase()} card for a card game`;
+        
+        const newImage = {
+          name,
+          url: `https://via.placeholder.com/512x512.png?text=${encodeURIComponent(name)}`,
+          prompt,
+          type,
+          energy_cost: energyCost
+        };
+        
+        await addGeneratedImage.mutateAsync(newImage);
       }
+      
       await refetchImages();
       toast({
         title: "Assets Generated",
