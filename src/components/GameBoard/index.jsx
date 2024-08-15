@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from "@/components/ui/use-toast";
 import confetti from 'canvas-confetti';
 
-export const GameBoard = ({ gameMode, onExit }) => {
+export const GameBoard = ({ gameMode, onExit, challengeRules }) => {
   const {
     playerHP, opponentHP, playerHand, opponentHand, currentTurn,
     momentumGauge, lastPlayedCard, gameLog, playCard, endTurn,
@@ -43,6 +43,12 @@ export const GameBoard = ({ gameMode, onExit }) => {
       exit={{ opacity: 0, scale: 0.9 }}
       className="game-board p-4 bg-gradient-to-b from-pink-100 to-purple-200 rounded-lg shadow-xl"
     >
+      {challengeRules && (
+        <div className="mb-4 p-2 bg-yellow-100 border border-yellow-300 rounded-md">
+          <h3 className="text-lg font-semibold text-yellow-800">Challenge Rules:</h3>
+          <p className="text-yellow-700">{challengeRules}</p>
+        </div>
+      )}
       <OpponentArea hp={opponentHP} hand={opponentHand} deckCount={opponentDeck.length} />
       <GameInfo currentTurn={currentTurn} momentumGauge={momentumGauge} />
       <div className="flex mb-6">

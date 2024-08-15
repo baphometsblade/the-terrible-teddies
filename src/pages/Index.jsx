@@ -7,6 +7,7 @@ import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { TutorialComponent } from '../components/TutorialComponent';
+import { DailyChallenge } from '../components/DailyChallenge';
 import { useToast } from "@/components/ui/use-toast";
 import { useGeneratedImages } from '../integrations/supabase';
 import { supabase } from '../integrations/supabase';
@@ -112,6 +113,9 @@ const Index = () => {
             <Button onClick={() => setGameState('leaderboard')} className="w-full bg-green-600 hover:bg-green-700 text-white">
               <Trophy className="mr-2 h-4 w-4" /> Leaderboard
             </Button>
+            <Button onClick={() => setGameState('dailyChallenge')} className="w-full bg-orange-600 hover:bg-orange-700 text-white">
+              <Calendar className="mr-2 h-4 w-4" /> Daily Challenge
+            </Button>
             <Button onClick={() => setGameState('tutorial')} className="w-full bg-yellow-600 hover:bg-yellow-700 text-white">
               <Info className="mr-2 h-4 w-4" /> Tutorial
             </Button>
@@ -132,6 +136,8 @@ const Index = () => {
         );
       case 'tutorial':
         return <TutorialComponent onExit={() => setGameState('menu')} />;
+      case 'dailyChallenge':
+        return <DailyChallenge onExit={() => setGameState('menu')} />;
       case 'error':
         return (
           <div className="text-center">

@@ -119,3 +119,36 @@ export const useEvolveCard = () => {
     },
   });
 };
+
+export const useDailyChallenge = () => {
+  return useQuery({
+    queryKey: ['dailyChallenge'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('daily_challenges')
+        .select('*')
+        .eq('date', new Date().toISOString().split('T')[0])
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+export const useUpdateUserStats = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (stats) => {
+      const { data, error } = await supabase
+        .from('user_stats')
+        .upsert(stats);
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('userStats');
+    },
+  });
+};
