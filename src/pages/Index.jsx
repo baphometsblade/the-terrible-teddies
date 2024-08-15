@@ -59,24 +59,9 @@ const Index = () => {
       console.error('Error refetching images:', error);
       toast({
         title: "Error",
-        description: `Failed to reload game assets: ${error.message}`,
-        variant: "destructive",
-        duration: 5000,
-      });
-      setGameState('error');
-    }
-  };
-
-  const handleRetry = async () => {
-    setGameState('loading');
-    try {
-      await refetchImages();
-    } catch (error) {
-      console.error('Error refetching images:', error);
-      toast({
-        title: "Error",
         description: "Failed to reload game assets. Please try again later.",
         variant: "destructive",
+        duration: 5000,
       });
       setGameState('error');
     }
