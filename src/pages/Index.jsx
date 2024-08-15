@@ -89,7 +89,30 @@ const Index = () => {
         return (
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Game Rules</h2>
-            <p className="mb-4">Detailed game rules will be added here.</p>
+            <p className="mb-4">
+              Terrible Teddies is a card battle game where you face off against an opponent using your deck of cute but terrible teddy bears.
+              Each player starts with 30 HP and a hand of cards. The goal is to reduce your opponent's HP to 0.
+            </p>
+            <h3 className="text-xl font-bold mb-2">Card Types:</h3>
+            <ul className="list-disc list-inside mb-4">
+              <li>Action: Deal damage to your opponent</li>
+              <li>Trap: Set a trap that activates on your opponent's turn</li>
+              <li>Special: Heal yourself or apply unique effects</li>
+              <li>Defense: Protect yourself from incoming damage</li>
+              <li>Boost: Increase your Momentum Gauge</li>
+            </ul>
+            <h3 className="text-xl font-bold mb-2">Gameplay:</h3>
+            <ol className="list-decimal list-inside mb-4">
+              <li>Players take turns playing cards from their hand</li>
+              <li>Each card costs Momentum to play</li>
+              <li>The Momentum Gauge fills up to 10 each turn</li>
+              <li>When a player's Momentum Gauge is full, their turn ends</li>
+              <li>Players draw a new card at the end of their turn</li>
+              <li>The game continues until one player's HP reaches 0</li>
+            </ol>
+            <p className="mb-4">
+              Strategy is key! Balance your card plays, manage your Momentum, and outsmart your opponent to win!
+            </p>
             <Button onClick={() => setGameState('menu')}>Back to Menu</Button>
           </div>
         );
