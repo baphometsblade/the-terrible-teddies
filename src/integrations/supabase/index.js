@@ -46,4 +46,47 @@ export const useAddGeneratedImage = () => {
   });
 };
 
-// ... (other hooks remain unchanged)
+// Hook for fetching user's deck
+export const useUserDeck = () => {
+  return useQuery({
+    queryKey: ['userDeck'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('user_decks').select('*').single();
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Supabase error: ${error.message}`);
+      }
+      return data?.cards || [];
+    },
+  });
+};
+
+// Hook for updating user stats
+export const useUpdateUserStats = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (stats) => {
+      const { data, error } = await supabase.from('user_stats').upsert(stats);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('userStats');
+    },
+  });
+};
+
+// Hook for saving user's deck
+export const useSaveUserDeck = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (deck) => {
+      const { data, error } = await supabase.from('user_decks').upsert({ cards: deck });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('userDeck');
+    },
+  });
+};
