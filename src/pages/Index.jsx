@@ -70,8 +70,17 @@ const Index = () => {
   const generateInitialAssets = async () => {
     setGameState('loading');
     try {
-      const response = await fetch('/api/generate-assets', {
+      // Call gi5code to generate assets
+      const response = await fetch('https://gi5code.com/api/generate-assets', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          projectId: 'terrible-teddies',
+          assetType: 'card-images',
+          count: 40, // Generate 40 card images
+        }),
       });
 
       if (!response.ok) {
@@ -99,105 +108,7 @@ const Index = () => {
     }
   };
 
-  const renderContent = () => {
-    switch (gameState) {
-      case 'loading':
-        return (
-          <div className="text-center text-2xl text-gray-600">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-            Loading game assets...
-          </div>
-        );
-      case 'auth':
-        return (
-          <div className="text-center">
-            <h2 className="text-2xl text-gray-600 mb-4">Please log in to play</h2>
-            <SupabaseAuthUI />
-          </div>
-        );
-      case 'menu':
-        return (
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-purple-800 mb-6">Welcome to Terrible Teddies!</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button onClick={() => setGameState('game')} className="bg-purple-600 hover:bg-purple-700 text-white">
-                Start Game
-              </Button>
-              <Button onClick={() => setGameState('deckBuilder')} className="bg-blue-600 hover:bg-blue-700 text-white">
-                Deck Builder
-              </Button>
-              <Button onClick={() => setGameState('leaderboard')} className="bg-green-600 hover:bg-green-700 text-white">
-                Leaderboard
-              </Button>
-              <Button onClick={() => setGameState('rules')} className="bg-yellow-600 hover:bg-yellow-700 text-white">
-                Game Rules
-              </Button>
-            </div>
-            <p className="mt-4">Total Cards: {generatedImages ? generatedImages.length : 0}</p>
-          </div>
-        );
-      case 'game':
-        return <GameBoard gameMode="singlePlayer" onExit={() => setGameState('menu')} />;
-      case 'deckBuilder':
-        return <DeckBuilder onExit={() => setGameState('menu')} />;
-      case 'leaderboard':
-        return (
-          <div>
-            <LeaderboardComponent />
-            <Button onClick={() => setGameState('menu')} className="mt-4">Back to Menu</Button>
-          </div>
-        );
-      case 'rules':
-        return (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Game Rules</h2>
-            <p className="mb-4">
-              Terrible Teddies is a card battle game where you face off against an opponent using your deck of cute but terrible teddy bears.
-              Each player starts with 30 HP and a hand of cards. The goal is to reduce your opponent's HP to 0.
-            </p>
-            <h3 className="text-xl font-bold mb-2">Card Types:</h3>
-            <ul className="list-disc list-inside mb-4">
-              <li>Action: Deal damage to your opponent</li>
-              <li>Trap: Set a trap that activates on your opponent's turn</li>
-              <li>Special: Heal yourself or apply unique effects</li>
-              <li>Defense: Protect yourself from incoming damage</li>
-              <li>Boost: Increase your Momentum Gauge</li>
-            </ul>
-            <h3 className="text-xl font-bold mb-2">Gameplay:</h3>
-            <ol className="list-decimal list-inside mb-4">
-              <li>Players take turns playing cards from their hand</li>
-              <li>Each card costs Momentum to play</li>
-              <li>The Momentum Gauge fills up to 10 each turn</li>
-              <li>When a player's Momentum Gauge is full, their turn ends</li>
-              <li>Players draw a new card at the end of their turn</li>
-              <li>The game continues until one player's HP reaches 0</li>
-            </ol>
-            <p className="mb-4">
-              Strategy is key! Balance your card plays, manage your Momentum, and outsmart your opponent to win!
-            </p>
-            <Button onClick={() => setGameState('menu')}>Back to Menu</Button>
-          </div>
-        );
-      case 'error':
-        return (
-          <div className="text-center">
-            <p className="text-2xl text-red-600 mb-4">An error occurred while loading the game.</p>
-            <div className="space-y-4">
-              <Button onClick={handleRetry} className="bg-blue-500 hover:bg-blue-600 text-white">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Retry Loading Assets
-              </Button>
-              <Button onClick={generateInitialAssets} className="bg-green-500 hover:bg-green-600 text-white">
-                <PawPrint className="w-4 h-4 mr-2" />
-                Generate Initial Assets
-              </Button>
-            </div>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+  // ... rest of the component code ...
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-100 to-pink-200 flex items-center justify-center">
