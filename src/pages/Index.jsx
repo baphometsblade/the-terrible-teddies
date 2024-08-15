@@ -3,11 +3,9 @@ import { useSupabaseAuth, SupabaseAuthUI } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
 import { Loader2, PawPrint } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { ImageGenerator } from '../components/ImageGenerator';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
-import { AssetGenerationButton } from '../components/AssetGenerationButton';
 import { useToast } from "@/components/ui/use-toast";
 import { useGeneratedImages } from '../integrations/supabase';
 
@@ -30,7 +28,7 @@ const Index = () => {
         });
         setGameState('error');
       } else if (!generatedImages || generatedImages.length === 0) {
-        setGameState('generate');
+        setGameState('error');
       } else {
         setGameState('menu');
       }
@@ -38,10 +36,6 @@ const Index = () => {
       setGameState('auth');
     }
   }, [authLoading, session, imagesLoading, imagesError, generatedImages]);
-
-  const handleGenerateComplete = () => {
-    setGameState('menu');
-  };
 
   const renderContent = () => {
     switch (gameState) {
@@ -59,8 +53,6 @@ const Index = () => {
             <SupabaseAuthUI />
           </div>
         );
-      case 'generate':
-        return <ImageGenerator onComplete={handleGenerateComplete} />;
       case 'menu':
         return (
           <div className="text-center">
@@ -80,15 +72,6 @@ const Index = () => {
               </Button>
             </div>
             <p className="mt-4">Total Cards: {generatedImages ? generatedImages.length : 0}</p>
-            <div className="mt-4 space-x-4">
-              <Button 
-                onClick={() => setGameState('generate')} 
-                className="bg-red-500 hover:bg-red-600 text-white"
-              >
-                Regenerate Images
-              </Button>
-              <AssetGenerationButton />
-            </div>
           </div>
         );
       case 'game':
