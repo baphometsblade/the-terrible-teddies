@@ -19,8 +19,11 @@ const Index = () => {
   const handleGenerateAssets = async () => {
     try {
       setGameState('loading');
-      const response = await fetch('/api/generate-assets', { method: 'POST' });
-      if (!response.ok) throw new Error('Failed to generate assets');
+      const response = await fetch('https://lov-p-1db83e7a-8789-4219-a42f-bff44602358e.fly.dev/api/generate-assets', { method: 'POST' });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to generate assets: ${response.status} ${response.statusText}. ${errorText}`);
+      }
       await refetchImages();
       toast({
         title: "Success",
