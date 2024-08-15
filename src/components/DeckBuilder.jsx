@@ -8,12 +8,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Loader2, Plus, Minus, Save, Filter } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { useGeneratedImages, useUserDeck, useSaveUserDeck } from '../integrations/supabase';
+import { CardEvolution } from './CardEvolution';
 
 export const DeckBuilder = ({ onExit }) => {
   const [deck, setDeck] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const [sortBy, setSortBy] = useState('name');
+  const [selectedCard, setSelectedCard] = useState(null);
   const { data: availableCards, isLoading } = useGeneratedImages();
   const { data: userDeck } = useUserDeck();
   const saveUserDeck = useSaveUserDeck();
@@ -95,6 +97,13 @@ export const DeckBuilder = ({ onExit }) => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleCardEvolution = (evolvedCard) => {
+    setDeck(prevDeck => prevDeck.map(card => 
+      card.id === evolvedCard.id ? evolvedCard : card
+    ));
+    setSelectedCard(null);
   };
 
   const getDeckStats = () => {
@@ -240,6 +249,13 @@ export const DeckBuilder = ({ onExit }) => {
                         >
                           <Minus className="w-4 h-4 mr-1" /> Remove
                         </Button>
+                        <Button 
+                          onClick={() => setSelectedCard(card)} 
+                          className="mt-2 bg-purple-500 hover:bg-purple-600 text-white"
+                          size="sm"
+                        >
+                          Evolve
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -279,6 +295,23 @@ export const DeckBuilder = ({ onExit }) => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+
+      {selectedCard && (
+        <AlertDialog open={!!selectedCard} onOpenChange={() => setSelectedCard(null)}>
+          <AlertDialogContent className="bg-gray-800 border border-gray-700">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-yellow-400">Evolve Card</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-300">
+                Do you want to evolve this card? It will become stronger but cost more energy.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <CardEvolution card={selectedCard} onEvolve={handleCardEvolution} />
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-gray-700 text-gray-300 hover:bg-gray-600">Cancel</AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 };

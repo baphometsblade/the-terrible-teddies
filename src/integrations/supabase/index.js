@@ -85,3 +85,37 @@ export const useSaveUserDeck = () => {
     },
   });
 };
+
+export const useEvolveCard = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (cardId) => {
+      const { data: card, error: fetchError } = await supabase
+        .from('generated_images')
+        .select('*')
+        .eq('id', cardId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      const evolvedCard = {
+        ...card,
+        level: (card.level || 1) + 1,
+        energy_cost: card.energy_cost + 1,
+        name: `Evolved ${card.name}`,
+      };
+      
+      const { data, error } = await supabase
+        .from('generated_images')
+        .update(evolvedCard)
+        .eq('id', cardId);
+      
+      if (error) throw error;
+      return evolvedCard;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('generatedImages');
+      queryClient.invalidateQueries('userDeck');
+    },
+  });
+};
