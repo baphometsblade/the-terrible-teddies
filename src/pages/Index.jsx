@@ -13,41 +13,42 @@ import { supabase } from '../integrations/supabase';
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
+  const [errorDetails, setErrorDetails] = useState('');
   const { toast } = useToast();
   const { data: generatedImages, isLoading: imagesLoading, error: imagesError, refetch: refetchImages } = useGeneratedImages();
 
   useEffect(() => {
-    if (!authLoading && session) {
-      if (imagesLoading) {
+    console.log('Index component mounted');
+    console.log('Auth loading:', authLoading);
+    console.log('Session:', session);
+    console.log('Images loading:', imagesLoading);
+    console.log('Images error:', imagesError);
+    console.log('Generated images:', generatedImages);
+
+    if (!authLoading) {
+      if (!session) {
+        console.log('No session, setting game state to auth');
+        setGameState('auth');
+      } else if (imagesLoading) {
+        console.log('Images loading, setting game state to loading');
         setGameState('loading');
       } else if (imagesError) {
         console.error('Error loading images:', imagesError);
-        toast({
-          title: "Error",
-          description: `Failed to load game assets: ${imagesError.message}`,
-          variant: "destructive",
-          duration: 5000,
-        });
+        setErrorDetails(imagesError.message || 'Unknown error occurred while loading images');
         setGameState('error');
       } else if (generatedImages && generatedImages.length > 0) {
-        console.log('Game assets loaded successfully');
+        console.log('Images loaded successfully, setting game state to menu');
         setGameState('menu');
       } else {
         console.warn('No game assets found');
-        toast({
-          title: "No Game Assets",
-          description: "No game assets found. Please generate initial assets.",
-          variant: "warning",
-          duration: 5000,
-        });
+        setErrorDetails('No game assets found. Please generate initial assets.');
         setGameState('error');
       }
-    } else if (!authLoading && !session) {
-      setGameState('auth');
     }
-  }, [authLoading, session, imagesLoading, imagesError, generatedImages, toast]);
+  }, [authLoading, session, imagesLoading, imagesError, generatedImages]);
 
   const handleRetry = async () => {
+    console.log('Retrying to load game assets');
     setGameState('loading');
     try {
       await refetchImages();
@@ -58,17 +59,13 @@ const Index = () => {
       });
     } catch (error) {
       console.error('Error refetching images:', error);
-      toast({
-        title: "Error",
-        description: "Failed to reload game assets. Please try generating initial assets.",
-        variant: "destructive",
-        duration: 5000,
-      });
+      setErrorDetails(error.message || 'Failed to reload game assets');
       setGameState('error');
     }
   };
 
   const generateInitialAssets = async () => {
+    console.log('Generating initial assets');
     setGameState('loading');
     try {
       const cardTypes = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
@@ -80,7 +77,7 @@ const Index = () => {
         prompt: 'Cute teddy bear for card game',
       }));
 
-      // Check if the 'generated_images' table exists
+      console.log('Checking if generated_images table exists');
       const { error: tableCheckError } = await supabase
         .from('generated_images')
         .select('id')
@@ -91,13 +88,14 @@ const Index = () => {
         throw new Error('The generated_images table does not exist or is not accessible.');
       }
 
-      // Insert the generated assets
+      console.log('Inserting generated assets');
       const { data, error } = await supabase
         .from('generated_images')
         .insert(generatedAssets);
 
       if (error) throw error;
 
+      console.log('Assets inserted successfully');
       toast({
         title: "Assets Generated",
         description: `Generated ${generatedAssets.length} assets successfully.`,
@@ -109,17 +107,13 @@ const Index = () => {
       setGameState('menu');
     } catch (error) {
       console.error('Error generating initial assets:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate initial assets. Please check your Supabase setup and try again.",
-        variant: "destructive",
-        duration: 5000,
-      });
+      setErrorDetails(error.message || 'Failed to generate initial assets');
       setGameState('error');
     }
   };
 
   const renderContent = () => {
+    console.log('Rendering content for game state:', gameState);
     switch (gameState) {
       case 'loading':
         return (
@@ -161,6 +155,7 @@ const Index = () => {
         return (
           <div className="text-center">
             <p className="text-lg text-red-600 mb-4">Failed to load game assets</p>
+            <p className="text-sm text-gray-600 mb-4">{errorDetails}</p>
             <Button onClick={handleRetry} className="mr-2 bg-blue-600 hover:bg-blue-700 text-white">
               <RefreshCw className="w-4 h-4 mr-2" /> Retry
             </Button>
