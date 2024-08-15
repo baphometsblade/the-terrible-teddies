@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabaseAuth, SupabaseAuthUI } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
-import { Loader2, PawPrint } from 'lucide-react';
+import { Loader2, PawPrint, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
@@ -13,7 +13,7 @@ const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
   const { toast } = useToast();
-  const { data: generatedImages, isLoading: imagesLoading, error: imagesError } = useGeneratedImages();
+  const { data: generatedImages, isLoading: imagesLoading, error: imagesError, refetch: refetchImages } = useGeneratedImages();
 
   useEffect(() => {
     if (!authLoading && session) {
@@ -23,11 +23,16 @@ const Index = () => {
         console.error('Error loading images:', imagesError);
         toast({
           title: "Error",
-          description: "Failed to load images. Please try again.",
+          description: "Failed to load game assets. Please try again.",
           variant: "destructive",
         });
         setGameState('error');
       } else if (!generatedImages || generatedImages.length === 0) {
+        toast({
+          title: "No Game Assets",
+          description: "No game assets found. Please contact support.",
+          variant: "destructive",
+        });
         setGameState('error');
       } else {
         setGameState('menu');
@@ -35,7 +40,22 @@ const Index = () => {
     } else if (!authLoading && !session) {
       setGameState('auth');
     }
-  }, [authLoading, session, imagesLoading, imagesError, generatedImages]);
+  }, [authLoading, session, imagesLoading, imagesError, generatedImages, toast]);
+
+  const handleRetry = async () => {
+    setGameState('loading');
+    try {
+      await refetchImages();
+    } catch (error) {
+      console.error('Error refetching images:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reload game assets. Please try again later.",
+        variant: "destructive",
+      });
+      setGameState('error');
+    }
+  };
 
   const renderContent = () => {
     switch (gameState) {
@@ -118,8 +138,12 @@ const Index = () => {
         );
       case 'error':
         return (
-          <div className="text-center text-2xl text-red-600">
-            An error occurred while loading the game. Please try again later.
+          <div className="text-center">
+            <p className="text-2xl text-red-600 mb-4">An error occurred while loading the game.</p>
+            <Button onClick={handleRetry} className="bg-blue-500 hover:bg-blue-600 text-white">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retry
+            </Button>
           </div>
         );
       default:

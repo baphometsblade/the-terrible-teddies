@@ -17,7 +17,19 @@ const fromSupabase = async (promise) => {
 export const useGeneratedImages = () => {
   return useQuery({
     queryKey: ['generatedImages'],
-    queryFn: () => fromSupabase(supabase.from('generated_images').select('*')),
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.from('generated_images').select('*');
+        if (error) throw new Error(error.message);
+        if (!data || data.length === 0) throw new Error('No images found');
+        return data;
+      } catch (error) {
+        console.error('Error fetching generated images:', error);
+        throw error;
+      }
+    },
+    retry: 3,
+    retryDelay: 1000,
   });
 };
 
