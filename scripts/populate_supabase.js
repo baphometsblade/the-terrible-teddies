@@ -15,7 +15,6 @@ const generateCards = () => {
     name: `Teddy Card ${i + 1}`,
     url: `https://picsum.photos/seed/${i + 1}/200/300`,
     type: cardTypes[Math.floor(Math.random() * cardTypes.length)],
-    energy_cost: Math.floor(Math.random() * 5) + 1,
     prompt: `A cute teddy bear for a ${cardTypes[Math.floor(Math.random() * cardTypes.length)]} card`,
   }));
 };
