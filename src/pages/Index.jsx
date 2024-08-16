@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabaseAuth, SupabaseAuthUI } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
-import { Loader2, PawPrint, Info, Trophy, Book } from 'lucide-react';
+import { Loader2, PawPrint, Info, Trophy, Book, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
@@ -13,10 +13,18 @@ import { useGeneratedImages } from '../integrations/supabase';
 import { supabase } from '../integrations/supabase';
 
 const Index = () => {
+  console.log('Index component rendering');
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
   const { toast } = useToast();
   const { data: generatedImages, isLoading: imagesLoading, error: imagesError, refetch: refetchImages } = useGeneratedImages();
+
+  console.log('Auth loading:', authLoading);
+  console.log('Session:', session);
+  console.log('Game state:', gameState);
+  console.log('Images loading:', imagesLoading);
+  console.log('Images error:', imagesError);
+  console.log('Generated images:', generatedImages);
 
   const handleGenerateAssets = async () => {
     try {
@@ -153,6 +161,7 @@ const Index = () => {
     }
   };
 
+  console.log('Rendering main component');
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-100 to-pink-200 flex items-center justify-center">
       <div className="container mx-auto p-8 max-w-4xl bg-white bg-opacity-90 rounded-lg shadow-xl">
