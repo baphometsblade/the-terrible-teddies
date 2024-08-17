@@ -27,12 +27,12 @@ export const DeckBuilder = ({ onSaveDeck }) => {
   );
 
   const addCardToDeck = (card) => {
-    if (deck.length < 40) {
+    if (deck.length < 30) {
       setDeck([...deck, card]);
     } else {
       toast({
         title: "Deck Full",
-        description: "Your deck is full! (40 cards maximum)",
+        description: "Your deck is full of mischief! (30 cards maximum)",
         variant: "destructive",
       });
     }
@@ -48,7 +48,7 @@ export const DeckBuilder = ({ onSaveDeck }) => {
     if (deck.length < 20) {
       toast({
         title: "Deck Too Small",
-        description: "Your deck must have at least 20 cards.",
+        description: "Your deck needs at least 20 cards to cause proper mayhem!",
         variant: "destructive",
       });
       return;
@@ -58,39 +58,39 @@ export const DeckBuilder = ({ onSaveDeck }) => {
 
   const handleAddNewCard = async () => {
     const newCard = {
-      name: "New Terrible Teddy",
+      name: "Naughty New Teddy",
       type: "Teddy",
-      description: "A naughty new teddy joins the fray!",
-      attack: 2,
-      defense: 2,
+      description: "A mischievous new teddy joins the fray with a twinkle in its button eyes!",
+      attack: Math.floor(Math.random() * 5) + 1,
+      special_ability: "Tickle Attack",
     };
 
     try {
       await addCard.mutateAsync(newCard);
       toast({
         title: "Card Added",
-        description: "New card has been added to the collection!",
+        description: "A new troublemaker has joined your collection!",
         variant: "success",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add new card. Please try again.",
+        description: "Failed to add new card. The teddy factory is on strike!",
         variant: "destructive",
       });
     }
   };
 
-  if (isLoading) return <div>Loading cards...</div>;
+  if (isLoading) return <div>Loading your mischievous minions...</div>;
   if (error) return <div>Error loading cards: {error.message}</div>;
 
   return (
     <div className="deck-builder p-4">
-      <h2 className="text-2xl font-bold mb-4">Deck Builder</h2>
+      <h2 className="text-2xl font-bold mb-4 text-purple-800">Terrible Teddies Deck Builder</h2>
       <div className="flex mb-4">
         <Input
           type="text"
-          placeholder="Search cards..."
+          placeholder="Search for trouble..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="mr-2"
@@ -100,41 +100,43 @@ export const DeckBuilder = ({ onSaveDeck }) => {
             <SelectValue placeholder="Filter by type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="All">All Types</SelectItem>
-            <SelectItem value="Teddy">Teddy</SelectItem>
-            <SelectItem value="Action">Action</SelectItem>
-            <SelectItem value="Item">Item</SelectItem>
+            <SelectItem value="All">All Types of Mischief</SelectItem>
+            <SelectItem value="Teddy">Naughty Teddies</SelectItem>
+            <SelectItem value="Action">Devious Actions</SelectItem>
+            <SelectItem value="Item">Ridiculous Items</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h3 className="text-xl font-bold mb-2">Available Cards</h3>
+          <h3 className="text-xl font-bold mb-2 text-purple-700">Available Troublemakers</h3>
           <div className="grid grid-cols-2 gap-2">
             {filteredCards.map((card) => (
-              <Card key={card.id} className="cursor-pointer hover:shadow-md" onClick={() => addCardToDeck(card)}>
+              <Card key={card.id} className="cursor-pointer hover:shadow-md bg-gradient-to-br from-pink-100 to-purple-100" onClick={() => addCardToDeck(card)}>
                 <CardContent className="p-2">
-                  <p className="font-bold">{card.name}</p>
-                  <p className="text-sm">{card.type}</p>
+                  <p className="font-bold text-purple-800">{card.name}</p>
+                  <p className="text-sm text-purple-600">{card.type}</p>
+                  <p className="text-xs italic text-purple-500">{card.description}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
-          <Button onClick={handleAddNewCard} className="mt-4">Add New Card</Button>
+          <Button onClick={handleAddNewCard} className="mt-4 bg-green-500 hover:bg-green-600 text-white">Create New Troublemaker</Button>
         </div>
         <div>
-          <h3 className="text-xl font-bold mb-2">Your Deck ({deck.length}/40)</h3>
+          <h3 className="text-xl font-bold mb-2 text-purple-700">Your Mischief Squad ({deck.length}/30)</h3>
           <div className="grid grid-cols-2 gap-2">
             {deck.map((card, index) => (
-              <Card key={index} className="cursor-pointer hover:shadow-md" onClick={() => removeCardFromDeck(index)}>
+              <Card key={index} className="cursor-pointer hover:shadow-md bg-gradient-to-br from-blue-100 to-purple-100" onClick={() => removeCardFromDeck(index)}>
                 <CardContent className="p-2">
-                  <p className="font-bold">{card.name}</p>
-                  <p className="text-sm">{card.type}</p>
+                  <p className="font-bold text-purple-800">{card.name}</p>
+                  <p className="text-sm text-purple-600">{card.type}</p>
+                  <p className="text-xs italic text-purple-500">{card.description}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
-          <Button onClick={handleSaveDeck} className="mt-4">Save Deck</Button>
+          <Button onClick={handleSaveDeck} className="mt-4 bg-purple-500 hover:bg-purple-600 text-white">Save Your Mischief Squad</Button>
         </div>
       </div>
     </div>
