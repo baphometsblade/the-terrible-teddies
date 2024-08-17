@@ -6,6 +6,19 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
+export const useGeneratedImages = () => {
+  return useQuery({
+    queryKey: ['generatedImages'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('generated_images')
+        .select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
 export const useTerribleTeddiesCards = () => {
   return useQuery({
     queryKey: ['terribleTeddiesCards'],
@@ -47,6 +60,20 @@ export const useUpdateUserStats = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries('userStats');
+    },
+  });
+};
+
+export const useUserDeck = () => {
+  return useQuery({
+    queryKey: ['userDeck'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_decks')
+        .select('*')
+        .single();
+      if (error) throw error;
+      return data;
     },
   });
 };
