@@ -42,8 +42,6 @@ export const useGeneratedImages = () => {
   });
 };
 
-// Other hooks remain unchanged...
-
 export const useUserDeck = () => {
   return useQuery({
     queryKey: ['userDeck'],
@@ -62,7 +60,10 @@ export const useUpdateUserStats = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (stats) => {
-      const { data, error } = await supabase.from('user_stats').upsert(stats);
+      const { data, error } = await supabase
+        .from('user_stats')
+        .upsert(stats);
+      
       if (error) throw error;
       return data;
     },
@@ -132,23 +133,6 @@ export const useDailyChallenge = () => {
       
       if (error) throw error;
       return data;
-    },
-  });
-};
-
-export const useUpdateUserStats = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (stats) => {
-      const { data, error } = await supabase
-        .from('user_stats')
-        .upsert(stats);
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries('userStats');
     },
   });
 };
