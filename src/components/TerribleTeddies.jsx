@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '../integrations/supabase';
+import { DeckBuilder } from './DeckBuilder';
 
 const CARD_TYPES = {
   TEDDY: 'Teddy',
@@ -128,17 +129,31 @@ const TerribleTeddies = () => {
     </div>
   );
 
+  const handleSaveDeck = (deck) => {
+    setPlayer1Deck(deck);
+    toast({
+      title: "Deck Saved",
+      description: "Your custom deck has been saved and will be used in the next game.",
+      variant: "success",
+    });
+    setGameState('menu');
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-4xl font-bold text-center mb-6">Terrible Teddies</h1>
       {gameState === 'menu' && (
-        <div className="text-center">
+        <div className="text-center space-y-4">
           <Button onClick={startGame} className="bg-purple-600 hover:bg-purple-700 text-white">
             Start Game
+          </Button>
+          <Button onClick={() => setGameState('deckBuilder')} className="bg-blue-600 hover:bg-blue-700 text-white">
+            Deck Builder
           </Button>
         </div>
       )}
       {gameState === 'playing' && renderGameBoard()}
+      {gameState === 'deckBuilder' && <DeckBuilder onSaveDeck={handleSaveDeck} />}
       {gameState === 'gameOver' && (
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Game Over!</h2>
