@@ -56,11 +56,9 @@ export const GameBoard = ({ player1Deck, player2Deck, onExit }) => {
         effectDescription = `${card.name} deals ${damage} damage with its ${card.special_ability || 'mischievous antics'}!`;
         break;
       case CARD_TYPES.ACTION:
-        // Implement action card effects
         effectDescription = `${card.name} causes chaos with ${card.effect || 'a hilarious prank'}!`;
         break;
       case CARD_TYPES.ITEM:
-        // Implement item card effects
         effectDescription = `${card.name} equips a ${card.item_name || 'ridiculous item'}, boosting its naughtiness!`;
         break;
     }
