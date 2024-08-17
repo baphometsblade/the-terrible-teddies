@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Zap, Heart, Sword } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { useGeneratedImages, useUserDeck, useUpdateUserStats } from '../integrations/supabase';
+import { useTerribleTeddiesCards, useUserDeck, useUpdateUserStats } from '../integrations/supabase';
 
 const CARD_TYPES = {
   ACTION: 'Action',
@@ -28,7 +28,7 @@ export const GameBoard = ({ gameMode, onExit }) => {
   const [gameLog, setGameLog] = useState([]);
   const [activeEffects, setActiveEffects] = useState({ player: [], opponent: [] });
   const { toast } = useToast();
-  const { data: allCards, isLoading: isLoadingCards } = useGeneratedImages();
+  const { data: allCards, isLoading: isLoadingCards } = useTerribleTeddiesCards();
   const { data: userDeck } = useUserDeck();
   const updateUserStats = useUpdateUserStats();
 
