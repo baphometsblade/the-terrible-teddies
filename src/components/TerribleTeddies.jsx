@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
@@ -7,6 +7,8 @@ import { supabase } from '../integrations/supabase';
 import { DeckBuilder } from './DeckBuilder';
 import { GameBoard } from './GameBoard';
 import { TutorialComponent } from './TutorialComponent';
+import { LeaderboardComponent } from './LeaderboardComponent';
+import { DailyChallenge } from './DailyChallenge';
 
 const CARD_TYPES = {
   TEDDY: 'Teddy',
@@ -62,27 +64,90 @@ const TerribleTeddies = () => {
   };
 
   const renderMenu = () => (
-    <div className="text-center space-y-4">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="text-center space-y-4"
+    >
       <h1 className="text-4xl font-bold mb-6 text-purple-800">Terrible Teddies</h1>
       <p className="text-lg mb-4 text-gray-600">Welcome to the naughtiest teddy bear battle in town!</p>
-      <Button onClick={startGame} className="bg-purple-600 hover:bg-purple-700 text-white">
-        Start Game
-      </Button>
-      <Button onClick={() => setGameState('deckBuilder')} className="bg-blue-600 hover:bg-blue-700 text-white">
-        Deck Builder
-      </Button>
-      <Button onClick={() => setGameState('tutorial')} className="bg-green-600 hover:bg-green-700 text-white">
-        How to Play
-      </Button>
-    </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Button onClick={startGame} className="bg-purple-600 hover:bg-purple-700 text-white">
+          Start Game
+        </Button>
+        <Button onClick={() => setGameState('deckBuilder')} className="bg-blue-600 hover:bg-blue-700 text-white">
+          Deck Builder
+        </Button>
+        <Button onClick={() => setGameState('tutorial')} className="bg-green-600 hover:bg-green-700 text-white">
+          How to Play
+        </Button>
+        <Button onClick={() => setGameState('leaderboard')} className="bg-yellow-600 hover:bg-yellow-700 text-white">
+          Leaderboard
+        </Button>
+        <Button onClick={() => setGameState('dailyChallenge')} className="bg-red-600 hover:bg-red-700 text-white">
+          Daily Challenge
+        </Button>
+      </div>
+    </motion.div>
   );
 
   return (
     <div className="container mx-auto p-4">
-      {gameState === 'menu' && renderMenu()}
-      {gameState === 'playing' && <GameBoard player1Deck={player1Deck} player2Deck={player2Deck} onExit={() => setGameState('menu')} />}
-      {gameState === 'deckBuilder' && <DeckBuilder onSaveDeck={handleSaveDeck} />}
-      {gameState === 'tutorial' && <TutorialComponent onExit={() => setGameState('menu')} />}
+      <AnimatePresence mode="wait">
+        {gameState === 'menu' && renderMenu()}
+        {gameState === 'playing' && (
+          <motion.div
+            key="playing"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+          >
+            <GameBoard player1Deck={player1Deck} player2Deck={player2Deck} onExit={() => setGameState('menu')} />
+          </motion.div>
+        )}
+        {gameState === 'deckBuilder' && (
+          <motion.div
+            key="deckBuilder"
+            initial={{ opacity: 0, x: -100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 100 }}
+          >
+            <DeckBuilder onSaveDeck={handleSaveDeck} />
+          </motion.div>
+        )}
+        {gameState === 'tutorial' && (
+          <motion.div
+            key="tutorial"
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -100 }}
+          >
+            <TutorialComponent onExit={() => setGameState('menu')} />
+          </motion.div>
+        )}
+        {gameState === 'leaderboard' && (
+          <motion.div
+            key="leaderboard"
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+          >
+            <LeaderboardComponent />
+            <Button onClick={() => setGameState('menu')} className="mt-4">Back to Menu</Button>
+          </motion.div>
+        )}
+        {gameState === 'dailyChallenge' && (
+          <motion.div
+            key="dailyChallenge"
+            initial={{ opacity: 0, rotate: -10 }}
+            animate={{ opacity: 1, rotate: 0 }}
+            exit={{ opacity: 0, rotate: 10 }}
+          >
+            <DailyChallenge onExit={() => setGameState('menu')} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
