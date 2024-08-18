@@ -11,7 +11,7 @@ from io import BytesIO
 load_dotenv()
 
 # Initialize the OpenAI language model
-llm = OpenAI()
+llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Define the agents
 image_generator = Agent(
