@@ -19,6 +19,22 @@ export const useGeneratedImages = () => {
   });
 };
 
+export const useAddGeneratedImage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (imageData) => {
+      const { data, error } = await supabase
+        .from('generated_images')
+        .insert(imageData);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('generatedImages');
+    },
+  });
+};
+
 export const useTerribleTeddiesCards = () => {
   return useQuery({
     queryKey: ['terribleTeddiesCards'],
@@ -74,6 +90,53 @@ export const useUserDeck = () => {
         .single();
       if (error) throw error;
       return data;
+    },
+  });
+};
+
+export const useLeaderboard = () => {
+  return useQuery({
+    queryKey: ['leaderboard'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_stats')
+        .select('username, games_won, games_played')
+        .order('games_won', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+export const useDailyChallenge = () => {
+  return useQuery({
+    queryKey: ['dailyChallenge'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('daily_challenges')
+        .select('*')
+        .eq('date', today)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+  });
+};
+
+export const useAddDailyChallenge = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (challenge) => {
+      const { data, error } = await supabase
+        .from('daily_challenges')
+        .insert(challenge);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('dailyChallenge');
     },
   });
 };

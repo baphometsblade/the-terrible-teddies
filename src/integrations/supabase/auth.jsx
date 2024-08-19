@@ -1,9 +1,10 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { supabase } from './index.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { Button } from '@/components/ui/button';
+import { useToast } from "@/components/ui/use-toast";
 
 const SupabaseAuthContext = createContext();
 
@@ -45,16 +46,30 @@ export const useSupabaseAuth = () => {
 export const SupabaseAuthUI = () => {
   const { session } = useSupabaseAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    queryClient.clear();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      queryClient.clear();
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out.",
+        variant: "success",
+      });
+    }
   };
 
   if (session) {
     return (
-      <div>
-        <p>Logged in as: {session.user.email}</p>
+      <div className="p-4 bg-white rounded shadow">
+        <p className="mb-4">Logged in as: {session.user.email}</p>
         <Button onClick={handleSignOut}>Sign Out</Button>
       </div>
     );
@@ -65,9 +80,9 @@ export const SupabaseAuthUI = () => {
       supabaseClient={supabase}
       appearance={{ theme: ThemeSupa }}
       providers={['google', 'github']}
+      onlyThirdPartyProviders={true}
     />
   );
 };
 
-// Export SupabaseAuthProvider as SupabaseProvider for consistency
 export { SupabaseAuthProvider as SupabaseProvider };
