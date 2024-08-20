@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import confetti from 'canvas-confetti';
 
-export const GameBoard = ({ onExit }) => {
+export const GameBoard = ({ playerDeck, onExit }) => {
   const {
     playerHP,
     opponentHP,
@@ -28,7 +28,7 @@ export const GameBoard = ({ onExit }) => {
     endTurn,
     isGameOver,
     winner,
-  } = useGameLogic('singlePlayer');
+  } = useGameLogic(playerDeck);
 
   const { toast } = useToast();
 

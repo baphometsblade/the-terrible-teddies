@@ -3,56 +3,40 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from '../integrations/supabase';
 import { DeckBuilder } from './DeckBuilder';
 import { GameBoard } from './GameBoard';
 import { TutorialComponent } from './TutorialComponent';
 import { LeaderboardComponent } from './LeaderboardComponent';
 import { DailyChallenge } from './DailyChallenge';
 import { Shop } from './Shop';
-import { useUserStats } from '../integrations/supabase';
+import { useUserStats } from '../hooks/useUserStats';
 import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle } from 'lucide-react';
 
 const TerribleTeddies = () => {
   const [gameState, setGameState] = useState('menu');
-  const [player1Deck, setPlayer1Deck] = useState([]);
-  const [player2Deck, setPlayer2Deck] = useState([]);
+  const [playerDeck, setPlayerDeck] = useState([]);
   const { toast } = useToast();
-  const { data: userStats, isLoading: isLoadingStats } = useUserStats();
+  const { userStats, isLoadingStats } = useUserStats();
 
   useEffect(() => {
-    fetchCards();
+    // Initialize player deck with placeholder cards
+    const placeholderDeck = Array(30).fill().map((_, index) => ({
+      id: `placeholder-${index}`,
+      name: `Placeholder Card ${index + 1}`,
+      type: ['Action', 'Trap', 'Special', 'Defense', 'Boost'][Math.floor(Math.random() * 5)],
+      energy_cost: Math.floor(Math.random() * 5) + 1,
+      url: '/placeholder.svg',
+      description: 'This is a placeholder card description.'
+    }));
+    setPlayerDeck(placeholderDeck);
   }, []);
-
-  const fetchCards = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('terrible_teddies_cards')
-        .select('*');
-      if (error) throw error;
-      shuffleAndDealCards(data);
-    } catch (error) {
-      console.error('Error fetching cards:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load game cards. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const shuffleAndDealCards = (cards) => {
-    const shuffled = [...cards].sort(() => Math.random() - 0.5);
-    setPlayer1Deck(shuffled.slice(0, 30));
-    setPlayer2Deck(shuffled.slice(30, 60));
-  };
 
   const startGame = () => {
     setGameState('playing');
   };
 
   const handleSaveDeck = (deck) => {
-    setPlayer1Deck(deck);
+    setPlayerDeck(deck);
     toast({
       title: "Deck Saved",
       description: "Your custom deck of mischievous teddies has been saved!",
@@ -137,7 +121,7 @@ const TerribleTeddies = () => {
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.5 }}
           >
-            <GameBoard player1Deck={player1Deck} player2Deck={player2Deck} onExit={() => setGameState('menu')} />
+            <GameBoard playerDeck={playerDeck} onExit={() => setGameState('menu')} />
           </motion.div>
         )}
         {gameState === 'deckBuilder' && (
@@ -148,7 +132,7 @@ const TerribleTeddies = () => {
             exit={{ opacity: 0, x: 100 }}
             transition={{ duration: 0.5 }}
           >
-            <DeckBuilder onSaveDeck={handleSaveDeck} />
+            <DeckBuilder onSaveDeck={handleSaveDeck} initialDeck={playerDeck} />
           </motion.div>
         )}
         {gameState === 'tutorial' && (

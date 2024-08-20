@@ -4,24 +4,30 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from "@/components/ui/use-toast";
-import { useTerribleTeddiesCards, useAddTerribleTeddiesCard } from '../integrations/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 
-export const DeckBuilder = ({ onSaveDeck }) => {
-  const [deck, setDeck] = useState([]);
+const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
+
+export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
+  const [deck, setDeck] = useState(initialDeck || []);
   const [availableCards, setAvailableCards] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
-  const { data: cards, isLoading, error } = useTerribleTeddiesCards();
-  const addCard = useAddTerribleTeddiesCard();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (cards) {
-      setAvailableCards(cards);
-    }
-  }, [cards]);
+    // Generate placeholder available cards
+    const placeholderCards = Array(60).fill().map((_, index) => ({
+      id: `available-${index}`,
+      name: `Available Card ${index + 1}`,
+      type: CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)],
+      energy_cost: Math.floor(Math.random() * 5) + 1,
+      url: '/placeholder.svg',
+      description: 'This is a placeholder available card description.'
+    }));
+    setAvailableCards(placeholderCards);
+  }, []);
 
   const filteredCards = availableCards.filter(card => 
     card.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -68,33 +74,23 @@ export const DeckBuilder = ({ onSaveDeck }) => {
     onSaveDeck(deck);
   };
 
-  const handleAddNewCard = async () => {
+  const handleAddNewCard = () => {
     const newCard = {
+      id: `new-${Date.now()}`,
       name: "Naughty New Teddy",
-      type: "Teddy",
+      type: CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)],
       description: "A mischievous new teddy joins the fray with a twinkle in its button eyes!",
-      attack: Math.floor(Math.random() * 5) + 1,
-      special_ability: "Tickle Attack",
+      energy_cost: Math.floor(Math.random() * 5) + 1,
+      url: '/placeholder.svg',
     };
 
-    try {
-      await addCard.mutateAsync(newCard);
-      toast({
-        title: "Card Added",
-        description: "A new troublemaker has joined your collection!",
-        variant: "success",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add new card. The teddy factory is on strike!",
-        variant: "destructive",
-      });
-    }
+    setAvailableCards([...availableCards, newCard]);
+    toast({
+      title: "Card Added",
+      description: "A new troublemaker has joined your collection!",
+      variant: "success",
+    });
   };
-
-  if (isLoading) return <div className="text-center text-2xl text-purple-600">Loading your mischievous minions...</div>;
-  if (error) return <div className="text-center text-2xl text-red-600">Error loading cards: {error.message}</div>;
 
   return (
     <motion.div 
@@ -118,9 +114,9 @@ export const DeckBuilder = ({ onSaveDeck }) => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="All">All Types of Mischief</SelectItem>
-            <SelectItem value="Teddy">Naughty Teddies</SelectItem>
-            <SelectItem value="Action">Devious Actions</SelectItem>
-            <SelectItem value="Item">Ridiculous Items</SelectItem>
+            {CARD_TYPES.map(type => (
+              <SelectItem key={type} value={type}>{type}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -143,9 +139,11 @@ export const DeckBuilder = ({ onSaveDeck }) => {
                     onClick={() => addCardToDeck(card)}
                   >
                     <CardContent className="p-4">
+                      <img src={card.url} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                       <p className="font-bold text-purple-800">{card.name}</p>
                       <p className="text-sm text-purple-600">{card.type}</p>
                       <p className="text-xs italic text-purple-500">{card.description}</p>
+                      <p className="text-xs text-purple-700 mt-1">Energy Cost: {card.energy_cost}</p>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -175,9 +173,11 @@ export const DeckBuilder = ({ onSaveDeck }) => {
                     onClick={() => removeCardFromDeck(index)}
                   >
                     <CardContent className="p-4">
+                      <img src={card.url} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                       <p className="font-bold text-purple-800">{card.name}</p>
                       <p className="text-sm text-purple-600">{card.type}</p>
                       <p className="text-xs italic text-purple-500">{card.description}</p>
+                      <p className="text-xs text-purple-700 mt-1">Energy Cost: {card.energy_cost}</p>
                     </CardContent>
                   </Card>
                 </motion.div>
