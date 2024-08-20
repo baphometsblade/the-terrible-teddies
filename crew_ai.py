@@ -6,6 +6,10 @@ from dotenv import load_dotenv
 import requests
 from PIL import Image
 from io import BytesIO
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Load environment variables
 load_dotenv()
@@ -75,39 +79,61 @@ asset_generation_crew = Crew(
     process=Process.sequential
 )
 
-# Run the crew
-results = asset_generation_crew.kickoff()
-
 # Process and save the results
 def save_image(image_url, filename):
-    response = requests.get(image_url)
-    img = Image.open(BytesIO(response.content))
-    os.makedirs('public/card_images', exist_ok=True)
-    img.save(f"public/card_images/{filename}.png")
+    try:
+        response = requests.get(image_url)
+        response.raise_for_status()
+        img = Image.open(BytesIO(response.content))
+        os.makedirs('public/card_images', exist_ok=True)
+        img.save(f"public/card_images/{filename}.png")
+        logging.info(f"Image saved: {filename}.png")
+    except requests.RequestException as e:
+        logging.error(f"Error downloading image: {e}")
+    except IOError as e:
+        logging.error(f"Error saving image: {e}")
 
 def process_results(results):
-    card_images = json.loads(results[0])
-    card_designs = json.loads(results[1])
-    game_rules = results[2]
-    game_lore = results[3]
+    try:
+        card_images = json.loads(results[0])
+        card_designs = json.loads(results[1])
+        game_rules = results[2]
+        game_lore = results[3]
 
-    # Save card images
-    for i, image_url in enumerate(card_images):
-        save_image(image_url, f"card_{i+1}")
+        # Save card images
+        for i, image_url in enumerate(card_images):
+            save_image(image_url, f"card_{i+1}")
 
-    # Save card designs
-    os.makedirs('src/data', exist_ok=True)
-    with open('src/data/cards.json', 'w') as f:
-        json.dump(card_designs, f, indent=2)
+        # Save card designs
+        os.makedirs('src/data', exist_ok=True)
+        with open('src/data/cards.json', 'w') as f:
+            json.dump(card_designs, f, indent=2)
+        logging.info("Card designs saved to src/data/cards.json")
 
-    # Save game rules
-    with open('src/data/game_rules.md', 'w') as f:
-        f.write(game_rules)
+        # Save game rules
+        with open('src/data/game_rules.md', 'w') as f:
+            f.write(game_rules)
+        logging.info("Game rules saved to src/data/game_rules.md")
 
-    # Save game lore
-    with open('src/data/game_lore.md', 'w') as f:
-        f.write(game_lore)
+        # Save game lore
+        with open('src/data/game_lore.md', 'w') as f:
+            f.write(game_lore)
+        logging.info("Game lore saved to src/data/game_lore.md")
 
-process_results(results)
+    except json.JSONDecodeError as e:
+        logging.error(f"Error decoding JSON: {e}")
+    except IOError as e:
+        logging.error(f"Error writing to file: {e}")
 
-print("Asset generation complete!")
+def run_crew():
+    try:
+        logging.info("Starting asset generation process...")
+        results = asset_generation_crew.kickoff()
+        logging.info("Asset generation process completed.")
+        process_results(results)
+        logging.info("All assets have been processed and saved.")
+    except Exception as e:
+        logging.error(f"An error occurred during the crew run: {e}")
+
+if __name__ == "__main__":
+    run_crew()
