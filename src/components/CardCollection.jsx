@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/components/ui/use-toast";
-import { useUserCards } from '../hooks/useUserCards';
+import { useUserCards } from '../integrations/supabase';
 import { LoadingSpinner } from './LoadingSpinner';
 
 export const CardCollection = ({ onClose }) => {
@@ -12,13 +12,15 @@ export const CardCollection = ({ onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
+  console.log('Cards:', cards); // Add this line for debugging
+
   if (isLoading) return <LoadingSpinner />;
   if (error) return <div>Error loading cards: {error.message}</div>;
 
-  const filteredCards = cards.filter(card => 
+  const filteredCards = cards ? cards.filter(card => 
     card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     card.type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) : [];
 
   return (
     <motion.div
@@ -44,7 +46,7 @@ export const CardCollection = ({ onClose }) => {
           >
             <Card className="bg-white shadow-lg">
               <CardContent className="p-4">
-                <img src={card.url} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
+                <img src={card.url || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                 <h3 className="text-lg font-semibold mb-1 text-purple-700">{card.name}</h3>
                 <p className="text-sm mb-1 text-purple-600">{card.type}</p>
                 <p className="text-xs text-gray-600">{card.description}</p>
