@@ -1,0 +1,99 @@
+1. Love Potion #69
+   - Effect: Restore 5 defense points to any bear on the field.
+   - Description: A seductive brew that rekindles the fire in even the most battered bears.
+
+2. Naughty Nurse's Kit
+   - Effect: Increase a bear's defense by 3 points for the next two turns.
+   - Description: A risqué nurse's outfit that offers more than just comfort—it provides some serious protection.
+
+3. Morning After Pill
+   - Effect: Increase a bear's attack by 4 points for one turn.
+   - Description: A quick pick-me-up that ensures your bear is ready for action, no matter what went down the night before.
+
+4. Bear Trap Lingerie
+   - Effect: Trap an enemy bear, causing it to lose its next turn.
+   - Description: A sexy snare that leaves enemy bears too entangled to do anything but admire the view.
+
+5. Smoky Joe's Cigar
+   - Effect: All enemy bears' attack is reduced by 2 points for the next turn.
+   - Description: A puff of smoke that's as distracting as it is disorienting—don't inhale too deeply.
+
+6. Voodoo Love Doll
+   - Effect: Reduce an enemy bear's attack and defense by 2 points each for the next two turns.
+   - Description: This sultry doll squeezes more than just your heart—your opponents won't know what hit them.
+
+7. Backup Booty Call
+   - Effect: Add a new bear to the battlefield from your hand.
+   - Description: When things get hot and heavy, sometimes you need a little extra help to get the job done.
+
+8. Lucky Panties
+   - Effect: Draw two additional cards from your deck.
+   - Description: A scandalous secret tucked away in the folds, ensuring you're always ready for whatever comes next.
+
+9. Viagra Brew
+   - Effect: Double a bear's attack for one turn, but it loses 2 defense points after.
+   - Description: A potent concoction that boosts performance but might leave you a little, well, drained.
+
+10. Latex Armor
+    - Effect: Increase a bear's defense by 4 points permanently.
+    - Description: Slippery, shiny, and oh-so-tight—this armor doesn't just protect, it turns heads.
+
+11. Naughty Nurse's Tonic
+    - Effect: Heal 3 defense points to all bears on your side of the field.
+    - Description: A restorative that's as potent as it is provocative, guaranteed to make your bears feel better all over.
+
+12. Frenzy Underwear
+    - Effect: All bears on your side gain 2 attack points for the next two turns.
+    - Description: There's something about the right pair of undies that just makes everyone feel a bit more… ferocious.
+
+13. Disguise Kit (Roleplay Edition)
+    - Effect: Swap the positions of two bears on your side of the field.
+    - Description: A quick change into something a little more comfortable—or dangerous—perfect for any scenario.
+
+14. Poison Lipstick
+    - Effect: Deal 3 damage to an enemy bear and reduce its defense by 1 point.
+    - Description: One kiss is all it takes to leave your enemies weak at the knees—and in the stats.
+
+15. Time Warp Condom
+    - Effect: Skip the next enemy turn.
+    - Description: Ever wish you could rewind and get a do-over? Now you can—just make sure to use it wisely.
+
+16. Energy Drink (Spiked)
+    - Effect: Restore a bear's special move, allowing it to be used again immediately.
+    - Description: A little liquid courage to keep the party going all night long.
+
+17. Hidden Pleasure Toy
+    - Effect: Add 2 attack points to a bear for its next attack, then the toy is discarded.
+    - Description: A sneaky little something that packs a punch—use it wisely, or lose it.
+
+18. Safe Word
+    - Effect: Make a bear untargetable by enemy attacks for one turn.
+    - Description: When things get a little too intense, a safe word is your best friend—keep your bear out of the line of fire.
+
+19. Sacrificial Thong
+    - Effect: Destroy one of your bears to instantly destroy an enemy bear of your choice.
+    - Description: Sometimes you have to give up something special to take out the competition.
+
+20. Kinky Rations
+    - Effect: Restore 2 defense points to all bears on your side for the next three turns.
+    - Description: Essential nourishment with a naughty twist—keeps your bears going strong.
+
+21. Decoy Doll
+    - Effect: Force an enemy bear to target this card instead of one of your bears.
+    - Description: A tempting decoy that distracts your enemies just long enough to make your move.
+
+22. Courage Condom
+    - Effect: A bear of your choice is immune to status effects for the next two turns.
+    - Description: A little extra protection to make sure your bear can stay in the game without any unwanted surprises.
+
+23. Booby Trap Bra
+    - Effect: Deal 5 damage to the next enemy bear that attacks one of your bears.
+    - Description: A bra with a bite—perfect for keeping those pesky enemies at bay.
+
+24. War Drum (Stripper Edition)
+    - Effect: All bears on your side gain 1 attack and 1 defense point for the next turn.
+    - Description: A beat that gets everyone pumped up and ready for action—especially in a sexy strip club setting.
+
+25. Spyglass (Peeping Tom)
+    - Effect: Look at the top three cards of your opponent's deck and rearrange them.
+    - Description: A naughty peek at what your opponent has coming, giving you the upper hand.

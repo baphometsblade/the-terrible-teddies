@@ -55,10 +55,43 @@ function parseBearData(data) {
   }));
 }
 
-async function saveToSupabase(bears) {
+function parseSupportCardData(data) {
+  const supportCards = [];
+  const lines = data.split('\n');
+  let currentCard = {};
+
+  for (const line of lines) {
+    if (line.match(/^\d+\./)) {
+      if (Object.keys(currentCard).length > 0) {
+        supportCards.push(currentCard);
+      }
+      currentCard = {
+        id: parseInt(line.match(/^\d+/)[0]),
+        name: line.split('.')[1].trim(),
+      };
+    } else if (line.trim().startsWith('- Effect:')) {
+      currentCard.effect = line.split(':')[1].trim();
+    } else if (line.trim().startsWith('- Description:')) {
+      currentCard.description = line.split(':')[1].trim();
+    }
+  }
+
+  if (Object.keys(currentCard).length > 0) {
+    supportCards.push(currentCard);
+  }
+
+  return supportCards.map(card => ({
+    ...card,
+    type: 'Support',
+    energy_cost: Math.floor(Math.random() * 3) + 1,
+    imageUrl: `/placeholder.svg`,
+  }));
+}
+
+async function saveToSupabase(cards) {
   const { data, error } = await supabase
     .from('terrible_teddies_cards')
-    .upsert(bears, { onConflict: 'id' });
+    .upsert(cards, { onConflict: 'id' });
 
   if (error) {
     console.error('Error saving to Supabase:', error);
@@ -67,11 +100,11 @@ async function saveToSupabase(bears) {
   }
 }
 
-async function saveToBack4App(bears) {
+async function saveToBack4App(cards) {
   const TerribleTeddyCard = Parse.Object.extend('TerribleTeddyCard');
-  const savePromises = bears.map(bear => {
-    const card = new TerribleTeddyCard();
-    return card.save(bear);
+  const savePromises = cards.map(card => {
+    const newCard = new TerribleTeddyCard();
+    return newCard.save(card);
   });
 
   try {
@@ -84,19 +117,27 @@ async function saveToBack4App(bears) {
 
 async function migrateTeddyData() {
   const dataDir = path.join(process.cwd(), 'public', 'data');
-  const fileNames = ['terrible_teddies_bears_1_10.txt', 'terrible_teddies_bears_11_20.txt', 'terrible_teddies_bears_21_30.txt', 'terrible_teddies_bears_31_40.txt'];
+  const bearFileNames = ['terrible_teddies_bears_1_10.txt', 'terrible_teddies_bears_11_20.txt', 'terrible_teddies_bears_21_30.txt', 'terrible_teddies_bears_31_40.txt'];
+  const supportCardFileName = 'terrible_teddies_support_cards.txt';
   
-  let allBears = [];
+  let allCards = [];
 
-  for (const fileName of fileNames) {
+  // Parse bear cards
+  for (const fileName of bearFileNames) {
     const filePath = path.join(dataDir, fileName);
     const fileContents = fs.readFileSync(filePath, 'utf8');
     const parsedBears = parseBearData(fileContents);
-    allBears = [...allBears, ...parsedBears];
+    allCards = [...allCards, ...parsedBears];
   }
 
-  await saveToSupabase(allBears);
-  await saveToBack4App(allBears);
+  // Parse support cards
+  const supportCardPath = path.join(dataDir, supportCardFileName);
+  const supportCardContents = fs.readFileSync(supportCardPath, 'utf8');
+  const parsedSupportCards = parseSupportCardData(supportCardContents);
+  allCards = [...allCards, ...parsedSupportCards];
+
+  await saveToSupabase(allCards);
+  await saveToBack4App(allCards);
 }
 
 migrateTeddyData().then(() => console.log('Migration complete'));
