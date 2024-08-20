@@ -38,6 +38,17 @@ def generate_card_image(prompt):
         logging.error(f"Error generating image: {e}")
         return None
 
+def ensure_table_structure():
+    try:
+        # Check if the energy_cost column exists
+        result = supabase.table("generated_images").select("energy_cost").limit(1).execute()
+        if 'error' in result:
+            # If the column doesn't exist, add it
+            supabase.table("generated_images").alter().add("energy_cost", "int4").execute()
+            logging.info("Added energy_cost column to generated_images table")
+    except Exception as e:
+        logging.error(f"Error ensuring table structure: {e}")
+
 def generate_and_store_card(name, type, energy_cost):
     prompt = f"A cute teddy bear as a {type} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background."
     image_url = generate_card_image(prompt)
@@ -47,16 +58,9 @@ def generate_and_store_card(name, type, energy_cost):
             "name": name,
             "type": type,
             "url": image_url,
-            "prompt": prompt
+            "prompt": prompt,
+            "energy_cost": energy_cost
         }
-        
-        # Check if the 'energy_cost' column exists
-        try:
-            result = supabase.table("generated_images").select("*").limit(1).execute()
-            if result.data and 'energy_cost' in result.data[0]:
-                card_data["energy_cost"] = energy_cost
-        except Exception as e:
-            logging.warning(f"Could not check for 'energy_cost' column: {e}")
         
         try:
             result = supabase.table("generated_images").insert(card_data).execute()
@@ -73,6 +77,8 @@ def main():
     try:
         check_api_key()
         logging.info("Starting asset generation for Terrible Teddies...")
+        
+        ensure_table_structure()
         
         for card_type in CARD_TYPES:
             for i in range(8):  # Generate 8 cards of each type
