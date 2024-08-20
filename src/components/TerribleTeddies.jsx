@@ -5,8 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { useUserStats } from '../hooks/useUserStats';
 import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Loader2 } from 'lucide-react';
+import { DeckBuilder } from './DeckBuilder';
 
-const DeckBuilder = lazy(() => import('./DeckBuilder').then(module => ({ default: module.DeckBuilder })));
 const GameBoard = lazy(() => import('./GameBoard'));
 const TutorialComponent = lazy(() => import('./TutorialComponent').then(module => ({ default: module.TutorialComponent })));
 const LeaderboardComponent = lazy(() => import('./LeaderboardComponent').then(module => ({ default: module.LeaderboardComponent })));
@@ -108,7 +108,7 @@ const TerribleTeddies = () => {
       <AnimatePresence mode="wait">
         {gameState === 'menu' && renderMenu()}
         {gameState === 'playing' && renderComponent(() => <GameBoard playerDeck={playerDeck} onExit={() => setGameState('menu')} />)}
-        {gameState === 'deckBuilder' && renderComponent(() => <DeckBuilder onSaveDeck={handleSaveDeck} initialDeck={playerDeck} />)}
+        {gameState === 'deckBuilder' && <DeckBuilder onSaveDeck={handleSaveDeck} initialDeck={playerDeck} />}
         {gameState === 'tutorial' && renderComponent(() => <TutorialComponent onExit={() => setGameState('menu')} />)}
         {gameState === 'leaderboard' && renderComponent(() => (
           <>
