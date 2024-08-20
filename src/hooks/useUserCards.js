@@ -10,9 +10,8 @@ export const useUserCards = () => {
     queryFn: async () => {
       if (!currentUser) return [];
       const { data, error } = await supabase
-        .from('user_cards')
-        .select('*')
-        .eq('user_id', currentUser.id);
+        .from('terrible_teddies_cards')
+        .select('*');
       if (error) throw error;
       return data;
     },
