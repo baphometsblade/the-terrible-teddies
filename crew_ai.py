@@ -23,27 +23,27 @@ load_dotenv()
 # Initialize the OpenAI language model
 llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Define the agents with more detailed descriptions
+# Define the agents
 image_generator = Agent(
     role='Image Generator',
-    goal='Generate hyper-realistic and satirical images for Terrible Teddies cards',
-    backstory='You are an AI artist specializing in creating hyper-detailed, adult-themed teddy bear illustrations with a South Park-esque style. Your creations should be humorous, slightly edgy, and visually striking.',
+    goal='Generate stylized images for Terrible Teddies cards',
+    backstory='You are an AI artist specializing in creating stylized teddy bear illustrations',
     verbose=True,
     llm=llm
 )
 
 card_designer = Agent(
     role='Card Designer',
-    goal='Design balanced and humorously offensive cards for the Terrible Teddies game',
-    backstory='You are a game designer with expertise in creating satirical and edgy card game mechanics. Your designs should be both entertaining and strategically balanced.',
+    goal='Design balanced and interesting cards for the Terrible Teddies game',
+    backstory='You are a game designer with expertise in card game mechanics and balance',
     verbose=True,
     llm=llm
 )
 
 rule_writer = Agent(
     role='Rule Writer',
-    goal='Create clear and engaging rules for the Terrible Teddies game with an adult humor twist',
-    backstory='You are an experienced technical writer specializing in adult-themed game rule books. Your writing should be concise, easy to understand, and sprinkled with humor.',
+    goal='Create clear and engaging rules for the Terrible Teddies game',
+    backstory='You are an experienced technical writer specializing in game rule books',
     verbose=True,
     llm=llm
 )
@@ -56,25 +56,29 @@ lore_creator = Agent(
     llm=llm
 )
 
-# Define the tasks with more specific instructions
+# Define the tasks
 generate_card_images = Task(
-    description='Generate 40 unique, hyper-realistic, and satirical teddy bear images for game cards. Each image should be distinct and memorable, capturing the essence of the card type.',
-    agent=image_generator
+    description='Generate 40 unique, stylized teddy bear images for game cards based on the provided data',
+    agent=image_generator,
+    expected_output="A list of 40 image URLs for the generated card images"
 )
 
 design_cards = Task(
-    description='Create 40 balanced cards with names, types, energy costs, and humorously offensive effects. Ensure a good distribution of card types and effects for varied gameplay.',
-    agent=card_designer
+    description='Create 40 balanced cards with names, types, energy costs, and effects based on the provided teddy bear data',
+    agent=card_designer,
+    expected_output="A JSON string containing an array of 40 card objects with properties: name, type, energy_cost, effect"
 )
 
 write_game_rules = Task(
-    description='Write comprehensive rules for the Terrible Teddies card game with an adult humor twist. Include setup, turn structure, winning conditions, and special card interactions.',
-    agent=rule_writer
+    description='Write comprehensive rules for the Terrible Teddies card game',
+    agent=rule_writer,
+    expected_output="A markdown formatted string containing the complete game rules"
 )
 
 create_game_lore = Task(
     description='Develop a satirical and edgy backstory for the Terrible Teddies universe. Create a world where these mischievous teddies exist, their origins, and the reason for their battles.',
-    agent=lore_creator
+    agent=lore_creator,
+    expected_output="A markdown formatted string containing the game's lore and backstory"
 )
 
 # Create the crew
@@ -85,6 +89,7 @@ asset_generation_crew = Crew(
     process=Process.sequential
 )
 
+# Process and save the results
 def save_image(image_url, filename):
     try:
         response = requests.get(image_url)
@@ -105,7 +110,7 @@ def process_results(results):
         game_rules = results[2]
         game_lore = results[3]
 
-        # Save card images with a progress bar
+        # Save card images
         print(f"{Fore.CYAN}Saving card images...{Style.RESET_ALL}")
         for i, image_url in tqdm.tqdm(enumerate(card_images), total=len(card_images)):
             save_image(image_url, f"card_{i+1}")
