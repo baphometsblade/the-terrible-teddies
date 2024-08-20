@@ -1,6 +1,12 @@
 import sys
 import subprocess
 import logging
+import os
+import requests
+from openai import OpenAI
+from supabase import create_client, Client
+import random
+from dotenv import load_dotenv
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -18,13 +24,6 @@ def check_and_install_packages():
 # Check and install required packages
 check_and_install_packages()
 
-# Now import the required modules
-from openai import OpenAI
-from supabase import create_client, Client
-import random
-from dotenv import load_dotenv
-import os
-
 # Load environment variables
 load_dotenv()
 
@@ -35,6 +34,14 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 supabase: Client = create_client(os.environ.get("VITE_SUPABASE_PROJECT_URL"), os.environ.get("VITE_SUPABASE_API_KEY"))
 
 CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
+
+def validate_api_key():
+    try:
+        response = client.models.list()
+        return True
+    except Exception as e:
+        logging.error(f"API key validation failed: {str(e)}")
+        return False
 
 def ensure_table_structure():
     try:
@@ -88,6 +95,10 @@ def generate_and_store_card(name, type, energy_cost):
 def main():
     logging.info("Starting asset generation for Terrible Teddies...")
     
+    if not validate_api_key():
+        logging.error("Invalid or expired OpenAI API key. Please update your API key and try again.")
+        return
+
     ensure_table_structure()
     
     for card_type in CARD_TYPES:
