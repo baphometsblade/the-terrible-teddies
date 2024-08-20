@@ -21,16 +21,14 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 def ensure_energy_cost_column():
     try:
-        # Check if the column exists
-        result = supabase.table('generated_images').select('energy_cost').limit(1).execute()
-        if 'error' in result and 'message' in result['error'] and 'energy_cost' in result['error']['message']:
-            # Column doesn't exist, so add it
-            supabase.table('generated_images').alter().add('energy_cost', 'int4').execute()
-            logging.info("Added 'energy_cost' column to 'generated_images' table")
+        # Use RPC to execute SQL command
+        result = supabase.rpc('add_energy_cost_column').execute()
+        if result.get('error'):
+            logging.error(f"Error adding 'energy_cost' column: {result['error']}")
         else:
-            logging.info("'energy_cost' column already exists in 'generated_images' table")
+            logging.info("'energy_cost' column added successfully or already exists")
     except Exception as e:
-        logging.error(f"Error checking/adding 'energy_cost' column: {str(e)}")
+        logging.error(f"Error ensuring 'energy_cost' column: {str(e)}")
         raise
 
 def generate_card_image(card_type, name):
