@@ -2,16 +2,16 @@ import os
 import sys
 import subprocess
 import logging
-from openai import OpenAI
 from supabase import create_client, Client
 import random
 from dotenv import load_dotenv
+import requests
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def check_and_install_packages():
-    required_packages = ['openai', 'supabase', 'python-dotenv', 'Pillow', 'requests']
+    required_packages = ['supabase', 'python-dotenv', 'Pillow', 'requests']
     for package in required_packages:
         try:
             __import__(package)
@@ -26,20 +26,26 @@ check_and_install_packages()
 # Load environment variables
 load_dotenv()
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
 # Initialize Supabase client
 supabase: Client = create_client(os.environ.get("VITE_SUPABASE_PROJECT_URL"), os.environ.get("VITE_SUPABASE_API_KEY"))
 
 CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
 
 def validate_api_key():
-    try:
-        response = client.models.list()
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        logging.error("OPENAI_API_KEY not found in environment variables.")
+        return False
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}"
+    }
+    response = requests.get("https://api.openai.com/v1/models", headers=headers)
+    
+    if response.status_code == 200:
         return True
-    except Exception as e:
-        logging.error(f"API key validation failed: {str(e)}")
+    else:
+        logging.error(f"API key validation failed: Error code: {response.status_code} - {response.json()}")
         return False
 
 def ensure_table_structure():
@@ -55,14 +61,20 @@ def ensure_table_structure():
 
 def generate_card_image(prompt):
     try:
-        response = client.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            size="1024x1024",
-            quality="standard",
-            n=1,
-        )
-        return response.data[0].url
+        api_key = os.environ.get("OPENAI_API_KEY")
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        }
+        data = {
+            "model": "dall-e-3",
+            "prompt": prompt,
+            "n": 1,
+            "size": "1024x1024"
+        }
+        response = requests.post("https://api.openai.com/v1/images/generations", headers=headers, json=data)
+        response.raise_for_status()
+        return response.json()['data'][0]['url']
     except Exception as e:
         logging.error(f"Error generating image: {e}")
         return None
