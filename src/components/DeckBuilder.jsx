@@ -9,35 +9,31 @@ import { Sparkles } from 'lucide-react';
 
 const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 
-const teddyBears = [
-  { id: 1, name: "Knight's Kiss", type: "Action", energy_cost: 3, url: "/placeholder.svg", description: "The Chivalrous Charmer", attack: 6, defense: 8, specialMove: "Heartbreaker" },
-  { id: 2, name: "Smoky Joe", type: "Trap", energy_cost: 2, url: "/placeholder.svg", description: "The Sinister Smoker", attack: 7, defense: 6, specialMove: "Smoke Screen" },
-  { id: 3, name: "Lady Lush", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Tipsy Temptress", attack: 5, defense: 7, specialMove: "Wine Whirl" },
-  { id: 4, name: "Captain Cuddles", type: "Defense", energy_cost: 3, url: "/placeholder.svg", description: "The Naughty Navigator", attack: 8, defense: 6, specialMove: "Treasure Hunt" },
-  { id: 5, name: "Boozy Bruno", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Brewmaster Bear", attack: 7, defense: 7, specialMove: "Beer Bash" },
-  { id: 6, name: "Naughty Nurse", type: "Action", energy_cost: 2, url: "/placeholder.svg", description: "The Medic of Mischief", attack: 5, defense: 9, specialMove: "Bad Medicine" },
-  { id: 7, name: "Dapper Dan", type: "Trap", energy_cost: 3, url: "/placeholder.svg", description: "The Gentleman's Scoundrel", attack: 7, defense: 7, specialMove: "Dirty Trick" },
-  { id: 8, name: "Vicious Vixen", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Femme Fatale", attack: 8, defense: 6, specialMove: "Seduction" },
-  { id: 9, name: "Rascal Rex", type: "Defense", energy_cost: 2, url: "/placeholder.svg", description: "The Cunning Con Artist", attack: 6, defense: 8, specialMove: "Con Job" },
-  { id: 10, name: "Lady Lacerate", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Bloodthirsty Beauty", attack: 9, defense: 5, specialMove: "Twin Strike" },
-  { id: 11, name: "Mischief Mike", type: "Action", energy_cost: 3, url: "/placeholder.svg", description: "The Prankster Extraordinaire", attack: 6, defense: 7, specialMove: "Exploding Cigar" },
-  { id: 12, name: "Velvet Viper", type: "Trap", energy_cost: 2, url: "/placeholder.svg", description: "The Slippery Seductress", attack: 7, defense: 6, specialMove: "Venomous Kiss" },
-  { id: 13, name: "Gory Gus", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Bear of Brutality", attack: 9, defense: 5, specialMove: "Savage Claw" },
-  { id: 14, name: "Temptress Trixie", type: "Defense", energy_cost: 3, url: "/placeholder.svg", description: "The Alluring Assassin", attack: 8, defense: 6, specialMove: "Fatal Attraction" },
-  { id: 15, name: "Rowdy Ron", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Barroom Brawler", attack: 7, defense: 7, specialMove: "Knockout Punch" },
-  { id: 16, name: "Shady Sheila", type: "Action", energy_cost: 2, url: "/placeholder.svg", description: "The Underworld Queen", attack: 6, defense: 8, specialMove: "Blackmail" },
-  { id: 17, name: "Feral Fang", type: "Trap", energy_cost: 3, url: "/placeholder.svg", description: "The Wild Warrior", attack: 8, defense: 6, specialMove: "Primal Rage" },
-  { id: 18, name: "Deadeye Duke", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Sharpshooter", attack: 7, defense: 6, specialMove: "Bullseye" },
-  { id: 19, name: "Blitzkrieg Bear", type: "Defense", energy_cost: 2, url: "/placeholder.svg", description: "The War Machine", attack: 9, defense: 5, specialMove: "Total Annihilation" },
-  { id: 20, name: "Hexing Harriet", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Voodoo Vixen", attack: 6, defense: 8, specialMove: "Voodoo Curse" },
-];
-
 export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
   const [deck, setDeck] = useState(initialDeck || []);
-  const [availableCards, setAvailableCards] = useState(teddyBears);
+  const [availableCards, setAvailableCards] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const { toast } = useToast();
+
+  useEffect(() => {
+    const loadTeddyBears = async () => {
+      try {
+        const response = await fetch('/api/teddybears');
+        const data = await response.json();
+        setAvailableCards(data);
+      } catch (error) {
+        console.error('Error loading teddy bears:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load teddy bears. Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    loadTeddyBears();
+  }, []);
 
   const filteredCards = availableCards.filter(card => 
     card.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -131,7 +127,7 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
                     onClick={() => addCardToDeck(card)}
                   >
                     <CardContent className="p-4">
-                      <img src={card.url} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
+                      <img src={card.url || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                       <p className="font-bold text-purple-800">{card.name}</p>
                       <p className="text-sm text-purple-600">{card.type}</p>
                       <p className="text-xs italic text-purple-500">{card.description}</p>
@@ -163,7 +159,7 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
                     onClick={() => removeCardFromDeck(index)}
                   >
                     <CardContent className="p-4">
-                      <img src={card.url} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
+                      <img src={card.url || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                       <p className="font-bold text-purple-800">{card.name}</p>
                       <p className="text-sm text-purple-600">{card.type}</p>
                       <p className="text-xs italic text-purple-500">{card.description}</p>
