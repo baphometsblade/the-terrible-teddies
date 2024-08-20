@@ -36,7 +36,6 @@ export const useAddGeneratedImage = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (newImage) => {
-      // Check if the 'energy_cost' column exists
       const { data: columns, error: columnError } = await supabase
         .from('generated_images')
         .select('*')
@@ -46,7 +45,6 @@ export const useAddGeneratedImage = () => {
 
       const hasEnergyCost = columns.length > 0 && 'energy_cost' in columns[0];
 
-      // If 'energy_cost' doesn't exist, remove it from the newImage object
       if (!hasEnergyCost) {
         delete newImage.energy_cost;
       }
@@ -84,7 +82,7 @@ export const useUpdateUserStats = () => {
       const { data, error } = await supabase
         .from('user_stats')
         .update(newStats)
-        .eq('id', 1) // Assuming there's only one row for user stats
+        .eq('id', 1)
         .single();
       if (error) throw error;
       return data;
@@ -113,8 +111,6 @@ export const useEvolveCard = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (cardId) => {
-      // Implement the card evolution logic here
-      // This is a placeholder implementation
       const { data, error } = await supabase
         .from('terrible_teddies_cards')
         .update({ level: supabase.raw('level + 1') })
@@ -125,6 +121,17 @@ export const useEvolveCard = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['terribleTeddiesCards']);
+    },
+  });
+};
+
+export const useCurrentUser = () => {
+  return useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return user;
     },
   });
 };
