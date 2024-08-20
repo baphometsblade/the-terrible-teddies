@@ -1,6 +1,5 @@
-crewai
-langchain
 openai
-pillow
-requests
+supabase
 python-dotenv
+Pillow
+requests

@@ -32,13 +32,13 @@ def install_requirements():
         logging.error(f"Error installing requirements: {e}")
         sys.exit(1)
 
-def run_crew_ai():
-    print("Running crew_ai.py...")
+def run_generate_assets():
+    print("Running generate_assets.py...")
     try:
-        subprocess.run([sys.executable, "crew_ai.py"], check=True)
-        print("crew_ai.py completed successfully.")
+        subprocess.run([sys.executable, "generate_assets.py"], check=True)
+        print("generate_assets.py completed successfully.")
     except subprocess.CalledProcessError as e:
-        logging.error(f"Error running crew_ai.py: {e}")
+        logging.error(f"Error running generate_assets.py: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
@@ -48,12 +48,12 @@ if __name__ == "__main__":
         logging.error("Error: requirements.txt not found. Please make sure it exists in the current directory.")
         sys.exit(1)
 
-    if not os.path.exists("crew_ai.py"):
-        logging.error("Error: crew_ai.py not found. Please make sure it exists in the current directory.")
+    if not os.path.exists("generate_assets.py"):
+        logging.error("Error: generate_assets.py not found. Please make sure it exists in the current directory.")
         sys.exit(1)
 
     install_requirements()
-    run_crew_ai()
+    run_generate_assets()
 
     print("Asset generation process completed!")
     print("\nThank you for using Terrible Teddies Asset Generator!")
