@@ -1,97 +1,56 @@
-import json
 import os
-from crewai import Agent, Task, Crew
-from langchain.llms import OpenAI
+import json
 from dotenv import load_dotenv
-import requests
-from PIL import Image
-from io import BytesIO
+from openai import OpenAI
+from supabase import create_client, Client
 
 # Load environment variables
 load_dotenv()
 
-# Initialize the OpenAI language model
-llm = OpenAI()
+# Initialize OpenAI client
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# Define the agents
-image_generator = Agent(
-    role='Image Generator',
-    goal='Generate stylized images for Terrible Teddies cards',
-    backstory='You are an AI artist specializing in creating stylized teddy bear illustrations',
-    verbose=True,
-    llm=llm
-)
+# Initialize Supabase client
+supabase: Client = create_client(os.environ.get("VITE_SUPABASE_PROJECT_URL"), os.environ.get("VITE_SUPABASE_API_KEY"))
 
-card_designer = Agent(
-    role='Card Designer',
-    goal='Design balanced and interesting cards for the Terrible Teddies game',
-    backstory='You are a game designer with expertise in card game mechanics and balance',
-    verbose=True,
-    llm=llm
-)
+CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
 
-rule_writer = Agent(
-    role='Rule Writer',
-    goal='Create clear and engaging rules for the Terrible Teddies game',
-    backstory='You are an experienced technical writer specializing in game rule books',
-    verbose=True,
-    llm=llm
-)
+def generate_card_image(prompt):
+    response = client.images.generate(
+        model="dall-e-3",
+        prompt=prompt,
+        size="1024x1024",
+        quality="standard",
+        n=1,
+    )
+    return response.data[0].url
 
-# Define the tasks
-generate_card_images = Task(
-    description='Generate 40 unique, stylized teddy bear images for game cards',
-    agent=image_generator,
-    expected_output="A list of 40 image URLs for the generated card images"
-)
+def generate_and_store_card(name, type, energy_cost):
+    prompt = f"A cute teddy bear as a {type} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background."
+    image_url = generate_card_image(prompt)
+    
+    card_data = {
+        "name": name,
+        "type": type,
+        "energy_cost": energy_cost,
+        "url": image_url,
+        "prompt": prompt
+    }
+    
+    result = supabase.table("generated_images").insert(card_data).execute()
+    print(f"Generated and stored card: {name}")
+    return result
 
-design_cards = Task(
-    description='Create 40 balanced cards with names, types, energy costs, and effects',
-    agent=card_designer,
-    expected_output="A JSON string containing an array of 40 card objects with properties: name, type, energy_cost, effect"
-)
+def main():
+    print("Starting asset generation for Terrible Teddies...")
+    
+    for card_type in CARD_TYPES:
+        for i in range(8):  # Generate 8 cards of each type
+            name = f"{card_type} Teddy {i+1}"
+            energy_cost = random.randint(1, 5)
+            generate_and_store_card(name, card_type, energy_cost)
+    
+    print("Asset generation complete!")
 
-write_game_rules = Task(
-    description='Write comprehensive rules for the Terrible Teddies card game',
-    agent=rule_writer,
-    expected_output="A markdown formatted string containing the complete game rules"
-)
-
-# Create the crew
-asset_generation_crew = Crew(
-    agents=[image_generator, card_designer, rule_writer],
-    tasks=[generate_card_images, design_cards, write_game_rules],
-    verbose=2
-)
-
-# Run the crew
-results = asset_generation_crew.kickoff()
-
-# Process and save the results
-def save_image(image_url, filename):
-    response = requests.get(image_url)
-    img = Image.open(BytesIO(response.content))
-    os.makedirs('public/card_images', exist_ok=True)
-    img.save(f"public/card_images/{filename}.png")
-
-def process_results(results):
-    card_images = json.loads(results[0])
-    card_designs = json.loads(results[1])
-    game_rules = results[2]
-
-    # Save card images
-    for i, image_url in enumerate(card_images):
-        save_image(image_url, f"card_{i+1}")
-
-    # Save card designs
-    os.makedirs('src/data', exist_ok=True)
-    with open('src/data/cards.json', 'w') as f:
-        json.dump(card_designs, f, indent=2)
-
-    # Save game rules
-    with open('src/data/game_rules.md', 'w') as f:
-        f.write(game_rules)
-
-process_results(results)
-
-print("Asset generation complete!")
+if __name__ == "__main__":
+    main()
