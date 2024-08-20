@@ -152,3 +152,20 @@ export const useLogout = () => {
     },
   });
 };
+
+export const useSignUp = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ email, password }) => {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['currentUser']);
+    },
+  });
+};
