@@ -169,3 +169,16 @@ export const useSignUp = () => {
     },
   });
 };
+
+export const useUserCards = () => {
+  return useQuery({
+    queryKey: ['userCards'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('terrible_teddies_cards')
+        .select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+};
