@@ -46,10 +46,17 @@ def generate_and_store_card(name, type, energy_cost):
         card_data = {
             "name": name,
             "type": type,
-            "energy_cost": energy_cost,
             "url": image_url,
             "prompt": prompt
         }
+        
+        # Check if the 'energy_cost' column exists
+        try:
+            result = supabase.table("generated_images").select("*").limit(1).execute()
+            if result.data and 'energy_cost' in result.data[0]:
+                card_data["energy_cost"] = energy_cost
+        except Exception as e:
+            logging.warning(f"Could not check for 'energy_cost' column: {e}")
         
         try:
             result = supabase.table("generated_images").insert(card_data).execute()
