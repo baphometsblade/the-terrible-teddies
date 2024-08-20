@@ -13,13 +13,14 @@ import { GameOverModal } from './GameOverModal';
 import { SpecialMoveModal } from './SpecialMoveModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameLogic } from '../../hooks/useGameLogic';
-import { useTerribleTeddiesCards, useUserDeck } from '../../integrations/supabase';
+import { useTerribleTeddiesCards, useUserDeck, useUpdateUserStats } from '../../integrations/supabase';
 import { LoadingSpinner } from '../LoadingSpinner';
 import confetti from 'canvas-confetti';
 
 export const GameBoard = ({ onExit, settings }) => {
   const { data: allCards, isLoading: isLoadingCards } = useTerribleTeddiesCards();
   const { data: userDeck, isLoading: isLoadingDeck } = useUserDeck();
+  const updateUserStats = useUpdateUserStats();
   const { toast } = useToast();
   const [showSpecialMoveModal, setShowSpecialMoveModal] = useState(false);
 
@@ -58,7 +59,7 @@ export const GameBoard = ({ onExit, settings }) => {
   };
 
   const handlePlayAgain = () => {
-    window.location.reload();
+    initializeGame(userDeck.length > 0 ? userDeck : allCards.slice(0, 20));
   };
 
   const handleSpecialMove = () => {
@@ -79,14 +80,21 @@ export const GameBoard = ({ onExit, settings }) => {
   };
 
   useEffect(() => {
-    if (isGameOver && winner === 'player' && settings.soundEnabled) {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
+    if (isGameOver) {
+      if (winner === 'player') {
+        updateUserStats.mutate({ games_won: 1, coins: 50 });
+        if (settings.soundEnabled) {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
+      } else {
+        updateUserStats.mutate({ games_played: 1 });
+      }
     }
-  }, [isGameOver, winner, settings.soundEnabled]);
+  }, [isGameOver, winner, settings.soundEnabled, updateUserStats]);
 
   if (isLoadingCards || isLoadingDeck) {
     return <LoadingSpinner />;
@@ -101,7 +109,7 @@ export const GameBoard = ({ onExit, settings }) => {
       className={`game-board p-6 rounded-2xl shadow-2xl ${settings.darkMode ? 'bg-gray-800 text-white' : 'bg-gradient-to-b from-pink-100 to-purple-200'}`}
     >
       <OpponentArea hp={opponentHP} hand={opponentHand} darkMode={settings.darkMode} />
-      <GameInfo currentTurn={currentTurn} darkMode={settings.darkMode} />
+      <GameInfo currentTurn={currentTurn} momentumGauge={momentumGauge} darkMode={settings.darkMode} />
       <MomentumGauge value={momentumGauge} darkMode={settings.darkMode} />
       <div className="flex mb-6 space-x-4">
         <LastPlayedCard card={lastPlayedCard} darkMode={settings.darkMode} />
