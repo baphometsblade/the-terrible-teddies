@@ -139,3 +139,16 @@ export const useLogin = () => {
     },
   });
 };
+
+export const useLogout = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['currentUser']);
+    },
+  });
+};
