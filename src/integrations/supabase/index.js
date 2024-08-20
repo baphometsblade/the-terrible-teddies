@@ -35,4 +35,87 @@ export const useAddTerribleTeddiesCard = () => {
   });
 };
 
-// ... (keep the rest of the file unchanged)
+export const useCurrentUser = () => {
+  return useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return user;
+    },
+  });
+};
+
+export const useUserStats = () => {
+  const { data: currentUser } = useCurrentUser();
+  return useQuery({
+    queryKey: ['userStats', currentUser?.id],
+    queryFn: async () => {
+      if (!currentUser) return null;
+      const { data, error } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!currentUser,
+  });
+};
+
+export const useUpdateUserStats = () => {
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (updates) => {
+      if (!currentUser) throw new Error('No user logged in');
+      const { data, error } = await supabase
+        .from('user_stats')
+        .update(updates)
+        .eq('user_id', currentUser.id);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userStats', currentUser?.id] });
+    },
+  });
+};
+
+export const useUserDeck = () => {
+  const { data: currentUser } = useCurrentUser();
+  return useQuery({
+    queryKey: ['userDeck', currentUser?.id],
+    queryFn: async () => {
+      if (!currentUser) return null;
+      const { data, error } = await supabase
+        .from('user_decks')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!currentUser,
+  });
+};
+
+export const useUpdateUserDeck = () => {
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (deck) => {
+      if (!currentUser) throw new Error('No user logged in');
+      const { data, error } = await supabase
+        .from('user_decks')
+        .upsert({ user_id: currentUser.id, deck })
+        .eq('user_id', currentUser.id);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userDeck', currentUser?.id] });
+    },
+  });
+};
