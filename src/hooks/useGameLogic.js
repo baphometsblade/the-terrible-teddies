@@ -204,6 +204,38 @@ export const useGameLogic = (initialDeck = []) => {
     setActiveEffects(newActiveEffects);
   };
 
+  const useSpecialMove = (moveName) => {
+    if (momentumGauge < 10) return;
+
+    let effectDescription = '';
+    switch (moveName) {
+      case "Teddy Tornado":
+        setOpponentHP(prev => Math.max(0, prev - 5));
+        effectDescription = "Teddy Tornado deals 5 damage to the opponent!";
+        break;
+      case "Fluff Armor":
+        setActiveEffects(prev => ({
+          ...prev,
+          player: [...prev.player, { type: CARD_TYPES.DEFENSE, energy_cost: 5, name: "Fluff Armor" }]
+        }));
+        effectDescription = "Fluff Armor provides 5 defense points!";
+        break;
+      case "Cuddle Heal":
+        setPlayerHP(prev => Math.min(30, prev + 5));
+        effectDescription = "Cuddle Heal restores 5 HP!";
+        break;
+    }
+
+    setMomentumGauge(0);
+    setGameLog(prev => [...prev, { player: 'You', action: effectDescription }]);
+    toast({
+      title: "Special Move",
+      description: effectDescription,
+    });
+    playSound(1100, 0.5);
+    endTurn();
+  };
+
   useEffect(() => {
     if (playerHP <= 0 || opponentHP <= 0) {
       setIsGameOver(true);
@@ -227,5 +259,7 @@ export const useGameLogic = (initialDeck = []) => {
     isGameOver,
     winner,
     isLoadingCards,
+    useSpecialMove,
+    initializeGame,
   };
 };

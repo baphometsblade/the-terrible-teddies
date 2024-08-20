@@ -10,6 +10,7 @@ import { CardEffects } from './CardEffects';
 import { MomentumGauge } from './MomentumGauge';
 import { PlayerHand } from './PlayerHand';
 import { GameOverModal } from './GameOverModal';
+import { SpecialMoveModal } from './SpecialMoveModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useTerribleTeddiesCards, useUserDeck } from '../../integrations/supabase';
@@ -20,6 +21,7 @@ export const GameBoard = ({ onExit }) => {
   const { data: allCards, isLoading: isLoadingCards } = useTerribleTeddiesCards();
   const { data: userDeck, isLoading: isLoadingDeck } = useUserDeck();
   const { toast } = useToast();
+  const [showSpecialMoveModal, setShowSpecialMoveModal] = useState(false);
 
   const {
     playerHP,
@@ -35,6 +37,7 @@ export const GameBoard = ({ onExit }) => {
     isGameOver,
     winner,
     initializeGame,
+    useSpecialMove,
   } = useGameLogic();
 
   useEffect(() => {
@@ -56,6 +59,23 @@ export const GameBoard = ({ onExit }) => {
 
   const handlePlayAgain = () => {
     window.location.reload();
+  };
+
+  const handleSpecialMove = () => {
+    if (momentumGauge >= 10) {
+      setShowSpecialMoveModal(true);
+    } else {
+      toast({
+        title: "Not enough momentum",
+        description: "You need 10 momentum to use a special move!",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const executeSpecialMove = (moveName) => {
+    useSpecialMove(moveName);
+    setShowSpecialMoveModal(false);
   };
 
   useEffect(() => {
@@ -106,6 +126,15 @@ export const GameBoard = ({ onExit }) => {
         </motion.div>
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button 
+            onClick={handleSpecialMove}
+            disabled={currentTurn !== 'player' || momentumGauge < 10}
+            className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300"
+          >
+            Special Move
+          </Button>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button 
             onClick={onExit}
             className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300"
           >
@@ -124,6 +153,14 @@ export const GameBoard = ({ onExit }) => {
             winner={winner} 
             onPlayAgain={handlePlayAgain} 
             onExit={onExit} 
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showSpecialMoveModal && (
+          <SpecialMoveModal 
+            onClose={() => setShowSpecialMoveModal(false)}
+            onSelectMove={executeSpecialMove}
           />
         )}
       </AnimatePresence>
