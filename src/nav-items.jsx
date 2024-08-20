@@ -9,12 +9,12 @@ export const navItems = [
     title: "Home",
     to: "/",
     icon: <Home className="h-4 w-4" />,
-    page: Index,
+    component: Index,
   },
   {
     title: "Auth",
     to: "/auth",
     icon: <LogIn className="h-4 w-4" />,
-    page: SupabaseAuthUI,
+    component: SupabaseAuthUI,
   },
 ];

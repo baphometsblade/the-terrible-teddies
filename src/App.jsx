@@ -33,14 +33,14 @@ const App = () => (
           <BrowserRouter>
             <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
               <Routes>
-                {navItems.map(({ to, page: PageComponent }) => (
+                {navItems.map(({ to, component: Component }) => (
                   <Route 
                     key={to} 
                     path={to} 
                     element={
                       <ErrorBoundary FallbackComponent={ErrorFallback}>
                         <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
-                          <PageComponent />
+                          <Component />
                         </Suspense>
                       </ErrorBoundary>
                     } 
