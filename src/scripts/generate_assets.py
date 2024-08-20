@@ -31,6 +31,7 @@ def ensure_energy_cost_column():
             logging.info("'energy_cost' column already exists in 'generated_images' table")
     except Exception as e:
         logging.error(f"Error checking/adding 'energy_cost' column: {str(e)}")
+        raise
 
 def generate_card_image(card_type, name):
     prompt = f"A cute teddy bear as a {card_type} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background. The card name is {name}."
@@ -86,7 +87,11 @@ def main():
         logging.error("OPENAI_API_KEY is not set in the environment variables")
         return
     
-    ensure_energy_cost_column()
+    try:
+        ensure_energy_cost_column()
+    except Exception as e:
+        logging.error(f"Failed to ensure 'energy_cost' column: {str(e)}")
+        return
     
     for card_type in CARD_TYPES:
         for i in range(8):  # Generate 8 cards of each type
