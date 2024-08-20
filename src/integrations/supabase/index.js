@@ -30,7 +30,7 @@ export const useAddGeneratedImage = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries('generatedImages');
+      queryClient.invalidateQueries(['generatedImages']);
     },
   });
 };
@@ -59,7 +59,7 @@ export const useAddTerribleTeddiesCard = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries('terribleTeddiesCards');
+      queryClient.invalidateQueries(['terribleTeddiesCards']);
     },
   });
 };
@@ -89,7 +89,7 @@ export const useUpdateUserStats = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries('userStats');
+      queryClient.invalidateQueries(['userStats']);
     },
   });
 };
@@ -150,7 +150,7 @@ export const useAddDailyChallenge = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries('dailyChallenge');
+      queryClient.invalidateQueries(['dailyChallenge']);
     },
   });
 };
@@ -187,7 +187,7 @@ export const useEvolveCard = () => {
       return evolvedCard;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries('terribleTeddiesCards');
+      queryClient.invalidateQueries(['terribleTeddiesCards']);
     },
   });
 };

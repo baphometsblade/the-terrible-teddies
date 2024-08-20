@@ -10,12 +10,12 @@ const CARD_TYPES = {
   BOOST: 'Boost'
 };
 
-export const useGameLogic = (gameMode) => {
+export const useGameLogic = (initialDeck = []) => {
   const [playerHP, setPlayerHP] = useState(30);
   const [opponentHP, setOpponentHP] = useState(30);
   const [playerHand, setPlayerHand] = useState([]);
   const [opponentHand, setOpponentHand] = useState([]);
-  const [playerDeck, setPlayerDeck] = useState([]);
+  const [playerDeck, setPlayerDeck] = useState(initialDeck);
   const [opponentDeck, setOpponentDeck] = useState([]);
   const [currentTurn, setCurrentTurn] = useState('player');
   const [momentumGauge, setMomentumGauge] = useState(0);
@@ -30,14 +30,14 @@ export const useGameLogic = (gameMode) => {
   const [audioContext] = useState(() => new (window.AudioContext || window.webkitAudioContext)());
 
   useEffect(() => {
-    if (allCards) {
+    if (allCards && allCards.length > 0 && playerDeck.length === 0) {
       initializeGame();
     }
-  }, [allCards]);
+  }, [allCards, playerDeck]);
 
   const initializeGame = () => {
     const shuffledCards = shuffleArray([...allCards]);
-    setPlayerDeck(shuffledCards.slice(0, 20));
+    setPlayerDeck(prevDeck => prevDeck.length > 0 ? prevDeck : shuffledCards.slice(0, 20));
     setOpponentDeck(shuffledCards.slice(20, 40));
     dealInitialHands();
   };
@@ -162,7 +162,7 @@ export const useGameLogic = (gameMode) => {
   };
 
   const aiTurn = useCallback(() => {
-    if (currentTurn === 'opponent' && gameMode === 'singlePlayer') {
+    if (currentTurn === 'opponent') {
       setTimeout(() => {
         const aiCard = opponentHand[Math.floor(Math.random() * opponentHand.length)];
         setOpponentHand(prev => prev.filter(c => c.id !== aiCard.id));
@@ -173,7 +173,7 @@ export const useGameLogic = (gameMode) => {
         endTurn();
       }, 1000);
     }
-  }, [currentTurn, gameMode, opponentHand, playSound]);
+  }, [currentTurn, opponentHand, playSound]);
 
   useEffect(() => {
     aiTurn();
@@ -226,5 +226,6 @@ export const useGameLogic = (gameMode) => {
     opponentDeck,
     isGameOver,
     winner,
+    isLoadingCards,
   };
 };

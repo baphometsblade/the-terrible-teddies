@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
-import { DeckBuilder } from './DeckBuilder';
-import { GameBoard } from './GameBoard';
-import { TutorialComponent } from './TutorialComponent';
-import { LeaderboardComponent } from './LeaderboardComponent';
-import { DailyChallenge } from './DailyChallenge';
-import { Shop } from './Shop';
 import { useUserStats } from '../hooks/useUserStats';
-import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle } from 'lucide-react';
+import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Loader2 } from 'lucide-react';
+
+const DeckBuilder = lazy(() => import('./DeckBuilder'));
+const GameBoard = lazy(() => import('./GameBoard'));
+const TutorialComponent = lazy(() => import('./TutorialComponent'));
+const LeaderboardComponent = lazy(() => import('./LeaderboardComponent'));
+const DailyChallenge = lazy(() => import('./DailyChallenge'));
+const Shop = lazy(() => import('./Shop'));
 
 const TerribleTeddies = () => {
   const [gameState, setGameState] = useState('menu');
@@ -96,77 +97,27 @@ const TerribleTeddies = () => {
     return gradients[color] || gradients.purple;
   };
 
+  const renderComponent = (Component) => (
+    <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+      <Component />
+    </Suspense>
+  );
+
   return (
     <div className="container mx-auto p-8">
       <AnimatePresence mode="wait">
         {gameState === 'menu' && renderMenu()}
-        {gameState === 'playing' && (
-          <motion.div
-            key="playing"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.5 }}
-          >
-            <GameBoard playerDeck={playerDeck} onExit={() => setGameState('menu')} />
-          </motion.div>
-        )}
-        {gameState === 'deckBuilder' && (
-          <motion.div
-            key="deckBuilder"
-            initial={{ opacity: 0, x: -100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 100 }}
-            transition={{ duration: 0.5 }}
-          >
-            <DeckBuilder onSaveDeck={handleSaveDeck} initialDeck={playerDeck} />
-          </motion.div>
-        )}
-        {gameState === 'tutorial' && (
-          <motion.div
-            key="tutorial"
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -100 }}
-            transition={{ duration: 0.5 }}
-          >
-            <TutorialComponent onExit={() => setGameState('menu')} />
-          </motion.div>
-        )}
-        {gameState === 'leaderboard' && (
-          <motion.div
-            key="leaderboard"
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.5 }}
-          >
+        {gameState === 'playing' && renderComponent(() => <GameBoard playerDeck={playerDeck} onExit={() => setGameState('menu')} />)}
+        {gameState === 'deckBuilder' && renderComponent(() => <DeckBuilder onSaveDeck={handleSaveDeck} initialDeck={playerDeck} />)}
+        {gameState === 'tutorial' && renderComponent(() => <TutorialComponent onExit={() => setGameState('menu')} />)}
+        {gameState === 'leaderboard' && renderComponent(() => (
+          <>
             <LeaderboardComponent />
             <Button onClick={() => setGameState('menu')} className="mt-8">Back to Menu</Button>
-          </motion.div>
-        )}
-        {gameState === 'dailyChallenge' && (
-          <motion.div
-            key="dailyChallenge"
-            initial={{ opacity: 0, rotate: -10 }}
-            animate={{ opacity: 1, rotate: 0 }}
-            exit={{ opacity: 0, rotate: 10 }}
-            transition={{ duration: 0.5 }}
-          >
-            <DailyChallenge onExit={() => setGameState('menu')} />
-          </motion.div>
-        )}
-        {gameState === 'shop' && (
-          <motion.div
-            key="shop"
-            initial={{ opacity: 0, y: -100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Shop onClose={() => setGameState('menu')} />
-          </motion.div>
-        )}
+          </>
+        ))}
+        {gameState === 'dailyChallenge' && renderComponent(() => <DailyChallenge onExit={() => setGameState('menu')} />)}
+        {gameState === 'shop' && renderComponent(() => <Shop onClose={() => setGameState('menu')} />)}
       </AnimatePresence>
     </div>
   );

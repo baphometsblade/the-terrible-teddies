@@ -1,21 +1,20 @@
+import React, { lazy } from 'react';
 import { Home, LogIn } from "lucide-react";
-import Index from "./pages/Index.jsx";
-import { SupabaseAuthUI } from "./integrations/supabase/auth.jsx";
 
-/**
- * Central place for defining the navigation items. Used for navigation components and routing.
- */
+const Index = lazy(() => import("./pages/Index.jsx"));
+const SupabaseAuthUI = lazy(() => import("./integrations/supabase/auth").then(module => ({ default: module.SupabaseAuthUI })));
+
 export const navItems = [
   {
     title: "Home",
     to: "/",
     icon: <Home className="h-4 w-4" />,
-    page: <Index />,
+    page: Index,
   },
   {
     title: "Auth",
     to: "/auth",
     icon: <LogIn className="h-4 w-4" />,
-    page: <SupabaseAuthUI />,
+    page: SupabaseAuthUI,
   },
 ];
