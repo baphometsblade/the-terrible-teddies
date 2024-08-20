@@ -8,7 +8,7 @@ import { useUserCards } from '../hooks/useUserCards';
 import { LoadingSpinner } from './LoadingSpinner';
 
 export const CardCollection = ({ onClose }) => {
-  const { cards, isLoading, error } = useUserCards();
+  const { data: cards, isLoading, error } = useUserCards();
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 

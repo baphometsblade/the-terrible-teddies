@@ -12,7 +12,7 @@ import { LoadingSpinner } from './LoadingSpinner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { CardCollection } from './CardCollection';
+import { CardCollection } from './CardCollection.jsx';
 
 const GameBoard = lazy(() => import('./GameBoard'));
 const TutorialComponent = lazy(() => import('./TutorialComponent').then(module => ({ default: module.TutorialComponent })));
