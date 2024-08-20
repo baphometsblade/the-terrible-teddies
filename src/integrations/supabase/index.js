@@ -11,7 +11,7 @@ export const useTerribleTeddiesCards = () => {
     queryKey: ['terribleTeddiesCards'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('terrible_teddies_cards')
+        .from('generated_images')
         .select('*');
       if (error) throw error;
       return data;

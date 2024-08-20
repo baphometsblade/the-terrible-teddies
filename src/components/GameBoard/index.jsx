@@ -13,6 +13,7 @@ import { GameOverModal } from './GameOverModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useTerribleTeddiesCards, useUserDeck } from '../../integrations/supabase';
+import { LoadingSpinner } from '../LoadingSpinner';
 import confetti from 'canvas-confetti';
 
 export const GameBoard = ({ onExit }) => {
@@ -68,7 +69,7 @@ export const GameBoard = ({ onExit }) => {
   }, [isGameOver, winner]);
 
   if (isLoadingCards || isLoadingDeck) {
-    return <div>Loading game...</div>;
+    return <LoadingSpinner />;
   }
 
   return (

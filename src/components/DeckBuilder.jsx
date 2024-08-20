@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTerribleTeddiesCards } from '../integrations/supabase';
+import { LoadingSpinner } from './LoadingSpinner';
 
 const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 
@@ -72,7 +73,7 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
   };
 
   if (isLoading) {
-    return <div className="text-center">Loading cards...</div>;
+    return <LoadingSpinner />;
   }
 
   return (

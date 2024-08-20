@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { useUserStats } from '../integrations/supabase';
-import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Loader2, Users } from 'lucide-react';
+import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Users } from 'lucide-react';
 import { DeckBuilder } from './DeckBuilder';
 import { Auth } from './Auth';
 import { useCurrentUser } from '../integrations/supabase';
+import { LoadingSpinner } from './LoadingSpinner';
 
 const GameBoard = lazy(() => import('./GameBoard'));
 const TutorialComponent = lazy(() => import('./TutorialComponent').then(module => ({ default: module.TutorialComponent })));
@@ -76,7 +77,7 @@ const TerribleTeddies = () => {
                 </CardContent>
               </Card>
             )}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
               <MenuButton onClick={startGame} color="purple" icon={<PlayCircle className="w-6 h-6" />}>Start Game</MenuButton>
               <MenuButton onClick={() => setGameState('deckBuilder')} color="blue" icon={<Sparkles className="w-6 h-6" />}>Deck Builder</MenuButton>
               <MenuButton onClick={() => setGameState('tutorial')} color="green" icon={<Book className="w-6 h-6" />}>How to Play</MenuButton>
@@ -122,13 +123,13 @@ const TerribleTeddies = () => {
   };
 
   const renderComponent = (Component) => (
-    <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+    <Suspense fallback={<LoadingSpinner />}>
       <Component />
     </Suspense>
   );
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="container mx-auto p-4 md:p-8">
       <AnimatePresence mode="wait">
         {gameState === 'menu' && renderMenu()}
         {gameState === 'playing' && renderComponent(() => <GameBoard playerDeck={playerDeck} onExit={() => setGameState('menu')} />)}
