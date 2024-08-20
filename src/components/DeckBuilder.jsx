@@ -17,22 +17,22 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const loadTeddyBears = async () => {
+    const fetchBears = async () => {
       try {
-        const response = await fetch('/api/teddybears');
+        const response = await fetch('/api/bears');
         const data = await response.json();
         setAvailableCards(data);
       } catch (error) {
-        console.error('Error loading teddy bears:', error);
+        console.error('Error fetching bears:', error);
         toast({
           title: "Error",
-          description: "Failed to load teddy bears. Please try again.",
+          description: "Failed to load bears. Please try again.",
           variant: "destructive",
         });
       }
     };
 
-    loadTeddyBears();
+    fetchBears();
   }, []);
 
   const filteredCards = availableCards.filter(card => 
@@ -127,7 +127,7 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
                     onClick={() => addCardToDeck(card)}
                   >
                     <CardContent className="p-4">
-                      <img src={card.url || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
+                      <img src={card.imageUrl || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                       <p className="font-bold text-purple-800">{card.name}</p>
                       <p className="text-sm text-purple-600">{card.type}</p>
                       <p className="text-xs italic text-purple-500">{card.description}</p>
@@ -159,7 +159,7 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
                     onClick={() => removeCardFromDeck(index)}
                   >
                     <CardContent className="p-4">
-                      <img src={card.url || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
+                      <img src={card.imageUrl || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                       <p className="font-bold text-purple-800">{card.name}</p>
                       <p className="text-sm text-purple-600">{card.type}</p>
                       <p className="text-xs italic text-purple-500">{card.description}</p>
