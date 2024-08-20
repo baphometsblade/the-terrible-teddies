@@ -19,6 +19,19 @@ CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
 OPENAI_API_URL = "https://api.openai.com/v1/images/generations"
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
+def ensure_energy_cost_column():
+    try:
+        # Check if the column exists
+        result = supabase.table('generated_images').select('energy_cost').limit(1).execute()
+        if 'error' in result and 'message' in result['error'] and 'energy_cost' in result['error']['message']:
+            # Column doesn't exist, so add it
+            supabase.table('generated_images').alter().add('energy_cost', 'int4').execute()
+            logging.info("Added 'energy_cost' column to 'generated_images' table")
+        else:
+            logging.info("'energy_cost' column already exists in 'generated_images' table")
+    except Exception as e:
+        logging.error(f"Error checking/adding 'energy_cost' column: {str(e)}")
+
 def generate_card_image(card_type, name):
     prompt = f"A cute teddy bear as a {card_type} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background. The card name is {name}."
     
@@ -72,6 +85,8 @@ def main():
     if not OPENAI_API_KEY:
         logging.error("OPENAI_API_KEY is not set in the environment variables")
         return
+    
+    ensure_energy_cost_column()
     
     for card_type in CARD_TYPES:
         for i in range(8):  # Generate 8 cards of each type
