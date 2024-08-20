@@ -35,4 +35,32 @@ export const useAddTerribleTeddiesCard = () => {
   });
 };
 
-// ... (keep other existing functions)
+export const useUserDeck = () => {
+  return useQuery({
+    queryKey: ['userDeck'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_decks')
+        .select('*')
+        .single();
+      if (error) throw error;
+      return data?.cards || [];
+    },
+  });
+};
+
+export const useUpdateUserStats = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (stats) => {
+      const { data, error } = await supabase
+        .from('user_stats')
+        .upsert(stats);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userStats'] });
+    },
+  });
+};

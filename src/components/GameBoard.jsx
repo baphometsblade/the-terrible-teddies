@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Zap, Heart, Sword } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { useTerribleTeddiesCards, useUserDeck, useUpdateUserStats } from '../integrations/supabase';
+import { useTerribleTeddiesCards, useUserDeck, useUpdateUserStats } from '../integrations/supabase/index.js';
 
 const CARD_TYPES = {
   ACTION: 'Action',
