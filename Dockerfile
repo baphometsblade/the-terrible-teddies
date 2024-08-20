@@ -16,12 +16,14 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Expose the port the app runs on
-EXPOSE 3000
+# Set proper permissions for the app directory
+RUN chown -R node:node /app
 
 # Create a non-root user
-RUN adduser -D myuser
-USER myuser
+USER node
+
+# Expose the port the app runs on
+EXPOSE 3000
 
 # Define the command to run the app
 CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "$PORT"]
