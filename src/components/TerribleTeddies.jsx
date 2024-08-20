@@ -3,9 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
-import { useUserStats } from '../hooks/useUserStats';
-import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Loader2 } from 'lucide-react';
+import { useUserStats } from '../integrations/supabase';
+import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Loader2, Users } from 'lucide-react';
 import { DeckBuilder } from './DeckBuilder';
+import { Auth } from './Auth';
+import { useCurrentUser } from '../integrations/supabase';
 
 const GameBoard = lazy(() => import('./GameBoard'));
 const TutorialComponent = lazy(() => import('./TutorialComponent').then(module => ({ default: module.TutorialComponent })));
@@ -17,9 +19,18 @@ const TerribleTeddies = () => {
   const [gameState, setGameState] = useState('menu');
   const [playerDeck, setPlayerDeck] = useState([]);
   const { toast } = useToast();
-  const { userStats, isLoadingStats } = useUserStats();
+  const { data: userStats, isLoading: isLoadingStats } = useUserStats();
+  const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser();
 
   const startGame = () => {
+    if (!currentUser) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to start a game.",
+        variant: "destructive",
+      });
+      return;
+    }
     setGameState('playing');
   };
 
@@ -45,31 +56,43 @@ const TerribleTeddies = () => {
         Terrible Teddies
       </h1>
       <p className="text-2xl mb-8 text-gray-700">Welcome to the naughtiest teddy bear battle in town!</p>
-      {!isLoadingStats && (
-        <Card className="mb-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg shadow-lg">
-          <CardContent className="p-6">
-            <h2 className="text-2xl font-semibold text-purple-800 mb-4">Your Stats</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-lg font-medium text-gray-700">Coins</p>
-                <p className="text-3xl font-bold text-yellow-500">{userStats?.coins || 0}</p>
-              </div>
-              <div>
-                <p className="text-lg font-medium text-gray-700">Games Won</p>
-                <p className="text-3xl font-bold text-green-500">{userStats?.games_won || 0}</p>
-              </div>
+      {!isLoadingUser && (
+        currentUser ? (
+          <>
+            {!isLoadingStats && (
+              <Card className="mb-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg shadow-lg">
+                <CardContent className="p-6">
+                  <h2 className="text-2xl font-semibold text-purple-800 mb-4">Your Stats</h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-lg font-medium text-gray-700">Coins</p>
+                      <p className="text-3xl font-bold text-yellow-500">{userStats?.coins || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-medium text-gray-700">Games Won</p>
+                      <p className="text-3xl font-bold text-green-500">{userStats?.games_won || 0}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            <div className="grid grid-cols-2 gap-6">
+              <MenuButton onClick={startGame} color="purple" icon={<PlayCircle className="w-6 h-6" />}>Start Game</MenuButton>
+              <MenuButton onClick={() => setGameState('deckBuilder')} color="blue" icon={<Sparkles className="w-6 h-6" />}>Deck Builder</MenuButton>
+              <MenuButton onClick={() => setGameState('tutorial')} color="green" icon={<Book className="w-6 h-6" />}>How to Play</MenuButton>
+              <MenuButton onClick={() => setGameState('leaderboard')} color="yellow" icon={<Trophy className="w-6 h-6" />}>Leaderboard</MenuButton>
+              <MenuButton onClick={() => setGameState('dailyChallenge')} color="red" icon={<Target className="w-6 h-6" />}>Daily Challenge</MenuButton>
+              <MenuButton onClick={() => setGameState('shop')} color="indigo" icon={<ShoppingCart className="w-6 h-6" />}>Shop</MenuButton>
+              <MenuButton onClick={() => setGameState('multiplayer')} color="pink" icon={<Users className="w-6 h-6" />}>Multiplayer</MenuButton>
             </div>
-          </CardContent>
-        </Card>
+          </>
+        ) : (
+          <div className="mt-8">
+            <h2 className="text-2xl font-semibold text-purple-800 mb-4">Login or Sign Up</h2>
+            <Auth />
+          </div>
+        )
       )}
-      <div className="grid grid-cols-2 gap-6">
-        <MenuButton onClick={startGame} color="purple" icon={<PlayCircle className="w-6 h-6" />}>Start Game</MenuButton>
-        <MenuButton onClick={() => setGameState('deckBuilder')} color="blue" icon={<Sparkles className="w-6 h-6" />}>Deck Builder</MenuButton>
-        <MenuButton onClick={() => setGameState('tutorial')} color="green" icon={<Book className="w-6 h-6" />}>How to Play</MenuButton>
-        <MenuButton onClick={() => setGameState('leaderboard')} color="yellow" icon={<Trophy className="w-6 h-6" />}>Leaderboard</MenuButton>
-        <MenuButton onClick={() => setGameState('dailyChallenge')} color="red" icon={<Target className="w-6 h-6" />}>Daily Challenge</MenuButton>
-        <MenuButton onClick={() => setGameState('shop')} color="indigo" icon={<ShoppingCart className="w-6 h-6" />}>Shop</MenuButton>
-      </div>
     </motion.div>
   );
 
@@ -93,6 +116,7 @@ const TerribleTeddies = () => {
       yellow: 'from-yellow-500 to-yellow-700',
       red: 'from-red-500 to-red-700',
       indigo: 'from-indigo-500 to-indigo-700',
+      pink: 'from-pink-500 to-pink-700',
     };
     return gradients[color] || gradients.purple;
   };
@@ -118,6 +142,7 @@ const TerribleTeddies = () => {
         ))}
         {gameState === 'dailyChallenge' && renderComponent(() => <DailyChallenge onExit={() => setGameState('menu')} />)}
         {gameState === 'shop' && renderComponent(() => <Shop onClose={() => setGameState('menu')} />)}
+        {gameState === 'multiplayer' && renderComponent(() => <div>Multiplayer component (to be implemented)</div>)}
       </AnimatePresence>
     </div>
   );
