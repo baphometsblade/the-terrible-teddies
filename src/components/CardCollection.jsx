@@ -49,7 +49,8 @@ export const CardCollection = ({ onClose }) => {
                 <img src={card.url || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                 <h3 className="text-lg font-semibold mb-1 text-purple-700">{card.name}</h3>
                 <p className="text-sm mb-1 text-purple-600">{card.type}</p>
-                <p className="text-xs text-gray-600">{card.description}</p>
+                <p className="text-xs text-gray-600">{card.prompt}</p>
+                <p className="text-xs text-gray-600">Energy Cost: {card.energy_cost}</p>
               </CardContent>
             </Card>
           </motion.div>
