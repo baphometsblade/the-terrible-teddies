@@ -12,6 +12,7 @@ import { PlayerHand } from './PlayerHand';
 import { GameOverModal } from './GameOverModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameLogic } from '../../hooks/useGameLogic';
+import confetti from 'canvas-confetti';
 
 export const GameBoard = ({ onExit }) => {
   const {
@@ -43,9 +44,18 @@ export const GameBoard = ({ onExit }) => {
   };
 
   const handlePlayAgain = () => {
-    // Reset game state
     window.location.reload();
   };
+
+  useEffect(() => {
+    if (isGameOver && winner === 'player') {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
+  }, [isGameOver, winner]);
 
   return (
     <motion.div 

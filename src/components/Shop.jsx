@@ -3,13 +3,15 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
-import { useUserStats, useUpdateUserStats } from '../integrations/supabase/index.js';
+import { useUserStats, useUpdateUserStats } from '../integrations/supabase';
+import { ShoppingCart, Package, Heart, Zap, Shield } from 'lucide-react';
 
 const shopItems = [
-  { id: 1, name: 'Extra Card Pack', description: 'Get 5 random cards', cost: 100 },
-  { id: 2, name: 'HP Boost', description: 'Increase max HP by 5', cost: 200 },
-  { id: 3, name: 'Lucky Charm', description: 'Increase chance of rare cards', cost: 300 },
-  { id: 4, name: 'Energy Drink', description: 'Start games with +1 energy', cost: 400 },
+  { id: 1, name: 'Extra Card Pack', description: 'Get 5 random cards', cost: 100, icon: <Package className="w-8 h-8 text-purple-500" /> },
+  { id: 2, name: 'HP Boost', description: 'Increase max HP by 5', cost: 200, icon: <Heart className="w-8 h-8 text-red-500" /> },
+  { id: 3, name: 'Lucky Charm', description: 'Increase chance of rare cards', cost: 300, icon: <ShoppingCart className="w-8 h-8 text-yellow-500" /> },
+  { id: 4, name: 'Energy Drink', description: 'Start games with +1 energy', cost: 400, icon: <Zap className="w-8 h-8 text-blue-500" /> },
+  { id: 5, name: 'Teddy Armor', description: 'Reduce damage taken by 10%', cost: 500, icon: <Shield className="w-8 h-8 text-green-500" /> },
 ];
 
 export const Shop = ({ onClose }) => {
@@ -50,39 +52,52 @@ export const Shop = ({ onClose }) => {
     );
   };
 
-  if (isLoading) return <div>Loading shop...</div>;
-  if (error) return <div>Error loading shop: {error.message}</div>;
+  if (isLoading) return <div className="text-center text-2xl text-purple-600">Loading shop...</div>;
+  if (error) return <div className="text-center text-2xl text-red-600">Error loading shop: {error.message}</div>;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 50 }}
-      className="shop-container p-6 bg-white rounded-lg shadow-xl"
+      className="shop-container p-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg shadow-xl"
     >
-      <h2 className="text-2xl font-bold mb-4 text-purple-800">Terrible Teddies Shop</h2>
-      <p className="mb-4 text-lg text-gray-700">Your Coins: {userStats.coins}</p>
-      <div className="grid grid-cols-2 gap-4">
+      <h2 className="text-4xl font-bold mb-6 text-center text-purple-800">Terrible Teddies Shop</h2>
+      <div className="flex justify-between items-center mb-8">
+        <p className="text-2xl font-bold text-yellow-600">Your Coins: {userStats.coins}</p>
+        <Button onClick={onClose} className="bg-gray-500 hover:bg-gray-600 text-white">
+          Close Shop
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {shopItems.map((item) => (
-          <Card key={item.id} className="bg-gradient-to-br from-pink-100 to-purple-100">
-            <CardContent className="p-4">
-              <h3 className="text-lg font-semibold mb-2 text-purple-700">{item.name}</h3>
-              <p className="text-sm mb-2 text-gray-600">{item.description}</p>
-              <p className="text-md font-bold mb-2 text-yellow-600">{item.cost} coins</p>
-              <Button
-                onClick={() => handlePurchase(item)}
-                disabled={userStats.coins < item.cost || purchasedItems.includes(item.id)}
-                className="w-full bg-purple-500 hover:bg-purple-600 text-white"
-              >
-                {purchasedItems.includes(item.id) ? 'Purchased' : 'Buy'}
-              </Button>
-            </CardContent>
-          </Card>
+          <motion.div
+            key={item.id}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Card className="bg-white shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex justify-center mb-4">
+                  {item.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-2 text-purple-700">{item.name}</h3>
+                <p className="text-sm mb-4 text-gray-600">{item.description}</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-lg font-bold text-yellow-600">{item.cost} coins</p>
+                  <Button
+                    onClick={() => handlePurchase(item)}
+                    disabled={userStats.coins < item.cost || purchasedItems.includes(item.id)}
+                    className="bg-purple-500 hover:bg-purple-600 text-white"
+                  >
+                    {purchasedItems.includes(item.id) ? 'Purchased' : 'Buy'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         ))}
       </div>
-      <Button onClick={onClose} className="mt-6 bg-gray-500 hover:bg-gray-600 text-white">
-        Close Shop
-      </Button>
     </motion.div>
   );
 };

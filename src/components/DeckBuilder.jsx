@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from "@/components/ui/use-toast";
 import { useTerribleTeddiesCards, useAddTerribleTeddiesCard } from '../integrations/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles } from 'lucide-react';
 
 export const DeckBuilder = ({ onSaveDeck }) => {
   const [deck, setDeck] = useState([]);
@@ -30,6 +31,11 @@ export const DeckBuilder = ({ onSaveDeck }) => {
   const addCardToDeck = (card) => {
     if (deck.length < 30) {
       setDeck([...deck, card]);
+      toast({
+        title: "Card Added",
+        description: `${card.name} has been added to your deck!`,
+        variant: "success",
+      });
     } else {
       toast({
         title: "Deck Full",
@@ -41,8 +47,13 @@ export const DeckBuilder = ({ onSaveDeck }) => {
 
   const removeCardFromDeck = (index) => {
     const newDeck = [...deck];
-    newDeck.splice(index, 1);
+    const removedCard = newDeck.splice(index, 1)[0];
     setDeck(newDeck);
+    toast({
+      title: "Card Removed",
+      description: `${removedCard.name} has been removed from your deck.`,
+      variant: "default",
+    });
   };
 
   const handleSaveDeck = () => {
@@ -90,16 +101,16 @@ export const DeckBuilder = ({ onSaveDeck }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="deck-builder p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg shadow-lg"
+      className="deck-builder p-6 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg shadow-lg"
     >
-      <h2 className="text-3xl font-bold mb-6 text-center text-purple-800">Terrible Teddies Deck Builder</h2>
-      <div className="flex mb-6">
+      <h2 className="text-4xl font-bold mb-8 text-center text-purple-800">Terrible Teddies Deck Builder</h2>
+      <div className="flex mb-6 space-x-4">
         <Input
           type="text"
           placeholder="Search for trouble..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="mr-2 flex-grow"
+          className="flex-grow"
         />
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[180px]">
@@ -113,7 +124,7 @@ export const DeckBuilder = ({ onSaveDeck }) => {
           </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-8">
         <div>
           <h3 className="text-2xl font-bold mb-4 text-purple-700">Available Troublemakers</h3>
           <div className="grid grid-cols-2 gap-4 h-[60vh] overflow-y-auto p-4 bg-white bg-opacity-50 rounded-lg">
@@ -141,7 +152,10 @@ export const DeckBuilder = ({ onSaveDeck }) => {
               ))}
             </AnimatePresence>
           </div>
-          <Button onClick={handleAddNewCard} className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white transition-all duration-300">Create New Troublemaker</Button>
+          <Button onClick={handleAddNewCard} className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white transition-all duration-300">
+            <Sparkles className="w-5 h-5 mr-2" />
+            Create New Troublemaker
+          </Button>
         </div>
         <div>
           <h3 className="text-2xl font-bold mb-4 text-purple-700">Your Mischief Squad ({deck.length}/30)</h3>
