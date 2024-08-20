@@ -1,12 +1,29 @@
+import sys
+import subprocess
 import os
 import logging
-from openai import OpenAI
-from supabase import create_client, Client
-import random
 from dotenv import load_dotenv
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def check_and_install_packages():
+    required_packages = ['openai', 'supabase', 'python-dotenv', 'Pillow', 'requests']
+    for package in required_packages:
+        try:
+            __import__(package)
+        except ImportError:
+            logging.info(f"Installing {package}...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    logging.info("All required packages are installed.")
+
+# Check and install required packages
+check_and_install_packages()
+
+# Now import the required modules
+from openai import OpenAI
+from supabase import create_client, Client
+import random
 
 # Load environment variables
 load_dotenv()
@@ -19,10 +36,16 @@ supabase: Client = create_client(os.environ.get("VITE_SUPABASE_PROJECT_URL"), os
 
 CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
 
-def check_api_key():
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key or not api_key.startswith("sk-"):
-        raise ValueError("Invalid OpenAI API key. Please check your .env file and ensure you have set a valid OPENAI_API_KEY.")
+def ensure_table_structure():
+    try:
+        # Check if the energy_cost column exists
+        result = supabase.table("generated_images").select("energy_cost").limit(1).execute()
+        if 'error' in result:
+            # If the column doesn't exist, add it
+            supabase.table("generated_images").alter().add("energy_cost", "int4").execute()
+            logging.info("Added energy_cost column to generated_images table")
+    except Exception as e:
+        logging.error(f"Error ensuring table structure: {e}")
 
 def generate_card_image(prompt):
     try:
@@ -37,17 +60,6 @@ def generate_card_image(prompt):
     except Exception as e:
         logging.error(f"Error generating image: {e}")
         return None
-
-def ensure_table_structure():
-    try:
-        # Check if the energy_cost column exists
-        result = supabase.table("generated_images").select("energy_cost").limit(1).execute()
-        if 'error' in result:
-            # If the column doesn't exist, add it
-            supabase.table("generated_images").alter().add("energy_cost", "int4").execute()
-            logging.info("Added energy_cost column to generated_images table")
-    except Exception as e:
-        logging.error(f"Error ensuring table structure: {e}")
 
 def generate_and_store_card(name, type, energy_cost):
     prompt = f"A cute teddy bear as a {type} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background."
@@ -74,27 +86,21 @@ def generate_and_store_card(name, type, energy_cost):
     return None
 
 def main():
-    try:
-        check_api_key()
-        logging.info("Starting asset generation for Terrible Teddies...")
-        
-        ensure_table_structure()
-        
-        for card_type in CARD_TYPES:
-            for i in range(8):  # Generate 8 cards of each type
-                name = f"{card_type} Teddy {i+1}"
-                energy_cost = random.randint(1, 5)
-                result = generate_and_store_card(name, card_type, energy_cost)
-                if result:
-                    logging.info(f"Successfully generated and stored {name}")
-                else:
-                    logging.warning(f"Failed to generate or store {name}")
-        
-        logging.info("Asset generation complete!")
-    except ValueError as ve:
-        logging.error(f"Configuration error: {ve}")
-    except Exception as e:
-        logging.error(f"An unexpected error occurred: {e}")
+    logging.info("Starting asset generation for Terrible Teddies...")
+    
+    ensure_table_structure()
+    
+    for card_type in CARD_TYPES:
+        for i in range(8):  # Generate 8 cards of each type
+            name = f"{card_type} Teddy {i+1}"
+            energy_cost = random.randint(1, 5)
+            result = generate_and_store_card(name, card_type, energy_cost)
+            if result:
+                logging.info(f"Successfully generated and stored {name}")
+            else:
+                logging.warning(f"Failed to generate or store {name}")
+    
+    logging.info("Asset generation complete!")
 
 if __name__ == "__main__":
     main()
