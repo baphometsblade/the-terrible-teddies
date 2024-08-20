@@ -6,44 +6,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
-import { supabase } from '../integrations/supabase';
+import { useTerribleTeddiesCards } from '../integrations/supabase';
 
 const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 
 export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
   const [deck, setDeck] = useState(initialDeck || []);
-  const [availableCards, setAvailableCards] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const { toast } = useToast();
+  const { data: availableCards, isLoading, error } = useTerribleTeddiesCards();
 
   useEffect(() => {
-    const fetchBears = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('terrible_teddies_cards')
-          .select('*');
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load cards. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
-        if (error) throw error;
-
-        setAvailableCards(data);
-      } catch (error) {
-        console.error('Error fetching bears:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load bears. Please try again.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchBears();
-  }, []);
-
-  const filteredCards = availableCards.filter(card => 
+  const filteredCards = availableCards ? availableCards.filter(card => 
     card.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
     (typeFilter === 'All' || card.type === typeFilter)
-  );
+  ) : [];
 
   const addCardToDeck = (card) => {
     if (deck.length < 30) {
@@ -84,6 +71,10 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
     }
     onSaveDeck(deck);
   };
+
+  if (isLoading) {
+    return <div className="text-center">Loading cards...</div>;
+  }
 
   return (
     <motion.div 
@@ -132,13 +123,11 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
                     onClick={() => addCardToDeck(card)}
                   >
                     <CardContent className="p-4">
-                      <img src={card.imageUrl || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
+                      <img src={card.url || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                       <p className="font-bold text-purple-800">{card.name}</p>
                       <p className="text-sm text-purple-600">{card.type}</p>
                       <p className="text-xs italic text-purple-500">{card.description}</p>
                       <p className="text-xs text-purple-700 mt-1">Energy Cost: {card.energy_cost}</p>
-                      <p className="text-xs text-purple-700">Attack: {card.attack} | Defense: {card.defense}</p>
-                      <p className="text-xs text-purple-700">Special: {card.specialMove}</p>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -164,13 +153,11 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
                     onClick={() => removeCardFromDeck(index)}
                   >
                     <CardContent className="p-4">
-                      <img src={card.imageUrl || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
+                      <img src={card.url || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                       <p className="font-bold text-purple-800">{card.name}</p>
                       <p className="text-sm text-purple-600">{card.type}</p>
                       <p className="text-xs italic text-purple-500">{card.description}</p>
                       <p className="text-xs text-purple-700 mt-1">Energy Cost: {card.energy_cost}</p>
-                      <p className="text-xs text-purple-700">Attack: {card.attack} | Defense: {card.defense}</p>
-                      <p className="text-xs text-purple-700">Special: {card.specialMove}</p>
                     </CardContent>
                   </Card>
                 </motion.div>
