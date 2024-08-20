@@ -154,3 +154,40 @@ export const useAddDailyChallenge = () => {
     },
   });
 };
+
+export const useEvolveCard = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (cardId) => {
+      // Fetch the current card data
+      const { data: currentCard, error: fetchError } = await supabase
+        .from('terrible_teddies_cards')
+        .select('*')
+        .eq('id', cardId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Perform the evolution logic
+      const evolvedCard = {
+        ...currentCard,
+        level: currentCard.level + 1,
+        attack: currentCard.attack + 2,
+        defense: currentCard.defense + 1,
+        name: `Evolved ${currentCard.name}`,
+      };
+
+      // Update the card in the database
+      const { data, error } = await supabase
+        .from('terrible_teddies_cards')
+        .update(evolvedCard)
+        .eq('id', cardId);
+
+      if (error) throw error;
+      return evolvedCard;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('terribleTeddiesCards');
+    },
+  });
+};
