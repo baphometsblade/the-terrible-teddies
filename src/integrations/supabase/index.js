@@ -64,3 +64,17 @@ export const useUpdateUserStats = () => {
     },
   });
 };
+
+export const useUserStats = () => {
+  return useQuery({
+    queryKey: ['userStats'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_stats')
+        .select('*')
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+};
