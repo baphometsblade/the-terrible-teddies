@@ -1,11 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
-import { useQuery } from '@tanstack/react-query';
-import { useCurrentUser } from './auth';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
+
+export const useCurrentUser = () => {
+  return useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      return user;
+    },
+  });
+};
 
 export const useUserCards = () => {
   const { data: currentUser } = useCurrentUser();
@@ -97,8 +107,6 @@ export const useGeneratedImages = () => {
 export const useEvolveCard = () => {
   return useMutation({
     mutationFn: async (cardId) => {
-      // Implement card evolution logic here
-      // This is a placeholder and should be replaced with actual evolution logic
       const { data, error } = await supabase
         .from('terrible_teddies_cards')
         .update({ level: supabase.raw('level + 1') })
