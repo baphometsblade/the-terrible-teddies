@@ -43,6 +43,11 @@ export const useSupabaseAuth = () => {
   return context;
 };
 
+export const useCurrentUser = () => {
+  const { session } = useSupabaseAuth();
+  return { data: session?.user || null };
+};
+
 export const SupabaseAuthUI = () => {
   const { session } = useSupabaseAuth();
   const queryClient = useQueryClient();
