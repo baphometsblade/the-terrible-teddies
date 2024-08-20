@@ -49,15 +49,16 @@ export const GameBoard = ({ onExit }) => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="game-board p-4 bg-gradient-to-b from-pink-100 to-purple-200 rounded-lg shadow-xl"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.5 }}
+      className="game-board p-6 bg-gradient-to-b from-pink-100 to-purple-200 rounded-2xl shadow-2xl"
     >
       <OpponentArea hp={opponentHP} hand={opponentHand} />
       <GameInfo currentTurn={currentTurn} />
       <MomentumGauge value={momentumGauge} />
-      <div className="flex mb-6">
+      <div className="flex mb-6 space-x-4">
         <LastPlayedCard card={lastPlayedCard} />
         <GameLog log={gameLog} />
       </div>
@@ -68,20 +69,24 @@ export const GameBoard = ({ onExit }) => {
         currentTurn={currentTurn}
       />
       <PlayerHand hand={playerHand} onPlayCard={handlePlayCard} />
-      <div className="mt-6 flex justify-center space-x-4">
-        <Button 
-          onClick={handleEndTurn}
-          disabled={currentTurn !== 'player'}
-          className="bg-blue-500 hover:bg-blue-600 text-white"
-        >
-          End Turn
-        </Button>
-        <Button 
-          onClick={onExit}
-          className="bg-red-500 hover:bg-red-600 text-white"
-        >
-          Surrender
-        </Button>
+      <div className="mt-8 flex justify-center space-x-6">
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button 
+            onClick={handleEndTurn}
+            disabled={currentTurn !== 'player'}
+            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300"
+          >
+            End Turn
+          </Button>
+        </motion.div>
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button 
+            onClick={onExit}
+            className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300"
+          >
+            Surrender
+          </Button>
+        </motion.div>
       </div>
       <AnimatePresence>
         {lastPlayedCard && (

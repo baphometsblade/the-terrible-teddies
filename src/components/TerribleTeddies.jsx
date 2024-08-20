@@ -9,18 +9,15 @@ import { GameBoard } from './GameBoard';
 import { TutorialComponent } from './TutorialComponent';
 import { LeaderboardComponent } from './LeaderboardComponent';
 import { DailyChallenge } from './DailyChallenge';
-
-const CARD_TYPES = {
-  TEDDY: 'Teddy',
-  ACTION: 'Action',
-  ITEM: 'Item'
-};
+import { Shop } from './Shop';
+import { useUserStats } from '../integrations/supabase';
 
 const TerribleTeddies = () => {
   const [gameState, setGameState] = useState('menu');
   const [player1Deck, setPlayer1Deck] = useState([]);
   const [player2Deck, setPlayer2Deck] = useState([]);
   const { toast } = useToast();
+  const { data: userStats, isLoading: isLoadingStats } = useUserStats();
 
   useEffect(() => {
     fetchCards();
@@ -68,29 +65,52 @@ const TerribleTeddies = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="text-center space-y-4"
+      className="text-center space-y-6"
     >
-      <h1 className="text-4xl font-bold mb-6 text-purple-800">Terrible Teddies</h1>
-      <p className="text-lg mb-4 text-gray-600">Welcome to the naughtiest teddy bear battle in town!</p>
+      <h1 className="text-5xl font-extrabold mb-8 text-purple-800 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
+        Terrible Teddies
+      </h1>
+      <p className="text-xl mb-6 text-gray-600">Welcome to the naughtiest teddy bear battle in town!</p>
+      {!isLoadingStats && (
+        <div className="mb-6 p-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg shadow-md">
+          <p className="text-lg font-semibold text-purple-800">Your Stats</p>
+          <p className="text-md text-gray-700">Coins: {userStats?.coins || 0}</p>
+          <p className="text-md text-gray-700">Games Won: {userStats?.games_won || 0}</p>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
-        <Button onClick={startGame} className="bg-purple-600 hover:bg-purple-700 text-white">
-          Start Game
-        </Button>
-        <Button onClick={() => setGameState('deckBuilder')} className="bg-blue-600 hover:bg-blue-700 text-white">
-          Deck Builder
-        </Button>
-        <Button onClick={() => setGameState('tutorial')} className="bg-green-600 hover:bg-green-700 text-white">
-          How to Play
-        </Button>
-        <Button onClick={() => setGameState('leaderboard')} className="bg-yellow-600 hover:bg-yellow-700 text-white">
-          Leaderboard
-        </Button>
-        <Button onClick={() => setGameState('dailyChallenge')} className="bg-red-600 hover:bg-red-700 text-white">
-          Daily Challenge
-        </Button>
+        <MenuButton onClick={startGame} color="purple">Start Game</MenuButton>
+        <MenuButton onClick={() => setGameState('deckBuilder')} color="blue">Deck Builder</MenuButton>
+        <MenuButton onClick={() => setGameState('tutorial')} color="green">How to Play</MenuButton>
+        <MenuButton onClick={() => setGameState('leaderboard')} color="yellow">Leaderboard</MenuButton>
+        <MenuButton onClick={() => setGameState('dailyChallenge')} color="red">Daily Challenge</MenuButton>
+        <MenuButton onClick={() => setGameState('shop')} color="indigo">Shop</MenuButton>
       </div>
     </motion.div>
   );
+
+  const MenuButton = ({ onClick, color, children }) => (
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className={`w-full py-3 px-6 rounded-full font-bold text-white shadow-lg transition-all duration-300 bg-gradient-to-r ${getGradient(color)}`}
+      onClick={onClick}
+    >
+      {children}
+    </motion.button>
+  );
+
+  const getGradient = (color) => {
+    const gradients = {
+      purple: 'from-purple-500 to-purple-700',
+      blue: 'from-blue-500 to-blue-700',
+      green: 'from-green-500 to-green-700',
+      yellow: 'from-yellow-500 to-yellow-700',
+      red: 'from-red-500 to-red-700',
+      indigo: 'from-indigo-500 to-indigo-700',
+    };
+    return gradients[color] || gradients.purple;
+  };
 
   return (
     <div className="container mx-auto p-4">
@@ -145,6 +165,16 @@ const TerribleTeddies = () => {
             exit={{ opacity: 0, rotate: 10 }}
           >
             <DailyChallenge onExit={() => setGameState('menu')} />
+          </motion.div>
+        )}
+        {gameState === 'shop' && (
+          <motion.div
+            key="shop"
+            initial={{ opacity: 0, y: -100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+          >
+            <Shop onClose={() => setGameState('menu')} />
           </motion.div>
         )}
       </AnimatePresence>
