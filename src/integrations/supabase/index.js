@@ -36,19 +36,6 @@ export const useAddGeneratedImage = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (newImage) => {
-      const { data: columns, error: columnError } = await supabase
-        .from('generated_images')
-        .select('*')
-        .limit(1);
-
-      if (columnError) throw columnError;
-
-      const hasEnergyCost = columns.length > 0 && 'energy_cost' in columns[0];
-
-      if (!hasEnergyCost) {
-        delete newImage.energy_cost;
-      }
-
       const { data, error } = await supabase
         .from('generated_images')
         .insert(newImage);
@@ -132,6 +119,23 @@ export const useCurrentUser = () => {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (error) throw error;
       return user;
+    },
+  });
+};
+
+export const useLogin = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ email, password }) => {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['currentUser']);
     },
   });
 };
