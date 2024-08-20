@@ -64,6 +64,20 @@ export const useAddTerribleTeddiesCard = () => {
   });
 };
 
+export const useUserStats = () => {
+  return useQuery({
+    queryKey: ['userStats'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_stats')
+        .select('*')
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
 export const useUpdateUserStats = () => {
   const queryClient = useQueryClient();
   return useMutation({

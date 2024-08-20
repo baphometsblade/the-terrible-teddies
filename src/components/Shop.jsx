@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
-import { useUserStats, useUpdateUserStats } from '../integrations/supabase';
+import { useUserStats, useUpdateUserStats } from '../integrations/supabase/index.js';
 
 const shopItems = [
   { id: 1, name: 'Extra Card Pack', description: 'Get 5 random cards', cost: 100 },
