@@ -9,25 +9,25 @@ import { Sparkles } from 'lucide-react';
 
 const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 
+const placeholderCards = [
+  { id: 1, name: "Knight's Kiss", type: "Action", energy_cost: 3, url: "/placeholder.svg", description: "The Chivalrous Charmer" },
+  { id: 2, name: "Smoky Joe", type: "Trap", energy_cost: 2, url: "/placeholder.svg", description: "The Sinister Smoker" },
+  { id: 3, name: "Lady Lush", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Tipsy Temptress" },
+  { id: 4, name: "Captain Cuddles", type: "Defense", energy_cost: 3, url: "/placeholder.svg", description: "The Naughty Navigator" },
+  { id: 5, name: "Boozy Bruno", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Brewmaster Bear" },
+  { id: 6, name: "Naughty Nurse", type: "Action", energy_cost: 2, url: "/placeholder.svg", description: "The Medic of Mischief" },
+  { id: 7, name: "Dapper Dan", type: "Trap", energy_cost: 3, url: "/placeholder.svg", description: "The Gentleman's Scoundrel" },
+  { id: 8, name: "Vicious Vixen", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Femme Fatale" },
+  { id: 9, name: "Rascal Rex", type: "Defense", energy_cost: 2, url: "/placeholder.svg", description: "The Cunning Con Artist" },
+  { id: 10, name: "Lady Lacerate", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Bloodthirsty Beauty" },
+];
+
 export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
   const [deck, setDeck] = useState(initialDeck || []);
-  const [availableCards, setAvailableCards] = useState([]);
+  const [availableCards, setAvailableCards] = useState(placeholderCards);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Generate placeholder available cards
-    const placeholderCards = Array(60).fill().map((_, index) => ({
-      id: `available-${index}`,
-      name: `Available Card ${index + 1}`,
-      type: CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)],
-      energy_cost: Math.floor(Math.random() * 5) + 1,
-      url: '/placeholder.svg',
-      description: 'This is a placeholder available card description.'
-    }));
-    setAvailableCards(placeholderCards);
-  }, []);
 
   const filteredCards = availableCards.filter(card => 
     card.name.toLowerCase().includes(searchTerm.toLowerCase()) &&

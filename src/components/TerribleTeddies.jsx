@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,19 +17,6 @@ const TerribleTeddies = () => {
   const [playerDeck, setPlayerDeck] = useState([]);
   const { toast } = useToast();
   const { userStats, isLoadingStats } = useUserStats();
-
-  useEffect(() => {
-    // Initialize player deck with placeholder cards
-    const placeholderDeck = Array(30).fill().map((_, index) => ({
-      id: `placeholder-${index}`,
-      name: `Placeholder Card ${index + 1}`,
-      type: ['Action', 'Trap', 'Special', 'Defense', 'Boost'][Math.floor(Math.random() * 5)],
-      energy_cost: Math.floor(Math.random() * 5) + 1,
-      url: '/placeholder.svg',
-      description: 'This is a placeholder card description.'
-    }));
-    setPlayerDeck(placeholderDeck);
-  }, []);
 
   const startGame = () => {
     setGameState('playing');

@@ -14,6 +14,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import confetti from 'canvas-confetti';
 
+const placeholderCards = [
+  { id: 1, name: "Knight's Kiss", type: "Action", energy_cost: 3, url: "/placeholder.svg", description: "The Chivalrous Charmer" },
+  { id: 2, name: "Smoky Joe", type: "Trap", energy_cost: 2, url: "/placeholder.svg", description: "The Sinister Smoker" },
+  { id: 3, name: "Lady Lush", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Tipsy Temptress" },
+  { id: 4, name: "Captain Cuddles", type: "Defense", energy_cost: 3, url: "/placeholder.svg", description: "The Naughty Navigator" },
+  { id: 5, name: "Boozy Bruno", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Brewmaster Bear" },
+  { id: 6, name: "Naughty Nurse", type: "Action", energy_cost: 2, url: "/placeholder.svg", description: "The Medic of Mischief" },
+  { id: 7, name: "Dapper Dan", type: "Trap", energy_cost: 3, url: "/placeholder.svg", description: "The Gentleman's Scoundrel" },
+  { id: 8, name: "Vicious Vixen", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Femme Fatale" },
+  { id: 9, name: "Rascal Rex", type: "Defense", energy_cost: 2, url: "/placeholder.svg", description: "The Cunning Con Artist" },
+  { id: 10, name: "Lady Lacerate", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Bloodthirsty Beauty" },
+];
+
 export const GameBoard = ({ playerDeck, onExit }) => {
   const {
     playerHP,
@@ -28,7 +41,7 @@ export const GameBoard = ({ playerDeck, onExit }) => {
     endTurn,
     isGameOver,
     winner,
-  } = useGameLogic(playerDeck);
+  } = useGameLogic(playerDeck.length > 0 ? playerDeck : placeholderCards);
 
   const { toast } = useToast();
 
