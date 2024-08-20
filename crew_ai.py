@@ -51,7 +51,7 @@ rule_writer = Agent(
 lore_creator = Agent(
     role='Lore Creator',
     goal='Develop a rich, satirical backstory for the Terrible Teddies universe',
-    backstory='You are a creative writer skilled in crafting humorous and edgy lore for adult-themed games. Your stories should be engaging, slightly absurd, and filled with pop culture references.',
+    backstory='You are a creative writer skilled in crafting humorous and edgy lore for adult-themed games',
     verbose=True,
     llm=llm
 )
@@ -76,7 +76,7 @@ write_game_rules = Task(
 )
 
 create_game_lore = Task(
-    description='Develop a satirical and edgy backstory for the Terrible Teddies universe. Create a world where these mischievous teddies exist, their origins, and the reason for their battles.',
+    description='Develop a satirical and edgy backstory for the Terrible Teddies universe',
     agent=lore_creator,
     expected_output="A markdown formatted string containing the game's lore and backstory"
 )

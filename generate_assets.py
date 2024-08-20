@@ -13,10 +13,6 @@ load_dotenv()
 # Initialize the OpenAI language model
 llm = OpenAI()
 
-# Load teddy bear data
-with open('teddies.json', 'r') as f:
-    teddies = json.load(f)
-
 # Define the agents
 image_generator = Agent(
     role='Image Generator',
@@ -44,18 +40,21 @@ rule_writer = Agent(
 
 # Define the tasks
 generate_card_images = Task(
-    description=f'Generate {len(teddies)} unique, stylized teddy bear images for game cards based on the provided data',
-    agent=image_generator
+    description='Generate 40 unique, stylized teddy bear images for game cards',
+    agent=image_generator,
+    expected_output="A list of 40 image URLs for the generated card images"
 )
 
 design_cards = Task(
-    description=f'Create {len(teddies)} balanced cards with names, types, energy costs, and effects based on the provided teddy bear data',
-    agent=card_designer
+    description='Create 40 balanced cards with names, types, energy costs, and effects',
+    agent=card_designer,
+    expected_output="A JSON string containing an array of 40 card objects with properties: name, type, energy_cost, effect"
 )
 
 write_game_rules = Task(
     description='Write comprehensive rules for the Terrible Teddies card game',
-    agent=rule_writer
+    agent=rule_writer,
+    expected_output="A markdown formatted string containing the complete game rules"
 )
 
 # Create the crew
