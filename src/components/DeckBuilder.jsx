@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
+import { supabase } from '../integrations/supabase';
 
 const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 
@@ -19,8 +20,12 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
   useEffect(() => {
     const fetchBears = async () => {
       try {
-        const response = await fetch('/api/bears');
-        const data = await response.json();
+        const { data, error } = await supabase
+          .from('terrible_teddies_cards')
+          .select('*');
+
+        if (error) throw error;
+
         setAvailableCards(data);
       } catch (error) {
         console.error('Error fetching bears:', error);
