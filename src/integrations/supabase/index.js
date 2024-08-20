@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -18,6 +18,7 @@ export const useCurrentUser = () => {
 };
 
 export const useLogin = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ email, password }) => {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -26,6 +27,9 @@ export const useLogin = () => {
       });
       if (error) throw error;
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['currentUser']);
     },
   });
 };
@@ -44,10 +48,14 @@ export const useSignUp = () => {
 };
 
 export const useLogout = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['currentUser']);
     },
   });
 };
@@ -100,6 +108,7 @@ export const useUserStats = () => {
 };
 
 export const useUpdateUserStats = () => {
+  const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUser();
   return useMutation({
     mutationFn: async (newStats) => {
@@ -111,10 +120,14 @@ export const useUpdateUserStats = () => {
       if (error) throw error;
       return data;
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['userStats', currentUser?.id]);
+    },
   });
 };
 
 export const useAddGeneratedImage = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (newImage) => {
       const { data, error } = await supabase
@@ -122,6 +135,9 @@ export const useAddGeneratedImage = () => {
         .insert(newImage);
       if (error) throw error;
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['generatedImages']);
     },
   });
 };
@@ -140,6 +156,7 @@ export const useGeneratedImages = () => {
 };
 
 export const useEvolveCard = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (cardId) => {
       const { data, error } = await supabase
@@ -149,6 +166,10 @@ export const useEvolveCard = () => {
         .single();
       if (error) throw error;
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['terribleTeddiesCards']);
+      queryClient.invalidateQueries(['userCards']);
     },
   });
 };
