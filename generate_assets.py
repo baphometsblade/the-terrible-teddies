@@ -1,8 +1,8 @@
 import os
+import logging
 from openai import OpenAI
 from supabase import create_client, Client
 import random
-import logging
 from dotenv import load_dotenv
 
 # Set up logging
@@ -21,7 +21,7 @@ CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
 
 def check_api_key():
     api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key or api_key.startswith("sk-") is False:
+    if not api_key or not api_key.startswith("sk-"):
         raise ValueError("Invalid OpenAI API key. Please check your .env file and ensure you have set a valid OPENAI_API_KEY.")
 
 def generate_card_image(prompt):
