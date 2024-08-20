@@ -17,7 +17,7 @@ import { useTerribleTeddiesCards, useUserDeck } from '../../integrations/supabas
 import { LoadingSpinner } from '../LoadingSpinner';
 import confetti from 'canvas-confetti';
 
-export const GameBoard = ({ onExit }) => {
+export const GameBoard = ({ onExit, settings }) => {
   const { data: allCards, isLoading: isLoadingCards } = useTerribleTeddiesCards();
   const { data: userDeck, isLoading: isLoadingDeck } = useUserDeck();
   const { toast } = useToast();
@@ -38,7 +38,7 @@ export const GameBoard = ({ onExit }) => {
     winner,
     initializeGame,
     useSpecialMove,
-  } = useGameLogic();
+  } = useGameLogic(settings);
 
   useEffect(() => {
     if (!isLoadingCards && !isLoadingDeck && allCards && userDeck) {
@@ -79,14 +79,14 @@ export const GameBoard = ({ onExit }) => {
   };
 
   useEffect(() => {
-    if (isGameOver && winner === 'player') {
+    if (isGameOver && winner === 'player' && settings.soundEnabled) {
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 }
       });
     }
-  }, [isGameOver, winner]);
+  }, [isGameOver, winner, settings.soundEnabled]);
 
   if (isLoadingCards || isLoadingDeck) {
     return <LoadingSpinner />;
@@ -98,28 +98,33 @@ export const GameBoard = ({ onExit }) => {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.5 }}
-      className="game-board p-6 bg-gradient-to-b from-pink-100 to-purple-200 rounded-2xl shadow-2xl"
+      className={`game-board p-6 rounded-2xl shadow-2xl ${settings.darkMode ? 'bg-gray-800 text-white' : 'bg-gradient-to-b from-pink-100 to-purple-200'}`}
     >
-      <OpponentArea hp={opponentHP} hand={opponentHand} />
-      <GameInfo currentTurn={currentTurn} />
-      <MomentumGauge value={momentumGauge} />
+      <OpponentArea hp={opponentHP} hand={opponentHand} darkMode={settings.darkMode} />
+      <GameInfo currentTurn={currentTurn} darkMode={settings.darkMode} />
+      <MomentumGauge value={momentumGauge} darkMode={settings.darkMode} />
       <div className="flex mb-6 space-x-4">
-        <LastPlayedCard card={lastPlayedCard} />
-        <GameLog log={gameLog} />
+        <LastPlayedCard card={lastPlayedCard} darkMode={settings.darkMode} />
+        <GameLog log={gameLog} darkMode={settings.darkMode} />
       </div>
       <PlayerArea 
         hp={playerHP} 
         hand={playerHand} 
         onPlayCard={handlePlayCard} 
         currentTurn={currentTurn}
+        darkMode={settings.darkMode}
       />
-      <PlayerHand hand={playerHand} onPlayCard={handlePlayCard} />
+      <PlayerHand hand={playerHand} onPlayCard={handlePlayCard} darkMode={settings.darkMode} />
       <div className="mt-8 flex justify-center space-x-6">
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button 
             onClick={handleEndTurn}
             disabled={currentTurn !== 'player'}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300"
+            className={`font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300 ${
+              settings.darkMode 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white'
+            }`}
           >
             End Turn
           </Button>
@@ -128,7 +133,11 @@ export const GameBoard = ({ onExit }) => {
           <Button 
             onClick={handleSpecialMove}
             disabled={currentTurn !== 'player' || momentumGauge < 10}
-            className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300"
+            className={`font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300 ${
+              settings.darkMode 
+                ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                : 'bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white'
+            }`}
           >
             Special Move
           </Button>
@@ -136,7 +145,11 @@ export const GameBoard = ({ onExit }) => {
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button 
             onClick={onExit}
-            className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300"
+            className={`font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300 ${
+              settings.darkMode 
+                ? 'bg-red-600 hover:bg-red-700 text-white' 
+                : 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white'
+            }`}
           >
             Surrender
           </Button>
@@ -144,7 +157,7 @@ export const GameBoard = ({ onExit }) => {
       </div>
       <AnimatePresence>
         {lastPlayedCard && (
-          <CardEffects effect={lastPlayedCard.specialMove} type={lastPlayedCard.type} />
+          <CardEffects effect={lastPlayedCard.specialMove} type={lastPlayedCard.type} darkMode={settings.darkMode} />
         )}
       </AnimatePresence>
       <AnimatePresence>
@@ -153,6 +166,7 @@ export const GameBoard = ({ onExit }) => {
             winner={winner} 
             onPlayAgain={handlePlayAgain} 
             onExit={onExit} 
+            darkMode={settings.darkMode}
           />
         )}
       </AnimatePresence>
@@ -161,6 +175,7 @@ export const GameBoard = ({ onExit }) => {
           <SpecialMoveModal 
             onClose={() => setShowSpecialMoveModal(false)}
             onSelectMove={executeSpecialMove}
+            darkMode={settings.darkMode}
           />
         )}
       </AnimatePresence>

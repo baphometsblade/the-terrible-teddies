@@ -4,11 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { useUserStats } from '../integrations/supabase';
-import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Users } from 'lucide-react';
+import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Users, Settings } from 'lucide-react';
 import { DeckBuilder } from './DeckBuilder';
 import { Auth } from './Auth';
 import { useCurrentUser } from '../integrations/supabase';
 import { LoadingSpinner } from './LoadingSpinner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const GameBoard = lazy(() => import('./GameBoard'));
 const TutorialComponent = lazy(() => import('./TutorialComponent').then(module => ({ default: module.TutorialComponent })));
@@ -22,6 +25,11 @@ const TerribleTeddies = () => {
   const { toast } = useToast();
   const { data: userStats, isLoading: isLoadingStats } = useUserStats();
   const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser();
+  const [settings, setSettings] = useState({
+    soundEnabled: true,
+    darkMode: false,
+    highPerformanceMode: false,
+  });
 
   const startGame = () => {
     if (!currentUser) {
@@ -43,6 +51,15 @@ const TerribleTeddies = () => {
       variant: "success",
     });
     setGameState('menu');
+  };
+
+  const handleSettingChange = (setting) => {
+    setSettings(prev => ({ ...prev, [setting]: !prev[setting] }));
+    toast({
+      title: "Setting Updated",
+      description: `${setting} has been ${settings[setting] ? 'disabled' : 'enabled'}.`,
+      variant: "success",
+    });
   };
 
   const renderMenu = () => (
@@ -85,6 +102,42 @@ const TerribleTeddies = () => {
               <MenuButton onClick={() => setGameState('dailyChallenge')} color="red" icon={<Target className="w-6 h-6" />}>Daily Challenge</MenuButton>
               <MenuButton onClick={() => setGameState('shop')} color="indigo" icon={<ShoppingCart className="w-6 h-6" />}>Shop</MenuButton>
               <MenuButton onClick={() => setGameState('multiplayer')} color="pink" icon={<Users className="w-6 h-6" />}>Multiplayer</MenuButton>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <MenuButton color="gray" icon={<Settings className="w-6 h-6" />}>Settings</MenuButton>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Game Settings</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="sound">Sound</Label>
+                      <Switch
+                        id="sound"
+                        checked={settings.soundEnabled}
+                        onCheckedChange={() => handleSettingChange('soundEnabled')}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="darkMode">Dark Mode</Label>
+                      <Switch
+                        id="darkMode"
+                        checked={settings.darkMode}
+                        onCheckedChange={() => handleSettingChange('darkMode')}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="highPerformance">High Performance Mode</Label>
+                      <Switch
+                        id="highPerformance"
+                        checked={settings.highPerformanceMode}
+                        onCheckedChange={() => handleSettingChange('highPerformanceMode')}
+                      />
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </>
         ) : (
@@ -118,6 +171,7 @@ const TerribleTeddies = () => {
       red: 'from-red-500 to-red-700',
       indigo: 'from-indigo-500 to-indigo-700',
       pink: 'from-pink-500 to-pink-700',
+      gray: 'from-gray-500 to-gray-700',
     };
     return gradients[color] || gradients.purple;
   };
@@ -129,10 +183,10 @@ const TerribleTeddies = () => {
   );
 
   return (
-    <div className="container mx-auto p-4 md:p-8">
+    <div className={`container mx-auto p-4 md:p-8 ${settings.darkMode ? 'dark' : ''}`}>
       <AnimatePresence mode="wait">
         {gameState === 'menu' && renderMenu()}
-        {gameState === 'playing' && renderComponent(() => <GameBoard playerDeck={playerDeck} onExit={() => setGameState('menu')} />)}
+        {gameState === 'playing' && renderComponent(() => <GameBoard playerDeck={playerDeck} onExit={() => setGameState('menu')} settings={settings} />)}
         {gameState === 'deckBuilder' && <DeckBuilder onSaveDeck={handleSaveDeck} initialDeck={playerDeck} />}
         {gameState === 'tutorial' && renderComponent(() => <TutorialComponent onExit={() => setGameState('menu')} />)}
         {gameState === 'leaderboard' && renderComponent(() => (
