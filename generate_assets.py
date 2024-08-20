@@ -31,16 +31,16 @@ supabase: Client = create_client(os.environ.get("VITE_SUPABASE_PROJECT_URL"), os
 
 CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
 
-def validate_api_key():
-    api_key = os.environ.get("OPENAI_API_KEY")
+def validate_unsplash_api_key():
+    api_key = os.environ.get("UNSPLASH_ACCESS_KEY")
     if not api_key:
-        logging.error("OPENAI_API_KEY not found in environment variables.")
+        logging.error("UNSPLASH_ACCESS_KEY not found in environment variables.")
         return False
     
     headers = {
-        "Authorization": f"Bearer {api_key}"
+        "Authorization": f"Client-ID {api_key}"
     }
-    response = requests.get("https://api.openai.com/v1/models", headers=headers)
+    response = requests.get("https://api.unsplash.com/photos/random", headers=headers)
     
     if response.status_code == 200:
         return True
@@ -61,26 +61,23 @@ def ensure_table_structure():
 
 def generate_card_image(prompt):
     try:
-        api_key = os.environ.get("OPENAI_API_KEY")
+        api_key = os.environ.get("UNSPLASH_ACCESS_KEY")
         headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
+            "Authorization": f"Client-ID {api_key}"
         }
-        data = {
-            "model": "dall-e-3",
-            "prompt": prompt,
-            "n": 1,
-            "size": "1024x1024"
+        params = {
+            "query": prompt,
+            "orientation": "squarish"
         }
-        response = requests.post("https://api.openai.com/v1/images/generations", headers=headers, json=data)
+        response = requests.get("https://api.unsplash.com/photos/random", headers=headers, params=params)
         response.raise_for_status()
-        return response.json()['data'][0]['url']
+        return response.json()['urls']['regular']
     except Exception as e:
         logging.error(f"Error generating image: {e}")
         return None
 
 def generate_and_store_card(name, type, energy_cost):
-    prompt = f"A cute teddy bear as a {type} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background."
+    prompt = f"cute teddy bear {type.lower()} card game"
     image_url = generate_card_image(prompt)
     
     if image_url:
@@ -106,8 +103,8 @@ def generate_and_store_card(name, type, energy_cost):
 def main():
     logging.info("Starting asset generation for Terrible Teddies...")
     
-    if not validate_api_key():
-        logging.error("Invalid or expired OpenAI API key. Please update your API key in the .env file and try again.")
+    if not validate_unsplash_api_key():
+        logging.error("Invalid or expired Unsplash API key. Please update your API key in the .env file and try again.")
         return
 
     ensure_table_structure()
