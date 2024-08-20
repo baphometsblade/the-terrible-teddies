@@ -19,6 +19,11 @@ supabase: Client = create_client(os.environ.get("VITE_SUPABASE_PROJECT_URL"), os
 
 CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
 
+def check_api_key():
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key or api_key.startswith("sk-") is False:
+        raise ValueError("Invalid OpenAI API key. Please check your .env file and ensure you have set a valid OPENAI_API_KEY.")
+
 def generate_card_image(prompt):
     try:
         response = client.images.generate(
@@ -58,19 +63,25 @@ def generate_and_store_card(name, type, energy_cost):
     return None
 
 def main():
-    logging.info("Starting asset generation for Terrible Teddies...")
-    
-    for card_type in CARD_TYPES:
-        for i in range(8):  # Generate 8 cards of each type
-            name = f"{card_type} Teddy {i+1}"
-            energy_cost = random.randint(1, 5)
-            result = generate_and_store_card(name, card_type, energy_cost)
-            if result:
-                logging.info(f"Successfully generated and stored {name}")
-            else:
-                logging.warning(f"Failed to generate or store {name}")
-    
-    logging.info("Asset generation complete!")
+    try:
+        check_api_key()
+        logging.info("Starting asset generation for Terrible Teddies...")
+        
+        for card_type in CARD_TYPES:
+            for i in range(8):  # Generate 8 cards of each type
+                name = f"{card_type} Teddy {i+1}"
+                energy_cost = random.randint(1, 5)
+                result = generate_and_store_card(name, card_type, energy_cost)
+                if result:
+                    logging.info(f"Successfully generated and stored {name}")
+                else:
+                    logging.warning(f"Failed to generate or store {name}")
+        
+        logging.info("Asset generation complete!")
+    except ValueError as ve:
+        logging.error(f"Configuration error: {ve}")
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
 
 if __name__ == "__main__":
     main()
