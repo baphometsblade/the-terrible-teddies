@@ -1,8 +1,6 @@
 import sys
 import subprocess
-import os
 import logging
-from dotenv import load_dotenv
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -24,6 +22,8 @@ check_and_install_packages()
 from openai import OpenAI
 from supabase import create_client, Client
 import random
+from dotenv import load_dotenv
+import os
 
 # Load environment variables
 load_dotenv()
