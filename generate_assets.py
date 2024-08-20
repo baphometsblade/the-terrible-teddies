@@ -1,8 +1,7 @@
+import os
 import sys
 import subprocess
 import logging
-import os
-import requests
 from openai import OpenAI
 from supabase import create_client, Client
 import random
@@ -47,7 +46,7 @@ def ensure_table_structure():
     try:
         # Check if the energy_cost column exists
         result = supabase.table("generated_images").select("energy_cost").limit(1).execute()
-        if 'error' in result:
+        if 'error' in result.dict():
             # If the column doesn't exist, add it
             supabase.table("generated_images").alter().add("energy_cost", "int4").execute()
             logging.info("Added energy_cost column to generated_images table")
@@ -96,7 +95,7 @@ def main():
     logging.info("Starting asset generation for Terrible Teddies...")
     
     if not validate_api_key():
-        logging.error("Invalid or expired OpenAI API key. Please update your API key and try again.")
+        logging.error("Invalid or expired OpenAI API key. Please update your API key in the .env file and try again.")
         return
 
     ensure_table_structure()
