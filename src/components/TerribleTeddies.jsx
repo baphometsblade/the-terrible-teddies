@@ -12,6 +12,7 @@ import { LoadingSpinner } from './LoadingSpinner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { CardCollection } from './CardCollection';
 
 const GameBoard = lazy(() => import('./GameBoard'));
 const TutorialComponent = lazy(() => import('./TutorialComponent').then(module => ({ default: module.TutorialComponent })));
@@ -30,6 +31,7 @@ const TerribleTeddies = () => {
     darkMode: false,
     highPerformanceMode: false,
   });
+  const [showCardCollection, setShowCardCollection] = useState(false);
 
   const startGame = () => {
     if (!currentUser) {
@@ -101,6 +103,7 @@ const TerribleTeddies = () => {
               <MenuButton onClick={() => setGameState('leaderboard')} color="yellow" icon={<Trophy className="w-6 h-6" />}>Leaderboard</MenuButton>
               <MenuButton onClick={() => setGameState('dailyChallenge')} color="red" icon={<Target className="w-6 h-6" />}>Daily Challenge</MenuButton>
               <MenuButton onClick={() => setGameState('shop')} color="indigo" icon={<ShoppingCart className="w-6 h-6" />}>Shop</MenuButton>
+              <MenuButton onClick={() => setShowCardCollection(true)} color="yellow" icon={<Book className="w-6 h-6" />}>Card Collection</MenuButton>
               <MenuButton onClick={() => setGameState('multiplayer')} color="pink" icon={<Users className="w-6 h-6" />}>Multiplayer</MenuButton>
               <Dialog>
                 <DialogTrigger asChild>
@@ -198,6 +201,7 @@ const TerribleTeddies = () => {
         {gameState === 'dailyChallenge' && renderComponent(() => <DailyChallenge onExit={() => setGameState('menu')} />)}
         {gameState === 'shop' && renderComponent(() => <Shop onClose={() => setGameState('menu')} />)}
         {gameState === 'multiplayer' && renderComponent(() => <div>Multiplayer component (to be implemented)</div>)}
+        {showCardCollection && <CardCollection onClose={() => setShowCardCollection(false)} />}
       </AnimatePresence>
     </div>
   );
