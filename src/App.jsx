@@ -18,7 +18,15 @@ const App = () => (
           <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
             <Routes>
               {navItems.map(({ to, page: PageComponent }) => (
-                <Route key={to} path={to} element={<PageComponent />} />
+                <Route 
+                  key={to} 
+                  path={to} 
+                  element={
+                    <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+                      <PageComponent />
+                    </Suspense>
+                  } 
+                />
               ))}
             </Routes>
           </Suspense>

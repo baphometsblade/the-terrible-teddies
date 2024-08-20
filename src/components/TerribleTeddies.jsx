@@ -6,12 +6,12 @@ import { useToast } from "@/components/ui/use-toast";
 import { useUserStats } from '../hooks/useUserStats';
 import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Loader2 } from 'lucide-react';
 
-const DeckBuilder = lazy(() => import('./DeckBuilder'));
+const DeckBuilder = lazy(() => import('./DeckBuilder').then(module => ({ default: module.DeckBuilder })));
 const GameBoard = lazy(() => import('./GameBoard'));
-const TutorialComponent = lazy(() => import('./TutorialComponent'));
-const LeaderboardComponent = lazy(() => import('./LeaderboardComponent'));
-const DailyChallenge = lazy(() => import('./DailyChallenge'));
-const Shop = lazy(() => import('./Shop'));
+const TutorialComponent = lazy(() => import('./TutorialComponent').then(module => ({ default: module.TutorialComponent })));
+const LeaderboardComponent = lazy(() => import('./LeaderboardComponent').then(module => ({ default: module.LeaderboardComponent })));
+const DailyChallenge = lazy(() => import('./DailyChallenge').then(module => ({ default: module.DailyChallenge })));
+const Shop = lazy(() => import('./Shop').then(module => ({ default: module.Shop })));
 
 const TerribleTeddies = () => {
   const [gameState, setGameState] = useState('menu');

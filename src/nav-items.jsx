@@ -1,8 +1,8 @@
-import React, { lazy } from 'react';
+import React from 'react';
 import { Home, LogIn } from "lucide-react";
 
-const Index = lazy(() => import("./pages/Index.jsx"));
-const SupabaseAuthUI = lazy(() => import("./integrations/supabase/auth").then(module => ({ default: module.SupabaseAuthUI })));
+const Index = React.lazy(() => import("./pages/Index"));
+const SupabaseAuthUI = React.lazy(() => import("./integrations/supabase/auth").then(module => ({ default: module.SupabaseAuthUI })));
 
 export const navItems = [
   {
