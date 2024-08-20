@@ -9,22 +9,32 @@ import { Sparkles } from 'lucide-react';
 
 const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 
-const placeholderCards = [
-  { id: 1, name: "Knight's Kiss", type: "Action", energy_cost: 3, url: "/placeholder.svg", description: "The Chivalrous Charmer" },
-  { id: 2, name: "Smoky Joe", type: "Trap", energy_cost: 2, url: "/placeholder.svg", description: "The Sinister Smoker" },
-  { id: 3, name: "Lady Lush", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Tipsy Temptress" },
-  { id: 4, name: "Captain Cuddles", type: "Defense", energy_cost: 3, url: "/placeholder.svg", description: "The Naughty Navigator" },
-  { id: 5, name: "Boozy Bruno", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Brewmaster Bear" },
-  { id: 6, name: "Naughty Nurse", type: "Action", energy_cost: 2, url: "/placeholder.svg", description: "The Medic of Mischief" },
-  { id: 7, name: "Dapper Dan", type: "Trap", energy_cost: 3, url: "/placeholder.svg", description: "The Gentleman's Scoundrel" },
-  { id: 8, name: "Vicious Vixen", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Femme Fatale" },
-  { id: 9, name: "Rascal Rex", type: "Defense", energy_cost: 2, url: "/placeholder.svg", description: "The Cunning Con Artist" },
-  { id: 10, name: "Lady Lacerate", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Bloodthirsty Beauty" },
+const teddyBears = [
+  { id: 1, name: "Knight's Kiss", type: "Action", energy_cost: 3, url: "/placeholder.svg", description: "The Chivalrous Charmer", attack: 6, defense: 8, specialMove: "Heartbreaker" },
+  { id: 2, name: "Smoky Joe", type: "Trap", energy_cost: 2, url: "/placeholder.svg", description: "The Sinister Smoker", attack: 7, defense: 6, specialMove: "Smoke Screen" },
+  { id: 3, name: "Lady Lush", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Tipsy Temptress", attack: 5, defense: 7, specialMove: "Wine Whirl" },
+  { id: 4, name: "Captain Cuddles", type: "Defense", energy_cost: 3, url: "/placeholder.svg", description: "The Naughty Navigator", attack: 8, defense: 6, specialMove: "Treasure Hunt" },
+  { id: 5, name: "Boozy Bruno", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Brewmaster Bear", attack: 7, defense: 7, specialMove: "Beer Bash" },
+  { id: 6, name: "Naughty Nurse", type: "Action", energy_cost: 2, url: "/placeholder.svg", description: "The Medic of Mischief", attack: 5, defense: 9, specialMove: "Bad Medicine" },
+  { id: 7, name: "Dapper Dan", type: "Trap", energy_cost: 3, url: "/placeholder.svg", description: "The Gentleman's Scoundrel", attack: 7, defense: 7, specialMove: "Dirty Trick" },
+  { id: 8, name: "Vicious Vixen", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Femme Fatale", attack: 8, defense: 6, specialMove: "Seduction" },
+  { id: 9, name: "Rascal Rex", type: "Defense", energy_cost: 2, url: "/placeholder.svg", description: "The Cunning Con Artist", attack: 6, defense: 8, specialMove: "Con Job" },
+  { id: 10, name: "Lady Lacerate", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Bloodthirsty Beauty", attack: 9, defense: 5, specialMove: "Twin Strike" },
+  { id: 11, name: "Mischief Mike", type: "Action", energy_cost: 3, url: "/placeholder.svg", description: "The Prankster Extraordinaire", attack: 6, defense: 7, specialMove: "Exploding Cigar" },
+  { id: 12, name: "Velvet Viper", type: "Trap", energy_cost: 2, url: "/placeholder.svg", description: "The Slippery Seductress", attack: 7, defense: 6, specialMove: "Venomous Kiss" },
+  { id: 13, name: "Gory Gus", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Bear of Brutality", attack: 9, defense: 5, specialMove: "Savage Claw" },
+  { id: 14, name: "Temptress Trixie", type: "Defense", energy_cost: 3, url: "/placeholder.svg", description: "The Alluring Assassin", attack: 8, defense: 6, specialMove: "Fatal Attraction" },
+  { id: 15, name: "Rowdy Ron", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Barroom Brawler", attack: 7, defense: 7, specialMove: "Knockout Punch" },
+  { id: 16, name: "Shady Sheila", type: "Action", energy_cost: 2, url: "/placeholder.svg", description: "The Underworld Queen", attack: 6, defense: 8, specialMove: "Blackmail" },
+  { id: 17, name: "Feral Fang", type: "Trap", energy_cost: 3, url: "/placeholder.svg", description: "The Wild Warrior", attack: 8, defense: 6, specialMove: "Primal Rage" },
+  { id: 18, name: "Deadeye Duke", type: "Special", energy_cost: 4, url: "/placeholder.svg", description: "The Sharpshooter", attack: 7, defense: 6, specialMove: "Bullseye" },
+  { id: 19, name: "Blitzkrieg Bear", type: "Defense", energy_cost: 2, url: "/placeholder.svg", description: "The War Machine", attack: 9, defense: 5, specialMove: "Total Annihilation" },
+  { id: 20, name: "Hexing Harriet", type: "Boost", energy_cost: 5, url: "/placeholder.svg", description: "The Voodoo Vixen", attack: 6, defense: 8, specialMove: "Voodoo Curse" },
 ];
 
 export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
   const [deck, setDeck] = useState(initialDeck || []);
-  const [availableCards, setAvailableCards] = useState(placeholderCards);
+  const [availableCards, setAvailableCards] = useState(teddyBears);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const { toast } = useToast();
@@ -72,24 +82,6 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
       return;
     }
     onSaveDeck(deck);
-  };
-
-  const handleAddNewCard = () => {
-    const newCard = {
-      id: `new-${Date.now()}`,
-      name: "Naughty New Teddy",
-      type: CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)],
-      description: "A mischievous new teddy joins the fray with a twinkle in its button eyes!",
-      energy_cost: Math.floor(Math.random() * 5) + 1,
-      url: '/placeholder.svg',
-    };
-
-    setAvailableCards([...availableCards, newCard]);
-    toast({
-      title: "Card Added",
-      description: "A new troublemaker has joined your collection!",
-      variant: "success",
-    });
   };
 
   return (
@@ -144,16 +136,14 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
                       <p className="text-sm text-purple-600">{card.type}</p>
                       <p className="text-xs italic text-purple-500">{card.description}</p>
                       <p className="text-xs text-purple-700 mt-1">Energy Cost: {card.energy_cost}</p>
+                      <p className="text-xs text-purple-700">Attack: {card.attack} | Defense: {card.defense}</p>
+                      <p className="text-xs text-purple-700">Special: {card.specialMove}</p>
                     </CardContent>
                   </Card>
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
-          <Button onClick={handleAddNewCard} className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white transition-all duration-300">
-            <Sparkles className="w-5 h-5 mr-2" />
-            Create New Troublemaker
-          </Button>
         </div>
         <div>
           <h3 className="text-2xl font-bold mb-4 text-purple-700">Your Mischief Squad ({deck.length}/30)</h3>
@@ -178,6 +168,8 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
                       <p className="text-sm text-purple-600">{card.type}</p>
                       <p className="text-xs italic text-purple-500">{card.description}</p>
                       <p className="text-xs text-purple-700 mt-1">Energy Cost: {card.energy_cost}</p>
+                      <p className="text-xs text-purple-700">Attack: {card.attack} | Defense: {card.defense}</p>
+                      <p className="text-xs text-purple-700">Special: {card.specialMove}</p>
                     </CardContent>
                   </Card>
                 </motion.div>
