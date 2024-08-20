@@ -4,6 +4,10 @@ import requests
 from supabase import create_client, Client
 import random
 from dotenv import load_dotenv
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Load environment variables
 load_dotenv()
@@ -30,16 +34,21 @@ def generate_card_image(card_type, name):
         "response_format": "b64_json"
     }
     
-    response = requests.post(OPENAI_API_URL, headers=headers, json=data)
-    
-    if response.status_code == 200:
+    try:
+        response = requests.post(OPENAI_API_URL, headers=headers, json=data)
+        response.raise_for_status()
         image_data = response.json()['data'][0]['b64_json']
         return f"data:image/png;base64,{image_data}"
-    else:
-        raise Exception(f"Failed to generate image: {response.text}")
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to generate image: {str(e)}")
+        return None
 
 def generate_and_store_card(name, type, energy_cost):
     image_data = generate_card_image(type, name)
+    
+    if image_data is None:
+        logging.error(f"Failed to generate image for card: {name}")
+        return None
     
     card_data = {
         "name": name,
@@ -49,23 +58,30 @@ def generate_and_store_card(name, type, energy_cost):
         "prompt": f"A {type} card for Terrible Teddies named {name}"
     }
     
-    result = supabase.table("generated_images").insert(card_data).execute()
-    print(f"Generated and stored card: {name}")
-    return result
+    try:
+        result = supabase.table("generated_images").insert(card_data).execute()
+        logging.info(f"Generated and stored card: {name}")
+        return result
+    except Exception as e:
+        logging.error(f"Failed to store card in Supabase: {str(e)}")
+        return None
 
 def main():
-    print("Starting asset generation for Terrible Teddies...")
+    logging.info("Starting asset generation for Terrible Teddies...")
     
     if not OPENAI_API_KEY:
-        raise ValueError("OPENAI_API_KEY is not set in the environment variables")
+        logging.error("OPENAI_API_KEY is not set in the environment variables")
+        return
     
     for card_type in CARD_TYPES:
         for i in range(8):  # Generate 8 cards of each type
             name = f"{card_type} Teddy {i+1}"
             energy_cost = random.randint(1, 5)
-            generate_and_store_card(name, card_type, energy_cost)
+            result = generate_and_store_card(name, card_type, energy_cost)
+            if result is None:
+                logging.warning(f"Failed to generate or store card: {name}")
     
-    print("Asset generation complete!")
+    logging.info("Asset generation complete!")
 
 if __name__ == "__main__":
     main()
