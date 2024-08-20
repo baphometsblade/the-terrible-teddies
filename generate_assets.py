@@ -1,27 +1,10 @@
 import os
-import sys
-import subprocess
-import logging
 from supabase import create_client, Client
 import random
 from dotenv import load_dotenv
-import requests
-
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-def check_and_install_packages():
-    required_packages = ['supabase', 'python-dotenv', 'Pillow', 'requests']
-    for package in required_packages:
-        try:
-            __import__(package)
-        except ImportError:
-            logging.info(f"Installing {package}...")
-            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    logging.info("All required packages are installed.")
-
-# Check and install required packages
-check_and_install_packages()
+from PIL import Image, ImageDraw
+import io
+import base64
 
 # Load environment variables
 load_dotenv()
@@ -31,83 +14,64 @@ supabase: Client = create_client(os.environ.get("VITE_SUPABASE_PROJECT_URL"), os
 
 CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
 
-def validate_unsplash_api_key():
-    api_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-    if not api_key:
-        logging.error("UNSPLASH_ACCESS_KEY not found in environment variables.")
-        return False
-    
-    headers = {
-        "Authorization": f"Client-ID {api_key}"
+def generate_card_image(card_type):
+    # Create a new image with a white background
+    img = Image.new('RGB', (200, 200), color='white')
+    draw = ImageDraw.Draw(img)
+
+    # Define colors for each card type
+    colors = {
+        'Action': 'red',
+        'Trap': 'purple',
+        'Special': 'yellow',
+        'Defense': 'blue',
+        'Boost': 'green'
     }
-    response = requests.get("https://api.unsplash.com/photos/random", headers=headers)
-    
-    if response.status_code == 200:
-        return True
-    else:
-        logging.error(f"API key validation failed: Error code: {response.status_code} - {response.json()}")
-        return False
 
-def ensure_table_structure():
-    try:
-        # Check if the energy_cost column exists
-        result = supabase.table("generated_images").select("energy_cost").limit(1).execute()
-        if 'error' in result.dict():
-            # If the column doesn't exist, add it
-            supabase.table("generated_images").alter().add("energy_cost", "int4").execute()
-            logging.info("Added energy_cost column to generated_images table")
-    except Exception as e:
-        logging.error(f"Error ensuring table structure: {e}")
+    # Draw a shape based on the card type
+    if card_type == 'Action':
+        draw.polygon([(100, 50), (50, 150), (150, 150)], fill=colors[card_type])
+    elif card_type == 'Trap':
+        draw.rectangle([50, 50, 150, 150], fill=colors[card_type])
+    elif card_type == 'Special':
+        draw.ellipse([50, 50, 150, 150], fill=colors[card_type])
+    elif card_type == 'Defense':
+        draw.arc([50, 50, 150, 150], 0, 360, fill=colors[card_type], width=20)
+    elif card_type == 'Boost':
+        draw.polygon([(100, 50), (50, 100), (100, 150), (150, 100)], fill=colors[card_type])
 
-def generate_card_image(prompt):
-    try:
-        api_key = os.environ.get("UNSPLASH_ACCESS_KEY")
-        headers = {
-            "Authorization": f"Client-ID {api_key}"
-        }
-        params = {
-            "query": prompt,
-            "orientation": "squarish"
-        }
-        response = requests.get("https://api.unsplash.com/photos/random", headers=headers, params=params)
-        response.raise_for_status()
-        return response.json()['urls']['regular']
-    except Exception as e:
-        logging.error(f"Error generating image: {e}")
-        return None
+    # Save image to a bytes buffer
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    image_bytes = buffer.getvalue()
+
+    # Encode image bytes to base64
+    image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+
+    return f"data:image/png;base64,{image_base64}"
 
 def generate_and_store_card(name, type, energy_cost):
-    prompt = f"cute teddy bear {type.lower()} card game"
-    image_url = generate_card_image(prompt)
+    image_data = generate_card_image(type)
     
-    if image_url:
-        card_data = {
-            "name": name,
-            "type": type,
-            "url": image_url,
-            "prompt": prompt,
-            "energy_cost": energy_cost
-        }
-        
-        try:
-            result = supabase.table("generated_images").insert(card_data).execute()
-            logging.info(f"Generated and stored card: {name}")
-            return result
-        except Exception as e:
-            logging.error(f"Error storing card data: {e}")
-    else:
-        logging.error(f"Failed to generate image for card: {name}")
+    card_data = {
+        "name": name,
+        "type": type,
+        "url": image_data,
+        "prompt": f"A simple {type.lower()} card for Terrible Teddies",
+        "energy_cost": energy_cost
+    }
+    
+    try:
+        result = supabase.table("generated_images").insert(card_data).execute()
+        print(f"Generated and stored card: {name}")
+        return result
+    except Exception as e:
+        print(f"Error storing card data: {e}")
     
     return None
 
 def main():
-    logging.info("Starting asset generation for Terrible Teddies...")
-    
-    if not validate_unsplash_api_key():
-        logging.error("Invalid or expired Unsplash API key. Please update your API key in the .env file and try again.")
-        return
-
-    ensure_table_structure()
+    print("Starting asset generation for Terrible Teddies...")
     
     for card_type in CARD_TYPES:
         for i in range(8):  # Generate 8 cards of each type
@@ -115,11 +79,11 @@ def main():
             energy_cost = random.randint(1, 5)
             result = generate_and_store_card(name, card_type, energy_cost)
             if result:
-                logging.info(f"Successfully generated and stored {name}")
+                print(f"Successfully generated and stored {name}")
             else:
-                logging.warning(f"Failed to generate or store {name}")
+                print(f"Failed to generate or store {name}")
     
-    logging.info("Asset generation complete!")
+    print("Asset generation complete!")
 
 if __name__ == "__main__":
     main()
