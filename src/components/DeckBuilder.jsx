@@ -126,7 +126,7 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
                       <img src={card.url || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                       <p className="font-bold text-purple-800">{card.name}</p>
                       <p className="text-sm text-purple-600">{card.type}</p>
-                      <p className="text-xs italic text-purple-500">{card.description}</p>
+                      <p className="text-xs italic text-purple-500">{card.prompt}</p>
                       <p className="text-xs text-purple-700 mt-1">Energy Cost: {card.energy_cost}</p>
                     </CardContent>
                   </Card>
@@ -156,7 +156,7 @@ export const DeckBuilder = ({ onSaveDeck, initialDeck }) => {
                       <img src={card.url || "/placeholder.svg"} alt={card.name} className="w-full h-32 object-cover mb-2 rounded" />
                       <p className="font-bold text-purple-800">{card.name}</p>
                       <p className="text-sm text-purple-600">{card.type}</p>
-                      <p className="text-xs italic text-purple-500">{card.description}</p>
+                      <p className="text-xs italic text-purple-500">{card.prompt}</p>
                       <p className="text-xs text-purple-700 mt-1">Energy Cost: {card.energy_cost}</p>
                     </CardContent>
                   </Card>
