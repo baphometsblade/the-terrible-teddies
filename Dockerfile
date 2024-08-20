@@ -19,5 +19,9 @@ RUN npm run build
 # Expose the port the app runs on
 EXPOSE 3000
 
+# Create a non-root user
+RUN adduser -D myuser
+USER myuser
+
 # Define the command to run the app
-CMD ["npm", "run", "preview"]
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "$PORT"]
