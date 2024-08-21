@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { CardCollection } from './CardCollection';
 
-const GameBoard = lazy(() => import('./GameBoard'));
+const GameBoard = lazy(() => import('./GameBoard').then(module => ({ default: module.GameBoard })));
 const TutorialComponent = lazy(() => import('./TutorialComponent').then(module => ({ default: module.TutorialComponent })));
 const LeaderboardComponent = lazy(() => import('./LeaderboardComponent').then(module => ({ default: module.LeaderboardComponent })));
 const DailyChallenge = lazy(() => import('./DailyChallenge').then(module => ({ default: module.DailyChallenge })));
