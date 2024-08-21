@@ -79,18 +79,18 @@ const TerribleTeddies = () => {
       {!isLoadingUser && (
         currentUser ? (
           <>
-            {!isLoadingStats && (
+            {!isLoadingStats && userStats && (
               <Card className="mb-8 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg shadow-lg">
                 <CardContent className="p-6">
                   <h2 className="text-2xl font-semibold text-purple-800 mb-4">Your Stats</h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-lg font-medium text-gray-700">Coins</p>
-                      <p className="text-3xl font-bold text-yellow-500">{userStats?.coins || 0}</p>
+                      <p className="text-3xl font-bold text-yellow-500">{userStats.coins || 0}</p>
                     </div>
                     <div>
                       <p className="text-lg font-medium text-gray-700">Games Won</p>
-                      <p className="text-3xl font-bold text-green-500">{userStats?.games_won || 0}</p>
+                      <p className="text-3xl font-bold text-green-500">{userStats.games_won || 0}</p>
                     </div>
                   </div>
                 </CardContent>
