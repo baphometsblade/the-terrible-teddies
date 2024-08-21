@@ -12,10 +12,12 @@ const CARD_TYPES = {
 
 const INITIAL_ENERGY = 3;
 const MAX_ENERGY = 10;
+const INITIAL_HP = 30;
+const HAND_SIZE = 5;
 
 export const useGameLogic = (initialDeck = []) => {
-  const [playerHP, setPlayerHP] = useState(30);
-  const [opponentHP, setOpponentHP] = useState(30);
+  const [playerHP, setPlayerHP] = useState(INITIAL_HP);
+  const [opponentHP, setOpponentHP] = useState(INITIAL_HP);
   const [playerHand, setPlayerHand] = useState([]);
   const [opponentHand, setOpponentHand] = useState([]);
   const [playerDeck, setPlayerDeck] = useState(initialDeck);
@@ -32,30 +34,6 @@ export const useGameLogic = (initialDeck = []) => {
   const { toast } = useToast();
   const { data: allCards, isLoading: isLoadingCards } = useGeneratedImages();
 
-  const [audioContext] = useState(() => new (window.AudioContext || window.webkitAudioContext)());
-
-  useEffect(() => {
-    if (allCards && allCards.length > 0 && playerDeck.length === 0) {
-      initializeGame();
-    }
-  }, [allCards, playerDeck]);
-
-  const initializeGame = () => {
-    const shuffledCards = shuffleArray([...allCards]);
-    setPlayerDeck(prevDeck => prevDeck.length > 0 ? prevDeck : shuffledCards.slice(0, 20));
-    setOpponentDeck(shuffledCards.slice(20, 40));
-    setPlayerHP(30);
-    setOpponentHP(30);
-    setPlayerEnergy(INITIAL_ENERGY);
-    setOpponentEnergy(INITIAL_ENERGY);
-    setMomentumGauge(0);
-    setGameLog([]);
-    setActiveEffects({ player: [], opponent: [] });
-    setIsGameOver(false);
-    setWinner(null);
-    dealInitialHands();
-  };
-
   const shuffleArray = (array) => {
     const newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
@@ -65,38 +43,46 @@ export const useGameLogic = (initialDeck = []) => {
     return newArray;
   };
 
+  const initializeGame = useCallback(() => {
+    if (!allCards || allCards.length === 0) return;
+
+    const shuffledCards = shuffleArray([...allCards]);
+    setPlayerDeck(shuffledCards.slice(0, 20));
+    setOpponentDeck(shuffledCards.slice(20, 40));
+    setPlayerHP(INITIAL_HP);
+    setOpponentHP(INITIAL_HP);
+    setPlayerEnergy(INITIAL_ENERGY);
+    setOpponentEnergy(INITIAL_ENERGY);
+    setMomentumGauge(0);
+    setGameLog([]);
+    setActiveEffects({ player: [], opponent: [] });
+    setIsGameOver(false);
+    setWinner(null);
+    setCurrentTurn('player');
+    dealInitialHands();
+  }, [allCards]);
+
   const dealInitialHands = () => {
-    setPlayerHand(drawCards(5));
-    setOpponentHand(drawCards(5, true));
+    setPlayerHand(drawCards(HAND_SIZE, 'player'));
+    setOpponentHand(drawCards(HAND_SIZE, 'opponent'));
   };
 
-  const drawCards = (count, isOpponent = false) => {
-    const deck = isOpponent ? opponentDeck : playerDeck;
+  const drawCards = (count, player) => {
+    const deck = player === 'player' ? playerDeck : opponentDeck;
     const drawnCards = deck.slice(0, count);
     const newDeck = deck.slice(count);
     
-    if (isOpponent) {
-      setOpponentDeck(newDeck);
-    } else {
+    if (player === 'player') {
       setPlayerDeck(newDeck);
+    } else {
+      setOpponentDeck(newDeck);
     }
 
     return drawnCards;
   };
 
-  const playSound = useCallback((frequency, duration) => {
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-    oscillator.start();
-    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + duration);
-    oscillator.stop(audioContext.currentTime + duration);
-  }, [audioContext]);
-
-  const applyCardEffect = (card, isOpponent = false) => {
+  const applyCardEffect = (card, player) => {
+    const isOpponent = player === 'opponent';
     const target = isOpponent ? 'player' : 'opponent';
     let effectDescription = '';
 
@@ -108,43 +94,38 @@ export const useGameLogic = (initialDeck = []) => {
         } else {
           setOpponentHP(prev => Math.max(0, prev - damage));
         }
-        playSound(330, 0.3);
         effectDescription = `${card.name} deals ${damage} damage to the ${target}!`;
         break;
       case CARD_TYPES.TRAP:
         setActiveEffects(prev => ({
           ...prev,
-          [isOpponent ? 'opponent' : 'player']: [...prev[isOpponent ? 'opponent' : 'player'], card]
+          [player]: [...prev[player], card]
         }));
-        playSound(550, 0.2);
         effectDescription = `${card.name} has been set as a trap.`;
         break;
       case CARD_TYPES.SPECIAL:
         const heal = card.energy_cost;
         if (isOpponent) {
-          setOpponentHP(prev => Math.min(30, prev + heal));
+          setOpponentHP(prev => Math.min(INITIAL_HP, prev + heal));
         } else {
-          setPlayerHP(prev => Math.min(30, prev + heal));
+          setPlayerHP(prev => Math.min(INITIAL_HP, prev + heal));
         }
-        playSound(660, 0.3);
-        effectDescription = `${card.name} heals the ${isOpponent ? 'opponent' : 'player'} for ${heal} HP!`;
+        effectDescription = `${card.name} heals the ${player} for ${heal} HP!`;
         break;
       case CARD_TYPES.DEFENSE:
         setActiveEffects(prev => ({
           ...prev,
-          [isOpponent ? 'opponent' : 'player']: [...prev[isOpponent ? 'opponent' : 'player'], card]
+          [player]: [...prev[player], card]
         }));
-        playSound(440, 0.2);
-        effectDescription = `${card.name} provides defense for the ${isOpponent ? 'opponent' : 'player'}.`;
+        effectDescription = `${card.name} provides defense for the ${player}.`;
         break;
       case CARD_TYPES.BOOST:
         setMomentumGauge(prev => Math.min(10, prev + card.energy_cost));
-        playSound(880, 0.2);
         effectDescription = `${card.name} boosts the momentum gauge by ${card.energy_cost}!`;
         break;
     }
 
-    setGameLog(prev => [...prev, { player: isOpponent ? 'Opponent' : 'You', action: effectDescription }]);
+    setGameLog(prev => [...prev, { player, action: effectDescription }]);
     toast({
       title: card.type,
       description: effectDescription,
@@ -166,8 +147,7 @@ export const useGameLogic = (initialDeck = []) => {
     setPlayerHand(prev => prev.filter(c => c.id !== card.id));
     setLastPlayedCard(card);
     
-    playSound(440, 0.2);
-    applyCardEffect(card);
+    applyCardEffect(card, 'player');
     
     if (playerEnergy - card.energy_cost <= 0) {
       endTurn();
@@ -183,8 +163,7 @@ export const useGameLogic = (initialDeck = []) => {
           setOpponentHand(prev => prev.filter(c => c.id !== aiCard.id));
           setOpponentEnergy(prev => prev - aiCard.energy_cost);
           
-          playSound(330, 0.2);
-          applyCardEffect(aiCard, true);
+          applyCardEffect(aiCard, 'opponent');
           
           if (opponentEnergy - aiCard.energy_cost <= 0) {
             endTurn();
@@ -196,7 +175,7 @@ export const useGameLogic = (initialDeck = []) => {
         }
       }, 1000);
     }
-  }, [currentTurn, opponentHand, opponentEnergy, playSound]);
+  }, [currentTurn, opponentHand, opponentEnergy]);
 
   useEffect(() => {
     aiTurn();
@@ -206,10 +185,10 @@ export const useGameLogic = (initialDeck = []) => {
     setCurrentTurn(prev => prev === 'player' ? 'opponent' : 'player');
     if (currentTurn === 'player') {
       setPlayerEnergy(Math.min(MAX_ENERGY, playerEnergy + 1));
-      setPlayerHand(prev => [...prev, ...drawCards(1)]);
+      setPlayerHand(prev => [...prev, ...drawCards(1, 'player')]);
     } else {
       setOpponentEnergy(Math.min(MAX_ENERGY, opponentEnergy + 1));
-      setOpponentHand(prev => [...prev, ...drawCards(1, true)]);
+      setOpponentHand(prev => [...prev, ...drawCards(1, 'opponent')]);
     }
     checkActiveEffects();
   };
@@ -219,7 +198,7 @@ export const useGameLogic = (initialDeck = []) => {
     ['player', 'opponent'].forEach(side => {
       activeEffects[side].forEach(effect => {
         if (effect.type === CARD_TYPES.TRAP) {
-          applyCardEffect(effect, side === 'opponent');
+          applyCardEffect(effect, side === 'opponent' ? 'player' : 'opponent');
         } else {
           newActiveEffects[side].push(effect);
         }
@@ -245,18 +224,17 @@ export const useGameLogic = (initialDeck = []) => {
         effectDescription = "Fluff Armor provides 5 defense points!";
         break;
       case "Cuddle Heal":
-        setPlayerHP(prev => Math.min(30, prev + 5));
+        setPlayerHP(prev => Math.min(INITIAL_HP, prev + 5));
         effectDescription = "Cuddle Heal restores 5 HP!";
         break;
     }
 
     setMomentumGauge(0);
-    setGameLog(prev => [...prev, { player: 'You', action: effectDescription }]);
+    setGameLog(prev => [...prev, { player: 'player', action: effectDescription }]);
     toast({
       title: "Special Move",
       description: effectDescription,
     });
-    playSound(1100, 0.5);
     endTurn();
   };
 
@@ -266,6 +244,12 @@ export const useGameLogic = (initialDeck = []) => {
       setWinner(playerHP > 0 ? 'player' : 'opponent');
     }
   }, [playerHP, opponentHP]);
+
+  useEffect(() => {
+    if (!isLoadingCards && allCards && allCards.length > 0) {
+      initializeGame();
+    }
+  }, [isLoadingCards, allCards, initializeGame]);
 
   return {
     playerHP,
@@ -278,11 +262,8 @@ export const useGameLogic = (initialDeck = []) => {
     gameLog,
     playCard,
     endTurn,
-    playerDeck,
-    opponentDeck,
     isGameOver,
     winner,
-    isLoadingCards,
     useSpecialMove,
     initializeGame,
     playerEnergy,
