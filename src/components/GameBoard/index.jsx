@@ -11,6 +11,7 @@ import { MomentumGauge } from './MomentumGauge';
 import { PlayerHand } from './PlayerHand';
 import { GameOverModal } from './GameOverModal';
 import { SpecialMoveModal } from './SpecialMoveModal';
+import { TurnIndicator } from './TurnIndicator';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useTerribleTeddiesCards, useUserDeck, useUpdateUserStats } from '../../integrations/supabase';
@@ -39,6 +40,8 @@ export const GameBoard = ({ onExit, settings }) => {
     winner,
     initializeGame,
     useSpecialMove,
+    playerEnergy,
+    opponentEnergy,
   } = useGameLogic(settings);
 
   useEffect(() => {
@@ -49,6 +52,14 @@ export const GameBoard = ({ onExit, settings }) => {
 
   const handlePlayCard = (card) => {
     if (currentTurn !== 'player') return;
+    if (playerEnergy < card.energy_cost) {
+      toast({
+        title: "Not enough Energy!",
+        description: `You need ${card.energy_cost} energy to play this card.`,
+        variant: "destructive",
+      });
+      return;
+    }
     playCard(card);
   };
 
@@ -108,9 +119,10 @@ export const GameBoard = ({ onExit, settings }) => {
       transition={{ duration: 0.5 }}
       className={`game-board p-6 rounded-2xl shadow-2xl ${settings.darkMode ? 'bg-gray-800 text-white' : 'bg-gradient-to-b from-pink-100 to-purple-200'}`}
     >
-      <OpponentArea hp={opponentHP} hand={opponentHand} darkMode={settings.darkMode} />
+      <OpponentArea hp={opponentHP} hand={opponentHand} energy={opponentEnergy} darkMode={settings.darkMode} />
       <GameInfo currentTurn={currentTurn} momentumGauge={momentumGauge} darkMode={settings.darkMode} />
       <MomentumGauge value={momentumGauge} darkMode={settings.darkMode} />
+      <TurnIndicator currentTurn={currentTurn} darkMode={settings.darkMode} />
       <div className="flex mb-6 space-x-4">
         <LastPlayedCard card={lastPlayedCard} darkMode={settings.darkMode} />
         <GameLog log={gameLog} darkMode={settings.darkMode} />
@@ -120,6 +132,7 @@ export const GameBoard = ({ onExit, settings }) => {
         hand={playerHand} 
         onPlayCard={handlePlayCard} 
         currentTurn={currentTurn}
+        energy={playerEnergy}
         darkMode={settings.darkMode}
       />
       <PlayerHand hand={playerHand} onPlayCard={handlePlayCard} darkMode={settings.darkMode} />

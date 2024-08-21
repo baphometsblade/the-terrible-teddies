@@ -10,6 +10,9 @@ const CARD_TYPES = {
   BOOST: 'Boost'
 };
 
+const INITIAL_ENERGY = 3;
+const MAX_ENERGY = 10;
+
 export const useGameLogic = (initialDeck = []) => {
   const [playerHP, setPlayerHP] = useState(30);
   const [opponentHP, setOpponentHP] = useState(30);
@@ -24,6 +27,8 @@ export const useGameLogic = (initialDeck = []) => {
   const [activeEffects, setActiveEffects] = useState({ player: [], opponent: [] });
   const [isGameOver, setIsGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
+  const [playerEnergy, setPlayerEnergy] = useState(INITIAL_ENERGY);
+  const [opponentEnergy, setOpponentEnergy] = useState(INITIAL_ENERGY);
   const { toast } = useToast();
   const { data: allCards, isLoading: isLoadingCards } = useGeneratedImages();
 
@@ -39,6 +44,15 @@ export const useGameLogic = (initialDeck = []) => {
     const shuffledCards = shuffleArray([...allCards]);
     setPlayerDeck(prevDeck => prevDeck.length > 0 ? prevDeck : shuffledCards.slice(0, 20));
     setOpponentDeck(shuffledCards.slice(20, 40));
+    setPlayerHP(30);
+    setOpponentHP(30);
+    setPlayerEnergy(INITIAL_ENERGY);
+    setOpponentEnergy(INITIAL_ENERGY);
+    setMomentumGauge(0);
+    setGameLog([]);
+    setActiveEffects({ player: [], opponent: [] });
+    setIsGameOver(false);
+    setWinner(null);
     dealInitialHands();
   };
 
@@ -139,24 +153,23 @@ export const useGameLogic = (initialDeck = []) => {
 
   const playCard = (card) => {
     if (currentTurn !== 'player') return;
-    if (momentumGauge + card.energy_cost > 10) {
+    if (playerEnergy < card.energy_cost) {
       toast({
-        title: "Not enough Momentum!",
-        description: "You need more Momentum to play this card.",
+        title: "Not enough Energy!",
+        description: `You need ${card.energy_cost} energy to play this card.`,
         variant: "destructive",
       });
-      playSound(200, 0.3);
       return;
     }
     
-    setMomentumGauge(prev => prev + card.energy_cost);
+    setPlayerEnergy(prev => prev - card.energy_cost);
     setPlayerHand(prev => prev.filter(c => c.id !== card.id));
     setLastPlayedCard(card);
     
     playSound(440, 0.2);
     applyCardEffect(card);
     
-    if (momentumGauge + card.energy_cost >= 10) {
+    if (playerEnergy - card.energy_cost <= 0) {
       endTurn();
     }
   };
@@ -164,16 +177,26 @@ export const useGameLogic = (initialDeck = []) => {
   const aiTurn = useCallback(() => {
     if (currentTurn === 'opponent') {
       setTimeout(() => {
-        const aiCard = opponentHand[Math.floor(Math.random() * opponentHand.length)];
-        setOpponentHand(prev => prev.filter(c => c.id !== aiCard.id));
-        
-        playSound(330, 0.2);
-        applyCardEffect(aiCard, true);
-        
-        endTurn();
+        const playableCards = opponentHand.filter(card => card.energy_cost <= opponentEnergy);
+        if (playableCards.length > 0) {
+          const aiCard = playableCards[Math.floor(Math.random() * playableCards.length)];
+          setOpponentHand(prev => prev.filter(c => c.id !== aiCard.id));
+          setOpponentEnergy(prev => prev - aiCard.energy_cost);
+          
+          playSound(330, 0.2);
+          applyCardEffect(aiCard, true);
+          
+          if (opponentEnergy - aiCard.energy_cost <= 0) {
+            endTurn();
+          } else {
+            aiTurn();
+          }
+        } else {
+          endTurn();
+        }
       }, 1000);
     }
-  }, [currentTurn, opponentHand, playSound]);
+  }, [currentTurn, opponentHand, opponentEnergy, playSound]);
 
   useEffect(() => {
     aiTurn();
@@ -181,10 +204,11 @@ export const useGameLogic = (initialDeck = []) => {
 
   const endTurn = () => {
     setCurrentTurn(prev => prev === 'player' ? 'opponent' : 'player');
-    setMomentumGauge(0);
     if (currentTurn === 'player') {
+      setPlayerEnergy(Math.min(MAX_ENERGY, playerEnergy + 1));
       setPlayerHand(prev => [...prev, ...drawCards(1)]);
     } else {
+      setOpponentEnergy(Math.min(MAX_ENERGY, opponentEnergy + 1));
       setOpponentHand(prev => [...prev, ...drawCards(1, true)]);
     }
     checkActiveEffects();
@@ -261,5 +285,7 @@ export const useGameLogic = (initialDeck = []) => {
     isLoadingCards,
     useSpecialMove,
     initializeGame,
+    playerEnergy,
+    opponentEnergy,
   };
 };
