@@ -8,6 +8,7 @@ import sys
 import json
 import requests
 import time
+import traceback
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', stream=sys.stdout)
@@ -53,6 +54,7 @@ def generate_card_image(card):
             return image_response.content
         except Exception as e:
             logging.error(f"Attempt {attempt + 1} failed for card {card['name']}: {str(e)}")
+            logging.error(traceback.format_exc())
             if attempt < max_retries - 1:
                 time.sleep(5)  # Wait for 5 seconds before retrying
             else:
@@ -71,20 +73,21 @@ def update_card_image(card):
         storage_path = f"card_images/{card['name'].replace(' ', '_')}.png"
         storage_response = supabase.storage.from_("card-images").upload(storage_path, image_data, {"content-type": "image/png"})
         
-        if 'error' in storage_response:
+        if isinstance(storage_response, dict) and 'error' in storage_response:
             raise Exception(f"Failed to upload image to storage: {storage_response['error']}")
         
         public_url = supabase.storage.from_("card-images").get_public_url(storage_path)
         
         update_response = supabase.table("generated_images").update({"url": public_url}).eq("name", card['name']).execute()
         
-        if 'error' in update_response:
-            raise Exception(f"Failed to update database: {update_response['error']}")
+        if hasattr(update_response, 'error') and update_response.error:
+            raise Exception(f"Failed to update database: {update_response.error}")
         
         logging.info(f"Updated image for card: {card['name']}")
         return update_response.data
     except Exception as e:
         logging.error(f"Failed to update card image in Supabase: {card['name']}, Error: {str(e)}")
+        logging.error(traceback.format_exc())
         return None
 
 def process_cards(cards):
@@ -109,18 +112,24 @@ def main():
     try:
         # Fetch all cards from the database
         response = supabase.table("generated_images").select("*").execute()
-        if 'error' in response:
-            raise Exception(f"Failed to fetch cards from database: {response['error']}")
+        if hasattr(response, 'error') and response.error:
+            raise Exception(f"Failed to fetch cards from database: {response.error}")
         
         cards = response.data
         if not cards:
             raise Exception("No cards found in the database")
 
+        print(json.dumps({"total_cards": len(cards)}))
+        sys.stdout.flush()
+
         process_cards(cards)
     
         logging.info("Asset generation complete!")
+        print(json.dumps({"completed": True}))
+        sys.stdout.flush()
     except Exception as e:
         logging.error(f"An error occurred during asset generation: {str(e)}")
+        logging.error(traceback.format_exc())
         print(json.dumps({"error": str(e)}))
         sys.stdout.flush()
 

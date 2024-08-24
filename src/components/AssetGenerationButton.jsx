@@ -7,8 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from '../integrations/supabase';
 
-const TOTAL_CARDS = 40;
-
 export const AssetGenerationButton = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -16,6 +14,7 @@ export const AssetGenerationButton = () => {
   const [showDialog, setShowDialog] = useState(false);
   const [generatedCards, setGeneratedCards] = useState([]);
   const [error, setError] = useState(null);
+  const [totalCards, setTotalCards] = useState(0);
   const { toast } = useToast();
 
   const handleGenerateAssets = useCallback(async () => {
@@ -49,32 +48,32 @@ export const AssetGenerationButton = () => {
           if (line.trim() === '') continue;
           try {
             const data = JSON.parse(line);
-            if (typeof data.progress === 'number') {
+            if (data.totalCards) {
+              setTotalCards(data.totalCards);
+            } else if (data.progress) {
               setProgress(data.progress);
-            }
-            if (data.currentImage && data.url) {
               setCurrentImage(data.url);
-              setGeneratedCards(prev => [...prev, { name: data.currentImage, type: data.type, url: data.url }]);
-            }
-            if (data.error) {
+              setGeneratedCards(prev => [...prev, { name: data.currentImage, url: data.url }]);
+            } else if (data.error) {
               setError(data.error);
               toast({
                 title: "Error",
                 description: data.error,
                 variant: "destructive",
               });
+            } else if (data.completed) {
+              toast({
+                title: "Assets Generated",
+                description: "All assets have been successfully generated.",
+                variant: "success",
+              });
+              setIsGenerating(false);
             }
           } catch (error) {
             console.error('Error parsing JSON:', error);
           }
         }
       }
-
-      toast({
-        title: "Assets Generated",
-        description: "All assets have been successfully generated.",
-        variant: "success",
-      });
     } catch (error) {
       console.error('Error generating assets:', error);
       setError(error.message || "Failed to generate assets. Please try again.");
@@ -83,7 +82,6 @@ export const AssetGenerationButton = () => {
         description: error.message || "Failed to generate assets. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setIsGenerating(false);
     }
   }, [toast]);
@@ -96,12 +94,6 @@ export const AssetGenerationButton = () => {
   }, [isGenerating]);
 
   useEffect(() => {
-    if (progress >= 100) {
-      setIsGenerating(false);
-    }
-  }, [progress]);
-
-  useEffect(() => {
     const fetchGeneratedCards = async () => {
       const { data, error } = await supabase
         .from('generated_images')
@@ -112,6 +104,7 @@ export const AssetGenerationButton = () => {
         console.error('Error fetching generated cards:', error);
       } else {
         setGeneratedCards(data);
+        setTotalCards(data.length);
       }
     };
 
@@ -143,7 +136,7 @@ export const AssetGenerationButton = () => {
             <Progress value={progress} className="w-full" />
             <p className="mt-2 text-center">{progress.toFixed(2)}% Complete</p>
             <p className="text-center text-sm text-gray-500">
-              Generated {generatedCards.length} out of {TOTAL_CARDS} cards
+              Generated {generatedCards.length} out of {totalCards} cards
             </p>
           </div>
           {error && (
@@ -158,7 +151,6 @@ export const AssetGenerationButton = () => {
                 <div key={index} className="border rounded p-2">
                   <img src={card.url} alt={card.name} className="w-full h-32 object-cover mb-2" />
                   <p className="text-sm font-semibold">{card.name}</p>
-                  <p className="text-xs text-gray-500">{card.type}</p>
                 </div>
               ))}
             </div>
