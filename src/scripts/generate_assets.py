@@ -5,6 +5,7 @@ from supabase import create_client, Client
 import random
 from dotenv import load_dotenv
 import logging
+from openai import OpenAI
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -15,9 +16,10 @@ load_dotenv()
 # Initialize Supabase client
 supabase: Client = create_client(os.environ.get("VITE_SUPABASE_PROJECT_URL"), os.environ.get("VITE_SUPABASE_API_KEY"))
 
+# Initialize OpenAI client
+openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
 CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
-OPENAI_API_URL = "https://api.openai.com/v1/images/generations"
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 def ensure_energy_cost_column():
     try:
@@ -34,24 +36,20 @@ def ensure_energy_cost_column():
 def generate_card_image(card_type, name):
     prompt = f"A cute teddy bear as a {card_type} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background. The card name is {name}."
     
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {OPENAI_API_KEY}"
-    }
-    
-    data = {
-        "prompt": prompt,
-        "n": 1,
-        "size": "512x512",
-        "response_format": "b64_json"
-    }
-    
     try:
-        response = requests.post(OPENAI_API_URL, headers=headers, json=data)
-        response.raise_for_status()
-        image_data = response.json()['data'][0]['b64_json']
+        response = openai_client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1,
+        )
+        image_url = response.data[0].url
+        image_response = requests.get(image_url)
+        image_response.raise_for_status()
+        image_data = base64.b64encode(image_response.content).decode('utf-8')
         return f"data:image/png;base64,{image_data}"
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         logging.error(f"Failed to generate image: {str(e)}")
         return None
 
@@ -81,7 +79,7 @@ def generate_and_store_card(name, type, energy_cost):
 def main():
     logging.info("Starting asset generation for Terrible Teddies...")
     
-    if not OPENAI_API_KEY:
+    if not os.environ.get("OPENAI_API_KEY"):
         logging.error("OPENAI_API_KEY is not set in the environment variables")
         return
     
