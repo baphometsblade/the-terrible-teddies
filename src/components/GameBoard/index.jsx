@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlayerArea } from './PlayerArea';
 import { OpponentArea } from './OpponentArea';
 import { GameInfo } from './GameInfo';
@@ -42,7 +42,7 @@ export const GameBoard = ({ onExit, settings }) => {
     useSpecialMove,
     playerEnergy,
     opponentEnergy,
-  } = useGameLogic(settings);
+  } = useGameLogic();
 
   useEffect(() => {
     if (!isLoadingCards && !isLoadingDeck && allCards && userDeck) {
