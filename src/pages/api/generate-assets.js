@@ -20,15 +20,15 @@ export default async function handler(req, res) {
     const output = data.toString();
     console.log('Python script output:', output);
 
-    const lines = output.split('\n');
-    for (const line of lines) {
-      if (line.startsWith('PROGRESS:')) {
-        const progress = parseFloat(line.split('PROGRESS:')[1]);
-        res.write(`data: ${JSON.stringify({ progress })}\n\n`);
-      } else if (line.startsWith('CURRENT_IMAGE:')) {
-        const currentImage = line.split('CURRENT_IMAGE:')[1].trim();
-        res.write(`data: ${JSON.stringify({ currentImage })}\n\n`);
+    try {
+      const jsonData = JSON.parse(output);
+      if (jsonData.progress) {
+        res.write(`data: ${JSON.stringify({ progress: jsonData.progress, currentImage: jsonData.currentImage })}\n\n`);
+      } else if (jsonData.error) {
+        res.write(`data: ${JSON.stringify({ error: jsonData.error })}\n\n`);
       }
+    } catch (error) {
+      console.error('Error parsing JSON:', error);
     }
   });
 
