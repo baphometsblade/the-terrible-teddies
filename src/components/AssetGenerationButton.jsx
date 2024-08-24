@@ -1,21 +1,27 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
+const TOTAL_CARDS = CARD_TYPES.length * 8;
 
 export const AssetGenerationButton = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentImage, setCurrentImage] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
+  const [generatedCards, setGeneratedCards] = useState([]);
   const { toast } = useToast();
 
   const handleGenerateAssets = useCallback(async () => {
     setIsGenerating(true);
     setProgress(0);
     setCurrentImage(null);
+    setGeneratedCards([]);
     setShowDialog(true);
 
     try {
@@ -46,6 +52,7 @@ export const AssetGenerationButton = () => {
             }
             if (data.currentImage) {
               setCurrentImage(data.currentImage);
+              setGeneratedCards(prev => [...prev, { name: data.name, type: data.type, image: data.currentImage }]);
             }
           } catch (error) {
             console.error('Error parsing JSON:', error);
@@ -76,6 +83,12 @@ export const AssetGenerationButton = () => {
     }
   }, [isGenerating]);
 
+  useEffect(() => {
+    if (progress >= 100) {
+      setIsGenerating(false);
+    }
+  }, [progress]);
+
   return (
     <>
       <Button
@@ -93,14 +106,28 @@ export const AssetGenerationButton = () => {
         )}
       </Button>
       <Dialog open={showDialog} onOpenChange={handleCloseDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Generating Assets</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <Progress value={progress} className="w-full" />
             <p className="mt-2 text-center">{progress.toFixed(2)}% Complete</p>
+            <p className="text-center text-sm text-gray-500">
+              Generated {generatedCards.length} out of {TOTAL_CARDS} cards
+            </p>
           </div>
+          <ScrollArea className="h-[400px] mt-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {generatedCards.map((card, index) => (
+                <div key={index} className="border rounded p-2">
+                  <img src={card.image} alt={card.name} className="w-full h-32 object-cover mb-2" />
+                  <p className="text-sm font-semibold">{card.name}</p>
+                  <p className="text-xs text-gray-500">{card.type}</p>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
           {currentImage && (
             <div className="mt-4">
               <p className="mb-2 font-semibold">Current Image:</p>
