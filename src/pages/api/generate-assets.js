@@ -15,10 +15,12 @@ export default async function handler(req, res) {
 
   pythonProcess.stdout.on('data', (data) => {
     output += data.toString();
+    console.log('Python script output:', data.toString());
   });
 
   pythonProcess.stderr.on('data', (data) => {
     error += data.toString();
+    console.error('Python script error:', data.toString());
   });
 
   pythonProcess.on('close', (code) => {
@@ -30,6 +32,10 @@ export default async function handler(req, res) {
 
     const imagesCount = (output.match(/Generated and stored card/g) || []).length;
     const cardsCount = imagesCount;
+
+    if (imagesCount === 0) {
+      return res.status(500).json({ message: 'No assets were generated. Check the Python script for errors.' });
+    }
 
     res.status(200).json({
       message: 'Assets generated successfully',
