@@ -50,8 +50,8 @@ async def generate_card_image(card):
         async with aiohttp.ClientSession() as session:
             async with session.get(image_url) as image_response:
                 image_response.raise_for_status()
-                image_data = base64.b64encode(await image_response.read()).decode('utf-8')
-        return f"data:image/png;base64,{image_data}"
+                image_data = await image_response.read()
+        return image_data
     except Exception as e:
         logging.error(f"Failed to generate image for card {card['name']}: {str(e)}")
         return None
@@ -65,9 +65,21 @@ async def update_card_image(card):
     
     try:
         logging.info(f"Updating card image in Supabase: {card['name']}")
-        result = await supabase.table("generated_images").update({"url": image_data}).eq("name", card['name']).execute()
+        storage_path = f"card_images/{card['name'].replace(' ', '_')}.png"
+        storage_response = await supabase.storage.from_("card-images").upload(storage_path, image_data, {"content-type": "image/png"})
+        
+        if storage_response.error:
+            raise Exception(f"Failed to upload image to storage: {storage_response.error}")
+        
+        public_url = supabase.storage.from_("card-images").get_public_url(storage_path)
+        
+        update_response = await supabase.table("generated_images").update({"url": public_url}).eq("name", card['name']).execute()
+        
+        if update_response.error:
+            raise Exception(f"Failed to update database: {update_response.error}")
+        
         logging.info(f"Updated image for card: {card['name']}")
-        return result
+        return update_response.data
     except Exception as e:
         logging.error(f"Failed to update card image in Supabase: {card['name']}, Error: {str(e)}")
         return None

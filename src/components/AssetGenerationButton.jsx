@@ -5,9 +5,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from '../integrations/supabase';
 
-const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
-const TOTAL_CARDS = CARD_TYPES.length * 8;
+const TOTAL_CARDS = 40;
 
 export const AssetGenerationButton = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -89,6 +89,23 @@ export const AssetGenerationButton = () => {
     }
   }, [progress]);
 
+  useEffect(() => {
+    const fetchGeneratedCards = async () => {
+      const { data, error } = await supabase
+        .from('generated_images')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching generated cards:', error);
+      } else {
+        setGeneratedCards(data);
+      }
+    };
+
+    fetchGeneratedCards();
+  }, []);
+
   return (
     <>
       <Button
@@ -121,7 +138,7 @@ export const AssetGenerationButton = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {generatedCards.map((card, index) => (
                 <div key={index} className="border rounded p-2">
-                  <img src={card.image} alt={card.name} className="w-full h-32 object-cover mb-2" />
+                  <img src={card.url} alt={card.name} className="w-full h-32 object-cover mb-2" />
                   <p className="text-sm font-semibold">{card.name}</p>
                   <p className="text-xs text-gray-500">{card.type}</p>
                 </div>
