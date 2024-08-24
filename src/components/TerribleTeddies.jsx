@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { CardCollection } from './CardCollection';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AssetGenerationButton } from './AssetGenerationButton';
 
 const GameBoard = lazy(() => import('./GameBoard').then(module => ({ default: module.GameBoard })));
 const TutorialComponent = lazy(() => import('./TutorialComponent').then(module => ({ default: module.TutorialComponent })));
@@ -145,6 +146,7 @@ const TerribleTeddies = () => {
               <MenuButton onClick={() => setGameState('shop')} color="indigo" icon={<ShoppingCart className="w-6 h-6" />}>Shop</MenuButton>
               <MenuButton onClick={() => setShowCardCollection(true)} color="yellow" icon={<Book className="w-6 h-6" />}>Card Collection</MenuButton>
               <MenuButton onClick={() => setGameState('multiplayer')} color="pink" icon={<Users className="w-6 h-6" />}>Multiplayer</MenuButton>
+              <AssetGenerationButton />
               <Dialog>
                 <DialogTrigger asChild>
                   <MenuButton color="gray" icon={<Settings className="w-6 h-6" />}>Settings</MenuButton>
