@@ -16,28 +16,32 @@ export default async function handler(req, res) {
 
   const pythonProcess = spawn('python', [scriptPath]);
 
-  pythonProcess.stdout.on('data', (data) => {
-    const output = data.toString();
-    console.log('Python script output:', output);
+  let buffer = '';
 
-    output.split('\n').forEach(line => {
-      if (line.trim()) {
-        try {
-          const jsonData = JSON.parse(line);
-          if (jsonData.progress) {
-            res.write(`data: ${JSON.stringify({ 
-              progress: jsonData.progress, 
-              currentImage: jsonData.currentImage,
-              url: jsonData.url
-            })}\n\n`);
-          } else if (jsonData.error) {
-            res.write(`data: ${JSON.stringify({ error: jsonData.error })}\n\n`);
-          }
-        } catch (error) {
-          console.error('Error parsing JSON:', error, 'Raw output:', line);
+  pythonProcess.stdout.on('data', (data) => {
+    buffer += data.toString();
+    let newlineIndex;
+    while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+      const line = buffer.slice(0, newlineIndex);
+      buffer = buffer.slice(newlineIndex + 1);
+      
+      console.log('Python script output:', line);
+
+      try {
+        const jsonData = JSON.parse(line);
+        if (jsonData.progress) {
+          res.write(`data: ${JSON.stringify({ 
+            progress: jsonData.progress, 
+            currentImage: jsonData.currentImage,
+            url: jsonData.url
+          })}\n\n`);
+        } else if (jsonData.error) {
+          res.write(`data: ${JSON.stringify({ error: jsonData.error })}\n\n`);
         }
+      } catch (error) {
+        console.error('Error parsing JSON:', error, 'Raw output:', line);
       }
-    });
+    }
   });
 
   pythonProcess.stderr.on('data', (data) => {

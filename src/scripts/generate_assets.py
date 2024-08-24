@@ -7,6 +7,7 @@ import logging
 import sys
 import json
 import requests
+import time
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', stream=sys.stdout)
@@ -34,23 +35,29 @@ openai_client = OpenAI(api_key=openai_api_key)
 def generate_card_image(card):
     prompt = f"A cute teddy bear as a {card['type']} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background. The card name is {card['name']}. The teddy bear should represent: {card['description']}"
     
-    try:
-        logging.info(f"Generating image for card: {card['name']}")
-        response = openai_client.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            size="1024x1024",
-            quality="standard",
-            n=1,
-        )
-        image_url = response.data[0].url
-        logging.info(f"Image generated successfully for card: {card['name']}")
-        image_response = requests.get(image_url)
-        image_response.raise_for_status()
-        return image_response.content
-    except Exception as e:
-        logging.error(f"Failed to generate image for card {card['name']}: {str(e)}")
-        return None
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            logging.info(f"Generating image for card: {card['name']} (Attempt {attempt + 1})")
+            response = openai_client.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size="1024x1024",
+                quality="standard",
+                n=1,
+            )
+            image_url = response.data[0].url
+            logging.info(f"Image generated successfully for card: {card['name']}")
+            image_response = requests.get(image_url)
+            image_response.raise_for_status()
+            return image_response.content
+        except Exception as e:
+            logging.error(f"Attempt {attempt + 1} failed for card {card['name']}: {str(e)}")
+            if attempt < max_retries - 1:
+                time.sleep(5)  # Wait for 5 seconds before retrying
+            else:
+                logging.error(f"All attempts failed for card {card['name']}")
+                return None
 
 def update_card_image(card):
     image_data = generate_card_image(card)
@@ -64,14 +71,14 @@ def update_card_image(card):
         storage_path = f"card_images/{card['name'].replace(' ', '_')}.png"
         storage_response = supabase.storage.from_("card-images").upload(storage_path, image_data, {"content-type": "image/png"})
         
-        if storage_response.get('error'):
+        if 'error' in storage_response:
             raise Exception(f"Failed to upload image to storage: {storage_response['error']}")
         
         public_url = supabase.storage.from_("card-images").get_public_url(storage_path)
         
         update_response = supabase.table("generated_images").update({"url": public_url}).eq("name", card['name']).execute()
         
-        if update_response.get('error'):
+        if 'error' in update_response:
             raise Exception(f"Failed to update database: {update_response['error']}")
         
         logging.info(f"Updated image for card: {card['name']}")
@@ -92,6 +99,9 @@ def process_cards(cards):
         else:
             print(json.dumps({"error": f"Failed to update image for {card['name']}"}))
             sys.stdout.flush()
+        
+        # Add a delay between processing each card to avoid rate limiting
+        time.sleep(2)
 
 def main():
     logging.info("Starting asset generation for Terrible Teddies...")
@@ -99,7 +109,7 @@ def main():
     try:
         # Fetch all cards from the database
         response = supabase.table("generated_images").select("*").execute()
-        if response.get('error'):
+        if 'error' in response:
             raise Exception(f"Failed to fetch cards from database: {response['error']}")
         
         cards = response.data

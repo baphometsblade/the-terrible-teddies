@@ -15,6 +15,7 @@ export const AssetGenerationButton = () => {
   const [currentImage, setCurrentImage] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
   const [generatedCards, setGeneratedCards] = useState([]);
+  const [error, setError] = useState(null);
   const { toast } = useToast();
 
   const handleGenerateAssets = useCallback(async () => {
@@ -22,6 +23,7 @@ export const AssetGenerationButton = () => {
     setProgress(0);
     setCurrentImage(null);
     setGeneratedCards([]);
+    setError(null);
     setShowDialog(true);
 
     try {
@@ -50,9 +52,17 @@ export const AssetGenerationButton = () => {
             if (typeof data.progress === 'number') {
               setProgress(data.progress);
             }
-            if (data.currentImage) {
-              setCurrentImage(data.currentImage);
-              setGeneratedCards(prev => [...prev, { name: data.name, type: data.type, image: data.currentImage }]);
+            if (data.currentImage && data.url) {
+              setCurrentImage(data.url);
+              setGeneratedCards(prev => [...prev, { name: data.currentImage, type: data.type, url: data.url }]);
+            }
+            if (data.error) {
+              setError(data.error);
+              toast({
+                title: "Error",
+                description: data.error,
+                variant: "destructive",
+              });
             }
           } catch (error) {
             console.error('Error parsing JSON:', error);
@@ -67,6 +77,7 @@ export const AssetGenerationButton = () => {
       });
     } catch (error) {
       console.error('Error generating assets:', error);
+      setError(error.message || "Failed to generate assets. Please try again.");
       toast({
         title: "Error",
         description: error.message || "Failed to generate assets. Please try again.",
@@ -80,6 +91,7 @@ export const AssetGenerationButton = () => {
   const handleCloseDialog = useCallback(() => {
     if (!isGenerating) {
       setShowDialog(false);
+      setError(null);
     }
   }, [isGenerating]);
 
@@ -134,6 +146,12 @@ export const AssetGenerationButton = () => {
               Generated {generatedCards.length} out of {TOTAL_CARDS} cards
             </p>
           </div>
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+              <strong className="font-bold">Error: </strong>
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
           <ScrollArea className="h-[400px] mt-4">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {generatedCards.map((card, index) => (
