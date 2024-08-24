@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
@@ -12,7 +12,7 @@ export const AssetGenerationButton = () => {
   const [showDialog, setShowDialog] = useState(false);
   const { toast } = useToast();
 
-  const handleGenerateAssets = async () => {
+  const handleGenerateAssets = useCallback(async () => {
     setIsGenerating(true);
     setProgress(0);
     setCurrentImage(null);
@@ -64,9 +64,14 @@ export const AssetGenerationButton = () => {
       });
     } finally {
       setIsGenerating(false);
+    }
+  }, [toast]);
+
+  const handleCloseDialog = useCallback(() => {
+    if (!isGenerating) {
       setShowDialog(false);
     }
-  };
+  }, [isGenerating]);
 
   return (
     <>
@@ -84,7 +89,7 @@ export const AssetGenerationButton = () => {
           'Generate All Assets'
         )}
       </Button>
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <Dialog open={showDialog} onOpenChange={handleCloseDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Generating Assets</DialogTitle>
@@ -98,6 +103,9 @@ export const AssetGenerationButton = () => {
               <p className="mb-2 font-semibold">Current Image:</p>
               <img src={currentImage} alt="Current generated image" className="w-full h-auto" />
             </div>
+          )}
+          {!isGenerating && (
+            <Button onClick={handleCloseDialog} className="mt-4">Close</Button>
           )}
         </DialogContent>
       </Dialog>
