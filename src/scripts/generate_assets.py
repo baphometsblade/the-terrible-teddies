@@ -8,9 +8,10 @@ import logging
 from openai import OpenAI
 import asyncio
 import aiohttp
+import sys
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', stream=sys.stdout)
 
 # Load environment variables
 load_dotenv()

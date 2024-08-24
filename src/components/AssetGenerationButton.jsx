@@ -26,6 +26,10 @@ export const AssetGenerationButton = () => {
       }
 
       const result = await response.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
       toast({
         title: "Assets Generated",
         description: `Generated ${result.imagesCount} images and ${result.cardsCount} cards.`,

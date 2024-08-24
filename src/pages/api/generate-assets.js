@@ -27,14 +27,14 @@ export default async function handler(req, res) {
     if (code !== 0) {
       console.error(`Python script exited with code ${code}`);
       console.error('Error:', error);
-      return res.status(500).json({ message: 'Asset generation failed', error });
+      return res.status(500).json({ error: `Asset generation failed: ${error}` });
     }
 
     const imagesCount = (output.match(/Generated and stored card/g) || []).length;
     const cardsCount = imagesCount;
 
     if (imagesCount === 0) {
-      return res.status(500).json({ message: 'No assets were generated. Check the Python script for errors.' });
+      return res.status(500).json({ error: 'No assets were generated. Check the Python script for errors.' });
     }
 
     res.status(200).json({
