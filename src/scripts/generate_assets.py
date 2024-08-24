@@ -103,20 +103,18 @@ async def main():
         logging.error(f"Failed to ensure 'energy_cost' column: {str(e)}")
         return
     
-    tasks = []
-    for card_type in CARD_TYPES:
+    total_cards = len(CARD_TYPES) * 8
+    for index, card_type in enumerate(CARD_TYPES):
         for i in range(8):  # Generate 8 cards of each type
             name = f"{card_type} Teddy {i+1}"
             energy_cost = random.randint(1, 5)
-            tasks.append(generate_and_store_card(name, card_type, energy_cost))
-    
-    results = await asyncio.gather(*tasks)
-    successful_cards = [task for task in results if task is not None]
-    failed_cards = [task for task in results if task is None]
-    
-    logging.info(f"Successfully generated and stored {len(successful_cards)} cards")
-    if failed_cards:
-        logging.warning(f"Failed to generate or store {len(failed_cards)} cards")
+            result = await generate_and_store_card(name, card_type, energy_cost)
+            
+            if result:
+                progress = ((index * 8 + i + 1) / total_cards) * 100
+                print(f"PROGRESS:{progress}")
+                print(f"CURRENT_IMAGE:{result['data'][0]['url']}")
+                sys.stdout.flush()
     
     logging.info("Asset generation complete!")
 
