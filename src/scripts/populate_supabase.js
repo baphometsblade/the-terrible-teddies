@@ -10,27 +10,122 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const cardTypes = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 
-const generateCards = () => {
-  return Array.from({ length: 40 }, (_, i) => ({
-    name: `Teddy Card ${i + 1}`,
-    url: `https://picsum.photos/seed/${i + 1}/200/300`,
+const teddyData = [
+  {
+    name: "Cuddles McTrouble",
+    type: "Action",
+    energy_cost: 2,
+    attack: 3,
+    defense: 2,
+    special_move: "Tickle Attack",
+    description: "A mischievous bear with a penchant for tickle-based chaos.",
+  },
+  {
+    name: "Sir Fluffsalot",
+    type: "Defense",
+    energy_cost: 3,
+    attack: 1,
+    defense: 5,
+    special_move: "Fluff Shield",
+    description: "A noble bear whose fluffy fur provides excellent protection.",
+  },
+  {
+    name: "Sneaky Paws",
+    type: "Trap",
+    energy_cost: 1,
+    attack: 2,
+    defense: 1,
+    special_move: "Honey Trap",
+    description: "A cunning bear that lays sweet and sticky traps for opponents.",
+  },
+  {
+    name: "Captain Grizzles",
+    type: "Action",
+    energy_cost: 3,
+    attack: 4,
+    defense: 3,
+    special_move: "Bear Hug",
+    description: "A brave teddy bear captain with a crushing embrace.",
+  },
+  {
+    name: "Mystic Moonbeam",
+    type: "Special",
+    energy_cost: 4,
+    attack: 3,
+    defense: 3,
+    special_move: "Starlight Serenade",
+    description: "A mystical bear with the power to harness cosmic energy.",
+  },
+  {
+    name: "Sergeant Snuggles",
+    type: "Defense",
+    energy_cost: 2,
+    attack: 1,
+    defense: 4,
+    special_move: "Plush Barricade",
+    description: "A tactical teddy expert in defensive maneuvers.",
+  },
+  {
+    name: "Ninja Bearnana",
+    type: "Action",
+    energy_cost: 2,
+    attack: 4,
+    defense: 1,
+    special_move: "Shadow Claw",
+    description: "A stealthy bear trained in the art of surprise attacks.",
+  },
+  {
+    name: "Professor Honeypot",
+    type: "Boost",
+    energy_cost: 3,
+    attack: 2,
+    defense: 2,
+    special_move: "Intellect Surge",
+    description: "A scholarly bear with the ability to boost allies' intelligence.",
+  },
+  {
+    name: "Disco Teddy",
+    type: "Special",
+    energy_cost: 3,
+    attack: 3,
+    defense: 2,
+    special_move: "Groovy Waves",
+    description: "A funky bear that can stun opponents with sick dance moves.",
+  },
+  {
+    name: "Beary Potter",
+    type: "Special",
+    energy_cost: 4,
+    attack: 3,
+    defense: 3,
+    special_move: "Ursine Spell",
+    description: "A magical bear skilled in casting powerful bear-themed spells.",
+  },
+  // Add more teddy data here to reach 40 unique teddies
+];
+
+// Generate the remaining teddies to reach 40
+for (let i = teddyData.length; i < 40; i++) {
+  teddyData.push({
+    name: `Teddy ${i + 1}`,
     type: cardTypes[Math.floor(Math.random() * cardTypes.length)],
-    prompt: `A cute teddy bear for a ${cardTypes[Math.floor(Math.random() * cardTypes.length)]} card`,
     energy_cost: Math.floor(Math.random() * 5) + 1,
-    attack: Math.floor(Math.random() * 10) + 1,
-    defense: Math.floor(Math.random() * 10) + 1,
+    attack: Math.floor(Math.random() * 5) + 1,
+    defense: Math.floor(Math.random() * 5) + 1,
     special_move: `Special Move ${i + 1}`,
-    description: `This is a description for Teddy Card ${i + 1}`,
-  }));
-};
+    description: `A unique teddy bear with special abilities.`,
+  });
+}
 
 const populateDatabase = async () => {
-  const cards = generateCards();
-
   // Populate generated_images table
   const { data: cardData, error: cardError } = await supabase
     .from('generated_images')
-    .insert(cards);
+    .insert(teddyData.map(teddy => ({
+      ...teddy,
+      url: `https://picsum.photos/seed/${teddy.name}/200/300`, // Placeholder image URL
+      prompt: `A cute teddy bear for a ${teddy.type} card named ${teddy.name}`,
+    })));
 
   if (cardError) {
     console.error('Error inserting card data:', cardError);
@@ -56,7 +151,7 @@ const populateDatabase = async () => {
   }
 
   // Create and populate user_decks table
-  const defaultDeck = cards.slice(0, 20).map(card => card.id); // Use first 20 cards as default deck
+  const defaultDeck = teddyData.slice(0, 20).map((_, index) => index + 1); // Use first 20 cards as default deck
   const { error: userDecksError } = await supabase
     .from('user_decks')
     .insert([
