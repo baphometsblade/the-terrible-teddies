@@ -117,6 +117,20 @@ export const GameBoard = ({ onExit, settings }) => {
     return <LoadingSpinner />;
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Game Data</h2>
+          <p className="text-gray-700 mb-4">{error.message}</p>
+          <Button onClick={onExit} className="bg-blue-500 hover:bg-blue-600 text-white">
+            Return to Menu
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
