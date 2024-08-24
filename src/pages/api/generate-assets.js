@@ -20,17 +20,21 @@ export default async function handler(req, res) {
     const output = data.toString();
     console.log('Python script output:', output);
 
-    if (output.includes('PROGRESS:')) {
-      const progress = parseFloat(output.split('PROGRESS:')[1]);
-      res.write(`data: ${JSON.stringify({ progress })}\n\n`);
-    } else if (output.includes('CURRENT_IMAGE:')) {
-      const currentImage = output.split('CURRENT_IMAGE:')[1].trim();
-      res.write(`data: ${JSON.stringify({ currentImage })}\n\n`);
+    const lines = output.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('PROGRESS:')) {
+        const progress = parseFloat(line.split('PROGRESS:')[1]);
+        res.write(`data: ${JSON.stringify({ progress })}\n\n`);
+      } else if (line.startsWith('CURRENT_IMAGE:')) {
+        const currentImage = line.split('CURRENT_IMAGE:')[1].trim();
+        res.write(`data: ${JSON.stringify({ currentImage })}\n\n`);
+      }
     }
   });
 
   pythonProcess.stderr.on('data', (data) => {
     console.error('Python script error:', data.toString());
+    res.write(`data: ${JSON.stringify({ error: data.toString() })}\n\n`);
   });
 
   pythonProcess.on('close', (code) => {

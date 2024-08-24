@@ -39,13 +39,16 @@ export const AssetGenerationButton = () => {
 
         for (const line of lines) {
           if (line.trim() === '') continue;
-          const data = JSON.parse(line);
-
-          if (data.progress) {
-            setProgress(data.progress);
-          }
-          if (data.currentImage) {
-            setCurrentImage(data.currentImage);
+          try {
+            const data = JSON.parse(line);
+            if (typeof data.progress === 'number') {
+              setProgress(data.progress);
+            }
+            if (data.currentImage) {
+              setCurrentImage(data.currentImage);
+            }
+          } catch (error) {
+            console.error('Error parsing JSON:', error);
           }
         }
       }
