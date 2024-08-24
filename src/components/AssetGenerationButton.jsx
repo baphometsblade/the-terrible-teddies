@@ -62,15 +62,20 @@ export const AssetGenerationButton = () => {
               setGeneratedCards(prev => [...prev, { name: data.currentImage, url: data.url }]);
             } else if (data.error) {
               setError(data.error);
+              console.error('Asset generation error:', data.error);
+              if (data.traceback) {
+                console.error('Error traceback:', data.traceback);
+              }
               toast({
                 title: "Error",
                 description: data.error,
                 variant: "destructive",
               });
+              setIsGenerating(false);
             } else if (data.completed) {
               toast({
                 title: "Assets Generated",
-                description: "All assets have been successfully generated.",
+                description: `Successfully generated ${data.total_generated} assets.`,
                 variant: "success",
               });
               setIsGenerating(false);

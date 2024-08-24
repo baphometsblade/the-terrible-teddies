@@ -25,7 +25,13 @@ if not supabase_url or not supabase_key:
     print(json.dumps({"error": error_message}))
     sys.exit(1)
 
-supabase: Client = create_client(supabase_url, supabase_key)
+try:
+    supabase: Client = create_client(supabase_url, supabase_key)
+except Exception as e:
+    error_message = f"Failed to create Supabase client: {str(e)}"
+    logging.error(error_message)
+    print(json.dumps({"error": error_message}))
+    sys.exit(1)
 
 # Initialize OpenAI client
 openai_api_key = os.environ.get("OPENAI_API_KEY")
@@ -35,7 +41,13 @@ if not openai_api_key:
     print(json.dumps({"error": error_message}))
     sys.exit(1)
 
-openai_client = OpenAI(api_key=openai_api_key)
+try:
+    openai_client = OpenAI(api_key=openai_api_key)
+except Exception as e:
+    error_message = f"Failed to create OpenAI client: {str(e)}"
+    logging.error(error_message)
+    print(json.dumps({"error": error_message}))
+    sys.exit(1)
 
 def generate_card_image(card):
     prompt = f"A cute teddy bear as a {card['type']} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background. The card name is {card['name']}. The teddy bear should represent: {card['description']}"
@@ -137,16 +149,20 @@ def main():
         if not cards:
             raise Exception("No cards found in the database")
 
+        total_cards = len(cards)
+        print(json.dumps({"total_cards": total_cards}))
+        sys.stdout.flush()
+
         process_cards(cards)
     
         logging.info("Asset generation complete!")
-        print(json.dumps({"completed": True}))
+        print(json.dumps({"completed": True, "total_generated": total_cards}))
         sys.stdout.flush()
     except Exception as e:
         error_message = f"An error occurred during asset generation: {str(e)}"
         logging.error(error_message)
         logging.error(traceback.format_exc())
-        print(json.dumps({"error": error_message}))
+        print(json.dumps({"error": error_message, "traceback": traceback.format_exc()}))
         sys.stdout.flush()
 
 if __name__ == "__main__":
