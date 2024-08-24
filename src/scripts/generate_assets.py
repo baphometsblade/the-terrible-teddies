@@ -1,13 +1,12 @@
 import os
-import asyncio
-import aiohttp
-from supabase import create_client, Client
 import random
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
+from supabase import create_client, Client
+from openai import OpenAI
 import logging
 import sys
 import json
+import requests
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', stream=sys.stdout)
@@ -30,14 +29,14 @@ if not openai_api_key:
     logging.error("OPENAI_API_KEY is not set in the environment variables")
     raise ValueError("OPENAI_API_KEY is not set in the environment variables")
 
-openai_client = AsyncOpenAI(api_key=openai_api_key)
+openai_client = OpenAI(api_key=openai_api_key)
 
-async def generate_card_image(card):
+def generate_card_image(card):
     prompt = f"A cute teddy bear as a {card['type']} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background. The card name is {card['name']}. The teddy bear should represent: {card['description']}"
     
     try:
         logging.info(f"Generating image for card: {card['name']}")
-        response = await openai_client.images.generate(
+        response = openai_client.images.generate(
             model="dall-e-3",
             prompt=prompt,
             size="1024x1024",
@@ -46,17 +45,15 @@ async def generate_card_image(card):
         )
         image_url = response.data[0].url
         logging.info(f"Image generated successfully for card: {card['name']}")
-        async with aiohttp.ClientSession() as session:
-            async with session.get(image_url) as image_response:
-                image_response.raise_for_status()
-                image_data = await image_response.read()
-        return image_data
+        image_response = requests.get(image_url)
+        image_response.raise_for_status()
+        return image_response.content
     except Exception as e:
         logging.error(f"Failed to generate image for card {card['name']}: {str(e)}")
         return None
 
-async def update_card_image(card):
-    image_data = await generate_card_image(card)
+def update_card_image(card):
+    image_data = generate_card_image(card)
     
     if image_data is None:
         logging.error(f"Failed to generate image for card: {card['name']}")
@@ -67,15 +64,15 @@ async def update_card_image(card):
         storage_path = f"card_images/{card['name'].replace(' ', '_')}.png"
         storage_response = supabase.storage.from_("card-images").upload(storage_path, image_data, {"content-type": "image/png"})
         
-        if hasattr(storage_response, 'error') and storage_response.error:
-            raise Exception(f"Failed to upload image to storage: {storage_response.error}")
+        if storage_response.get('error'):
+            raise Exception(f"Failed to upload image to storage: {storage_response['error']}")
         
         public_url = supabase.storage.from_("card-images").get_public_url(storage_path)
         
         update_response = supabase.table("generated_images").update({"url": public_url}).eq("name", card['name']).execute()
         
-        if hasattr(update_response, 'error') and update_response.error:
-            raise Exception(f"Failed to update database: {update_response.error}")
+        if update_response.get('error'):
+            raise Exception(f"Failed to update database: {update_response['error']}")
         
         logging.info(f"Updated image for card: {card['name']}")
         return update_response.data
@@ -83,33 +80,33 @@ async def update_card_image(card):
         logging.error(f"Failed to update card image in Supabase: {card['name']}, Error: {str(e)}")
         return None
 
-async def process_cards(cards):
+def process_cards(cards):
     total_cards = len(cards)
     for index, card in enumerate(cards):
-        result = await update_card_image(card)
+        result = update_card_image(card)
         
         if result:
             progress = ((index + 1) / total_cards) * 100
-            print(json.dumps({"progress": progress, "currentImage": card['name']}))
+            print(json.dumps({"progress": progress, "currentImage": card['name'], "url": result[0]['url']}))
             sys.stdout.flush()
         else:
             print(json.dumps({"error": f"Failed to update image for {card['name']}"}))
             sys.stdout.flush()
 
-async def main():
+def main():
     logging.info("Starting asset generation for Terrible Teddies...")
     
     try:
         # Fetch all cards from the database
         response = supabase.table("generated_images").select("*").execute()
-        if hasattr(response, 'error') and response.error:
-            raise Exception(f"Failed to fetch cards from database: {response.error}")
+        if response.get('error'):
+            raise Exception(f"Failed to fetch cards from database: {response['error']}")
         
         cards = response.data
         if not cards:
             raise Exception("No cards found in the database")
 
-        await process_cards(cards)
+        process_cards(cards)
     
         logging.info("Asset generation complete!")
     except Exception as e:
@@ -118,4 +115,4 @@ async def main():
         sys.stdout.flush()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

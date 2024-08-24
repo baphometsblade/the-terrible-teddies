@@ -20,16 +20,24 @@ export default async function handler(req, res) {
     const output = data.toString();
     console.log('Python script output:', output);
 
-    try {
-      const jsonData = JSON.parse(output);
-      if (jsonData.progress) {
-        res.write(`data: ${JSON.stringify({ progress: jsonData.progress, currentImage: jsonData.currentImage })}\n\n`);
-      } else if (jsonData.error) {
-        res.write(`data: ${JSON.stringify({ error: jsonData.error })}\n\n`);
+    output.split('\n').forEach(line => {
+      if (line.trim()) {
+        try {
+          const jsonData = JSON.parse(line);
+          if (jsonData.progress) {
+            res.write(`data: ${JSON.stringify({ 
+              progress: jsonData.progress, 
+              currentImage: jsonData.currentImage,
+              url: jsonData.url
+            })}\n\n`);
+          } else if (jsonData.error) {
+            res.write(`data: ${JSON.stringify({ error: jsonData.error })}\n\n`);
+          }
+        } catch (error) {
+          console.error('Error parsing JSON:', error, 'Raw output:', line);
+        }
       }
-    } catch (error) {
-      console.error('Error parsing JSON:', error);
-    }
+    });
   });
 
   pythonProcess.stderr.on('data', (data) => {
