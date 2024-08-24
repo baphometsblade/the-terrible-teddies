@@ -17,6 +17,10 @@ const generateCards = () => {
     type: cardTypes[Math.floor(Math.random() * cardTypes.length)],
     prompt: `A cute teddy bear for a ${cardTypes[Math.floor(Math.random() * cardTypes.length)]} card`,
     energy_cost: Math.floor(Math.random() * 5) + 1,
+    attack: Math.floor(Math.random() * 10) + 1,
+    defense: Math.floor(Math.random() * 10) + 1,
+    special_move: `Special Move ${i + 1}`,
+    description: `This is a description for Teddy Card ${i + 1}`,
   }));
 };
 
@@ -31,24 +35,63 @@ const populateDatabase = async () => {
   if (cardError) {
     console.error('Error inserting card data:', cardError);
   } else {
-    console.log('Successfully inserted', cardData.length, 'cards');
+    console.log('Successfully inserted', cardData.length, 'cards into generated_images table');
   }
 
   // Create and populate user_stats table
-  const { error: tableError } = await supabase
+  const { error: userStatsError } = await supabase
     .from('user_stats')
     .insert([
-      { user_id: 'default_user', coins: 100, games_won: 0, games_played: 0 }
+      { user_id: 'default_user', coins: 100, games_won: 0, games_played: 0, challenges_completed: 0 }
     ]);
 
-  if (tableError) {
-    if (tableError.code === '42P07') {
-      console.log('user_stats table already exists');
+  if (userStatsError) {
+    if (userStatsError.code === '23505') { // unique_violation error code
+      console.log('Default user already exists in user_stats table');
     } else {
-      console.error('Error creating user_stats table:', tableError);
+      console.error('Error inserting into user_stats table:', userStatsError);
     }
   } else {
-    console.log('Successfully created user_stats table and inserted default user');
+    console.log('Successfully inserted default user into user_stats table');
+  }
+
+  // Create and populate user_decks table
+  const defaultDeck = cards.slice(0, 20).map(card => card.id); // Use first 20 cards as default deck
+  const { error: userDecksError } = await supabase
+    .from('user_decks')
+    .insert([
+      { user_id: 'default_user', cards: defaultDeck }
+    ]);
+
+  if (userDecksError) {
+    if (userDecksError.code === '23505') { // unique_violation error code
+      console.log('Default user deck already exists in user_decks table');
+    } else {
+      console.error('Error inserting into user_decks table:', userDecksError);
+    }
+  } else {
+    console.log('Successfully inserted default user deck into user_decks table');
+  }
+
+  // Create and populate daily_challenges table
+  const challenge = {
+    date: new Date().toISOString().split('T')[0],
+    description: "Win a game using only Action cards",
+    reward: 100
+  };
+
+  const { error: challengeError } = await supabase
+    .from('daily_challenges')
+    .insert([challenge]);
+
+  if (challengeError) {
+    if (challengeError.code === '23505') { // unique_violation error code
+      console.log('Daily challenge for today already exists in daily_challenges table');
+    } else {
+      console.error('Error inserting into daily_challenges table:', challengeError);
+    }
+  } else {
+    console.log('Successfully inserted daily challenge into daily_challenges table');
   }
 };
 
