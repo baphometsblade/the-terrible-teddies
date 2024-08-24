@@ -1,10 +1,10 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, lazy, Suspense, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
-import { useUserStats } from '../integrations/supabase';
-import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Users, Settings } from 'lucide-react';
+import { useUserStats, useUpdateUserStats } from '../integrations/supabase';
+import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Users, Settings, Volume2, VolumeX } from 'lucide-react';
 import { DeckBuilder } from './DeckBuilder';
 import { Auth } from './Auth';
 import { useCurrentUser } from '../integrations/supabase';
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { CardCollection } from './CardCollection';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const GameBoard = lazy(() => import('./GameBoard').then(module => ({ default: module.GameBoard })));
 const TutorialComponent = lazy(() => import('./TutorialComponent').then(module => ({ default: module.TutorialComponent })));
@@ -27,12 +28,20 @@ const TerribleTeddies = () => {
   const { toast } = useToast();
   const { data: userStats, isLoading: isLoadingStats } = useUserStats();
   const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser();
+  const updateUserStats = useUpdateUserStats();
   const [settings, setSettings] = useState({
     soundEnabled: true,
     darkMode: false,
     highPerformanceMode: false,
   });
   const [showCardCollection, setShowCardCollection] = useState(false);
+  const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
+
+  useEffect(() => {
+    const lastClaimDate = localStorage.getItem('lastDailyRewardClaim');
+    const today = new Date().toDateString();
+    setDailyRewardClaimed(lastClaimDate === today);
+  }, []);
 
   const startGame = () => {
     if (!currentUser) {
@@ -65,6 +74,29 @@ const TerribleTeddies = () => {
     });
   };
 
+  const claimDailyReward = async () => {
+    if (dailyRewardClaimed) return;
+
+    const rewardAmount = 50; // Daily reward amount
+    try {
+      await updateUserStats.mutateAsync({ coins: (userStats?.coins || 0) + rewardAmount });
+      localStorage.setItem('lastDailyRewardClaim', new Date().toDateString());
+      setDailyRewardClaimed(true);
+      toast({
+        title: "Daily Reward Claimed!",
+        description: `You've received ${rewardAmount} coins. Come back tomorrow for more!`,
+        variant: "success",
+      });
+    } catch (error) {
+      console.error('Error claiming daily reward:', error);
+      toast({
+        title: "Error",
+        description: "Failed to claim daily reward. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const renderMenu = () => (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -94,6 +126,13 @@ const TerribleTeddies = () => {
                       <p className="text-3xl font-bold text-green-500">{userStats.games_won || 0}</p>
                     </div>
                   </div>
+                  <Button
+                    onClick={claimDailyReward}
+                    disabled={dailyRewardClaimed}
+                    className="mt-4 bg-yellow-500 hover:bg-yellow-600 text-white"
+                  >
+                    {dailyRewardClaimed ? "Daily Reward Claimed" : "Claim Daily Reward"}
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -155,15 +194,24 @@ const TerribleTeddies = () => {
   );
 
   const MenuButton = ({ onClick, color, children, icon }) => (
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      className={`w-full py-4 px-6 rounded-xl font-bold text-white shadow-lg transition-all duration-300 bg-gradient-to-r ${getGradient(color)} flex items-center justify-center space-x-2`}
-      onClick={onClick}
-    >
-      {icon}
-      <span>{children}</span>
-    </motion.button>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`w-full py-4 px-6 rounded-xl font-bold text-white shadow-lg transition-all duration-300 bg-gradient-to-r ${getGradient(color)} flex items-center justify-center space-x-2`}
+            onClick={onClick}
+          >
+            {icon}
+            <span>{children}</span>
+          </motion.button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{children}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 
   const getGradient = (color) => {
@@ -187,7 +235,26 @@ const TerribleTeddies = () => {
   );
 
   return (
-    <div className={`container mx-auto p-4 md:p-8 ${settings.darkMode ? 'dark' : ''}`}>
+    <div className={`container mx-auto p-4 md:p-8 ${settings.darkMode ? 'dark bg-gray-900 text-white' : 'bg-gray-100'}`}>
+      <div className="absolute top-4 right-4">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleSettingChange('soundEnabled')}
+                className="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
+              >
+                {settings.soundEnabled ? <Volume2 className="h-6 w-6" /> : <VolumeX className="h-6 w-6" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{settings.soundEnabled ? 'Mute' : 'Unmute'}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
       <AnimatePresence mode="wait">
         {gameState === 'menu' && renderMenu()}
         {gameState === 'playing' && renderComponent(() => <GameBoard playerDeck={playerDeck} onExit={() => setGameState('menu')} settings={settings} />)}
