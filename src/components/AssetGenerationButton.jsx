@@ -48,8 +48,14 @@ export const AssetGenerationButton = () => {
           if (line.trim() === '') continue;
           try {
             const data = JSON.parse(line);
-            if (data.totalCards) {
-              setTotalCards(data.totalCards);
+            if (data.status === "starting") {
+              toast({
+                title: "Asset Generation Started",
+                description: "The asset generation process has begun.",
+                variant: "info",
+              });
+            } else if (data.total_cards) {
+              setTotalCards(data.total_cards);
             } else if (data.progress) {
               setProgress(data.progress);
               setCurrentImage(data.url);
