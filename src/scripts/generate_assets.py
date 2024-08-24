@@ -123,7 +123,7 @@ def process_cards(cards):
             print(json.dumps({
                 "progress": progress,
                 "currentImage": card['name'],
-                "url": result[0]['url'],
+                "url": result[0]['url'] if result and len(result) > 0 else None,
                 "generatedCards": index + 1
             }))
             sys.stdout.flush()
