@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PlayerArea } from './PlayerArea';
 import { OpponentArea } from './OpponentArea';
 import { GameInfo } from './GameInfo';
@@ -44,11 +44,17 @@ export const GameBoard = ({ onExit, settings }) => {
     opponentEnergy,
   } = useGameLogic();
 
-  useEffect(() => {
-    if (!isLoadingCards && !isLoadingDeck && allCards && userDeck) {
+  const handleInitializeGame = useCallback(() => {
+    if (allCards && userDeck) {
       initializeGame(userDeck.length > 0 ? userDeck : allCards.slice(0, 20));
     }
-  }, [isLoadingCards, isLoadingDeck, allCards, userDeck, initializeGame]);
+  }, [allCards, userDeck, initializeGame]);
+
+  useEffect(() => {
+    if (!isLoadingCards && !isLoadingDeck) {
+      handleInitializeGame();
+    }
+  }, [isLoadingCards, isLoadingDeck, handleInitializeGame]);
 
   const handlePlayCard = (card) => {
     if (currentTurn !== 'player') return;
@@ -70,7 +76,7 @@ export const GameBoard = ({ onExit, settings }) => {
   };
 
   const handlePlayAgain = () => {
-    initializeGame(userDeck.length > 0 ? userDeck : allCards.slice(0, 20));
+    handleInitializeGame();
   };
 
   const handleSpecialMove = () => {
