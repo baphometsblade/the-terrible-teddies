@@ -93,6 +93,19 @@ const populateDatabase = async () => {
   } else {
     console.log('Successfully inserted daily challenge into daily_challenges table');
   }
+
+  // Create and populate games table
+  const { error: gamesError } = await supabase
+    .from('games')
+    .insert([
+      { host_id: 'default_user', status: 'waiting' }
+    ]);
+
+  if (gamesError) {
+    console.error('Error inserting into games table:', gamesError);
+  } else {
+    console.log('Successfully inserted sample game into games table');
+  }
 };
 
 populateDatabase()

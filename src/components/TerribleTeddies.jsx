@@ -19,6 +19,7 @@ const TutorialComponent = lazy(() => import('./TutorialComponent').then(module =
 const LeaderboardComponent = lazy(() => import('./LeaderboardComponent').then(module => ({ default: module.LeaderboardComponent })));
 const DailyChallenge = lazy(() => import('./DailyChallenge').then(module => ({ default: module.DailyChallenge })));
 const Shop = lazy(() => import('./Shop').then(module => ({ default: module.Shop })));
+const Multiplayer = lazy(() => import('./Multiplayer').then(module => ({ default: module.Multiplayer })));
 
 const TerribleTeddies = () => {
   const [gameState, setGameState] = useState('menu');
@@ -200,7 +201,7 @@ const TerribleTeddies = () => {
         ))}
         {gameState === 'dailyChallenge' && renderComponent(() => <DailyChallenge onExit={() => setGameState('menu')} />)}
         {gameState === 'shop' && renderComponent(() => <Shop onClose={() => setGameState('menu')} />)}
-        {gameState === 'multiplayer' && renderComponent(() => <div>Multiplayer component (to be implemented)</div>)}
+        {gameState === 'multiplayer' && renderComponent(() => <Multiplayer onExit={() => setGameState('menu')} />)}
         {showCardCollection && <CardCollection onClose={() => setShowCardCollection(false)} />}
       </AnimatePresence>
     </div>

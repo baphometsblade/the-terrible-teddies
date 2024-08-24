@@ -18,7 +18,8 @@ import { useTerribleTeddiesCards, useUserDeck, useUpdateUserStats } from '../../
 import { LoadingSpinner } from '../LoadingSpinner';
 import confetti from 'canvas-confetti';
 
-export const GameBoard = ({ onExit, settings }) => {
+export const GameBoard = ({ onExit, settings, gameId = null }) => {
+  const [isMultiplayer, setIsMultiplayer] = useState(!!gameId);
   const { data: allCards, isLoading: isLoadingCards } = useTerribleTeddiesCards();
   const { data: userDeck, isLoading: isLoadingDeck } = useUserDeck();
   const updateUserStats = useUpdateUserStats();
@@ -44,7 +45,46 @@ export const GameBoard = ({ onExit, settings }) => {
     opponentEnergy,
   } = useGameLogic();
 
-  const handleInitializeGame = useCallback(() => {
+  const handleInitializeGame = useCallback(
+  () => {
+    if (allCards && userDeck) {
+      if (isMultiplayer) {
+        // Initialize multiplayer game
+        initializeMultiplayerGame(gameId, userDeck.length > 0 ? userDeck : allCards.slice(0, 20));
+      } else {
+        initializeGame(userDeck.length > 0 ? userDeck : allCards.slice(0, 20));
+      }
+    }
+  },
+  [allCards, userDeck, initializeGame, isMultiplayer, gameId]
+);
+
+const initializeMultiplayerGame = async (gameId, deck) => {
+  // Logic to initialize a multiplayer game
+  // This would involve setting up real-time listeners for the game state
+  // and handling turn-based gameplay between two players
+  // For brevity, we'll just set up a basic listener here
+  const gameSubscription = supabase
+    .channel(`game:${gameId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'games', filter: `id=eq.${gameId}` }, handleGameUpdate)
+    .subscribe();
+
+  // Initialize the game state
+  initializeGame(deck);
+
+  return () => {
+    gameSubscription.unsubscribe();
+  };
+};
+
+const handleGameUpdate = (payload) => {
+  // Handle game state updates from the server
+  // This would update the local game state based on the opponent's moves
+  console.log('Game update:', payload);
+  // Update game state here based on the payload
+};
+
+// Continue with the rest of the component...() => {
     if (allCards && userDeck) {
       initializeGame(userDeck.length > 0 ? userDeck : allCards.slice(0, 20));
     }
