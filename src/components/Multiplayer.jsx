@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from '../integrations/supabase';
-import { useCurrentUser } from '../integrations/supabase/auth';
+import { supabase } from '@/integrations/supabase';
+import { useCurrentUser } from '@/integrations/supabase/auth';
 import { GameBoard } from './GameBoard';
 
-const Multiplayer = ({ onExit }) => {
+export const Multiplayer = ({ onExit }) => {
   const [games, setGames] = useState([]);
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [isJoiningGame, setIsJoiningGame] = useState(false);
@@ -115,5 +115,3 @@ const Multiplayer = ({ onExit }) => {
     </div>
   );
 };
-
-export default Multiplayer;
