@@ -14,6 +14,7 @@ export const useTerribleTeddiesCards = () => {
         .from('generated_images')
         .select('*');
       if (error) throw error;
+      console.log('Fetched cards:', data); // Add this line for debugging
       return data;
     },
   });
