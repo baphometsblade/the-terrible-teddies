@@ -20,7 +20,7 @@ const TutorialComponent = lazy(() => import('./TutorialComponent').then(module =
 const LeaderboardComponent = lazy(() => import('./LeaderboardComponent').then(module => ({ default: module.LeaderboardComponent })));
 const DailyChallenge = lazy(() => import('./DailyChallenge').then(module => ({ default: module.DailyChallenge })));
 const Shop = lazy(() => import('./Shop').then(module => ({ default: module.Shop })));
-const Multiplayer = lazy(() => import('./Multiplayer').then(module => ({ default: module.Multiplayer })));
+const Multiplayer = lazy(() => import('./Multiplayer'));
 
 const TerribleTeddies = () => {
   const [gameState, setGameState] = useState('menu');

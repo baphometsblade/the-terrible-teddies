@@ -6,7 +6,7 @@ import { supabase } from '../integrations/supabase';
 import { useCurrentUser } from '../integrations/supabase/auth';
 import { GameBoard } from './GameBoard';
 
-export const Multiplayer = ({ onExit }) => {
+const Multiplayer = ({ onExit }) => {
   const [games, setGames] = useState([]);
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [isJoiningGame, setIsJoiningGame] = useState(false);
@@ -115,3 +115,5 @@ export const Multiplayer = ({ onExit }) => {
     </div>
   );
 };
+
+export default Multiplayer;
