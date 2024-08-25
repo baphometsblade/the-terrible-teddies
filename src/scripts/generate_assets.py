@@ -84,6 +84,7 @@ def update_card_image(card):
         error_message = f"Failed to generate image for card: {card['name']}"
         logging.error(error_message)
         print(json.dumps({"error": error_message}))
+        sys.stdout.flush()
         return None
     
     try:
@@ -108,6 +109,7 @@ def update_card_image(card):
         logging.error(error_message)
         logging.error(traceback.format_exc())
         print(json.dumps({"error": error_message}))
+        sys.stdout.flush()
         return None
 
 def process_cards(cards):
