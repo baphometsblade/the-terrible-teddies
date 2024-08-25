@@ -89,14 +89,22 @@ def update_card_image(card):
     
     try:
         logging.info(f"Updating card image in Supabase: {card['name']}")
-        storage_path = f"card_images/{card['name'].replace(' ', '_')}.png"
-        storage_response = supabase.storage.from_("card-images").upload(storage_path, image_data, {"content-type": "image/png"})
+        bucket_name = "card-images"
+        file_path = f"{card['name'].replace(' ', '_')}.png"
         
-        if isinstance(storage_response, dict) and 'error' in storage_response:
-            raise Exception(f"Failed to upload image to storage: {storage_response['error']}")
+        # Upload file to Supabase Storage
+        upload_url = f"{supabase_url}/storage/v1/object/{bucket_name}/{file_path}"
+        headers = {
+            "Authorization": f"Bearer {supabase_key}",
+            "Content-Type": "application/octet-stream"
+        }
+        upload_response = requests.post(upload_url, headers=headers, data=image_data)
+        upload_response.raise_for_status()
         
-        public_url = supabase.storage.from_("card-images").get_public_url(storage_path)
+        # Get public URL
+        public_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_path}"
         
+        # Update database record
         update_response = supabase.table("generated_images").update({"url": public_url}).eq("name", card['name']).execute()
         
         if hasattr(update_response, 'error') and update_response.error:
