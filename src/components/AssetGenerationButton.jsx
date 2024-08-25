@@ -68,7 +68,7 @@ export const AssetGenerationButton = () => {
               }
               toast({
                 title: "Error",
-                description: data.error,
+                description: `Asset generation error: ${data.error}`,
                 variant: "destructive",
               });
               setIsGenerating(false);
@@ -82,6 +82,7 @@ export const AssetGenerationButton = () => {
             }
           } catch (error) {
             console.error('Error parsing JSON:', error);
+            setError(`Error parsing JSON: ${error.message}`);
           }
         }
       }
@@ -90,7 +91,7 @@ export const AssetGenerationButton = () => {
       setError(error.message || "Failed to generate assets. Please try again.");
       toast({
         title: "Error",
-        description: error.message || "Failed to generate assets. Please try again.",
+        description: `Failed to generate assets: ${error.message}`,
         variant: "destructive",
       });
       setIsGenerating(false);
@@ -122,7 +123,7 @@ export const AssetGenerationButton = () => {
         console.error('Error fetching generated cards:', error);
         toast({
           title: "Error",
-          description: "Failed to fetch generated cards. Please try again.",
+          description: `Failed to fetch generated cards: ${error.message}`,
           variant: "destructive",
         });
       }

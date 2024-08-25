@@ -41,25 +41,30 @@ export default async function handler(req, res) {
             generatedCards: Math.floor((jsonData.progress / 100) * totalCards)
           })}\n\n`);
         } else if (jsonData.error) {
-          res.write(`data: ${JSON.stringify({ error: jsonData.error })}\n\n`);
+          console.error('Python script error:', jsonData.error);
+          res.write(`data: ${JSON.stringify({ 
+            error: jsonData.error,
+            traceback: jsonData.traceback || 'No traceback available'
+          })}\n\n`);
         } else if (jsonData.completed) {
           res.write(`data: ${JSON.stringify({ message: 'Assets generated successfully', completed: true })}\n\n`);
         }
       } catch (error) {
         console.error('Error parsing JSON:', error, 'Raw output:', line);
+        res.write(`data: ${JSON.stringify({ error: `Error parsing JSON: ${error.message}`, rawOutput: line })}\n\n`);
       }
     }
   });
 
   pythonProcess.stderr.on('data', (data) => {
     console.error('Python script error:', data.toString());
-    res.write(`data: ${JSON.stringify({ error: data.toString() })}\n\n`);
+    res.write(`data: ${JSON.stringify({ error: `Python script error: ${data.toString()}` })}\n\n`);
   });
 
   pythonProcess.on('close', (code) => {
     if (code !== 0) {
       console.error(`Python script exited with code ${code}`);
-      res.write(`data: ${JSON.stringify({ error: 'Asset generation failed' })}\n\n`);
+      res.write(`data: ${JSON.stringify({ error: `Asset generation failed with exit code ${code}` })}\n\n`);
     }
     res.end();
   });
