@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { useUserStats, useUpdateUserStats } from '../integrations/supabase';
+import { useQuery } from '@tanstack/react-query';
 import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Users, Settings, Volume2, VolumeX } from 'lucide-react';
 import { DeckBuilder } from './DeckBuilder';
 import { Auth } from './Auth';
@@ -27,9 +28,29 @@ const TerribleTeddies = () => {
   const [gameState, setGameState] = useState('menu');
   const [playerDeck, setPlayerDeck] = useState([]);
   const { toast } = useToast();
-  const { data: userStats, isLoading: isLoadingStats } = useUserStats();
+  const { data: userStats, isLoading: isLoadingStats, error: userStatsError } = useQuery({
+    queryKey: ['userStats'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('user_stats').select('*').single();
+      if (error) throw error;
+      return data;
+    },
+    retry: 3,
+    retryDelay: 1000,
+  });
   const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser();
   const updateUserStats = useUpdateUserStats();
+
+  useEffect(() => {
+    if (userStatsError) {
+      console.error('Error fetching user stats:', userStatsError);
+      toast({
+        title: "Error",
+        description: "Failed to load user stats. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [userStatsError, toast]);
   const [settings, setSettings] = useState({
     soundEnabled: true,
     darkMode: false,

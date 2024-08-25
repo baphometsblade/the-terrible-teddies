@@ -31,7 +31,7 @@ export const AssetGenerationButton = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate assets');
+        throw new Error(`Failed to generate assets: ${response.statusText}`);
       }
 
       const reader = response.body.getReader();
@@ -106,21 +106,30 @@ export const AssetGenerationButton = () => {
 
   useEffect(() => {
     const fetchGeneratedCards = async () => {
-      const { data, error } = await supabase
-        .from('generated_images')
-        .select('*')
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('generated_images')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (error) {
+        if (error) {
+          throw error;
+        }
+
+        setGeneratedCards(data || []);
+        setTotalCards(data ? data.length : 0);
+      } catch (error) {
         console.error('Error fetching generated cards:', error);
-      } else {
-        setGeneratedCards(data);
-        setTotalCards(data.length);
+        toast({
+          title: "Error",
+          description: "Failed to fetch generated cards. Please try again.",
+          variant: "destructive",
+        });
       }
     };
 
     fetchGeneratedCards();
-  }, []);
+  }, [toast]);
 
   return (
     <>
