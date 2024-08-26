@@ -8,6 +8,7 @@ import json
 import requests
 import time
 import traceback
+import uuid
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', stream=sys.stdout)
@@ -81,10 +82,10 @@ def update_card_image(card):
     try:
         logging.info(f"Updating card image in Supabase: {card['name']}")
         bucket_name = "card-images"
-        file_path = f"{card['name'].replace(' ', '_')}.png"
+        file_name = f"{uuid.uuid4()}.png"
         
         # Upload file to Supabase Storage
-        upload_url = f"{supabase_url}/storage/v1/object/{bucket_name}/{file_path}"
+        upload_url = f"{supabase_url}/storage/v1/object/{bucket_name}/{file_name}"
         headers = {
             "Authorization": f"Bearer {supabase_key}",
             "Content-Type": "image/png"
@@ -93,7 +94,7 @@ def update_card_image(card):
         upload_response.raise_for_status()
         
         # Get public URL
-        public_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_path}"
+        public_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_name}"
         
         # Update database record
         update_url = f"{supabase_url}/rest/v1/generated_images?id=eq.{card['id']}"
@@ -109,7 +110,7 @@ def update_card_image(card):
         
         logging.info(f"Updated image for card: {card['name']}")
         return {"url": public_url}
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
         error_message = f"Failed to update card image in Supabase: {card['name']}, Error: {str(e)}"
         logging.error(error_message)
         logging.error(traceback.format_exc())
@@ -169,7 +170,7 @@ def main():
         logging.info("Asset generation complete!")
         print(json.dumps({"completed": True, "total_generated": total_cards}))
         sys.stdout.flush()
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
         error_message = f"An error occurred during asset generation: {str(e)}"
         logging.error(error_message)
         logging.error(traceback.format_exc())
