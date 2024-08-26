@@ -1,6 +1,7 @@
 import os
 import random
 from dotenv import load_dotenv
+from supabase import create_client, Client
 from openai import OpenAI
 import logging
 import sys
@@ -15,11 +16,19 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Load environment variables
 load_dotenv()
 
-# Initialize Supabase variables
+# Initialize Supabase client
 supabase_url = os.environ.get("VITE_SUPABASE_PROJECT_URL")
 supabase_key = os.environ.get("VITE_SUPABASE_API_KEY")
 if not supabase_url or not supabase_key:
     error_message = "Supabase environment variables are not set"
+    logging.error(error_message)
+    print(json.dumps({"error": error_message}))
+    sys.exit(1)
+
+try:
+    supabase: Client = create_client(supabase_url, supabase_key)
+except Exception as e:
+    error_message = f"Failed to create Supabase client: {str(e)}"
     logging.error(error_message)
     print(json.dumps({"error": error_message}))
     sys.exit(1)
@@ -96,19 +105,13 @@ def update_card_image(card):
         public_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_path}"
         
         # Update database record
-        update_url = f"{supabase_url}/rest/v1/generated_images?name=eq.{card['name']}"
-        update_headers = {
-            "apikey": supabase_key,
-            "Authorization": f"Bearer {supabase_key}",
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal"
-        }
-        update_data = {"url": public_url}
-        update_response = requests.patch(update_url, headers=update_headers, json=update_data)
-        update_response.raise_for_status()
+        update_response = supabase.table("generated_images").update({"url": public_url}).eq("name", card['name']).execute()
+        
+        if hasattr(update_response, 'error') and update_response.error:
+            raise Exception(f"Failed to update database: {update_response.error}")
         
         logging.info(f"Updated image for card: {card['name']}")
-        return {"url": public_url}
+        return update_response.data
     except Exception as e:
         error_message = f"Failed to update card image in Supabase: {card['name']}, Error: {str(e)}"
         logging.error(error_message)
@@ -130,7 +133,7 @@ def process_cards(cards):
             print(json.dumps({
                 "progress": progress,
                 "currentImage": card['name'],
-                "url": result['url'],
+                "url": result[0]['url'] if result and len(result) > 0 else None,
                 "generatedCards": index + 1
             }))
             sys.stdout.flush()
@@ -148,15 +151,11 @@ def main():
     
     try:
         # Fetch all cards from the database
-        fetch_url = f"{supabase_url}/rest/v1/generated_images?select=*"
-        fetch_headers = {
-            "apikey": supabase_key,
-            "Authorization": f"Bearer {supabase_key}"
-        }
-        response = requests.get(fetch_url, headers=fetch_headers)
-        response.raise_for_status()
-        cards = response.json()
+        response = supabase.table("generated_images").select("*").execute()
+        if hasattr(response, 'error') and response.error:
+            raise Exception(f"Failed to fetch cards from database: {response.error}")
         
+        cards = response.data
         if not cards:
             raise Exception("No cards found in the database")
 
