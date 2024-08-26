@@ -9,6 +9,7 @@ import requests
 import time
 import traceback
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', stream=sys.stdout)
@@ -42,7 +43,7 @@ except Exception as e:
     sys.exit(1)
 
 def generate_card_image(card):
-    prompt = f"A cute teddy bear as a {card['type']} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background. The card name is {card['name']}. The teddy bear should represent: {card['description']}"
+    prompt = f"Create a cute and mischievous teddy bear card for 'Terrible Teddies' game. Card type: {card['type']}. Name: {card['name']}. The bear should be {random.choice(['playful', 'naughty', 'sneaky', 'adorable', 'fierce'])} and engaged in an action related to {card['type']}. Style: Vibrant cartoon on a white background. Incorporate elements from the description: {card['description']}"
     
     max_retries = 3
     for attempt in range(max_retries):
@@ -62,7 +63,6 @@ def generate_card_image(card):
             return image_response.content
         except Exception as e:
             logging.error(f"Attempt {attempt + 1} failed for card {card['name']}: {str(e)}")
-            logging.error(traceback.format_exc())
             if attempt < max_retries - 1:
                 time.sleep(5)  # Wait for 5 seconds before retrying
             else:
@@ -73,74 +73,80 @@ def update_card_image(card):
     image_data = generate_card_image(card)
     
     if image_data is None:
-        error_message = f"Failed to generate image for card: {card['name']}"
-        logging.error(error_message)
-        print(json.dumps({"error": error_message}))
-        sys.stdout.flush()
-        return None
+        return {"error": f"Failed to generate image for card: {card['name']}"}
     
-    try:
-        logging.info(f"Updating card image in Supabase: {card['name']}")
-        bucket_name = "card-images"
-        file_name = f"{uuid.uuid4()}.png"
-        
-        # Upload file to Supabase Storage
-        upload_url = f"{supabase_url}/storage/v1/object/{bucket_name}/{file_name}"
-        headers = {
-            "Authorization": f"Bearer {supabase_key}",
-            "Content-Type": "image/png"
-        }
-        upload_response = requests.post(upload_url, headers=headers, data=image_data)
-        upload_response.raise_for_status()
-        
-        # Get public URL
-        public_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_name}"
-        
-        # Update database record
-        update_url = f"{supabase_url}/rest/v1/generated_images?id=eq.{card['id']}"
-        update_headers = {
-            "apikey": supabase_key,
-            "Authorization": f"Bearer {supabase_key}",
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal"
-        }
-        update_data = {"url": public_url}
-        update_response = requests.patch(update_url, headers=update_headers, json=update_data)
-        update_response.raise_for_status()
-        
-        logging.info(f"Updated image for card: {card['name']}")
-        return {"url": public_url}
-    except requests.exceptions.RequestException as e:
-        error_message = f"Failed to update card image in Supabase: {card['name']}, Error: {str(e)}"
-        logging.error(error_message)
-        logging.error(traceback.format_exc())
-        print(json.dumps({"error": error_message}))
-        sys.stdout.flush()
-        return None
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            logging.info(f"Updating card image in Supabase: {card['name']} (Attempt {attempt + 1})")
+            bucket_name = "card-images"
+            file_name = f"{uuid.uuid4()}.png"
+            
+            # Upload file to Supabase Storage
+            upload_url = f"{supabase_url}/storage/v1/object/{bucket_name}/{file_name}"
+            headers = {
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "image/png"
+            }
+            upload_response = requests.post(upload_url, headers=headers, data=image_data)
+            upload_response.raise_for_status()
+            
+            # Get public URL
+            public_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_name}"
+            
+            # Update database record
+            update_url = f"{supabase_url}/rest/v1/generated_images?id=eq.{card['id']}"
+            update_headers = {
+                "apikey": supabase_key,
+                "Authorization": f"Bearer {supabase_key}",
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal"
+            }
+            update_data = {"url": public_url}
+            update_response = requests.patch(update_url, headers=update_headers, json=update_data)
+            update_response.raise_for_status()
+            
+            logging.info(f"Updated image for card: {card['name']}")
+            return {"url": public_url, "name": card['name']}
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Attempt {attempt + 1} failed to update card image in Supabase: {card['name']}, Error: {str(e)}")
+            if attempt < max_retries - 1:
+                time.sleep(5)  # Wait for 5 seconds before retrying
+            else:
+                logging.error(f"All attempts failed to update card image in Supabase: {card['name']}")
+                return {"error": f"Failed to update card image in Supabase: {card['name']}"}
 
 def process_cards(cards):
     total_cards = len(cards)
     print(json.dumps({"total_cards": total_cards}))
     sys.stdout.flush()
     
-    for index, card in enumerate(cards):
-        result = update_card_image(card)
-        
-        if result:
-            progress = ((index + 1) / total_cards) * 100
-            print(json.dumps({
-                "progress": progress,
-                "currentImage": card['name'],
-                "url": result['url'],
-                "generatedCards": index + 1
-            }))
-            sys.stdout.flush()
-        else:
-            print(json.dumps({"error": f"Failed to update image for {card['name']}"}))
-            sys.stdout.flush()
-        
-        # Add a delay between processing each card to avoid rate limiting
-        time.sleep(2)
+    processed_cards = 0
+    batch_size = 5  # Process 5 cards concurrently
+    
+    with ThreadPoolExecutor(max_workers=batch_size) as executor:
+        for i in range(0, total_cards, batch_size):
+            batch = cards[i:i+batch_size]
+            futures = [executor.submit(update_card_image, card) for card in batch]
+            
+            for future in as_completed(futures):
+                result = future.result()
+                processed_cards += 1
+                
+                if "error" in result:
+                    print(json.dumps({"error": result["error"]}))
+                else:
+                    progress = (processed_cards / total_cards) * 100
+                    print(json.dumps({
+                        "progress": progress,
+                        "currentImage": result["name"],
+                        "url": result["url"],
+                        "generatedCards": processed_cards
+                    }))
+                sys.stdout.flush()
+            
+            # Add a delay between batches to avoid rate limiting
+            time.sleep(5)
 
 def main():
     logging.info("Starting asset generation for Terrible Teddies...")
