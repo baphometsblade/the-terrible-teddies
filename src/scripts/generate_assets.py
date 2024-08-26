@@ -87,7 +87,7 @@ def update_card_image(card):
         upload_url = f"{supabase_url}/storage/v1/object/{bucket_name}/{file_path}"
         headers = {
             "Authorization": f"Bearer {supabase_key}",
-            "Content-Type": "application/octet-stream"
+            "Content-Type": "image/png"
         }
         upload_response = requests.post(upload_url, headers=headers, data=image_data)
         upload_response.raise_for_status()
@@ -96,7 +96,7 @@ def update_card_image(card):
         public_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_path}"
         
         # Update database record
-        update_url = f"{supabase_url}/rest/v1/generated_images?name=eq.{card['name']}"
+        update_url = f"{supabase_url}/rest/v1/generated_images?id=eq.{card['id']}"
         update_headers = {
             "apikey": supabase_key,
             "Authorization": f"Bearer {supabase_key}",
