@@ -14,7 +14,6 @@ export default async function handler(req, res) {
   const { prompt, name, type, energy_cost } = req.body;
 
   try {
-    console.log('Generating image with prompt:', prompt);
     const response = await openai.createImage({
       prompt,
       n: 1,
@@ -22,7 +21,6 @@ export default async function handler(req, res) {
     });
 
     const imageUrl = response.data.data[0].url;
-    console.log('Image generated:', imageUrl);
 
     // Upload image to Supabase storage
     const { data, error } = await supabase.storage
@@ -31,24 +29,14 @@ export default async function handler(req, res) {
         contentType: 'image/png'
       });
 
-    if (error) {
-      console.error('Error uploading to Supabase:', error);
-      throw error;
-    }
-
-    console.log('Image uploaded to Supabase:', data.path);
+    if (error) throw error;
 
     // Get public URL of uploaded image
     const { publicURL, error: urlError } = supabase.storage
       .from('card-images')
       .getPublicUrl(data.path);
 
-    if (urlError) {
-      console.error('Error getting public URL:', urlError);
-      throw urlError;
-    }
-
-    console.log('Public URL:', publicURL);
+    if (urlError) throw urlError;
 
     // Save image data to Supabase database
     const { data: insertData, error: insertError } = await supabase
@@ -61,16 +49,11 @@ export default async function handler(req, res) {
         energy_cost
       });
 
-    if (insertError) {
-      console.error('Error inserting data into Supabase:', insertError);
-      throw insertError;
-    }
-
-    console.log('Data inserted into Supabase:', insertData);
+    if (insertError) throw insertError;
 
     res.status(200).json({ success: true, imageUrl: publicURL });
   } catch (error) {
-    console.error('Error in image generation process:', error);
-    res.status(500).json({ error: 'Failed to generate image', details: error.message });
+    console.error('Error generating image:', error);
+    res.status(500).json({ error: 'Failed to generate image' });
   }
 }
