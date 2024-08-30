@@ -38,41 +38,45 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-const App = () => (
-  <ErrorBoundary FallbackComponent={ErrorFallback}>
-    <SupabaseProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <BrowserRouter>
-            <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
-              <Routes>
-                <Route path="/auth" element={<navItems.find(item => item.to === "/auth").component />} />
-                {navItems.map(({ to, component: Component }) => (
-                  to !== "/auth" && (
-                    <Route 
-                      key={to} 
-                      path={to} 
-                      element={
-                        <ErrorBoundary FallbackComponent={ErrorFallback}>
-                          <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
-                            <ProtectedRoute>
-                              <Component />
-                            </ProtectedRoute>
-                          </Suspense>
-                        </ErrorBoundary>
-                      } 
-                    />
-                  )
-                ))}
-                <Route path="*" element={<Navigate to="/auth" replace />} />
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </SupabaseProvider>
-  </ErrorBoundary>
-);
+const App = () => {
+  const AuthComponent = navItems.find(item => item.to === "/auth")?.component;
+
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <SupabaseProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <BrowserRouter>
+              <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+                <Routes>
+                  <Route path="/auth" element={AuthComponent ? <AuthComponent /> : null} />
+                  {navItems.map(({ to, component: Component }) => (
+                    to !== "/auth" && (
+                      <Route 
+                        key={to} 
+                        path={to} 
+                        element={
+                          <ErrorBoundary FallbackComponent={ErrorFallback}>
+                            <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+                              <ProtectedRoute>
+                                <Component />
+                              </ProtectedRoute>
+                            </Suspense>
+                          </ErrorBoundary>
+                        } 
+                      />
+                    )
+                  ))}
+                  <Route path="*" element={<Navigate to="/auth" replace />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </SupabaseProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;
