@@ -17,6 +17,8 @@ import { useGameLogic } from '@/hooks/useGameLogic';
 import { useTerribleTeddiesCards, useUserDeck, useUpdateUserStats } from '@/integrations/supabase';
 import { LoadingSpinner } from '../LoadingSpinner';
 import confetti from 'canvas-confetti';
+import { TurnTimer } from './TurnTimer';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export const GameBoard = ({ onExit, settings, gameId = null }) => {
   const [isMultiplayer, setIsMultiplayer] = useState(!!gameId);
@@ -25,6 +27,8 @@ export const GameBoard = ({ onExit, settings, gameId = null }) => {
   const updateUserStats = useUpdateUserStats();
   const { toast } = useToast();
   const [showSpecialMoveModal, setShowSpecialMoveModal] = useState(false);
+  const [turnTimeLeft, setTurnTimeLeft] = useState(30);
+  const [showSurrenderDialog, setShowSurrenderDialog] = useState(false);
 
   const {
     playerHP,
@@ -45,6 +49,27 @@ export const GameBoard = ({ onExit, settings, gameId = null }) => {
     opponentEnergy,
   } = useGameLogic();
 
+  useEffect(() => {
+    let timer;
+    if (currentTurn === 'player' && !isGameOver) {
+      timer = setInterval(() => {
+        setTurnTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            endTurn();
+            return 30;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [currentTurn, isGameOver, endTurn]);
+
+  useEffect(() => {
+    setTurnTimeLeft(30);
+  }, [currentTurn]);
+
   const handleInitializeGame = useCallback(() => {
     if (allCards && userDeck) {
       initializeGame(userDeck.length > 0 ? userDeck : allCards);
@@ -59,14 +84,17 @@ export const GameBoard = ({ onExit, settings, gameId = null }) => {
 
   const handlePlayCard = (card) => {
     playCard(card);
+    setTurnTimeLeft(30);
   };
 
   const handleEndTurn = () => {
     endTurn();
+    setTurnTimeLeft(30);
   };
 
   const handlePlayAgain = () => {
     handleInitializeGame();
+    setTurnTimeLeft(30);
   };
 
   const handleSpecialMove = () => {
@@ -84,6 +112,16 @@ export const GameBoard = ({ onExit, settings, gameId = null }) => {
   const executeSpecialMove = (moveName) => {
     useSpecialMove(moveName);
     setShowSpecialMoveModal(false);
+    setTurnTimeLeft(30);
+  };
+
+  const handleSurrender = () => {
+    setShowSurrenderDialog(true);
+  };
+
+  const confirmSurrender = () => {
+    setShowSurrenderDialog(false);
+    onExit();
   };
 
   useEffect(() => {
@@ -160,18 +198,35 @@ export const GameBoard = ({ onExit, settings, gameId = null }) => {
           </Button>
         </motion.div>
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button 
-            onClick={onExit}
-            className={`font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300 ${
-              settings.darkMode 
-                ? 'bg-red-600 hover:bg-red-700 text-white' 
-                : 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white'
-            }`}
-          >
-            Surrender
-          </Button>
+          <AlertDialog open={showSurrenderDialog} onOpenChange={setShowSurrenderDialog}>
+            <AlertDialogTrigger asChild>
+              <Button 
+                onClick={handleSurrender}
+                className={`font-bold py-3 px-8 rounded-full shadow-lg transition-all duration-300 ${
+                  settings.darkMode 
+                    ? 'bg-red-600 hover:bg-red-700 text-white' 
+                    : 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white'
+                }`}
+              >
+                Surrender
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure you want to surrender?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. You will lose the game and forfeit any potential rewards.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmSurrender}>Confirm Surrender</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </motion.div>
       </div>
+      <TurnTimer timeLeft={turnTimeLeft} currentTurn={currentTurn} />
       <AnimatePresence>
         {lastPlayedCard && (
           <CardEffects effect={lastPlayedCard.specialMove} type={lastPlayedCard.type} darkMode={settings.darkMode} />
