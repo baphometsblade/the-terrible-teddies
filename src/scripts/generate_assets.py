@@ -10,6 +10,8 @@ import time
 import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from PIL import Image
+import io
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', stream=sys.stdout)
@@ -69,6 +71,13 @@ def generate_card_image(card):
                 logging.error(f"All attempts failed for card {card['name']}")
                 return None
 
+def create_card_back(card_type):
+    img = Image.new('RGB', (1024, 1024), color='white')
+    # Add card back design here
+    # For example, you can draw shapes, add text, etc.
+    # This is a placeholder implementation
+    return img
+
 def update_card_image(card):
     image_data = generate_card_image(card)
     
@@ -82,7 +91,13 @@ def update_card_image(card):
             bucket_name = "card-images"
             file_name = f"{uuid.uuid4()}.png"
             
-            # Upload file to Supabase Storage
+            # Create card back
+            card_back = create_card_back(card['type'])
+            card_back_buffer = io.BytesIO()
+            card_back.save(card_back_buffer, format='PNG')
+            card_back_bytes = card_back_buffer.getvalue()
+
+            # Upload card front to Supabase Storage
             upload_url = f"{supabase_url}/storage/v1/object/{bucket_name}/{file_name}"
             headers = {
                 "Authorization": f"Bearer {supabase_key}",
@@ -91,8 +106,15 @@ def update_card_image(card):
             upload_response = requests.post(upload_url, headers=headers, data=image_data)
             upload_response.raise_for_status()
             
-            # Get public URL
+            # Upload card back to Supabase Storage
+            back_file_name = f"back_{file_name}"
+            back_upload_url = f"{supabase_url}/storage/v1/object/{bucket_name}/{back_file_name}"
+            back_upload_response = requests.post(back_upload_url, headers=headers, data=card_back_bytes)
+            back_upload_response.raise_for_status()
+            
+            # Get public URLs
             public_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_name}"
+            back_public_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{back_file_name}"
             
             # Update database record
             update_url = f"{supabase_url}/rest/v1/generated_images?id=eq.{card['id']}"
@@ -102,12 +124,12 @@ def update_card_image(card):
                 "Content-Type": "application/json",
                 "Prefer": "return=minimal"
             }
-            update_data = {"url": public_url}
+            update_data = {"url": public_url, "back_url": back_public_url}
             update_response = requests.patch(update_url, headers=update_headers, json=update_data)
             update_response.raise_for_status()
             
             logging.info(f"Updated image for card: {card['name']}")
-            return {"url": public_url, "name": card['name']}
+            return {"url": public_url, "back_url": back_public_url, "name": card['name']}
         except requests.exceptions.RequestException as e:
             logging.error(f"Attempt {attempt + 1} failed to update card image in Supabase: {card['name']}, Error: {str(e)}")
             if attempt < max_retries - 1:
@@ -141,6 +163,7 @@ def process_cards(cards):
                         "progress": progress,
                         "currentImage": result["name"],
                         "url": result["url"],
+                        "back_url": result["back_url"],
                         "generatedCards": processed_cards
                     }))
                 sys.stdout.flush()
