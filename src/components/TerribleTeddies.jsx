@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from 'react-router-dom';
 import { useUserStats, useUpdateUserStats } from '../integrations/supabase';
 import { useQuery } from '@tanstack/react-query';
 import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Users, Settings, Volume2, VolumeX, Gift } from 'lucide-react';
 import { DeckBuilder } from './DeckBuilder';
 import { Auth } from './Auth';
-import { useCurrentUser } from '../integrations/supabase';
+import { useCurrentUser, useLogout } from '../integrations/supabase';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -25,6 +26,7 @@ const Shop = lazy(() => import('./Shop').then(module => ({ default: module.Shop 
 const Multiplayer = lazy(() => import('./Multiplayer').then(module => ({ default: module.Multiplayer })));
 
 const TerribleTeddies = () => {
+  const navigate = useNavigate();
   const [gameState, setGameState] = useState('menu');
   const [playerDeck, setPlayerDeck] = useState([]);
   const { toast } = useToast();
@@ -115,15 +117,17 @@ const TerribleTeddies = () => {
     setGameState('playing');
   };
 
+  const logout = useLogout();
+
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await logout.mutateAsync();
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out.",
         variant: "success",
       });
-      window.location.href = '/auth';
+      navigate('/auth');
     } catch (error) {
       console.error('Error logging out:', error);
       toast({
