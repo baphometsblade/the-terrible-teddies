@@ -48,6 +48,8 @@ export const GameBoard = ({ onExit, settings, gameId = null }) => {
     useSpecialMove,
     playerEnergy,
     opponentEnergy,
+    activeEffects,
+    applyActiveEffects,
   } = useGameLogic();
 
   useEffect(() => {
@@ -69,7 +71,8 @@ export const GameBoard = ({ onExit, settings, gameId = null }) => {
 
   useEffect(() => {
     setTurnTimeLeft(30);
-  }, [currentTurn]);
+    applyActiveEffects();
+  }, [currentTurn, applyActiveEffects]);
 
   const handleInitializeGame = useCallback(() => {
     if (allCards && userDeck) {
@@ -84,8 +87,16 @@ export const GameBoard = ({ onExit, settings, gameId = null }) => {
   }, [isLoadingCards, isLoadingDeck, handleInitializeGame]);
 
   const handlePlayCard = (card) => {
-    playCard(card);
-    setTurnTimeLeft(30);
+    if (playerEnergy >= card.energy_cost) {
+      playCard(card);
+      setTurnTimeLeft(30);
+    } else {
+      toast({
+        title: "Not enough energy",
+        description: `You need ${card.energy_cost} energy to play this card.`,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEndTurn = () => {
@@ -154,7 +165,13 @@ export const GameBoard = ({ onExit, settings, gameId = null }) => {
       transition={{ duration: 0.5 }}
       className={`game-board p-6 rounded-2xl shadow-2xl ${settings.darkMode ? 'bg-gray-800 text-white' : 'bg-gradient-to-b from-pink-100 to-purple-200'}`}
     >
-      <OpponentArea hp={opponentHP} hand={opponentHand} energy={opponentEnergy} darkMode={settings.darkMode} />
+      <OpponentArea 
+        hp={opponentHP} 
+        hand={opponentHand} 
+        energy={opponentEnergy} 
+        darkMode={settings.darkMode} 
+        activeEffects={activeEffects.opponent}
+      />
       <GameInfo currentTurn={currentTurn} momentumGauge={momentumGauge} darkMode={settings.darkMode} />
       <MomentumGauge value={momentumGauge} darkMode={settings.darkMode} />
       <TurnIndicator currentTurn={currentTurn} darkMode={settings.darkMode} />
@@ -169,8 +186,14 @@ export const GameBoard = ({ onExit, settings, gameId = null }) => {
         currentTurn={currentTurn}
         energy={playerEnergy}
         darkMode={settings.darkMode}
+        activeEffects={activeEffects.player}
       />
-      <PlayerHand hand={playerHand} onPlayCard={handlePlayCard} darkMode={settings.darkMode} />
+      <PlayerHand 
+        hand={playerHand} 
+        onPlayCard={handlePlayCard} 
+        darkMode={settings.darkMode} 
+        playerEnergy={playerEnergy}
+      />
       <div className="mt-8 flex justify-center space-x-6">
         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
           <Button 
