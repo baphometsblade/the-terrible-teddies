@@ -10,7 +10,7 @@ import time
 import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import io
 
 # Set up logging
@@ -73,9 +73,25 @@ def generate_card_image(card):
 
 def create_card_back(card_type):
     img = Image.new('RGB', (1024, 1024), color='white')
-    # Add card back design here
-    # For example, you can draw shapes, add text, etc.
-    # This is a placeholder implementation
+    draw = ImageDraw.Draw(img)
+    
+    # Add a background pattern
+    for i in range(0, 1024, 50):
+        for j in range(0, 1024, 50):
+            draw.rectangle([i, j, i+25, j+25], fill='lightgray')
+    
+    # Add a border
+    draw.rectangle([10, 10, 1013, 1013], outline='black', width=5)
+    
+    # Add the game logo
+    font_large = ImageFont.truetype("arial.ttf", 60)
+    draw.text((512, 300), "Terrible", fill='purple', font=font_large, anchor='mm')
+    draw.text((512, 380), "Teddies", fill='purple', font=font_large, anchor='mm')
+    
+    # Add card type
+    font_small = ImageFont.truetype("arial.ttf", 40)
+    draw.text((512, 700), f"Type: {card_type}", fill='black', font=font_small, anchor='mm')
+    
     return img
 
 def update_card_image(card):
