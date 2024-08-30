@@ -59,62 +59,75 @@ export const SupabaseAuthUI = () => {
 
   console.log('SupabaseAuthUI rendered, session:', session);
 
+  useEffect(() => {
+    console.log('SupabaseAuthUI useEffect - session changed:', session);
+  }, [session]);
+
   const handleSignIn = async (e) => {
     e.preventDefault();
     console.log('Attempting sign in with email:', email);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      console.log('Sign in successful, data:', data);
+      toast({
+        title: "Signed In",
+        description: "You have successfully signed in.",
+        variant: "success",
+      });
+      navigate('/');
+    } catch (error) {
       console.error('Sign in error:', error);
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      console.log('Sign in successful');
-      toast({
-        title: "Signed In",
-        description: "You have successfully signed in.",
-        variant: "success",
-      });
-      navigate('/'); // Redirect to main menu
     }
   };
 
   const handleSignUp = async (e) => {
     e.preventDefault();
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
+    console.log('Attempting sign up with email:', email);
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+      console.log('Sign up successful, data:', data);
       toast({
         title: "Signed Up",
         description: "Please check your email to confirm your account.",
         variant: "success",
       });
+    } catch (error) {
+      console.error('Sign up error:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive",
-      });
-    } else {
+    console.log('Attempting sign out');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      console.log('Sign out successful');
       queryClient.clear();
       toast({
         title: "Signed Out",
         description: "You have been successfully signed out.",
         variant: "success",
       });
-      navigate('/auth'); // Redirect to auth page after sign out
+      navigate('/auth');
+    } catch (error) {
+      console.error('Sign out error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

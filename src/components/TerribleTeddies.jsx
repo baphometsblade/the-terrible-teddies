@@ -33,14 +33,19 @@ const TerribleTeddies = () => {
     queryKey: ['userStats', currentUser?.id],
     queryFn: async () => {
       console.log('Fetching user stats for user:', currentUser?.id);
-      if (!currentUser) return null;
-      const { data, error } = await supabase.from('user_stats').select('*').eq('user_id', currentUser.id).single();
-      if (error) {
+      if (!currentUser) {
+        console.log('No current user, skipping user stats fetch');
+        return null;
+      }
+      try {
+        const { data, error } = await supabase.from('user_stats').select('*').eq('user_id', currentUser.id).single();
+        if (error) throw error;
+        console.log('User stats fetched successfully:', data);
+        return data;
+      } catch (error) {
         console.error('Error fetching user stats:', error);
         throw error;
       }
-      console.log('User stats fetched:', data);
-      return data;
     },
     retry: 3,
     retryDelay: 1000,
@@ -49,6 +54,12 @@ const TerribleTeddies = () => {
   const updateUserStats = useUpdateUserStats();
 
   console.log('TerribleTeddies rendered, currentUser:', currentUser, 'userStats:', userStats);
+
+  useEffect(() => {
+    console.log('TerribleTeddies useEffect - currentUser or userStats changed');
+    console.log('Current user:', currentUser);
+    console.log('User stats:', userStats);
+  }, [currentUser, userStats]);
 
   useEffect(() => {
     if (userStatsError) {
