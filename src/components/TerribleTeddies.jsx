@@ -147,29 +147,6 @@ const TerribleTeddies = () => {
     });
   };
 
-  const claimDailyReward = async () => {
-    if (dailyRewardClaimed) return;
-
-    const rewardAmount = 50; // Daily reward amount
-    try {
-      await updateUserStats.mutateAsync({ coins: (userStats?.coins || 0) + rewardAmount });
-      localStorage.setItem('lastDailyRewardClaim', new Date().toDateString());
-      setDailyRewardClaimed(true);
-      toast({
-        title: "Daily Reward Claimed!",
-        description: `You've received ${rewardAmount} coins. Come back tomorrow for more!`,
-        variant: "success",
-      });
-    } catch (error) {
-      console.error('Error claiming daily reward:', error);
-      toast({
-        title: "Error",
-        description: "Failed to claim daily reward. Please try again later.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const renderMenu = () => (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
