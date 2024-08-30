@@ -27,25 +27,19 @@ export const AssetGenerationButton = () => {
     setShowDialog(true);
 
     try {
-      await generateGameAssets();
-      
-      // Fetch the updated card data from Supabase
-      const { data, error } = await supabase
-        .from('generated_images')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      setGeneratedCards(data || []);
-      setTotalCards(data ? data.length : 0);
-      setProgress(100);
+      const result = await generateGameAssets((data) => {
+        if (data.total_cards) {
+          setTotalCards(data.total_cards);
+        } else if (data.progress) {
+          setProgress(data.progress);
+          setCurrentImage(data.currentImage);
+          setGeneratedCards((prev) => [...prev, { name: data.currentImage, url: data.url }]);
+        }
+      });
 
       toast({
         title: "Assets Generated",
-        description: `Successfully generated ${data.length} assets.`,
+        description: `Successfully generated ${result.total_generated} assets.`,
         variant: "success",
       });
     } catch (error) {
