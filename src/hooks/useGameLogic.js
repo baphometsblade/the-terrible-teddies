@@ -89,22 +89,71 @@ export const useGameLogic = () => {
     setLastPlayedCard(card);
 
     // Apply card effects
-    if (card.type === 'Action') {
-      setOpponentHP(Math.max(0, opponentHP - card.attack));
-    } else if (card.type === 'Defense') {
-      setPlayerHP(Math.min(INITIAL_HP, playerHP + card.defense));
+    switch (card.type) {
+      case 'Action':
+        setOpponentHP(Math.max(0, opponentHP - card.attack));
+        break;
+      case 'Defense':
+        setPlayerHP(Math.min(INITIAL_HP, playerHP + card.defense));
+        break;
+      case 'Trap':
+        setActiveEffects(prev => ({
+          ...prev,
+          opponent: [...prev.opponent, { type: 'Trap', duration: 2, effect: card.effect }]
+        }));
+        break;
+      case 'Special':
+        // Handle special effects (can be expanded based on card abilities)
+        break;
+      case 'Boost':
+        setActiveEffects(prev => ({
+          ...prev,
+          player: [...prev.player, { type: 'Boost', duration: 2, effect: card.effect }]
+        }));
+        break;
     }
 
     // Update momentum gauge
     setMomentumGauge(Math.min(10, momentumGauge + 1));
 
     // Log the action
-    setGameLog([...gameLog, { player: 'Player', action: `Played ${card.name}` }]);
+    setGameLog(prev => [...prev, { player: 'Player', action: `Played ${card.name}` }]);
 
     // Check for game over
     if (opponentHP <= 0) {
       endGame('player');
     }
+  };
+
+  const applyActiveEffects = () => {
+    activeEffects.player.forEach(effect => {
+      // Apply player effects
+      if (effect.type === 'Boost') {
+        // Example: Increase player's attack
+        setPlayerAttackBonus(prev => prev + effect.effect.attackBoost);
+      }
+    });
+
+    activeEffects.opponent.forEach(effect => {
+      // Apply opponent effects
+      if (effect.type === 'Trap') {
+        // Example: Decrease opponent's defense
+        setOpponentDefenseReduction(prev => prev + effect.effect.defenseReduction);
+      }
+    });
+
+    // Reduce duration of effects and remove expired ones
+    setActiveEffects(prev => ({
+      player: prev.player.map(e => ({ ...e, duration: e.duration - 1 })).filter(e => e.duration > 0),
+      opponent: prev.opponent.map(e => ({ ...e, duration: e.duration - 1 })).filter(e => e.duration > 0)
+    }));
+  };
+
+  // Add this to the returned object in useGameLogic
+  return {
+    // ... other returned values
+    activeEffects,
+    applyActiveEffects,
   };
 
   const endTurn = () => {

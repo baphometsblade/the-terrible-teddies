@@ -37,6 +37,7 @@ const TerribleTeddies = () => {
     },
     retry: 3,
     retryDelay: 1000,
+    enabled: !!currentUser, // Only fetch stats if user is logged in
   });
   const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser();
   const updateUserStats = useUpdateUserStats();
@@ -51,6 +52,7 @@ const TerribleTeddies = () => {
       });
     }
   }, [userStatsError, toast]);
+
   const [settings, setSettings] = useState({
     soundEnabled: true,
     darkMode: false,
@@ -60,10 +62,12 @@ const TerribleTeddies = () => {
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
 
   useEffect(() => {
-    const lastClaimDate = localStorage.getItem('lastDailyRewardClaim');
-    const today = new Date().toDateString();
-    setDailyRewardClaimed(lastClaimDate === today);
-  }, []);
+    if (currentUser) {
+      const lastClaimDate = localStorage.getItem(`lastDailyRewardClaim_${currentUser.id}`);
+      const today = new Date().toDateString();
+      setDailyRewardClaimed(lastClaimDate === today);
+    }
+  }, [currentUser]);
 
   const startGame = () => {
     if (!currentUser) {
@@ -75,6 +79,29 @@ const TerribleTeddies = () => {
       return;
     }
     setGameState('playing');
+  };
+
+  const handleLogin = () => {
+    setGameState('auth');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+        variant: "success",
+      });
+      setGameState('menu');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast({
+        title: "Logout Error",
+        description: "An error occurred while logging out. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSaveDeck = (deck) => {

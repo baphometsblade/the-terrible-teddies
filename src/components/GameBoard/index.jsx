@@ -19,6 +19,7 @@ import { LoadingSpinner } from '../LoadingSpinner';
 import confetti from 'canvas-confetti';
 import { TurnTimer } from './TurnTimer';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ActiveEffects } from './ActiveEffects';
 
 export const GameBoard = ({ onExit, settings, gameId = null }) => {
   const [isMultiplayer, setIsMultiplayer] = useState(!!gameId);
