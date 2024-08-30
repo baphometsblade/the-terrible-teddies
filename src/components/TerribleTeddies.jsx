@@ -28,18 +28,19 @@ const TerribleTeddies = () => {
   const [gameState, setGameState] = useState('menu');
   const [playerDeck, setPlayerDeck] = useState([]);
   const { toast } = useToast();
+  const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser();
   const { data: userStats, isLoading: isLoadingStats, error: userStatsError } = useQuery({
-    queryKey: ['userStats'],
+    queryKey: ['userStats', currentUser?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('user_stats').select('*').single();
+      if (!currentUser) return null;
+      const { data, error } = await supabase.from('user_stats').select('*').eq('user_id', currentUser.id).single();
       if (error) throw error;
       return data;
     },
     retry: 3,
     retryDelay: 1000,
-    enabled: !!currentUser, // Only fetch stats if user is logged in
+    enabled: !!currentUser,
   });
-  const { data: currentUser, isLoading: isLoadingUser } = useCurrentUser();
   const updateUserStats = useUpdateUserStats();
 
   useEffect(() => {
