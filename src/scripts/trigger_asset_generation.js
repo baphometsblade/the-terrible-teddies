@@ -1,28 +1,28 @@
-import { exec } from 'child_process';
-import path from 'path';
+export async function triggerAssetGeneration() {
+  try {
+    const response = await fetch('/api/generate-assets', {
+      method: 'POST',
+    });
 
-export function triggerAssetGeneration() {
-  return new Promise((resolve, reject) => {
-    const scriptPath = path.join(process.cwd(), 'src', 'scripts', 'generate_assets.py');
-    const pythonProcess = exec(`python ${scriptPath}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
     let output = '';
 
-    pythonProcess.stdout.on('data', (data) => {
-      output += data.toString();
-      console.log(data.toString());
-    });
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      output += chunk;
+      console.log(chunk);
+    }
 
-    pythonProcess.stderr.on('data', (data) => {
-      console.error(`Error: ${data}`);
-    });
-
-    pythonProcess.on('close', (code) => {
-      if (code === 0) {
-        resolve(output);
-      } else {
-        reject(new Error(`Asset generation process exited with code ${code}`));
-      }
-    });
-  });
+    return output;
+  } catch (error) {
+    console.error('Error in triggerAssetGeneration:', error);
+    throw error;
+  }
 }
