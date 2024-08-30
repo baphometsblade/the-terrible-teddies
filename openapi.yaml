@@ -1,0 +1,117 @@
+openapi: 3.1.0
+info:
+  title: GPT Engineer OpenAI API
+  version: 1.0.0
+  description: API for interacting with GPT Engineer's AI capabilities
+
+servers:
+  - url: https://api.gptengineer.app/v1
+
+paths:
+  /generate:
+    post:
+      summary: Generate code based on user input
+      operationId: generateCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+
+  /analyze:
+    post:
+      summary: Analyze existing code
+      operationId: analyzeCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyzeResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    GenerateRequest:
+      type: object
+      required:
+        - prompt
+        - language
+      properties:
+        prompt:
+          type: string
+          description: The user's input describing the desired code
+        language:
+          type: string
+          description: The programming language for code generation
+        context:
+          type: string
+          description: Additional context for code generation (optional)
+
+    GenerateResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: The generated code
+        explanation:
+          type: string
+          description: Explanation of the generated code
+
+    AnalyzeRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: The code to be analyzed
+        language:
+          type: string
+          description: The programming language of the code (optional)
+
+    AnalyzeResponse:
+      type: object
+      properties:
+        analysis:
+          type: string
+          description: Analysis of the provided code
+        suggestions:
+          type: array
+          items:
+            type: string
+          description: Suggestions for improvement
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+security:
+  - BearerAuth: []
