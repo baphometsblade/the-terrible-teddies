@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from '../integrations/supabase';
+import { generateGameAssets } from '../scripts/generate-game-assets';
 
 export const AssetGenerationButton = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -26,66 +27,27 @@ export const AssetGenerationButton = () => {
     setShowDialog(true);
 
     try {
-      const response = await fetch('/api/generate-assets', {
-        method: 'POST',
+      await generateGameAssets();
+      
+      // Fetch the updated card data from Supabase
+      const { data, error } = await supabase
+        .from('generated_images')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      setGeneratedCards(data || []);
+      setTotalCards(data ? data.length : 0);
+      setProgress(100);
+
+      toast({
+        title: "Assets Generated",
+        description: `Successfully generated ${data.length} assets.`,
+        variant: "success",
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to generate assets: ${response.statusText}`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.trim() === '') continue;
-          try {
-            const data = JSON.parse(line);
-            if (data.status === "starting") {
-              toast({
-                title: "Asset Generation Started",
-                description: "The asset generation process has begun.",
-                variant: "info",
-              });
-            } else if (data.total_cards) {
-              setTotalCards(data.total_cards);
-            } else if (data.progress) {
-              setProgress(data.progress);
-              setCurrentImage(data.url);
-              setGeneratedCards(prev => [...prev, { name: data.currentImage, url: data.url }]);
-            } else if (data.error) {
-              setError(data.error);
-              console.error('Asset generation error:', data.error);
-              if (data.traceback) {
-                console.error('Error traceback:', data.traceback);
-              }
-              toast({
-                title: "Error",
-                description: `Asset generation error: ${data.error}`,
-                variant: "destructive",
-              });
-              setIsGenerating(false);
-            } else if (data.completed) {
-              toast({
-                title: "Assets Generated",
-                description: `Successfully generated ${data.total_generated} assets.`,
-                variant: "success",
-              });
-              setIsGenerating(false);
-            }
-          } catch (error) {
-            console.error('Error parsing JSON:', error);
-            setError(`Error parsing JSON: ${error.message}`);
-          }
-        }
-      }
     } catch (error) {
       console.error('Error generating assets:', error);
       setError(error.message || "Failed to generate assets. Please try again.");
@@ -94,6 +56,7 @@ export const AssetGenerationButton = () => {
         description: `Failed to generate assets: ${error.message}`,
         variant: "destructive",
       });
+    } finally {
       setIsGenerating(false);
     }
   }, [toast]);
