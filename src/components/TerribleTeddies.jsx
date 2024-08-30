@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { useUserStats, useUpdateUserStats } from '../integrations/supabase';
 import { useQuery } from '@tanstack/react-query';
-import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Users, Settings, Volume2, VolumeX } from 'lucide-react';
+import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Users, Settings, Volume2, VolumeX, Gift } from 'lucide-react';
 import { DeckBuilder } from './DeckBuilder';
 import { Auth } from './Auth';
 import { useCurrentUser } from '../integrations/supabase';
@@ -60,6 +60,70 @@ const TerribleTeddies = () => {
     highPerformanceMode: false,
   });
   const [showCardCollection, setShowCardCollection] = useState(false);
+  const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      const lastClaimDate = localStorage.getItem(`lastDailyRewardClaim_${currentUser.id}`);
+      const today = new Date().toDateString();
+      setDailyRewardClaimed(lastClaimDate === today);
+    }
+  }, [currentUser]);
+
+  const claimDailyReward = async () => {
+    if (dailyRewardClaimed) return;
+
+    const rewardAmount = 50; // Daily reward amount
+    try {
+      await updateUserStats.mutateAsync({ coins: (userStats?.coins || 0) + rewardAmount });
+      localStorage.setItem(`lastDailyRewardClaim_${currentUser.id}`, new Date().toDateString());
+      setDailyRewardClaimed(true);
+      toast({
+        title: "Daily Reward Claimed!",
+        description: `You've received ${rewardAmount} coins. Come back tomorrow for more!`,
+        variant: "success",
+      });
+    } catch (error) {
+      console.error('Error claiming daily reward:', error);
+      toast({
+        title: "Error",
+        description: "Failed to claim daily reward. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
+  const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      const lastClaimDate = localStorage.getItem(`lastDailyRewardClaim_${currentUser.id}`);
+      const today = new Date().toDateString();
+      setDailyRewardClaimed(lastClaimDate === today);
+    }
+  }, [currentUser]);
+
+  const claimDailyReward = async () => {
+    if (dailyRewardClaimed) return;
+
+    const rewardAmount = 50; // Daily reward amount
+    try {
+      await updateUserStats.mutateAsync({ coins: (userStats?.coins || 0) + rewardAmount });
+      localStorage.setItem(`lastDailyRewardClaim_${currentUser.id}`, new Date().toDateString());
+      setDailyRewardClaimed(true);
+      toast({
+        title: "Daily Reward Claimed!",
+        description: `You've received ${rewardAmount} coins. Come back tomorrow for more!`,
+        variant: "success",
+      });
+    } catch (error) {
+      console.error('Error claiming daily reward:', error);
+      toast({
+        title: "Error",
+        description: "Failed to claim daily reward. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
   const [dailyRewardClaimed, setDailyRewardClaimed] = useState(false);
 
   useEffect(() => {
