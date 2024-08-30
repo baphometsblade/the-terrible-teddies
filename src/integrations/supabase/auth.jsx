@@ -52,6 +52,44 @@ export const SupabaseAuthUI = () => {
   const { session } = useSupabaseAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSignIn = async (e) => {
+    e.preventDefault();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed In",
+        description: "You have successfully signed in.",
+        variant: "success",
+      });
+    }
+  };
+
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Signed Up",
+        description: "Please check your email to confirm your account.",
+        variant: "success",
+      });
+    }
+  };
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -81,12 +119,26 @@ export const SupabaseAuthUI = () => {
   }
 
   return (
-    <Auth
-      supabaseClient={supabase}
-      appearance={{ theme: ThemeSupa }}
-      providers={['google', 'github']}
-      onlyThirdPartyProviders={true}
-    />
+    <div className="p-4 bg-white rounded shadow">
+      <form onSubmit={handleSignIn} className="space-y-4">
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full p-2 border rounded"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full p-2 border rounded"
+        />
+        <Button type="submit" className="w-full">Sign In</Button>
+      </form>
+      <Button onClick={handleSignUp} className="w-full mt-2">Sign Up</Button>
+    </div>
   );
 };
 
