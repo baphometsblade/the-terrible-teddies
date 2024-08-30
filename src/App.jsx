@@ -2,9 +2,9 @@ import React, { Suspense } from 'react';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { navItems } from "./nav-items";
-import { SupabaseProvider } from "./integrations/supabase/auth";
+import { SupabaseProvider, useSupabaseAuth } from "./integrations/supabase/auth";
 import { Loader2 } from 'lucide-react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,20 @@ const ErrorFallback = ({ error, resetErrorBoundary }) => (
   </div>
 );
 
+const ProtectedRoute = ({ children }) => {
+  const { session, loading } = useSupabaseAuth();
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+  }
+
+  if (!session) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return children;
+};
+
 const App = () => (
   <ErrorBoundary FallbackComponent={ErrorFallback}>
     <SupabaseProvider>
@@ -33,19 +47,25 @@ const App = () => (
           <BrowserRouter>
             <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
               <Routes>
+                <Route path="/auth" element={<navItems.find(item => item.to === "/auth").component />} />
                 {navItems.map(({ to, component: Component }) => (
-                  <Route 
-                    key={to} 
-                    path={to} 
-                    element={
-                      <ErrorBoundary FallbackComponent={ErrorFallback}>
-                        <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
-                          <Component />
-                        </Suspense>
-                      </ErrorBoundary>
-                    } 
-                  />
+                  to !== "/auth" && (
+                    <Route 
+                      key={to} 
+                      path={to} 
+                      element={
+                        <ErrorBoundary FallbackComponent={ErrorFallback}>
+                          <Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+                            <ProtectedRoute>
+                              <Component />
+                            </ProtectedRoute>
+                          </Suspense>
+                        </ErrorBoundary>
+                      } 
+                    />
+                  )
                 ))}
+                <Route path="*" element={<Navigate to="/auth" replace />} />
               </Routes>
             </Suspense>
           </BrowserRouter>
