@@ -5,6 +5,7 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from 'react-router-dom';
 
 const SupabaseAuthContext = createContext();
 
@@ -54,6 +55,7 @@ export const SupabaseAuthUI = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -70,6 +72,7 @@ export const SupabaseAuthUI = () => {
         description: "You have successfully signed in.",
         variant: "success",
       });
+      navigate('/'); // Redirect to main menu
     }
   };
 
@@ -106,6 +109,7 @@ export const SupabaseAuthUI = () => {
         description: "You have been successfully signed out.",
         variant: "success",
       });
+      navigate('/auth'); // Redirect to auth page after sign out
     }
   };
 
