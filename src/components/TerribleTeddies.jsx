@@ -32,9 +32,14 @@ const TerribleTeddies = () => {
   const { data: userStats, isLoading: isLoadingStats, error: userStatsError } = useQuery({
     queryKey: ['userStats', currentUser?.id],
     queryFn: async () => {
+      console.log('Fetching user stats for user:', currentUser?.id);
       if (!currentUser) return null;
       const { data, error } = await supabase.from('user_stats').select('*').eq('user_id', currentUser.id).single();
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user stats:', error);
+        throw error;
+      }
+      console.log('User stats fetched:', data);
       return data;
     },
     retry: 3,
@@ -42,6 +47,8 @@ const TerribleTeddies = () => {
     enabled: !!currentUser,
   });
   const updateUserStats = useUpdateUserStats();
+
+  console.log('TerribleTeddies rendered, currentUser:', currentUser, 'userStats:', userStats);
 
   useEffect(() => {
     if (userStatsError) {

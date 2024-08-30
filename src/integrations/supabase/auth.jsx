@@ -57,16 +57,21 @@ export const SupabaseAuthUI = () => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
+  console.log('SupabaseAuthUI rendered, session:', session);
+
   const handleSignIn = async (e) => {
     e.preventDefault();
+    console.log('Attempting sign in with email:', email);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
+      console.error('Sign in error:', error);
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
     } else {
+      console.log('Sign in successful');
       toast({
         title: "Signed In",
         description: "You have successfully signed in.",
