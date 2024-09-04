@@ -12,11 +12,9 @@ import colorama
 from colorama import Fore, Style
 from supabase import create_client, Client
 
-# Initialize colorama and set up logging
 colorama.init(autoreset=True)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Load environment variables and initialize OpenAI and Supabase
 load_dotenv()
 llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 supabase: Client = create_client(os.environ.get("VITE_SUPABASE_PROJECT_URL"), os.environ.get("VITE_SUPABASE_API_KEY"))
@@ -110,28 +108,23 @@ def process_results(results):
         ui_design = json.loads(results[3])
         qa_feedback = json.loads(results[4])
 
-        # Save game mechanics
         with open('src/data/game_mechanics.json', 'w') as f:
             json.dump(game_mechanics, f, indent=2)
         logging.info(f"{Fore.GREEN}Game mechanics saved to src/data/game_mechanics.json{Style.RESET_ALL}")
 
-        # Save concept art
         print(f"{Fore.CYAN}Saving concept art...{Style.RESET_ALL}")
         for i, art_item in tqdm.tqdm(enumerate(concept_art_data), total=len(concept_art_data)):
             save_image(art_item['url'], f"concept_art_{i+1}")
 
-        # Save card data to Supabase
         for card in card_data:
             supabase.table('terrible_teddies_cards').insert(card).execute()
         logging.info(f"{Fore.GREEN}Card data saved to Supabase{Style.RESET_ALL}")
 
-        # Save UI design
         with open('src/data/ui_design.json', 'w') as f:
             json.dump(ui_design, f, indent=2)
         logging.info(f"{Fore.GREEN}UI design saved to src/data/ui_design.json{Style.RESET_ALL}")
         save_image(ui_design['mockup_url'], "ui_mockup")
 
-        # Save QA feedback
         with open('src/data/qa_feedback.json', 'w') as f:
             json.dump(qa_feedback, f, indent=2)
         logging.info(f"{Fore.GREEN}QA feedback saved to src/data/qa_feedback.json{Style.RESET_ALL}")
