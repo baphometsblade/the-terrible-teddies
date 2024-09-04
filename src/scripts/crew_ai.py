@@ -25,28 +25,28 @@ def create_agents():
     return {
         'game_designer': Agent(
             role='Game Designer',
-            goal='Design comprehensive game mechanics and rules for Terrible Teddies',
+            goal='Design comprehensive and balanced game mechanics for Terrible Teddies',
             backstory='You are an experienced game designer specializing in card games with a humorous twist. Your expertise lies in creating engaging, balanced, and fun gameplay mechanics.',
             verbose=True,
             llm=llm
         ),
         'artist': Agent(
             role='Artist',
-            goal='Create visually appealing and cohesive art for Terrible Teddies cards, characters, and UI elements',
+            goal='Create visually appealing and cohesive art style for Terrible Teddies',
             backstory='You are a talented digital artist with a knack for creating cute yet mischievous characters. Your art style perfectly captures the essence of Terrible Teddies.',
             verbose=True,
             llm=llm
         ),
         'writer': Agent(
             role='Writer',
-            goal='Develop engaging card descriptions, flavor text, character backstories, and overall game lore',
+            goal='Develop engaging card descriptions and overall game lore',
             backstory='You are a creative writer with a talent for humorous and slightly edgy content. Your writing brings the world of Terrible Teddies to life.',
             verbose=True,
             llm=llm
         ),
         'ui_designer': Agent(
             role='UI Designer',
-            goal='Design an intuitive, visually appealing, and responsive user interface for the game',
+            goal='Design an intuitive and visually appealing user interface for the game',
             backstory='You are a skilled UI/UX designer with experience in creating interfaces for digital card games. Your designs are both functional and aesthetically pleasing.',
             verbose=True,
             llm=llm
