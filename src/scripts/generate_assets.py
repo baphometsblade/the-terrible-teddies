@@ -7,6 +7,7 @@ import json
 import sys
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -81,7 +82,7 @@ def main():
     with ThreadPoolExecutor(max_workers=5) as executor:
         future_to_card = {executor.submit(generate_and_store_card, f"{card_type} Teddy {i+1}", card_type, random.randint(1, 5)): (card_type, i) for card_type in CARD_TYPES for i in range(8)}
         
-        for future in as_completed(future_to_card):
+        for future in tqdm(as_completed(future_to_card), total=total_cards, desc="Generating cards"):
             card_type, i = future_to_card[future]
             result = future.result()
             
