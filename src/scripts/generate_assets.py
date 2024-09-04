@@ -18,6 +18,8 @@ SUPABASE_URL = os.getenv("VITE_SUPABASE_URL")
 SUPABASE_KEY = os.getenv("VITE_SUPABASE_ANON_KEY")
 
 CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
+TEDDY_TRAITS = ['mischievous', 'adorable', 'fierce', 'sleepy', 'excited', 'naughty', 'playful', 'grumpy']
+BACKGROUNDS = ['toy store', 'child\'s bedroom', 'playground', 'picnic area', 'teddy bear factory']
 
 def generate_card_image(prompt):
     try:
@@ -33,8 +35,24 @@ def generate_card_image(prompt):
         logging.error(f"Error generating image: {str(e)}")
         return None
 
+def generate_card_prompt(name, type):
+    trait = random.choice(TEDDY_TRAITS)
+    background = random.choice(BACKGROUNDS)
+    action = get_action_for_type(type)
+    return f"A cute {trait} teddy bear named {name} as a {type} card for the game Terrible Teddies. The teddy is {action} in a {background} setting. Cartoon style, vibrant colors, child-friendly."
+
+def get_action_for_type(type):
+    actions = {
+        'Action': 'performing a playful attack or mischievous prank',
+        'Trap': 'setting up a clever trap or surprise',
+        'Special': 'using a unique and magical ability',
+        'Defense': 'protecting itself or others with a cute shield or barrier',
+        'Boost': 'powering up or encouraging other teddies'
+    }
+    return actions.get(type, 'doing something cute and funny')
+
 def generate_and_store_card(name, type, energy_cost):
-    prompt = f"A cute teddy bear as a {type} card for a card game called Terrible Teddies. The teddy should look {random.choice(['mischievous', 'adorable', 'fierce', 'sleepy', 'excited'])} and be doing an action related to its type. Cartoon style, vibrant colors, white background."
+    prompt = generate_card_prompt(name, type)
     image_url = generate_card_image(prompt)
     
     if not image_url:
@@ -48,8 +66,8 @@ def generate_and_store_card(name, type, energy_cost):
         "prompt": prompt,
         "attack": random.randint(1, 5),
         "defense": random.randint(1, 5),
-        "special_move": f"{type} Special Move",
-        "description": f"A {type.lower()} teddy bear with unique abilities."
+        "special_move": f"{type} Special: {random.choice(['Tickle Attack', 'Fluff Explosion', 'Cuddle Beam', 'Nap Time', 'Sugar Rush'])}",
+        "description": f"A {random.choice(TEDDY_TRAITS)} {type.lower()} teddy bear with unique abilities."
     }
     
     try:
