@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from 'react-router-dom';
 import { useUserStats, useUpdateUserStats } from '../integrations/supabase';
 import { useQuery } from '@tanstack/react-query';
-import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Users, Settings, Volume2, VolumeX, Gift } from 'lucide-react';
+import { Sparkles, Trophy, Book, ShoppingCart, Target, PlayCircle, Users, Settings, Volume2, VolumeX, Gift, LogOut } from 'lucide-react';
 import { DeckBuilder } from './DeckBuilder';
 import { Auth } from './Auth';
 import { useCurrentUser, useLogout } from '../integrations/supabase';
