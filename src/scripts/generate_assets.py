@@ -43,7 +43,11 @@ def generate_and_store_card(name, type, energy_cost):
         "type": type,
         "energy_cost": energy_cost,
         "url": image_url,
-        "prompt": prompt
+        "prompt": prompt,
+        "attack": random.randint(1, 5),
+        "defense": random.randint(1, 5),
+        "special_move": f"{type} Special Move",
+        "description": f"A {type.lower()} teddy bear with unique abilities."
     }
     
     try:
