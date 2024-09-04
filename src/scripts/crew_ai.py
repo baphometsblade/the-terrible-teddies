@@ -1,7 +1,7 @@
 import json
 import os
 from crewai import Agent, Task, Crew, Process
-from langchain.llms import OpenAI
+from langchain.chat_models import ChatOpenAI
 from dotenv import load_dotenv
 import requests
 from PIL import Image
@@ -16,7 +16,7 @@ colorama.init(autoreset=True)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 load_dotenv()
-llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+llm = ChatOpenAI(model_name="gpt-4-turbo-preview", temperature=0.7)
 supabase: Client = create_client(os.environ.get("VITE_SUPABASE_PROJECT_URL"), os.environ.get("VITE_SUPABASE_API_KEY"))
 
 def create_agents():

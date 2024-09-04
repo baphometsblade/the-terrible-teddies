@@ -61,12 +61,32 @@ def generate_special_move(type):
     }
     return f"{type} Special: {random.choice(moves.get(type, ['Cuddle Beam', 'Nap Time', 'Fluff Explosion']))}"
 
+def generate_card_description(name, type, trait):
+    prompt = f"Create a short, fun description for a {trait} teddy bear named {name} who is a {type} card in the Terrible Teddies game. The description should be child-friendly and highlight the bear's unique personality and abilities."
+    
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4-turbo-preview",
+            messages=[
+                {"role": "system", "content": "You are a creative writer for a children's card game."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=50
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logging.error(f"Error generating card description: {str(e)}")
+        return f"A {trait} {type.lower()} teddy bear with unique abilities and a mischievous streak."
+
 def generate_and_store_card(name, type, energy_cost):
+    trait = random.choice(TEDDY_TRAITS)
     prompt = generate_card_prompt(name, type)
     image_url = generate_card_image(prompt)
     
     if not image_url:
         return None
+
+    description = generate_card_description(name, type, trait)
 
     card_data = {
         "name": name,
@@ -77,7 +97,7 @@ def generate_and_store_card(name, type, energy_cost):
         "attack": random.randint(1, 5),
         "defense": random.randint(1, 5),
         "special_move": generate_special_move(type),
-        "description": f"A {random.choice(TEDDY_TRAITS)} {type.lower()} teddy bear with unique abilities and a mischievous streak."
+        "description": description
     }
     
     try:
