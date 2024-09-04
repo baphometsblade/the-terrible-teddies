@@ -6,6 +6,7 @@ import requests
 import json
 import sys
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -77,23 +78,24 @@ def main():
     print(json.dumps({"total_cards": total_cards}))
     sys.stdout.flush()
 
-    for card_type in CARD_TYPES:
-        for i in range(8):
-            name = f"{card_type} Teddy {i+1}"
-            energy_cost = random.randint(1, 5)
-            result = generate_and_store_card(name, card_type, energy_cost)
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_card = {executor.submit(generate_and_store_card, f"{card_type} Teddy {i+1}", card_type, random.randint(1, 5)): (card_type, i) for card_type in CARD_TYPES for i in range(8)}
+        
+        for future in as_completed(future_to_card):
+            card_type, i = future_to_card[future]
+            result = future.result()
             
             if result:
                 generated_cards += 1
                 progress = (generated_cards / total_cards) * 100
                 print(json.dumps({
                     "progress": progress,
-                    "currentImage": name,
+                    "currentImage": result["name"],
                     "url": result["url"]
                 }))
                 sys.stdout.flush()
             else:
-                logging.error(f"Failed to generate or store {name}")
+                logging.error(f"Failed to generate or store {card_type} Teddy {i+1}")
     
     print(json.dumps({"completed": True, "total_generated": generated_cards}))
     sys.stdout.flush()
