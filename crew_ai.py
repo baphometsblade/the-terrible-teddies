@@ -10,42 +10,51 @@ import logging
 import tqdm
 import colorama
 from colorama import Fore, Style
+from supabase import create_client, Client
 
 # Initialize colorama and set up logging
 colorama.init(autoreset=True)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Load environment variables and initialize OpenAI
+# Load environment variables and initialize OpenAI and Supabase
 load_dotenv()
 llm = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+supabase: Client = create_client(os.environ.get("VITE_SUPABASE_PROJECT_URL"), os.environ.get("VITE_SUPABASE_API_KEY"))
 
 def create_agents():
     return {
-        'image_generator': Agent(
-            role='Image Generator',
-            goal='Generate stylized images for Terrible Teddies cards',
-            backstory='You are an AI artist specializing in creating stylized teddy bear illustrations',
+        'game_designer': Agent(
+            role='Game Designer',
+            goal='Design the core mechanics and rules for Terrible Teddies',
+            backstory='You are an experienced game designer specializing in card games with a humorous twist',
             verbose=True,
             llm=llm
         ),
-        'card_designer': Agent(
-            role='Card Designer',
-            goal='Design balanced and interesting cards for the Terrible Teddies game',
-            backstory='You are a game designer with expertise in card game mechanics and balance',
+        'artist': Agent(
+            role='Artist',
+            goal='Create visually appealing and cohesive art for Terrible Teddies cards and UI',
+            backstory='You are a talented digital artist with a knack for creating cute yet mischievous characters',
             verbose=True,
             llm=llm
         ),
-        'rule_writer': Agent(
-            role='Rule Writer',
-            goal='Create clear and engaging rules for the Terrible Teddies game',
-            backstory='You are an experienced technical writer specializing in game rule books',
+        'writer': Agent(
+            role='Writer',
+            goal='Develop engaging card descriptions, flavor text, and game lore',
+            backstory='You are a creative writer with a talent for humorous and slightly edgy content',
             verbose=True,
             llm=llm
         ),
-        'lore_creator': Agent(
-            role='Lore Creator',
-            goal='Develop a rich, satirical backstory for the Terrible Teddies universe',
-            backstory='You are a creative writer skilled in crafting humorous and edgy lore for adult-themed games',
+        'ui_designer': Agent(
+            role='UI Designer',
+            goal='Design an intuitive and visually appealing user interface for the game',
+            backstory='You are a skilled UI/UX designer with experience in creating interfaces for digital card games',
+            verbose=True,
+            llm=llm
+        ),
+        'qa_tester': Agent(
+            role='QA Tester',
+            goal='Ensure game balance, identify bugs, and improve overall player experience',
+            backstory='You are a meticulous QA tester with a passion for card games and a keen eye for detail',
             verbose=True,
             llm=llm
         )
@@ -54,24 +63,29 @@ def create_agents():
 def create_tasks(agents):
     return [
         Task(
-            description='Generate 40 unique, stylized teddy bear images for game cards based on the provided data',
-            agent=agents['image_generator'],
-            expected_output="A list of 40 image URLs for the generated card images"
+            description='Design the core game mechanics, including card types, energy system, and turn structure',
+            agent=agents['game_designer'],
+            expected_output="A JSON string containing the core game mechanics and rules"
         ),
         Task(
-            description='Create 40 balanced cards with names, types, energy costs, and effects based on the provided teddy bear data',
-            agent=agents['card_designer'],
-            expected_output="A JSON string containing an array of 40 card objects with properties: name, type, energy_cost, effect"
+            description='Create concept art for the main card types and game logo',
+            agent=agents['artist'],
+            expected_output="A list of image URLs for the concept art and logo"
         ),
         Task(
-            description='Write comprehensive rules for the Terrible Teddies card game',
-            agent=agents['rule_writer'],
-            expected_output="A markdown formatted string containing the complete game rules"
+            description='Write engaging descriptions for 20 unique Terrible Teddy cards',
+            agent=agents['writer'],
+            expected_output="A JSON string containing an array of 20 card objects with names, types, and descriptions"
         ),
         Task(
-            description='Develop a satirical and edgy backstory for the Terrible Teddies universe',
-            agent=agents['lore_creator'],
-            expected_output="A markdown formatted string containing the game's lore and backstory"
+            description='Design the main game screen UI, including card placement, player info, and action buttons',
+            agent=agents['ui_designer'],
+            expected_output="A detailed description of the UI layout and a mockup image URL"
+        ),
+        Task(
+            description='Review the game design, suggest balance improvements, and identify potential issues',
+            agent=agents['qa_tester'],
+            expected_output="A JSON string containing a list of suggestions, balance improvements, and potential issues"
         )
     ]
 
@@ -80,8 +94,8 @@ def save_image(image_url, filename):
         response = requests.get(image_url)
         response.raise_for_status()
         img = Image.open(BytesIO(response.content))
-        os.makedirs('public/card_images', exist_ok=True)
-        img.save(f"public/card_images/{filename}.png")
+        os.makedirs('public/game_assets', exist_ok=True)
+        img.save(f"public/game_assets/{filename}.png")
         logging.info(f"{Fore.GREEN}Image saved: {filename}.png{Style.RESET_ALL}")
     except requests.RequestException as e:
         logging.error(f"{Fore.RED}Error downloading image: {e}{Style.RESET_ALL}")
@@ -90,27 +104,37 @@ def save_image(image_url, filename):
 
 def process_results(results):
     try:
-        card_images = json.loads(results[0])
-        card_designs = json.loads(results[1])
-        game_rules = results[2]
-        game_lore = results[3]
+        game_mechanics = json.loads(results[0])
+        concept_art_urls = json.loads(results[1])
+        card_descriptions = json.loads(results[2])
+        ui_design = json.loads(results[3])
+        qa_feedback = json.loads(results[4])
 
-        print(f"{Fore.CYAN}Saving card images...{Style.RESET_ALL}")
-        for i, image_url in tqdm.tqdm(enumerate(card_images), total=len(card_images)):
-            save_image(image_url, f"card_{i+1}")
+        # Save game mechanics
+        with open('src/data/game_mechanics.json', 'w') as f:
+            json.dump(game_mechanics, f, indent=2)
+        logging.info(f"{Fore.GREEN}Game mechanics saved to src/data/game_mechanics.json{Style.RESET_ALL}")
 
-        os.makedirs('src/data', exist_ok=True)
-        with open('src/data/cards.json', 'w') as f:
-            json.dump(card_designs, f, indent=2)
-        logging.info(f"{Fore.GREEN}Card designs saved to src/data/cards.json{Style.RESET_ALL}")
+        # Save concept art
+        print(f"{Fore.CYAN}Saving concept art...{Style.RESET_ALL}")
+        for i, image_url in tqdm.tqdm(enumerate(concept_art_urls), total=len(concept_art_urls)):
+            save_image(image_url, f"concept_art_{i+1}")
 
-        with open('src/data/game_rules.md', 'w') as f:
-            f.write(game_rules)
-        logging.info(f"{Fore.GREEN}Game rules saved to src/data/game_rules.md{Style.RESET_ALL}")
+        # Save card descriptions to Supabase
+        for card in card_descriptions:
+            supabase.table('terrible_teddies_cards').insert(card).execute()
+        logging.info(f"{Fore.GREEN}Card descriptions saved to Supabase{Style.RESET_ALL}")
 
-        with open('src/data/game_lore.md', 'w') as f:
-            f.write(game_lore)
-        logging.info(f"{Fore.GREEN}Game lore saved to src/data/game_lore.md{Style.RESET_ALL}")
+        # Save UI design
+        with open('src/data/ui_design.json', 'w') as f:
+            json.dump(ui_design, f, indent=2)
+        logging.info(f"{Fore.GREEN}UI design saved to src/data/ui_design.json{Style.RESET_ALL}")
+        save_image(ui_design['mockup_url'], "ui_mockup")
+
+        # Save QA feedback
+        with open('src/data/qa_feedback.json', 'w') as f:
+            json.dump(qa_feedback, f, indent=2)
+        logging.info(f"{Fore.GREEN}QA feedback saved to src/data/qa_feedback.json{Style.RESET_ALL}")
 
     except json.JSONDecodeError as e:
         logging.error(f"{Fore.RED}Error decoding JSON: {e}{Style.RESET_ALL}")
@@ -119,7 +143,7 @@ def process_results(results):
 
 def run_crew():
     try:
-        print(f"{Fore.YELLOW}Starting asset generation process...{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Starting Terrible Teddies asset generation process...{Style.RESET_ALL}")
         agents = create_agents()
         tasks = create_tasks(agents)
         crew = Crew(
