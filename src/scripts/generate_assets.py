@@ -65,15 +65,17 @@ def generate_card_description(name, type, trait):
     prompt = f"Create a short, fun description for a {trait} teddy bear named {name} who is a {type} card in the Terrible Teddies game. The description should be child-friendly and highlight the bear's unique personality and abilities."
     
     try:
-        response = openai_client.completions.create(
-            model="gpt-1",  # Note: This is a placeholder. GPT-1 is not available through the API.
-            prompt=prompt,
+        response = openai_client.chat.completions.create(
+            model="gpt-4-turbo-preview",
+            messages=[
+                {"role": "system", "content": "You are a creative writer for a children's card game."},
+                {"role": "user", "content": prompt}
+            ],
             max_tokens=50,
             n=1,
-            stop=None,
             temperature=0.7,
         )
-        return response.choices[0].text.strip()
+        return response.choices[0].message.content.strip()
     except Exception as e:
         logging.error(f"Error generating card description: {str(e)}")
         return f"A {trait} {type.lower()} teddy bear with unique abilities and a mischievous streak."
