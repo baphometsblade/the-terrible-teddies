@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { generateGameAssets } from '../scripts/generate-game-assets';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const AssetGenerationButton = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -90,15 +91,17 @@ export const AssetGenerationButton = () => {
             </p>
           </div>
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-              <strong className="font-bold">Error: </strong>
-              <span className="block sm:inline">{error}</span>
-              {error.includes("404") && (
-                <p className="mt-2">
-                  The asset generation endpoint might not be set up correctly. Please check your server configuration and ensure the API route exists.
-                </p>
-              )}
-            </div>
+            <Alert variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                {error}
+                {error.includes("404") && (
+                  <p className="mt-2">
+                    The asset generation endpoint might not be set up correctly. Please check your server configuration and ensure the API route exists.
+                  </p>
+                )}
+              </AlertDescription>
+            </Alert>
           )}
           <ScrollArea className="h-[400px] mt-4">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
