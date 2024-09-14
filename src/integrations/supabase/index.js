@@ -6,7 +6,7 @@ import { useGeneratedImages, useAddGeneratedImage } from './queries/generatedIma
 import { useUserDeck } from './queries/userDeck';
 import { useUpdateUserStats, useUserStats } from './queries/userStats';
 import { useEvolveCard } from './mutations/evolveCard';
-import { useCurrentUser, useLogin, useLogout, useSignUp } from './auth';
+import { useCurrentUser, useSupabaseAuth, SupabaseAuthProvider as SupabaseProvider } from './auth.jsx';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -41,7 +41,6 @@ export {
   useUserStats,
   useEvolveCard,
   useCurrentUser,
-  useLogin,
-  useLogout,
-  useSignUp,
+  useSupabaseAuth,
+  SupabaseProvider,
 };

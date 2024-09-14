@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { navItems } from "./nav-items";
-import { SupabaseProvider, useSupabaseAuth } from "./integrations/supabase/auth";
+import { SupabaseProvider, useSupabaseAuth } from "./integrations/supabase/auth.jsx";
 import { Loader2 } from 'lucide-react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Button } from '@/components/ui/button';
