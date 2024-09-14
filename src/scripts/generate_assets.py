@@ -66,7 +66,7 @@ def generate_card_description(name, type, trait):
     
     try:
         response = openai_client.completions.create(
-            model="gpt-1",  # Note: This is a placeholder. Use an actually available model in practice.
+            model="gpt-1",  # Note: This is a placeholder. GPT-1 is not available through the API.
             prompt=prompt,
             max_tokens=50,
             n=1,
