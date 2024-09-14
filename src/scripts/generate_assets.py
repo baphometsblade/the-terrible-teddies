@@ -8,6 +8,7 @@ import sys
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
+from supabase import create_client, Client
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -16,6 +17,7 @@ openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 SUPABASE_URL = os.getenv("VITE_SUPABASE_URL")
 SUPABASE_KEY = os.getenv("VITE_SUPABASE_ANON_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost']
 TEDDY_TRAITS = ['mischievous', 'adorable', 'fierce', 'sleepy', 'excited', 'naughty', 'playful', 'grumpy', 'curious', 'silly']
@@ -69,20 +71,10 @@ def generate_and_store_card(name, type, energy_cost):
     }
     
     try:
-        response = requests.post(
-            f"{SUPABASE_URL}/rest/v1/generated_images",
-            headers={
-                "apikey": SUPABASE_KEY,
-                "Authorization": f"Bearer {SUPABASE_KEY}",
-                "Content-Type": "application/json",
-                "Prefer": "return=minimal"
-            },
-            json=card_data
-        )
-        response.raise_for_status()
+        result = supabase.table("generated_images").insert(card_data).execute()
         logging.info(f"Generated and stored card: {name}")
         return card_data
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         logging.error(f"Error storing card data: {str(e)}")
         return None
 
