@@ -27,6 +27,12 @@ export const AssetGenerationButton = () => {
     setShowDialog(true);
 
     try {
+      // Check if the API route exists
+      const routeCheck = await fetch('/api/generate-assets', { method: 'HEAD' });
+      if (routeCheck.status === 404) {
+        throw new Error("Asset generation endpoint not found. Please check your server configuration.");
+      }
+
       await generateGameAssets((data) => {
         if (data.total_cards) {
           setTotalCards(data.total_cards);
