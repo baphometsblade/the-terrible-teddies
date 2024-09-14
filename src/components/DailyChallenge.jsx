@@ -3,14 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '../integrations/supabase';
-import { useSupabaseAuth } from '../integrations/supabase/auth';
+import { useSession } from '../integrations/supabase/auth';
 import { GameBoard } from './GameBoard';
 
 export const DailyChallenge = ({ onExit }) => {
   const [challenge, setChallenge] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
-  const { session } = useSupabaseAuth();
+  const session = useSession();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -86,7 +86,7 @@ export const DailyChallenge = ({ onExit }) => {
             coins: supabase.sql`coins + ${challenge.reward}`,
             challenges_completed: supabase.sql`challenges_completed + 1`
           })
-          .eq('user_id', session.user.id);
+          .eq('user_id', session?.user?.id);
 
         if (error) throw error;
 
