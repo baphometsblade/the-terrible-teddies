@@ -5,7 +5,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { generateGameAssets } from '../scripts/generate-game-assets';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const AssetGenerationButton = () => {
@@ -27,27 +26,46 @@ export const AssetGenerationButton = () => {
     setShowDialog(true);
 
     try {
-      // Check if the API route exists
-      const routeCheck = await fetch('/api/generate-assets', { method: 'HEAD' });
-      if (routeCheck.status === 404) {
-        throw new Error("Asset generation endpoint not found. Please check your server configuration.");
+      const response = await fetch('/api/generate-assets', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      await generateGameAssets((data) => {
-        if (data.total_cards) {
-          setTotalCards(data.total_cards);
-        } else if (data.progress) {
-          setProgress(data.progress);
-          setCurrentImage(data.currentImage);
-          setGeneratedCards((prev) => [...prev, { name: data.currentImage, url: data.url }]);
-        }
-      });
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
 
-      toast({
-        title: "Assets Generated",
-        description: `Successfully generated ${generatedCards.length} assets.`,
-        variant: "success",
-      });
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.trim() === '') continue;
+
+          const data = JSON.parse(line);
+
+          if (data.total_cards) {
+            setTotalCards(data.total_cards);
+          } else if (data.progress) {
+            setProgress(data.progress);
+            setCurrentImage(data.currentImage);
+            setGeneratedCards((prev) => [...prev, { name: data.currentImage, url: data.url }]);
+          } else if (data.error) {
+            throw new Error(data.error);
+          } else if (data.completed) {
+            toast({
+              title: "Assets Generated",
+              description: `Successfully generated ${data.total_generated} assets.`,
+              variant: "success",
+            });
+          }
+        }
+      }
     } catch (error) {
       console.error('Error generating assets:', error);
       setError(error.message || "Failed to generate assets. Please try again.");
@@ -99,14 +117,7 @@ export const AssetGenerationButton = () => {
           {error && (
             <Alert variant="destructive">
               <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
-                {error}
-                {error.includes("404") && (
-                  <p className="mt-2">
-                    The asset generation endpoint might not be set up correctly. Please check your server configuration and ensure the API route exists.
-                  </p>
-                )}
-              </AlertDescription>
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
           <ScrollArea className="h-[400px] mt-4">

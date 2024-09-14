@@ -16,44 +16,19 @@ export default async function handler(req, res) {
 
   const pythonProcess = spawn('python', [scriptPath]);
 
-  let buffer = '';
-  let totalCards = 0;
-
   pythonProcess.stdout.on('data', (data) => {
-    buffer += data.toString();
-    let newlineIndex;
-    while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-      const line = buffer.slice(0, newlineIndex);
-      buffer = buffer.slice(newlineIndex + 1);
-      
-      console.log('Python script output:', line);
-
-      try {
-        const jsonData = JSON.parse(line);
-        if (jsonData.total_cards) {
-          totalCards = jsonData.total_cards;
-          res.write(`data: ${JSON.stringify({ totalCards })}\n\n`);
-        } else if (jsonData.progress) {
-          res.write(`data: ${JSON.stringify({ 
-            progress: jsonData.progress, 
-            currentImage: jsonData.currentImage,
-            url: jsonData.url,
-            generatedCards: Math.floor((jsonData.progress / 100) * totalCards)
-          })}\n\n`);
-        } else if (jsonData.error) {
-          console.error('Python script error:', jsonData.error);
-          res.write(`data: ${JSON.stringify({ 
-            error: jsonData.error,
-            traceback: jsonData.traceback || 'No traceback available'
-          })}\n\n`);
-        } else if (jsonData.completed) {
-          res.write(`data: ${JSON.stringify({ message: 'Assets generated successfully', completed: true })}\n\n`);
+    const lines = data.toString().split('\n');
+    lines.forEach(line => {
+      if (line.trim() !== '') {
+        try {
+          const jsonData = JSON.parse(line);
+          res.write(`data: ${JSON.stringify(jsonData)}\n\n`);
+        } catch (error) {
+          console.error('Error parsing JSON:', error, 'Raw output:', line);
+          res.write(`data: ${JSON.stringify({ error: `Error parsing JSON: ${error.message}`, rawOutput: line })}\n\n`);
         }
-      } catch (error) {
-        console.error('Error parsing JSON:', error, 'Raw output:', line);
-        res.write(`data: ${JSON.stringify({ error: `Error parsing JSON: ${error.message}`, rawOutput: line })}\n\n`);
       }
-    }
+    });
   });
 
   pythonProcess.stderr.on('data', (data) => {
