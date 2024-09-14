@@ -1,10 +1,9 @@
 import { supabase } from '../integrations/supabase';
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
 const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 const TOTAL_CARDS = 40;
@@ -16,13 +15,13 @@ export async function generateGameAssets(progressCallback) {
       const cardName = `${cardType} Card ${Math.floor(i / 5) + 1}`;
       const prompt = `A cute teddy bear as a ${cardType.toLowerCase()} card for a card game called Terrible Teddies. The teddy should look mischievous and be doing an action related to its type. Cartoon style, vibrant colors, white background.`;
 
-      const response = await openai.createImage({
+      const response = await openai.images.generate({
         prompt: prompt,
         n: 1,
         size: "512x512",
       });
 
-      const imageUrl = response.data.data[0].url;
+      const imageUrl = response.data[0].url;
 
       const { data, error } = await supabase
         .from('generated_images')
