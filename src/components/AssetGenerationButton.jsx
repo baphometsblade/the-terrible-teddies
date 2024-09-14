@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { generateGameAssets } from '../scripts/generate-game-assets';
 
 export const AssetGenerationButton = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -17,7 +18,7 @@ export const AssetGenerationButton = () => {
   const [totalCards, setTotalCards] = useState(0);
   const { toast } = useToast();
 
-  const handleGenerateAssets = useCallback(async () => {
+  const handleGenerateAssets = async () => {
     setIsGenerating(true);
     setProgress(0);
     setCurrentImage(null);
@@ -26,46 +27,21 @@ export const AssetGenerationButton = () => {
     setShowDialog(true);
 
     try {
-      const response = await fetch('/api/generate-assets', {
-        method: 'POST',
+      await generateGameAssets((data) => {
+        if (data.total_cards) {
+          setTotalCards(data.total_cards);
+        } else if (data.progress) {
+          setProgress(data.progress);
+          setCurrentImage(data.currentImage);
+          setGeneratedCards((prev) => [...prev, { name: data.currentImage, url: data.url }]);
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.trim() === '') continue;
-
-          const data = JSON.parse(line);
-
-          if (data.total_cards) {
-            setTotalCards(data.total_cards);
-          } else if (data.progress) {
-            setProgress(data.progress);
-            setCurrentImage(data.currentImage);
-            setGeneratedCards((prev) => [...prev, { name: data.currentImage, url: data.url }]);
-          } else if (data.error) {
-            throw new Error(data.error);
-          } else if (data.completed) {
-            toast({
-              title: "Assets Generated",
-              description: `Successfully generated ${data.total_generated} assets.`,
-              variant: "success",
-            });
-          }
-        }
-      }
+      toast({
+        title: "Assets Generated",
+        description: `Successfully generated ${generatedCards.length} assets.`,
+        variant: "success",
+      });
     } catch (error) {
       console.error('Error generating assets:', error);
       setError(error.message || "Failed to generate assets. Please try again.");
@@ -77,14 +53,7 @@ export const AssetGenerationButton = () => {
     } finally {
       setIsGenerating(false);
     }
-  }, [toast]);
-
-  const handleCloseDialog = useCallback(() => {
-    if (!isGenerating) {
-      setShowDialog(false);
-      setError(null);
-    }
-  }, [isGenerating]);
+  };
 
   return (
     <>
@@ -102,7 +71,7 @@ export const AssetGenerationButton = () => {
           'Generate All Assets'
         )}
       </Button>
-      <Dialog open={showDialog} onOpenChange={handleCloseDialog}>
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Generating Assets</DialogTitle>
@@ -130,14 +99,8 @@ export const AssetGenerationButton = () => {
               ))}
             </div>
           </ScrollArea>
-          {currentImage && (
-            <div className="mt-4">
-              <p className="mb-2 font-semibold">Current Image:</p>
-              <img src={currentImage} alt="Current generated image" className="w-full h-auto" />
-            </div>
-          )}
           {!isGenerating && (
-            <Button onClick={handleCloseDialog} className="mt-4">Close</Button>
+            <Button onClick={() => setShowDialog(false)} className="mt-4">Close</Button>
           )}
         </DialogContent>
       </Dialog>
