@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from '@/integrations/supabase';
-import { useCurrentUser } from '@/integrations/supabase/auth';
+import { useSession } from '@/integrations/supabase/auth';
 import { GameBoard } from './GameBoard';
 
 export const Multiplayer = ({ onExit }) => {
@@ -11,7 +11,7 @@ export const Multiplayer = ({ onExit }) => {
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [isJoiningGame, setIsJoiningGame] = useState(false);
   const [currentGame, setCurrentGame] = useState(null);
-  const { data: currentUser } = useCurrentUser();
+  const session = useSession();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -41,11 +41,20 @@ export const Multiplayer = ({ onExit }) => {
   };
 
   const createGame = async () => {
+    if (!session) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a game.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCreatingGame(true);
     const { data, error } = await supabase
       .from('games')
       .insert({
-        host_id: currentUser.id,
+        host_id: session.user.id,
         status: 'waiting',
       })
       .select()
@@ -64,10 +73,19 @@ export const Multiplayer = ({ onExit }) => {
   };
 
   const joinGame = async (gameId) => {
+    if (!session) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to join a game.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsJoiningGame(true);
     const { data, error } = await supabase
       .from('games')
-      .update({ guest_id: currentUser.id, status: 'in_progress' })
+      .update({ guest_id: session.user.id, status: 'in_progress' })
       .eq('id', gameId)
       .select()
       .single();
