@@ -18,20 +18,16 @@ const fromSupabase = async (query) => {
 };
 
 // Hook for fetching generated images
-export const useGeneratedImages = () => {
-    return useQuery({
-        queryKey: ['generatedImages'],
-        queryFn: () => fromSupabase(supabase.from('generated_images').select('*')),
-    });
-};
+export const useGeneratedImages = () => useQuery({
+    queryKey: ['generatedImages'],
+    queryFn: () => fromSupabase(supabase.from('generated_images').select('*'))
+});
 
 // Hook for fetching user deck
-export const useUserDeck = () => {
-    return useQuery({
-        queryKey: ['userDeck'],
-        queryFn: () => fromSupabase(supabase.from('user_decks').select('*')),
-    });
-};
+export const useUserDeck = () => useQuery({
+    queryKey: ['userDeck'],
+    queryFn: () => fromSupabase(supabase.from('user_decks').select('*').single())
+});
 
 // Hook for updating user stats
 export const useUpdateUserStats = () => {
@@ -44,24 +40,6 @@ export const useUpdateUserStats = () => {
     });
 };
 
-// Hook for adding a generated image
-export const useAddGeneratedImage = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (imageData) => fromSupabase(supabase.from('generated_images').insert(imageData)),
-        onSuccess: () => {
-            queryClient.invalidateQueries('generatedImages');
-        },
-    });
-};
+// Existing hooks (useA, useAddA, useUpdateA, useDeleteA) can remain as they are
 
-// Hook for adding a card image
-export const useAddCardImage = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (imageData) => fromSupabase(supabase.from('card_images').insert(imageData)),
-        onSuccess: () => {
-            queryClient.invalidateQueries('cardImages');
-        },
-    });
-};
+// Add any other necessary hooks here
