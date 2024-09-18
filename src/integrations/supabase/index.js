@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { useQuery, useMutation, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from "react";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_PROJECT_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY;
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
+import React from "react";
 export const queryClient = new QueryClient();
 export function SupabaseProvider({ children }) {
     return React.createElement(QueryClientProvider, { client: queryClient }, children);
@@ -17,77 +17,38 @@ const fromSupabase = async (query) => {
     return data;
 };
 
-/* supabase integration types
-
-### generated_images
-
-| name        | type                     | format | required |
-|-------------|--------------------------|--------|----------|
-| id          | int8                     | number | true     |
-| created_at  | timestamp with time zone | string | true     |
-| name        | text                     | string | true     |
-| url         | text                     | string | true     |
-| prompt      | text                     | string | true     |
-| type        | text                     | string | true     |
-| energy_cost | int4                     | number | true     |
-
-*/
-
-// Hooks for generated_images table
-
+// Hook for fetching generated images
 export const useGeneratedImages = () => useQuery({
-    queryKey: ['generated_images'],
-    queryFn: () => fromSupabase(supabase.from('generated_images').select('*')),
+    queryKey: ['generatedImages'],
+    queryFn: () => fromSupabase(supabase.from('generated_images').select('*'))
 });
 
-export const useGeneratedImage = (id) => useQuery({
-    queryKey: ['generated_images', id],
-    queryFn: () => fromSupabase(supabase.from('generated_images').select('*').eq('id', id).single()),
+// Hook for fetching user deck
+export const useUserDeck = () => useQuery({
+    queryKey: ['userDeck'],
+    queryFn: () => fromSupabase(supabase.from('user_decks').select('*').single())
 });
 
-export const useAddGeneratedImage = () => {
+// Hook for updating user stats
+export const useUpdateUserStats = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (newImage) => fromSupabase(supabase.from('generated_images').insert([newImage])),
+        mutationFn: (stats) => fromSupabase(supabase.from('user_stats').upsert(stats)),
         onSuccess: () => {
-            queryClient.invalidateQueries('generated_images');
+            queryClient.invalidateQueries('userStats');
         },
     });
 };
 
-export const useUpdateGeneratedImage = () => {
+// Hook for saving user deck
+export const useSaveUserDeck = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: ({ id, ...updateData }) => fromSupabase(supabase.from('generated_images').update(updateData).eq('id', id)),
+        mutationFn: (deck) => fromSupabase(supabase.from('user_decks').upsert({ deck })),
         onSuccess: () => {
-            queryClient.invalidateQueries('generated_images');
+            queryClient.invalidateQueries('userDeck');
         },
     });
 };
 
-export const useDeleteGeneratedImage = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (id) => fromSupabase(supabase.from('generated_images').delete().eq('id', id)),
-        onSuccess: () => {
-            queryClient.invalidateQueries('generated_images');
-        },
-    });
-};
-
-// Hooks for card_images table
-
-export const useCardImages = () => useQuery({
-    queryKey: ['card_images'],
-    queryFn: () => fromSupabase(supabase.from('card_images').select('*')),
-});
-
-export const useAddCardImage = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (newImage) => fromSupabase(supabase.from('card_images').insert([newImage])),
-        onSuccess: () => {
-            queryClient.invalidateQueries('card_images');
-        },
-    });
-};
+// Add any other necessary hooks here
