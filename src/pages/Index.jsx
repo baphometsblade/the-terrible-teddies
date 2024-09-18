@@ -9,11 +9,13 @@ import { ImageGenerator } from '../components/ImageGenerator';
 import { GameBoard } from '../components/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
   const [imagesGenerated, setImagesGenerated] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkImagesGenerated = async () => {
@@ -29,13 +31,20 @@ const Index = () => {
           setGameState(count > 0 ? 'menu' : 'imageGenerator');
         } catch (error) {
           console.error('Error checking generated images:', error);
+          toast({
+            title: "Error",
+            description: "Failed to check generated images. Please try again.",
+            variant: "destructive",
+          });
           setGameState('error');
         }
+      } else if (!authLoading && !session) {
+        setGameState('auth');
       }
     };
 
     checkImagesGenerated();
-  }, [authLoading, session]);
+  }, [authLoading, session, toast]);
 
   const handleImageGenerationComplete = () => {
     setImagesGenerated(true);
@@ -49,6 +58,13 @@ const Index = () => {
           <div className="text-center text-2xl text-gray-600">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
             Loading game assets...
+          </div>
+        );
+      case 'auth':
+        return (
+          <div className="text-center">
+            <h2 className="text-2xl text-gray-600 mb-4">Please log in to play</h2>
+            <SupabaseAuthUI />
           </div>
         );
       case 'imageGenerator':
