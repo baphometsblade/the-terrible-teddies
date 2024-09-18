@@ -17,9 +17,11 @@ const fromSupabase = async (query) => {
     return data;
 };
 
-// ... (keep existing code)
+export const useGeneratedImages = () => useQuery({
+    queryKey: ['generatedImages'],
+    queryFn: () => fromSupabase(supabase.from('generated_images').select('*')),
+});
 
-// Add these new hooks
 export const useUserDeck = () => useQuery({
     queryKey: ['userDeck'],
     queryFn: () => fromSupabase(supabase.from('user_decks').select('*').single()),
@@ -45,4 +47,22 @@ export const useUpdateUserStats = () => {
     });
 };
 
-// ... (keep any other existing exports)
+export const useAddGeneratedImage = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (imageData) => fromSupabase(supabase.from('generated_images').insert(imageData)),
+        onSuccess: () => {
+            queryClient.invalidateQueries('generatedImages');
+        },
+    });
+};
+
+export const useAddCardImage = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (cardData) => fromSupabase(supabase.from('card_images').insert(cardData)),
+        onSuccess: () => {
+            queryClient.invalidateQueries('cardImages');
+        },
+    });
+};
