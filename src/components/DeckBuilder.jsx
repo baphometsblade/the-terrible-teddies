@@ -1,50 +1,111 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { supabase } from '../integrations/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Loader2, Plus, Minus } from 'lucide-react';
+import { Loader2, Plus, Minus, Save } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
+import { useGeneratedImages, useUserDeck, useSaveUserDeck } from '../integrations/supabase';
 
 export const DeckBuilder = ({ onExit }) => {
   const [deck, setDeck] = useState([]);
-  const [availableCards, setAvailableCards] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: availableCards, isLoading } = useGeneratedImages();
+  const { data: userDeck } = useUserDeck();
+  const saveUserDeck = useSaveUserDeck();
+  const { toast } = useToast();
 
   useEffect(() => {
-    fetchCards();
-  }, []);
-
-  const fetchCards = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('generated_images')
-        .select('*');
-      
-      if (error) throw error;
-
-      setAvailableCards(data);
-    } catch (error) {
-      console.error('Error fetching cards:', error);
-    } finally {
-      setLoading(false);
+    if (userDeck) {
+      setDeck(userDeck);
     }
-  };
+  }, [userDeck]);
 
   const addCardToDeck = (card) => {
     if (deck.length < 40) {
-      setDeck([...deck, card]);
+      const cardCount = deck.filter(c => c.id === card.id).length;
+      if (cardCount < 3) {
+        setDeck([...deck, card]);
+      } else {
+        toast({
+          title: "Card Limit Reached",
+          description: "You can only have 3 copies of a card in your deck.",
+          variant: "destructive",
+        });
+      }
     } else {
-      alert('Your deck is full! (40 cards maximum)');
+      toast({
+        title: "Deck Full",
+        description: "Your deck is full! (40 cards maximum)",
+        variant: "destructive",
+      });
     }
   };
 
   const removeCardFromDeck = (cardId) => {
-    setDeck(deck.filter(card => card.name !== cardId));
+    const index = deck.findIndex(card => card.id === cardId);
+    if (index !== -1) {
+      const newDeck = [...deck];
+      newDeck.splice(index, 1);
+      setDeck(newDeck);
+    }
   };
 
-  if (loading) {
+  const handleSaveDeck = async () => {
+    if (deck.length < 20) {
+      toast({
+        title: "Deck Too Small",
+        description: "Your deck must have at least 20 cards.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await saveUserDeck.mutateAsync(deck);
+      toast({
+        title: "Deck Saved",
+        description: "Your custom deck has been saved successfully!",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error('Error saving deck:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save your deck. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getDeckStats = () => {
+    const stats = {
+      Action: 0,
+      Trap: 0,
+      Special: 0,
+      Defense: 0,
+      Boost: 0,
+    };
+    deck.forEach(card => {
+      stats[card.type]++;
+    });
+    return stats;
+  };
+
+  const renderDeckStats = () => {
+    const stats = getDeckStats();
+    return (
+      <div className="grid grid-cols-5 gap-2 mt-4">
+        {Object.entries(stats).map(([type, count]) => (
+          <div key={type} className="text-center">
+            <div className="text-sm font-bold">{type}</div>
+            <div className="text-lg">{count}</div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
@@ -64,7 +125,7 @@ export const DeckBuilder = ({ onExit }) => {
             <AnimatePresence>
               {availableCards.map((card) => (
                 <motion.div
-                  key={card.name}
+                  key={card.id}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
@@ -98,11 +159,12 @@ export const DeckBuilder = ({ onExit }) => {
         
         <div className="bg-gray-800 p-4 rounded-lg shadow-md">
           <h3 className="text-2xl font-bold mb-4 text-yellow-400">Your Deck ({deck.length}/40)</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {renderDeckStats()}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
             <AnimatePresence>
-              {deck.map((card) => (
+              {deck.map((card, index) => (
                 <motion.div
-                  key={card.name}
+                  key={`${card.id}-${index}`}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
@@ -119,7 +181,7 @@ export const DeckBuilder = ({ onExit }) => {
                         <p className="text-xs text-gray-300">{card.type}</p>
                         <p className="text-xs text-gray-300">Cost: {card.energy_cost}</p>
                         <Button 
-                          onClick={() => removeCardFromDeck(card.name)} 
+                          onClick={() => removeCardFromDeck(card.id)} 
                           className="mt-2 bg-red-500 hover:bg-red-600 text-white"
                           size="sm"
                         >
@@ -135,25 +197,31 @@ export const DeckBuilder = ({ onExit }) => {
         </div>
       </div>
 
-      <div className="mt-8 text-center">
+      <div className="mt-8 text-center space-x-4">
+        <Button 
+          onClick={handleSaveDeck}
+          className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105"
+        >
+          <Save className="w-4 h-4 mr-2" /> Save Deck
+        </Button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button 
               className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105"
             >
-              Save and Exit
+              Exit
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent className="bg-gray-800 border border-gray-700">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-yellow-400">Are you sure you want to exit?</AlertDialogTitle>
               <AlertDialogDescription className="text-gray-300">
-                Your deck will be saved automatically. You can always come back to edit it later.
+                Your deck changes will be saved automatically. You can always come back to edit it later.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel className="bg-gray-700 text-gray-300 hover:bg-gray-600">Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={onExit} className="bg-yellow-400 text-gray-900 hover:bg-yellow-500">Confirm</AlertDialogAction>
+              <AlertDialogAction onClick={onExit} className="bg-yellow-400 text-gray-900 hover:bg-yellow-500">Confirm Exit</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
