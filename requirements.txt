@@ -1,5 +1,0 @@
-openai
-supabase
-python-dotenv
-Pillow
-requests
