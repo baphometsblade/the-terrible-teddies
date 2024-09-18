@@ -14,8 +14,7 @@ const CARD_TYPES = [
   { name: 'Teddy Tantrum', type: 'Special', description: 'A cute cartoon angry teddy bear throwing a comical fit, with stuffing flying everywhere', energyCost: 3 },
 ];
 
-const PICO_API_URL = 'https://a.picoapps.xyz/hope-news';
-const PICO_API_KEY = 'v1-Z0FBQUFBQm11YWdKdFdxemtEX2JFNEFIZWRVOWVTaENrbTRKdVBzOXo5NnB1aDRFbFFCNk5VekR6OTBBTHotc0FYV3hpdzBZVjRiVlp1UDhDSHp0TGd6WW5lWl8xZFlPZ3c9PQ==';
+const OPENAI_API_URL = 'https://api.openai.com/v1/images/generations';
 
 export const ImageGenerator = ({ onComplete }) => {
   const [loading, setLoading] = useState(false);
@@ -27,20 +26,16 @@ export const ImageGenerator = ({ onComplete }) => {
   const generateAndStoreImage = async (card) => {
     const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
     try {
-      const response = await fetch(PICO_API_URL, {
+      const response = await fetch(OPENAI_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${PICO_API_KEY}`
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`
         },
         body: JSON.stringify({
           prompt: prompt,
-          negative_prompt: "realistic, photographic, human, person",
-          width: 512,
-          height: 512,
-          num_inference_steps: 20,
-          guidance_scale: 7.5,
-          num_images: 1
+          n: 1,
+          size: "256x256"
         })
       });
 
@@ -49,7 +44,7 @@ export const ImageGenerator = ({ onComplete }) => {
       }
 
       const data = await response.json();
-      const imageUrl = data.output[0];
+      const imageUrl = data.data[0].url;
 
       // Store the image URL in both tables
       await Promise.all([
