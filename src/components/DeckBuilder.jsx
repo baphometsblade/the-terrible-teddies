@@ -5,16 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Loader2, Plus, Minus, Save } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
-import { useGeneratedImages, useUserDeck, useSaveUserDeck, useEvolveCard } from '../integrations/supabase';
-import { CardEvolution } from './CardEvolution';
+import { useGeneratedImages, useUserDeck, useSaveUserDeck } from '../integrations/supabase';
 
 export const DeckBuilder = ({ onExit }) => {
   const [deck, setDeck] = useState([]);
-  const [selectedCard, setSelectedCard] = useState(null);
   const { data: availableCards, isLoading } = useGeneratedImages();
   const { data: userDeck } = useUserDeck();
   const saveUserDeck = useSaveUserDeck();
-  const evolveCard = useEvolveCard();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -176,22 +173,15 @@ export const DeckBuilder = ({ onExit }) => {
                   transition={{ duration: 0.2 }}
                   className="relative group"
                 >
-                  <Card 
-                    className="cursor-pointer bg-gray-700 hover:shadow-lg transition-all duration-200 overflow-hidden"
-                    onClick={() => setSelectedCard(card)}
-                  >
+                  <Card className="cursor-pointer bg-gray-700 hover:shadow-lg transition-all duration-200 overflow-hidden">
                     <CardContent className="p-0 relative">
                       <img src={card.url} alt={card.name} className="w-full h-40 object-cover" />
                       <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-2">
                         <p className="text-sm font-bold text-yellow-400">{card.name}</p>
                         <p className="text-xs text-gray-300">{card.type}</p>
                         <p className="text-xs text-gray-300">Cost: {card.energy_cost}</p>
-                        <p className="text-xs text-gray-300">Level: {card.level || 1}</p>
                         <Button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeCardFromDeck(card.id);
-                          }} 
+                          onClick={() => removeCardFromDeck(card.id)} 
                           className="mt-2 bg-red-500 hover:bg-red-600 text-white"
                           size="sm"
                         >

@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { supabase } from './index.js';
+import { supabase, SupabaseProvider } from './index.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
@@ -8,54 +8,69 @@ import { Button } from '@/components/ui/button';
 const SupabaseAuthContext = createContext();
 
 export const SupabaseAuthProvider = ({ children }) => {
+  return (
+    <SupabaseProvider>
+      <SupabaseAuthProviderInner>
+        {children}
+      </SupabaseAuthProviderInner>
+    </SupabaseProvider>
+  );
+}
+
+export const SupabaseAuthProviderInner = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const getSession = async () => {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setLoading(false);
-    });
+    };
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      setLoading(false);
+      queryClient.invalidateQueries('user');
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    getSession();
+
+    return () => {
+      authListener.subscription.unsubscribe();
+      setLoading(false);
+    };
+  }, [queryClient]);
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    queryClient.invalidateQueries('user');
+    setLoading(false);
+  };
 
   return (
-    <SupabaseAuthContext.Provider value={{ session, loading }}>
+    <SupabaseAuthContext.Provider value={{ session, loading, logout }}>
       {children}
     </SupabaseAuthContext.Provider>
   );
 };
 
 export const useSupabaseAuth = () => {
-  const context = useContext(SupabaseAuthContext);
-  if (context === undefined) {
-    throw new Error('useSupabaseAuth must be used within a SupabaseAuthProvider');
-  }
-  return context;
+  return useContext(SupabaseAuthContext);
 };
 
 export const SupabaseAuthUI = () => {
   const { session } = useSupabaseAuth();
-  const queryClient = useQueryClient();
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    queryClient.clear();
-  };
 
   if (session) {
     return (
-      <div>
-        <p>Logged in as: {session.user.email}</p>
-        <Button onClick={handleSignOut}>Sign Out</Button>
+      <div className="text-center">
+        <p className="mb-4">You are already logged in.</p>
+        <Button onClick={() => window.location.href = '/'}>
+          Go to Home
+        </Button>
       </div>
     );
   }
@@ -64,10 +79,8 @@ export const SupabaseAuthUI = () => {
     <Auth
       supabaseClient={supabase}
       appearance={{ theme: ThemeSupa }}
-      providers={['google', 'github']}
+      theme="default"
+      providers={[]}
     />
   );
 };
-
-// Export SupabaseAuthProvider as SupabaseProvider for consistency
-export { SupabaseAuthProvider as SupabaseProvider };
