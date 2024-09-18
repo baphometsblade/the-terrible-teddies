@@ -10,42 +10,25 @@ const SupabaseAuthContext = createContext();
 export const SupabaseAuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const queryClient = useQueryClient();
 
   useEffect(() => {
-    const getSession = async () => {
-      setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
-    };
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      queryClient.invalidateQueries('user');
     });
 
-    getSession();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
+    });
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [queryClient]);
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    queryClient.invalidateQueries('user');
-  };
-
-  const value = {
-    session,
-    loading,
-    logout,
-  };
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
-    <SupabaseAuthContext.Provider value={value}>
+    <SupabaseAuthContext.Provider value={{ session, loading }}>
       {children}
     </SupabaseAuthContext.Provider>
   );
@@ -61,14 +44,18 @@ export const useSupabaseAuth = () => {
 
 export const SupabaseAuthUI = () => {
   const { session } = useSupabaseAuth();
+  const queryClient = useQueryClient();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    queryClient.clear();
+  };
 
   if (session) {
     return (
-      <div className="text-center">
-        <p className="mb-4">You are already logged in.</p>
-        <Button onClick={() => window.location.href = '/'}>
-          Go to Home
-        </Button>
+      <div>
+        <p>Logged in as: {session.user.email}</p>
+        <Button onClick={handleSignOut}>Sign Out</Button>
       </div>
     );
   }
@@ -77,8 +64,10 @@ export const SupabaseAuthUI = () => {
     <Auth
       supabaseClient={supabase}
       appearance={{ theme: ThemeSupa }}
-      theme="default"
-      providers={[]}
+      providers={['google', 'github']}
     />
   );
 };
+
+// Export SupabaseAuthProvider as SupabaseProvider for consistency
+export { SupabaseAuthProvider as SupabaseProvider };
