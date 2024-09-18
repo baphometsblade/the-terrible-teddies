@@ -17,35 +17,77 @@ const fromSupabase = async (query) => {
     return data;
 };
 
-// Add this new hook
+/* supabase integration types
+
+### generated_images
+
+| name        | type                     | format | required |
+|-------------|--------------------------|--------|----------|
+| id          | int8                     | number | true     |
+| created_at  | timestamp with time zone | string | true     |
+| name        | text                     | string | true     |
+| url         | text                     | string | true     |
+| prompt      | text                     | string | true     |
+| type        | text                     | string | true     |
+| energy_cost | int4                     | number | true     |
+
+*/
+
+// Hooks for generated_images table
+
 export const useGeneratedImages = () => useQuery({
-    queryKey: ['generatedImages'],
+    queryKey: ['generated_images'],
     queryFn: () => fromSupabase(supabase.from('generated_images').select('*')),
 });
 
-export const useUserDeck = () => useQuery({
-    queryKey: ['userDeck'],
-    queryFn: () => fromSupabase(supabase.from('user_decks').select('*').single()),
+export const useGeneratedImage = (id) => useQuery({
+    queryKey: ['generated_images', id],
+    queryFn: () => fromSupabase(supabase.from('generated_images').select('*').eq('id', id).single()),
 });
 
-export const useSaveUserDeck = () => {
+export const useAddGeneratedImage = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (deck) => fromSupabase(supabase.from('user_decks').upsert({ deck }, { onConflict: 'user_id' })),
+        mutationFn: (newImage) => fromSupabase(supabase.from('generated_images').insert([newImage])),
         onSuccess: () => {
-            queryClient.invalidateQueries('userDeck');
+            queryClient.invalidateQueries('generated_images');
         },
     });
 };
 
-export const useUpdateUserStats = () => {
+export const useUpdateGeneratedImage = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (stats) => fromSupabase(supabase.from('user_stats').upsert(stats, { onConflict: 'user_id' })),
+        mutationFn: ({ id, ...updateData }) => fromSupabase(supabase.from('generated_images').update(updateData).eq('id', id)),
         onSuccess: () => {
-            queryClient.invalidateQueries('userStats');
+            queryClient.invalidateQueries('generated_images');
         },
     });
 };
 
-// ... (keep any other existing exports)
+export const useDeleteGeneratedImage = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id) => fromSupabase(supabase.from('generated_images').delete().eq('id', id)),
+        onSuccess: () => {
+            queryClient.invalidateQueries('generated_images');
+        },
+    });
+};
+
+// Hooks for card_images table
+
+export const useCardImages = () => useQuery({
+    queryKey: ['card_images'],
+    queryFn: () => fromSupabase(supabase.from('card_images').select('*')),
+});
+
+export const useAddCardImage = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (newImage) => fromSupabase(supabase.from('card_images').insert([newImage])),
+        onSuccess: () => {
+            queryClient.invalidateQueries('card_images');
+        },
+    });
+};
