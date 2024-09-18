@@ -1,39 +1,67 @@
-import { useState, useEffect } from 'react';
-import { useSupabaseAuth, SupabaseAuthProvider } from '../integrations/supabase/auth';
+import React, { useState, useEffect } from 'react';
+import { useSupabaseAuth } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GameBoard } from '../components/GameBoard';
-import { DeckBuilder } from '../components/DeckBuilder';
-import { ImageGenerator } from '../components/ImageGenerator';
-import { Loader2, PawPrint, Info } from 'lucide-react';
+import { Loader2, PawPrint } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ImageGenerator } from '../components/ImageGenerator';
+
+const ErrorBoundary = ({ children }) => {
+  const [hasError, setHasError] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (hasError) {
+      console.error("Error caught by ErrorBoundary:", error);
+    }
+  }, [hasError, error]);
+
+  if (hasError) {
+    return (
+      <div className="text-center text-red-600">
+        <h2>Something went wrong.</h2>
+        <details style={{ whiteSpace: 'pre-wrap' }}>
+          {error && error.toString()}
+        </details>
+      </div>
+    );
+  }
+
+  return children;
+};
 
 const IndexContent = () => {
-  const { session, loading: authLoading, logout } = useSupabaseAuth();
-  const [gameState, setGameState] = useState('loading'); // 'loading', 'menu', 'singlePlayer', 'multiplayer', 'deckBuilder', 'imageGenerator'
+  const { session, loading: authLoading } = useSupabaseAuth();
+  const [gameState, setGameState] = useState('loading');
   const [imagesGenerated, setImagesGenerated] = useState(false);
 
   useEffect(() => {
     const checkImagesGenerated = async () => {
       if (!authLoading && session) {
-        const { count, error } = await supabase
-          .from('generated_images')
-          .select('*', { count: 'exact', head: true });
-        
-        if (error) {
-          console.error('Error checking generated images:', error);
-          return;
-        }
+        try {
+          const { count, error } = await supabase
+            .from('generated_images')
+            .select('*', { count: 'exact', head: true });
+          
+          if (error) throw error;
 
-        setImagesGenerated(count > 0);
-        setGameState(count > 0 ? 'menu' : 'imageGenerator');
+          setImagesGenerated(count > 0);
+          setGameState(count > 0 ? 'menu' : 'imageGenerator');
+        } catch (error) {
+          console.error('Error checking generated images:', error);
+          setGameState('error');
+        }
       }
     };
 
     checkImagesGenerated();
   }, [authLoading, session]);
+
+  const handleImageGenerationComplete = () => {
+    setImagesGenerated(true);
+    setGameState('menu');
+  };
 
   if (authLoading) {
     return (
@@ -70,42 +98,6 @@ const IndexContent = () => {
     );
   }
 
-  const renderMenu = () => (
-    <motion.div 
-      className="space-y-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Button 
-        onClick={() => setGameState('singlePlayer')} 
-        className="w-full text-lg py-6 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-      >
-        Single Player
-      </Button>
-      <Button 
-        onClick={() => setGameState('multiplayer')} 
-        className="w-full text-lg py-6 bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
-        disabled
-      >
-        Multiplayer (Coming Soon)
-      </Button>
-      <Button 
-        onClick={() => setGameState('deckBuilder')} 
-        className="w-full text-lg py-6 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
-      >
-        Deck Builder
-      </Button>
-      <Button 
-        onClick={logout} 
-        variant="outline" 
-        className="w-full text-lg py-6 border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300 shadow-lg"
-      >
-        Logout
-      </Button>
-    </motion.div>
-  );
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-100 to-purple-200 flex items-center justify-center">
       <div className="container mx-auto p-8 max-w-4xl bg-white rounded-lg shadow-xl">
@@ -114,49 +106,26 @@ const IndexContent = () => {
           <h1 className="text-5xl font-bold text-center bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600">
             Terrible Teddies
           </h1>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="w-6 h-6 text-purple-500 ml-4 cursor-pointer" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>A cute and cuddly card game where teddy bears battle it out!</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
         {gameState === 'loading' && (
           <div className="text-center text-2xl text-gray-600">
             Loading game assets...
           </div>
         )}
-        {gameState === 'menu' && renderMenu()}
-        {(gameState === 'singlePlayer' || gameState === 'multiplayer') && (
-          <GameBoard
-            gameMode={gameState}
-            onExit={() => setGameState('menu')}
-          />
-        )}
-        {gameState === 'deckBuilder' && (
-          <DeckBuilder onExit={() => setGameState('menu')} />
+        {gameState === 'menu' && (
+          <div className="text-center text-2xl text-gray-600">
+            Welcome to Terrible Teddies! Game menu coming soon.
+          </div>
         )}
         {gameState === 'imageGenerator' && (
-          <Card className="bg-gradient-to-r from-pink-100 to-purple-100">
-            <CardHeader>
-              <CardTitle className="text-2xl text-center text-purple-700">Generate Game Assets</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ImageGenerator onComplete={(generatedImages) => {
-                setImagesGenerated(true);
-                setGameState('menu');
-                // You can use generatedImages here if needed
-              }} />
-            </CardContent>
-          </Card>
+          <div className="text-center">
+            <h2 className="text-2xl text-gray-600 mb-4">Image Generation Required</h2>
+            <ImageGenerator onComplete={handleImageGenerationComplete} />
+          </div>
         )}
-        {imagesGenerated && gameState === 'menu' && (
-          <div className="text-center text-green-600 mb-4">
-            All game assets have been generated successfully!
+        {gameState === 'error' && (
+          <div className="text-center text-2xl text-red-600">
+            An error occurred while loading the game. Please try again later.
           </div>
         )}
       </div>
@@ -165,9 +134,9 @@ const IndexContent = () => {
 };
 
 const Index = () => (
-  <SupabaseAuthProvider>
+  <ErrorBoundary>
     <IndexContent />
-  </SupabaseAuthProvider>
+  </ErrorBoundary>
 );
 
 export default Index;
