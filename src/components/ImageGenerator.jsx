@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
-import { useAddGeneratedImage, useAddCardImage } from '../integrations/supabase';
+import { useAddGeneratedImage } from '../integrations/supabase';
 
 const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 
@@ -12,38 +12,26 @@ export const ImageGenerator = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
   const addGeneratedImage = useAddGeneratedImage();
-  const addCardImage = useAddCardImage();
 
   const generateAndStoreImage = async (card) => {
-    const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
     try {
       console.log(`Generating image for ${card.name}`);
-      // Simulating image generation for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const imageUrl = `https://picsum.photos/200/300?random=${Math.random()}`; // Random placeholder image
+      // Simulating image generation with a placeholder
+      const imageUrl = `https://picsum.photos/200/300?random=${Math.random()}`;
 
       console.log(`Storing image for ${card.name}`);
-      await Promise.all([
-        addCardImage.mutateAsync({
-          name: card.name,
-          url: imageUrl,
-          prompt: card.description,
-          type: card.type,
-          energy_cost: card.energyCost
-        }),
-        addGeneratedImage.mutateAsync({
-          name: card.name,
-          url: imageUrl,
-          prompt: card.description,
-          type: card.type,
-          energy_cost: card.energyCost
-        })
-      ]);
+      await addGeneratedImage.mutateAsync({
+        name: card.name,
+        url: imageUrl,
+        prompt: card.description,
+        type: card.type,
+        energy_cost: card.energyCost
+      });
       console.log(`Image stored for ${card.name}`);
 
       return imageUrl;
     } catch (error) {
-      console.error(`Error generating image for ${card.name}:`, error);
+      console.error(`Error generating/storing image for ${card.name}:`, error);
       throw error;
     }
   };
