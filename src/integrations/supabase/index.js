@@ -1,15 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-import { useQuery, useMutation, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from "react";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_PROJECT_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY;
 export const supabase = createClient(supabaseUrl, supabaseKey);
-
-export const queryClient = new QueryClient();
-export function SupabaseProvider({ children }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, children);
-}
 
 const fromSupabase = async (query) => {
     const { data, error } = await query;
@@ -17,36 +11,34 @@ const fromSupabase = async (query) => {
     return data;
 };
 
-export const useGeneratedImages = () => useQuery({
-    queryKey: ['generatedImages'],
-    queryFn: () => fromSupabase(supabase.from('generated_images').select('*')),
-});
-
-export const useUserDeck = () => useQuery({
-    queryKey: ['userDeck'],
-    queryFn: () => fromSupabase(supabase.from('user_decks').select('*').single()),
-});
-
-export const useSaveUserDeck = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (deck) => fromSupabase(supabase.from('user_decks').upsert({ deck }, { onConflict: 'user_id' })),
-        onSuccess: () => {
-            queryClient.invalidateQueries('userDeck');
-        },
+// Hook for fetching generated images
+export const useGeneratedImages = () => {
+    return useQuery({
+        queryKey: ['generatedImages'],
+        queryFn: () => fromSupabase(supabase.from('generated_images').select('*')),
     });
 };
 
+// Hook for fetching user deck
+export const useUserDeck = () => {
+    return useQuery({
+        queryKey: ['userDeck'],
+        queryFn: () => fromSupabase(supabase.from('user_decks').select('*')),
+    });
+};
+
+// Hook for updating user stats
 export const useUpdateUserStats = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (stats) => fromSupabase(supabase.from('user_stats').upsert(stats, { onConflict: 'user_id' })),
+        mutationFn: (stats) => fromSupabase(supabase.from('user_stats').upsert(stats)),
         onSuccess: () => {
             queryClient.invalidateQueries('userStats');
         },
     });
 };
 
+// Hook for adding a generated image
 export const useAddGeneratedImage = () => {
     const queryClient = useQueryClient();
     return useMutation({
@@ -57,12 +49,13 @@ export const useAddGeneratedImage = () => {
     });
 };
 
-export const useAddCardImage = () => {
+// Hook for saving user deck
+export const useSaveUserDeck = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (cardData) => fromSupabase(supabase.from('card_images').insert(cardData)),
+        mutationFn: (deck) => fromSupabase(supabase.from('user_decks').upsert({ deck })),
         onSuccess: () => {
-            queryClient.invalidateQueries('cardImages');
+            queryClient.invalidateQueries('userDeck');
         },
     });
 };
