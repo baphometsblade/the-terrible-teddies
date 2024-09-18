@@ -1,27 +1,65 @@
-// ... (existing imports and code)
+import { createClient } from '@supabase/supabase-js';
+import { useQuery, useMutation, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Hook for evolving a card
-export const useEvolveCard = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (cardId) => fromSupabase(supabase.rpc('evolve_card', { card_id: cardId })),
-    onSuccess: () => {
-      queryClient.invalidateQueries('userDeck');
-    },
-  });
+const supabaseUrl = import.meta.env.VITE_SUPABASE_PROJECT_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY;
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+import React from "react";
+export const queryClient = new QueryClient();
+export function SupabaseProvider({ children }) {
+    return React.createElement(QueryClientProvider, { client: queryClient }, children);
+}
+
+const fromSupabase = async (query) => {
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return data;
 };
 
-// Hook for adding a generated image
-export const useAddGeneratedImage = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (imageData) => fromSupabase(supabase.from('generated_images').insert(imageData)),
-    onSuccess: () => {
-      queryClient.invalidateQueries('generatedImages');
-    },
-  });
+/* supabase integration types
+
+### a
+
+| name       | type                       | format | required |
+|------------|----------------------------|--------|----------|
+| id         | int8                       | number | true     |
+| created_at | timestamp with time zone   | string | true     |
+
+*/
+
+// Hooks for 'a' table
+export const useA = () => useQuery({
+    queryKey: ['a'],
+    queryFn: () => fromSupabase(supabase.from('a').select('*'))
+});
+
+export const useAddA = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (newA) => fromSupabase(supabase.from('a').insert([newA])),
+        onSuccess: () => {
+            queryClient.invalidateQueries('a');
+        },
+    });
 };
 
-// ... (existing exports)
-export { useAddGeneratedImage };
-// Remove the duplicate export of useEvolveCard
+export const useUpdateA = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, ...updateData }) => fromSupabase(supabase.from('a').update(updateData).eq('id', id)),
+        onSuccess: () => {
+            queryClient.invalidateQueries('a');
+        },
+    });
+};
+
+export const useDeleteA = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id) => fromSupabase(supabase.from('a').delete().eq('id', id)),
+        onSuccess: () => {
+            queryClient.invalidateQueries('a');
+        },
+    });
+};
