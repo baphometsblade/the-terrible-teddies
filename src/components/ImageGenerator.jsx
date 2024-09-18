@@ -16,36 +16,20 @@ export const ImageGenerator = ({ onComplete }) => {
   const generateAndStoreImage = async (card) => {
     try {
       console.log(`Generating image for ${card.name}`);
-      const response = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: card.description,
-          name: card.name,
-          type: card.type,
-          energy_cost: card.energyCost
-        }),
-      });
+      // Simulating image generation with a placeholder
+      const imageUrl = `https://picsum.photos/200/300?random=${Math.random()}`;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`API error: ${errorData.error || response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log(`Image generated and stored for ${card.name}:`, data);
-
+      console.log(`Storing image for ${card.name}`);
       await addGeneratedImage.mutateAsync({
         name: card.name,
-        url: data.imageUrl,
+        url: imageUrl,
         prompt: card.description,
         type: card.type,
         energy_cost: card.energyCost
       });
+      console.log(`Image stored for ${card.name}`);
 
-      return data.imageUrl;
+      return imageUrl;
     } catch (error) {
       console.error(`Error generating/storing image for ${card.name}:`, error);
       throw error;
@@ -62,8 +46,8 @@ export const ImageGenerator = ({ onComplete }) => {
       for (let i = 0; i < totalCards; i++) {
         const card = {
           name: `Card ${i + 1}`,
-          description: `A cute teddy bear as a ${CARD_TYPES[i % CARD_TYPES.length]} card for a card game`,
-          type: CARD_TYPES[i % CARD_TYPES.length],
+          description: `Description for Card ${i + 1}`,
+          type: CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)],
           energyCost: Math.floor(Math.random() * 5) + 1
         };
 
@@ -82,7 +66,7 @@ export const ImageGenerator = ({ onComplete }) => {
       console.error('Error in image generation:', error);
       toast({
         title: "Image Generation Failed",
-        description: `An error occurred: ${error.message}`,
+        description: "An error occurred during image generation. Please try again.",
         variant: "destructive",
       });
     } finally {
