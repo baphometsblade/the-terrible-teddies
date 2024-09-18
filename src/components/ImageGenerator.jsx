@@ -1,144 +1,107 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
-import { useAddGeneratedImage, useAddCardImage } from '../integrations/supabase';
+import { useAddGeneratedImage } from '../integrations/supabase';
 
-const CARD_TYPES = [
-  { name: 'Pillow Fight', type: 'Action', description: 'A cute cartoon teddy bear wielding a fluffy pillow as a weapon, ready for a playful battle', energyCost: 2 },
-  { name: 'Bear Trap', type: 'Trap', description: 'A cute cartoon teddy bear setting up a comical, oversized mousetrap with a cupcake as bait', energyCost: 3 },
-  { name: 'Stuffing Surge', type: 'Special', description: 'A cute cartoon teddy bear glowing with magical energy, surrounded by floating cotton stuffing', energyCost: 4 },
-  { name: 'Tickle Attack', type: 'Action', description: 'A cute cartoon mischievous teddy bear tickling another teddy bear who is laughing uncontrollably', energyCost: 1 },
-  { name: 'Sticky Honey', type: 'Trap', description: 'A cute cartoon teddy bear stuck in a pool of golden honey, looking adorably confused', energyCost: 2 },
-  { name: 'Teddy Tantrum', type: 'Special', description: 'A cute cartoon angry teddy bear throwing a comical fit, with stuffing flying everywhere', energyCost: 3 },
-];
-
-const PICO_API_URL = 'https://a.picoapps.xyz/hope-news';
-const PICO_API_KEY = 'v1-Z0FBQUFBQm11YWdKdFdxemtEX2JFNEFIZWRVOWVTaENrbTRKdVBzOXo5NnB1aDRFbFFCNk5VekR6OTBBTHotc0FYV3hpdzBZVjRiVlp1UDhDSHp0TGd6WW5lWl8xZFlPZ3c9PQ==';
+const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 
 export const ImageGenerator = ({ onComplete }) => {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
   const addGeneratedImage = useAddGeneratedImage();
-  const addCardImage = useAddCardImage();
 
   const generateAndStoreImage = async (card) => {
-    const prompt = `${card.description}, in a cute cartoon style, vibrant colors, child-friendly, for a card game called "Terrible Teddies"`;
     try {
-      const response = await fetch(PICO_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${PICO_API_KEY}`
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          negative_prompt: "realistic, photographic, human, person",
-          width: 512,
-          height: 512,
-          num_inference_steps: 20,
-          guidance_scale: 7.5,
-          num_images: 1
-        })
+      console.log(`Generating image for ${card.name}`);
+      // Simulating image generation with a placeholder
+      const imageUrl = `https://picsum.photos/200/300?random=${Math.random()}`;
+
+      console.log(`Storing image for ${card.name}`);
+      await addGeneratedImage.mutateAsync({
+        name: card.name,
+        url: imageUrl,
+        prompt: card.description,
+        type: card.type,
+        energy_cost: card.energyCost
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const imageUrl = data.output[0];
-
-      // Store the image URL in both tables
-      await Promise.all([
-        addCardImage.mutateAsync({
-          name: card.name,
-          url: imageUrl,
-          prompt: card.description,
-          type: card.type,
-          energy_cost: card.energyCost
-        }),
-        addGeneratedImage.mutateAsync({
-          name: card.name,
-          url: imageUrl,
-          prompt: card.description,
-          type: card.type,
-          energy_cost: card.energyCost
-        })
-      ]);
+      console.log(`Image stored for ${card.name}`);
 
       return imageUrl;
     } catch (error) {
-      console.error(`Error generating image for ${card.name}:`, error);
+      console.error(`Error generating/storing image for ${card.name}:`, error);
       throw error;
     }
   };
 
-  const generateAllImages = async () => {
+  const generateImages = async () => {
     setLoading(true);
-    const generatedImages = {};
+    setProgress(0);
+    const totalCards = 40;
+    let generatedCount = 0;
+
     try {
-      for (let i = 0; i < CARD_TYPES.length; i++) {
-        const card = CARD_TYPES[i];
-        const imageUrl = await generateAndStoreImage(card);
-        generatedImages[card.name] = imageUrl;
-        setProgress(((i + 1) / CARD_TYPES.length) * 100);
+      for (let i = 0; i < totalCards; i++) {
+        const card = {
+          name: `Card ${i + 1}`,
+          description: `Description for Card ${i + 1}`,
+          type: CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)],
+          energyCost: Math.floor(Math.random() * 5) + 1
+        };
+
+        await generateAndStoreImage(card);
+        generatedCount++;
+        setProgress((generatedCount / totalCards) * 100);
       }
-      
+
       toast({
-        title: "Success",
-        description: "All images have been generated and stored successfully!",
+        title: "Image Generation Complete",
+        description: `Generated and stored ${totalCards} images.`,
         variant: "success",
       });
-      onComplete(generatedImages);
+      onComplete();
     } catch (error) {
-      console.error('Error generating all images:', error);
+      console.error('Error in image generation:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate images. Please try again.",
+        title: "Image Generation Failed",
+        description: "An error occurred during image generation. Please try again.",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
-      setProgress(0);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <Button
-        onClick={generateAllImages}
-        className="w-full bg-purple-600 text-white font-bold py-2 px-4 rounded hover:bg-purple-700 transition-colors duration-300"
-        disabled={loading}
-      >
-        {loading ? 'Generating...' : 'Generate All Images'}
-      </Button>
-      {loading && (
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
-          <p className="text-lg font-semibold text-purple-700">Generating images... {Math.round(progress)}%</p>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
-            <div className="bg-purple-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style={{width: `${progress}%`}}></div>
+    <Card className="w-full max-w-md mx-auto">
+      <CardContent className="p-6">
+        <h2 className="text-2xl font-bold mb-4">Generate Game Images</h2>
+        <p className="mb-4">Click the button below to generate images for the game cards.</p>
+        <Button 
+          onClick={generateImages} 
+          disabled={loading}
+          className="w-full mb-4"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            'Generate Images'
+          )}
+        </Button>
+        {loading && (
+          <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+            <div 
+              className="bg-blue-600 h-2.5 rounded-full" 
+              style={{ width: `${progress}%` }}
+            ></div>
           </div>
-        </div>
-      )}
-      <div className="grid grid-cols-2 gap-4">
-        {CARD_TYPES.map((card) => (
-          <Card key={card.name} className="overflow-hidden">
-            <CardContent className="p-4">
-              <h3 className="text-lg font-bold">{card.name}</h3>
-              <p className="text-sm text-gray-600">{card.type}</p>
-              <p className="text-sm text-gray-600">Energy Cost: {card.energyCost}</p>
-              <div className="w-full h-48 bg-gray-200 mt-2 rounded-lg flex items-center justify-center">
-                <p className="text-sm text-gray-500">Image will be generated</p>
-              </div>
-              <p className="text-xs mt-2 italic">{card.description}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
