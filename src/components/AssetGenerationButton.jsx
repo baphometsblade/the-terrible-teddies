@@ -15,7 +15,6 @@ export const AssetGenerationButton = () => {
   const [showDialog, setShowDialog] = useState(false);
   const [generatedCards, setGeneratedCards] = useState([]);
   const [error, setError] = useState(null);
-  const [totalCards, setTotalCards] = useState(0);
   const { toast } = useToast();
 
   const handleGenerateAssets = async () => {
@@ -28,13 +27,9 @@ export const AssetGenerationButton = () => {
 
     try {
       await generateGameAssets((data) => {
-        if (data.total_cards) {
-          setTotalCards(data.total_cards);
-        } else if (data.progress) {
-          setProgress(data.progress);
-          setCurrentImage(data.currentImage);
-          setGeneratedCards((prev) => [...prev, { name: data.currentImage, url: data.url }]);
-        }
+        setProgress(data.progress);
+        setCurrentImage(data.currentImage);
+        setGeneratedCards((prev) => [...prev, { name: data.currentImage, url: data.url }]);
       });
 
       toast({
@@ -80,7 +75,7 @@ export const AssetGenerationButton = () => {
             <Progress value={progress} className="w-full" />
             <p className="mt-2 text-center">{progress.toFixed(2)}% Complete</p>
             <p className="text-center text-sm text-gray-500">
-              Generated {generatedCards.length} out of {totalCards} cards
+              Generated {generatedCards.length} out of 40 cards
             </p>
           </div>
           {error && (
