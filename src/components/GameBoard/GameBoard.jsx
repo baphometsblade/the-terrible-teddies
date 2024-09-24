@@ -4,7 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { TeddyCard } from '../TeddyCard';
 import { ActiveEffects } from './ActiveEffects';
+import { PlayerArea } from './PlayerArea';
+import { OpponentArea } from './OpponentArea';
+import { GameInfo } from './GameInfo';
+import { PlayerHand } from './PlayerHand';
 import { applyCardEffect, checkGameOver } from '../../utils/gameLogic';
+import { motion } from 'framer-motion';
 
 const fetchCards = async () => {
   const { data, error } = await supabase.from('generated_images').select('*');
@@ -90,34 +95,27 @@ export const GameBoard = ({ onExit }) => {
     }
   };
 
-  if (isLoading) return <div>Loading game...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (isLoading) return <div className="text-center text-2xl">Loading game...</div>;
+  if (error) return <div className="text-center text-2xl text-red-500">Error: {error.message}</div>;
 
   return (
-    <div className="game-board p-4 bg-gray-100 rounded-lg shadow-lg">
-      <div className="opponent-area mb-8">
-        <h2 className="text-2xl font-bold mb-4">Opponent (HP: {opponentHP})</h2>
-        <div className="flex space-x-2 justify-center">
-          {opponentHand.map((card) => (
-            <div key={card.id} className="w-24 h-32 bg-gray-300 rounded"></div>
-          ))}
-        </div>
-      </div>
+    <motion.div 
+      className="game-board p-4 bg-gradient-to-br from-purple-800 to-indigo-900 rounded-lg shadow-2xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <OpponentArea teddies={opponentHand} hp={opponentHP} />
       <ActiveEffects effects={activeEffects.opponent} />
-      <div className="battle-area mb-8 bg-gray-200 p-4 rounded-lg">
-        <p className="text-2xl text-center">{currentTurn === 'player' ? "Your Turn" : "Opponent's Turn"}</p>
-        <p className="text-center">Momentum Gauge: {momentumGauge}/10</p>
-      </div>
+      <GameInfo currentTurn={currentTurn} momentumGauge={momentumGauge} />
       <ActiveEffects effects={activeEffects.player} />
-      <div className="player-area">
-        <h2 className="text-2xl font-bold mb-4">Your Hand (HP: {playerHP})</h2>
-        <div className="flex flex-wrap justify-center gap-2">
-          {playerHand.map((card) => (
-            <TeddyCard key={card.id} teddy={card} onClick={() => handlePlayCard(card)} />
-          ))}
-        </div>
+      <PlayerArea teddies={playerHand} hp={playerHP} />
+      <PlayerHand cards={playerHand} onPlayCard={handlePlayCard} />
+      <div className="mt-8 text-center">
+        <Button onClick={onExit} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+          Exit Game
+        </Button>
       </div>
-      <Button onClick={onExit} className="mt-8">Exit Game</Button>
-    </div>
+    </motion.div>
   );
 };
