@@ -82,3 +82,6 @@ export const SupabaseAuthUI = () => {
     />
   );
 };
+
+// Export SupabaseProvider as an alias for SupabaseAuthProvider
+export const SupabaseProvider = SupabaseAuthProvider;

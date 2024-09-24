@@ -47,13 +47,11 @@ export const useShopCards = () => {
   });
 };
 
-// New hook for evolving a card
+// Hook for evolving a card
 export const useEvolveCard = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (cardId) => {
-      // Implement the card evolution logic here
-      // This is a placeholder implementation
       const { data, error } = await supabase
         .from('generated_images')
         .update({ level: supabase.raw('level + 1') })
