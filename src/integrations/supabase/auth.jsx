@@ -82,3 +82,6 @@ export const SupabaseAuthUI = () => {
     />
   );
 };
+
+// Export SupabaseProvider as SupabaseAuthProvider for consistency with the import in App.jsx
+export const SupabaseAuthProvider = SupabaseProvider;
