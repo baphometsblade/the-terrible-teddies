@@ -63,3 +63,6 @@ export const useEvolveCard = () => {
     },
   });
 };
+
+// Export the supabase client
+export { supabase };
