@@ -7,11 +7,12 @@ import { OpponentArea } from './OpponentArea';
 import { GameInfo } from './GameInfo';
 import { GameLog } from './GameLog';
 import { CardDetail } from './CardDetail';
+import { GameOverScreen } from '../GameOverScreen';
 import { playSound } from '../../utils/audio';
 import { applyCardEffect } from '../../utils/gameLogic';
 import { AIOpponent } from '../../utils/AIOpponent';
 
-export const GameBoard = ({ gameMode, onExit }) => {
+export const GameBoard = ({ gameMode, onExit, settings }) => {
   const [gameState, setGameState] = useState({
     playerHP: 30,
     opponentHP: 30,
@@ -26,6 +27,8 @@ export const GameBoard = ({ gameMode, onExit }) => {
     activeEffects: { player: [], opponent: [] },
   });
   const [selectedCard, setSelectedCard] = useState(null);
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [winner, setWinner] = useState(null);
   const { toast } = useToast();
   const { data: allCards, isLoading: isLoadingCards } = useGeneratedImages();
   const { data: userDeck } = useUserDeck();
@@ -145,23 +148,25 @@ export const GameBoard = ({ gameMode, onExit }) => {
   const checkGameOver = useCallback(() => {
     if (gameState.playerHP <= 0 || gameState.opponentHP <= 0) {
       const winner = gameState.playerHP > 0 ? 'player' : 'opponent';
+      setWinner(winner);
+      setIsGameOver(true);
       updateUserStats.mutate({ 
         games_played: 1, 
         games_won: winner === 'player' ? 1 : 0 
       });
-      toast({
-        title: "Game Over!",
-        description: `${winner === 'player' ? 'You win!' : 'You lose!'}`,
-        duration: 5000,
-      });
       playSound(winner === 'player' ? 'victory' : 'defeat');
-      setTimeout(onExit, 5000);
     }
-  }, [gameState.playerHP, gameState.opponentHP, updateUserStats, onExit, toast]);
+  }, [gameState.playerHP, gameState.opponentHP, updateUserStats]);
 
   useEffect(() => {
     checkGameOver();
   }, [gameState.playerHP, gameState.opponentHP, checkGameOver]);
+
+  const handlePlayAgain = () => {
+    setIsGameOver(false);
+    setWinner(null);
+    initializeGame();
+  };
 
   if (isLoadingCards) {
     return <div>Loading game...</div>;
@@ -218,6 +223,15 @@ export const GameBoard = ({ gameMode, onExit }) => {
       </div>
       {selectedCard && (
         <CardDetail card={selectedCard} onClose={() => setSelectedCard(null)} />
+      )}
+      {isGameOver && (
+        <GameOverScreen
+          winner={winner}
+          playerScore={gameState.playerHP}
+          opponentScore={gameState.opponentHP}
+          onPlayAgain={handlePlayAgain}
+          onMainMenu={onExit}
+        />
       )}
     </div>
   );

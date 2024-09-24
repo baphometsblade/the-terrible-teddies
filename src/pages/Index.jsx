@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabaseAuth } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
-import { Loader2, PawPrint } from 'lucide-react';
+import { Loader2, PawPrint, Settings, Trophy, Book } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
 import { ImageGenerator } from '../components/ImageGenerator';
@@ -65,18 +65,22 @@ const Index = () => {
       case 'menu':
         return (
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-purple-800 mb-6">Welcome to Terrible Teddies!</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button onClick={() => setGameState('game')} className="bg-purple-600 hover:bg-purple-700 text-white">
+            <h2 className="text-4xl font-bold text-purple-800 mb-8">Welcome to Terrible Teddies!</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+              <Button onClick={() => setGameState('game')} className="bg-purple-600 hover:bg-purple-700 text-white text-lg py-6">
+                <PawPrint className="w-6 h-6 mr-2" />
                 Start Game
               </Button>
-              <Button onClick={() => setGameState('deckBuilder')} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button onClick={() => setGameState('deckBuilder')} className="bg-blue-600 hover:bg-blue-700 text-white text-lg py-6">
+                <Book className="w-6 h-6 mr-2" />
                 Deck Builder
               </Button>
-              <Button onClick={() => setGameState('leaderboard')} className="bg-green-600 hover:bg-green-700 text-white">
+              <Button onClick={() => setGameState('leaderboard')} className="bg-green-600 hover:bg-green-700 text-white text-lg py-6">
+                <Trophy className="w-6 h-6 mr-2" />
                 Leaderboard
               </Button>
-              <Button onClick={() => setGameState('settings')} className="bg-yellow-600 hover:bg-yellow-700 text-white">
+              <Button onClick={() => setGameState('settings')} className="bg-yellow-600 hover:bg-yellow-700 text-white text-lg py-6">
+                <Settings className="w-6 h-6 mr-2" />
                 Game Settings
               </Button>
             </div>
@@ -90,7 +94,7 @@ const Index = () => {
         return (
           <div>
             <LeaderboardComponent />
-            <Button onClick={() => setGameState('menu')} className="mt-4">Back to Menu</Button>
+            <Button onClick={() => setGameState('menu')} className="mt-8 bg-purple-600 hover:bg-purple-700 text-white">Back to Menu</Button>
           </div>
         );
       case 'settings':
@@ -121,10 +125,10 @@ const Index = () => {
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 260, damping: 20 }}
           >
-            <PawPrint className="w-16 h-16 mx-auto text-purple-600" />
+            <PawPrint className="w-24 h-24 mx-auto text-purple-600" />
           </motion.div>
-          <h1 className="text-4xl font-bold text-purple-800 mt-4">Terrible Teddies</h1>
-          <p className="text-xl text-purple-600">The cutest card battle game!</p>
+          <h1 className="text-5xl font-bold text-purple-800 mt-6 mb-2">Terrible Teddies</h1>
+          <p className="text-2xl text-purple-600">The cutest card battle game!</p>
         </header>
         {renderContent()}
       </div>
