@@ -2,7 +2,6 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const fetchLeaderboard = async () => {
   const { data, error } = await supabase
@@ -25,32 +24,28 @@ export const LeaderboardComponent = () => {
   if (error) return <div>Error loading leaderboard: {error.message}</div>;
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">Leaderboard</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Rank</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Wins</TableHead>
-              <TableHead>Games Played</TableHead>
+    <div>
+      <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Rank</TableHead>
+            <TableHead>Username</TableHead>
+            <TableHead>Wins</TableHead>
+            <TableHead>Games Played</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {leaderboard.map((player, index) => (
+            <TableRow key={player.username}>
+              <TableCell>{index + 1}</TableCell>
+              <TableCell>{player.username}</TableCell>
+              <TableCell>{player.games_won}</TableCell>
+              <TableCell>{player.games_played}</TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {leaderboard.map((player, index) => (
-              <TableRow key={player.username}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{player.username}</TableCell>
-                <TableCell>{player.games_won}</TableCell>
-                <TableCell>{player.games_played}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 };

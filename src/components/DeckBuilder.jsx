@@ -1,193 +1,72 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Button } from '@/components/ui/button';
-import { useToast } from "@/components/ui/use-toast";
-import { useGeneratedImages, useUserDeck, useSaveUserDeck } from '../integrations/supabase';
+import { Button } from "@/components/ui/button";
 import TeddyCard from './TeddyCard';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
+
+const fetchCards = async () => {
+  const { data, error } = await supabase.from('generated_images').select('*');
+  if (error) throw error;
+  return data;
+};
+
+const saveDeck = async (deck) => {
+  const { data, error } = await supabase.from('user_decks').upsert({ deck });
+  if (error) throw error;
+  return data;
+};
 
 export const DeckBuilder = ({ onExit }) => {
   const [deck, setDeck] = useState([]);
-  const [availableTeddies, setAvailableTeddies] = useState([]);
-  const { data: allTeddies, isLoading, refetch } = useGeneratedImages();
-  const { data: userDeck } = useUserDeck();
-  const saveUserDeck = useSaveUserDeck();
-  const { toast } = useToast();
+  const { data: cards, isLoading, error } = useQuery({
+    queryKey: ['cards'],
+    queryFn: fetchCards,
+  });
 
-  useEffect(() => {
-    if (userDeck && userDeck.deck) {
-      setDeck(userDeck.deck);
-    }
-  }, [userDeck]);
+  const saveDeckMutation = useMutation({
+    mutationFn: saveDeck,
+    onSuccess: () => {
+      console.log('Deck saved successfully');
+    },
+  });
 
-  useEffect(() => {
-    if (allTeddies) {
-      setAvailableTeddies(allTeddies.filter(teddy => !deck.some(deckTeddy => deckTeddy.id === teddy.id)));
-    }
-  }, [allTeddies, deck]);
-
-  const onDragEnd = (result) => {
-    const { source, destination } = result;
-
-    if (!destination) return;
-
-    if (source.droppableId === destination.droppableId) {
-      const items = reorder(
-        source.droppableId === 'deck' ? deck : availableTeddies,
-        source.index,
-        destination.index
-      );
-
-      if (source.droppableId === 'deck') {
-        setDeck(items);
-      } else {
-        setAvailableTeddies(items);
-      }
-    } else {
-      const result = move(
-        source.droppableId === 'deck' ? deck : availableTeddies,
-        source.droppableId === 'deck' ? availableTeddies : deck,
-        source,
-        destination
-      );
-
-      setDeck(result.deck);
-      setAvailableTeddies(result.availableTeddies);
+  const addToDeck = (card) => {
+    if (deck.length < 20) {
+      setDeck([...deck, card]);
     }
   };
 
-  const reorder = (list, startIndex, endIndex) => {
-    const result = Array.from(list);
-    const [removed] = result.splice(startIndex, 1);
-    result.splice(endIndex, 0, removed);
-    return result;
+  const removeFromDeck = (cardId) => {
+    setDeck(deck.filter((card) => card.id !== cardId));
   };
 
-  const move = (source, destination, droppableSource, droppableDestination) => {
-    const sourceClone = Array.from(source);
-    const destClone = Array.from(destination);
-    const [removed] = sourceClone.splice(droppableSource.index, 1);
-
-    destClone.splice(droppableDestination.index, 0, removed);
-
-    const result = {};
-    result.deck = droppableSource.droppableId === 'deck' ? sourceClone : destClone;
-    result.availableTeddies = droppableSource.droppableId === 'deck' ? destClone : sourceClone;
-
-    return result;
+  const handleSaveDeck = () => {
+    saveDeckMutation.mutate(deck);
   };
 
-  const handleSaveDeck = async () => {
-    if (deck.length !== 5) {
-      toast({
-        title: "Invalid Team Size",
-        description: "Your team must have exactly 5 teddies.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await saveUserDeck.mutateAsync(deck);
-      toast({
-        title: "Team Saved",
-        description: "Your Terrible Teddies team has been saved successfully!",
-        variant: "success",
-      });
-    } catch (error) {
-      console.error('Error saving deck:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save your team. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (isLoading) {
-    return <div>Loading teddies...</div>;
-  }
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="deck-builder bg-gradient-to-r from-red-900 to-purple-900 p-6 rounded-xl shadow-lg">
-        <h2 className="text-3xl font-bold mb-6 text-center text-yellow-400">Build Your Terrible Teddies Team</h2>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Droppable droppableId="availableTeddies">
-            {(provided) => (
-              <div 
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className="bg-gray-800 p-4 rounded-lg shadow-md"
-              >
-                <h3 className="text-2xl font-bold mb-4 text-yellow-400">Available Teddies</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {availableTeddies.map((teddy, index) => (
-                    <Draggable key={teddy.id} draggableId={teddy.id} index={index}>
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                        >
-                          <TeddyCard teddy={teddy} />
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                </div>
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-          
-          <Droppable droppableId="deck">
-            {(provided) => (
-              <div 
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className="bg-gray-800 p-4 rounded-lg shadow-md"
-              >
-                <h3 className="text-2xl font-bold mb-4 text-yellow-400">Your Team ({deck.length}/5)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {deck.map((teddy, index) => (
-                    <Draggable key={teddy.id} draggableId={teddy.id} index={index}>
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                        >
-                          <TeddyCard teddy={teddy} />
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                </div>
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </div>
-
-        <div className="mt-8 text-center">
-          <Button 
-            onClick={handleSaveDeck}
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded mr-4"
-          >
-            Save Team
-          </Button>
-          <Button 
-            onClick={onExit}
-            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
-          >
-            Exit
-          </Button>
-        </div>
+    <div className="deck-builder">
+      <h2 className="text-2xl font-bold mb-4">Deck Builder</h2>
+      <div className="grid grid-cols-5 gap-4 mb-8">
+        {cards.map((card) => (
+          <TeddyCard key={card.id} card={card} onClick={() => addToDeck(card)} />
+        ))}
       </div>
-    </DragDropContext>
+      <h3 className="text-xl font-bold mb-4">Your Deck ({deck.length}/20)</h3>
+      <div className="grid grid-cols-5 gap-4 mb-8">
+        {deck.map((card) => (
+          <TeddyCard key={card.id} card={card} onClick={() => removeFromDeck(card.id)} />
+        ))}
+      </div>
+      <Button onClick={handleSaveDeck} disabled={deck.length !== 20}>
+        Save Deck
+      </Button>
+      <Button onClick={onExit} className="ml-4">
+        Exit
+      </Button>
+    </div>
   );
 };
-
-export default DeckBuilder;
