@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -77,33 +77,36 @@ export const DeckBuilder = ({ onExit }) => {
     }
   };
 
-  const getDeckStats = () => {
-    const stats = {
-      Action: 0,
-      Trap: 0,
-      Special: 0,
-      Defense: 0,
-      Boost: 0,
-    };
-    deck.forEach(card => {
-      stats[card.type]++;
-    });
-    return stats;
-  };
-
-  const renderDeckStats = () => {
-    const stats = getDeckStats();
-    return (
-      <div className="grid grid-cols-5 gap-2 mt-4">
-        {Object.entries(stats).map(([type, count]) => (
-          <div key={type} className="text-center">
-            <div className="text-sm font-bold">{type}</div>
-            <div className="text-lg">{count}</div>
+  const renderCard = (card, inDeck = false) => (
+    <motion.div
+      key={`${card.id}-${inDeck ? 'deck' : 'available'}`}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      whileHover={{ scale: 1.05, zIndex: 1 }}
+      whileTap={{ scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      className="relative group"
+    >
+      <Card className="cursor-pointer bg-gray-700 hover:shadow-lg transition-all duration-200 overflow-hidden">
+        <CardContent className="p-0 relative">
+          <img src={card.url} alt={card.name} className="w-full h-40 object-cover" />
+          <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-2">
+            <p className="text-sm font-bold text-yellow-400">{card.name}</p>
+            <p className="text-xs text-gray-300">{card.type}</p>
+            <p className="text-xs text-gray-300">Cost: {card.energy_cost}</p>
+            <Button 
+              onClick={() => inDeck ? removeCardFromDeck(card.id) : addCardToDeck(card)} 
+              className={`mt-2 ${inDeck ? 'bg-red-500 hover:bg-red-600' : 'bg-yellow-400 hover:bg-yellow-500'} text-gray-900`}
+              size="sm"
+            >
+              {inDeck ? <><Minus className="w-4 h-4 mr-1" /> Remove</> : <><Plus className="w-4 h-4 mr-1" /> Add to Deck</>}
+            </Button>
           </div>
-        ))}
-      </div>
-    );
-  };
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
 
   if (isLoading) {
     return (
@@ -123,75 +126,16 @@ export const DeckBuilder = ({ onExit }) => {
           <h3 className="text-2xl font-bold mb-4 text-yellow-400">Available Cards</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <AnimatePresence>
-              {availableCards.map((card) => (
-                <motion.div
-                  key={card.id}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  whileHover={{ scale: 1.05, zIndex: 1 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="relative group"
-                >
-                  <Card className="cursor-pointer bg-gray-700 hover:shadow-lg transition-all duration-200 overflow-hidden">
-                    <CardContent className="p-0 relative">
-                      <img src={card.url} alt={card.name} className="w-full h-40 object-cover" />
-                      <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-2">
-                        <p className="text-sm font-bold text-yellow-400">{card.name}</p>
-                        <p className="text-xs text-gray-300">{card.type}</p>
-                        <p className="text-xs text-gray-300">Cost: {card.energy_cost}</p>
-                        <Button 
-                          onClick={() => addCardToDeck(card)} 
-                          className="mt-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900"
-                          size="sm"
-                        >
-                          <Plus className="w-4 h-4 mr-1" /> Add to Deck
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+              {availableCards && availableCards.map((card) => renderCard(card))}
             </AnimatePresence>
           </div>
         </div>
         
         <div className="bg-gray-800 p-4 rounded-lg shadow-md">
           <h3 className="text-2xl font-bold mb-4 text-yellow-400">Your Deck ({deck.length}/40)</h3>
-          {renderDeckStats()}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <AnimatePresence>
-              {deck.map((card, index) => (
-                <motion.div
-                  key={`${card.id}-${index}`}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  whileHover={{ scale: 1.05, zIndex: 1 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                  className="relative group"
-                >
-                  <Card className="cursor-pointer bg-gray-700 hover:shadow-lg transition-all duration-200 overflow-hidden">
-                    <CardContent className="p-0 relative">
-                      <img src={card.url} alt={card.name} className="w-full h-40 object-cover" />
-                      <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-2">
-                        <p className="text-sm font-bold text-yellow-400">{card.name}</p>
-                        <p className="text-xs text-gray-300">{card.type}</p>
-                        <p className="text-xs text-gray-300">Cost: {card.energy_cost}</p>
-                        <Button 
-                          onClick={() => removeCardFromDeck(card.id)} 
-                          className="mt-2 bg-red-500 hover:bg-red-600 text-white"
-                          size="sm"
-                        >
-                          <Minus className="w-4 h-4 mr-1" /> Remove
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+              {deck.map((card, index) => renderCard(card, true))}
             </AnimatePresence>
           </div>
         </div>

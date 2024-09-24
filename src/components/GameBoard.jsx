@@ -41,7 +41,7 @@ export const GameBoard = ({ gameMode, onExit }) => {
   }, [allCards, userDeck]);
 
   const initializeGame = () => {
-    const playerDeckCards = userDeck.length > 0 ? userDeck : allCards.slice(0, 20);
+    const playerDeckCards = userDeck && userDeck.length > 0 ? userDeck : allCards.slice(0, 20);
     const opponentDeckCards = allCards.slice(20, 40);
     setPlayerDeck(shuffleArray(playerDeckCards));
     setOpponentDeck(shuffleArray(opponentDeckCards));
@@ -300,7 +300,7 @@ export const GameBoard = ({ gameMode, onExit }) => {
                   </div>
                   <div>
                     <p className="text-xs text-purple-700">Cost: {lastPlayedCard.energy_cost}</p>
-                    <p className="text-xs italic text-purple-600">{lastPlayedCard.prompt}</p>
+                    <p className="text-xs italic text-purple-600">{lastPlayedCard.effect}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -358,7 +358,7 @@ export const GameBoard = ({ gameMode, onExit }) => {
                     </div>
                     <div>
                       <p className="text-xs text-purple-700">Cost: {card.energy_cost}</p>
-                      <p className="text-xs italic text-purple-600">{card.prompt}</p>
+                      <p className="text-xs italic text-purple-600">{card.effect}</p>
                     </div>
                   </CardContent>
                 </Card>

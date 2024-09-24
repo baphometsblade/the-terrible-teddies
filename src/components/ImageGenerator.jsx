@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { generateGameAssets } from '../utils/generateGameAssets';
 
 export const ImageGenerator = ({ onComplete }) => {
@@ -57,11 +58,9 @@ export const ImageGenerator = ({ onComplete }) => {
           )}
         </Button>
         {loading && (
-          <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full" 
-              style={{ width: `${progress}%` }}
-            ></div>
+          <div className="mt-4">
+            <Progress value={progress} className="w-full" />
+            <p className="text-center mt-2">{Math.round(progress)}% complete</p>
           </div>
         )}
       </CardContent>
