@@ -9,7 +9,7 @@ const App = () => {
   const returnToMenu = () => setGameState('menu');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-indigo-900 flex items-center justify-center">
+    <div className="container mx-auto px-4 py-8">
       {gameState === 'menu' ? (
         <MainMenu onStartGame={startGame} />
       ) : (
