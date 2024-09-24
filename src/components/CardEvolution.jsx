@@ -15,7 +15,7 @@ export const CardEvolution = ({ card, onEvolve }) => {
       const evolvedCard = await evolveCard.mutateAsync(card.id);
       toast({
         title: "Card Evolved!",
-        description: `${card.name} has evolved to ${evolvedCard.name}!`,
+        description: `${card.name} has evolved to level ${evolvedCard.level}!`,
         variant: "success",
       });
       onEvolve(evolvedCard);
@@ -34,10 +34,10 @@ export const CardEvolution = ({ card, onEvolve }) => {
       <CardContent className="p-4">
         <img src={card.url} alt={card.name} className="w-full h-40 object-cover rounded mb-2" />
         <h3 className="text-lg font-bold mb-1">{card.name}</h3>
-        <p className="text-sm mb-2">Level: {card.level}</p>
+        <p className="text-sm mb-2">Level: {card.level || 1}</p>
         <Button 
           onClick={handleEvolve} 
-          disabled={isEvolving || card.level >= 3}
+          disabled={isEvolving || (card.level && card.level >= 3)}
           className="w-full bg-purple-500 hover:bg-purple-600 text-white"
         >
           {isEvolving ? "Evolving..." : "Evolve"}
