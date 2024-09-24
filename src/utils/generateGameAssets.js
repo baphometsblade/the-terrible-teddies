@@ -1,5 +1,5 @@
 import { Configuration, OpenAIApi } from 'openai';
-import { supabase } from '../integrations/supabase';
+import { supabase } from '../lib/supabase';
 
 const configuration = new Configuration({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
