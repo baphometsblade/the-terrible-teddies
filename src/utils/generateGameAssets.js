@@ -51,8 +51,9 @@ const generateCardPrompt = (type, name) => {
   }
 };
 
-export async function generateGameAssets(onProgress) {
+export async function generateGameAssets() {
   let generatedCount = 0;
+  const generatedCards = [];
 
   for (let i = 0; i < TOTAL_CARDS; i++) {
     const cardType = CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)];
@@ -73,22 +74,32 @@ export async function generateGameAssets(onProgress) {
 
       if (error) throw error;
 
-      const { data: cardData, error: cardError } = await supabase
-        .from('generated_images')
-        .insert({
-          name: cardName,
-          url: `${import.meta.env.VITE_SUPABASE_PROJECT_URL}/storage/v1/object/public/card-images/${data.path}`,
-          type: cardType,
-          energy_cost: Math.floor(Math.random() * 3) + 1,
-          effect: generateCardEffect(cardType),
-        });
+      const cardData = {
+        name: cardName,
+        url: `${import.meta.env.VITE_SUPABASE_PROJECT_URL}/storage/v1/object/public/card-images/${data.path}`,
+        type: cardType,
+        energy_cost: Math.floor(Math.random() * 3) + 1,
+        effect: generateCardEffect(cardType),
+      };
 
-      if (cardError) throw cardError;
-
+      generatedCards.push(cardData);
       generatedCount++;
-      onProgress((generatedCount / TOTAL_CARDS) * 100);
+      console.log(`Generated ${generatedCount}/${TOTAL_CARDS} cards`);
     } catch (error) {
       console.error('Error generating image:', error);
     }
   }
+
+  // Insert all generated cards into the database
+  const { data, error } = await supabase
+    .from('generated_images')
+    .insert(generatedCards);
+
+  if (error) {
+    console.error('Error inserting generated cards:', error);
+  } else {
+    console.log('All cards generated and inserted successfully');
+  }
+
+  return generatedCards;
 }

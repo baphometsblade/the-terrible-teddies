@@ -4,23 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Loader2, PawPrint, Settings, Trophy, Book } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
-import { ImageGenerator } from '../components/ImageGenerator';
+import { generateGameAssets } from '../utils/generateGameAssets';
 import { GameBoard } from '../components/GameBoard/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { GameSettings } from '../components/GameSettings';
+import { CardShop } from '../components/CardShop';
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
-  const [imagesGenerated, setImagesGenerated] = useState(false);
   const [gameSettings, setGameSettings] = useState({
     difficulty: 'normal',
     soundEnabled: true,
   });
 
   useEffect(() => {
-    const checkImagesGenerated = async () => {
+    const checkAndGenerateAssets = async () => {
       if (!authLoading && session) {
         try {
           const { count, error } = await supabase
@@ -29,22 +29,21 @@ const Index = () => {
           
           if (error) throw error;
 
-          setImagesGenerated(count > 0);
-          setGameState(count > 0 ? 'menu' : 'imageGenerator');
+          if (count === 0) {
+            console.log('No assets found. Generating assets...');
+            await generateGameAssets();
+          }
+
+          setGameState('menu');
         } catch (error) {
-          console.error('Error checking generated images:', error);
+          console.error('Error checking or generating assets:', error);
           setGameState('error');
         }
       }
     };
 
-    checkImagesGenerated();
+    checkAndGenerateAssets();
   }, [authLoading, session]);
-
-  const handleImageGenerationComplete = () => {
-    setImagesGenerated(true);
-    setGameState('menu');
-  };
 
   const renderContent = () => {
     switch (gameState) {
@@ -53,13 +52,6 @@ const Index = () => {
           <div className="text-center text-2xl text-gray-600">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
             Loading game assets...
-          </div>
-        );
-      case 'imageGenerator':
-        return (
-          <div className="text-center">
-            <h2 className="text-2xl text-gray-600 mb-4">Image Generation Required</h2>
-            <ImageGenerator onComplete={handleImageGenerationComplete} />
           </div>
         );
       case 'menu':
@@ -83,6 +75,10 @@ const Index = () => {
                 <Settings className="w-6 h-6 mr-2" />
                 Game Settings
               </Button>
+              <Button onClick={() => setGameState('cardShop')} className="bg-green-600 hover:bg-green-700 text-white text-lg py-6">
+                <PawPrint className="w-6 h-6 mr-2" />
+                Card Shop
+              </Button>
             </div>
           </div>
         );
@@ -105,6 +101,8 @@ const Index = () => {
             onBack={() => setGameState('menu')}
           />
         );
+      case 'cardShop':
+        return <CardShop onExit={() => setGameState('menu')} />;
       case 'error':
         return (
           <div className="text-center text-2xl text-red-600">

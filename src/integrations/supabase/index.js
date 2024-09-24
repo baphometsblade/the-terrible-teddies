@@ -44,28 +44,6 @@ export const useUpdateUserStats = () => {
     });
 };
 
-// Hook for adding a generated image
-export const useAddGeneratedImage = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (imageData) => fromSupabase(supabase.from('generated_images').insert(imageData)),
-        onSuccess: () => {
-            queryClient.invalidateQueries('generatedImages');
-        },
-    });
-};
-
-// Hook for adding a card image
-export const useAddCardImage = () => {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: (imageData) => fromSupabase(supabase.from('card_images').insert(imageData)),
-        onSuccess: () => {
-            queryClient.invalidateQueries('cardImages');
-        },
-    });
-};
-
 // Hook for saving user deck
 export const useSaveUserDeck = () => {
     const queryClient = useQueryClient();
