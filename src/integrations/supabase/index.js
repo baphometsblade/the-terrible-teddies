@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { SupabaseProvider } from './auth';
 
 const fromSupabase = async (query) => {
   const { data, error } = await query;
@@ -64,5 +65,5 @@ export const useEvolveCard = () => {
   });
 };
 
-// Export the supabase client
-export { supabase };
+// Export the supabase client and SupabaseProvider
+export { supabase, SupabaseProvider };

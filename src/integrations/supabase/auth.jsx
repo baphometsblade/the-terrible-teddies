@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 
 const SupabaseAuthContext = createContext();
 
-export const SupabaseAuthProvider = ({ children }) => {
+export const SupabaseProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
@@ -82,6 +82,3 @@ export const SupabaseAuthUI = () => {
     />
   );
 };
-
-// Export SupabaseProvider as an alias for SupabaseAuthProvider
-export const SupabaseProvider = SupabaseAuthProvider;
