@@ -11,28 +11,55 @@ import { GameLog } from './GameLog';
 import { applyCardEffect, checkGameOver } from '../../utils/gameLogic';
 import { AIOpponent } from '../../utils/AIOpponent';
 import { playSound } from '../../utils/audio';
-import { terribleTeddies } from '../../data/terribleTeddies';
+
+const fetchCards = async () => {
+  const { data, error } = await supabase.from('generated_images').select('*');
+  if (error) throw error;
+  return data;
+};
 
 export const GameBoard = ({ onExit }) => {
-  const [playerTeddies, setPlayerTeddies] = useState([]);
-  const [opponentTeddies, setOpponentTeddies] = useState([]);
+  const { data: cards, isLoading, error } = useQuery({
+    queryKey: ['cards'],
+    queryFn: fetchCards,
+  });
+
+  const [playerDeck, setPlayerDeck] = useState([]);
+  const [opponentDeck, setOpponentDeck] = useState([]);
+  const [playerHand, setPlayerHand] = useState([]);
   const [playerHP, setPlayerHP] = useState(30);
   const [opponentHP, setOpponentHP] = useState(30);
   const [currentTurn, setCurrentTurn] = useState('player');
   const [momentumGauge, setMomentumGauge] = useState(0);
   const [activeEffects, setActiveEffects] = useState({ player: [], opponent: [] });
   const [gameLog, setGameLog] = useState([]);
-  const [selectedTeddy, setSelectedTeddy] = useState(null);
 
   const ai = new AIOpponent('normal');
 
   useEffect(() => {
-    const shuffledTeddies = [...terribleTeddies].sort(() => Math.random() - 0.5);
-    setPlayerTeddies(shuffledTeddies.slice(0, 3));
-    setOpponentTeddies(shuffledTeddies.slice(3, 6));
-  }, []);
+    if (cards) {
+      const shuffledCards = [...cards].sort(() => Math.random() - 0.5);
+      setPlayerDeck(shuffledCards.slice(0, 20));
+      setOpponentDeck(shuffledCards.slice(20, 40));
+      drawInitialHand();
+    }
+  }, [cards]);
 
-  const handlePlayTeddy = (teddy) => {
+  const drawInitialHand = () => {
+    setPlayerHand(playerDeck.slice(0, 5));
+    setPlayerDeck(playerDeck.slice(5));
+  };
+
+  const drawCard = () => {
+    if (playerDeck.length > 0) {
+      const newCard = playerDeck[0];
+      setPlayerHand([...playerHand, newCard]);
+      setPlayerDeck(playerDeck.slice(1));
+      playSound('drawCard');
+    }
+  };
+
+  const handlePlayCard = (card) => {
     if (currentTurn !== 'player') return;
 
     const newState = applyCardEffect({
@@ -41,9 +68,10 @@ export const GameBoard = ({ onExit }) => {
       momentumGauge,
       activeEffects,
       gameLog,
-    }, teddy, false);
+    }, card, false);
 
     updateGameState(newState);
+    setPlayerHand(playerHand.filter(c => c.id !== card.id));
     playSound('playCard');
 
     if (checkGameOver(newState)) {
@@ -55,27 +83,29 @@ export const GameBoard = ({ onExit }) => {
   };
 
   const handleOpponentTurn = () => {
-    const aiTeddy = ai.chooseTeddy(opponentTeddies, { playerHP, opponentHP, momentumGauge, activeEffects });
-    if (aiTeddy) {
+    const aiCard = ai.chooseCard(opponentDeck, { playerHP, opponentHP, momentumGauge, activeEffects });
+    if (aiCard) {
       const newState = applyCardEffect({
         playerHP,
         opponentHP,
         momentumGauge,
         activeEffects,
         gameLog,
-      }, aiTeddy, true);
+      }, aiCard, true);
 
       updateGameState(newState);
-      setOpponentTeddies(opponentTeddies.filter(t => t.id !== aiTeddy.id));
+      setOpponentDeck(opponentDeck.filter(c => c.id !== aiCard.id));
       playSound('playCard');
 
       if (checkGameOver(newState)) {
         endGame(newState.playerHP > 0 ? 'player' : 'opponent');
       } else {
         setCurrentTurn('player');
+        drawCard();
       }
     } else {
       setCurrentTurn('player');
+      drawCard();
     }
   };
 
@@ -92,19 +122,20 @@ export const GameBoard = ({ onExit }) => {
     // Implement end game logic (e.g., show modal, update stats)
   };
 
+  if (isLoading) return <div>Loading game assets...</div>;
+  if (error) return <div>Error loading game assets: {error.message}</div>;
+
   return (
     <div className="game-board p-4 bg-gradient-to-br from-purple-800 to-indigo-900 rounded-lg shadow-2xl">
-      <OpponentArea teddies={opponentTeddies} hp={opponentHP} />
+      <OpponentArea deck={opponentDeck} hp={opponentHP} />
       <GameInfo currentTurn={currentTurn} momentumGauge={momentumGauge} />
       <BattleArena
-        playerTeddies={playerTeddies}
-        opponentTeddies={opponentTeddies}
-        selectedTeddy={selectedTeddy}
-        onTeddySelect={setSelectedTeddy}
-        onPlayTeddy={handlePlayTeddy}
+        playerCards={playerHand}
+        opponentCards={opponentDeck.slice(0, 5)}
+        onPlayCard={handlePlayCard}
         currentTurn={currentTurn}
       />
-      <PlayerArea teddies={playerTeddies} hp={playerHP} />
+      <PlayerArea deck={playerDeck} hand={playerHand} hp={playerHP} />
       <GameLog logs={gameLog} />
       <div className="mt-8 text-center">
         <Button onClick={onExit} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
