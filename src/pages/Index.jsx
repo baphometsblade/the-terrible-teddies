@@ -6,14 +6,27 @@ import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { CardShop } from '../components/CardShop';
 import { AssetGenerator } from '../components/AssetGenerator';
-import { PawPrint, Settings, Trophy, Book, ShoppingBag } from 'lucide-react';
+import { Auth } from '../components/Auth';
+import { PawPrint, Settings, Trophy, Book, ShoppingBag, LogOut } from 'lucide-react';
 import { useGeneratedImages } from '../integrations/supabase';
+import { supabase } from '../lib/supabase';
 
 const Index = () => {
   const [currentView, setCurrentView] = useState('menu');
   const [gameMode, setGameMode] = useState('singlePlayer');
   const [difficulty, setDifficulty] = useState('normal');
+  const [session, setSession] = useState(null);
   const { data: generatedImages, isLoading, refetch } = useGeneratedImages();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+  }, [])
 
   useEffect(() => {
     if (!generatedImages || generatedImages.length === 0) {
@@ -21,7 +34,15 @@ const Index = () => {
     }
   }, [generatedImages]);
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  }
+
   const renderContent = () => {
+    if (!session) {
+      return <Auth />;
+    }
+
     switch (currentView) {
       case 'assetGenerator':
         return <AssetGenerator onComplete={() => { refetch(); setCurrentView('menu'); }} />;
@@ -58,6 +79,10 @@ const Index = () => {
                 <Settings className="w-6 h-6 mr-2" />
                 Game Settings
               </Button>
+              <Button onClick={handleSignOut} className="bg-gray-600 hover:bg-gray-700 text-white text-lg py-6">
+                <LogOut className="w-6 h-6 mr-2" />
+                Sign Out
+              </Button>
             </div>
           </div>
         );
@@ -83,7 +108,7 @@ const Index = () => {
           <p className="text-2xl text-red-600">The Ultimate Ultra-Realistic Brawler!</p>
         </header>
         {renderContent()}
-        {currentView !== 'menu' && currentView !== 'assetGenerator' && (
+        {currentView !== 'menu' && currentView !== 'assetGenerator' && session && (
           <Button onClick={() => setCurrentView('menu')} className="mt-8 bg-gray-600 hover:bg-gray-700 text-white">
             Back to Main Menu
           </Button>
