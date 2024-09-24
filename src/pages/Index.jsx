@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabaseAuth } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
-import { Loader2, PawPrint, Settings, Trophy, Book, ShoppingCart } from 'lucide-react';
+import { Loader2, PawPrint, Settings, Trophy, Book } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
 import { ImageGenerator } from '../components/ImageGenerator';
@@ -9,7 +9,6 @@ import { GameBoard } from '../components/GameBoard/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { GameSettings } from '../components/GameSettings';
-import { CardShop } from '../components/CardShop';
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
@@ -76,10 +75,6 @@ const Index = () => {
                 <Book className="w-6 h-6 mr-2" />
                 Deck Builder
               </Button>
-              <Button onClick={() => setGameState('cardShop')} className="bg-green-600 hover:bg-green-700 text-white text-lg py-6">
-                <ShoppingCart className="w-6 h-6 mr-2" />
-                Card Shop
-              </Button>
               <Button onClick={() => setGameState('leaderboard')} className="bg-yellow-600 hover:bg-yellow-700 text-white text-lg py-6">
                 <Trophy className="w-6 h-6 mr-2" />
                 Leaderboard
@@ -95,8 +90,6 @@ const Index = () => {
         return <GameBoard gameMode="singlePlayer" onExit={() => setGameState('menu')} settings={gameSettings} />;
       case 'deckBuilder':
         return <DeckBuilder onExit={() => setGameState('menu')} />;
-      case 'cardShop':
-        return <CardShop />;
       case 'leaderboard':
         return (
           <div>
