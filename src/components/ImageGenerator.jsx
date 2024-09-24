@@ -4,7 +4,16 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { generateGameAssets } from '../utils/generateGameAssets';
+import { generateAllAssets } from '../utils/assetGenerator';
+
+const teddyList = [
+  { name: "Blitzkrieg Bear", type: "Action" },
+  { name: "Icy Ivan", type: "Defense" },
+  { name: "Lady Lush", type: "Special" },
+  { name: "Chainsaw Charlie", type: "Action" },
+  { name: "Velvet Viper", type: "Trap" },
+  // Add more teddies as needed
+];
 
 export const ImageGenerator = ({ onComplete }) => {
   const [loading, setLoading] = useState(false);
@@ -16,16 +25,22 @@ export const ImageGenerator = ({ onComplete }) => {
     setProgress(0);
 
     try {
-      await generateGameAssets((progress) => {
-        setProgress(progress);
-      });
+      const totalTeddies = teddyList.length;
+      const generatedAssets = [];
+
+      for (let i = 0; i < totalTeddies; i++) {
+        const teddy = teddyList[i];
+        const asset = await generateAllAssets([teddy]);
+        generatedAssets.push(asset[0]);
+        setProgress(((i + 1) / totalTeddies) * 100);
+      }
 
       toast({
         title: "Asset Generation Complete",
-        description: "All game assets have been generated and stored.",
+        description: `Generated ${generatedAssets.length} assets successfully.`,
         variant: "success",
       });
-      onComplete();
+      onComplete(generatedAssets);
     } catch (error) {
       console.error('Error in asset generation:', error);
       toast({
@@ -42,7 +57,7 @@ export const ImageGenerator = ({ onComplete }) => {
     <Card className="w-full max-w-md mx-auto">
       <CardContent className="p-6">
         <h2 className="text-2xl font-bold mb-4">Generate Game Assets</h2>
-        <p className="mb-4">Click the button below to generate images for the game cards.</p>
+        <p className="mb-4">Click the button below to generate images for all Terrible Teddies.</p>
         <Button 
           onClick={handleGenerateAssets} 
           disabled={loading}
