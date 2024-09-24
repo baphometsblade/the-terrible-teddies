@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from 'framer-motion';
 
-const TeddyCard = ({ teddy, onClick }) => {
+export const TeddyCard = ({ teddy, onClick }) => {
   return (
     <motion.div
       whileHover={{ scale: 1.05 }}
@@ -22,5 +22,3 @@ const TeddyCard = ({ teddy, onClick }) => {
     </motion.div>
   );
 };
-
-export default TeddyCard;
