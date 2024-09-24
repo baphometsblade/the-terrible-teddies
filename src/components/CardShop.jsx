@@ -1,6 +1,5 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import TeddyCard from './TeddyCard';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 
@@ -10,11 +9,6 @@ const fetchShopCards = async () => {
   return data;
 };
 
-const purchaseCard = async (cardId) => {
-  // Implement purchase logic here
-  console.log('Purchasing card:', cardId);
-};
-
 export const CardShop = ({ onExit }) => {
   const { data: shopCards, isLoading, error } = useQuery({
     queryKey: ['shopCards'],
@@ -22,13 +16,13 @@ export const CardShop = ({ onExit }) => {
   });
 
   const purchaseMutation = useMutation({
-    mutationFn: purchaseCard,
-    onSuccess: () => {
-      console.log('Card purchased successfully');
+    mutationFn: async (cardId) => {
+      // Implement purchase logic here
+      console.log('Purchasing card:', cardId);
     },
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div>Loading shop...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
   return (
@@ -36,13 +30,15 @@ export const CardShop = ({ onExit }) => {
       <h2 className="text-2xl font-bold mb-4">Card Shop</h2>
       <div className="grid grid-cols-5 gap-4 mb-8">
         {shopCards.map((card) => (
-          <div key={card.id} className="relative">
-            <TeddyCard card={card} />
+          <div key={card.id} className="card">
+            <img src={card.url} alt={card.name} className="w-full h-32 object-cover rounded mb-2" />
+            <p className="text-sm mb-1">{card.name}</p>
+            <p className="text-sm mb-2">Price: {card.price} coins</p>
             <Button
               onClick={() => purchaseMutation.mutate(card.id)}
-              className="mt-2 w-full"
+              className="w-full"
             >
-              Buy ({card.price} coins)
+              Buy
             </Button>
           </div>
         ))}

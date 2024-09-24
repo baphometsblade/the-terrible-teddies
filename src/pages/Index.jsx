@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { GameBoard } from '../components/GameBoard';
+import { GameBoard } from '../components/GameBoard/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { CardShop } from '../components/CardShop';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
@@ -21,7 +21,7 @@ const Index = () => {
       default:
         return (
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-red-800 mb-8">Welcome to Terrible Teddies!</h1>
+            <h1 className="text-4xl font-bold text-purple-800 mb-8">Welcome to Terrible Teddies!</h1>
             <div className="space-y-4">
               <Button onClick={() => setCurrentView('game')} className="w-full">Start Game</Button>
               <Button onClick={() => setCurrentView('deckBuilder')} className="w-full">Deck Builder</Button>

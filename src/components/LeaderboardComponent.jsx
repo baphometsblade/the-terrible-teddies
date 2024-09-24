@@ -1,7 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const fetchLeaderboard = async () => {
   const { data, error } = await supabase
@@ -26,26 +25,26 @@ export const LeaderboardComponent = () => {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Rank</TableHead>
-            <TableHead>Username</TableHead>
-            <TableHead>Wins</TableHead>
-            <TableHead>Games Played</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <table className="w-full">
+        <thead>
+          <tr>
+            <th className="text-left">Rank</th>
+            <th className="text-left">Username</th>
+            <th className="text-left">Wins</th>
+            <th className="text-left">Games Played</th>
+          </tr>
+        </thead>
+        <tbody>
           {leaderboard.map((player, index) => (
-            <TableRow key={player.username}>
-              <TableCell>{index + 1}</TableCell>
-              <TableCell>{player.username}</TableCell>
-              <TableCell>{player.games_won}</TableCell>
-              <TableCell>{player.games_played}</TableCell>
-            </TableRow>
+            <tr key={player.username}>
+              <td>{index + 1}</td>
+              <td>{player.username}</td>
+              <td>{player.games_won}</td>
+              <td>{player.games_played}</td>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 };
