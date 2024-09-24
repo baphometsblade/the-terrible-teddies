@@ -10,9 +10,26 @@ const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 const TOTAL_CARDS = 40;
 
 const generateCardName = (type) => {
-  const adjectives = ['Mischievous', 'Cuddly', 'Sneaky', 'Fluffy', 'Grumpy', 'Playful'];
-  const nouns = ['Paw', 'Hug', 'Growl', 'Snuggle', 'Roar', 'Nap'];
+  const adjectives = ['Mischievous', 'Cuddly', 'Sneaky', 'Fluffy', 'Grumpy', 'Playful', 'Sleepy', 'Bouncy', 'Silly', 'Fuzzy'];
+  const nouns = ['Paw', 'Hug', 'Growl', 'Snuggle', 'Roar', 'Nap', 'Tickle', 'Giggle', 'Whisper', 'Tumble'];
   return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
+};
+
+const generateCardEffect = (type) => {
+  switch (type) {
+    case 'Action':
+      return `Deal ${Math.floor(Math.random() * 3) + 2} damage to the opponent.`;
+    case 'Trap':
+      return `When activated, negate the opponent's next action and deal ${Math.floor(Math.random() * 2) + 1} damage.`;
+    case 'Special':
+      return `Heal ${Math.floor(Math.random() * 3) + 1} HP and draw a card.`;
+    case 'Defense':
+      return `Reduce incoming damage by ${Math.floor(Math.random() * 2) + 1} for the next ${Math.floor(Math.random() * 2) + 1} turns.`;
+    case 'Boost':
+      return `Increase your Momentum Gauge by ${Math.floor(Math.random() * 2) + 1}.`;
+    default:
+      return 'No effect.';
+  }
 };
 
 const generateCardPrompt = (type, name) => {
@@ -20,15 +37,15 @@ const generateCardPrompt = (type, name) => {
   
   switch (type) {
     case 'Action':
-      return `${basePrompt} The teddy bear should look active and ready to attack.`;
+      return `${basePrompt} The teddy bear should look active and ready to attack, maybe holding a pillow or a toy weapon.`;
     case 'Trap':
-      return `${basePrompt} The teddy bear should look sneaky and mischievous.`;
+      return `${basePrompt} The teddy bear should look sneaky and mischievous, perhaps hiding behind something or setting up a prank.`;
     case 'Special':
-      return `${basePrompt} The teddy bear should have a magical or unique appearance.`;
+      return `${basePrompt} The teddy bear should have a magical or unique appearance, possibly glowing or surrounded by sparkles.`;
     case 'Defense':
-      return `${basePrompt} The teddy bear should look protective or have a shield.`;
+      return `${basePrompt} The teddy bear should look protective or have a shield, maybe hiding under a blanket fort.`;
     case 'Boost':
-      return `${basePrompt} The teddy bear should look energized or powered-up.`;
+      return `${basePrompt} The teddy bear should look energized or powered-up, perhaps with a determined expression or flexing its stuffed muscles.`;
     default:
       return basePrompt;
   }
@@ -62,8 +79,8 @@ export async function generateGameAssets(onProgress) {
           name: cardName,
           url: `${import.meta.env.VITE_SUPABASE_PROJECT_URL}/storage/v1/object/public/card-images/${data.path}`,
           type: cardType,
-          energy_cost: Math.floor(Math.random() * 5) + 1,
-          effect: `Effect description for ${cardName}`,
+          energy_cost: Math.floor(Math.random() * 3) + 1,
+          effect: generateCardEffect(cardType),
         });
 
       if (cardError) throw cardError;
