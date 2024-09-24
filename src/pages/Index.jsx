@@ -10,6 +10,7 @@ import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { GameSettings } from '../components/GameSettings';
 import { CardShop } from '../components/CardShop';
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
@@ -18,6 +19,7 @@ const Index = () => {
     difficulty: 'normal',
     soundEnabled: true,
   });
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkAndGenerateAssets = async () => {
@@ -30,20 +32,32 @@ const Index = () => {
           if (error) throw error;
 
           if (count === 0) {
-            console.log('No assets found. Generating assets...');
+            toast({
+              title: "Generating Game Assets",
+              description: "This may take a few minutes. Please wait.",
+            });
             await generateGameAssets();
+            toast({
+              title: "Assets Generated",
+              description: "Game assets have been created successfully!",
+            });
           }
 
           setGameState('menu');
         } catch (error) {
           console.error('Error checking or generating assets:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load or generate game assets. Please try again.",
+            variant: "destructive",
+          });
           setGameState('error');
         }
       }
     };
 
     checkAndGenerateAssets();
-  }, [authLoading, session]);
+  }, [authLoading, session, toast]);
 
   const renderContent = () => {
     switch (gameState) {

@@ -74,9 +74,13 @@ export async function generateGameAssets() {
 
       if (error) throw error;
 
+      const publicUrl = supabase.storage
+        .from('card-images')
+        .getPublicUrl(data.path).data.publicUrl;
+
       const cardData = {
         name: cardName,
-        url: `${import.meta.env.VITE_SUPABASE_PROJECT_URL}/storage/v1/object/public/card-images/${data.path}`,
+        url: publicUrl,
         type: cardType,
         energy_cost: Math.floor(Math.random() * 3) + 1,
         effect: generateCardEffect(cardType),
@@ -97,6 +101,7 @@ export async function generateGameAssets() {
 
   if (error) {
     console.error('Error inserting generated cards:', error);
+    throw error;
   } else {
     console.log('All cards generated and inserted successfully');
   }
