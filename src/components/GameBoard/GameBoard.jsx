@@ -69,7 +69,7 @@ export const GameBoard = ({ onExit, gameMode = 'singlePlayer', difficulty = 'nor
       ...prevState,
       currentTurn: prevState.currentTurn === 'player' ? 'opponent' : 'player',
       selectedTeddy: null,
-      momentumGauge: 0,
+      momentumGauge: Math.min(prevState.momentumGauge + 1, 10),
     }));
   };
 
