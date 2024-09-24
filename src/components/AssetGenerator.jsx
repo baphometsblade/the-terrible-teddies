@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from "@/components/ui/use-toast";
 import { generateGameAssets } from '../utils/generateGameAssets';
+import { motion } from 'framer-motion';
 
 export const AssetGenerator = ({ onComplete }) => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -35,7 +36,12 @@ export const AssetGenerator = ({ onComplete }) => {
   };
 
   return (
-    <div className="p-4 bg-pink-100 rounded-lg shadow-md">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="p-4 bg-pink-100 rounded-lg shadow-md"
+    >
       <h2 className="text-2xl font-bold mb-4 text-purple-800">Generate Cheeky Game Assets</h2>
       <p className="mb-4 text-purple-600">Click the button below to generate saucy images for the game cards.</p>
       <Button
@@ -46,11 +52,15 @@ export const AssetGenerator = ({ onComplete }) => {
         {isGenerating ? 'Generating Naughty Assets...' : 'Generate Cheeky Assets'}
       </Button>
       {isGenerating && (
-        <div className="mt-4">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-4"
+        >
           <Progress value={progress} className="w-full" />
           <p className="text-center mt-2 text-purple-700">{Math.round(progress)}% complete</p>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 };

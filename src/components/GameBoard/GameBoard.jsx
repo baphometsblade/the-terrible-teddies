@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
 import { useGeneratedImages, useUserDeck } from '../../integrations/supabase';
@@ -126,7 +126,12 @@ export const GameBoard = ({ onExit, gameMode = 'singlePlayer', difficulty = 'nor
   }
 
   return (
-    <div className="game-board p-4 bg-gradient-to-b from-red-100 to-purple-200 rounded-lg shadow-xl">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="game-board p-4 bg-gradient-to-b from-red-100 to-purple-200 rounded-lg shadow-xl"
+    >
       <OpponentArea teddies={gameState.opponentTeddies} hp={gameState.opponentHP} />
       <GameInfo currentTurn={gameState.currentTurn} momentumGauge={gameState.momentumGauge} />
       <BattleArena
@@ -147,24 +152,31 @@ export const GameBoard = ({ onExit, gameMode = 'singlePlayer', difficulty = 'nor
           Evolve Teddy
         </Button>
       </div>
-      {showEvolution && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-        >
-          <div className="bg-white p-4 rounded-lg">
-            <h2 className="text-2xl font-bold mb-4">Choose a Teddy to Evolve</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {gameState.playerTeddies.map(teddy => (
-                <CardEvolution key={teddy.id} card={teddy} onEvolve={handleEvolution} />
-              ))}
-            </div>
-            <Button onClick={() => setShowEvolution(false)} className="mt-4">Close</Button>
-          </div>
-        </motion.div>
-      )}
-    </div>
+      <AnimatePresence>
+        {showEvolution && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-white p-4 rounded-lg"
+            >
+              <h2 className="text-2xl font-bold mb-4">Choose a Teddy to Evolve</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {gameState.playerTeddies.map(teddy => (
+                  <CardEvolution key={teddy.id} card={teddy} onEvolve={handleEvolution} />
+                ))}
+              </div>
+              <Button onClick={() => setShowEvolution(false)} className="mt-4">Close</Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
