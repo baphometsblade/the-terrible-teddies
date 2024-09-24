@@ -51,7 +51,7 @@ const generateCardPrompt = (type, name) => {
   }
 };
 
-export async function generateGameAssets() {
+export async function generateGameAssets(onProgress) {
   let generatedCount = 0;
   const generatedCards = [];
 
@@ -70,7 +70,10 @@ export async function generateGameAssets() {
       const imageUrl = response.data.data[0].url;
       const { data, error } = await supabase.storage
         .from('card-images')
-        .upload(`${cardName.replace(/\s+/g, '-').toLowerCase()}.png`, await (await fetch(imageUrl)).blob());
+        .upload(`${cardName.replace(/\s+/g, '-').toLowerCase()}.png`, await (await fetch(imageUrl)).blob(), {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (error) throw error;
 
@@ -88,9 +91,13 @@ export async function generateGameAssets() {
 
       generatedCards.push(cardData);
       generatedCount++;
+      if (onProgress) {
+        onProgress((generatedCount / TOTAL_CARDS) * 100);
+      }
       console.log(`Generated ${generatedCount}/${TOTAL_CARDS} cards`);
     } catch (error) {
       console.error('Error generating image:', error);
+      throw error;
     }
   }
 

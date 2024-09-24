@@ -11,6 +11,7 @@ import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { GameSettings } from '../components/GameSettings';
 import { CardShop } from '../components/CardShop';
 import { useToast } from "@/components/ui/use-toast";
+import { Progress } from "@/components/ui/progress";
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
@@ -19,12 +20,14 @@ const Index = () => {
     difficulty: 'normal',
     soundEnabled: true,
   });
+  const [generationProgress, setGenerationProgress] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
     const checkAndGenerateAssets = async () => {
       if (!authLoading && session) {
         try {
+          setGameState('loading');
           const { count, error } = await supabase
             .from('generated_images')
             .select('*', { count: 'exact', head: true });
@@ -36,7 +39,9 @@ const Index = () => {
               title: "Generating Game Assets",
               description: "This may take a few minutes. Please wait.",
             });
-            await generateGameAssets();
+            await generateGameAssets((progress) => {
+              setGenerationProgress(progress);
+            });
             toast({
               title: "Assets Generated",
               description: "Game assets have been created successfully!",
@@ -65,7 +70,14 @@ const Index = () => {
         return (
           <div className="text-center text-2xl text-gray-600">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-            Loading game assets...
+            {generationProgress > 0 ? (
+              <div className="mt-4">
+                <Progress value={generationProgress} className="w-64 mx-auto" />
+                <p className="mt-2">Generating assets: {Math.round(generationProgress)}%</p>
+              </div>
+            ) : (
+              "Loading game assets..."
+            )}
           </div>
         );
       case 'menu':
