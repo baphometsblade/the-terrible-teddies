@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
 import { MainMenu } from './MainMenu';
 import { GameBoard } from './GameBoard/GameBoard';
 import { DeckBuilder } from './DeckBuilder';
