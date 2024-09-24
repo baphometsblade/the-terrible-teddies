@@ -1,23 +1,29 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
+import { MainMenu } from './MainMenu';
+import { GameBoard } from './GameBoard/GameBoard';
+import { DeckBuilder } from './DeckBuilder';
+import { CardShop } from './CardShop';
 
 const App = () => {
-  const [gameStarted, setGameStarted] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState('menu');
 
-  const startGame = () => {
-    setGameStarted(true);
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'game':
+        return <GameBoard onExit={() => setCurrentScreen('menu')} />;
+      case 'deckBuilder':
+        return <DeckBuilder onExit={() => setCurrentScreen('menu')} />;
+      case 'cardShop':
+        return <CardShop onExit={() => setCurrentScreen('menu')} />;
+      default:
+        return <MainMenu onScreenChange={setCurrentScreen} />;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-purple-900 flex flex-col items-center justify-center text-white p-4">
-      <h1 className="text-6xl font-bold mb-8 text-center">Terrible Teddies</h1>
-      {!gameStarted ? (
-        <Button onClick={startGame} className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-xl">
-          Start Game
-        </Button>
-      ) : (
-        <div className="text-2xl">Game in progress...</div>
-      )}
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-indigo-900 flex flex-col items-center justify-center text-white p-4">
+      {renderScreen()}
     </div>
   );
 };
