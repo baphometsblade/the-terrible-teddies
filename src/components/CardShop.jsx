@@ -24,7 +24,7 @@ const purchaseCard = async (cardId) => {
   return updatedDeck;
 };
 
-export const CardShop = () => {
+export const CardShop = ({ onExit }) => {
   const [selectedCard, setSelectedCard] = useState(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -96,6 +96,7 @@ export const CardShop = () => {
           </Card>
         </div>
       )}
+      <Button onClick={onExit} className="mt-4">Back to Menu</Button>
     </div>
   );
 };

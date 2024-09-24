@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/components/ui/use-toast";
 import { useGeneratedImages, useUserDeck, useSaveUserDeck } from '../integrations/supabase';
-import { generateAllAssets } from '../utils/assetGenerator';
 import TeddyCard from './TeddyCard';
 
 export const DeckBuilder = ({ onExit }) => {
   const [deck, setDeck] = useState([]);
-  const [isGeneratingAssets, setIsGeneratingAssets] = useState(false);
   const { data: availableTeddies, isLoading, refetch } = useGeneratedImages();
   const { data: userDeck } = useUserDeck();
   const saveUserDeck = useSaveUserDeck();
@@ -18,35 +16,6 @@ export const DeckBuilder = ({ onExit }) => {
       setDeck(userDeck.deck);
     }
   }, [userDeck]);
-
-  const generateAssets = async () => {
-    setIsGeneratingAssets(true);
-    try {
-      const teddyList = [
-        { name: "Blitzkrieg Bear", type: "Action" },
-        { name: "Icy Ivan", type: "Defense" },
-        { name: "Lady Lush", type: "Special" },
-        { name: "Chainsaw Charlie", type: "Action" },
-        { name: "Velvet Viper", type: "Trap" },
-      ];
-      await generateAllAssets(teddyList);
-      await refetch();
-      toast({
-        title: "Assets Generated",
-        description: "All teddy bear assets have been created and saved.",
-        variant: "success",
-      });
-    } catch (error) {
-      console.error('Error generating assets:', error);
-      toast({
-        title: "Asset Generation Failed",
-        description: "An error occurred while generating assets. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingAssets(false);
-    }
-  };
 
   const addTeddyToDeck = (teddy) => {
     if (deck.length < 5) {
@@ -98,14 +67,6 @@ export const DeckBuilder = ({ onExit }) => {
   return (
     <div className="deck-builder bg-gradient-to-r from-red-900 to-purple-900 p-6 rounded-xl shadow-lg">
       <h2 className="text-3xl font-bold mb-6 text-center text-yellow-400">Build Your Terrible Teddies Team</h2>
-      
-      <Button 
-        onClick={generateAssets}
-        disabled={isGeneratingAssets}
-        className="mb-4 bg-green-500 hover:bg-green-600 text-white"
-      >
-        {isGeneratingAssets ? "Generating Assets..." : "Generate Teddy Assets"}
-      </Button>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-gray-800 p-4 rounded-lg shadow-md">

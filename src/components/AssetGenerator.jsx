@@ -4,7 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from "@/components/ui/use-toast";
 import { generateGameAssets } from '../utils/generateGameAssets';
 
-export const AssetGenerator = () => {
+export const AssetGenerator = ({ onComplete }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
@@ -21,6 +21,7 @@ export const AssetGenerator = () => {
         description: 'All cheeky game assets have been successfully created and stored.',
         variant: 'success',
       });
+      onComplete();
     } catch (error) {
       console.error('Error generating assets:', error);
       toast({

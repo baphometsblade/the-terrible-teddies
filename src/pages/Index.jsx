@@ -1,19 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { GameBoard } from '../components/GameBoard/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { CardShop } from '../components/CardShop';
+import { AssetGenerator } from '../components/AssetGenerator';
 import { PawPrint, Settings, Trophy, Book, ShoppingBag } from 'lucide-react';
+import { useGeneratedImages } from '../integrations/supabase';
 
 const Index = () => {
   const [currentView, setCurrentView] = useState('menu');
   const [gameMode, setGameMode] = useState('singlePlayer');
   const [difficulty, setDifficulty] = useState('normal');
+  const { data: generatedImages, isLoading, refetch } = useGeneratedImages();
+
+  useEffect(() => {
+    if (!generatedImages || generatedImages.length === 0) {
+      setCurrentView('assetGenerator');
+    }
+  }, [generatedImages]);
 
   const renderContent = () => {
     switch (currentView) {
+      case 'assetGenerator':
+        return <AssetGenerator onComplete={() => { refetch(); setCurrentView('menu'); }} />;
       case 'game':
         return <GameBoard onExit={() => setCurrentView('menu')} gameMode={gameMode} difficulty={difficulty} />;
       case 'deckBuilder':
@@ -53,6 +64,10 @@ const Index = () => {
     }
   };
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-100 to-purple-200 flex items-center justify-center">
       <div className="container mx-auto p-8 max-w-4xl bg-white rounded-lg shadow-xl">
@@ -68,7 +83,7 @@ const Index = () => {
           <p className="text-2xl text-red-600">The Ultimate Ultra-Realistic Brawler!</p>
         </header>
         {renderContent()}
-        {currentView !== 'menu' && (
+        {currentView !== 'menu' && currentView !== 'assetGenerator' && (
           <Button onClick={() => setCurrentView('menu')} className="mt-8 bg-gray-600 hover:bg-gray-700 text-white">
             Back to Main Menu
           </Button>
