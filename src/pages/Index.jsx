@@ -8,11 +8,16 @@ import { ImageGenerator } from '../components/ImageGenerator';
 import { GameBoard } from '../components/GameBoard/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
+import { GameSettings } from '../components/GameSettings';
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
   const [gameState, setGameState] = useState('loading');
   const [imagesGenerated, setImagesGenerated] = useState(false);
+  const [gameSettings, setGameSettings] = useState({
+    difficulty: 'normal',
+    soundEnabled: true,
+  });
 
   useEffect(() => {
     const checkImagesGenerated = async () => {
@@ -71,14 +76,14 @@ const Index = () => {
               <Button onClick={() => setGameState('leaderboard')} className="bg-green-600 hover:bg-green-700 text-white">
                 Leaderboard
               </Button>
-              <Button onClick={() => setGameState('rules')} className="bg-yellow-600 hover:bg-yellow-700 text-white">
-                Game Rules
+              <Button onClick={() => setGameState('settings')} className="bg-yellow-600 hover:bg-yellow-700 text-white">
+                Game Settings
               </Button>
             </div>
           </div>
         );
       case 'game':
-        return <GameBoard gameMode="singlePlayer" onExit={() => setGameState('menu')} />;
+        return <GameBoard gameMode="singlePlayer" onExit={() => setGameState('menu')} settings={gameSettings} />;
       case 'deckBuilder':
         return <DeckBuilder onExit={() => setGameState('menu')} />;
       case 'leaderboard':
@@ -88,13 +93,13 @@ const Index = () => {
             <Button onClick={() => setGameState('menu')} className="mt-4">Back to Menu</Button>
           </div>
         );
-      case 'rules':
+      case 'settings':
         return (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Game Rules</h2>
-            <p className="mb-4">Detailed game rules will be added here.</p>
-            <Button onClick={() => setGameState('menu')}>Back to Menu</Button>
-          </div>
+          <GameSettings
+            settings={gameSettings}
+            onSettingsChange={setGameSettings}
+            onBack={() => setGameState('menu')}
+          />
         );
       case 'error':
         return (
