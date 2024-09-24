@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../../lib/supabase';
 import { PlayerArea } from './PlayerArea';
 import { OpponentArea } from './OpponentArea';
 import { GameInfo } from './GameInfo';
@@ -11,19 +9,9 @@ import { GameLog } from './GameLog';
 import { applyCardEffect, checkGameOver } from '../../utils/gameLogic';
 import { AIOpponent } from '../../utils/AIOpponent';
 import { playSound } from '../../utils/audio';
-
-const fetchCards = async () => {
-  const { data, error } = await supabase.from('generated_images').select('*');
-  if (error) throw error;
-  return data;
-};
+import { terribleTeddies } from '../../data/terribleTeddies';
 
 export const GameBoard = ({ onExit }) => {
-  const { data: cards, isLoading, error } = useQuery({
-    queryKey: ['cards'],
-    queryFn: fetchCards,
-  });
-
   const [playerDeck, setPlayerDeck] = useState([]);
   const [opponentDeck, setOpponentDeck] = useState([]);
   const [playerHand, setPlayerHand] = useState([]);
@@ -37,13 +25,11 @@ export const GameBoard = ({ onExit }) => {
   const ai = new AIOpponent('normal');
 
   useEffect(() => {
-    if (cards) {
-      const shuffledCards = [...cards].sort(() => Math.random() - 0.5);
-      setPlayerDeck(shuffledCards.slice(0, 20));
-      setOpponentDeck(shuffledCards.slice(20, 40));
-      drawInitialHand();
-    }
-  }, [cards]);
+    const shuffledTeddies = [...terribleTeddies].sort(() => Math.random() - 0.5);
+    setPlayerDeck(shuffledTeddies.slice(0, 20));
+    setOpponentDeck(shuffledTeddies.slice(20, 40));
+    drawInitialHand();
+  }, []);
 
   const drawInitialHand = () => {
     setPlayerHand(playerDeck.slice(0, 5));
@@ -121,9 +107,6 @@ export const GameBoard = ({ onExit }) => {
     playSound(winner === 'player' ? 'victory' : 'defeat');
     // Implement end game logic (e.g., show modal, update stats)
   };
-
-  if (isLoading) return <div>Loading game assets...</div>;
-  if (error) return <div>Error loading game assets: {error.message}</div>;
 
   return (
     <div className="game-board p-4 bg-gradient-to-br from-purple-800 to-indigo-900 rounded-lg shadow-2xl">

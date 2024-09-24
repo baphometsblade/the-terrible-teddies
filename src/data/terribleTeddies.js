@@ -23,5 +23,17 @@ export const terribleTeddies = [
       description: "Stuns the opponent with a surprise smooch, causing them to skip their next turn."
     }
   },
-  // ... Add all 50 Terrible Teddies here
+  // Add the remaining 48 teddies here...
+  {
+    id: 50,
+    name: "Teddy Temptress",
+    title: "The Seductive Siren",
+    description: "With a voice like honey and eyes that sparkle with mischief, she can charm even the toughest opponents into lowering their guard.",
+    attack: 7,
+    defense: 4,
+    specialMove: {
+      name: "Siren's Song",
+      description: "Mesmerizes the opponent, reducing their attack power for the next two turns."
+    }
+  }
 ];

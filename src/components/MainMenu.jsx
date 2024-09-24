@@ -30,12 +30,6 @@ export const MainMenu = ({ onScreenChange }) => {
         >
           Card Shop
         </Button>
-        <Button 
-          onClick={() => onScreenChange('generateAssets')} 
-          className="w-48 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-xl"
-        >
-          Generate Assets
-        </Button>
       </div>
     </motion.div>
   );
