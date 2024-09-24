@@ -1,9 +1,9 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
 import { Heart } from 'lucide-react';
+import TeddyCard from '../TeddyCard';
 
-export const OpponentArea = ({ hp, hand }) => {
+export const OpponentArea = ({ teddies, hp }) => {
   return (
     <div className="opponent-area mb-6 bg-gradient-to-r from-red-100 to-pink-100 p-4 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-purple-800 mb-2">Opponent's Terrible Teddy</h2>
@@ -12,17 +12,9 @@ export const OpponentArea = ({ hp, hand }) => {
         <Progress value={(hp / 30) * 100} className="w-full h-4 bg-red-200" />
         <p className="text-sm ml-2 text-purple-700 font-semibold">{hp}/30</p>
       </div>
-      <div className="flex space-x-2 mt-4 justify-center">
-        {hand.map((_, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="w-16 h-24 bg-gradient-to-br from-red-300 to-pink-300 shadow-md rounded-lg"></div>
-          </motion.div>
+      <div className="flex flex-wrap justify-center gap-4 mt-4">
+        {teddies.map((teddy) => (
+          <TeddyCard key={teddy.id} teddy={teddy} />
         ))}
       </div>
     </div>
