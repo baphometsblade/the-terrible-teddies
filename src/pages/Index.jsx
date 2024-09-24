@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabaseAuth } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
-import { Loader2, PawPrint, Settings, Trophy, Book } from 'lucide-react';
+import { Loader2, PawPrint, Settings, Trophy, Book, ShoppingCart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
 import { ImageGenerator } from '../components/ImageGenerator';
@@ -9,6 +9,7 @@ import { GameBoard } from '../components/GameBoard/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { GameSettings } from '../components/GameSettings';
+import { CardShop } from '../components/CardShop';
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
@@ -66,7 +67,7 @@ const Index = () => {
         return (
           <div className="text-center">
             <h2 className="text-4xl font-bold text-purple-800 mb-8">Welcome to Terrible Teddies!</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-3xl mx-auto">
               <Button onClick={() => setGameState('game')} className="bg-purple-600 hover:bg-purple-700 text-white text-lg py-6">
                 <PawPrint className="w-6 h-6 mr-2" />
                 Start Game
@@ -75,11 +76,15 @@ const Index = () => {
                 <Book className="w-6 h-6 mr-2" />
                 Deck Builder
               </Button>
-              <Button onClick={() => setGameState('leaderboard')} className="bg-green-600 hover:bg-green-700 text-white text-lg py-6">
+              <Button onClick={() => setGameState('cardShop')} className="bg-green-600 hover:bg-green-700 text-white text-lg py-6">
+                <ShoppingCart className="w-6 h-6 mr-2" />
+                Card Shop
+              </Button>
+              <Button onClick={() => setGameState('leaderboard')} className="bg-yellow-600 hover:bg-yellow-700 text-white text-lg py-6">
                 <Trophy className="w-6 h-6 mr-2" />
                 Leaderboard
               </Button>
-              <Button onClick={() => setGameState('settings')} className="bg-yellow-600 hover:bg-yellow-700 text-white text-lg py-6">
+              <Button onClick={() => setGameState('settings')} className="bg-pink-600 hover:bg-pink-700 text-white text-lg py-6">
                 <Settings className="w-6 h-6 mr-2" />
                 Game Settings
               </Button>
@@ -90,6 +95,8 @@ const Index = () => {
         return <GameBoard gameMode="singlePlayer" onExit={() => setGameState('menu')} settings={gameSettings} />;
       case 'deckBuilder':
         return <DeckBuilder onExit={() => setGameState('menu')} />;
+      case 'cardShop':
+        return <CardShop />;
       case 'leaderboard':
         return (
           <div>
