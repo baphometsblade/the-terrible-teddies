@@ -4,16 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { generateAllAssets } from '../utils/assetGenerator';
-
-const teddyList = [
-  { name: "Blitzkrieg Bear", type: "Action" },
-  { name: "Icy Ivan", type: "Defense" },
-  { name: "Lady Lush", type: "Special" },
-  { name: "Chainsaw Charlie", type: "Action" },
-  { name: "Velvet Viper", type: "Trap" },
-  // Add more teddies as needed
-];
+import { generateGameAssets } from '../utils/generateGameAssets';
 
 export const ImageGenerator = ({ onComplete }) => {
   const [loading, setLoading] = useState(false);
@@ -25,15 +16,9 @@ export const ImageGenerator = ({ onComplete }) => {
     setProgress(0);
 
     try {
-      const totalTeddies = teddyList.length;
-      const generatedAssets = [];
-
-      for (let i = 0; i < totalTeddies; i++) {
-        const teddy = teddyList[i];
-        const asset = await generateAllAssets([teddy]);
-        generatedAssets.push(asset[0]);
-        setProgress(((i + 1) / totalTeddies) * 100);
-      }
+      const generatedAssets = await generateGameAssets((progress) => {
+        setProgress(progress);
+      });
 
       toast({
         title: "Asset Generation Complete",

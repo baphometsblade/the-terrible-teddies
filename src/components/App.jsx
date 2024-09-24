@@ -3,9 +3,11 @@ import { MainMenu } from './MainMenu';
 import { GameBoard } from './GameBoard/GameBoard';
 import { DeckBuilder } from './DeckBuilder';
 import { CardShop } from './CardShop';
+import { ImageGenerator } from './ImageGenerator';
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('menu');
+  const [generatedAssets, setGeneratedAssets] = useState([]);
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -15,6 +17,11 @@ const App = () => {
         return <DeckBuilder onExit={() => setCurrentScreen('menu')} />;
       case 'cardShop':
         return <CardShop onExit={() => setCurrentScreen('menu')} />;
+      case 'generateAssets':
+        return <ImageGenerator onComplete={(assets) => {
+          setGeneratedAssets(assets);
+          setCurrentScreen('menu');
+        }} />;
       default:
         return <MainMenu onScreenChange={setCurrentScreen} />;
     }
