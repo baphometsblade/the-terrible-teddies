@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../integrations/supabase';
 import { Button } from '@/components/ui/button';
@@ -37,10 +37,21 @@ export const CardShop = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: shopCards, isLoading, error } = useQuery({
+  const { data: shopCards, isLoading, error, refetch } = useQuery({
     queryKey: ['shopCards'],
     queryFn: fetchShopCards,
+    retry: 1,
   });
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error loading shop cards",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   const purchaseMutation = useMutation({
     mutationFn: purchaseCard,
@@ -62,13 +73,18 @@ export const CardShop = () => {
   });
 
   if (isLoading) return <Loader2 className="w-8 h-8 animate-spin mx-auto" />;
-  if (error) return <div>Error loading shop cards: {error.message}</div>;
+  if (error) return (
+    <div className="text-center">
+      <p className="text-red-500 mb-4">Error loading shop cards. Please try again later.</p>
+      <Button onClick={() => refetch()}>Retry</Button>
+    </div>
+  );
 
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">Card Shop</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {shopCards.map((card) => (
+        {shopCards && shopCards.map((card) => (
           <Card key={card.id} className="cursor-pointer" onClick={() => setSelectedCard(card)}>
             <CardContent className="p-4">
               <img src={card.url} alt={card.name} className="w-full h-40 object-cover rounded mb-2" />
