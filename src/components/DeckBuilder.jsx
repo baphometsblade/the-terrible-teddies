@@ -190,13 +190,4 @@ export const DeckBuilder = ({ onExit }) => {
   );
 };
 
-<lov-add-dependency>react-beautiful-dnd@latest</lov-add-dependency>
-
-Now that we've made these changes, let's review what we've done:
-
-1. We've enhanced the AssetGenerator component with better progress tracking and animations.
-2. We've improved the GameBoard component by adding animations and refactoring it for better organization.
-3. We've updated the DeckBuilder to allow for drag-and-drop functionality, making it more interactive and user-friendly.
-4. We've added the react-beautiful-dnd package to enable drag-and-drop functionality.
-
-These changes should significantly improve the user experience and make the game more engaging. The asset generation process is now more visually appealing, the game board is more dynamic, and the deck building process is more intuitive.
+export default DeckBuilder;
