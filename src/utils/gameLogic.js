@@ -33,11 +33,5 @@ export const applyCardEffect = (state, card, isOpponent) => {
 };
 
 export const checkGameOver = (state) => {
-  if (state.playerHP <= 0 || state.opponentHP <= 0) {
-    return {
-      isGameOver: true,
-      winner: state.playerHP > 0 ? 'player' : 'opponent'
-    };
-  }
-  return { isGameOver: false, winner: null };
+  return state.playerHP <= 0 || state.opponentHP <= 0;
 };

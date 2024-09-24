@@ -2,19 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
-import { TeddyCard } from '../TeddyCard';
-import { ActiveEffects } from './ActiveEffects';
 import { PlayerArea } from './PlayerArea';
 import { OpponentArea } from './OpponentArea';
 import { GameInfo } from './GameInfo';
 import { PlayerHand } from './PlayerHand';
+import { BattleArena } from './BattleArena';
+import { GameLog } from './GameLog';
 import { applyCardEffect, checkGameOver } from '../../utils/gameLogic';
-import { motion } from 'framer-motion';
+import { AIOpponent } from '../../utils/AIOpponent';
+import { playSound } from '../../utils/audio';
 
-const fetchCards = async () => {
-  const { data, error } = await supabase.from('generated_images').select('*');
+const fetchUserDeck = async () => {
+  const { data, error } = await supabase.from('user_decks').select('*').single();
   if (error) throw error;
-  return data;
+  return data.deck;
 };
 
 export const GameBoard = ({ onExit }) => {
@@ -25,19 +26,23 @@ export const GameBoard = ({ onExit }) => {
   const [currentTurn, setCurrentTurn] = useState('player');
   const [momentumGauge, setMomentumGauge] = useState(0);
   const [activeEffects, setActiveEffects] = useState({ player: [], opponent: [] });
+  const [gameLog, setGameLog] = useState([]);
+  const [selectedCard, setSelectedCard] = useState(null);
 
-  const { data: cards, isLoading, error } = useQuery({
-    queryKey: ['cards'],
-    queryFn: fetchCards,
+  const { data: userDeck, isLoading, error } = useQuery({
+    queryKey: ['userDeck'],
+    queryFn: fetchUserDeck,
   });
 
+  const ai = new AIOpponent('normal');
+
   useEffect(() => {
-    if (cards) {
-      const shuffledCards = [...cards].sort(() => Math.random() - 0.5);
-      setPlayerHand(shuffledCards.slice(0, 5));
-      setOpponentHand(shuffledCards.slice(5, 10));
+    if (userDeck) {
+      const shuffledDeck = [...userDeck].sort(() => Math.random() - 0.5);
+      setPlayerHand(shuffledDeck.slice(0, 5));
+      setOpponentHand(shuffledDeck.slice(5, 10));
     }
-  }, [cards]);
+  }, [userDeck]);
 
   const handlePlayCard = (card) => {
     if (currentTurn !== 'player' || card.energy_cost > 10 - momentumGauge) return;
@@ -47,18 +52,14 @@ export const GameBoard = ({ onExit }) => {
       opponentHP,
       momentumGauge,
       activeEffects,
+      gameLog,
     }, card, false);
 
-    setPlayerHP(newState.playerHP);
-    setOpponentHP(newState.opponentHP);
-    setMomentumGauge(newState.momentumGauge);
-    setActiveEffects(newState.activeEffects);
-    setPlayerHand(playerHand.filter(c => c.id !== card.id));
+    updateGameState(newState);
+    playSound('playCard');
 
-    const { isGameOver, winner } = checkGameOver(newState);
-    if (isGameOver) {
-      alert(`Game Over! ${winner === 'player' ? 'You win!' : 'You lose!'}`);
-      onExit();
+    if (checkGameOver(newState)) {
+      endGame(newState.playerHP > 0 ? 'player' : 'opponent');
     } else {
       setCurrentTurn('opponent');
       setTimeout(handleOpponentTurn, 1000);
@@ -66,27 +67,22 @@ export const GameBoard = ({ onExit }) => {
   };
 
   const handleOpponentTurn = () => {
-    // Simple AI: play a random card
-    const playableCards = opponentHand.filter(card => card.energy_cost <= 10 - momentumGauge);
-    if (playableCards.length > 0) {
-      const randomCard = playableCards[Math.floor(Math.random() * playableCards.length)];
+    const aiCard = ai.chooseCard(opponentHand, { playerHP, opponentHP, momentumGauge, activeEffects });
+    if (aiCard) {
       const newState = applyCardEffect({
         playerHP,
         opponentHP,
         momentumGauge,
         activeEffects,
-      }, randomCard, true);
+        gameLog,
+      }, aiCard, true);
 
-      setPlayerHP(newState.playerHP);
-      setOpponentHP(newState.opponentHP);
-      setMomentumGauge(newState.momentumGauge);
-      setActiveEffects(newState.activeEffects);
-      setOpponentHand(opponentHand.filter(c => c.id !== randomCard.id));
+      updateGameState(newState);
+      setOpponentHand(opponentHand.filter(c => c.id !== aiCard.id));
+      playSound('playCard');
 
-      const { isGameOver, winner } = checkGameOver(newState);
-      if (isGameOver) {
-        alert(`Game Over! ${winner === 'player' ? 'You win!' : 'You lose!'}`);
-        onExit();
+      if (checkGameOver(newState)) {
+        endGame(newState.playerHP > 0 ? 'player' : 'opponent');
       } else {
         setCurrentTurn('player');
       }
@@ -95,27 +91,40 @@ export const GameBoard = ({ onExit }) => {
     }
   };
 
+  const updateGameState = (newState) => {
+    setPlayerHP(newState.playerHP);
+    setOpponentHP(newState.opponentHP);
+    setMomentumGauge(newState.momentumGauge);
+    setActiveEffects(newState.activeEffects);
+    setGameLog(newState.gameLog);
+  };
+
+  const endGame = (winner) => {
+    playSound(winner === 'player' ? 'victory' : 'defeat');
+    // Implement end game logic (e.g., show modal, update stats)
+  };
+
   if (isLoading) return <div className="text-center text-2xl">Loading game...</div>;
   if (error) return <div className="text-center text-2xl text-red-500">Error: {error.message}</div>;
 
   return (
-    <motion.div 
-      className="game-board p-4 bg-gradient-to-br from-purple-800 to-indigo-900 rounded-lg shadow-2xl"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="game-board p-4 bg-gradient-to-br from-purple-800 to-indigo-900 rounded-lg shadow-2xl">
       <OpponentArea teddies={opponentHand} hp={opponentHP} />
-      <ActiveEffects effects={activeEffects.opponent} />
       <GameInfo currentTurn={currentTurn} momentumGauge={momentumGauge} />
-      <ActiveEffects effects={activeEffects.player} />
-      <PlayerArea teddies={playerHand} hp={playerHP} />
-      <PlayerHand cards={playerHand} onPlayCard={handlePlayCard} />
+      <BattleArena
+        playerTeddies={playerHand.filter(card => card.type === 'Teddy')}
+        opponentTeddies={opponentHand.filter(card => card.type === 'Teddy')}
+        selectedCard={selectedCard}
+        onCardSelect={setSelectedCard}
+      />
+      <PlayerArea teddies={playerHand.filter(card => card.type === 'Teddy')} hp={playerHP} />
+      <PlayerHand cards={playerHand} onPlayCard={handlePlayCard} onSelectCard={setSelectedCard} />
+      <GameLog logs={gameLog} />
       <div className="mt-8 text-center">
         <Button onClick={onExit} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
           Exit Game
         </Button>
       </div>
-    </motion.div>
+    </div>
   );
 };

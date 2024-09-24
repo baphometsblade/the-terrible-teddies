@@ -24,7 +24,6 @@ export class AIOpponent {
   }
 
   chooseBalancedCard(cards, gameState) {
-    // Prioritize cards based on the current game state
     const sortedCards = cards.sort((a, b) => {
       const aScore = this.calculateCardScore(a, gameState);
       const bScore = this.calculateCardScore(b, gameState);
@@ -35,7 +34,6 @@ export class AIOpponent {
 
   chooseOptimalCard(cards, gameState) {
     // Implement more advanced logic for optimal card selection
-    // This could include considering card synergies, predicting player moves, etc.
     return this.chooseBalancedCard(cards, gameState);
   }
 

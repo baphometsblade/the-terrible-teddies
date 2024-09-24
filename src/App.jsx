@@ -1,33 +1,18 @@
+import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { navItems } from "./nav-items";
-import { SupabaseAuthProvider } from "./integrations/supabase/auth";
-import { useEffect } from "react";
-import { setupDatabase } from "./utils/setupDatabase";
+import { SupabaseProvider } from './integrations/supabase';
+import Index from './pages/Index';
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  useEffect(() => {
-    setupDatabase();
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
-      <SupabaseAuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <BrowserRouter>
-            <Routes>
-              {navItems.map(({ to, page }) => (
-                <Route key={to} path={to} element={page} />
-              ))}
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </SupabaseAuthProvider>
+      <SupabaseProvider>
+        <Toaster />
+        <Index />
+      </SupabaseProvider>
     </QueryClientProvider>
   );
 };
