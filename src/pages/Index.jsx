@@ -9,11 +9,13 @@ import { PawPrint, Settings, Trophy, Book, ShoppingBag } from 'lucide-react';
 
 const Index = () => {
   const [currentView, setCurrentView] = useState('menu');
+  const [gameMode, setGameMode] = useState('singlePlayer');
+  const [difficulty, setDifficulty] = useState('normal');
 
   const renderContent = () => {
     switch (currentView) {
       case 'game':
-        return <GameBoard onExit={() => setCurrentView('menu')} />;
+        return <GameBoard onExit={() => setCurrentView('menu')} gameMode={gameMode} difficulty={difficulty} />;
       case 'deckBuilder':
         return <DeckBuilder onExit={() => setCurrentView('menu')} />;
       case 'leaderboard':
@@ -40,6 +42,10 @@ const Index = () => {
               <Button onClick={() => setCurrentView('cardShop')} className="bg-green-600 hover:bg-green-700 text-white text-lg py-6">
                 <ShoppingBag className="w-6 h-6 mr-2" />
                 Teddy Shop
+              </Button>
+              <Button onClick={() => setCurrentView('settings')} className="bg-purple-600 hover:bg-purple-700 text-white text-lg py-6">
+                <Settings className="w-6 h-6 mr-2" />
+                Game Settings
               </Button>
             </div>
           </div>
