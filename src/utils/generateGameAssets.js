@@ -18,34 +18,34 @@ const generateCardName = (type) => {
 const generateCardEffect = (type) => {
   switch (type) {
     case 'Action':
-      return `Tease the opponent, dealing ${Math.floor(Math.random() * 3) + 2} damage.`;
+      return `Deal ${Math.floor(Math.random() * 3) + 2} damage to the opponent.`;
     case 'Trap':
-      return `When activated, distract the opponent, negating their next action and dealing ${Math.floor(Math.random() * 2) + 1} damage.`;
+      return `When activated, negate the opponent's next action and deal ${Math.floor(Math.random() * 2) + 1} damage.`;
     case 'Special':
-      return `Charm your way to healing ${Math.floor(Math.random() * 3) + 1} HP and draw a card.`;
+      return `Heal ${Math.floor(Math.random() * 3) + 1} HP and draw a card.`;
     case 'Defense':
-      return `Use your allure to reduce incoming damage by ${Math.floor(Math.random() * 2) + 1} for the next ${Math.floor(Math.random() * 2) + 1} turns.`;
+      return `Reduce incoming damage by ${Math.floor(Math.random() * 2) + 1} for the next ${Math.floor(Math.random() * 2) + 1} turns.`;
     case 'Boost':
-      return `Flirt to increase your Momentum Gauge by ${Math.floor(Math.random() * 2) + 1}.`;
+      return `Increase your Momentum Gauge by ${Math.floor(Math.random() * 2) + 1}.`;
     default:
       return 'No effect.';
   }
 };
 
 const generateCardPrompt = (type, name) => {
-  const basePrompt = `A cheeky, adult-themed teddy bear for a card game, representing a ${type.toLowerCase()} card named "${name}". The image should be suggestive and humorous, suitable for an adult card game called "Terrible Teddies". The teddy bear should have a mischievous expression and be in a playful pose.`;
+  const basePrompt = `A hyper-realistic, ultra-detailed teddy bear for the adult card game "Terrible Teddies". The teddy represents a ${type.toLowerCase()} card named "${name}". The image should be high resolution and showcase intricate details of the bear's fur, eyes, and any accessories or features that make it unique. The bear should have a mischievous and slightly menacing appearance, suitable for an adult-themed game.`;
   
   switch (type) {
     case 'Action':
-      return `${basePrompt} The teddy bear is winking and blowing a kiss, wearing a slightly revealing outfit. It has a confident and flirtatious demeanor.`;
+      return `${basePrompt} The teddy bear is in an action pose, perhaps wielding a weapon or showing off its muscles. It has a determined and slightly aggressive expression.`;
     case 'Trap':
-      return `${basePrompt} The teddy bear is hiding behind a large heart-shaped object, peeking out with a sly grin. It's holding a pair of fluffy handcuffs or a feather tickler.`;
+      return `${basePrompt} The teddy bear is hiding or setting up a trap, with a sly and cunning look. It might be peeking out from behind an object or holding a comically large trap.`;
     case 'Special':
-      return `${basePrompt} The teddy bear is surrounded by a magical aura of hearts and sparkles. It's striking a dramatic pose, wearing a cape or wizard hat made of lace or silk.`;
+      return `${basePrompt} The teddy bear is surrounded by a magical aura or special effects. It has an otherworldly or enchanted appearance, with glowing eyes or mystical symbols on its fur.`;
     case 'Defense':
-      return `${basePrompt} The teddy bear is partially hidden behind a large feather fan or a silky curtain, with just its eyes and paws visible. It has a coy, protective expression.`;
+      return `${basePrompt} The teddy bear is in a defensive stance, perhaps holding a shield or surrounded by a protective barrier. It has a determined and unyielding expression.`;
     case 'Boost':
-      return `${basePrompt} The teddy bear is flexing its stuffed muscles or striking a bodybuilder pose. It's wearing a tiny, shimmering outfit that accentuates its teddy bear physique.`;
+      return `${basePrompt} The teddy bear is radiating energy or power. It might be glowing, have electricity crackling around it, or be surrounded by speed lines to indicate a boost in power.`;
     default:
       return basePrompt;
   }
