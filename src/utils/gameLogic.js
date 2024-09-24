@@ -31,3 +31,13 @@ export const applyCardEffect = (state, card, isOpponent) => {
   newState.gameLog = [...newState.gameLog, { player: isOpponent ? 'Opponent' : 'You', action: effectDescription }];
   return newState;
 };
+
+export const checkGameOver = (state) => {
+  if (state.playerHP <= 0 || state.opponentHP <= 0) {
+    return {
+      isGameOver: true,
+      winner: state.playerHP > 0 ? 'player' : 'opponent'
+    };
+  }
+  return { isGameOver: false, winner: null };
+};

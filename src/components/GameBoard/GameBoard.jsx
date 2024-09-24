@@ -9,7 +9,7 @@ import { GameLog } from './GameLog';
 import { CardDetail } from './CardDetail';
 import { GameOverScreen } from '../GameOverScreen';
 import { playSound } from '../../utils/audio';
-import { applyCardEffect } from '../../utils/gameLogic';
+import { applyCardEffect, checkGameOver } from '../../utils/gameLogic';
 import { AIOpponent } from '../../utils/AIOpponent';
 
 export const GameBoard = ({ gameMode, onExit, settings }) => {
@@ -128,39 +128,22 @@ export const GameBoard = ({ gameMode, onExit, settings }) => {
       } else {
         newState.opponentHand = [...newState.opponentHand, ...drawCards(1, newState.opponentDeck)];
       }
-      return checkActiveEffects(newState);
+      return checkGameOver(newState);
     });
   };
-
-  const checkActiveEffects = (state) => {
-    const newState = { ...state };
-    ['player', 'opponent'].forEach(side => {
-      newState.activeEffects[side] = newState.activeEffects[side].filter(effect => {
-        if (effect.type === 'Trap') {
-          return applyCardEffect(newState, effect, side === 'opponent');
-        }
-        return true;
-      });
-    });
-    return newState;
-  };
-
-  const checkGameOver = useCallback(() => {
-    if (gameState.playerHP <= 0 || gameState.opponentHP <= 0) {
-      const winner = gameState.playerHP > 0 ? 'player' : 'opponent';
-      setWinner(winner);
-      setIsGameOver(true);
-      updateUserStats.mutate({ 
-        games_played: 1, 
-        games_won: winner === 'player' ? 1 : 0 
-      });
-      playSound(winner === 'player' ? 'victory' : 'defeat');
-    }
-  }, [gameState.playerHP, gameState.opponentHP, updateUserStats]);
 
   useEffect(() => {
-    checkGameOver();
-  }, [gameState.playerHP, gameState.opponentHP, checkGameOver]);
+    const gameOverResult = checkGameOver(gameState);
+    if (gameOverResult.isGameOver) {
+      setIsGameOver(true);
+      setWinner(gameOverResult.winner);
+      updateUserStats.mutate({ 
+        games_played: 1, 
+        games_won: gameOverResult.winner === 'player' ? 1 : 0 
+      });
+      playSound(gameOverResult.winner === 'player' ? 'victory' : 'defeat');
+    }
+  }, [gameState, updateUserStats]);
 
   const handlePlayAgain = () => {
     setIsGameOver(false);
