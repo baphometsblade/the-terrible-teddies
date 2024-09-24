@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from "@/components/ui/use-toast";
-import { generateGameAssets } from '../utils/generateGameAssets';
 import { motion } from 'framer-motion';
+import { generateGameAssets } from '../utils/generateGameAssets';
 
 export const AssetGenerator = ({ onComplete }) => {
   const [isGenerating, setIsGenerating] = useState(false);
