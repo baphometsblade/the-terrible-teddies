@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { supabase } from './index.js';
 import { useQueryClient } from '@tanstack/react-query';
 import { Auth } from '@supabase/auth-ui-react';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 
 const SupabaseAuthContext = createContext();
 
-export const SupabaseAuthProvider = ({ children }) => {
+export const SupabaseProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
