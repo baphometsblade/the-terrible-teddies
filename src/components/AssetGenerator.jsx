@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from 'framer-motion';
-import { generateGameAssets } from '../utils/generateGameAssets';
+import { generateAllAssets } from '../utils/generateGameAssets';
+import { terribleTeddies } from '../data/terribleTeddies';
 
 export const AssetGenerator = ({ onComplete }) => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -14,12 +15,12 @@ export const AssetGenerator = ({ onComplete }) => {
     setIsGenerating(true);
     setProgress(0);
     try {
-      await generateGameAssets((progress) => {
+      await generateAllAssets(terribleTeddies, (progress) => {
         setProgress(progress);
       });
       toast({
         title: 'Assets Generated',
-        description: 'All cheeky game assets have been successfully created and stored.',
+        description: 'All cheeky Terrible Teddies assets have been successfully created and stored.',
         variant: 'success',
       });
       onComplete();
@@ -42,14 +43,14 @@ export const AssetGenerator = ({ onComplete }) => {
       exit={{ opacity: 0, y: -20 }}
       className="p-4 bg-pink-100 rounded-lg shadow-md"
     >
-      <h2 className="text-2xl font-bold mb-4 text-purple-800">Generate Cheeky Game Assets</h2>
-      <p className="mb-4 text-purple-600">Click the button below to generate saucy images for the game cards.</p>
+      <h2 className="text-2xl font-bold mb-4 text-purple-800">Generate Terrible Teddies Assets</h2>
+      <p className="mb-4 text-purple-600">Click the button below to generate saucy images for the Terrible Teddies.</p>
       <Button
         onClick={handleGenerateAssets}
         disabled={isGenerating}
         className="w-full mb-4 bg-purple-500 hover:bg-purple-600 text-white"
       >
-        {isGenerating ? 'Generating Naughty Assets...' : 'Generate Cheeky Assets'}
+        {isGenerating ? 'Generating Naughty Teddies...' : 'Generate Terrible Teddies'}
       </Button>
       {isGenerating && (
         <motion.div 
