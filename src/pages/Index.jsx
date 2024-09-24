@@ -4,14 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Loader2, PawPrint, Settings, Trophy, Book } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
-import { generateGameAssets } from '../utils/generateGameAssets';
 import { GameBoard } from '../components/GameBoard/GameBoard';
 import { DeckBuilder } from '../components/DeckBuilder';
 import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { GameSettings } from '../components/GameSettings';
 import { CardShop } from '../components/CardShop';
+import { AssetGenerator } from '../components/AssetGenerator';
 import { useToast } from "@/components/ui/use-toast";
-import { Progress } from "@/components/ui/progress";
 
 const Index = () => {
   const { session, loading: authLoading } = useSupabaseAuth();
@@ -20,11 +19,10 @@ const Index = () => {
     difficulty: 'normal',
     soundEnabled: true,
   });
-  const [generationProgress, setGenerationProgress] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkAndGenerateAssets = async () => {
+    const checkAssets = async () => {
       if (!authLoading && session) {
         try {
           setGameState('loading');
@@ -34,26 +32,12 @@ const Index = () => {
           
           if (error) throw error;
 
-          if (count === 0) {
-            toast({
-              title: "Generating Game Assets",
-              description: "This may take a few minutes. Please wait.",
-            });
-            await generateGameAssets((progress) => {
-              setGenerationProgress(progress);
-            });
-            toast({
-              title: "Assets Generated",
-              description: "Game assets have been created successfully!",
-            });
-          }
-
-          setGameState('menu');
+          setGameState(count === 0 ? 'needsAssets' : 'menu');
         } catch (error) {
-          console.error('Error checking or generating assets:', error);
+          console.error('Error checking assets:', error);
           toast({
             title: "Error",
-            description: "Failed to load or generate game assets. Please try again.",
+            description: "Failed to check game assets. Please try again.",
             variant: "destructive",
           });
           setGameState('error');
@@ -61,7 +45,7 @@ const Index = () => {
       }
     };
 
-    checkAndGenerateAssets();
+    checkAssets();
   }, [authLoading, session, toast]);
 
   const renderContent = () => {
@@ -70,16 +54,11 @@ const Index = () => {
         return (
           <div className="text-center text-2xl text-gray-600">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-            {generationProgress > 0 ? (
-              <div className="mt-4">
-                <Progress value={generationProgress} className="w-64 mx-auto" />
-                <p className="mt-2">Generating assets: {Math.round(generationProgress)}%</p>
-              </div>
-            ) : (
-              "Loading game assets..."
-            )}
+            Loading game...
           </div>
         );
+      case 'needsAssets':
+        return <AssetGenerator />;
       case 'menu':
         return (
           <div className="text-center">
@@ -104,6 +83,10 @@ const Index = () => {
               <Button onClick={() => setGameState('cardShop')} className="bg-green-600 hover:bg-green-700 text-white text-lg py-6">
                 <PawPrint className="w-6 h-6 mr-2" />
                 Card Shop
+              </Button>
+              <Button onClick={() => setGameState('needsAssets')} className="bg-orange-600 hover:bg-orange-700 text-white text-lg py-6">
+                <Loader2 className="w-6 h-6 mr-2" />
+                Regenerate Assets
               </Button>
             </div>
           </div>
