@@ -15,8 +15,8 @@ export const DeckBuilder = ({ onExit }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (userDeck) {
-      setDeck(userDeck);
+    if (userDeck && userDeck.deck) {
+      setDeck(userDeck.deck);
     }
   }, [userDeck]);
 

@@ -31,7 +31,7 @@ export const useGeneratedImages = () => {
 export const useUserDeck = () => {
     return useQuery({
         queryKey: ['userDeck'],
-        queryFn: () => fromSupabase(supabase.from('user_decks').select('*')),
+        queryFn: () => fromSupabase(supabase.from('user_decks').select('*').single()),
     });
 };
 
@@ -66,5 +66,13 @@ export const useEvolveCard = () => {
             queryClient.invalidateQueries('userDeck');
             queryClient.invalidateQueries('generatedImages');
         },
+    });
+};
+
+// Hook for fetching shop cards
+export const useShopCards = () => {
+    return useQuery({
+        queryKey: ['shopCards'],
+        queryFn: () => fromSupabase(supabase.from('shop_cards').select('*')),
     });
 };

@@ -45,7 +45,7 @@ export const GameBoard = ({ gameMode, onExit, settings }) => {
   }, [allCards, userDeck]);
 
   const initializeGame = () => {
-    const playerDeckCards = userDeck && userDeck.length > 0 ? userDeck : allCards.slice(0, 20);
+    const playerDeckCards = userDeck && userDeck.deck && userDeck.deck.length > 0 ? userDeck.deck : allCards.slice(0, 20);
     const opponentDeckCards = allCards.slice(20, 40);
     setGameState(prevState => ({
       ...prevState,

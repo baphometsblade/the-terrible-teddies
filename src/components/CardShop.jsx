@@ -1,19 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../integrations/supabase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, ShoppingCart } from 'lucide-react';
-
-const fetchShopCards = async () => {
-  const { data, error } = await supabase
-    .from('shop_cards')
-    .select('*')
-    .order('price', { ascending: true });
-  if (error) throw error;
-  return data;
-};
+import { useShopCards } from '../integrations/supabase';
 
 const purchaseCard = async (cardId) => {
   const { data, error } = await supabase
@@ -37,21 +29,7 @@ export const CardShop = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: shopCards, isLoading, error, refetch } = useQuery({
-    queryKey: ['shopCards'],
-    queryFn: fetchShopCards,
-    retry: 1,
-  });
-
-  useEffect(() => {
-    if (error) {
-      toast({
-        title: "Error loading shop cards",
-        description: "Please try again later.",
-        variant: "destructive",
-      });
-    }
-  }, [error, toast]);
+  const { data: shopCards, isLoading, error } = useShopCards();
 
   const purchaseMutation = useMutation({
     mutationFn: purchaseCard,
@@ -76,7 +54,7 @@ export const CardShop = () => {
   if (error) return (
     <div className="text-center">
       <p className="text-red-500 mb-4">Error loading shop cards. Please try again later.</p>
-      <Button onClick={() => refetch()}>Retry</Button>
+      <Button onClick={() => queryClient.invalidateQueries('shopCards')}>Retry</Button>
     </div>
   );
 
