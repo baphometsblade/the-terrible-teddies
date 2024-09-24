@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSupabaseAuth } from '../integrations/supabase/auth';
 import { Button } from '@/components/ui/button';
-import { Loader2, PawPrint, Settings, Trophy, Book } from 'lucide-react';
+import { Loader2, PawPrint, Settings, Trophy, Book, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '../integrations/supabase';
 import { GameBoard } from '../components/GameBoard/GameBoard';
@@ -58,7 +58,7 @@ const Index = () => {
           </div>
         );
       case 'needsAssets':
-        return <AssetGenerator />;
+        return <AssetGenerator onComplete={() => setGameState('menu')} />;
       case 'menu':
         return (
           <div className="text-center">
@@ -81,7 +81,7 @@ const Index = () => {
                 Game Settings
               </Button>
               <Button onClick={() => setGameState('cardShop')} className="bg-green-600 hover:bg-green-700 text-white text-lg py-6">
-                <PawPrint className="w-6 h-6 mr-2" />
+                <ShoppingBag className="w-6 h-6 mr-2" />
                 Card Shop
               </Button>
               <Button onClick={() => setGameState('needsAssets')} className="bg-orange-600 hover:bg-orange-700 text-white text-lg py-6">
@@ -135,7 +135,7 @@ const Index = () => {
             <PawPrint className="w-24 h-24 mx-auto text-purple-600" />
           </motion.div>
           <h1 className="text-5xl font-bold text-purple-800 mt-6 mb-2">Terrible Teddies</h1>
-          <p className="text-2xl text-purple-600">The cutest card battle game!</p>
+          <p className="text-2xl text-purple-600">The cheekiest card battle game!</p>
         </header>
         {renderContent()}
       </div>
