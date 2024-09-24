@@ -33,19 +33,19 @@ const generateCardEffect = (type) => {
 };
 
 const generateCardPrompt = (type, name) => {
-  const basePrompt = `A cheeky, adult-themed teddy bear for a card game, representing a ${type.toLowerCase()} card named "${name}". The image should be suggestive and humorous, suitable for an adult card game called "Terrible Teddies".`;
+  const basePrompt = `A cheeky, adult-themed teddy bear for a card game, representing a ${type.toLowerCase()} card named "${name}". The image should be suggestive and humorous, suitable for an adult card game called "Terrible Teddies". The teddy bear should have a mischievous expression and be in a playful pose.`;
   
   switch (type) {
     case 'Action':
-      return `${basePrompt} The teddy bear should look flirtatious and ready to tease, maybe with a saucy wink or blowing a kiss.`;
+      return `${basePrompt} The teddy bear is winking and blowing a kiss, wearing a slightly revealing outfit. It has a confident and flirtatious demeanor.`;
     case 'Trap':
-      return `${basePrompt} The teddy bear should look mischievous and seductive, perhaps in a playful pose or setting up a cheeky prank.`;
+      return `${basePrompt} The teddy bear is hiding behind a large heart-shaped object, peeking out with a sly grin. It's holding a pair of fluffy handcuffs or a feather tickler.`;
     case 'Special':
-      return `${basePrompt} The teddy bear should have a magical or unique appearance, possibly surrounded by hearts or with a charming, irresistible aura.`;
+      return `${basePrompt} The teddy bear is surrounded by a magical aura of hearts and sparkles. It's striking a dramatic pose, wearing a cape or wizard hat made of lace or silk.`;
     case 'Defense':
-      return `${basePrompt} The teddy bear should look coy or protective, maybe hiding behind lingerie or a feather boa.`;
+      return `${basePrompt} The teddy bear is partially hidden behind a large feather fan or a silky curtain, with just its eyes and paws visible. It has a coy, protective expression.`;
     case 'Boost':
-      return `${basePrompt} The teddy bear should look confident and alluring, perhaps with a determined expression or in a provocative pose.`;
+      return `${basePrompt} The teddy bear is flexing its stuffed muscles or striking a bodybuilder pose. It's wearing a tiny, shimmering outfit that accentuates its teddy bear physique.`;
     default:
       return basePrompt;
   }
