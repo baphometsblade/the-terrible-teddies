@@ -149,18 +149,6 @@ export const GameBoard = ({ gameMode, onExit, settings }) => {
     initializeGame();
   };
 
-  const handleEvolveCard = (evolvedCard) => {
-    setGameState(prevState => ({
-      ...prevState,
-      playerHand: prevState.playerHand.map(card => 
-        card.id === evolvedCard.id ? evolvedCard : card
-      ),
-      playerDeck: prevState.playerDeck.map(card => 
-        card.id === evolvedCard.id ? evolvedCard : card
-      ),
-    }));
-  };
-
   if (isLoadingCards) {
     return <div>Loading game...</div>;
   }
@@ -212,14 +200,6 @@ export const GameBoard = ({ gameMode, onExit, settings }) => {
           onMainMenu={onExit}
         />
       )}
-      <div className="mt-6">
-        <h3 className="text-xl font-bold mb-2">Evolve Your Cards</h3>
-        <div className="flex space-x-4 overflow-x-auto pb-4">
-          {gameState.playerHand.map(card => (
-            <CardEvolution key={card.id} card={card} onEvolve={handleEvolveCard} />
-          ))}
-        </div>
-      </div>
     </div>
   );
 };

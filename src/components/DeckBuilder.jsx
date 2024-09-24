@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Loader2, Plus, Minus, Save } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { useGeneratedImages, useUserDeck, useSaveUserDeck } from '../integrations/supabase';
 
@@ -100,7 +98,7 @@ export const DeckBuilder = ({ onExit }) => {
               className={`mt-2 ${inDeck ? 'bg-red-500 hover:bg-red-600' : 'bg-yellow-400 hover:bg-yellow-500'} text-gray-900`}
               size="sm"
             >
-              {inDeck ? <><Minus className="w-4 h-4 mr-1" /> Remove</> : <><Plus className="w-4 h-4 mr-1" /> Add to Deck</>}
+              {inDeck ? 'Remove' : 'Add to Deck'}
             </Button>
           </div>
         </CardContent>
@@ -109,12 +107,7 @@ export const DeckBuilder = ({ onExit }) => {
   );
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-        <span className="ml-2 text-lg text-purple-700">Loading cards...</span>
-      </div>
-    );
+    return <div>Loading cards...</div>;
   }
 
   return (
@@ -135,40 +128,25 @@ export const DeckBuilder = ({ onExit }) => {
           <h3 className="text-2xl font-bold mb-4 text-yellow-400">Your Deck ({deck.length}/40)</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <AnimatePresence>
-              {deck.map((card, index) => renderCard(card, true))}
+              {deck.map((card) => renderCard(card, true))}
             </AnimatePresence>
           </div>
         </div>
       </div>
 
-      <div className="mt-8 text-center space-x-4">
+      <div className="mt-8 text-center">
         <Button 
           onClick={handleSaveDeck}
-          className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105"
+          className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
         >
-          <Save className="w-4 h-4 mr-2" /> Save Deck
+          Save Deck
         </Button>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button 
-              className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105"
-            >
-              Exit
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent className="bg-gray-800 border border-gray-700">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-yellow-400">Are you sure you want to exit?</AlertDialogTitle>
-              <AlertDialogDescription className="text-gray-300">
-                Your deck changes will be saved automatically. You can always come back to edit it later.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="bg-gray-700 text-gray-300 hover:bg-gray-600">Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={onExit} className="bg-yellow-400 text-gray-900 hover:bg-yellow-500">Confirm Exit</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Button 
+          onClick={onExit}
+          className="ml-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+        >
+          Exit
+        </Button>
       </div>
     </div>
   );
