@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import { useGeneratedImages, useUserDeck, useUpdateUserStats } from '../../integrations/supabase';
 import { PlayerArea } from './PlayerArea';
 import { OpponentArea } from './OpponentArea';
 import { GameInfo } from './GameInfo';
 import { GameLog } from './GameLog';
-import { CardDetail } from './CardDetail';
+import { CardPreview } from './CardPreview';
+import { ActiveEffects } from './ActiveEffects';
 import { GameOverScreen } from '../GameOverScreen';
 import { CardEvolution } from '../CardEvolution';
 import { playSound } from '../../utils/audio';
 import { applyCardEffect, checkGameOver } from '../../utils/gameLogic';
 import { AIOpponent } from '../../utils/AIOpponent';
+import { Button } from '@/components/ui/button';
 
 export const GameBoard = ({ gameMode, onExit, settings }) => {
   const [gameState, setGameState] = useState({
@@ -55,12 +57,7 @@ export const GameBoard = ({ gameMode, onExit, settings }) => {
   };
 
   const shuffleArray = (array) => {
-    const newArray = [...array];
-    for (let i = newArray.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-    }
-    return newArray;
+    return [...array].sort(() => Math.random() - 0.5);
   };
 
   const drawCards = (count, deck) => {
@@ -111,7 +108,7 @@ export const GameBoard = ({ gameMode, onExit, settings }) => {
         endTurn();
       }, 1000);
     }
-  }, [gameState, gameMode]);
+  }, [gameState, gameMode, aiOpponent]);
 
   useEffect(() => {
     aiTurn();
@@ -174,18 +171,7 @@ export const GameBoard = ({ gameMode, onExit, settings }) => {
       <GameInfo currentTurn={gameState.currentTurn} momentumGauge={gameState.momentumGauge} />
       <div className="flex mb-6">
         <div className="w-1/2 pr-2">
-          <AnimatePresence>
-            {gameState.lastPlayedCard && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="last-played-card bg-gradient-to-r from-yellow-100 to-orange-100 p-4 rounded-lg shadow-md"
-              >
-                <CardDetail card={gameState.lastPlayedCard} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <ActiveEffects effects={gameState.activeEffects.player} />
         </div>
         <div className="w-1/2 pl-2">
           <GameLog logs={gameState.gameLog} />
@@ -199,26 +185,23 @@ export const GameBoard = ({ gameMode, onExit, settings }) => {
         onSelectCard={setSelectedCard}
       />
       <div className="mt-6 space-x-4 flex justify-center">
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <Button
           onClick={endTurn}
           disabled={gameState.currentTurn !== 'player'}
           className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           End Turn
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        </Button>
+        <Button
           onClick={onExit}
+          variant="outline"
           className="border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white font-bold py-3 px-6 rounded-full shadow-lg transition-all duration-300"
         >
           Surrender
-        </motion.button>
+        </Button>
       </div>
       {selectedCard && (
-        <CardDetail card={selectedCard} onClose={() => setSelectedCard(null)} />
+        <CardPreview card={selectedCard} onClose={() => setSelectedCard(null)} />
       )}
       {isGameOver && (
         <GameOverScreen

@@ -101,7 +101,6 @@ export async function generateGameAssets(onProgress) {
     }
   }
 
-  // Insert all generated cards into the database
   const { data, error } = await supabase
     .from('generated_images')
     .insert(generatedCards);
