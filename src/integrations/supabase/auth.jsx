@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 
 const SupabaseAuthContext = createContext();
 
-export const SupabaseProvider = ({ children }) => {
+export const SupabaseAuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
