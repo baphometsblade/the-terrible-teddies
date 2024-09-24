@@ -8,6 +8,7 @@ import { GameInfo } from './GameInfo';
 import { GameLog } from './GameLog';
 import { CardDetail } from './CardDetail';
 import { GameOverScreen } from '../GameOverScreen';
+import { CardEvolution } from '../CardEvolution';
 import { playSound } from '../../utils/audio';
 import { applyCardEffect, checkGameOver } from '../../utils/gameLogic';
 import { AIOpponent } from '../../utils/AIOpponent';
@@ -33,7 +34,7 @@ export const GameBoard = ({ gameMode, onExit, settings }) => {
   const { data: allCards, isLoading: isLoadingCards } = useGeneratedImages();
   const { data: userDeck } = useUserDeck();
   const updateUserStats = useUpdateUserStats();
-  const aiOpponent = new AIOpponent();
+  const aiOpponent = new AIOpponent(settings.difficulty);
 
   useEffect(() => {
     if (allCards && userDeck) {
@@ -151,6 +152,18 @@ export const GameBoard = ({ gameMode, onExit, settings }) => {
     initializeGame();
   };
 
+  const handleEvolveCard = (evolvedCard) => {
+    setGameState(prevState => ({
+      ...prevState,
+      playerHand: prevState.playerHand.map(card => 
+        card.id === evolvedCard.id ? evolvedCard : card
+      ),
+      playerDeck: prevState.playerDeck.map(card => 
+        card.id === evolvedCard.id ? evolvedCard : card
+      ),
+    }));
+  };
+
   if (isLoadingCards) {
     return <div>Loading game...</div>;
   }
@@ -216,6 +229,14 @@ export const GameBoard = ({ gameMode, onExit, settings }) => {
           onMainMenu={onExit}
         />
       )}
+      <div className="mt-6">
+        <h3 className="text-xl font-bold mb-2">Evolve Your Cards</h3>
+        <div className="flex space-x-4 overflow-x-auto pb-4">
+          {gameState.playerHand.map(card => (
+            <CardEvolution key={card.id} card={card} onEvolve={handleEvolveCard} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
