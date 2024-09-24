@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from "@/components/ui/use-toast";
 import { generateGameAssets } from '../utils/generateGameAssets';
 
 export const AssetGenerator = () => {
@@ -18,7 +18,7 @@ export const AssetGenerator = () => {
       });
       toast({
         title: 'Assets Generated',
-        description: 'All game assets have been successfully created and stored.',
+        description: 'All cheeky game assets have been successfully created and stored.',
         variant: 'success',
       });
     } catch (error) {
@@ -34,19 +34,20 @@ export const AssetGenerator = () => {
   };
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4">Generate Game Assets</h2>
+    <div className="p-4 bg-pink-100 rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-4 text-purple-800">Generate Cheeky Game Assets</h2>
+      <p className="mb-4 text-purple-600">Click the button below to generate saucy images for the game cards.</p>
       <Button
         onClick={handleGenerateAssets}
         disabled={isGenerating}
-        className="w-full mb-4"
+        className="w-full mb-4 bg-purple-500 hover:bg-purple-600 text-white"
       >
-        {isGenerating ? 'Generating...' : 'Generate Assets'}
+        {isGenerating ? 'Generating Naughty Assets...' : 'Generate Cheeky Assets'}
       </Button>
       {isGenerating && (
         <div className="mt-4">
           <Progress value={progress} className="w-full" />
-          <p className="text-center mt-2">{Math.round(progress)}% complete</p>
+          <p className="text-center mt-2 text-purple-700">{Math.round(progress)}% complete</p>
         </div>
       )}
     </div>

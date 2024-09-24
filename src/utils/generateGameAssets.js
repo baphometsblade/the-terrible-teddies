@@ -10,42 +10,42 @@ const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 const TOTAL_CARDS = 40;
 
 const generateCardName = (type) => {
-  const adjectives = ['Mischievous', 'Cuddly', 'Sneaky', 'Fluffy', 'Grumpy', 'Playful', 'Sleepy', 'Bouncy', 'Silly', 'Fuzzy'];
-  const nouns = ['Paw', 'Hug', 'Growl', 'Snuggle', 'Roar', 'Nap', 'Tickle', 'Giggle', 'Whisper', 'Tumble'];
+  const adjectives = ['Naughty', 'Cheeky', 'Saucy', 'Mischievous', 'Provocative', 'Flirty', 'Risqué', 'Daring', 'Sassy', 'Bold'];
+  const nouns = ['Tease', 'Wink', 'Whisper', 'Touch', 'Caress', 'Embrace', 'Kiss', 'Flirt', 'Temptation', 'Seduction'];
   return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
 };
 
 const generateCardEffect = (type) => {
   switch (type) {
     case 'Action':
-      return `Deal ${Math.floor(Math.random() * 3) + 2} damage to the opponent.`;
+      return `Tease the opponent, dealing ${Math.floor(Math.random() * 3) + 2} damage.`;
     case 'Trap':
-      return `When activated, negate the opponent's next action and deal ${Math.floor(Math.random() * 2) + 1} damage.`;
+      return `When activated, distract the opponent, negating their next action and dealing ${Math.floor(Math.random() * 2) + 1} damage.`;
     case 'Special':
-      return `Heal ${Math.floor(Math.random() * 3) + 1} HP and draw a card.`;
+      return `Charm your way to healing ${Math.floor(Math.random() * 3) + 1} HP and draw a card.`;
     case 'Defense':
-      return `Reduce incoming damage by ${Math.floor(Math.random() * 2) + 1} for the next ${Math.floor(Math.random() * 2) + 1} turns.`;
+      return `Use your allure to reduce incoming damage by ${Math.floor(Math.random() * 2) + 1} for the next ${Math.floor(Math.random() * 2) + 1} turns.`;
     case 'Boost':
-      return `Increase your Momentum Gauge by ${Math.floor(Math.random() * 2) + 1}.`;
+      return `Flirt to increase your Momentum Gauge by ${Math.floor(Math.random() * 2) + 1}.`;
     default:
       return 'No effect.';
   }
 };
 
 const generateCardPrompt = (type, name) => {
-  const basePrompt = `A cute cartoon teddy bear for a card game, representing a ${type.toLowerCase()} card named "${name}". The image should be colorful, child-friendly, and suitable for a card game called "Terrible Teddies".`;
+  const basePrompt = `A cheeky, adult-themed teddy bear for a card game, representing a ${type.toLowerCase()} card named "${name}". The image should be suggestive and humorous, suitable for an adult card game called "Terrible Teddies".`;
   
   switch (type) {
     case 'Action':
-      return `${basePrompt} The teddy bear should look active and ready to attack, maybe holding a pillow or a toy weapon.`;
+      return `${basePrompt} The teddy bear should look flirtatious and ready to tease, maybe with a saucy wink or blowing a kiss.`;
     case 'Trap':
-      return `${basePrompt} The teddy bear should look sneaky and mischievous, perhaps hiding behind something or setting up a prank.`;
+      return `${basePrompt} The teddy bear should look mischievous and seductive, perhaps in a playful pose or setting up a cheeky prank.`;
     case 'Special':
-      return `${basePrompt} The teddy bear should have a magical or unique appearance, possibly glowing or surrounded by sparkles.`;
+      return `${basePrompt} The teddy bear should have a magical or unique appearance, possibly surrounded by hearts or with a charming, irresistible aura.`;
     case 'Defense':
-      return `${basePrompt} The teddy bear should look protective or have a shield, maybe hiding under a blanket fort.`;
+      return `${basePrompt} The teddy bear should look coy or protective, maybe hiding behind lingerie or a feather boa.`;
     case 'Boost':
-      return `${basePrompt} The teddy bear should look energized or powered-up, perhaps with a determined expression or flexing its stuffed muscles.`;
+      return `${basePrompt} The teddy bear should look confident and alluring, perhaps with a determined expression or in a provocative pose.`;
     default:
       return basePrompt;
   }
