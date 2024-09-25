@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MainMenu } from '../components/MainMenu';
-import { GameBoard } from '../components/GameBoard';
+import { GameBoard } from '../components/GameBoard/GameBoard';
+import { AssetGenerator } from '../components/AssetGenerator';
+import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { Button } from '@/components/ui/button';
 
 const fetchGameData = async () => {
   const { data, error } = await supabase.from('generated_images').select('*');
@@ -12,11 +15,21 @@ const fetchGameData = async () => {
 };
 
 const Index = () => {
-  const [gameStarted, setGameStarted] = useState(false);
+  const [gameState, setGameState] = useState('menu');
+  const [assetsGenerated, setAssetsGenerated] = useState(false);
   const { data: gameData, isLoading, error } = useQuery({
     queryKey: ['gameData'],
     queryFn: fetchGameData,
   });
+
+  useEffect(() => {
+    if (gameData && gameData.length > 0) {
+      setAssetsGenerated(true);
+    }
+  }, [gameData]);
+
+  const handleStartGame = () => setGameState('playing');
+  const handleReturnToMenu = () => setGameState('menu');
 
   if (isLoading) {
     return (
@@ -37,10 +50,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-indigo-900 text-white p-8">
-      {!gameStarted ? (
-        <MainMenu onStartGame={() => setGameStarted(true)} />
+      {!assetsGenerated ? (
+        <AssetGenerator onComplete={() => setAssetsGenerated(true)} />
+      ) : gameState === 'menu' ? (
+        <div>
+          <MainMenu onStartGame={handleStartGame} />
+          <div className="mt-8">
+            <LeaderboardComponent />
+          </div>
+        </div>
       ) : (
-        <GameBoard onExitGame={() => setGameStarted(false)} gameData={gameData} />
+        <GameBoard onExitGame={handleReturnToMenu} gameData={gameData} />
       )}
     </div>
   );

@@ -3,8 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from 'framer-motion';
-import { generateAllAssets } from '../utils/generateGameAssets';
-import { terribleTeddies } from '../data/terribleTeddies';
+import { generateGameAssets } from '../utils/generateGameAssets';
 
 export const AssetGenerator = ({ onComplete }) => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -15,7 +14,7 @@ export const AssetGenerator = ({ onComplete }) => {
     setIsGenerating(true);
     setProgress(0);
     try {
-      await generateAllAssets(terribleTeddies, (progress) => {
+      await generateGameAssets((progress) => {
         setProgress(progress);
       });
       toast({

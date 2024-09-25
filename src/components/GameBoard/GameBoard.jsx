@@ -9,9 +9,8 @@ import { GameLog } from './GameLog';
 import { applyCardEffect, checkGameOver } from '../../utils/gameLogic';
 import { AIOpponent } from '../../utils/AIOpponent';
 import { playSound } from '../../utils/audio';
-import { terribleTeddies } from '../../data/terribleTeddies';
 
-export const GameBoard = ({ onExit }) => {
+export const GameBoard = ({ onExitGame, gameData }) => {
   const [playerDeck, setPlayerDeck] = useState([]);
   const [opponentDeck, setOpponentDeck] = useState([]);
   const [playerHand, setPlayerHand] = useState([]);
@@ -25,11 +24,13 @@ export const GameBoard = ({ onExit }) => {
   const ai = new AIOpponent('normal');
 
   useEffect(() => {
-    const shuffledTeddies = [...terribleTeddies].sort(() => Math.random() - 0.5);
-    setPlayerDeck(shuffledTeddies.slice(0, 20));
-    setOpponentDeck(shuffledTeddies.slice(20, 40));
-    drawInitialHand();
-  }, []);
+    if (gameData && gameData.length > 0) {
+      const shuffledCards = [...gameData].sort(() => Math.random() - 0.5);
+      setPlayerDeck(shuffledCards.slice(0, 20));
+      setOpponentDeck(shuffledCards.slice(20, 40));
+      drawInitialHand();
+    }
+  }, [gameData]);
 
   const drawInitialHand = () => {
     setPlayerHand(playerDeck.slice(0, 5));
@@ -121,7 +122,7 @@ export const GameBoard = ({ onExit }) => {
       <PlayerArea deck={playerDeck} hand={playerHand} hp={playerHP} />
       <GameLog logs={gameLog} />
       <div className="mt-8 text-center">
-        <Button onClick={onExit} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+        <Button onClick={onExitGame} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
           Exit Game
         </Button>
       </div>

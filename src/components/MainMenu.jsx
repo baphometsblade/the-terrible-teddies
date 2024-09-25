@@ -7,7 +7,7 @@ export const MainMenu = ({ onStartGame }) => {
       <h1 className="text-6xl font-bold mb-8 text-purple-300">Terrible Teddies</h1>
       <Button 
         onClick={onStartGame}
-        className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-xl"
+        className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg text-xl mb-4"
       >
         Start Game
       </Button>
