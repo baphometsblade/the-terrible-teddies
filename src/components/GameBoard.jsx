@@ -4,7 +4,7 @@ import { OpponentArea } from './OpponentArea';
 import { CardDisplay } from './CardDisplay';
 import { Button } from "@/components/ui/button";
 
-export const GameBoard = () => {
+export const GameBoard = ({ onExitGame }) => {
   const [playerHealth, setPlayerHealth] = useState(30);
   const [opponentHealth, setOpponentHealth] = useState(30);
   const [playerHand, setPlayerHand] = useState([]);
@@ -31,6 +31,7 @@ export const GameBoard = () => {
       </div>
       <CardDisplay cards={playerHand} />
       <PlayerArea health={playerHealth} />
+      <Button onClick={onExitGame} className="mt-8">Exit Game</Button>
     </div>
   );
 };
