@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Typography } from '@mui/material';
+import { Button } from "@/components/ui/button";
 import { TeddyBearCard } from './TeddyBearCard';
 import { simulateBattle } from '../utils/gameLogic';
 
@@ -12,17 +12,17 @@ export function BattleArena({ playerBear, opponentBear }) {
   };
 
   return (
-    <div>
-      <Typography variant="h4">Battle Arena</Typography>
-      <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold">Battle Arena</h2>
+      <div className="flex justify-around">
         <TeddyBearCard bear={playerBear} />
         <TeddyBearCard bear={opponentBear} />
       </div>
       <Button onClick={handleBattle}>Start Battle</Button>
       {result && (
-        <Typography>
+        <p className="text-lg font-semibold">
           Winner: {result.winner.name}
-        </Typography>
+        </p>
       )}
     </div>
   );

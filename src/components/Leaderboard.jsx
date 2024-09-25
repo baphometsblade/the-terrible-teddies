@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -38,17 +45,17 @@ export function Leaderboard() {
   }
 
   return (
-    <div>
-      <Typography variant="h4">Leaderboard</Typography>
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold">Leaderboard</h2>
       <Table>
-        <TableHead>
+        <TableHeader>
           <TableRow>
-            <TableCell>Rank</TableCell>
-            <TableCell>Username</TableCell>
-            <TableCell>Wins</TableCell>
-            <TableCell>Losses</TableCell>
+            <TableHead>Rank</TableHead>
+            <TableHead>Username</TableHead>
+            <TableHead>Wins</TableHead>
+            <TableHead>Losses</TableHead>
           </TableRow>
-        </TableHead>
+        </TableHeader>
         <TableBody>
           {leaderboard.map((player, index) => (
             <TableRow key={player.id}>
