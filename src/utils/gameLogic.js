@@ -1,10 +1,10 @@
 import { supabase } from '../lib/supabase';
 
-export const initializeGame = async (player1Id, player2Id) => {
+export const initializeGame = async () => {
   const { data: cards, error } = await supabase
-    .from('generated_images')
+    .from('terrible_teddies')
     .select('*')
-    .limit(40);
+    .limit(10);  // Fetch 10 cards for simplicity
 
   if (error) {
     console.error('Error fetching cards:', error);
@@ -12,74 +12,46 @@ export const initializeGame = async (player1Id, player2Id) => {
   }
 
   const shuffledCards = shuffleArray(cards);
-  const player1Hand = shuffledCards.slice(0, 5);
-  const player2Hand = shuffledCards.slice(5, 10);
-  const drawPile = shuffledCards.slice(10);
+  const playerHand = shuffledCards.slice(0, 5);
+  const opponentHand = shuffledCards.slice(5, 10);
 
   return {
-    players: [
-      { id: player1Id, hp: 30, hand: player1Hand, energy: 3 },
-      { id: player2Id, hp: 30, hand: player2Hand, energy: 3 },
-    ],
-    drawPile,
-    discardPile: [],
-    currentTurn: 0,
-    turnNumber: 1,
+    player: { hand: playerHand, hp: 30 },
+    opponent: { hand: opponentHand, hp: 30 },
+    currentPlayer: 'player',
+    turn: 1,
   };
 };
 
-export const playCard = (gameState, playerId, cardIndex) => {
-  const playerIndex = gameState.players.findIndex(p => p.id === playerId);
-  const opponentIndex = playerIndex === 0 ? 1 : 0;
-  const player = gameState.players[playerIndex];
-  const opponent = gameState.players[opponentIndex];
-  const card = player.hand[cardIndex];
-
-  if (player.energy < card.energy_cost) {
-    return { error: 'Not enough energy to play this card' };
-  }
+export const playCard = (gameState, card) => {
+  const currentPlayer = gameState.currentPlayer;
+  const opponent = currentPlayer === 'player' ? 'opponent' : 'player';
 
   // Remove the card from the player's hand
-  player.hand.splice(cardIndex, 1);
-  player.energy -= card.energy_cost;
+  gameState[currentPlayer].hand = gameState[currentPlayer].hand.filter(c => c.id !== card.id);
 
   // Apply card effects
-  switch (card.type) {
-    case 'Action':
-      opponent.hp -= card.attack || 0;
-      break;
-    case 'Defense':
-      player.hp += card.defense || 0;
-      break;
-    // Add more case statements for other card types
-  }
+  gameState[opponent].hp -= card.attack;
 
-  // Move the card to the discard pile
-  gameState.discardPile.push(card);
-
-  return { updatedGameState: gameState };
-};
-
-export const endTurn = (gameState) => {
-  gameState.currentTurn = gameState.currentTurn === 0 ? 1 : 0;
-  gameState.turnNumber++;
-
-  const currentPlayer = gameState.players[gameState.currentTurn];
-  currentPlayer.energy = Math.min(currentPlayer.energy + 1, 10);
-
-  // Draw a card
-  if (gameState.drawPile.length > 0) {
-    const drawnCard = gameState.drawPile.pop();
-    currentPlayer.hand.push(drawnCard);
+  // Check for special move
+  if (card.special_move) {
+    applySpecialMove(gameState, card, currentPlayer);
   }
 
   return gameState;
 };
 
+export const endTurn = (gameState) => {
+  gameState.currentPlayer = gameState.currentPlayer === 'player' ? 'opponent' : 'player';
+  gameState.turn += 1;
+  return gameState;
+};
+
 export const checkGameOver = (gameState) => {
-  const deadPlayer = gameState.players.find(player => player.hp <= 0);
-  if (deadPlayer) {
-    return { gameOver: true, winner: gameState.players.find(player => player.id !== deadPlayer.id) };
+  if (gameState.player.hp <= 0) {
+    return { gameOver: true, winner: 'opponent' };
+  } else if (gameState.opponent.hp <= 0) {
+    return { gameOver: true, winner: 'player' };
   }
   return { gameOver: false };
 };
@@ -91,4 +63,19 @@ const shuffleArray = (array) => {
     [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
   }
   return newArray;
+};
+
+const applySpecialMove = (gameState, card, currentPlayer) => {
+  const opponent = currentPlayer === 'player' ? 'opponent' : 'player';
+  switch (card.special_move) {
+    case 'On the Rocks':
+      gameState[opponent].defense -= 2;
+      break;
+    case 'Sneak Kiss':
+      gameState[opponent].skipNextTurn = true;
+      break;
+    // Add more special moves here
+    default:
+      break;
+  }
 };

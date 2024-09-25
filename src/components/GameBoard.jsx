@@ -1,66 +1,66 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { initializeGame, playCard, endTurn, checkGameOver } from '../utils/gameLogic';
-import { PlayerArea } from './PlayerArea';
+import { PlayerHand } from './PlayerHand';
 import { OpponentArea } from './OpponentArea';
-import { Button } from "@/components/ui/button";
+import { BattleArena } from './BattleArena';
+import { GameInfo } from './GameInfo';
+import { initializeGame, playCard, endTurn, checkGameOver } from '../utils/gameLogic';
+import { supabase } from '../lib/supabase';
 
-export const GameBoard = ({ player1Id, player2Id }) => {
+export const GameBoard = () => {
   const [gameState, setGameState] = useState(null);
   const [selectedCard, setSelectedCard] = useState(null);
 
   useEffect(() => {
     const setupGame = async () => {
-      const initialState = await initializeGame(player1Id, player2Id);
+      const initialState = await initializeGame();
       setGameState(initialState);
     };
     setupGame();
-  }, [player1Id, player2Id]);
+  }, []);
 
-  const handleCardPlay = (cardIndex) => {
+  const handleCardPlay = async (card) => {
     if (!gameState) return;
 
-    const result = playCard(gameState, player1Id, cardIndex);
-    if (result.error) {
-      console.error(result.error);
-      return;
-    }
+    const updatedState = playCard(gameState, card);
+    setGameState(updatedState);
 
-    setGameState(result.updatedGameState);
-    const gameOverCheck = checkGameOver(result.updatedGameState);
+    const gameOverCheck = checkGameOver(updatedState);
     if (gameOverCheck.gameOver) {
-      console.log(`Game Over! Winner: ${gameOverCheck.winner.id}`);
+      console.log(`Game Over! Winner: ${gameOverCheck.winner}`);
       // Implement game over logic here
+    } else {
+      // AI opponent's turn
+      const aiMove = await getAIMove(updatedState);
+      const aiUpdatedState = playCard(updatedState, aiMove);
+      setGameState(aiUpdatedState);
     }
   };
 
   const handleEndTurn = () => {
     if (!gameState) return;
-
     const updatedState = endTurn(gameState);
     setGameState(updatedState);
   };
 
   if (!gameState) return <div>Loading...</div>;
 
-  const currentPlayer = gameState.players[gameState.currentTurn];
-  const isPlayerTurn = currentPlayer.id === player1Id;
-
   return (
     <div className="game-board">
-      <OpponentArea player={gameState.players[1]} />
-      <div className="play-area">
-        {/* Implement play area UI here */}
-      </div>
-      <PlayerArea 
-        player={gameState.players[0]} 
+      <GameInfo currentPlayer={gameState.currentPlayer} turn={gameState.turn} />
+      <OpponentArea opponent={gameState.opponent} />
+      <BattleArena />
+      <PlayerHand 
+        hand={gameState.player.hand} 
         onCardSelect={setSelectedCard}
         onCardPlay={handleCardPlay}
-        isPlayerTurn={isPlayerTurn}
       />
-      <Button onClick={handleEndTurn} disabled={!isPlayerTurn}>
-        End Turn
-      </Button>
+      <button onClick={handleEndTurn}>End Turn</button>
     </div>
   );
+};
+
+const getAIMove = async (gameState) => {
+  // Implement AI logic here
+  // For now, just return a random card from the AI's hand
+  return gameState.opponent.hand[Math.floor(Math.random() * gameState.opponent.hand.length)];
 };
