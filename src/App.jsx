@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './components/Home';
 import Game from './components/Game';
-import Leaderboard from './components/Leaderboard';
+import { Leaderboard } from './components/Leaderboard';
 import Shop from './components/Shop';
 
 function App() {
