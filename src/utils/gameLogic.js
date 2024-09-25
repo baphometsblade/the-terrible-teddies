@@ -1,37 +1,33 @@
-export const applyCardEffect = (state, card, isOpponent) => {
-  const newState = { ...state };
-  const target = isOpponent ? 'player' : 'opponent';
-  let effectDescription = '';
+import { getTeddyBear, updateTeddyBear } from './teddyBearOperations';
 
-  switch(card.type) {
-    case 'Action':
-      const damage = card.energy_cost * 2;
-      newState[`${target}HP`] = Math.max(0, newState[`${target}HP`] - damage);
-      effectDescription = `${card.name} deals ${damage} damage to the ${target}!`;
-      break;
-    case 'Trap':
-      newState.activeEffects[isOpponent ? 'opponent' : 'player'].push(card);
-      effectDescription = `${card.name} has been set as a trap.`;
-      break;
-    case 'Special':
-      const heal = card.energy_cost;
-      newState[`${isOpponent ? 'opponent' : 'player'}HP`] = Math.min(30, newState[`${isOpponent ? 'opponent' : 'player'}HP`] + heal);
-      effectDescription = `${card.name} heals the ${isOpponent ? 'opponent' : 'player'} for ${heal} HP!`;
-      break;
-    case 'Defense':
-      newState.activeEffects[isOpponent ? 'opponent' : 'player'].push(card);
-      effectDescription = `${card.name} provides defense for the ${isOpponent ? 'opponent' : 'player'}.`;
-      break;
-    case 'Boost':
-      newState.momentumGauge = Math.min(10, newState.momentumGauge + card.energy_cost);
-      effectDescription = `${card.name} boosts the momentum gauge by ${card.energy_cost}!`;
-      break;
+export async function simulateBattle(bear1Id, bear2Id) {
+  const bear1 = await getTeddyBear(bear1Id);
+  const bear2 = await getTeddyBear(bear2Id);
+
+  if (!bear1 || !bear2) {
+    console.error('Error fetching bears for battle');
+    return null;
   }
 
-  newState.gameLog = [...newState.gameLog, { player: isOpponent ? 'Opponent' : 'You', action: effectDescription }];
-  return newState;
-};
+  const bear1Score = calculateBearScore(bear1);
+  const bear2Score = calculateBearScore(bear2);
 
-export const checkGameOver = (state) => {
-  return state.playerHP <= 0 || state.opponentHP <= 0;
-};
+  let winner, loser;
+  if (bear1Score > bear2Score) {
+    winner = bear1;
+    loser = bear2;
+  } else {
+    winner = bear2;
+    loser = bear1;
+  }
+
+  // Update stats
+  await updateTeddyBear(winner.id, { wins: winner.wins + 1 });
+  await updateTeddyBear(loser.id, { losses: loser.losses + 1 });
+
+  return { winner, loser };
+}
+
+function calculateBearScore(bear) {
+  return bear.strength + bear.agility + bear.intelligence + Math.random() * 10;
+}
