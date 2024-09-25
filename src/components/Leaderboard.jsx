@@ -1,39 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
-export function Leaderboard() {
+const Leaderboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
 
   useEffect(() => {
     fetchLeaderboard();
-    const subscription = supabase
-      .from('players')
-      .on('UPDATE', payload => {
-        setLeaderboard(currentLeaderboard => 
-          currentLeaderboard.map(player => 
-            player.id === payload.new.id ? payload.new : player
-          )
-        );
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeSubscription(subscription);
-    };
   }, []);
 
-  async function fetchLeaderboard() {
+  const fetchLeaderboard = async () => {
     const { data, error } = await supabase
       .from('players')
-      .select('id, username, wins, losses')
+      .select('username, wins')
       .order('wins', { ascending: false })
       .limit(10);
 
@@ -42,31 +20,20 @@ export function Leaderboard() {
     } else {
       setLeaderboard(data);
     }
-  }
+  };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Leaderboard</h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Rank</TableHead>
-            <TableHead>Username</TableHead>
-            <TableHead>Wins</TableHead>
-            <TableHead>Losses</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {leaderboard.map((player, index) => (
-            <TableRow key={player.id}>
-              <TableCell>{index + 1}</TableCell>
-              <TableCell>{player.username}</TableCell>
-              <TableCell>{player.wins}</TableCell>
-              <TableCell>{player.losses}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="container mx-auto px-4 py-8">
+      <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
+      <ul>
+        {leaderboard.map((player, index) => (
+          <li key={index} className="mb-2">
+            {index + 1}. {player.username} - Wins: {player.wins}
+          </li>
+        ))}
+      </ul>
     </div>
   );
-}
+};
+
+export default Leaderboard;
