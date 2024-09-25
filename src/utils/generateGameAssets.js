@@ -1,13 +1,12 @@
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 import { supabase } from '../lib/supabase';
-
-const configuration = new Configuration({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
 
 const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
 const TOTAL_CARDS = 40;
+
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+});
 
 const generateCardName = (type) => {
   const adjectives = ['Naughty', 'Cheeky', 'Saucy', 'Mischievous', 'Provocative', 'Flirty', 'Risqué', 'Daring', 'Sassy', 'Bold'];
@@ -46,13 +45,13 @@ export async function generateGameAssets(onProgress) {
     const prompt = generateCardPrompt(cardType, cardName);
 
     try {
-      const response = await openai.createImage({
+      const response = await openai.images.generate({
         prompt: prompt,
         n: 1,
         size: "512x512",
       });
 
-      const imageUrl = response.data.data[0].url;
+      const imageUrl = response.data[0].url;
       const { data, error } = await supabase.storage
         .from('card-images')
         .upload(`${cardName.replace(/\s+/g, '-').toLowerCase()}.png`, await (await fetch(imageUrl)).blob(), {
