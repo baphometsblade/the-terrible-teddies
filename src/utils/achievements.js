@@ -40,7 +40,6 @@ export async function checkAchievements(playerId) {
           .from('player_achievements')
           .insert([{ player_id: playerId, achievement_id: achievement.id }]);
 
-        // Notify the player (you can implement a notification system here)
         console.log(`Achievement unlocked: ${achievement.name}`);
       }
     }
@@ -48,6 +47,16 @@ export async function checkAchievements(playerId) {
 }
 
 function evaluateCondition(condition, playerData) {
-  // This is a simple evaluation. You might want to use a more robust solution in production.
-  return eval(condition);
+  // Replace this with a safer way to evaluate conditions
+  // For example, you could use a switch statement or if-else clauses
+  // based on predefined condition types
+  switch (condition) {
+    case 'games_played > 10':
+      return playerData.games_played > 10;
+    case 'wins > 5':
+      return playerData.wins > 5;
+    // Add more cases as needed
+    default:
+      return false;
+  }
 }

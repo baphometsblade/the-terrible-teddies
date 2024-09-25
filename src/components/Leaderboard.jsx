@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
-const Leaderboard = () => {
+export const Leaderboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
 
   useEffect(() => {
@@ -35,5 +35,3 @@ const Leaderboard = () => {
     </div>
   );
 };
-
-export default Leaderboard;
