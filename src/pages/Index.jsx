@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MainMenu } from '../components/MainMenu';
 import { GameBoard } from '../components/GameBoard';
 import { AssetGenerator } from '../components/AssetGenerator';
-import { LeaderboardComponent } from '../components/LeaderboardComponent';
 import { useGeneratedImages } from '../integrations/supabase';
+import { setupTerribleTeddies } from '../utils/supabaseSetup';
 
 const Index = () => {
   const [gameState, setGameState] = useState('menu');
   const { data: gameData, isLoading, error } = useGeneratedImages();
+
+  useEffect(() => {
+    setupTerribleTeddies();
+  }, []);
 
   const handleStartGame = () => setGameState('playing');
   const handleReturnToMenu = () => setGameState('menu');
@@ -25,12 +29,7 @@ const Index = () => {
       {!gameData || gameData.length === 0 ? (
         <AssetGenerator onComplete={() => setGameState('menu')} />
       ) : gameState === 'menu' ? (
-        <div>
-          <MainMenu onStartGame={handleStartGame} />
-          <div className="mt-8">
-            <LeaderboardComponent />
-          </div>
-        </div>
+        <MainMenu onStartGame={handleStartGame} />
       ) : (
         <GameBoard onExitGame={handleReturnToMenu} />
       )}
