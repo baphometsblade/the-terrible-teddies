@@ -1,63 +1,66 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from './Card';
+import { supabase } from '../lib/supabase';
+import { initializeGame, playCard, endTurn, checkGameOver } from '../utils/gameLogic';
+import { PlayerArea } from './PlayerArea';
+import { OpponentArea } from './OpponentArea';
 import { Button } from "@/components/ui/button";
-import { useGeneratedImages } from '../integrations/supabase';
 
-export const GameBoard = () => {
-  const [playerHand, setPlayerHand] = useState([]);
-  const [opponentHand, setOpponentHand] = useState([]);
-  const [currentTurn, setCurrentTurn] = useState('player');
-  const { data: teddies, isLoading, error } = useGeneratedImages();
+export const GameBoard = ({ player1Id, player2Id }) => {
+  const [gameState, setGameState] = useState(null);
+  const [selectedCard, setSelectedCard] = useState(null);
 
   useEffect(() => {
-    if (teddies) {
-      const shuffledTeddies = [...teddies].sort(() => Math.random() - 0.5);
-      setPlayerHand(shuffledTeddies.slice(0, 5));
-      setOpponentHand(shuffledTeddies.slice(5, 10));
-    }
-  }, [teddies]);
+    const setupGame = async () => {
+      const initialState = await initializeGame(player1Id, player2Id);
+      setGameState(initialState);
+    };
+    setupGame();
+  }, [player1Id, player2Id]);
 
-  const handlePlayCard = (card) => {
-    // Implement card playing logic here
-    console.log('Playing card:', card);
-    setCurrentTurn(currentTurn === 'player' ? 'opponent' : 'player');
+  const handleCardPlay = (cardIndex) => {
+    if (!gameState) return;
+
+    const result = playCard(gameState, player1Id, cardIndex);
+    if (result.error) {
+      console.error(result.error);
+      return;
+    }
+
+    setGameState(result.updatedGameState);
+    const gameOverCheck = checkGameOver(result.updatedGameState);
+    if (gameOverCheck.gameOver) {
+      console.log(`Game Over! Winner: ${gameOverCheck.winner.id}`);
+      // Implement game over logic here
+    }
   };
 
-  if (isLoading) return <div>Loading game board...</div>;
-  if (error) return <div>Error loading game board: {error.message}</div>;
+  const handleEndTurn = () => {
+    if (!gameState) return;
+
+    const updatedState = endTurn(gameState);
+    setGameState(updatedState);
+  };
+
+  if (!gameState) return <div>Loading...</div>;
+
+  const currentPlayer = gameState.players[gameState.currentTurn];
+  const isPlayerTurn = currentPlayer.id === player1Id;
 
   return (
-    <div className="game-board p-4 bg-gradient-to-br from-purple-800 to-indigo-900 rounded-lg shadow-2xl">
-      <div className="opponent-hand mb-8">
-        <h2 className="text-2xl font-bold text-white mb-4">Opponent's Hand</h2>
-        <div className="flex justify-center space-x-2">
-          {opponentHand.map((teddy) => (
-            <Card key={teddy.id} teddy={teddy} faceDown />
-          ))}
-        </div>
+    <div className="game-board">
+      <OpponentArea player={gameState.players[1]} />
+      <div className="play-area">
+        {/* Implement play area UI here */}
       </div>
-      <div className="player-hand mt-8">
-        <h2 className="text-2xl font-bold text-white mb-4">Your Hand</h2>
-        <div className="flex justify-center space-x-2">
-          {playerHand.map((teddy) => (
-            <Card 
-              key={teddy.id} 
-              teddy={teddy} 
-              onClick={() => handlePlayCard(teddy)}
-              disabled={currentTurn !== 'player'}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="mt-8 text-center">
-        <Button 
-          onClick={() => setCurrentTurn('opponent')} 
-          disabled={currentTurn !== 'player'}
-          className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
-        >
-          End Turn
-        </Button>
-      </div>
+      <PlayerArea 
+        player={gameState.players[0]} 
+        onCardSelect={setSelectedCard}
+        onCardPlay={handleCardPlay}
+        isPlayerTurn={isPlayerTurn}
+      />
+      <Button onClick={handleEndTurn} disabled={!isPlayerTurn}>
+        End Turn
+      </Button>
     </div>
   );
 };
