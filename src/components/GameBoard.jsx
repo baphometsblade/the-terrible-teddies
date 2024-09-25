@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
 import { PlayerArea } from './PlayerArea';
 import { OpponentArea } from './OpponentArea';
 import { CardDisplay } from './CardDisplay';
-import { Button } from "@/components/ui/button";
 
 export const GameBoard = ({ onExitGame }) => {
   const [playerHealth, setPlayerHealth] = useState(30);
