@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 
 export const MainMenu = ({ onStartGame }) => {
   return (
-    <div className="text-center">
+    <div className="flex flex-col items-center justify-center h-full">
       <h1 className="text-6xl font-bold mb-8 text-purple-300">Terrible Teddies</h1>
       <Button 
         onClick={onStartGame}
