@@ -1,30 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import TeddySelection from './TeddySelection';
+import BattleArena from './BattleArena';
+import Leaderboard from './Leaderboard';
+import Shop from './Shop';
+import { supabase } from '../lib/supabase';
 
 const Game = () => {
-  const [playerHealth, setPlayerHealth] = useState(30);
-  const [opponentHealth, setOpponentHealth] = useState(30);
+  const [gameState, setGameState] = useState('selection');
+  const [playerTeddy, setPlayerTeddy] = useState(null);
+  const [opponentTeddy, setOpponentTeddy] = useState(null);
+  const [playerScore, setPlayerScore] = useState(0);
 
-  const attack = () => {
-    const damage = Math.floor(Math.random() * 5) + 1;
-    setOpponentHealth(prev => Math.max(0, prev - damage));
+  useEffect(() => {
+    fetchPlayerScore();
+  }, []);
+
+  const fetchPlayerScore = async () => {
+    const { data, error } = await supabase
+      .from('players')
+      .select('score')
+      .single();
+    if (data) setPlayerScore(data.score);
+    if (error) console.error('Error fetching player score:', error);
+  };
+
+  const handleTeddySelect = (teddy) => {
+    setPlayerTeddy(teddy);
+    // Randomly select an opponent teddy (this should be improved in the future)
+    setOpponentTeddy(teddyData[Math.floor(Math.random() * teddyData.length)]);
+    setGameState('battle');
+  };
+
+  const handleBattleEnd = (result) => {
+    if (result === 'win') {
+      setPlayerScore(prevScore => prevScore + 10);
+      // Update score in the database
+      supabase.from('players').update({ score: playerScore + 10 }).eq('id', 1);
+    }
+    setGameState('selection');
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-4">Terrible Teddies Battle</h2>
-      <div className="flex justify-between mb-4">
-        <div>
-          <p>Your Health: {playerHealth}</p>
-        </div>
-        <div>
-          <p>Opponent Health: {opponentHealth}</p>
-        </div>
+      <h1 className="text-4xl font-bold mb-8 text-center text-purple-600">Cheeky Teddy Brawl</h1>
+      {gameState === 'selection' && (
+        <TeddySelection onSelect={handleTeddySelect} />
+      )}
+      {gameState === 'battle' && (
+        <BattleArena
+          playerTeddy={playerTeddy}
+          opponentTeddy={opponentTeddy}
+          onBattleEnd={handleBattleEnd}
+        />
+      )}
+      <div className="mt-8 flex justify-between">
+        <Leaderboard />
+        <Shop />
       </div>
-      <Button onClick={attack} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
-        Attack
-      </Button>
-      {opponentHealth <= 0 && <p className="mt-4 text-green-600 font-bold">You win!</p>}
+      <p className="mt-4 text-xl font-semibold text-center">Your Score: {playerScore}</p>
     </div>
   );
 };

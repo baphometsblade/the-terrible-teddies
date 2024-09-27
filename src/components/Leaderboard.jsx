@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-export const Leaderboard = () => {
+const Leaderboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
 
   useEffect(() => {
@@ -11,27 +11,26 @@ export const Leaderboard = () => {
   const fetchLeaderboard = async () => {
     const { data, error } = await supabase
       .from('players')
-      .select('username, wins')
-      .order('wins', { ascending: false })
+      .select('id, username, score')
+      .order('score', { ascending: false })
       .limit(10);
 
-    if (error) {
-      console.error('Error fetching leaderboard:', error);
-    } else {
-      setLeaderboard(data);
-    }
+    if (data) setLeaderboard(data);
+    if (error) console.error('Error fetching leaderboard:', error);
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="bg-white p-4 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
       <ul>
         {leaderboard.map((player, index) => (
-          <li key={index} className="mb-2">
-            {index + 1}. {player.username} - Wins: {player.wins}
+          <li key={player.id} className="mb-2">
+            <span className="font-semibold">{index + 1}.</span> {player.username} - {player.score}
           </li>
         ))}
       </ul>
     </div>
   );
 };
+
+export default Leaderboard;
