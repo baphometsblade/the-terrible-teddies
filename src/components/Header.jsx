@@ -1,22 +1,23 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 
-const Header = ({ setCurrentView }) => {
+const Header = () => {
   return (
     <header className="bg-purple-800 p-4">
       <nav className="container mx-auto flex justify-between items-center">
-        <Button variant="ghost" onClick={() => setCurrentView('game')}>
-          Game
-        </Button>
-        <Button variant="ghost" onClick={() => setCurrentView('shop')}>
-          Shop
-        </Button>
-        <Button variant="ghost" onClick={() => setCurrentView('profile')}>
-          Profile
-        </Button>
-        <Button variant="ghost" onClick={() => setCurrentView('leaderboard')}>
-          Leaderboard
-        </Button>
+        <Link to="/">
+          <Button variant="ghost">Game</Button>
+        </Link>
+        <Link to="/shop">
+          <Button variant="ghost">Shop</Button>
+        </Link>
+        <Link to="/profile">
+          <Button variant="ghost">Profile</Button>
+        </Link>
+        <Link to="/leaderboard">
+          <Button variant="ghost">Leaderboard</Button>
+        </Link>
       </nav>
     </header>
   );
