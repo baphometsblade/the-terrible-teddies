@@ -1,47 +1,55 @@
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from 'react';
 import { terribleTeddies } from '../data/terribleTeddies';
+import TeddyCard from './TeddyCard';
+import BattleArena from './BattleArena';
+import PlayerArea from './PlayerArea';
 
 const GameBoard = () => {
-  const [playerHand, setPlayerHand] = useState(terribleTeddies.slice(0, 5));
-  const [opponentHand, setOpponentHand] = useState(terribleTeddies.slice(5, 10));
+  const [playerHand, setPlayerHand] = useState([]);
+  const [opponentHand, setOpponentHand] = useState([]);
   const [currentTurn, setCurrentTurn] = useState('player');
+  const [playerHP, setPlayerHP] = useState(30);
+  const [opponentHP, setOpponentHP] = useState(30);
 
-  const playCard = (card) => {
-    // Implement card playing logic here
-    console.log(`Playing card: ${card.name}`);
-    setCurrentTurn(currentTurn === 'player' ? 'opponent' : 'player');
+  useEffect(() => {
+    // Initialize hands
+    const shuffledTeddies = [...terribleTeddies].sort(() => 0.5 - Math.random());
+    setPlayerHand(shuffledTeddies.slice(0, 5));
+    setOpponentHand(shuffledTeddies.slice(5, 10));
+  }, []);
+
+  const handleCardPlay = (card) => {
+    if (currentTurn === 'player') {
+      setOpponentHP(prevHP => Math.max(0, prevHP - card.attack));
+      setPlayerHand(prevHand => prevHand.filter(c => c.id !== card.id));
+      setCurrentTurn('opponent');
+      setTimeout(opponentTurn, 1000);
+    }
+  };
+
+  const opponentTurn = () => {
+    const randomCard = opponentHand[Math.floor(Math.random() * opponentHand.length)];
+    setPlayerHP(prevHP => Math.max(0, prevHP - randomCard.attack));
+    setOpponentHand(prevHand => prevHand.filter(c => c.id !== randomCard.id));
+    setCurrentTurn('player');
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-4">Game Board</h2>
-      <div className="mb-4">
-        <p>Current Turn: {currentTurn}</p>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <h3 className="text-xl font-bold mb-2">Your Hand</h3>
-          {playerHand.map((card) => (
-            <div key={card.id} className="mb-2 p-2 border rounded">
-              <p>{card.name}</p>
-              <p>Attack: {card.attack} | Defense: {card.defense}</p>
-              <Button onClick={() => playCard(card)} disabled={currentTurn !== 'player'}>
-                Play Card
-              </Button>
-            </div>
-          ))}
-        </div>
-        <div>
-          <h3 className="text-xl font-bold mb-2">Opponent's Hand</h3>
-          {opponentHand.map((card) => (
-            <div key={card.id} className="mb-2 p-2 border rounded">
-              <p>{card.name}</p>
-              <p>Attack: {card.attack} | Defense: {card.defense}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="game-board">
+      <PlayerArea 
+        hand={opponentHand} 
+        hp={opponentHP} 
+        isOpponent={true} 
+      />
+      <BattleArena 
+        currentTurn={currentTurn}
+      />
+      <PlayerArea 
+        hand={playerHand} 
+        hp={playerHP} 
+        isOpponent={false} 
+        onCardPlay={handleCardPlay}
+      />
     </div>
   );
 };
