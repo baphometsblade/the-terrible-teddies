@@ -2,22 +2,60 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
-import { generateAllAssets } from '../utils/assetGenerator';
+import { generateTeddyImage } from '../utils/imageGenerator';
+import { supabase } from '../lib/supabase';
 
 export const AssetGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
 
+  const generateTeddyBear = async () => {
+    const names = ["Whiskey Whiskers", "Madame Mistletoe", "Baron Von Blubber", "Bella Bombshell", "Professor Playful"];
+    const titles = ["The Smooth Operator", "The Festive Flirt", "The Inflated Ego", "The Dynamite Diva", "The Teasing Tutor"];
+    const specialMoves = ["On the Rocks", "Sneak Kiss", "Burst Bubble", "Heart Stopper", "Mind Game"];
+
+    const randomIndex = Math.floor(Math.random() * names.length);
+    const name = names[randomIndex];
+    const title = titles[randomIndex];
+    const specialMove = specialMoves[randomIndex];
+    const description = `A cheeky teddy with a knack for ${specialMove.toLowerCase()}.`;
+
+    const imageUrl = await generateTeddyImage(name, description);
+
+    return {
+      name,
+      title,
+      description,
+      attack: Math.floor(Math.random() * 3) + 4, // 4-6
+      defense: Math.floor(Math.random() * 3) + 4, // 4-6
+      specialMove,
+      imageUrl
+    };
+  };
+
   const handleGenerateAssets = async () => {
     setIsGenerating(true);
     setProgress(0);
+    const generatedAssets = [];
+
     try {
-      const assets = await generateAllAssets(50);
-      setProgress(100);
+      for (let i = 0; i < 5; i++) { // Generate 5 bears for testing
+        const bear = await generateTeddyBear();
+        generatedAssets.push(bear);
+        setProgress(((i + 1) / 5) * 100);
+      }
+
+      // Save generated assets to Supabase
+      const { data, error } = await supabase
+        .from('terrible_teddies')
+        .insert(generatedAssets);
+
+      if (error) throw error;
+
       toast({
         title: "Assets Generated",
-        description: `Successfully generated ${assets.length} Terrible Teddies!`,
+        description: `Successfully generated ${generatedAssets.length} Terrible Teddies!`,
         variant: "success",
       });
     } catch (error) {
