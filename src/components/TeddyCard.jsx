@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
-const TeddyCard = ({ teddy }) => {
+const TeddyCard = ({ teddy, onSelect }) => {
   return (
     <Card className="w-full bg-white shadow-lg rounded-lg overflow-hidden">
       <CardHeader>
@@ -17,6 +18,11 @@ const TeddyCard = ({ teddy }) => {
         </div>
         <p className="mt-2">Special Move: {teddy.specialMove}</p>
       </CardContent>
+      {onSelect && (
+        <CardFooter>
+          <Button onClick={() => onSelect(teddy)} className="w-full">Select</Button>
+        </CardFooter>
+      )}
     </Card>
   );
 };
