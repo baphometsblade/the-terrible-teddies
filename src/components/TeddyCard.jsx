@@ -10,7 +10,6 @@ const TeddyCard = ({ teddy, onPlay, isPlayable }) => {
         <p className="text-sm text-gray-500">{teddy.title}</p>
       </CardHeader>
       <CardContent>
-        <img src={teddy.imageUrl} alt={teddy.name} className="w-full h-32 object-cover mb-2" />
         <p className="text-sm mb-1">Attack: {teddy.attack}</p>
         <p className="text-sm mb-1">Defense: {teddy.defense}</p>
         <p className="text-sm italic">{teddy.specialMove}</p>

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { terribleTeddies } from '../data/terribleTeddies';
-import TeddyCard from './TeddyCard';
-import BattleArena from './BattleArena';
+import { teddyData } from '../data/teddyData';
 import PlayerArea from './PlayerArea';
+import BattleArena from './BattleArena';
 
 const GameBoard = () => {
   const [playerHand, setPlayerHand] = useState([]);
@@ -13,7 +12,7 @@ const GameBoard = () => {
 
   useEffect(() => {
     // Initialize hands
-    const shuffledTeddies = [...terribleTeddies].sort(() => 0.5 - Math.random());
+    const shuffledTeddies = [...teddyData].sort(() => 0.5 - Math.random());
     setPlayerHand(shuffledTeddies.slice(0, 5));
     setOpponentHand(shuffledTeddies.slice(5, 10));
   }, []);
