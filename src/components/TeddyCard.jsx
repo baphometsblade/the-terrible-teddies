@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import TeddySprite from './TeddySprite';
 
-const TeddyCard = ({ teddy, onSelect, isPlayable = true }) => {
+const TeddyCard = ({ teddy }) => {
   return (
     <Card className="w-64 bg-purple-100 shadow-lg">
       <CardHeader>
@@ -17,14 +17,12 @@ const TeddyCard = ({ teddy, onSelect, isPlayable = true }) => {
           <p>Attack: {teddy.attack}</p>
           <p>Defense: {teddy.defense}</p>
         </div>
-        <p className="mt-2">Special: {teddy.specialMove}</p>
+        <p className="mt-2">Special: {teddy.special_move}</p>
       </CardContent>
       <CardFooter>
-        {isPlayable && (
-          <Button onClick={() => onSelect(teddy)} className="w-full">
-            Select
-          </Button>
-        )}
+        <Button className="w-full">
+          Select
+        </Button>
       </CardFooter>
     </Card>
   );
