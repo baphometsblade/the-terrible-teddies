@@ -11,6 +11,7 @@ import TeddyCollection from './components/TeddyCollection';
 import UserSubmission from './components/UserSubmission';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
+import MatchmakingSystem from './components/MatchmakingSystem';
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ function App() {
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/collection" element={session ? <TeddyCollection /> : <Navigate to="/auth" />} />
               <Route path="/submit" element={session ? <UserSubmission /> : <Navigate to="/auth" />} />
+              <Route path="/matchmaking" element={session ? <MatchmakingSystem /> : <Navigate to="/auth" />} />
               <Route path="/auth" element={!session ? <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} /> : <Navigate to="/" />} />
             </Routes>
           </main>

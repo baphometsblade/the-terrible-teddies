@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import TeddyBear from './TeddyBear';
+import { AIOpponent } from '../utils/AIOpponent';
+import MatchmakingSystem from './MatchmakingSystem';
 
 const GameBoard = () => {
   const [playerBear, setPlayerBear] = useState(null);
@@ -12,6 +14,8 @@ const GameBoard = () => {
   const [turnCount, setTurnCount] = useState(0);
   const [playerEnergy, setPlayerEnergy] = useState(3);
   const [opponentEnergy, setOpponentEnergy] = useState(3);
+  const [isMultiplayer, setIsMultiplayer] = useState(false);
+  const [aiOpponent, setAiOpponent] = useState(null);
 
   const { data: bears, isLoading, error } = useQuery({
     queryKey: ['bears'],
@@ -75,8 +79,35 @@ const GameBoard = () => {
       setPlayerEnergy(Math.min(playerEnergy + 1, 3));
     } else {
       setOpponentEnergy(Math.min(opponentEnergy + 1, 3));
-      // Implement AI opponent turn logic here
+      if (!isMultiplayer && aiOpponent) {
+        handleAITurn();
+      }
     }
+  };
+
+  const handleAITurn = () => {
+    const aiCard = aiOpponent.chooseCard([opponentBear], { playerHP: playerBear.hp, opponentHP: opponentBear.hp, momentumGauge: 10 - opponentEnergy });
+    if (aiCard) {
+      attackMutation.mutate({
+        attacker_id: opponentBear.id,
+        defender_id: playerBear.id,
+      });
+    } else {
+      switchTurns();
+    }
+  };
+
+  const startSinglePlayerGame = () => {
+    setIsMultiplayer(false);
+    setAiOpponent(new AIOpponent('normal'));
+    setGameState('battle');
+  };
+
+  const handleMatchFound = (matchData) => {
+    setIsMultiplayer(true);
+    setPlayerBear(matchData.player1Bear);
+    setOpponentBear(matchData.player2Bear);
+    setGameState('battle');
   };
 
   if (isLoading) return <div>Loading game...</div>;
@@ -85,6 +116,12 @@ const GameBoard = () => {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-4">Terrible Teddies Battle</h1>
+      {gameState === 'selecting' && (
+        <div className="flex flex-col items-center space-y-4">
+          <Button onClick={startSinglePlayerGame}>Start Single Player Game</Button>
+          <MatchmakingSystem onMatchFound={handleMatchFound} />
+        </div>
+      )}
       {gameState === 'battle' && playerBear && opponentBear && (
         <div className="flex justify-between">
           <Card className="w-1/2 mr-2">
