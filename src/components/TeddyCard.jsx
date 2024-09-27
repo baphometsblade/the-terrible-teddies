@@ -1,28 +1,18 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-const TeddyCard = ({ teddy, onPlay, isPlayable }) => {
+const TeddyCard = ({ teddy }) => {
   return (
-    <Card className="w-64 bg-white shadow-lg rounded-lg overflow-hidden">
+    <Card className="w-full">
       <CardHeader>
         <h3 className="text-lg font-bold">{teddy.name}</h3>
         <p className="text-sm text-gray-500">{teddy.title}</p>
       </CardHeader>
       <CardContent>
-        <p className="text-sm mb-1">Attack: {teddy.attack}</p>
-        <p className="text-sm mb-1">Defense: {teddy.defense}</p>
-        <p className="text-sm italic">{teddy.specialMove}: {teddy.specialMoveDescription}</p>
+        <p>Attack: {teddy.attack}</p>
+        <p>Defense: {teddy.defense}</p>
+        <p>Special Move: {teddy.specialMove}</p>
       </CardContent>
-      <CardFooter>
-        <Button 
-          onClick={() => onPlay(teddy)} 
-          disabled={!isPlayable}
-          className="w-full"
-        >
-          Play
-        </Button>
-      </CardFooter>
     </Card>
   );
 };
