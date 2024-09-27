@@ -1,17 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { generateTeddyImage } from '../utils/imageGenerator';
+import React from 'react';
+import { supabase } from '../lib/supabase';
 
 const TeddySprite = ({ teddy }) => {
-  const [imageUrl, setImageUrl] = useState(null);
+  const [imageUrl, setImageUrl] = React.useState(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const fetchImage = async () => {
-      const url = await generateTeddyImage(teddy.name, teddy.description);
-      setImageUrl(url);
+      const { data, error } = supabase.storage
+        .from('teddy-images')
+        .getPublicUrl(`${teddy.name.replace(/\s+/g, '-').toLowerCase()}.png`);
+      
+      if (error) {
+        console.error('Error fetching teddy image:', error);
+      } else {
+        setImageUrl(data.publicUrl);
+      }
     };
 
     fetchImage();
-  }, [teddy]);
+  }, [teddy.name]);
 
   if (!imageUrl) {
     return <div className="w-32 h-32 bg-gray-300 animate-pulse rounded-lg"></div>;

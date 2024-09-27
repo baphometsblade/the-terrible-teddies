@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import TeddyCard from '../components/TeddyCard';
 import BattleArena from '../components/BattleArena';
 import { generateTeddyBears } from '../utils/teddyGenerator';
-import { generateBackgroundImage } from '../utils/imageGenerator';
+import { supabase } from '../lib/supabase';
 
 const Index = () => {
   const [gameState, setGameState] = useState('menu');
@@ -14,8 +14,17 @@ const Index = () => {
 
   useEffect(() => {
     const fetchBackgroundImage = async () => {
-      const image = await generateBackgroundImage('cheeky teddy bear battle');
-      setBackgroundImage(image);
+      const backgrounds = ['cheeky-teddy-bear-battle', 'teddy-bear-casino', 'teddy-bear-beach-party'];
+      const randomBg = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+      const { data, error } = supabase.storage
+        .from('background-images')
+        .getPublicUrl(`${randomBg}.png`);
+      
+      if (error) {
+        console.error('Error fetching background image:', error);
+      } else {
+        setBackgroundImage(data.publicUrl);
+      }
     };
 
     fetchBackgroundImage();
