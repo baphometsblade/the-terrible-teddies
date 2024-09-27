@@ -8,6 +8,7 @@ import Shop from './components/Shop';
 import Profile from './components/Profile';
 import Leaderboard from './components/Leaderboard';
 import TeddyCollection from './components/TeddyCollection';
+import UserSubmission from './components/UserSubmission';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 
@@ -38,6 +39,7 @@ function App() {
               <Route path="/profile" element={session ? <Profile /> : <Navigate to="/auth" />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/collection" element={session ? <TeddyCollection /> : <Navigate to="/auth" />} />
+              <Route path="/submit" element={session ? <UserSubmission /> : <Navigate to="/auth" />} />
               <Route path="/auth" element={!session ? <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} /> : <Navigate to="/" />} />
             </Routes>
           </main>

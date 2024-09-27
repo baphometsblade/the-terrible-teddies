@@ -18,6 +18,12 @@ const Header = () => {
         <Link to="/leaderboard">
           <Button variant="ghost">Leaderboard</Button>
         </Link>
+        <Link to="/collection">
+          <Button variant="ghost">Collection</Button>
+        </Link>
+        <Link to="/submit">
+          <Button variant="ghost">Submit Teddy</Button>
+        </Link>
       </nav>
     </header>
   );
