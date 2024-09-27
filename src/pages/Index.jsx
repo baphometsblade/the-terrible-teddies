@@ -10,9 +10,9 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleStartGame = () => {
+    console.log('Starting game...');
     setIsLoading(true);
     try {
-      console.log('Starting game...');
       const teddies = generateTeddyBears(10); // Generate 10 teddies
       console.log('Teddies generated:', teddies);
       setGeneratedTeddies(teddies);

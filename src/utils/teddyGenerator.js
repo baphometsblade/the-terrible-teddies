@@ -5,6 +5,7 @@ const generatePlaceholderImage = (name) => {
 };
 
 const generateTeddyBear = () => {
+  console.log('Generating a single teddy bear');
   const names = ["Whiskey Whiskers", "Madame Mistletoe", "Baron Von Blubber", "Bella Bombshell", "Professor Playful"];
   const titles = ["The Smooth Operator", "The Festive Flirt", "The Inflated Ego", "The Dynamite Diva", "The Teasing Tutor"];
   const specialMoves = ["On the Rocks", "Sneak Kiss", "Burst Bubble", "Heart Stopper", "Mind Game"];
@@ -14,7 +15,7 @@ const generateTeddyBear = () => {
   const title = titles[randomIndex];
   const specialMove = specialMoves[randomIndex];
 
-  return {
+  const teddy = {
     id: uuidv4(),
     name,
     title,
@@ -23,6 +24,9 @@ const generateTeddyBear = () => {
     specialMove,
     imageUrl: generatePlaceholderImage(name)
   };
+
+  console.log('Generated teddy:', teddy);
+  return teddy;
 };
 
 export const generateTeddyBears = (count) => {
