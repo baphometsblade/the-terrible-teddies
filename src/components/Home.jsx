@@ -1,9 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
+import { AssetGenerator } from './AssetGenerator';
 
 const Home = () => {
-  console.log('Home component rendered');
+  const handleAssetsGenerated = () => {
+    console.log('Assets generated successfully');
+    // You can add additional logic here if needed
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 text-center">
       <h1 className="text-4xl font-bold mb-4 text-purple-800">Welcome to Terrible Teddies</h1>
@@ -13,6 +18,9 @@ const Home = () => {
           Start Game
         </Button>
       </Link>
+      <div className="mt-8">
+        <AssetGenerator onComplete={handleAssetsGenerated} />
+      </div>
     </div>
   );
 };

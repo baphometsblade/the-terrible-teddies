@@ -1,60 +1,36 @@
 import OpenAI from 'openai';
 import { supabase } from '../lib/supabase';
 
-const CARD_TYPES = ['Action', 'Trap', 'Special', 'Defense', 'Boost'];
-const TOTAL_CARDS = 40;
-
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
 });
 
-const generateCardName = (type) => {
-  const adjectives = ['Naughty', 'Cheeky', 'Saucy', 'Mischievous', 'Provocative', 'Flirty', 'Risqué', 'Daring', 'Sassy', 'Bold'];
-  const nouns = ['Tease', 'Wink', 'Whisper', 'Touch', 'Caress', 'Embrace', 'Kiss', 'Flirt', 'Temptation', 'Seduction'];
-  return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
-};
+const teddyBears = [
+  { name: "Whiskey Whiskers", title: "The Smooth Operator" },
+  { name: "Madame Mistletoe", title: "The Festive Flirt" },
+  // ... add all 50 teddy bears here
+];
 
-const generateCardEffect = (type) => {
-  switch (type) {
-    case 'Action':
-      return `Deal ${Math.floor(Math.random() * 3) + 2} damage to the opponent.`;
-    case 'Trap':
-      return `When activated, negate the opponent's next action and deal ${Math.floor(Math.random() * 2) + 1} damage.`;
-    case 'Special':
-      return `Heal ${Math.floor(Math.random() * 3) + 1} HP and draw a card.`;
-    case 'Defense':
-      return `Reduce incoming damage by ${Math.floor(Math.random() * 2) + 1} for the next ${Math.floor(Math.random() * 2) + 1} turns.`;
-    case 'Boost':
-      return `Increase your Momentum Gauge by ${Math.floor(Math.random() * 2) + 1}.`;
-    default:
-      return 'No effect.';
-  }
-};
-
-const generateCardPrompt = (type, name) => {
-  return `A hyper-realistic, ultra-detailed teddy bear for the adult card game "Terrible Teddies". The teddy represents a ${type.toLowerCase()} card named "${name}". The image should be high resolution and showcase intricate details of the bear's fur, eyes, and any accessories or features that make it unique. The bear should have a mischievous and slightly menacing appearance, suitable for an adult-themed game.`;
+const generatePrompt = (bear) => {
+  return `Create a hyper-realistic, ultra-detailed image of a mischievous teddy bear named "${bear.name}" (${bear.title}) for the adult card game "Terrible Teddies". The bear should embody cheeky, tongue-in-cheek humor with a hint of naughtiness. Make it visually striking and slightly provocative, suitable for an adult audience. Ensure the bear's expression and pose reflect its title and personality. The image should be high resolution with intricate details of the bear's fur, accessories, and surroundings that match its character.`;
 };
 
 export async function generateGameAssets(onProgress) {
-  let generatedCount = 0;
-  const generatedCards = [];
+  const generatedAssets = [];
 
-  for (let i = 0; i < TOTAL_CARDS; i++) {
-    const cardType = CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)];
-    const cardName = generateCardName(cardType);
-    const prompt = generateCardPrompt(cardType, cardName);
-
+  for (let i = 0; i < teddyBears.length; i++) {
+    const bear = teddyBears[i];
     try {
       const response = await openai.images.generate({
-        prompt: prompt,
+        prompt: generatePrompt(bear),
         n: 1,
-        size: "512x512",
+        size: "1024x1024",
       });
 
       const imageUrl = response.data[0].url;
       const { data, error } = await supabase.storage
-        .from('card-images')
-        .upload(`${cardName.replace(/\s+/g, '-').toLowerCase()}.png`, await (await fetch(imageUrl)).blob(), {
+        .from('teddy-images')
+        .upload(`${bear.name.replace(/\s+/g, '-').toLowerCase()}.png`, await (await fetch(imageUrl)).blob(), {
           cacheControl: '3600',
           upsert: false
         });
@@ -62,40 +38,40 @@ export async function generateGameAssets(onProgress) {
       if (error) throw error;
 
       const publicUrl = supabase.storage
-        .from('card-images')
+        .from('teddy-images')
         .getPublicUrl(data.path).data.publicUrl;
 
-      const cardData = {
-        name: cardName,
+      const assetData = {
+        name: bear.name,
+        title: bear.title,
         url: publicUrl,
-        type: cardType,
-        energy_cost: Math.floor(Math.random() * 3) + 1,
-        effect: generateCardEffect(cardType),
-        level: 1,
+        attack: Math.floor(Math.random() * 3) + 5, // Random attack between 5-7
+        defense: Math.floor(Math.random() * 3) + 4, // Random defense between 4-6
+        special_move: `${bear.name}'s Special Move`, // Placeholder, replace with actual special moves
+        special_move_description: `Description of ${bear.name}'s special move` // Placeholder, replace with actual descriptions
       };
 
-      generatedCards.push(cardData);
-      generatedCount++;
+      generatedAssets.push(assetData);
       if (onProgress) {
-        onProgress((generatedCount / TOTAL_CARDS) * 100);
+        onProgress(((i + 1) / teddyBears.length) * 100);
       }
-      console.log(`Generated ${generatedCount}/${TOTAL_CARDS} cards`);
+      console.log(`Generated asset for ${bear.name}`);
     } catch (error) {
-      console.error('Error generating image:', error);
-      throw error;
+      console.error(`Error generating image for ${bear.name}:`, error);
     }
   }
 
+  // Save all generated assets to Supabase
   const { data, error } = await supabase
-    .from('generated_images')
-    .insert(generatedCards);
+    .from('terrible_teddies')
+    .insert(generatedAssets);
 
   if (error) {
-    console.error('Error inserting generated cards:', error);
+    console.error('Error inserting generated assets:', error);
     throw error;
   } else {
-    console.log('All cards generated and inserted successfully');
+    console.log('All assets generated and inserted successfully');
   }
 
-  return generatedCards;
+  return generatedAssets;
 }
