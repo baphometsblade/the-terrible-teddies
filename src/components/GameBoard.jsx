@@ -2,6 +2,10 @@ import React from 'react';
 import TeddyCard from './TeddyCard';
 
 const GameBoard = ({ generatedTeddies }) => {
+  if (!generatedTeddies || generatedTeddies.length === 0) {
+    return <div>No teddies generated. Please try again.</div>;
+  }
+
   return (
     <div className="game-board">
       <h2 className="text-2xl font-bold mb-4">Game Board</h2>

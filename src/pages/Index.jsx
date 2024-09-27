@@ -11,10 +11,15 @@ const Index = () => {
 
   const handleStartGame = () => {
     setIsLoading(true);
-    const teddies = generateTeddyBears(50);
-    setGeneratedTeddies(teddies);
-    setGameStarted(true);
-    setIsLoading(false);
+    try {
+      const teddies = generateTeddyBears(50);
+      setGeneratedTeddies(teddies);
+      setGameStarted(true);
+    } catch (error) {
+      console.error("Error generating teddies:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
