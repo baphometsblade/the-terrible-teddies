@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import TeddySprite from './TeddySprite';
 
 const TeddyCard = ({ teddy, onSelect, isPlayable = true }) => {
   return (
@@ -10,7 +11,7 @@ const TeddyCard = ({ teddy, onSelect, isPlayable = true }) => {
         <p className="text-sm text-gray-600">{teddy.title}</p>
       </CardHeader>
       <CardContent>
-        <img src={teddy.imageUrl} alt={teddy.name} className="w-full h-32 object-cover rounded-md mb-2" />
+        <TeddySprite teddy={teddy} />
         <p className="text-sm mb-2">{teddy.description}</p>
         <div className="grid grid-cols-2 gap-2">
           <p>Attack: {teddy.attack}</p>
