@@ -5,27 +5,50 @@ import TeddyCard from '../components/TeddyCard';
 import TeddyGenerator from '../components/TeddyGenerator';
 
 const fetchTeddies = async () => {
-  const { data, error } = await supabase
-    .from('terrible_teddies')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(10);
-  if (error) throw error;
-  return data;
+  console.log('Fetching teddies...');
+  try {
+    const { data, error } = await supabase
+      .from('terrible_teddies')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+    
+    console.log('Fetched teddies:', data);
+    return data;
+  } catch (error) {
+    console.error('Error in fetchTeddies:', error);
+    throw error;
+  }
 };
 
 const Index = () => {
+  console.log('Rendering Index component');
   const { data: teddies, isLoading, error, refetch } = useQuery({
     queryKey: ['teddies'],
     queryFn: fetchTeddies,
   });
 
+  console.log('Query state:', { isLoading, error, teddiesCount: teddies?.length });
+
   const handleGenerate = async () => {
+    console.log('Generate button clicked');
     await refetch();
   };
 
-  if (isLoading) return <div className="text-center mt-8">Loading...</div>;
-  if (error) return <div className="text-center mt-8">Error: {error.message}</div>;
+  if (isLoading) {
+    console.log('Loading teddies...');
+    return <div className="text-center mt-8">Loading...</div>;
+  }
+  
+  if (error) {
+    console.error('Error in Index component:', error);
+    return <div className="text-center mt-8">Error: {error.message}</div>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

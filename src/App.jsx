@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 const queryClient = new QueryClient();
 
 function App() {
+  console.log('Rendering App component');
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
