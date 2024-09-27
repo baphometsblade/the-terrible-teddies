@@ -1,54 +1,36 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SupabaseProvider, useSupabaseAuth } from './integrations/supabase/auth';
+import { Routes, Route, Link } from 'react-router-dom';
+import { useSupabaseAuth } from './integrations/supabase/auth';
+import { Button } from "@/components/ui/button";
 import Index from './pages/Index';
 import GameBoard from './components/GameBoard';
 import Shop from './components/Shop';
 import Profile from './components/Profile';
 import { Auth } from './components/Auth';
-import { Button } from "@/components/ui/button";
-
-const queryClient = new QueryClient();
-
-const PrivateRoute = ({ children }) => {
-  const { session } = useSupabaseAuth();
-  return session ? children : <Navigate to="/auth" replace />;
-};
 
 function App() {
   const { session } = useSupabaseAuth();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <div className="App min-h-screen bg-gradient-to-b from-purple-100 to-pink-100">
-          <nav className="bg-purple-600 p-4">
-            <ul className="flex justify-center space-x-4">
-              <li><Button variant="ghost" asChild><a href="/">Home</a></Button></li>
-              <li><Button variant="ghost" asChild><a href="/game">Play</a></Button></li>
-              <li><Button variant="ghost" asChild><a href="/shop">Shop</a></Button></li>
-              <li><Button variant="ghost" asChild><a href="/profile">Profile</a></Button></li>
-              {!session && <li><Button variant="ghost" asChild><a href="/auth">Login</a></Button></li>}
-            </ul>
-          </nav>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/game" element={<PrivateRoute><GameBoard /></PrivateRoute>} />
-            <Route path="/shop" element={<PrivateRoute><Shop /></PrivateRoute>} />
-            <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-            <Route path="/auth" element={<Auth />} />
-          </Routes>
-        </div>
-      </Router>
-    </QueryClientProvider>
+    <div className="App min-h-screen bg-gradient-to-b from-purple-100 to-pink-100">
+      <nav className="bg-purple-600 p-4">
+        <ul className="flex justify-center space-x-4">
+          <li><Button variant="ghost" asChild><Link to="/">Home</Link></Button></li>
+          <li><Button variant="ghost" asChild><Link to="/game">Play</Link></Button></li>
+          <li><Button variant="ghost" asChild><Link to="/shop">Shop</Link></Button></li>
+          <li><Button variant="ghost" asChild><Link to="/profile">Profile</Link></Button></li>
+          {!session && <li><Button variant="ghost" asChild><Link to="/auth">Login</Link></Button></li>}
+        </ul>
+      </nav>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/game" element={session ? <GameBoard /> : <Auth />} />
+        <Route path="/shop" element={session ? <Shop /> : <Auth />} />
+        <Route path="/profile" element={session ? <Profile /> : <Auth />} />
+        <Route path="/auth" element={<Auth />} />
+      </Routes>
+    </div>
   );
 }
 
-const AppWithSupabase = () => (
-  <SupabaseProvider>
-    <App />
-  </SupabaseProvider>
-);
-
-export default AppWithSupabase;
+export default App;
