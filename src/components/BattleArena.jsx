@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import TeddyCard from './TeddyCard';
 
 const BattleArena = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
-  const [playerHealth, setPlayerHealth] = useState(100);
-  const [opponentHealth, setOpponentHealth] = useState(100);
+  const [playerHealth, setPlayerHealth] = useState(30);
+  const [opponentHealth, setOpponentHealth] = useState(30);
+  const [currentTurn, setCurrentTurn] = useState('player');
   const [battleLog, setBattleLog] = useState([]);
 
   useEffect(() => {
@@ -22,8 +24,10 @@ const BattleArena = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
 
   const handlePlayerAttack = () => {
     attack(playerTeddy, opponentTeddy, setOpponentHealth);
+    setCurrentTurn('opponent');
     setTimeout(() => {
       attack(opponentTeddy, playerTeddy, setPlayerHealth);
+      setCurrentTurn('player');
     }, 1000);
   };
 
@@ -31,17 +35,17 @@ const BattleArena = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
     <div className="flex flex-col items-center">
       <div className="flex justify-between w-full mb-4">
         <div className="text-center">
-          <img src={playerTeddy.imageUrl} alt={playerTeddy.name} className="w-32 h-32 object-cover rounded-full mb-2" />
-          <p>{playerTeddy.name}</p>
+          <TeddyCard teddy={playerTeddy} isPlayable={false} />
           <p>Health: {playerHealth}</p>
         </div>
         <div className="text-center">
-          <img src={opponentTeddy.imageUrl} alt={opponentTeddy.name} className="w-32 h-32 object-cover rounded-full mb-2" />
-          <p>{opponentTeddy.name}</p>
+          <TeddyCard teddy={opponentTeddy} isPlayable={false} />
           <p>Health: {opponentHealth}</p>
         </div>
       </div>
-      <Button onClick={handlePlayerAttack} className="mb-4">Attack!</Button>
+      <Button onClick={handlePlayerAttack} disabled={currentTurn !== 'player'} className="mb-4">
+        Attack!
+      </Button>
       <div className="w-full max-h-40 overflow-y-auto bg-gray-100 p-4 rounded">
         {battleLog.map((log, index) => (
           <p key={index}>{log}</p>

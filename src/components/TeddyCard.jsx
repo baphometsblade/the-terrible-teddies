@@ -1,27 +1,29 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import TeddySprite from './TeddySprite';
 
-const TeddyCard = ({ bear, onSelect }) => {
+const TeddyCard = ({ teddy, onSelect, isPlayable = true }) => {
   return (
-    <Card className="bg-purple-700 text-white">
+    <Card className="w-64 bg-purple-100 shadow-lg">
       <CardHeader>
-        <h3 className="text-lg font-semibold">{bear.name}</h3>
-        <p className="text-sm text-purple-300">{bear.title}</p>
+        <h3 className="text-lg font-bold">{teddy.name}</h3>
+        <p className="text-sm text-gray-600">{teddy.title}</p>
       </CardHeader>
       <CardContent>
-        <TeddySprite teddy={bear} />
-        <p className="text-sm mb-2 mt-2">{bear.description}</p>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <p>Attack: {bear.attack}</p>
-          <p>Defense: {bear.defense}</p>
+        <img src={teddy.imageUrl} alt={teddy.name} className="w-full h-32 object-cover rounded-md mb-2" />
+        <p className="text-sm mb-2">{teddy.description}</p>
+        <div className="grid grid-cols-2 gap-2">
+          <p>Attack: {teddy.attack}</p>
+          <p>Defense: {teddy.defense}</p>
         </div>
+        <p className="mt-2">Special: {teddy.specialMove}</p>
       </CardContent>
       <CardFooter>
-        <Button onClick={() => onSelect(bear)} className="w-full">
-          Select
-        </Button>
+        {isPlayable && (
+          <Button onClick={() => onSelect(teddy)} className="w-full">
+            Select
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

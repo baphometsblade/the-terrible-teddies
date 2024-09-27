@@ -18,6 +18,7 @@ const generateTeddyBear = () => {
     id: uuidv4(),
     name,
     title,
+    description: `A cheeky teddy with a knack for ${specialMove.toLowerCase()}.`,
     attack: Math.floor(Math.random() * 3) + 4, // 4-6
     defense: Math.floor(Math.random() * 3) + 4, // 4-6
     specialMove,
