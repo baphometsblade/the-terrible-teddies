@@ -1,82 +1,86 @@
 import React, { useState, useEffect } from 'react';
-import { PlayerArea } from './GameBoard/PlayerArea';
-import { OpponentArea } from './GameBoard/OpponentArea';
-import { GameInfo } from './GameBoard/GameInfo';
-import { CardDetail } from './GameBoard/CardDetail';
-import { ActiveEffects } from './GameBoard/ActiveEffects';
 import { Button } from "@/components/ui/button";
-import { initializeGame, playCard, endTurn, checkGameOver } from '../utils/gameLogic';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Card, CardContent } from "@/components/ui/card";
+import { useGeneratedImages } from '../integrations/supabase';
 
-const GameBoard = ({ onExitGame }) => {
-  const [gameState, setGameState] = useState(null);
+const GameBoard = () => {
+  const [playerHand, setPlayerHand] = useState([]);
+  const [opponentHand, setOpponentHand] = useState([]);
+  const [playerHealth, setPlayerHealth] = useState(30);
+  const [opponentHealth, setOpponentHealth] = useState(30);
+  const [currentTurn, setCurrentTurn] = useState('player');
   const [selectedCard, setSelectedCard] = useState(null);
-  const [showCardDetail, setShowCardDetail] = useState(false);
-  const [activeEffects, setActiveEffects] = useState([]);
+
+  const { data: generatedImages } = useGeneratedImages();
 
   useEffect(() => {
-    setGameState(initializeGame());
-  }, []);
+    if (generatedImages) {
+      const shuffledCards = [...generatedImages].sort(() => Math.random() - 0.5);
+      setPlayerHand(shuffledCards.slice(0, 5));
+      setOpponentHand(shuffledCards.slice(5, 10));
+    }
+  }, [generatedImages]);
 
-  const handleCardPlay = (card) => {
-    if (gameState.currentPlayer === 'player' && gameState.momentumGauge + card.energy_cost <= 10) {
-      const newState = playCard(gameState, card, gameState.opponent.teddies[0]); // For simplicity, always target the first opponent teddy
-      setGameState(newState);
-      setSelectedCard(null);
-      // Add visual effect for card play
-      setActiveEffects([...activeEffects, { name: card.name, type: 'play' }]);
-      setTimeout(() => setActiveEffects(activeEffects => activeEffects.filter(effect => effect.name !== card.name)), 1000);
+  const playCard = (card) => {
+    if (currentTurn === 'player') {
+      setOpponentHealth(prev => Math.max(0, prev - card.attack));
+      setPlayerHand(prev => prev.filter(c => c.id !== card.id));
+      setCurrentTurn('opponent');
+      setTimeout(opponentTurn, 1000);
     }
   };
 
-  const handleEndTurn = () => {
-    const newState = endTurn(gameState);
-    setGameState(newState);
-    // Add visual effect for turn end
-    setActiveEffects([...activeEffects, { name: 'End Turn', type: 'turn' }]);
-    setTimeout(() => setActiveEffects(activeEffects => activeEffects.filter(effect => effect.name !== 'End Turn')), 1000);
+  const opponentTurn = () => {
+    if (opponentHand.length > 0) {
+      const randomCard = opponentHand[Math.floor(Math.random() * opponentHand.length)];
+      setPlayerHealth(prev => Math.max(0, prev - randomCard.attack));
+      setOpponentHand(prev => prev.filter(c => c.id !== randomCard.id));
+    }
+    setCurrentTurn('player');
   };
-
-  const handleCardClick = (card) => {
-    setSelectedCard(card);
-    setShowCardDetail(true);
-  };
-
-  if (!gameState) return <div>Loading...</div>;
-
-  const { gameOver, winner } = checkGameOver(gameState);
-
-  if (gameOver) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-b from-purple-400 to-pink-500">
-        <h2 className="text-4xl font-bold mb-4 text-white">{winner === 'player' ? 'You Win!' : 'You Lose!'}</h2>
-        <Button onClick={onExitGame} className="bg-white text-purple-600 hover:bg-purple-100">Back to Menu</Button>
-      </div>
-    );
-  }
 
   return (
-    <div className="game-board p-4 bg-gradient-to-br from-purple-100 to-pink-100 min-h-screen">
-      <GameInfo currentTurn={gameState.currentPlayer} momentumGauge={gameState.momentumGauge} />
-      <div className="flex justify-between mb-4">
-        <OpponentArea teddies={gameState.opponent.teddies} hp={gameState.opponent.hp} />
-        <PlayerArea 
-          teddies={gameState.player.teddies}
-          hp={gameState.player.hp}
-          hand={gameState.player.hand}
-          onCardPlay={handleCardPlay}
-          onCardClick={handleCardClick}
-          momentumGauge={gameState.momentumGauge}
-        />
+    <div className="p-4">
+      <div className="mb-4">
+        <h2 className="text-xl font-bold">Opponent (Health: {opponentHealth})</h2>
+        <div className="flex space-x-2">
+          {opponentHand.map(card => (
+            <Card key={card.id} className="w-20 h-32 bg-red-100">
+              <CardContent className="p-2">
+                <p className="text-xs">{card.name}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
-      <Button onClick={handleEndTurn} className="mt-4 bg-purple-500 hover:bg-purple-600 text-white">End Turn</Button>
-      <Button onClick={onExitGame} className="mt-4 ml-4 bg-red-500 hover:bg-red-600 text-white">Exit Game</Button>
-      <AnimatePresence>
-        {showCardDetail && selectedCard && (
-          <CardDetail card={selectedCard} onClose={() => setShowCardDetail(false)} />
-        )}
-      </AnimatePresence>
-      <ActiveEffects effects={activeEffects} />
+      
+      <div className="mb-4">
+        <h2 className="text-xl font-bold">Player (Health: {playerHealth})</h2>
+        <div className="flex space-x-2">
+          {playerHand.map(card => (
+            <Card 
+              key={card.id} 
+              className={`w-20 h-32 cursor-pointer ${selectedCard?.id === card.id ? 'border-2 border-blue-500' : ''}`}
+              onClick={() => setSelectedCard(card)}
+            >
+              <CardContent className="p-2">
+                <img src={card.url} alt={card.name} className="w-full h-16 object-cover mb-1" />
+                <p className="text-xs">{card.name}</p>
+                <p className="text-xs">ATK: {card.attack}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+      
+      <Button 
+        onClick={() => selectedCard && playCard(selectedCard)} 
+        disabled={currentTurn !== 'player' || !selectedCard}
+      >
+        Play Selected Card
+      </Button>
+      
+      <p className="mt-4">Current Turn: {currentTurn}</p>
     </div>
   );
 };
