@@ -10,13 +10,13 @@ const TeddyCard = ({ teddy }) => {
         <p className="text-sm text-gray-600">{teddy.title}</p>
       </CardHeader>
       <CardContent>
-        <img src={teddy.image_url} alt={teddy.name} className="w-full h-48 object-cover rounded-md mb-2" />
+        <img src={teddy.imageUrl} alt={teddy.name} className="w-full h-48 object-cover rounded-md mb-2" />
         <p className="text-sm mb-2">{teddy.description}</p>
         <div className="grid grid-cols-2 gap-2">
           <p>Attack: {teddy.attack}</p>
           <p>Defense: {teddy.defense}</p>
         </div>
-        <p className="mt-2">Special: {teddy.special_move}</p>
+        <p className="mt-2">Special: {teddy.specialMove}</p>
       </CardContent>
       <CardFooter>
         <Button className="w-full">
