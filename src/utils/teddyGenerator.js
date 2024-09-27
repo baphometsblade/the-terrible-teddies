@@ -1,9 +1,4 @@
-import OpenAI from 'openai';
 import { supabase } from '../lib/supabase';
-
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-});
 
 const generateTeddyBear = async () => {
   const names = ["Whiskey Whiskers", "Madame Mistletoe", "Baron Von Blubber", "Bella Bombshell", "Professor Playful"];
@@ -15,17 +10,6 @@ const generateTeddyBear = async () => {
   const title = titles[randomIndex];
   const specialMove = specialMoves[randomIndex];
 
-  const prompt = `Create a hyper-realistic, ultra-detailed image of a mischievous teddy bear named "${name}" (${title}) for the adult card game "Terrible Teddies". The bear should embody cheeky, tongue-in-cheek humor with a hint of naughtiness. Make it visually striking and slightly provocative, suitable for an adult audience. Ensure the bear's expression and pose reflect its title and personality. The image should be high resolution with intricate details of the bear's fur, accessories, and surroundings that match its character.`;
-
-  const response = await openai.images.generate({
-    model: "dall-e-3",
-    prompt: prompt,
-    n: 1,
-    size: "1024x1024",
-  });
-
-  const imageUrl = response.data[0].url;
-
   return {
     name,
     title,
@@ -33,7 +17,7 @@ const generateTeddyBear = async () => {
     attack: Math.floor(Math.random() * 3) + 4, // 4-6
     defense: Math.floor(Math.random() * 3) + 4, // 4-6
     specialMove,
-    imageUrl
+    imageUrl: 'https://via.placeholder.com/150' // Placeholder image URL
   };
 };
 
@@ -43,13 +27,18 @@ export const generateTeddyBears = async (count) => {
     const bear = await generateTeddyBear();
     bears.push(bear);
 
-    // Store the bear in Supabase
-    const { data, error } = await supabase
-      .from('terrible_teddies')
-      .insert([bear]);
+    try {
+      const { data, error } = await supabase
+        .from('terrible_teddies')
+        .insert([bear]);
 
-    if (error) {
-      console.error('Error storing bear:', error);
+      if (error) {
+        console.error('Error storing bear:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error generating or storing bear:', error);
+      throw error;
     }
   }
   return bears;

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { supabase, initializeSupabase } from '../lib/supabase';
 import TeddyCard from '../components/TeddyCard';
 import TeddyGenerator from '../components/TeddyGenerator';
 
@@ -27,10 +27,20 @@ const fetchTeddies = async () => {
 };
 
 const Index = () => {
-  console.log('Rendering Index component');
+  const [isSupabaseInitialized, setIsSupabaseInitialized] = useState(false);
+
+  useEffect(() => {
+    const init = async () => {
+      const initialized = await initializeSupabase();
+      setIsSupabaseInitialized(initialized);
+    };
+    init();
+  }, []);
+
   const { data: teddies, isLoading, error, refetch } = useQuery({
     queryKey: ['teddies'],
     queryFn: fetchTeddies,
+    enabled: isSupabaseInitialized,
   });
 
   console.log('Query state:', { isLoading, error, teddiesCount: teddies?.length });
@@ -39,6 +49,10 @@ const Index = () => {
     console.log('Generate button clicked');
     await refetch();
   };
+
+  if (!isSupabaseInitialized) {
+    return <div className="text-center mt-8">Initializing Supabase...</div>;
+  }
 
   if (isLoading) {
     console.log('Loading teddies...');
