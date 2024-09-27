@@ -3,18 +3,20 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+const fetchLeaderboard = async () => {
+  const { data, error } = await supabase
+    .from('players')
+    .select('*')
+    .order('wins', { ascending: false })
+    .limit(10);
+  if (error) throw error;
+  return data;
+};
+
 const Leaderboard = () => {
   const { data: leaderboardData, isLoading, error } = useQuery({
     queryKey: ['leaderboard'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .order('wins', { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: fetchLeaderboard,
   });
 
   if (isLoading) return <div className="text-center mt-8">Loading leaderboard...</div>;

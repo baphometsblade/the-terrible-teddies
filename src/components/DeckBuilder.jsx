@@ -1,68 +1,97 @@
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { useQuery, useMutation } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import TeddyCard from './TeddyCard';
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
-const fetchCards = async () => {
-  const { data, error } = await supabase.from('generated_images').select('*');
+const fetchTeddies = async () => {
+  const { data, error } = await supabase
+    .from('terrible_teddies')
+    .select('*');
   if (error) throw error;
   return data;
 };
 
-export const DeckBuilder = ({ onExit }) => {
+const DeckBuilder = () => {
   const [deck, setDeck] = useState([]);
-  const { data: cards, isLoading, error } = useQuery({
-    queryKey: ['cards'],
-    queryFn: fetchCards,
+  const { data: teddies, isLoading, error } = useQuery({
+    queryKey: ['teddies'],
+    queryFn: fetchTeddies,
   });
+  const { toast } = useToast();
 
-  const saveDeckMutation = useMutation({
-    mutationFn: async (newDeck) => {
-      const { data, error } = await supabase.from('user_decks').upsert({ deck: newDeck });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const addToDeck = (card) => {
-    if (deck.length < 20) {
-      setDeck([...deck, card]);
+  const addToDeck = (teddy) => {
+    if (deck.length < 20 && !deck.find(t => t.id === teddy.id)) {
+      setDeck([...deck, teddy]);
+    } else {
+      toast({
+        title: "Cannot add to deck",
+        description: deck.length >= 20 ? "Deck is full" : "Teddy already in deck",
+        variant: "destructive",
+      });
     }
   };
 
-  const removeFromDeck = (cardId) => {
-    setDeck(deck.filter((card) => card.id !== cardId));
+  const removeFromDeck = (teddyId) => {
+    setDeck(deck.filter(t => t.id !== teddyId));
   };
 
-  if (isLoading) return <div>Loading cards...</div>;
+  const saveDeck = async () => {
+    if (deck.length !== 20) {
+      toast({
+        title: "Cannot save deck",
+        description: "Deck must contain exactly 20 teddies",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('player_decks')
+      .insert({ deck: deck.map(t => t.id) });
+
+    if (error) {
+      toast({
+        title: "Error saving deck",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Deck saved successfully",
+        variant: "success",
+      });
+    }
+  };
+
+  if (isLoading) return <div>Loading teddies...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <div className="deck-builder">
-      <h2 className="text-2xl font-bold mb-4">Deck Builder</h2>
-      <div className="grid grid-cols-5 gap-4 mb-8">
-        {cards.map((card) => (
-          <div key={card.id} className="card" onClick={() => addToDeck(card)}>
-            <img src={card.url} alt={card.name} className="w-full h-32 object-cover rounded" />
-            <p className="text-sm mt-1">{card.name}</p>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-4">Deck Builder</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">Available Teddies</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {teddies.map(teddy => (
+              <TeddyCard key={teddy.id} teddy={teddy} onClick={() => addToDeck(teddy)} />
+            ))}
           </div>
-        ))}
-      </div>
-      <h3 className="text-xl font-bold mb-4">Your Deck ({deck.length}/20)</h3>
-      <div className="grid grid-cols-5 gap-4 mb-8">
-        {deck.map((card) => (
-          <div key={card.id} className="card" onClick={() => removeFromDeck(card.id)}>
-            <img src={card.url} alt={card.name} className="w-full h-32 object-cover rounded" />
-            <p className="text-sm mt-1">{card.name}</p>
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold mb-2">Your Deck ({deck.length}/20)</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {deck.map(teddy => (
+              <TeddyCard key={teddy.id} teddy={teddy} onClick={() => removeFromDeck(teddy.id)} />
+            ))}
           </div>
-        ))}
+          <Button onClick={saveDeck} className="mt-4" disabled={deck.length !== 20}>Save Deck</Button>
+        </div>
       </div>
-      <Button onClick={() => saveDeckMutation.mutate(deck)} disabled={deck.length !== 20}>
-        Save Deck
-      </Button>
-      <Button onClick={onExit} className="ml-4">
-        Exit
-      </Button>
     </div>
   );
 };
+
+export default DeckBuilder;
