@@ -2,15 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const TeddyCard = ({ teddy, onClick, selected, faceDown }) => {
-  if (faceDown) {
-    return (
-      <Card className="w-full bg-purple-300 h-40 flex items-center justify-center">
-        <p className="text-2xl font-bold text-purple-700">?</p>
-      </Card>
-    );
-  }
-
+const TeddyCard = ({ teddy, onClick, selected, showDetails = false }) => {
   return (
     <Card 
       className={`w-full bg-white shadow-lg rounded-lg overflow-hidden ${selected ? 'ring-2 ring-purple-500' : ''}`}
@@ -18,11 +10,16 @@ const TeddyCard = ({ teddy, onClick, selected, faceDown }) => {
     >
       <CardHeader>
         <h3 className="text-xl font-bold">{teddy.name}</h3>
+        <p className="text-sm text-gray-600">{teddy.title}</p>
       </CardHeader>
       <CardContent>
-        <p className="text-sm mb-2">{teddy.title}</p>
-        <p>Attack: {teddy.attack}</p>
-        <p>Defense: {teddy.defense}</p>
+        <img src={teddy.imageUrl || '/placeholder.svg'} alt={teddy.name} className="w-full h-32 object-cover mb-2 rounded" />
+        {showDetails && <p className="text-sm mb-2">{teddy.description}</p>}
+        <div className="grid grid-cols-2 gap-2">
+          <p>Attack: {teddy.attack}</p>
+          <p>Defense: {teddy.defense}</p>
+        </div>
+        {showDetails && <p className="mt-2">Special: {teddy.specialMove}</p>}
       </CardContent>
       {onClick && (
         <CardFooter>

@@ -3,45 +3,50 @@ export class AIOpponent {
     this.difficulty = difficulty;
   }
 
-  chooseCard(hand, gameState) {
-    const playableCards = hand.filter(card => card.energy_cost <= 10 - gameState.momentumGauge);
-    if (playableCards.length === 0) return null;
-    
+  chooseTeddy(hand) {
+    // Simple AI: choose the teddy with the highest attack
+    return hand.reduce((prev, current) => (prev.attack > current.attack) ? prev : current);
+  }
+
+  chooseAction(aiTeddy, playerTeddy, energy) {
+    const actions = ['attack', 'defend'];
+    if (energy >= 2) actions.push('special');
+
     switch (this.difficulty) {
       case 'easy':
-        return this.chooseRandomCard(playableCards);
+        return this.chooseRandomAction(actions);
       case 'normal':
-        return this.chooseBalancedCard(playableCards, gameState);
+        return this.chooseBalancedAction(aiTeddy, playerTeddy, actions);
       case 'hard':
-        return this.chooseOptimalCard(playableCards, gameState);
+        return this.chooseOptimalAction(aiTeddy, playerTeddy, energy, actions);
       default:
-        return this.chooseBalancedCard(playableCards, gameState);
+        return this.chooseRandomAction(actions);
     }
   }
 
-  chooseRandomCard(cards) {
-    return cards[Math.floor(Math.random() * cards.length)];
+  chooseRandomAction(actions) {
+    return actions[Math.floor(Math.random() * actions.length)];
   }
 
-  chooseBalancedCard(cards, gameState) {
-    const sortedCards = cards.sort((a, b) => {
-      const aScore = this.calculateCardScore(a, gameState);
-      const bScore = this.calculateCardScore(b, gameState);
-      return bScore - aScore;
-    });
-    return sortedCards[0];
+  chooseBalancedAction(aiTeddy, playerTeddy, actions) {
+    if (aiTeddy.health < playerTeddy.health && actions.includes('special')) {
+      return 'special';
+    } else if (aiTeddy.defense < playerTeddy.attack) {
+      return 'defend';
+    } else {
+      return 'attack';
+    }
   }
 
-  chooseOptimalCard(cards, gameState) {
-    // Implement more advanced logic for optimal card selection
-    return this.chooseBalancedCard(cards, gameState);
-  }
-
-  calculateCardScore(card, gameState) {
-    let score = card.energy_cost;
-    if (gameState.playerHP < 10 && card.type === 'Action') score += 5;
-    if (gameState.opponentHP < 10 && card.type === 'Special') score += 5;
-    if (gameState.momentumGauge > 7 && card.type === 'Boost') score += 3;
-    return score;
+  chooseOptimalAction(aiTeddy, playerTeddy, energy, actions) {
+    // Implement more advanced logic for optimal action selection
+    // This is a placeholder and should be expanded based on game balance and strategy
+    if (energy >= 2 && actions.includes('special')) {
+      return 'special';
+    } else if (aiTeddy.attack > playerTeddy.defense) {
+      return 'attack';
+    } else {
+      return 'defend';
+    }
   }
 }

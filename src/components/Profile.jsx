@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const Profile = () => {
@@ -26,13 +27,17 @@ const Profile = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-4 text-center text-purple-600">Player Profile</h1>
       {profile && (
-        <div className="bg-white p-4 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold mb-2">{profile.username}</h2>
-          <p className="mb-2">Wins: {profile.wins}</p>
-          <p className="mb-2">Losses: {profile.losses}</p>
-          <p className="mb-2">Coins: {profile.coins}</p>
-          <Button onClick={() => supabase.auth.signOut()}>Sign Out</Button>
-        </div>
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <h2 className="text-2xl font-bold">{profile.username}</h2>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-2">Wins: {profile.wins}</p>
+            <p className="mb-2">Losses: {profile.losses}</p>
+            <p className="mb-2">Coins: {profile.coins}</p>
+            <Button onClick={() => supabase.auth.signOut()} className="mt-4">Sign Out</Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
