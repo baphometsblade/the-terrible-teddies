@@ -45,12 +45,12 @@ const GameBoard = () => {
   }, [playerHP, opponentHP]);
 
   return (
-    <div className="p-4 bg-gradient-to-r from-purple-400 to-pink-500">
+    <div className="p-4 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold text-white mb-4">Cheeky Teddy Brawl</h2>
-      <div className="flex justify-between mb-4">
-        <div>
+      <div className="flex flex-col md:flex-row justify-between mb-4">
+        <div className="mb-4 md:mb-0">
           <h3 className="text-xl font-semibold text-white mb-2">Your Teddies (HP: {playerHP})</h3>
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap gap-4">
             {playerTeddies.map((teddy) => (
               <TeddyCard
                 key={teddy.id}
@@ -63,7 +63,7 @@ const GameBoard = () => {
         </div>
         <div>
           <h3 className="text-xl font-semibold text-white mb-2">Opponent's Teddies (HP: {opponentHP})</h3>
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap gap-4">
             {opponentTeddies.map((teddy) => (
               <TeddyCard key={teddy.id} teddy={teddy} />
             ))}
@@ -77,7 +77,7 @@ const GameBoard = () => {
       >
         Attack
       </Button>
-      <div className="mt-4 bg-white p-4 rounded-lg">
+      <div className="mt-4 bg-white p-4 rounded-lg max-h-40 overflow-y-auto">
         <h3 className="text-lg font-semibold mb-2">Battle Log</h3>
         <ul className="list-disc list-inside">
           {battleLog.map((log, index) => (
