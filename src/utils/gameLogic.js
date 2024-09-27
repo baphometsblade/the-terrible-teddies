@@ -3,8 +3,8 @@ import { teddyData } from '../data/teddyData';
 export const initializeGame = () => {
   const shuffledTeddies = shuffleArray([...teddyData]);
   return {
-    player: { hand: shuffledTeddies.slice(0, 5), hp: 30 },
-    opponent: { hand: shuffledTeddies.slice(5, 10), hp: 30 },
+    player: { teddies: shuffledTeddies.slice(0, 3), hand: shuffledTeddies.slice(3, 8), hp: 30 },
+    opponent: { teddies: shuffledTeddies.slice(8, 11), hand: shuffledTeddies.slice(11, 16), hp: 30 },
     currentPlayer: 'player',
     momentumGauge: 0,
   };
@@ -59,10 +59,22 @@ const applySpecialMove = (gameState, card, currentPlayer) => {
   const opponent = currentPlayer === 'player' ? 'opponent' : 'player';
   switch (card.specialMove) {
     case "On the Rocks":
-      gameState[opponent].hand.forEach(c => c.defense = Math.max(0, c.defense - 2));
+      gameState[opponent].teddies.forEach(c => c.defense = Math.max(0, c.defense - 2));
       break;
     case "Sneak Kiss":
       gameState[opponent].skipNextTurn = true;
+      break;
+    case "Burst Bubble":
+      gameState[opponent].teddies.forEach(c => c.attack = Math.max(0, c.attack - 2));
+      break;
+    case "Heart Stopper":
+      card.attack += 2;
+      break;
+    case "Mind Game":
+      if (gameState[opponent].teddies.length > 0) {
+        const randomTeddy = gameState[opponent].teddies[Math.floor(Math.random() * gameState[opponent].teddies.length)];
+        gameState[opponent].hp -= randomTeddy.attack;
+      }
       break;
     // Add more special move effects here
     default:
