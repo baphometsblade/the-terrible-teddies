@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import TeddyCard from './TeddyCard';
 import PlayerArea from './PlayerArea';
 import { Button } from "@/components/ui/button";
+import { calculateDamage } from '../utils/gameLogic';
 
 const fetchTeddies = async () => {
   const { data, error } = await supabase
@@ -18,7 +19,11 @@ const GameBoard = () => {
   const [playerTeddies, setPlayerTeddies] = useState([]);
   const [opponentTeddies, setOpponentTeddies] = useState([]);
   const [selectedTeddy, setSelectedTeddy] = useState(null);
+  const [opponentTeddy, setOpponentTeddy] = useState(null);
   const [gameState, setGameState] = useState('selecting'); // 'selecting', 'battle', 'gameOver'
+  const [playerHP, setPlayerHP] = useState(30);
+  const [opponentHP, setOpponentHP] = useState(30);
+  const [currentTurn, setCurrentTurn] = useState('player');
 
   const { data: teddies, isLoading, error } = useQuery({
     queryKey: ['teddies'],
@@ -35,12 +40,33 @@ const GameBoard = () => {
 
   const handleTeddySelect = (teddy) => {
     setSelectedTeddy(teddy);
+    setOpponentTeddy(opponentTeddies[Math.floor(Math.random() * opponentTeddies.length)]);
     setGameState('battle');
   };
 
   const handleAttack = () => {
-    // Implement attack logic here
-    console.log('Attack!');
+    if (currentTurn === 'player') {
+      const damage = calculateDamage(selectedTeddy, opponentTeddy);
+      setOpponentHP(prevHP => Math.max(0, prevHP - damage));
+      setCurrentTurn('opponent');
+    } else {
+      const damage = calculateDamage(opponentTeddy, selectedTeddy);
+      setPlayerHP(prevHP => Math.max(0, prevHP - damage));
+      setCurrentTurn('player');
+    }
+
+    if (playerHP <= 0 || opponentHP <= 0) {
+      setGameState('gameOver');
+    }
+  };
+
+  const resetGame = () => {
+    setSelectedTeddy(null);
+    setOpponentTeddy(null);
+    setGameState('selecting');
+    setPlayerHP(30);
+    setOpponentHP(30);
+    setCurrentTurn('player');
   };
 
   if (isLoading) return <div className="text-center mt-8">Loading game...</div>;
@@ -59,14 +85,20 @@ const GameBoard = () => {
           </div>
         </div>
       )}
-      {gameState === 'battle' && selectedTeddy && (
-        <div className="flex justify-between">
-          <PlayerArea teddy={selectedTeddy} isPlayer={true} />
-          <div className="flex flex-col items-center justify-center">
+      {gameState === 'battle' && selectedTeddy && opponentTeddy && (
+        <div className="flex flex-col md:flex-row justify-between">
+          <PlayerArea teddy={selectedTeddy} isPlayer={true} hp={playerHP} />
+          <div className="flex flex-col items-center justify-center my-4 md:my-0">
+            <p className="text-xl font-bold mb-2">{currentTurn === 'player' ? "Your Turn" : "Opponent's Turn"}</p>
             <Button onClick={handleAttack} className="mb-4">Attack</Button>
-            <Button onClick={() => setGameState('selecting')}>Back to Selection</Button>
           </div>
-          <PlayerArea teddy={opponentTeddies[0]} isPlayer={false} />
+          <PlayerArea teddy={opponentTeddy} isPlayer={false} hp={opponentHP} />
+        </div>
+      )}
+      {gameState === 'gameOver' && (
+        <div className="text-center">
+          <h2 className="text-3xl font-bold mb-4">{playerHP > 0 ? "You Win!" : "You Lose!"}</h2>
+          <Button onClick={resetGame}>Play Again</Button>
         </div>
       )}
     </div>
