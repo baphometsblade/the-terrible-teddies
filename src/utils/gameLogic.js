@@ -6,31 +6,35 @@ export const initializeGame = () => {
     player: { hand: shuffledTeddies.slice(0, 5), hp: 30 },
     opponent: { hand: shuffledTeddies.slice(5, 10), hp: 30 },
     currentPlayer: 'player',
+    momentumGauge: 0,
   };
 };
 
-export const playCard = (gameState, attackingCard, defendingCard) => {
+export const playCard = (gameState, card, target) => {
   const currentPlayer = gameState.currentPlayer;
   const opponent = currentPlayer === 'player' ? 'opponent' : 'player';
 
   // Remove the card from the player's hand
-  gameState[currentPlayer].hand = gameState[currentPlayer].hand.filter(c => c.id !== attackingCard.id);
+  gameState[currentPlayer].hand = gameState[currentPlayer].hand.filter(c => c.id !== card.id);
 
   // Calculate damage
-  let damage = attackingCard.attack - defendingCard.defense;
-  damage = Math.max(0, damage); // Ensure damage is not negative
+  let damage = Math.max(0, card.attack - target.defense);
 
   // Apply damage to opponent
   gameState[opponent].hp -= damage;
 
   // Apply special move effects
-  applySpecialMove(gameState, attackingCard, currentPlayer);
+  applySpecialMove(gameState, card, currentPlayer);
+
+  // Update momentum gauge
+  gameState.momentumGauge = Math.min(10, gameState.momentumGauge + card.energy_cost);
 
   return gameState;
 };
 
 export const endTurn = (gameState) => {
   gameState.currentPlayer = gameState.currentPlayer === 'player' ? 'opponent' : 'player';
+  gameState.momentumGauge = 0;
   return gameState;
 };
 

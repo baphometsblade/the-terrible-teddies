@@ -1,22 +1,20 @@
-import React from 'react';
-import PlayerArea from './PlayerArea';
-import BattleArena from './BattleArena';
-import GameOverScreen from './GameOverScreen';
+import React, { useState, useEffect } from 'react';
 import { initializeGame, playCard, endTurn, checkGameOver } from '../utils/gameLogic';
+import PlayerHand from './PlayerHand';
+import OpponentArea from './OpponentArea';
+import { Button } from "@/components/ui/button";
 
 const GameBoard = ({ onExitGame }) => {
-  const [gameState, setGameState] = React.useState(null);
-  const [selectedCard, setSelectedCard] = React.useState(null);
+  const [gameState, setGameState] = useState(null);
+  const [selectedCard, setSelectedCard] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setGameState(initializeGame());
   }, []);
 
   const handleCardPlay = (card) => {
-    if (gameState.currentPlayer === 'player' && !selectedCard) {
-      setSelectedCard(card);
-    } else if (gameState.currentPlayer === 'player' && selectedCard) {
-      const newState = playCard(gameState, selectedCard, card);
+    if (gameState.currentPlayer === 'player' && gameState.momentumGauge + card.energy_cost <= 10) {
+      const newState = playCard(gameState, card, gameState.opponent.hand[0]); // For simplicity, always target the first opponent card
       setGameState(newState);
       setSelectedCard(null);
     }
@@ -32,27 +30,27 @@ const GameBoard = ({ onExitGame }) => {
   const { gameOver, winner } = checkGameOver(gameState);
 
   if (gameOver) {
-    return <GameOverScreen winner={winner} onPlayAgain={() => setGameState(initializeGame())} />;
+    return (
+      <div>
+        <h2>{winner === 'player' ? 'You Win!' : 'You Lose!'}</h2>
+        <Button onClick={onExitGame}>Back to Menu</Button>
+      </div>
+    );
   }
 
   return (
     <div className="game-board">
-      <PlayerArea
-        player={gameState.opponent}
-        isOpponent={true}
-        onCardPlay={handleCardPlay}
-      />
-      <BattleArena
-        currentPlayer={gameState.currentPlayer}
-        selectedCard={selectedCard}
-      />
-      <PlayerArea
-        player={gameState.player}
-        isOpponent={false}
-        onCardPlay={handleCardPlay}
-      />
-      <button onClick={handleEndTurn}>End Turn</button>
-      <button onClick={onExitGame}>Exit Game</button>
+      <OpponentArea hp={gameState.opponent.hp} hand={gameState.opponent.hand} />
+      <div className="player-area">
+        <PlayerHand 
+          hand={gameState.player.hand} 
+          onCardPlay={handleCardPlay}
+          momentumGauge={gameState.momentumGauge}
+        />
+        <div>HP: {gameState.player.hp}</div>
+        <Button onClick={handleEndTurn}>End Turn</Button>
+      </div>
+      <Button onClick={onExitGame}>Exit Game</Button>
     </div>
   );
 };
