@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import TeddyCard from '../components/TeddyCard';
@@ -20,7 +20,7 @@ const Index = () => {
     queryFn: fetchTeddies,
   });
 
-  const handleGenerate = async (newBears) => {
+  const handleGenerate = async () => {
     await refetch();
   };
 
