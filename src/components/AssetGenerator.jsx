@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
-import { generateTeddyImage } from '../utils/imageGenerator';
+import { generateTeddyImage, generateBackgroundImage } from '../utils/imageGenerator';
 import { supabase } from '../lib/supabase';
 
 export const AssetGenerator = () => {
@@ -46,6 +46,9 @@ export const AssetGenerator = () => {
         setProgress(((i + 1) / 5) * 100);
       }
 
+      // Generate a background image
+      const backgroundUrl = await generateBackgroundImage("Cheeky teddy bear card game");
+
       // Save generated assets to Supabase
       const { data, error } = await supabase
         .from('terrible_teddies')
@@ -53,9 +56,16 @@ export const AssetGenerator = () => {
 
       if (error) throw error;
 
+      // Save background image URL to Supabase (you might want to create a separate table for this)
+      const { data: bgData, error: bgError } = await supabase
+        .from('game_assets')
+        .insert({ type: 'background', url: backgroundUrl });
+
+      if (bgError) throw bgError;
+
       toast({
         title: "Assets Generated",
-        description: `Successfully generated ${generatedAssets.length} Terrible Teddies!`,
+        description: `Successfully generated ${generatedAssets.length} Terrible Teddies and a background image!`,
         variant: "success",
       });
     } catch (error) {
