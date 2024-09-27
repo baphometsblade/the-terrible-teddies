@@ -51,7 +51,7 @@ const Index = () => {
     <div 
       className="container mx-auto px-4 py-8 min-h-screen"
       style={{
-        backgroundImage: `url(${backgroundImage})`,
+        backgroundImage: backgroundImage ? `url(${backgroundImage})` : 'none',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
