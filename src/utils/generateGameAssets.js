@@ -21,30 +21,11 @@ export async function generateGameAssets(onProgress) {
   for (let i = 0; i < teddyBears.length; i++) {
     const bear = teddyBears[i];
     try {
-      const response = await openai.images.generate({
-        prompt: generatePrompt(bear),
-        n: 1,
-        size: "1024x1024",
-      });
-
-      const imageUrl = response.data[0].url;
-      const { data, error } = await supabase.storage
-        .from('teddy-images')
-        .upload(`${bear.name.replace(/\s+/g, '-').toLowerCase()}.png`, await (await fetch(imageUrl)).blob(), {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) throw error;
-
-      const publicUrl = supabase.storage
-        .from('teddy-images')
-        .getPublicUrl(data.path).data.publicUrl;
-
+      const imageUrl = await generateTeddyImage(bear);
       const assetData = {
         name: bear.name,
         title: bear.title,
-        url: publicUrl,
+        url: imageUrl,
         attack: Math.floor(Math.random() * 3) + 5, // Random attack between 5-7
         defense: Math.floor(Math.random() * 3) + 4, // Random defense between 4-6
         special_move: `${bear.name}'s Special Move`, // Placeholder, replace with actual special moves
@@ -74,4 +55,28 @@ export async function generateGameAssets(onProgress) {
   }
 
   return generatedAssets;
+}
+
+async function generateTeddyImage(bear) {
+  const response = await openai.images.generate({
+    prompt: generatePrompt(bear),
+    n: 1,
+    size: "1024x1024",
+  });
+
+  const imageUrl = response.data[0].url;
+  const { data, error } = await supabase.storage
+    .from('teddy-images')
+    .upload(`${bear.name.replace(/\s+/g, '-').toLowerCase()}.png`, await (await fetch(imageUrl)).blob(), {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+  if (error) throw error;
+
+  const publicUrl = supabase.storage
+    .from('teddy-images')
+    .getPublicUrl(data.path).data.publicUrl;
+
+  return publicUrl;
 }

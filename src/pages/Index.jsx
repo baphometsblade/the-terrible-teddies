@@ -41,7 +41,7 @@ const Index = () => {
             <div key={index} className="border p-4 rounded">
               <img src={asset.url} alt={asset.name} className="w-full h-48 object-cover mb-2" />
               <p className="font-bold">{asset.name}</p>
-              <p>{asset.type}</p>
+              <p>{asset.title}</p>
             </div>
           ))}
         </div>
