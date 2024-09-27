@@ -10,18 +10,11 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleStartGame = () => {
-    console.log('Starting game...');
     setIsLoading(true);
-    try {
-      const teddies = generateTeddyBears(10); // Generate 10 teddies
-      console.log('Teddies generated:', teddies);
-      setGeneratedTeddies(teddies);
-      setGameStarted(true);
-    } catch (error) {
-      console.error("Error generating teddies:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    const teddies = generateTeddyBears(10); // Generate 10 teddies
+    setGeneratedTeddies(teddies);
+    setGameStarted(true);
+    setIsLoading(false);
   };
 
   return (
@@ -33,11 +26,7 @@ const Index = () => {
         </Button>
       ) : (
         <ErrorBoundary>
-          {isLoading ? (
-            <p>Loading game...</p>
-          ) : (
-            <GameBoard generatedTeddies={generatedTeddies} />
-          )}
+          <GameBoard generatedTeddies={generatedTeddies} />
         </ErrorBoundary>
       )}
     </div>
