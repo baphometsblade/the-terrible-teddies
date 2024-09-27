@@ -78,7 +78,6 @@ const applySpecialMove = (gameState, card, currentPlayer) => {
         gameState[opponent].hp -= randomTeddy.attack;
       }
       break;
-    // Add more special move effects here
     default:
       break;
   }
