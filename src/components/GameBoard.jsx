@@ -3,18 +3,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import TeddyBear from './TeddyBear';
 
 const GameBoard = () => {
   const [playerBear, setPlayerBear] = useState(null);
   const [opponentBear, setOpponentBear] = useState(null);
   const [gameState, setGameState] = useState('selecting');
   const [turnCount, setTurnCount] = useState(0);
+  const [playerEnergy, setPlayerEnergy] = useState(3);
+  const [opponentEnergy, setOpponentEnergy] = useState(3);
 
   const { data: bears, isLoading, error } = useQuery({
     queryKey: ['bears'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('bears')
+        .from('terrible_teddies')
         .select('*');
       if (error) throw error;
       return data;
@@ -34,6 +37,8 @@ const GameBoard = () => {
       setTurnCount(turnCount + 1);
       if (data.game_over) {
         setGameState('gameOver');
+      } else {
+        switchTurns();
       }
     },
   });
@@ -47,10 +52,31 @@ const GameBoard = () => {
   }, [bears]);
 
   const handleAttack = () => {
-    attackMutation.mutate({
-      attacker_id: playerBear.id,
-      defender_id: opponentBear.id,
-    });
+    if (playerEnergy >= 1) {
+      attackMutation.mutate({
+        attacker_id: playerBear.id,
+        defender_id: opponentBear.id,
+      });
+      setPlayerEnergy(playerEnergy - 1);
+    }
+  };
+
+  const handleSpecialMove = () => {
+    if (playerEnergy >= 2) {
+      // Implement special move logic here
+      setPlayerEnergy(playerEnergy - 2);
+      switchTurns();
+    }
+  };
+
+  const switchTurns = () => {
+    setTurnCount(turnCount + 1);
+    if (turnCount % 2 === 0) {
+      setPlayerEnergy(Math.min(playerEnergy + 1, 3));
+    } else {
+      setOpponentEnergy(Math.min(opponentEnergy + 1, 3));
+      // Implement AI opponent turn logic here
+    }
   };
 
   if (isLoading) return <div>Loading game...</div>;
@@ -66,11 +92,13 @@ const GameBoard = () => {
               <CardTitle>{playerBear.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>HP: {playerBear.hp}</p>
-              <p>Attack: {playerBear.attack}</p>
-              <p>Defense: {playerBear.defense}</p>
-              <Button onClick={handleAttack} disabled={attackMutation.isLoading}>
+              <TeddyBear bear={playerBear} />
+              <p>Energy: {playerEnergy}/3</p>
+              <Button onClick={handleAttack} disabled={attackMutation.isLoading || playerEnergy < 1}>
                 Attack
+              </Button>
+              <Button onClick={handleSpecialMove} disabled={playerEnergy < 2}>
+                Special Move
               </Button>
             </CardContent>
           </Card>
@@ -79,9 +107,8 @@ const GameBoard = () => {
               <CardTitle>{opponentBear.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>HP: {opponentBear.hp}</p>
-              <p>Attack: {opponentBear.attack}</p>
-              <p>Defense: {opponentBear.defense}</p>
+              <TeddyBear bear={opponentBear} />
+              <p>Energy: {opponentEnergy}/3</p>
             </CardContent>
           </Card>
         </div>
