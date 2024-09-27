@@ -1,4 +1,6 @@
-import { teddyData } from '../data/teddyData';
+export const calculateDamage = (attacker, defender) => {
+  return Math.max(0, attacker.attack - defender.defense);
+};
 
 export const initializeGame = () => {
   const shuffledTeddies = shuffleArray([...teddyData]);
