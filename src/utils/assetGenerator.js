@@ -1,57 +1,67 @@
-import { Configuration, OpenAIApi } from 'openai';
-import { supabase } from '../integrations/supabase';
+import OpenAI from 'openai';
+import { supabase } from '../lib/supabase';
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
-const generatePrompt = (teddyName, teddyType) => {
-  return `A hyper-realistic, ultra-detailed teddy bear named ${teddyName} for the game Terrible Teddies. The teddy is a ${teddyType} type character with a mischievous and slightly menacing appearance. The image should be high resolution and showcase intricate details of the bear's fur, eyes, and any accessories or features that make it unique.`;
+const generateTeddyBear = async () => {
+  const names = ["Whiskey Whiskers", "Madame Mistletoe", "Baron Von Blubber", "Bella Bombshell", "Professor Playful"];
+  const titles = ["The Smooth Operator", "The Festive Flirt", "The Inflated Ego", "The Dynamite Diva", "The Teasing Tutor"];
+  const specialMoves = ["On the Rocks", "Sneak Kiss", "Burst Bubble", "Heart Stopper", "Mind Game"];
+
+  const randomIndex = Math.floor(Math.random() * names.length);
+  const name = names[randomIndex];
+  const title = titles[randomIndex];
+  const specialMove = specialMoves[randomIndex];
+
+  const prompt = `Create a hyper-realistic, ultra-detailed image of a mischievous teddy bear named "${name}" (${title}) for the adult card game "Terrible Teddies". The bear should embody cheeky, tongue-in-cheek humor with a hint of naughtiness. Make it visually striking and slightly provocative, suitable for an adult audience. Ensure the bear's expression and pose reflect its title and personality. The image should be high resolution with intricate details of the bear's fur, accessories, and surroundings that match its character.`;
+
+  const response = await openai.images.generate({
+    model: "dall-e-3",
+    prompt: prompt,
+    n: 1,
+    size: "1024x1024",
+  });
+
+  const imageUrl = response.data[0].url;
+
+  return {
+    name,
+    title,
+    description: `A cheeky teddy with a knack for ${specialMove.toLowerCase()}.`,
+    attack: Math.floor(Math.random() * 3) + 4, // 4-6
+    defense: Math.floor(Math.random() * 3) + 4, // 4-6
+    specialMove,
+    imageUrl
+  };
 };
 
-export const generateAndSaveAsset = async (teddyName, teddyType) => {
-  try {
-    const response = await openai.createImage({
-      prompt: generatePrompt(teddyName, teddyType),
-      n: 1,
-      size: "1024x1024",
-    });
+export const generateAllAssets = async (count = 50) => {
+  const generatedAssets = [];
+  for (let i = 0; i < count; i++) {
+    const bear = await generateTeddyBear();
+    generatedAssets.push(bear);
 
-    const imageUrl = response.data.data[0].url;
-    const imageName = `${teddyName.replace(/\s+/g, '_').toLowerCase()}.png`;
+    // Store the bear data in Supabase
+    const { data, error } = await supabase
+      .from('terrible_teddies')
+      .insert([bear]);
 
-    // Download the image
-    const imageResponse = await fetch(imageUrl);
-    const imageBlob = await imageResponse.blob();
+    if (error) {
+      console.error('Error storing bear data:', error);
+    }
 
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
+    // Store the image in Supabase Storage
+    const { data: imageData, error: imageError } = await supabase.storage
       .from('teddy-images')
-      .upload(imageName, imageBlob, {
+      .upload(`${bear.name.replace(/\s+/g, '-').toLowerCase()}.png`, await (await fetch(bear.imageUrl)).blob(), {
         contentType: 'image/png',
-        upsert: true
       });
 
-    if (error) throw error;
-
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from('teddy-images')
-      .getPublicUrl(imageName);
-
-    return publicUrlData.publicUrl;
-  } catch (error) {
-    console.error('Error generating or saving asset:', error);
-    throw error;
-  }
-};
-
-export const generateAllAssets = async (teddyList) => {
-  const generatedAssets = [];
-  for (const teddy of teddyList) {
-    const assetUrl = await generateAndSaveAsset(teddy.name, teddy.type);
-    generatedAssets.push({ ...teddy, imageUrl: assetUrl });
+    if (imageError) {
+      console.error('Error storing bear image:', imageError);
+    }
   }
   return generatedAssets;
 };

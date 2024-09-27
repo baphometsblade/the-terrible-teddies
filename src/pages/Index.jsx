@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import TeddyCard from '../components/TeddyCard';
 import { supabase } from '../lib/supabase';
+import { AssetGenerator } from '../components/AssetGenerator';
 
 const Index = () => {
   const [backgroundImage, setBackgroundImage] = useState(null);
@@ -66,6 +67,7 @@ const Index = () => {
           Start Game
         </Button>
       </div>
+      <AssetGenerator />
     </div>
   );
 };

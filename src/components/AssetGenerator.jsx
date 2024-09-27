@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
-import { motion } from 'framer-motion';
-import { generateGameAssets } from '../utils/generateGameAssets';
+import { generateAllAssets } from '../utils/assetGenerator';
 
-export const AssetGenerator = ({ onComplete }) => {
+export const AssetGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
@@ -14,21 +13,19 @@ export const AssetGenerator = ({ onComplete }) => {
     setIsGenerating(true);
     setProgress(0);
     try {
-      await generateGameAssets((progress) => {
-        setProgress(progress);
-      });
+      const assets = await generateAllAssets(50);
+      setProgress(100);
       toast({
-        title: 'Assets Generated',
-        description: 'All cheeky Terrible Teddies assets have been successfully created and stored.',
-        variant: 'success',
+        title: "Assets Generated",
+        description: `Successfully generated ${assets.length} Terrible Teddies!`,
+        variant: "success",
       });
-      onComplete();
     } catch (error) {
       console.error('Error generating assets:', error);
       toast({
-        title: 'Asset Generation Failed',
-        description: 'An error occurred while generating game assets. Please try again.',
-        variant: 'destructive',
+        title: "Asset Generation Failed",
+        description: "An error occurred while generating assets. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
@@ -36,31 +33,18 @@ export const AssetGenerator = ({ onComplete }) => {
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="p-4 bg-pink-100 rounded-lg shadow-md"
-    >
-      <h2 className="text-2xl font-bold mb-4 text-purple-800">Generate Terrible Teddies Assets</h2>
-      <p className="mb-4 text-purple-600">Click the button below to generate saucy images for the Terrible Teddies.</p>
+    <div className="p-4 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-4">Generate Terrible Teddies Assets</h2>
       <Button
         onClick={handleGenerateAssets}
         disabled={isGenerating}
-        className="w-full mb-4 bg-purple-500 hover:bg-purple-600 text-white"
+        className="w-full mb-4"
       >
-        {isGenerating ? 'Generating Naughty Teddies...' : 'Generate Terrible Teddies'}
+        {isGenerating ? 'Generating...' : 'Generate Assets'}
       </Button>
       {isGenerating && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-4"
-        >
-          <Progress value={progress} className="w-full" />
-          <p className="text-center mt-2 text-purple-700">{Math.round(progress)}% complete</p>
-        </motion.div>
+        <Progress value={progress} className="w-full" />
       )}
-    </motion.div>
+    </div>
   );
 };
