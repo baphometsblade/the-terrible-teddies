@@ -1,7 +1,4 @@
 import { completion } from 'litellm';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 export const getAICompletion = async (messages) => {
   try {
