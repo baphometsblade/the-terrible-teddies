@@ -2,53 +2,55 @@ import React, { useState, useEffect } from 'react';
 import { teddyData } from '../data/teddyData';
 import PlayerArea from './PlayerArea';
 import BattleArena from './BattleArena';
+import GameOverScreen from './GameOverScreen';
+import { initializeGame, playCard, endTurn, checkGameOver } from '../utils/gameLogic';
 
 const GameBoard = () => {
-  const [playerHand, setPlayerHand] = useState([]);
-  const [opponentHand, setOpponentHand] = useState([]);
-  const [currentTurn, setCurrentTurn] = useState('player');
-  const [playerHP, setPlayerHP] = useState(30);
-  const [opponentHP, setOpponentHP] = useState(30);
+  const [gameState, setGameState] = useState(null);
+  const [selectedCard, setSelectedCard] = useState(null);
 
   useEffect(() => {
-    // Initialize hands
-    const shuffledTeddies = [...teddyData].sort(() => 0.5 - Math.random());
-    setPlayerHand(shuffledTeddies.slice(0, 5));
-    setOpponentHand(shuffledTeddies.slice(5, 10));
+    setGameState(initializeGame(teddyData));
   }, []);
 
   const handleCardPlay = (card) => {
-    if (currentTurn === 'player') {
-      setOpponentHP(prevHP => Math.max(0, prevHP - card.attack));
-      setPlayerHand(prevHand => prevHand.filter(c => c.id !== card.id));
-      setCurrentTurn('opponent');
-      setTimeout(opponentTurn, 1000);
+    if (gameState.currentPlayer === 'player' && !selectedCard) {
+      setSelectedCard(card);
+    } else if (gameState.currentPlayer === 'player' && selectedCard) {
+      const newState = playCard(gameState, selectedCard, card);
+      setGameState(newState);
+      setSelectedCard(null);
     }
   };
 
-  const opponentTurn = () => {
-    const randomCard = opponentHand[Math.floor(Math.random() * opponentHand.length)];
-    setPlayerHP(prevHP => Math.max(0, prevHP - randomCard.attack));
-    setOpponentHand(prevHand => prevHand.filter(c => c.id !== randomCard.id));
-    setCurrentTurn('player');
+  const handleEndTurn = () => {
+    const newState = endTurn(gameState);
+    setGameState(newState);
   };
+
+  const { gameOver, winner } = checkGameOver(gameState);
+
+  if (gameOver) {
+    return <GameOverScreen winner={winner} onPlayAgain={() => setGameState(initializeGame(teddyData))} />;
+  }
 
   return (
     <div className="game-board">
-      <PlayerArea 
-        hand={opponentHand} 
-        hp={opponentHP} 
-        isOpponent={true} 
-      />
-      <BattleArena 
-        currentTurn={currentTurn}
-      />
-      <PlayerArea 
-        hand={playerHand} 
-        hp={playerHP} 
-        isOpponent={false} 
+      <PlayerArea
+        player={gameState.opponent}
+        isOpponent={true}
         onCardPlay={handleCardPlay}
       />
+      <BattleArena
+        currentPlayer={gameState.currentPlayer}
+        selectedCard={selectedCard}
+      />
+      <PlayerArea
+        player={gameState.player}
+        isOpponent={false}
+        onCardPlay={handleCardPlay}
+      />
+      <button onClick={handleEndTurn}>End Turn</button>
     </div>
   );
 };

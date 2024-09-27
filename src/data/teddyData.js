@@ -19,5 +19,5 @@ export const teddyData = [
     specialMove: "Sneak Kiss",
     specialMoveDescription: "Stuns the opponent with a surprise smooch, causing them to skip their next turn."
   },
-  // Add more teddy data here...
+  // ... Add all 50 Terrible Teddies here
 ];

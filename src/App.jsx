@@ -1,19 +1,12 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './components/Home';
 import GameBoard from './components/GameBoard';
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/play" element={<GameBoard />} />
-          {/* Add more routes here for Rules and Leaderboard */}
-        </Routes>
-      </div>
-    </Router>
+    <div className="App bg-gray-100 min-h-screen p-8">
+      <h1 className="text-4xl font-bold text-center mb-8">Terrible Teddies</h1>
+      <GameBoard />
+    </div>
   );
 }
 
