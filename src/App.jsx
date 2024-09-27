@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Home from './components/Home';
+import Home from './pages/Index';
 import GameBoard from './components/GameBoard';
 import Shop from './components/Shop';
 import Profile from './components/Profile';
