@@ -1,13 +1,22 @@
-import React from 'react';
-import GameBoard from './components/GameBoard';
+import React, { useState } from 'react';
+import { MainMenu } from './components/MainMenu';
+import { GameBoard } from './components/GameBoard';
 
-function App() {
+const App = () => {
+  const [gameState, setGameState] = useState('menu');
+
+  const startGame = () => setGameState('playing');
+  const returnToMenu = () => setGameState('menu');
+
   return (
-    <div className="App bg-gray-100 min-h-screen p-8">
-      <h1 className="text-4xl font-bold text-center mb-8">Terrible Teddies</h1>
-      <GameBoard />
+    <div className="container mx-auto px-4 py-8">
+      {gameState === 'menu' ? (
+        <MainMenu onStartGame={startGame} />
+      ) : (
+        <GameBoard onExitGame={returnToMenu} />
+      )}
     </div>
   );
-}
+};
 
 export default App;

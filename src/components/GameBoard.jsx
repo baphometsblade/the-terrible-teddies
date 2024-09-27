@@ -5,7 +5,7 @@ import BattleArena from './BattleArena';
 import GameOverScreen from './GameOverScreen';
 import { initializeGame, playCard, endTurn, checkGameOver } from '../utils/gameLogic';
 
-const GameBoard = () => {
+const GameBoard = ({ onExitGame }) => {
   const [gameState, setGameState] = useState(null);
   const [selectedCard, setSelectedCard] = useState(null);
 
