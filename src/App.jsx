@@ -4,7 +4,6 @@ import Home from './components/Home';
 import Game from './components/Game';
 
 function App() {
-  console.log('App component rendered');
   return (
     <Router>
       <div className="App">
