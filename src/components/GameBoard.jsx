@@ -1,16 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { teddyData } from '../data/teddyData';
+import React from 'react';
 import PlayerArea from './PlayerArea';
 import BattleArena from './BattleArena';
 import GameOverScreen from './GameOverScreen';
 import { initializeGame, playCard, endTurn, checkGameOver } from '../utils/gameLogic';
 
 const GameBoard = ({ onExitGame }) => {
-  const [gameState, setGameState] = useState(null);
-  const [selectedCard, setSelectedCard] = useState(null);
+  const [gameState, setGameState] = React.useState(null);
+  const [selectedCard, setSelectedCard] = React.useState(null);
 
-  useEffect(() => {
-    setGameState(initializeGame(teddyData));
+  React.useEffect(() => {
+    setGameState(initializeGame());
   }, []);
 
   const handleCardPlay = (card) => {
@@ -28,10 +27,12 @@ const GameBoard = ({ onExitGame }) => {
     setGameState(newState);
   };
 
+  if (!gameState) return <div>Loading...</div>;
+
   const { gameOver, winner } = checkGameOver(gameState);
 
   if (gameOver) {
-    return <GameOverScreen winner={winner} onPlayAgain={() => setGameState(initializeGame(teddyData))} />;
+    return <GameOverScreen winner={winner} onPlayAgain={() => setGameState(initializeGame())} />;
   }
 
   return (
@@ -51,6 +52,7 @@ const GameBoard = ({ onExitGame }) => {
         onCardPlay={handleCardPlay}
       />
       <button onClick={handleEndTurn}>End Turn</button>
+      <button onClick={onExitGame}>Exit Game</button>
     </div>
   );
 };

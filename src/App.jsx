@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MainMenu } from './components/MainMenu';
-import { GameBoard } from './components/GameBoard';
+import GameBoard from './components/GameBoard';
 
 const App = () => {
   const [gameState, setGameState] = useState('menu');
