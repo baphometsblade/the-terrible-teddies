@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from './components/Home';
-import Game from './components/Game';
+import GameBoard from './components/GameBoard';
 
 function App() {
   return (
@@ -9,7 +9,8 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/play" element={<Game />} />
+          <Route path="/play" element={<GameBoard />} />
+          {/* Add more routes here for Rules and Leaderboard */}
         </Routes>
       </div>
     </Router>
