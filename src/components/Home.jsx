@@ -1,12 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 
 const Home = () => {
-  useEffect(() => {
-    console.log('Home component rendered');
-  }, []);
-
+  console.log('Home component rendered');
   return (
     <div className="container mx-auto px-4 py-8 text-center">
       <h1 className="text-4xl font-bold mb-4 text-purple-800">Welcome to Terrible Teddies</h1>
