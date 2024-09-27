@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useGeneratedImages } from '../integrations/supabase';
 
-const GameBoard = () => {
+const GameBoard = ({ generatedAssets }) => {
   const [playerHand, setPlayerHand] = useState([]);
   const [opponentHand, setOpponentHand] = useState([]);
   const [playerHealth, setPlayerHealth] = useState(30);
@@ -11,15 +10,13 @@ const GameBoard = () => {
   const [currentTurn, setCurrentTurn] = useState('player');
   const [selectedCard, setSelectedCard] = useState(null);
 
-  const { data: generatedImages } = useGeneratedImages();
-
   useEffect(() => {
-    if (generatedImages) {
-      const shuffledCards = [...generatedImages].sort(() => Math.random() - 0.5);
-      setPlayerHand(shuffledCards.slice(0, 5));
-      setOpponentHand(shuffledCards.slice(5, 10));
+    if (generatedAssets.length > 0) {
+      const shuffledAssets = [...generatedAssets].sort(() => Math.random() - 0.5);
+      setPlayerHand(shuffledAssets.slice(0, 5));
+      setOpponentHand(shuffledAssets.slice(5, 10));
     }
-  }, [generatedImages]);
+  }, [generatedAssets]);
 
   const playCard = (card) => {
     if (currentTurn === 'player') {
@@ -38,6 +35,10 @@ const GameBoard = () => {
     }
     setCurrentTurn('player');
   };
+
+  if (generatedAssets.length === 0) {
+    return <div>Loading assets...</div>;
+  }
 
   return (
     <div className="p-4">
