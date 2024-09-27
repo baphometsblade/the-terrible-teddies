@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import TeddySprite from './TeddySprite';
 
 const TeddyCard = ({ bear, onSelect }) => {
   return (
@@ -10,8 +11,8 @@ const TeddyCard = ({ bear, onSelect }) => {
         <p className="text-sm text-purple-300">{bear.title}</p>
       </CardHeader>
       <CardContent>
-        <img src={bear.imageUrl} alt={bear.name} className="w-full h-32 object-cover mb-2 rounded" />
-        <p className="text-sm mb-2">{bear.description}</p>
+        <TeddySprite teddy={bear} />
+        <p className="text-sm mb-2 mt-2">{bear.description}</p>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <p>Attack: {bear.attack}</p>
           <p>Defense: {bear.defense}</p>
