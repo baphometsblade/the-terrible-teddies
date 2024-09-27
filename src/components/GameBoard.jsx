@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import TeddyCard from './TeddyCard';
+import { teddyData } from '../data/teddyData';
 
 const GameBoard = () => {
   const [playerTeddy, setPlayerTeddy] = useState(null);
@@ -10,11 +11,7 @@ const GameBoard = () => {
   const handleTeddySelect = (teddy) => {
     setPlayerTeddy(teddy);
     // For now, we'll just set a random opponent teddy
-    setOpponentTeddy({
-      name: "Opponent Teddy",
-      attack: Math.floor(Math.random() * 5) + 1,
-      defense: Math.floor(Math.random() * 5) + 1,
-    });
+    setOpponentTeddy(teddyData[Math.floor(Math.random() * teddyData.length)]);
     setGameState('battle');
   };
 
@@ -35,13 +32,9 @@ const GameBoard = () => {
       {gameState === 'selecting' && (
         <div>
           <h2 className="text-2xl font-bold mb-4">Select Your Teddy</h2>
-          <div className="grid grid-cols-3 gap-4">
-            {[1, 2, 3].map((id) => (
-              <TeddyCard
-                key={id}
-                teddy={{ name: `Teddy ${id}`, attack: id, defense: 4 - id }}
-                onSelect={() => handleTeddySelect({ name: `Teddy ${id}`, attack: id, defense: 4 - id })}
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {teddyData.map((teddy) => (
+              <TeddyCard key={teddy.id} teddy={teddy} onSelect={() => handleTeddySelect(teddy)} />
             ))}
           </div>
         </div>

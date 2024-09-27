@@ -9,8 +9,11 @@ const TeddyCard = ({ teddy, onSelect }) => {
         <h3 className="text-xl font-bold">{teddy.name}</h3>
       </CardHeader>
       <CardContent>
+        <p className="text-sm mb-2">{teddy.title}</p>
+        <p className="text-sm mb-2">{teddy.description}</p>
         <p>Attack: {teddy.attack}</p>
         <p>Defense: {teddy.defense}</p>
+        <p>Special Move: {teddy.specialMove}</p>
       </CardContent>
       {onSelect && (
         <CardFooter>
