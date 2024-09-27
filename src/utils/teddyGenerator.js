@@ -26,5 +26,8 @@ const generateTeddyBear = () => {
 };
 
 export const generateTeddyBears = (count) => {
-  return Array.from({ length: count }, generateTeddyBear);
+  console.log(`Generating ${count} teddy bears`);
+  const teddies = Array.from({ length: count }, generateTeddyBear);
+  console.log('Generated teddies:', teddies);
+  return teddies;
 };

@@ -12,7 +12,9 @@ const Index = () => {
   const handleStartGame = () => {
     setIsLoading(true);
     try {
+      console.log('Starting game...');
       const teddies = generateTeddyBears(10); // Generate 10 teddies
+      console.log('Teddies generated:', teddies);
       setGeneratedTeddies(teddies);
       setGameStarted(true);
     } catch (error) {
