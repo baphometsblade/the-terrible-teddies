@@ -1,12 +1,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 const TeddyCard = ({ teddy }) => {
   return (
-    <Card className="w-full bg-purple-100 shadow-lg">
+    <Card className="w-full bg-white shadow-lg rounded-lg overflow-hidden">
       <CardHeader>
-        <h3 className="text-lg font-bold">{teddy.name}</h3>
+        <h3 className="text-xl font-bold">{teddy.name}</h3>
         <p className="text-sm text-gray-600">{teddy.title}</p>
       </CardHeader>
       <CardContent>
@@ -16,13 +15,8 @@ const TeddyCard = ({ teddy }) => {
           <p>Attack: {teddy.attack}</p>
           <p>Defense: {teddy.defense}</p>
         </div>
-        <p className="mt-2">Special: {teddy.specialMove}</p>
+        <p className="mt-2">Special Move: {teddy.specialMove}</p>
       </CardContent>
-      <CardFooter>
-        <Button className="w-full">
-          Select
-        </Button>
-      </CardFooter>
     </Card>
   );
 };
