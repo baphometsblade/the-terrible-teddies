@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from '../lib/supabase';
+import { getAICompletion } from '../utils/aiCompletion';
 
 const UserSubmission = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [ability, setAbility] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,6 +21,21 @@ const UserSubmission = () => {
       console.error('Error submitting teddy:', error);
     } else {
       console.log('Teddy submitted successfully:', data);
+      
+      // Generate AI response
+      const messages = [
+        { role: "system", content: "You are an AI assistant for a game called Cheeky Teddy Brawl. Respond to player submissions with enthusiasm and humor." },
+        { role: "user", content: `A player has submitted a new teddy bear idea. Name: ${name}, Description: ${description}, Special Ability: ${ability}. What do you think?` }
+      ];
+      
+      try {
+        const response = await getAICompletion(messages);
+        setAiResponse(response);
+      } catch (error) {
+        console.error('Error getting AI response:', error);
+        setAiResponse('Oops! Our AI teddy got stuck in a honey pot. Please try again later!');
+      }
+
       setName('');
       setDescription('');
       setAbility('');
@@ -58,6 +75,12 @@ const UserSubmission = () => {
         </div>
         <Button type="submit">Submit Teddy</Button>
       </form>
+      {aiResponse && (
+        <div className="mt-4 p-4 bg-purple-100 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2">AI Response:</h3>
+          <p>{aiResponse}</p>
+        </div>
+      )}
     </div>
   );
 };
