@@ -17,8 +17,8 @@ const Leaderboard = () => {
     },
   });
 
-  if (isLoading) return <div>Loading leaderboard...</div>;
-  if (error) return <div>Error loading leaderboard: {error.message}</div>;
+  if (isLoading) return <div className="text-center mt-8">Loading leaderboard...</div>;
+  if (error) return <div className="text-center mt-8">Error loading leaderboard: {error.message}</div>;
 
   return (
     <div className="container mx-auto p-4">
@@ -33,7 +33,7 @@ const Leaderboard = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {leaderboardData.map((player, index) => (
+          {leaderboardData && leaderboardData.map((player, index) => (
             <TableRow key={player.id}>
               <TableCell>{index + 1}</TableCell>
               <TableCell>{player.username}</TableCell>
