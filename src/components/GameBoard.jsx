@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { teddyBears } from '../data/teddyBears';
 import { Button } from "@/components/ui/button";
+import TeddyCard from './TeddyCard';
+import { teddyData } from '../data/teddyData';
 
 const GameBoard = () => {
   const [playerBear, setPlayerBear] = useState(null);
@@ -9,7 +10,7 @@ const GameBoard = () => {
 
   const selectBear = (bear) => {
     setPlayerBear(bear);
-    const randomOpponent = teddyBears[Math.floor(Math.random() * teddyBears.length)];
+    const randomOpponent = teddyData[Math.floor(Math.random() * teddyData.length)];
     setOpponentBear(randomOpponent);
     setBattleLog([]);
   };
@@ -28,31 +29,40 @@ const GameBoard = () => {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Terrible Teddies Battle Arena</h1>
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        {teddyBears.map(bear => (
-          <div key={bear.id} className="border p-2 rounded">
-            <h2 className="font-bold">{bear.name}</h2>
-            <p>{bear.title}</p>
-            <p>Attack: {bear.attack} | Defense: {bear.defense}</p>
-            <Button onClick={() => selectBear(bear)}>Select</Button>
-          </div>
-        ))}
-      </div>
-      {playerBear && opponentBear && (
-        <div className="mb-4">
-          <h2 className="text-xl font-bold">Battle</h2>
-          <p>Your Bear: {playerBear.name}</p>
-          <p>Opponent Bear: {opponentBear.name}</p>
-          <Button onClick={battle}>Fight!</Button>
+    <div className="game-board">
+      <h2 className="text-2xl font-bold mb-4">Battle Arena</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="player-area">
+          <h3 className="text-xl font-semibold mb-2">Your Teddy</h3>
+          {playerBear ? (
+            <TeddyCard bear={playerBear} />
+          ) : (
+            <p>Select a teddy to battle</p>
+          )}
         </div>
-      )}
-      <div>
-        <h2 className="text-xl font-bold">Battle Log</h2>
-        {battleLog.map((log, index) => (
-          <p key={index}>{log}</p>
-        ))}
+        <div className="opponent-area">
+          <h3 className="text-xl font-semibold mb-2">Opponent's Teddy</h3>
+          {opponentBear && <TeddyCard bear={opponentBear} />}
+        </div>
+      </div>
+      <div className="mt-8">
+        <h3 className="text-xl font-semibold mb-2">Your Collection</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {teddyData.map(bear => (
+            <TeddyCard key={bear.id} bear={bear} onSelect={() => selectBear(bear)} />
+          ))}
+        </div>
+      </div>
+      <Button onClick={battle} className="mt-8" disabled={!playerBear || !opponentBear}>
+        Battle!
+      </Button>
+      <div className="battle-log mt-8">
+        <h3 className="text-xl font-semibold mb-2">Battle Log</h3>
+        <ul className="bg-purple-800 p-4 rounded-lg">
+          {battleLog.map((log, index) => (
+            <li key={index} className="mb-2">{log}</li>
+          ))}
+        </ul>
       </div>
     </div>
   );

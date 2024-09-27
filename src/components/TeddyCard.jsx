@@ -1,24 +1,27 @@
 import React from 'react';
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
-const TeddyCard = ({ teddy, isSelected, onSelect }) => {
+const TeddyCard = ({ bear, onSelect }) => {
   return (
-    <Card 
-      className={`w-48 cursor-pointer transition-all duration-300 ${
-        isSelected ? 'ring-4 ring-yellow-400' : ''
-      }`}
-      onClick={onSelect}
-    >
-      <CardHeader className="p-2">
-        <h3 className="text-lg font-bold">{teddy.name}</h3>
-        <p className="text-sm text-gray-500">{teddy.title}</p>
+    <Card className="bg-purple-700 text-white">
+      <CardHeader>
+        <h3 className="text-lg font-semibold">{bear.name}</h3>
+        <p className="text-sm text-purple-300">{bear.title}</p>
       </CardHeader>
-      <CardContent className="p-2">
-        <img src={teddy.imageUrl} alt={teddy.name} className="w-full h-32 object-cover mb-2 rounded" />
-        <p className="text-sm">Attack: {teddy.attack}</p>
-        <p className="text-sm">Defense: {teddy.defense}</p>
-        <p className="text-sm">Special: {teddy.specialMove}</p>
+      <CardContent>
+        <img src={bear.imageUrl} alt={bear.name} className="w-full h-32 object-cover mb-2 rounded" />
+        <p className="text-sm mb-2">{bear.description}</p>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <p>Attack: {bear.attack}</p>
+          <p>Defense: {bear.defense}</p>
+        </div>
       </CardContent>
+      <CardFooter>
+        <Button onClick={() => onSelect(bear)} className="w-full">
+          Select
+        </Button>
+      </CardFooter>
     </Card>
   );
 };
