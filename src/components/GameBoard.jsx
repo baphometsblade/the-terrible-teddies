@@ -1,15 +1,59 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
 import TeddyCard from './TeddyCard';
+import { teddyData } from '../data/teddyData';
 
-const GameBoard = ({ generatedTeddies }) => {
+const GameBoard = () => {
+  const [playerTeddies, setPlayerTeddies] = useState(teddyData.slice(0, 3));
+  const [opponentTeddies, setOpponentTeddies] = useState(teddyData.slice(3, 6));
+  const [selectedTeddy, setSelectedTeddy] = useState(null);
+
+  const handleTeddySelect = (teddy) => {
+    setSelectedTeddy(teddy);
+  };
+
+  const handleBattleInitiate = () => {
+    if (selectedTeddy) {
+      console.log(`Battle initiated with ${selectedTeddy.name}`);
+      // Here we would implement the actual battle logic
+    } else {
+      console.log("Please select a teddy bear to battle");
+    }
+  };
+
   return (
-    <div className="game-board">
-      <h2 className="text-2xl font-bold mb-4">Game Board</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {generatedTeddies.map((teddy) => (
-          <TeddyCard key={teddy.id} teddy={teddy} />
-        ))}
+    <div className="p-4 bg-gradient-to-r from-purple-400 to-pink-500">
+      <h2 className="text-2xl font-bold text-white mb-4">Cheeky Teddy Brawl</h2>
+      <div className="flex justify-between mb-4">
+        <div>
+          <h3 className="text-xl font-semibold text-white mb-2">Your Teddies</h3>
+          <div className="flex space-x-4">
+            {playerTeddies.map((teddy) => (
+              <TeddyCard
+                key={teddy.id}
+                teddy={teddy}
+                isSelected={selectedTeddy && selectedTeddy.id === teddy.id}
+                onSelect={() => handleTeddySelect(teddy)}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <h3 className="text-xl font-semibold text-white mb-2">Opponent's Teddies</h3>
+          <div className="flex space-x-4">
+            {opponentTeddies.map((teddy) => (
+              <TeddyCard key={teddy.id} teddy={teddy} />
+            ))}
+          </div>
+        </div>
       </div>
+      <Button
+        onClick={handleBattleInitiate}
+        disabled={!selectedTeddy}
+        className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold"
+      >
+        Initiate Battle
+      </Button>
     </div>
   );
 };
