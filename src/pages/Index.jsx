@@ -56,14 +56,16 @@ const Index = () => {
       }}
     >
       <h1 className="text-4xl font-bold mb-4 text-center text-white">Terrible Teddies</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         {teddies.map(teddy => (
           <TeddyCard key={teddy.id} teddy={teddy} />
         ))}
       </div>
-      <Button className="mt-4 bg-purple-500 hover:bg-purple-600 text-white">
-        Start Game
-      </Button>
+      <div className="text-center">
+        <Button className="mt-4 bg-purple-500 hover:bg-purple-600 text-white">
+          Start Game
+        </Button>
+      </div>
     </div>
   );
 };

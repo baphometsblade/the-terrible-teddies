@@ -5,7 +5,7 @@ import TeddySprite from './TeddySprite';
 
 const TeddyCard = ({ teddy }) => {
   return (
-    <Card className="w-64 bg-purple-100 shadow-lg">
+    <Card className="w-full bg-purple-100 shadow-lg">
       <CardHeader>
         <h3 className="text-lg font-bold">{teddy.name}</h3>
         <p className="text-sm text-gray-600">{teddy.title}</p>
