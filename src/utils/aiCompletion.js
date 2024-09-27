@@ -1,14 +1,5 @@
-import { completion } from 'litellm';
-
+// This function should be implemented on the server-side
 export const getAICompletion = async (messages) => {
-  try {
-    const response = await completion({
-      model: "perplexity/claude-3.5-sonnet",
-      messages: messages,
-    });
-    return response.choices[0].message.content;
-  } catch (error) {
-    console.error('Error getting AI completion:', error);
-    throw error;
-  }
+  console.warn('AI completion is not implemented on the client-side');
+  return 'AI response placeholder';
 };
