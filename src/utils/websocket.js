@@ -1,4 +1,6 @@
 let socket = null;
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 5;
 
 export const initWebSocket = (url) => {
   if (socket) {
@@ -9,6 +11,7 @@ export const initWebSocket = (url) => {
 
   socket.onopen = () => {
     console.log('WebSocket connection established');
+    reconnectAttempts = 0;
   };
 
   socket.onmessage = (event) => {
@@ -23,8 +26,13 @@ export const initWebSocket = (url) => {
 
   socket.onclose = (event) => {
     console.log('WebSocket connection closed:', event.code, event.reason);
-    // Attempt to reconnect after a delay
-    setTimeout(() => initWebSocket(url), 5000);
+    if (reconnectAttempts < maxReconnectAttempts) {
+      reconnectAttempts++;
+      console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`);
+      setTimeout(() => initWebSocket(url), 5000 * reconnectAttempts);
+    } else {
+      console.error('Max reconnect attempts reached. Please check your connection and try again later.');
+    }
   };
 
   return socket;
