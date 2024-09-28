@@ -1,99 +1,79 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../utils/supabaseClient.jsx';
-import TeddyCard from './TeddyCard';
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
-import { calculateDamage } from '../utils/gameLogic';
+import React, { useState } from 'react';
+import { TeddyBear } from './TeddyBear';
+import { calculateDamage } from '../utils/battleLogic';
 
-const fetchTeddies = async () => {
-  const { data, error } = await supabase
-    .from('terrible_teddies')
-    .select('*')
-    .limit(10);
-  if (error) throw error;
-  return data;
-};
-
-const BattleArena = () => {
-  const { data: teddies, isLoading, error } = useQuery({
-    queryKey: ['battle-teddies'],
-    queryFn: fetchTeddies,
-  });
-
-  const [playerTeddy, setPlayerTeddy] = useState(null);
-  const [opponentTeddy, setOpponentTeddy] = useState(null);
+export const BattleArena = ({ playerBear, opponentBear }) => {
+  const [playerHealth, setPlayerHealth] = useState(30);
+  const [opponentHealth, setOpponentHealth] = useState(30);
+  const [playerEnergy, setPlayerEnergy] = useState(3);
+  const [opponentEnergy, setOpponentEnergy] = useState(3);
   const [battleLog, setBattleLog] = useState([]);
 
-  const selectTeddy = (teddy) => {
-    if (!playerTeddy) {
-      setPlayerTeddy(teddy);
-    } else if (!opponentTeddy) {
-      setOpponentTeddy(teddy);
+  const attack = () => {
+    const damage = calculateDamage(playerBear, opponentBear);
+    setOpponentHealth(prev => Math.max(0, prev - damage));
+    setBattleLog(prev => [...prev, `${playerBear.name} attacks for ${damage} damage!`]);
+    endTurn();
+  };
+
+  const defend = () => {
+    setPlayerBear(prev => ({ ...prev, defense: prev.defense + 2 }));
+    setBattleLog(prev => [...prev, `${playerBear.name} increases defense by 2!`]);
+    endTurn();
+  };
+
+  const useSpecialMove = () => {
+    if (playerEnergy >= 2) {
+      setPlayerEnergy(prev => prev - 2);
+      // Implement special move logic here
+      setBattleLog(prev => [...prev, `${playerBear.name} uses ${playerBear.specialMove}!`]);
+      endTurn();
     }
   };
 
-  const startBattle = () => {
-    if (playerTeddy && opponentTeddy) {
-      const newLog = [`${playerTeddy.name} vs ${opponentTeddy.name}`];
-      // Simplified battle logic
-      const playerDamage = Math.max(0, playerTeddy.attack - opponentTeddy.defense);
-      const opponentDamage = Math.max(0, opponentTeddy.attack - playerTeddy.defense);
-      newLog.push(`${playerTeddy.name} deals ${playerDamage} damage!`);
-      newLog.push(`${opponentTeddy.name} deals ${opponentDamage} damage!`);
-      if (playerDamage > opponentDamage) {
-        newLog.push(`${playerTeddy.name} wins!`);
-      } else if (opponentDamage > playerDamage) {
-        newLog.push(`${opponentTeddy.name} wins!`);
-      } else {
-        newLog.push("It's a tie!");
-      }
-      setBattleLog(newLog);
-    }
+  const endTurn = () => {
+    // Implement opponent's turn logic here
+    // For now, just a simple attack
+    const opponentDamage = calculateDamage(opponentBear, playerBear);
+    setPlayerHealth(prev => Math.max(0, prev - opponentDamage));
+    setBattleLog(prev => [...prev, `${opponentBear.name} attacks for ${opponentDamage} damage!`]);
   };
-
-  if (isLoading) return <div className="text-center mt-8">Loading...</div>;
-  if (error) return <div className="text-center mt-8">Error: {error.message}</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h2 className="text-3xl font-bold mb-4 text-center">Battle Arena</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <h3 className="text-xl font-bold mb-2">Your Teddy</h3>
-          {playerTeddy ? (
-            <TeddyCard teddy={playerTeddy} />
-          ) : (
-            <p>Select your teddy</p>
-          )}
+          <h2 className="text-2xl font-bold mb-2">Your Teddy</h2>
+          <TeddyBear bear={playerBear} />
+          <p>Health: {playerHealth}/30</p>
+          <p>Energy: {playerEnergy}/3</p>
         </div>
         <div>
-          <h3 className="text-xl font-bold mb-2">Opponent Teddy</h3>
-          {opponentTeddy ? (
-            <TeddyCard teddy={opponentTeddy} />
-          ) : (
-            <p>Select opponent teddy</p>
-          )}
+          <h2 className="text-2xl font-bold mb-2">Opponent's Teddy</h2>
+          <TeddyBear bear={opponentBear} />
+          <p>Health: {opponentHealth}/30</p>
+          <p>Energy: {opponentEnergy}/3</p>
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
-        {teddies && teddies.map(teddy => (
-          <Button key={teddy.id} onClick={() => selectTeddy(teddy)} className="w-full">
-            {teddy.name}
-          </Button>
-        ))}
+      <div className="mb-4">
+        <button onClick={attack} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mr-2">
+          Attack
+        </button>
+        <button onClick={defend} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
+          Defend
+        </button>
+        <button onClick={useSpecialMove} disabled={playerEnergy < 2} className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+          Use Special Move
+        </button>
       </div>
-      <Button onClick={startBattle} disabled={!playerTeddy || !opponentTeddy} className="w-full mb-4">
-        Start Battle
-      </Button>
-      <div className="bg-gray-100 p-4 rounded">
+      <div>
         <h3 className="text-xl font-bold mb-2">Battle Log</h3>
-        {battleLog.map((log, index) => (
-          <p key={index}>{log}</p>
-        ))}
+        <ul className="list-disc list-inside">
+          {battleLog.map((log, index) => (
+            <li key={index}>{log}</li>
+          ))}
+        </ul>
       </div>
     </div>
   );
 };
-
-export default BattleArena;
