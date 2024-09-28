@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../utils/supabaseClient';
+import { supabase } from '../utils/supabaseClient.jsx';
 import TeddyCard from './TeddyCard';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
