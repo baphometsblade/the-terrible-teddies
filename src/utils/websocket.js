@@ -1,8 +1,8 @@
 import { toast } from '@/components/ui/use-toast';
 
 class WebSocketManager {
-  constructor(url) {
-    this.url = url;
+  constructor() {
+    this.url = import.meta.env.VITE_WEBSOCKET_URL || 'wss://your-websocket-server-url';
     this.socket = null;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
@@ -74,4 +74,4 @@ class WebSocketManager {
   }
 }
 
-export const webSocketManager = new WebSocketManager('wss://your-websocket-server-url');
+export const webSocketManager = new WebSocketManager();
