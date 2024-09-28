@@ -21,7 +21,6 @@ export const initWebSocket = (url) => {
 
   socket.onerror = (error) => {
     console.error('WebSocket error:', error);
-    // Handle errors here
   };
 
   socket.onclose = (event) => {
