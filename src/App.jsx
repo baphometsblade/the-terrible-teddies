@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './components/Home';
 import Game from './components/Game';
@@ -7,8 +7,17 @@ import Shop from './components/Shop';
 import PlayerProfile from './components/PlayerProfile';
 import DailyChallenge from './components/DailyChallenge';
 import { SupabaseProvider } from './utils/supabaseClient';
+import { webSocketManager } from './utils/websocket';
 
 function App() {
+  useEffect(() => {
+    webSocketManager.connect();
+
+    return () => {
+      webSocketManager.disconnect();
+    };
+  }, []);
+
   return (
     <SupabaseProvider>
       <Router>
