@@ -2,20 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import TeddyCard from './TeddyCard';
+import { useToast } from "@/components/ui/use-toast";
 
 const DeckBuilder = () => {
   const [allTeddies, setAllTeddies] = useState([]);
   const [deck, setDeck] = useState([]);
   const [message, setMessage] = useState('');
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchTeddies();
+    fetchPlayerDeck();
   }, []);
 
   const fetchTeddies = async () => {
     const { data, error } = await supabase.from('terrible_teddies').select('*');
     if (error) console.error('Error fetching teddies:', error);
     else setAllTeddies(data);
+  };
+
+  const fetchPlayerDeck = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data, error } = await supabase
+        .from('player_decks')
+        .select('deck')
+        .eq('user_id', user.id)
+        .single();
+      if (error) {
+        console.error('Error fetching player deck:', error);
+      } else if (data) {
+        setDeck(data.deck);
+      }
+    }
   };
 
   const addToDeck = (teddy) => {
@@ -31,17 +50,32 @@ const DeckBuilder = () => {
   };
 
   const saveDeck = async () => {
-    const { data: user } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      setMessage('Please sign in to save your deck.');
+      toast({
+        title: "Authentication Error",
+        description: "Please sign in to save your deck.",
+        variant: "destructive",
+      });
       return;
     }
     const { error } = await supabase.from('player_decks').upsert({
       user_id: user.id,
       deck: deck.map(t => t.id)
     });
-    if (error) setMessage('Error saving deck');
-    else setMessage('Deck saved successfully!');
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save deck. Please try again.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Deck saved successfully!",
+        variant: "success",
+      });
+    }
   };
 
   return (
