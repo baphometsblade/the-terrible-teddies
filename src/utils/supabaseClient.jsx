@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import React, { useState, useEffect, createContext, useContext } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -10,36 +10,24 @@ const SupabaseAuthContext = createContext();
 
 export const SupabaseProvider = ({ children }) => {
   const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getSession = async () => {
-      setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setLoading(false);
-    };
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
 
-    getSession();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
 
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-  };
 
   const value = {
     session,
-    loading,
-    logout,
+    signUp: (data) => supabase.auth.signUp(data),
+    signIn: (data) => supabase.auth.signIn(data),
+    signOut: () => supabase.auth.signOut(),
   };
 
   return (
