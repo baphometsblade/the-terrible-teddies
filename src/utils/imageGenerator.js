@@ -21,17 +21,28 @@ export const generateTeddyImage = async (teddyName, teddyDescription) => {
   }
 };
 
-export const generateBackgroundImage = async (theme) => {
+export const saveTeddyImage = async (teddyName, imageUrl) => {
   try {
-    const response = await openai.createImage({
-      prompt: `A detailed, high-quality background image for a card game with the theme: ${theme}. The image should be visually appealing and suitable for an adult audience.`,
-      n: 1,
-      size: "1024x1024",
-    });
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    const fileName = `${teddyName.replace(/\s+/g, '-').toLowerCase()}.png`;
 
-    return response.data.data[0].url;
+    const { data, error } = await supabase.storage
+      .from('teddy-images')
+      .upload(fileName, blob, {
+        contentType: 'image/png',
+        upsert: true
+      });
+
+    if (error) throw error;
+
+    const { data: publicUrlData } = supabase.storage
+      .from('teddy-images')
+      .getPublicUrl(fileName);
+
+    return publicUrlData.publicUrl;
   } catch (error) {
-    console.error('Error generating background image:', error);
+    console.error('Error saving teddy image:', error);
     return null;
   }
 };
