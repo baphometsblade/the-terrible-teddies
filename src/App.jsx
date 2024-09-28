@@ -1,71 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from './lib/supabase';
-import Auth from './components/Auth';
-import DeckBuilder from './components/DeckBuilder';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Home from './components/Home';
+import Game from './components/Game';
+import Leaderboard from './components/Leaderboard';
 import Shop from './components/Shop';
-import BattleArena from './components/BattleArena';
 import PlayerProfile from './components/PlayerProfile';
-import Matchmaking from './components/Matchmaking';
-import { Button } from "@/components/ui/button";
+import { setupDatabase } from './utils/setupDatabase';
 
-const App = () => {
-  const [session, setSession] = useState(null);
-  const [currentView, setCurrentView] = useState('auth');
-
+function App() {
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) setCurrentView('profile');
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) setCurrentView('profile');
-    });
-
-    return () => subscription.unsubscribe();
+    setupDatabase();
   }, []);
 
-  const handleMatchFound = (matchData) => {
-    console.log('Match found:', matchData);
-    setCurrentView('battle');
-  };
-
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'auth':
-        return <Auth />;
-      case 'profile':
-        return <PlayerProfile />;
-      case 'deck':
-        return <DeckBuilder />;
-      case 'shop':
-        return <Shop />;
-      case 'battle':
-        return <BattleArena />;
-      case 'matchmaking':
-        return <Matchmaking onMatchFound={handleMatchFound} />;
-      default:
-        return <Auth />;
-    }
-  };
-
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-4xl font-bold mb-8 text-center">Terrible Teddies</h1>
-      {session && (
-        <nav className="mb-4">
-          <Button onClick={() => setCurrentView('profile')} className="mr-2">Profile</Button>
-          <Button onClick={() => setCurrentView('deck')} className="mr-2">Deck Builder</Button>
-          <Button onClick={() => setCurrentView('shop')} className="mr-2">Shop</Button>
-          <Button onClick={() => setCurrentView('matchmaking')} className="mr-2">Find Match</Button>
-        </nav>
-      )}
-      {renderCurrentView()}
-    </div>
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/play" element={<Game />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/profile" element={<PlayerProfile />} />
+        </Routes>
+      </div>
+    </Router>
   );
-};
+}
 
 export default App;

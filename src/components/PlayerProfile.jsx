@@ -28,25 +28,30 @@ const PlayerProfile = () => {
         
         if (error) {
           if (error.code === '42P01') {
-            // Table doesn't exist, create a new player profile
-            const newProfile = {
-              id: user.id,
-              username: user.email.split('@')[0], // Use email as temporary username
-              email: user.email,
-              coins: 0,
-              wins: 0,
-              losses: 0
-            };
-            const { data: createdProfile, error: createError } = await supabase
-              .from('players')
-              .insert(newProfile)
-              .single();
-            
-            if (createError) throw createError;
-            setProfile(createdProfile);
+            // Table doesn't exist, create it
+            await setupDatabase();
+            // Retry fetching the profile
+            await fetchProfile();
           } else {
             throw error;
           }
+        } else if (!data) {
+          // Player profile doesn't exist, create a new one
+          const newProfile = {
+            id: user.id,
+            username: user.email.split('@')[0],
+            email: user.email,
+            coins: 0,
+            wins: 0,
+            losses: 0
+          };
+          const { data: createdProfile, error: createError } = await supabase
+            .from('players')
+            .insert(newProfile)
+            .single();
+          
+          if (createError) throw createError;
+          setProfile(createdProfile);
         } else {
           setProfile(data);
         }
