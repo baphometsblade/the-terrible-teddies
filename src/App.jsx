@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SupabaseProvider } from './integrations/supabase/auth';
 import Home from './components/Home';
@@ -17,20 +17,18 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SupabaseProvider>
-        <Router>
-          <div className="min-h-screen bg-gradient-to-b from-purple-100 to-pink-100">
-            <Header />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/game" element={<GameBoard />} />
-              <Route path="/deck-builder" element={<DeckBuilder />} />
-              <Route path="/shop" element={<Shop />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/profile" element={<Profile />} />
-            </Routes>
-            <Toaster />
-          </div>
-        </Router>
+        <div className="min-h-screen bg-gradient-to-b from-purple-100 to-pink-100">
+          <Header />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/game" element={<GameBoard />} />
+            <Route path="/deck-builder" element={<DeckBuilder />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/profile" element={<Profile />} />
+          </Routes>
+          <Toaster />
+        </div>
       </SupabaseProvider>
     </QueryClientProvider>
   );
