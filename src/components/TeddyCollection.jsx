@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import TeddyCard from './TeddyCard';
-import { Spinner } from './ui/spinner';
+import { Spinner } from "@/components/ui/spinner";
 
 const fetchTeddies = async () => {
   const { data, error } = await supabase
