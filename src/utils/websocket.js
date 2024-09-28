@@ -24,7 +24,6 @@ class WebSocketManager {
 
     this.socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      // Handle incoming messages here
       console.log('Received message:', data);
     };
 
@@ -32,9 +31,10 @@ class WebSocketManager {
       console.error('WebSocket error:', error);
       toast({
         title: "Connection Error",
-        description: "There was an error connecting to the game server.",
+        description: "There was an error connecting to the game server. Retrying...",
         variant: "destructive",
       });
+      this.reconnect();
     };
 
     this.socket.onclose = (event) => {

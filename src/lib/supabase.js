@@ -7,7 +7,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const initializeSupabase = async () => {
   try {
-    const { data, error } = await supabase.from('terrible_teddies').select('*').limit(1);
+    const { data, error } = await supabase.from('player_teddies').select('*').limit(1);
     if (error) {
       console.error('Error checking Supabase connection:', error);
       return false;
