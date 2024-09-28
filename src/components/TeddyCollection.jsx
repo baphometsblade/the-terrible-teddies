@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import TeddyBear from './TeddyBear';
+import TeddyCard from './TeddyCard';
 
 const TeddyCollection = () => {
   const { data: collection, isLoading, error } = useQuery({
@@ -23,7 +23,7 @@ const TeddyCollection = () => {
       <h2 className="text-2xl font-bold mb-4">Your Teddy Collection</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {collection.map(teddy => (
-          <TeddyBear key={teddy.id} bear={teddy} />
+          <TeddyCard key={teddy.id} teddy={teddy} />
         ))}
       </div>
     </div>

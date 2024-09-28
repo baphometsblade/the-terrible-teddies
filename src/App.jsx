@@ -6,7 +6,8 @@ import Leaderboard from './components/Leaderboard';
 import Shop from './components/Shop';
 import PlayerProfile from './components/PlayerProfile';
 import DailyChallenge from './components/DailyChallenge';
-import { SupabaseProvider } from './utils/supabaseClient';
+import TeddyCollection from './components/TeddyCollection';
+import { SupabaseProvider } from './utils/supabaseClient.jsx';
 import { webSocketManager } from './utils/websocket';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
             <Route path="/shop" element={<Shop />} />
             <Route path="/profile" element={<PlayerProfile />} />
             <Route path="/daily-challenge" element={<DailyChallenge />} />
+            <Route path="/collection" element={<TeddyCollection />} />
           </Routes>
         </div>
       </Router>

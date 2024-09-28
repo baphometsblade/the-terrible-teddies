@@ -2,12 +2,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const TeddyCard = ({ teddy, onSelect, selected }) => {
+const TeddyCard = ({ teddy, onSelect }) => {
   return (
-    <Card 
-      className={`w-64 bg-white shadow-lg rounded-lg overflow-hidden ${selected ? 'ring-2 ring-purple-500' : ''}`}
-      onClick={onSelect}
-    >
+    <Card className="w-64 bg-white shadow-lg rounded-lg overflow-hidden">
       <CardHeader>
         <h3 className="text-xl font-bold">{teddy.name}</h3>
         <p className="text-sm text-gray-600">{teddy.title}</p>
@@ -23,7 +20,7 @@ const TeddyCard = ({ teddy, onSelect, selected }) => {
       </CardContent>
       {onSelect && (
         <CardFooter>
-          <Button onClick={onSelect} className="w-full">Select</Button>
+          <Button onClick={() => onSelect(teddy)} className="w-full">Select</Button>
         </CardFooter>
       )}
     </Card>
