@@ -25,15 +25,11 @@ class WebSocketManager {
     this.socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       console.log('Received message:', data);
+      // Handle incoming messages here
     };
 
     this.socket.onerror = (error) => {
       console.error('WebSocket error:', error);
-      toast({
-        title: "Connection Error",
-        description: "There was an error connecting to the game server. Retrying...",
-        variant: "destructive",
-      });
       this.reconnect();
     };
 
@@ -78,4 +74,4 @@ class WebSocketManager {
   }
 }
 
-export const webSocketManager = new WebSocketManager('wss://lov-p-1db83e7a-8789-4219-a42f-bff44602358e.fly.dev/');
+export const webSocketManager = new WebSocketManager('wss://your-websocket-server-url');
