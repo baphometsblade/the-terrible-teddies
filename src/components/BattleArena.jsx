@@ -1,24 +1,36 @@
-import React, { useState } from 'react';
-import { TeddyBear } from './TeddyBear';
+import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import TeddyCard from './TeddyCard';
 import { calculateDamage } from '../utils/battleLogic';
 
-export const BattleArena = ({ playerBear, opponentBear }) => {
+const BattleArena = ({ playerTeddy, opponentTeddy }) => {
   const [playerHealth, setPlayerHealth] = useState(30);
   const [opponentHealth, setOpponentHealth] = useState(30);
   const [playerEnergy, setPlayerEnergy] = useState(3);
   const [opponentEnergy, setOpponentEnergy] = useState(3);
   const [battleLog, setBattleLog] = useState([]);
+  const [currentTurn, setCurrentTurn] = useState('player');
+
+  useEffect(() => {
+    if (currentTurn === 'opponent') {
+      setTimeout(opponentTurn, 1000);
+    }
+  }, [currentTurn]);
+
+  const addToBattleLog = (message) => {
+    setBattleLog(prevLog => [...prevLog, message]);
+  };
 
   const attack = () => {
-    const damage = calculateDamage(playerBear, opponentBear);
+    const damage = calculateDamage(playerTeddy, opponentTeddy);
     setOpponentHealth(prev => Math.max(0, prev - damage));
-    setBattleLog(prev => [...prev, `${playerBear.name} attacks for ${damage} damage!`]);
+    addToBattleLog(`${playerTeddy.name} attacks for ${damage} damage!`);
     endTurn();
   };
 
   const defend = () => {
-    setPlayerBear(prev => ({ ...prev, defense: prev.defense + 2 }));
-    setBattleLog(prev => [...prev, `${playerBear.name} increases defense by 2!`]);
+    setPlayerTeddy(prev => ({ ...prev, defense: prev.defense + 2 }));
+    addToBattleLog(`${playerTeddy.name} increases defense by 2!`);
     endTurn();
   };
 
@@ -26,48 +38,62 @@ export const BattleArena = ({ playerBear, opponentBear }) => {
     if (playerEnergy >= 2) {
       setPlayerEnergy(prev => prev - 2);
       // Implement special move logic here
-      setBattleLog(prev => [...prev, `${playerBear.name} uses ${playerBear.specialMove}!`]);
+      addToBattleLog(`${playerTeddy.name} uses ${playerTeddy.specialMove}!`);
       endTurn();
     }
   };
 
   const endTurn = () => {
-    // Implement opponent's turn logic here
-    // For now, just a simple attack
-    const opponentDamage = calculateDamage(opponentBear, playerBear);
-    setPlayerHealth(prev => Math.max(0, prev - opponentDamage));
-    setBattleLog(prev => [...prev, `${opponentBear.name} attacks for ${opponentDamage} damage!`]);
+    setCurrentTurn('opponent');
   };
 
+  const opponentTurn = () => {
+    // Simple AI: randomly choose between attack and defend
+    if (Math.random() > 0.5) {
+      const damage = calculateDamage(opponentTeddy, playerTeddy);
+      setPlayerHealth(prev => Math.max(0, prev - damage));
+      addToBattleLog(`${opponentTeddy.name} attacks for ${damage} damage!`);
+    } else {
+      setOpponentTeddy(prev => ({ ...prev, defense: prev.defense + 2 }));
+      addToBattleLog(`${opponentTeddy.name} increases defense by 2!`);
+    }
+    setCurrentTurn('player');
+  };
+
+  if (playerHealth <= 0 || opponentHealth <= 0) {
+    return (
+      <div className="text-center">
+        <h2 className="text-2xl font-bold mb-4">
+          {playerHealth <= 0 ? 'You Lost!' : 'You Won!'}
+        </h2>
+        <Button onClick={() => window.location.reload()}>Play Again</Button>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div className="container mx-auto p-4">
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <h2 className="text-2xl font-bold mb-2">Your Teddy</h2>
-          <TeddyBear bear={playerBear} />
+          <h2 className="text-xl font-bold mb-2">Your Teddy</h2>
+          <TeddyCard teddy={playerTeddy} />
           <p>Health: {playerHealth}/30</p>
           <p>Energy: {playerEnergy}/3</p>
         </div>
         <div>
-          <h2 className="text-2xl font-bold mb-2">Opponent's Teddy</h2>
-          <TeddyBear bear={opponentBear} />
+          <h2 className="text-xl font-bold mb-2">Opponent's Teddy</h2>
+          <TeddyCard teddy={opponentTeddy} />
           <p>Health: {opponentHealth}/30</p>
           <p>Energy: {opponentEnergy}/3</p>
         </div>
       </div>
       <div className="mb-4">
-        <button onClick={attack} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mr-2">
-          Attack
-        </button>
-        <button onClick={defend} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
-          Defend
-        </button>
-        <button onClick={useSpecialMove} disabled={playerEnergy < 2} className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
-          Use Special Move
-        </button>
+        <Button onClick={attack} disabled={currentTurn !== 'player'} className="mr-2">Attack</Button>
+        <Button onClick={defend} disabled={currentTurn !== 'player'} className="mr-2">Defend</Button>
+        <Button onClick={useSpecialMove} disabled={currentTurn !== 'player' || playerEnergy < 2}>Use Special Move</Button>
       </div>
       <div>
-        <h3 className="text-xl font-bold mb-2">Battle Log</h3>
+        <h3 className="text-lg font-bold mb-2">Battle Log</h3>
         <ul className="list-disc list-inside">
           {battleLog.map((log, index) => (
             <li key={index}>{log}</li>
@@ -77,3 +103,5 @@ export const BattleArena = ({ playerBear, opponentBear }) => {
     </div>
   );
 };
+
+export default BattleArena;

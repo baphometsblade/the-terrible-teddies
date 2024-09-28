@@ -1,45 +1,62 @@
-import React, { useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-export function Auth() {
-  const [loading, setLoading] = useState(false)
-  const [email, setEmail] = useState('')
+const Auth = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
-  const handleLogin = async (e) => {
-    e.preventDefault()
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) setMessage(error.message);
+    else setMessage('Check your email for the confirmation link!');
+    setLoading(false);
+  };
 
-    try {
-      setLoading(true)
-      const { error } = await supabase.auth.signInWithOtp({ email })
-      if (error) throw error
-      alert('Check your email for the login link!')
-    } catch (error) {
-      alert(error.error_description || error.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const handleSignIn = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) setMessage(error.message);
+    else setMessage('Signed in successfully!');
+    setLoading(false);
+  };
 
   return (
-    <div className="row flex flex-center">
-      <div className="col-6 form-widget">
-        <h1 className="header">Supabase + React</h1>
-        <p className="description">Sign in via magic link with your email below</p>
-        <form className="form-widget" onSubmit={handleLogin}>
-          <Input
-            className="inputField"
-            type="email"
-            placeholder="Your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <Button className="button block" disabled={loading}>
-            {loading ? <span>Loading</span> : <span>Send magic link</span>}
+    <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-xl">
+      <h2 className="text-2xl font-bold mb-4">Authentication</h2>
+      <form>
+        <Input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="mb-4"
+        />
+        <Input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="mb-4"
+        />
+        <div className="flex space-x-4">
+          <Button onClick={handleSignUp} disabled={loading}>
+            Sign Up
           </Button>
-        </form>
-      </div>
+          <Button onClick={handleSignIn} disabled={loading}>
+            Sign In
+          </Button>
+        </div>
+      </form>
+      {message && <p className="mt-4 text-sm text-gray-600">{message}</p>}
     </div>
-  )
-}
+  );
+};
+
+export default Auth;

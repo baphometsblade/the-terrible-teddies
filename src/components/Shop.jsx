@@ -1,50 +1,47 @@
-import React from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { supabase } from '../utils/supabaseClient';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
-
-const fetchShopItems = async () => {
-  const { data, error } = await supabase.from('shop_items').select('*');
-  if (error) throw error;
-  return data;
-};
 
 const Shop = () => {
-  const { data: shopItems, isLoading, error } = useQuery({
-    queryKey: ['shopItems'],
-    queryFn: fetchShopItems,
-  });
-  const { toast } = useToast();
+  const [items, setItems] = useState([]);
+  const [message, setMessage] = useState('');
 
-  const purchaseMutation = useMutation({
-    mutationFn: async (itemId) => {
-      // Here you would implement the actual purchase logic
-      // For now, we'll just show a success message
-      toast({
-        title: "Purchase successful",
-        description: "You've purchased a new item!",
-        variant: "success",
-      });
-    },
-  });
+  useEffect(() => {
+    fetchShopItems();
+  }, []);
 
-  if (isLoading) return <div>Loading shop items...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  const fetchShopItems = async () => {
+    const { data, error } = await supabase.from('shop_items').select('*');
+    if (error) console.error('Error fetching shop items:', error);
+    else setItems(data);
+  };
+
+  const purchaseItem = async (item) => {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user) {
+      setMessage('Please sign in to make a purchase.');
+      return;
+    }
+    
+    // Here you would implement the actual purchase logic
+    // For now, we'll just simulate a successful purchase
+    setMessage(`Successfully purchased ${item.name}!`);
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4 text-center">Terrible Teddies Shop</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {shopItems && shopItems.map(item => (
-          <div key={item.id} className="bg-white p-4 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold mb-2">{item.name}</h2>
-            <p className="mb-2">{item.description}</p>
-            <p className="font-bold mb-2">Price: {item.price} coins</p>
-            <Button onClick={() => purchaseMutation.mutate(item.id)}>Buy</Button>
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Shop</h2>
+      <div className="grid grid-cols-3 gap-4">
+        {items.map(item => (
+          <div key={item.id} className="border p-4 rounded">
+            <h3 className="text-lg font-semibold">{item.name}</h3>
+            <p>{item.description}</p>
+            <p className="font-bold mt-2">${item.price}</p>
+            <Button onClick={() => purchaseItem(item)} className="mt-2">Purchase</Button>
           </div>
         ))}
       </div>
+      {message && <p className="mt-4 text-sm text-gray-600">{message}</p>}
     </div>
   );
 };
