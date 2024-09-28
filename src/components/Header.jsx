@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { useSupabaseAuth } from '../utils/supabaseClient';
+import { useSupabaseAuth } from '../utils/supabaseClient.jsx';
 
 const Header = () => {
   const { session, logout } = useSupabaseAuth();
