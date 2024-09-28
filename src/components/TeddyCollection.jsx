@@ -2,7 +2,6 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import TeddyCard from "./TeddyCard";
-import { Spinner } from "../components/ui/spinner";
 
 const fetchTeddies = async () => {
   const { data, error } = await supabase.from("player_teddies").select("*");
@@ -16,7 +15,7 @@ const TeddyCollection = () => {
     queryFn: fetchTeddies
   });
 
-  if (isLoading) return <Spinner />;
+  if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error loading collection: {error.message}</div>;
 
   return (
