@@ -7,7 +7,6 @@ import Shop from './components/Shop';
 import PlayerProfile from './components/PlayerProfile';
 import DailyChallenge from './components/DailyChallenge';
 import { setupDatabase } from './utils/setupDatabase';
-import { SupabaseProvider } from './utils/supabaseClient';
 
 function App() {
   React.useEffect(() => {
@@ -15,20 +14,18 @@ function App() {
   }, []);
 
   return (
-    <SupabaseProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/play" element={<Game />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/profile" element={<PlayerProfile />} />
-            <Route path="/daily-challenge" element={<DailyChallenge />} />
-          </Routes>
-        </div>
-      </Router>
-    </SupabaseProvider>
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/play" element={<Game />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/profile" element={<PlayerProfile />} />
+          <Route path="/daily-challenge" element={<DailyChallenge />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
