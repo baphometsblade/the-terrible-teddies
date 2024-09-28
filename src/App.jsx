@@ -1,12 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SupabaseProvider } from './integrations/supabase/auth';
+import { SupabaseProvider } from './utils/supabaseClient';
+import Header from './components/Header';
 import Home from './components/Home';
 import BattleArena from './components/BattleArena';
 import Collection from './components/Collection';
 import Shop from './components/Shop';
-import Header from './components/Header';
 import { Toaster } from "@/components/ui/toaster";
 
 const queryClient = new QueryClient();
