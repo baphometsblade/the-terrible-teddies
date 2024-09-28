@@ -18,19 +18,8 @@ const Header = () => {
         <Link to="/deck-builder">
           <Button variant="ghost" className="text-white">Deck Builder</Button>
         </Link>
-        <Link to="/shop">
-          <Button variant="ghost" className="text-white">Shop</Button>
-        </Link>
-        <Link to="/leaderboard">
-          <Button variant="ghost" className="text-white">Leaderboard</Button>
-        </Link>
         {session ? (
-          <>
-            <Link to="/profile">
-              <Button variant="ghost" className="text-white">Profile</Button>
-            </Link>
-            <Button variant="ghost" className="text-white" onClick={logout}>Logout</Button>
-          </>
+          <Button variant="ghost" className="text-white" onClick={logout}>Logout</Button>
         ) : (
           <Link to="/auth">
             <Button variant="ghost" className="text-white">Login</Button>

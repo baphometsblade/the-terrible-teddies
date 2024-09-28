@@ -22,16 +22,6 @@ const Home = () => {
               Deck Builder
             </Button>
           </Link>
-          <Link to="/shop">
-            <Button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-              Shop
-            </Button>
-          </Link>
-          <Link to="/leaderboard">
-            <Button className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
-              Leaderboard
-            </Button>
-          </Link>
         </div>
       ) : (
         <Link to="/auth">

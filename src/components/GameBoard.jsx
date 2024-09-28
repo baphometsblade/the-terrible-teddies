@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import TeddyCard from './TeddyCard';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { calculateDamage } from '../utils/gameLogic';
-import { AIOpponent } from '../utils/AIOpponent';
+
+const fetchPlayerDeck = async () => {
+  const { data, error } = await supabase
+    .from('player_decks')
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data.deck;
+};
 
 const GameBoard = () => {
   const [playerHand, setPlayerHand] = useState([]);
@@ -17,11 +25,9 @@ const GameBoard = () => {
   const [opponentEnergy, setOpponentEnergy] = useState(3);
   const [playerHealth, setPlayerHealth] = useState(30);
   const [opponentHealth, setOpponentHealth] = useState(30);
-  const [battleLog, setBattleLog] = useState([]);
   const { toast } = useToast();
-  const ai = new AIOpponent();
 
-  const { data: playerDeck, isLoading: isDeckLoading, error: deckError } = useQuery({
+  const { data: playerDeck, isLoading, error } = useQuery({
     queryKey: ['playerDeck'],
     queryFn: fetchPlayerDeck,
   });
@@ -47,38 +53,28 @@ const GameBoard = () => {
       });
       return;
     }
-    setOpponentTeddy(ai.chooseTeddy(opponentHand));
+    setOpponentTeddy(opponentHand[Math.floor(Math.random() * opponentHand.length)]);
     setGameState('battling');
-    setBattleLog([`Battle started! ${selectedTeddy.name} vs ${opponentTeddy.name}`]);
   };
 
   const performAction = (action) => {
     if (action === 'attack') {
       const damage = calculateDamage(selectedTeddy, opponentTeddy);
       setOpponentHealth(prev => Math.max(0, prev - damage));
-      setBattleLog(prev => [...prev, `${selectedTeddy.name} attacks for ${damage} damage!`]);
     } else if (action === 'defend') {
       setSelectedTeddy(prev => ({ ...prev, defense: prev.defense + 2 }));
-      setBattleLog(prev => [...prev, `${selectedTeddy.name} increases defense by 2!`]);
     } else if (action === 'special' && playerEnergy >= 2) {
       setPlayerEnergy(prev => prev - 2);
       // Implement special move logic here
-      setBattleLog(prev => [...prev, `${selectedTeddy.name} uses special move: ${selectedTeddy.specialMove}!`]);
     }
 
-    // AI turn
-    const aiAction = ai.chooseAction(opponentTeddy, selectedTeddy, opponentEnergy);
+    // Simplified AI turn
+    const aiAction = Math.random() < 0.7 ? 'attack' : 'defend';
     if (aiAction === 'attack') {
       const damage = calculateDamage(opponentTeddy, selectedTeddy);
       setPlayerHealth(prev => Math.max(0, prev - damage));
-      setBattleLog(prev => [...prev, `${opponentTeddy.name} attacks for ${damage} damage!`]);
-    } else if (aiAction === 'defend') {
+    } else {
       setOpponentTeddy(prev => ({ ...prev, defense: prev.defense + 2 }));
-      setBattleLog(prev => [...prev, `${opponentTeddy.name} increases defense by 2!`]);
-    } else if (aiAction === 'special' && opponentEnergy >= 2) {
-      setOpponentEnergy(prev => prev - 2);
-      // Implement AI special move logic here
-      setBattleLog(prev => [...prev, `${opponentTeddy.name} uses special move: ${opponentTeddy.specialMove}!`]);
     }
 
     checkGameOver();
@@ -102,8 +98,8 @@ const GameBoard = () => {
     }
   };
 
-  if (isDeckLoading) return <div>Loading game...</div>;
-  if (deckError) return <div>Error: {deckError.message}</div>;
+  if (isLoading) return <div>Loading game...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -152,14 +148,6 @@ const GameBoard = () => {
           </div>
         </div>
       )}
-      <div className="mt-4">
-        <h2 className="text-2xl font-bold mb-2">Battle Log</h2>
-        <div className="bg-gray-100 p-4 rounded-lg h-40 overflow-y-auto">
-          {battleLog.map((log, index) => (
-            <p key={index}>{log}</p>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
