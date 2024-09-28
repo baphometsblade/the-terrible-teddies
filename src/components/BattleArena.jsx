@@ -8,8 +8,8 @@ import { calculateDamage } from '../utils/gameLogic';
 const BattleArena = () => {
   const [playerDeck, setPlayerDeck] = useState([]);
   const [opponentDeck, setOpponentDeck] = useState([]);
-  const [playerTeddy, setPlayerTeddy] = useState(null);
-  const [opponentTeddy, setOpponentTeddy] = useState(null);
+  const [playerBear, setPlayerBear] = useState(null);
+  const [opponentBear, setOpponentBear] = useState(null);
   const [playerEnergy, setPlayerEnergy] = useState(3);
   const [opponentEnergy, setOpponentEnergy] = useState(3);
   const [playerHealth, setPlayerHealth] = useState(30);
@@ -35,7 +35,7 @@ const BattleArena = () => {
         console.error('Error fetching player deck:', error);
       } else if (data) {
         setPlayerDeck(data.deck);
-        setPlayerTeddy(data.deck[0]);
+        setPlayerBear(data.deck[0]);
       }
     }
   };
@@ -49,7 +49,7 @@ const BattleArena = () => {
       console.error('Error generating opponent deck:', error);
     } else {
       setOpponentDeck(data);
-      setOpponentTeddy(data[0]);
+      setOpponentBear(data[0]);
     }
   };
 
@@ -59,19 +59,19 @@ const BattleArena = () => {
     let damage = 0;
     switch (action) {
       case 'attack':
-        damage = calculateDamage(playerTeddy, opponentTeddy);
+        damage = calculateDamage(playerBear, opponentBear);
         setOpponentHealth(prev => Math.max(0, prev - damage));
-        addToBattleLog(`${playerTeddy.name} attacks for ${damage} damage!`);
+        addToBattleLog(`${playerBear.name} attacks for ${damage} damage!`);
         break;
       case 'defend':
-        setPlayerTeddy(prev => ({ ...prev, defense: prev.defense + 2 }));
-        addToBattleLog(`${playerTeddy.name} increases defense by 2!`);
+        setPlayerBear(prev => ({ ...prev, defense: prev.defense + 2 }));
+        addToBattleLog(`${playerBear.name} increases defense by 2!`);
         break;
       case 'special':
         if (playerEnergy >= 2) {
           setPlayerEnergy(prev => prev - 2);
           // Implement special move logic here
-          addToBattleLog(`${playerTeddy.name} uses ${playerTeddy.specialMove}!`);
+          addToBattleLog(`${playerBear.name} uses ${playerBear.specialMove}!`);
         } else {
           toast({
             title: "Not enough energy",
@@ -93,12 +93,12 @@ const BattleArena = () => {
     let damage = 0;
 
     if (action === 'attack') {
-      damage = calculateDamage(opponentTeddy, playerTeddy);
+      damage = calculateDamage(opponentBear, playerBear);
       setPlayerHealth(prev => Math.max(0, prev - damage));
-      addToBattleLog(`${opponentTeddy.name} attacks for ${damage} damage!`);
+      addToBattleLog(`${opponentBear.name} attacks for ${damage} damage!`);
     } else {
-      setOpponentTeddy(prev => ({ ...prev, defense: prev.defense + 2 }));
-      addToBattleLog(`${opponentTeddy.name} increases defense by 2!`);
+      setOpponentBear(prev => ({ ...prev, defense: prev.defense + 2 }));
+      addToBattleLog(`${opponentBear.name} increases defense by 2!`);
     }
 
     checkGameOver();
@@ -131,13 +131,13 @@ const BattleArena = () => {
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <h2 className="text-xl font-bold mb-2">Your Teddy</h2>
-          {playerTeddy && <TeddyCard teddy={playerTeddy} />}
+          {playerBear && <TeddyCard teddy={playerBear} />}
           <p>Health: {playerHealth}/30</p>
           <p>Energy: {playerEnergy}/3</p>
         </div>
         <div>
           <h2 className="text-xl font-bold mb-2">Opponent's Teddy</h2>
-          {opponentTeddy && <TeddyCard teddy={opponentTeddy} />}
+          {opponentBear && <TeddyCard teddy={opponentBear} />}
           <p>Health: {opponentHealth}/30</p>
           <p>Energy: {opponentEnergy}/3</p>
         </div>
