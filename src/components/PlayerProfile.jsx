@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 const PlayerProfile = () => {
   const [profile, setProfile] = useState(null);
@@ -16,6 +17,7 @@ const PlayerProfile = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
+      setError(null);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data, error } = await supabase
@@ -24,8 +26,30 @@ const PlayerProfile = () => {
           .eq('id', user.id)
           .single();
         
-        if (error) throw error;
-        setProfile(data);
+        if (error) {
+          if (error.code === '42P01') {
+            // Table doesn't exist, create a new player profile
+            const newProfile = {
+              id: user.id,
+              username: user.email.split('@')[0], // Use email as temporary username
+              email: user.email,
+              coins: 0,
+              wins: 0,
+              losses: 0
+            };
+            const { data: createdProfile, error: createError } = await supabase
+              .from('players')
+              .insert(newProfile)
+              .single();
+            
+            if (createError) throw createError;
+            setProfile(createdProfile);
+          } else {
+            throw error;
+          }
+        } else {
+          setProfile(data);
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -66,14 +90,18 @@ const PlayerProfile = () => {
     <div className="container mx-auto p-4">
       <h2 className="text-2xl font-bold mb-4">Player Profile</h2>
       {profile ? (
-        <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-          <p className="mb-2"><strong>Username:</strong> {profile.username}</p>
-          <p className="mb-2"><strong>Email:</strong> {profile.email}</p>
-          <p className="mb-2"><strong>Coins:</strong> {profile.coins}</p>
-          <p className="mb-2"><strong>Wins:</strong> {profile.wins}</p>
-          <p className="mb-2"><strong>Losses:</strong> {profile.losses}</p>
-          <Button onClick={handleLogout} className="mt-4">Logout</Button>
-        </div>
+        <Card className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+          <CardHeader>
+            <h3 className="text-xl font-semibold">{profile.username}</h3>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-2"><strong>Email:</strong> {profile.email}</p>
+            <p className="mb-2"><strong>Coins:</strong> {profile.coins}</p>
+            <p className="mb-2"><strong>Wins:</strong> {profile.wins}</p>
+            <p className="mb-2"><strong>Losses:</strong> {profile.losses}</p>
+            <Button onClick={handleLogout} className="mt-4">Logout</Button>
+          </CardContent>
+        </Card>
       ) : (
         <p>No profile data available.</p>
       )}
