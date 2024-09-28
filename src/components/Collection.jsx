@@ -3,19 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../utils/supabaseClient';
 import TeddyCard from './TeddyCard';
 
-const fetchPlayerCollection = async () => {
-  const { data, error } = await supabase
-    .from('player_collections')
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data.collection;
-};
-
 const Collection = () => {
   const { data: collection, isLoading, error } = useQuery({
     queryKey: ['playerCollection'],
-    queryFn: fetchPlayerCollection,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('player_collections')
+        .select('*')
+        .single();
+      if (error) throw error;
+      return data.collection;
+    },
   });
 
   if (isLoading) return <div>Loading your collection...</div>;
