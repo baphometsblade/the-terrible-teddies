@@ -12,11 +12,14 @@ const Header = () => {
         <Link to="/">
           <Button variant="ghost" className="text-white">Home</Button>
         </Link>
-        <Link to="/game">
-          <Button variant="ghost" className="text-white">Play</Button>
+        <Link to="/battle">
+          <Button variant="ghost" className="text-white">Battle</Button>
         </Link>
-        <Link to="/deck-builder">
-          <Button variant="ghost" className="text-white">Deck Builder</Button>
+        <Link to="/collection">
+          <Button variant="ghost" className="text-white">Collection</Button>
+        </Link>
+        <Link to="/shop">
+          <Button variant="ghost" className="text-white">Shop</Button>
         </Link>
         {session ? (
           <Button variant="ghost" className="text-white" onClick={logout}>Logout</Button>

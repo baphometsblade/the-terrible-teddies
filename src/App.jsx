@@ -3,8 +3,9 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SupabaseProvider } from './integrations/supabase/auth';
 import Home from './components/Home';
-import GameBoard from './components/GameBoard';
-import DeckBuilder from './components/DeckBuilder';
+import BattleArena from './components/BattleArena';
+import Collection from './components/Collection';
+import Shop from './components/Shop';
 import Header from './components/Header';
 import { Toaster } from "@/components/ui/toaster";
 
@@ -19,8 +20,9 @@ function App() {
             <Header />
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/game" element={<GameBoard />} />
-              <Route path="/deck-builder" element={<DeckBuilder />} />
+              <Route path="/battle" element={<BattleArena />} />
+              <Route path="/collection" element={<Collection />} />
+              <Route path="/shop" element={<Shop />} />
             </Routes>
             <Toaster />
           </div>
