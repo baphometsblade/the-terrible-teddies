@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SupabaseProvider } from './utils/supabaseClient';
+import { SupabaseProvider } from './utils/supabaseClient.jsx';
 import Header from './components/Header';
 import Home from './components/Home';
 import BattleArena from './components/BattleArena';
