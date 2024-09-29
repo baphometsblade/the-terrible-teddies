@@ -41,8 +41,13 @@ export const runMigrations = async () => {
 
 export const verifyTables = async () => {
   try {
-    const { data, error } = await supabase.from('terrible_teddies').select('count');
+    const { data, error } = await supabase
+      .from('terrible_teddies')
+      .select('count')
+      .limit(1);
+    
     if (error) throw error;
+    
     console.log('Table verification successful');
     return true;
   } catch (error) {
