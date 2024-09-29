@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 
 export const setupDatabase = async () => {
-  console.log('Setting up database...');
+  console.log('Starting database setup...');
 
   const migrations = [
     {
