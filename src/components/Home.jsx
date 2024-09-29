@@ -11,7 +11,7 @@ const Home = () => {
         <div>
           <h2 className="text-2xl font-bold mb-4">Game Options</h2>
           <div className="space-y-4">
-            <Link to="/play">
+            <Link to="/battle">
               <Button className="w-full">Play Game</Button>
             </Link>
             <Link to="/deck-builder">
