@@ -6,7 +6,8 @@ export const setupDatabase = async () => {
   const migrations = [
     '001_create_tables.sql',
     '002_create_functions.sql',
-    '003_create_policies.sql'
+    '003_create_policies.sql',
+    '013_create_player_teddies_table.sql'
   ];
 
   for (const migration of migrations) {
