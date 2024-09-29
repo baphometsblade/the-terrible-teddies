@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 export const runMigrations = async () => {
   const migrationFiles = [
     '001_create_player_teddies.sql',
+    '002_create_player_teddies.sql',
   ];
 
   for (const file of migrationFiles) {
