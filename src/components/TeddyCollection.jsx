@@ -12,7 +12,7 @@ const TeddyCollection = () => {
       if (!user) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('player_teddies')
-        .select('terrible_teddies(*)')
+        .select('*, terrible_teddies(*)')
         .eq('player_id', user.id);
       if (error) throw error;
       return data.map(item => item.terrible_teddies);
