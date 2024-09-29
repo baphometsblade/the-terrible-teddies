@@ -1,16 +1,26 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { runMigrations } from './utils/dbMigrations';
 import Home from './components/Home';
 import Game from './components/Game';
 import Shop from './components/Shop';
 import { SupabaseAuthUI } from './integrations/supabase/auth.jsx';
 import { SupabaseProvider } from './utils/supabaseClient.jsx';
-import { runMigrations } from './utils/dbMigrations';
 
 function App() {
+  const [isDbReady, setIsDbReady] = useState(false);
+
   useEffect(() => {
-    runMigrations();
+    const initializeDb = async () => {
+      await runMigrations();
+      setIsDbReady(true);
+    };
+    initializeDb();
   }, []);
+
+  if (!isDbReady) {
+    return <div>Initializing database...</div>;
+  }
 
   return (
     <SupabaseProvider>

@@ -1,31 +1,45 @@
 import { supabase } from '../lib/supabase';
 
 export const runMigrations = async () => {
-  const migrationFiles = [
-    '001_create_player_teddies.sql',
-    '002_create_player_teddies.sql',
-  ];
+  console.log('Starting database migrations...');
 
-  for (const file of migrationFiles) {
-    const { data, error } = await supabase.storage
-      .from('migrations')
-      .download(file);
+  const createPlayerTeddiesTable = `
+    CREATE TABLE IF NOT EXISTS public.player_teddies (
+      id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+      player_id UUID NOT NULL,
+      teddy_id UUID NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (player_id) REFERENCES auth.users(id) ON DELETE CASCADE
+    );
 
-    if (error) {
-      console.error(`Error downloading migration file ${file}:`, error);
-      continue;
-    }
+    -- Add an index for faster queries
+    CREATE INDEX IF NOT EXISTS idx_player_teddies_player_id ON public.player_teddies(player_id);
 
-    const sqlContent = await data.text();
+    -- Add RLS (Row Level Security) policies
+    ALTER TABLE public.player_teddies ENABLE ROW LEVEL SECURITY;
 
-    const { error: executionError } = await supabase.rpc('run_sql', {
-      sql: sqlContent
-    });
+    -- Policy to allow users to see only their own teddies
+    CREATE POLICY "Users can view own teddies" ON public.player_teddies
+      FOR SELECT USING (auth.uid() = player_id);
 
-    if (executionError) {
-      console.error(`Error executing migration ${file}:`, executionError);
-    } else {
-      console.log(`Successfully executed migration ${file}`);
-    }
+    -- Policy to allow users to insert their own teddies
+    CREATE POLICY "Users can insert own teddies" ON public.player_teddies
+      FOR INSERT WITH CHECK (auth.uid() = player_id);
+
+    -- Policy to allow users to update their own teddies
+    CREATE POLICY "Users can update own teddies" ON public.player_teddies
+      FOR UPDATE USING (auth.uid() = player_id);
+
+    -- Policy to allow users to delete their own teddies
+    CREATE POLICY "Users can delete own teddies" ON public.player_teddies
+      FOR DELETE USING (auth.uid() = player_id);
+  `;
+
+  try {
+    const { error } = await supabase.rpc('exec_sql', { sql: createPlayerTeddiesTable });
+    if (error) throw error;
+    console.log('Player teddies table created or updated successfully');
+  } catch (error) {
+    console.error('Error running migration:', error);
   }
 };
