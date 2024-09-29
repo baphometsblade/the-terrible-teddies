@@ -56,6 +56,7 @@ const Profile = () => {
             <p className="mb-2">Wins: {profile.wins || 0}</p>
             <p className="mb-2">Losses: {profile.losses || 0}</p>
             <p className="mb-2">Coins: {profile.coins || 0}</p>
+            <p className="mb-2">Win Rate: {profile.wins + profile.losses > 0 ? ((profile.wins / (profile.wins + profile.losses)) * 100).toFixed(2) + '%' : 'N/A'}</p>
             <Button onClick={logout} className="mt-4">Sign Out</Button>
           </CardContent>
         </Card>

@@ -4,13 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
 import { SupabaseProvider } from './integrations/supabase/auth';
 import Home from './components/Home';
-import GameBoard from './components/GameBoard';
-import TeddyCollection from './components/TeddyCollection';
+import Battle from './components/Battle';
+import Collection from './components/Collection';
 import Shop from './components/Shop';
-import Leaderboard from './components/Leaderboard';
 import Profile from './components/Profile';
 import Auth from './components/Auth';
-import DailyChallenge from './components/DailyChallenge';
+import TeddyDetails from './components/TeddyDetails';
+import Matchmaking from './components/Matchmaking';
 import Header from './components/Header';
 import { initializeDatabase } from './utils/setupDatabase';
 
@@ -29,13 +29,13 @@ function App() {
             <Header />
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/game" element={<GameBoard />} />
-              <Route path="/collection" element={<TeddyCollection />} />
+              <Route path="/battle" element={<Battle />} />
+              <Route path="/collection" element={<Collection />} />
               <Route path="/shop" element={<Shop />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/daily-challenge" element={<DailyChallenge />} />
+              <Route path="/teddy/:id" element={<TeddyDetails />} />
+              <Route path="/matchmaking" element={<Matchmaking />} />
             </Routes>
           </div>
         </Router>
