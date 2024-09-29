@@ -12,8 +12,13 @@ function App() {
 
   useEffect(() => {
     const initializeDb = async () => {
-      await runMigrations();
-      setIsDbReady(true);
+      try {
+        await runMigrations();
+        setIsDbReady(true);
+      } catch (error) {
+        console.error('Failed to initialize database:', error);
+        // Handle the error appropriately, e.g., show an error message to the user
+      }
     };
     initializeDb();
   }, []);

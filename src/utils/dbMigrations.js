@@ -36,10 +36,28 @@ export const runMigrations = async () => {
   `;
 
   try {
+    console.log('Executing SQL to create player_teddies table...');
     const { error } = await supabase.rpc('exec_sql', { sql: createPlayerTeddiesTable });
-    if (error) throw error;
+    if (error) {
+      console.error('Error running migration:', error);
+      throw error;
+    }
     console.log('Player teddies table created or updated successfully');
+
+    // Verify that the table was created
+    const { data, error: verifyError } = await supabase
+      .from('player_teddies')
+      .select('id')
+      .limit(1);
+
+    if (verifyError) {
+      console.error('Error verifying player_teddies table:', verifyError);
+      throw verifyError;
+    }
+
+    console.log('player_teddies table verified successfully');
   } catch (error) {
-    console.error('Error running migration:', error);
+    console.error('Migration failed:', error);
+    throw error;
   }
 };
