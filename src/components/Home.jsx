@@ -6,7 +6,7 @@ import { AssetGenerator } from './AssetGenerator';
 const Home = () => {
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8">Welcome to Terrible Teddies</h1>
+      <h1 className="text-4xl font-bold mb-8 text-center">Welcome to Terrible Teddies</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
           <h2 className="text-2xl font-bold mb-4">Game Options</h2>
