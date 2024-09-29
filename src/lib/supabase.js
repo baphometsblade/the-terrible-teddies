@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { runMigrations } from '../utils/dbMigrations';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -12,8 +11,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const initializeSupabase = async () => {
   try {
-    await runMigrations();
-    const { data, error } = await supabase.from('terrible_teddies').select('*').limit(1);
+    const { data, error } = await supabase
+      .from('terrible_teddies')
+      .select('*')
+      .limit(1);
     
     if (error) {
       console.error('Error fetching data:', error);
