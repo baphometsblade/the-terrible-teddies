@@ -1,20 +1,19 @@
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 import { supabase } from '../lib/supabase';
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
 export const generateTeddyImage = async (teddyName, teddyDescription) => {
   try {
-    const response = await openai.createImage({
+    const response = await openai.images.generate({
       prompt: `A hyper-realistic, ultra-detailed image of a cheeky, adult-themed teddy bear named ${teddyName}. ${teddyDescription}. The image should be visually striking and slightly provocative, perfect for an adult audience and suitable for a card game.`,
       n: 1,
       size: "512x512",
     });
 
-    return response.data.data[0].url;
+    return response.data[0].url;
   } catch (error) {
     console.error('Error generating teddy image:', error);
     return null;
