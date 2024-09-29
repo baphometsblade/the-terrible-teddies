@@ -1,20 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import TeddyCard from './TeddyCard';
 import PlayerHand from './PlayerHand';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { calculateDamage } from '../utils/battleSystem';
-
-const fetchPlayerDeck = async () => {
-  const { data, error } = await supabase
-    .from('player_teddies')
-    .select('*')
-    .limit(5);
-  if (error) throw error;
-  return data;
-};
+import AIOpponent from './AIOpponent';
 
 const GameBoard = () => {
   const [playerHand, setPlayerHand] = useState([]);
@@ -26,20 +18,32 @@ const GameBoard = () => {
   const [opponentEnergy, setOpponentEnergy] = useState(3);
   const [playerHealth, setPlayerHealth] = useState(30);
   const [opponentHealth, setOpponentHealth] = useState(30);
+  const [isSinglePlayer, setIsSinglePlayer] = useState(true);
   const { toast } = useToast();
 
   const { data: playerDeck, isLoading, error } = useQuery({
     queryKey: ['playerDeck'],
-    queryFn: fetchPlayerDeck,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('player_teddies')
+        .select('*')
+        .limit(5);
+      if (error) throw error;
+      return data;
+    },
   });
 
   useEffect(() => {
     if (playerDeck) {
       setPlayerHand(playerDeck);
-      // For now, we'll use the same deck for the opponent
-      setOpponentHand([...playerDeck].sort(() => Math.random() - 0.5));
+      if (isSinglePlayer) {
+        setOpponentHand(AIOpponent.generateHand(5));
+      } else {
+        // In multiplayer, we'd fetch the opponent's hand from the server
+        setOpponentHand([...playerDeck].sort(() => Math.random() - 0.5));
+      }
     }
-  }, [playerDeck]);
+  }, [playerDeck, isSinglePlayer]);
 
   const selectTeddy = (teddy) => {
     setSelectedTeddy(teddy);
@@ -69,13 +73,19 @@ const GameBoard = () => {
       // Implement special move logic here
     }
 
-    // Simplified AI turn
-    const aiAction = Math.random() < 0.7 ? 'attack' : 'defend';
-    if (aiAction === 'attack') {
-      const damage = calculateDamage(opponentTeddy, selectedTeddy);
-      setPlayerHealth(prev => Math.max(0, prev - damage));
+    if (isSinglePlayer) {
+      const aiAction = AIOpponent.chooseAction(opponentTeddy, selectedTeddy, opponentEnergy);
+      if (aiAction === 'attack') {
+        const damage = calculateDamage(opponentTeddy, selectedTeddy);
+        setPlayerHealth(prev => Math.max(0, prev - damage));
+      } else if (aiAction === 'defend') {
+        setOpponentTeddy(prev => ({ ...prev, defense: prev.defense + 2 }));
+      } else if (aiAction === 'special' && opponentEnergy >= 2) {
+        setOpponentEnergy(prev => prev - 2);
+        // Implement AI special move logic here
+      }
     } else {
-      setOpponentTeddy(prev => ({ ...prev, defense: prev.defense + 2 }));
+      // In multiplayer, we'd send the action to the server and wait for the opponent's response
     }
 
     checkGameOver();
