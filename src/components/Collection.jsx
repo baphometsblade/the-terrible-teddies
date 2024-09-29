@@ -10,11 +10,19 @@ const Collection = () => {
   const { data: teddies, isLoading, error } = useQuery({
     queryKey: ['playerTeddies'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from('player_teddies')
-        .select('terrible_teddies(*)')
+        .select(`
+          id,
+          teddy:terrible_teddies(*)
+        `)
+        .eq('player_id', user.id);
+
       if (error) throw error;
-      return data.map(item => item.terrible_teddies);
+      return data.map(item => item.teddy);
     },
   });
 
