@@ -12,7 +12,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const initializeSupabase = async () => {
   try {
-    await runMigrations();
+    const migrationsSuccessful = await runMigrations();
+    
+    if (!migrationsSuccessful) {
+      throw new Error('Failed to run migrations');
+    }
     
     const { data, error } = await supabase
       .from('terrible_teddies')

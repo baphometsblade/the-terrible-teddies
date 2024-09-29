@@ -1,14 +1,5 @@
 import { supabase } from '../lib/supabase';
 
-const createMigrationFunction = `
-CREATE OR REPLACE FUNCTION public.run_sql_migration(sql text)
-RETURNS void AS $$
-BEGIN
-  EXECUTE sql;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-`;
-
 const migrations = [
   `
   CREATE TABLE IF NOT EXISTS public.terrible_teddies (
@@ -47,21 +38,36 @@ export const runMigrations = async () => {
 
   try {
     // Create the migration function
-    const { error: functionError } = await supabase.rpc('run_sql_migration', { sql: createMigrationFunction });
-    if (functionError) throw new Error(`Error creating migration function: ${functionError.message}`);
-    console.log('Migration function created successfully');
+    const { data: createFunctionData, error: createFunctionError } = await supabase.rpc('run_sql_migration', {
+      sql: `
+        CREATE OR REPLACE FUNCTION public.run_sql_migration(sql text)
+        RETURNS void AS $$
+        BEGIN
+          EXECUTE sql;
+        END;
+        $$ LANGUAGE plpgsql SECURITY DEFINER;
+      `
+    });
+
+    if (createFunctionError) {
+      console.error('Error creating migration function:', createFunctionError);
+      return false;
+    }
 
     // Run migrations
     for (const [index, migration] of migrations.entries()) {
-      const { error } = await supabase.rpc('run_sql_migration', { sql: migration });
-      if (error) throw new Error(`Migration ${index + 1} error: ${error.message}`);
+      const { data, error } = await supabase.rpc('run_sql_migration', { sql: migration });
+      if (error) {
+        console.error(`Migration ${index + 1} error:`, error);
+        return false;
+      }
       console.log(`Executed migration ${index + 1}`);
     }
 
     console.log('Migrations completed successfully');
     return true;
   } catch (error) {
-    console.error('Error during database migration:', error.message);
-    throw error;
+    console.error('Error during database migration:', error);
+    return false;
   }
 };
