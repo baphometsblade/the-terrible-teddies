@@ -1,24 +1,26 @@
 import { supabase } from '../lib/supabase';
+import fs from 'fs';
+import path from 'path';
 
 export const setupDatabase = async () => {
-  const { error: playersError } = await supabase.rpc('create_players_table');
-  if (playersError) {
-    console.error('Error creating players table:', playersError);
-  } else {
-    console.log('Players table created successfully');
+  const migrationFiles = [
+    '001_initial_setup.sql',
+    '002_create_player_teddies.sql',
+    '003_create_terrible_teddies.sql',
+    '004_create_player_teddies.sql'
+  ];
+
+  for (const file of migrationFiles) {
+    const filePath = path.join(__dirname, '..', 'db', 'migrations', file);
+    const sql = fs.readFileSync(filePath, 'utf8');
+    
+    const { error } = await supabase.rpc('run_sql_migration', { sql });
+    if (error) {
+      console.error(`Error running migration ${file}:`, error);
+    } else {
+      console.log(`Migration ${file} completed successfully`);
+    }
   }
 
-  const { error: challengesError } = await supabase.rpc('create_daily_challenges_table');
-  if (challengesError) {
-    console.error('Error creating daily challenges table:', challengesError);
-  } else {
-    console.log('Daily challenges table created successfully');
-  }
-
-  const { error: completionsError } = await supabase.rpc('create_challenge_completions_table');
-  if (completionsError) {
-    console.error('Error creating challenge completions table:', completionsError);
-  } else {
-    console.log('Challenge completions table created successfully');
-  }
+  console.log('Database setup completed');
 };
