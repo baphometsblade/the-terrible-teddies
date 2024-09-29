@@ -6,6 +6,7 @@ import TeddyCard from './TeddyCard';
 import { calculateDamage } from '../utils/gameLogic';
 import AIOpponent from '../utils/AIOpponent';
 import { useToast } from "@/components/ui/use-toast";
+import { motion } from 'framer-motion';
 
 const Battle = () => {
   const [playerTeddy, setPlayerTeddy] = useState(null);
@@ -16,6 +17,7 @@ const Battle = () => {
   const [playerEnergy, setPlayerEnergy] = useState(3);
   const [opponentEnergy, setOpponentEnergy] = useState(3);
   const [battleLog, setBattleLog] = useState([]);
+  const [isGameOver, setIsGameOver] = useState(false);
   const { toast } = useToast();
 
   const { data: playerTeddies, isLoading, error } = useQuery({
@@ -38,16 +40,17 @@ const Battle = () => {
   }, [playerTeddies]);
 
   const handleAttack = () => {
-    if (currentTurn === 'player') {
+    if (currentTurn === 'player' && !isGameOver) {
       const damage = calculateDamage(playerTeddy, opponentTeddy);
       setOpponentHealth(prev => Math.max(0, prev - damage));
       addToBattleLog(`${playerTeddy.name} attacks for ${damage} damage!`);
+      checkGameOver();
       endTurn();
     }
   };
 
   const handleDefend = () => {
-    if (currentTurn === 'player') {
+    if (currentTurn === 'player' && !isGameOver) {
       setPlayerTeddy(prev => ({ ...prev, defense: prev.defense + 2 }));
       addToBattleLog(`${playerTeddy.name} increases defense by 2!`);
       endTurn();
@@ -55,7 +58,7 @@ const Battle = () => {
   };
 
   const handleSpecialMove = () => {
-    if (currentTurn === 'player' && playerEnergy >= 2) {
+    if (currentTurn === 'player' && playerEnergy >= 2 && !isGameOver) {
       setPlayerEnergy(prev => prev - 2);
       // Implement special move logic here
       addToBattleLog(`${playerTeddy.name} uses ${playerTeddy.specialMove}!`);
@@ -69,6 +72,7 @@ const Battle = () => {
   };
 
   const opponentTurn = () => {
+    if (isGameOver) return;
     const action = AIOpponent.chooseAction(opponentTeddy, playerTeddy, opponentEnergy);
     switch (action) {
       case 'attack':
@@ -86,11 +90,24 @@ const Battle = () => {
         addToBattleLog(`${opponentTeddy.name} uses ${opponentTeddy.specialMove}!`);
         break;
     }
+    checkGameOver();
     setCurrentTurn('player');
   };
 
   const addToBattleLog = (message) => {
     setBattleLog(prev => [...prev, message]);
+  };
+
+  const checkGameOver = () => {
+    if (playerHealth <= 0 || opponentHealth <= 0) {
+      setIsGameOver(true);
+      const winner = playerHealth > 0 ? 'Player' : 'Opponent';
+      toast({
+        title: "Game Over",
+        description: `${winner} wins the battle!`,
+        variant: winner === 'Player' ? "success" : "destructive",
+      });
+    }
   };
 
   if (isLoading) return <div>Loading battle...</div>;
@@ -103,26 +120,45 @@ const Battle = () => {
         <div>
           <h2 className="text-2xl font-bold mb-2">Your Teddy</h2>
           {playerTeddy && <TeddyCard teddy={playerTeddy} />}
-          <p>Health: {playerHealth}</p>
-          <p>Energy: {playerEnergy}</p>
+          <motion.div
+            className="mt-2 p-2 bg-blue-100 rounded"
+            animate={{ scale: playerHealth <= 10 ? [1, 1.1, 1] : 1 }}
+            transition={{ repeat: Infinity, duration: 0.5 }}
+          >
+            <p>Health: {playerHealth}</p>
+            <p>Energy: {playerEnergy}</p>
+          </motion.div>
         </div>
         <div>
           <h2 className="text-2xl font-bold mb-2">Opponent's Teddy</h2>
           {opponentTeddy && <TeddyCard teddy={opponentTeddy} />}
-          <p>Health: {opponentHealth}</p>
-          <p>Energy: {opponentEnergy}</p>
+          <motion.div
+            className="mt-2 p-2 bg-red-100 rounded"
+            animate={{ scale: opponentHealth <= 10 ? [1, 1.1, 1] : 1 }}
+            transition={{ repeat: Infinity, duration: 0.5 }}
+          >
+            <p>Health: {opponentHealth}</p>
+            <p>Energy: {opponentEnergy}</p>
+          </motion.div>
         </div>
       </div>
       <div className="mt-4">
-        <Button onClick={handleAttack} disabled={currentTurn !== 'player'} className="mr-2">Attack</Button>
-        <Button onClick={handleDefend} disabled={currentTurn !== 'player'} className="mr-2">Defend</Button>
-        <Button onClick={handleSpecialMove} disabled={currentTurn !== 'player' || playerEnergy < 2}>Special Move</Button>
+        <Button onClick={handleAttack} disabled={currentTurn !== 'player' || isGameOver} className="mr-2">Attack</Button>
+        <Button onClick={handleDefend} disabled={currentTurn !== 'player' || isGameOver} className="mr-2">Defend</Button>
+        <Button onClick={handleSpecialMove} disabled={currentTurn !== 'player' || playerEnergy < 2 || isGameOver}>Special Move</Button>
       </div>
       <div className="mt-4">
         <h3 className="text-xl font-bold mb-2">Battle Log</h3>
-        <ul className="list-disc list-inside">
+        <ul className="list-disc list-inside h-40 overflow-y-auto bg-gray-100 p-4 rounded">
           {battleLog.map((log, index) => (
-            <li key={index}>{log}</li>
+            <motion.li
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              {log}
+            </motion.li>
           ))}
         </ul>
       </div>

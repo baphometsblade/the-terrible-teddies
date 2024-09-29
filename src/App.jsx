@@ -5,9 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { SupabaseProvider } from './integrations/supabase/auth';
 import Home from './components/Home';
 import Battle from './components/Battle';
-import Collection from './components/Collection';
+import DeckBuilder from './components/DeckBuilder';
 import Shop from './components/Shop';
 import Profile from './components/Profile';
+import Leaderboard from './components/Leaderboard';
 import Auth from './components/Auth';
 import Header from './components/Header';
 
@@ -23,9 +24,10 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/battle" element={<Battle />} />
-              <Route path="/collection" element={<Collection />} />
+              <Route path="/deck-builder" element={<DeckBuilder />} />
               <Route path="/shop" element={<Shop />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/auth" element={<Auth />} />
             </Routes>
           </div>
