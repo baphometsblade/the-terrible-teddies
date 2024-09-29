@@ -1,44 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from './lib/supabase';
-import { initDatabase } from './utils/initDatabase';
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
-import GameInterface from './components/GameInterface';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SupabaseProvider } from './utils/supabaseClient';
+import Home from './components/Home';
+import Game from './components/Game';
+import Shop from './components/Shop';
+import { Toaster } from "@/components/ui/toaster";
+
+const queryClient = new QueryClient();
 
 function App() {
-  const [session, setSession] = useState(null);
-  const [isDbReady, setIsDbReady] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    initDatabase().then(() => setIsDbReady(true));
-  }, []);
-
-  if (!isDbReady) {
-    return <div>Loading...</div>;
-  }
-
-  if (!session) {
-    return (
-      <Auth
-        supabaseClient={supabase}
-        appearance={{ theme: ThemeSupa }}
-        providers={['google', 'facebook']}
-      />
-    );
-  }
-
   return (
-    <div className="App">
-      <GameInterface session={session} />
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <SupabaseProvider>
+        <Router>
+          <div className="App">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/game" element={<Game />} />
+              <Route path="/shop" element={<Shop />} />
+            </Routes>
+          </div>
+        </Router>
+        <Toaster />
+      </SupabaseProvider>
+    </QueryClientProvider>
   );
 }
 

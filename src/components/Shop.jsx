@@ -1,40 +1,26 @@
 import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { purchaseBearPack, purchaseSubscription } from '../utils/monetization';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import TeddyCard from './TeddyCard';
-
-const fetchShopTeddies = async () => {
-  const { data, error } = await supabase
-    .from('terrible_teddies')
-    .select('*')
-    .limit(5);
-  if (error) throw error;
-  return data;
-};
 
 const Shop = () => {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { data: shopTeddies, isLoading, error } = useQuery({
-    queryKey: ['shopTeddies'],
-    queryFn: fetchShopTeddies,
+  const { data: user } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    },
   });
 
-  const purchaseMutation = useMutation({
-    mutationFn: async (teddyId) => {
-      const { data, error } = await supabase
-        .from('player_teddies')
-        .insert([{ teddy_id: teddyId }]);
-      if (error) throw error;
-      return data;
-    },
+  const purchasePackMutation = useMutation({
+    mutationFn: ({ userId, packType }) => purchaseBearPack(userId, packType),
     onSuccess: () => {
-      queryClient.invalidateQueries('playerDeck');
       toast({
         title: "Purchase Successful",
-        description: "You've added a new teddy to your collection!",
+        description: "Your new bears are ready!",
         variant: "success",
       });
     },
@@ -47,24 +33,95 @@ const Shop = () => {
     },
   });
 
-  if (isLoading) return <div>Loading shop...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  const purchaseSubscriptionMutation = useMutation({
+    mutationFn: ({ userId, tier }) => purchaseSubscription(userId, tier),
+    onSuccess: () => {
+      toast({
+        title: "Subscription Activated",
+        description: "Enjoy your new benefits!",
+        variant: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Subscription Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePurchasePack = (packType) => {
+    if (user) {
+      purchasePackMutation.mutate({ userId: user.id, packType });
+    } else {
+      toast({
+        title: "Not Logged In",
+        description: "Please log in to make a purchase.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePurchaseSubscription = (tier) => {
+    if (user) {
+      purchaseSubscriptionMutation.mutate({ userId: user.id, tier });
+    } else {
+      toast({
+        title: "Not Logged In",
+        description: "Please log in to subscribe.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4">Teddy Shop</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {shopTeddies.map(teddy => (
-          <div key={teddy.id} className="flex flex-col items-center">
-            <TeddyCard teddy={teddy} />
-            <Button
-              onClick={() => purchaseMutation.mutate(teddy.id)}
-              className="mt-2"
-            >
-              Purchase
-            </Button>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">Terrible Teddies Shop</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-4">Bear Packs</h2>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-medium">Standard Pack</h3>
+              <p className="text-gray-600 mb-2">3 new bears - $4.99</p>
+              <Button onClick={() => handlePurchasePack('standard')}>Purchase Standard Pack</Button>
+            </div>
+            <div>
+              <h3 className="text-lg font-medium">Premium Pack</h3>
+              <p className="text-gray-600 mb-2">5 new bears - $9.99</p>
+              <Button onClick={() => handlePurchasePack('premium')}>Purchase Premium Pack</Button>
+            </div>
           </div>
-        ))}
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-4">Subscriptions</h2>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-medium">Gold Tier</h3>
+              <p className="text-gray-600 mb-2">$4.99/month</p>
+              <ul className="list-disc list-inside mb-2 text-sm">
+                <li>Exclusive bears</li>
+                <li>Custom card frames</li>
+                <li>Priority support</li>
+              </ul>
+              <Button onClick={() => handlePurchaseSubscription('gold')}>Subscribe to Gold</Button>
+            </div>
+            <div>
+              <h3 className="text-lg font-medium">Platinum Tier</h3>
+              <p className="text-gray-600 mb-2">$9.99/month</p>
+              <ul className="list-disc list-inside mb-2 text-sm">
+                <li>All Gold perks</li>
+                <li>Faster event access</li>
+                <li>Early bear releases</li>
+                <li>Exclusive cosmetics</li>
+              </ul>
+              <Button onClick={() => handlePurchaseSubscription('platinum')}>Subscribe to Platinum</Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
