@@ -15,7 +15,7 @@ export const setupDatabase = async () => {
     '008_create_players_table.sql',
     '009_update_player_teddies_relation.sql',
     '010_create_players_table.sql',
-    '011_create_public_functions.sql'
+    '011_fix_player_teddies_relation.sql'
   ];
 
   for (const migration of migrations) {

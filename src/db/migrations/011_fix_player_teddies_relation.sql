@@ -6,6 +6,7 @@ CREATE TABLE public.player_teddies (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   player_id UUID NOT NULL,
   teddy_id UUID NOT NULL,
+  level INTEGER DEFAULT 1,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (player_id) REFERENCES auth.users(id) ON DELETE CASCADE,
   FOREIGN KEY (teddy_id) REFERENCES public.terrible_teddies(id) ON DELETE CASCADE
