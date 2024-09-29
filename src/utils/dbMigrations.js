@@ -37,29 +37,11 @@ export const runMigrations = async () => {
   console.log('Starting database migrations...');
 
   try {
-    // Create the migration function
-    const { data: createFunctionData, error: createFunctionError } = await supabase.rpc('run_sql_migration', {
-      sql: `
-        CREATE OR REPLACE FUNCTION public.run_sql_migration(sql text)
-        RETURNS void AS $$
-        BEGIN
-          EXECUTE sql;
-        END;
-        $$ LANGUAGE plpgsql SECURITY DEFINER;
-      `
-    });
-
-    if (createFunctionError) {
-      console.error('Error creating migration function:', createFunctionError);
-      return false;
-    }
-
-    // Run migrations
     for (const [index, migration] of migrations.entries()) {
-      const { data, error } = await supabase.rpc('run_sql_migration', { sql: migration });
+      const { error } = await supabase.rpc('run_sql_migration', { sql: migration });
       if (error) {
         console.error(`Migration ${index + 1} error:`, error);
-        return false;
+        throw error;
       }
       console.log(`Executed migration ${index + 1}`);
     }
