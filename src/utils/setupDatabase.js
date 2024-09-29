@@ -9,7 +9,8 @@ export const setupDatabase = async () => {
     '003_create_terrible_teddies.sql',
     '004_create_player_teddies.sql',
     '005_create_player_teddies.sql',
-    '006_create_shop_items.sql'
+    '006_create_shop_items.sql',
+    '007_create_shop_items.sql'  // Add this new migration
   ];
 
   for (const migration of migrations) {
