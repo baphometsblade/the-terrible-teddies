@@ -1,11 +1,14 @@
 import React from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Shop = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: shopItems, isLoading, error } = useQuery({
     queryKey: ['shopItems'],
     queryFn: async () => {
@@ -22,6 +25,7 @@ const Shop = () => {
       return data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries(['shopItems']);
       toast({
         title: "Purchase successful",
         description: "Your item has been added to your collection!",
@@ -40,17 +44,28 @@ const Shop = () => {
   if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {shopItems.map(item => (
-        <div key={item.id} className="border p-4 rounded-lg">
-          <h3 className="text-lg font-bold">{item.name}</h3>
-          <p>{item.description}</p>
-          <p className="font-bold mt-2">Price: {item.price} coins</p>
-          <Button onClick={() => purchaseMutation.mutate(item.id)} className="mt-2">
-            Purchase
-          </Button>
-        </div>
-      ))}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">Teddy Shop</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {shopItems.map(item => (
+          <Card key={item.id} className="flex flex-col">
+            <CardHeader>
+              <CardTitle>{item.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <p className="mb-2">{item.description}</p>
+              <p className="font-bold mb-4">Price: {item.price} coins</p>
+              <Button 
+                onClick={() => purchaseMutation.mutate(item.id)}
+                disabled={purchaseMutation.isLoading}
+                className="w-full"
+              >
+                {purchaseMutation.isLoading ? 'Purchasing...' : 'Purchase'}
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
