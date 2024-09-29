@@ -24,10 +24,6 @@ export const initializeSupabase = async () => {
       throw new Error(`Failed to fetch data: ${error.message}`);
     }
     
-    if (!data) {
-      throw new Error('No data returned from the query');
-    }
-    
     console.log('Supabase connection successful');
     return true;
   } catch (error) {
