@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { supabase } from '../lib/supabase';
+import { uploadBearImage } from './imageUpload';
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
@@ -26,6 +27,9 @@ const generateTeddyBear = async () => {
 
   const imageUrl = response.data[0].url;
 
+  // Upload the image to Supabase Storage
+  const supabaseImageUrl = await uploadBearImage(name, imageUrl);
+
   return {
     name,
     title,
@@ -33,7 +37,7 @@ const generateTeddyBear = async () => {
     attack: Math.floor(Math.random() * 3) + 4, // 4-6
     defense: Math.floor(Math.random() * 3) + 4, // 4-6
     specialMove,
-    imageUrl
+    imageUrl: supabaseImageUrl
   };
 };
 
@@ -50,17 +54,6 @@ export const generateAllAssets = async (count = 50) => {
 
     if (error) {
       console.error('Error storing bear data:', error);
-    }
-
-    // Store the image in Supabase Storage
-    const { data: imageData, error: imageError } = await supabase.storage
-      .from('teddy-images')
-      .upload(`${bear.name.replace(/\s+/g, '-').toLowerCase()}.png`, await (await fetch(bear.imageUrl)).blob(), {
-        contentType: 'image/png',
-      });
-
-    if (imageError) {
-      console.error('Error storing bear image:', imageError);
     }
   }
   return generatedAssets;
