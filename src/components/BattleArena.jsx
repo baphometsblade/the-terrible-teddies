@@ -4,9 +4,12 @@ import { supabase } from '../lib/supabase';
 import TeddyCard from './TeddyCard';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import AIOpponent from '../utils/AIOpponent';
 
 const BattleArena = () => {
   const [battleId, setBattleId] = useState(null);
+  const [isAIOpponent, setIsAIOpponent] = useState(false);
+  const [aiDifficulty, setAiDifficulty] = useState('medium');
   const { toast } = useToast();
 
   const { data: battle, isLoading, error, refetch } = useQuery({
@@ -75,10 +78,12 @@ const BattleArena = () => {
         .from('battles')
         .insert({
           player1_id: user.id,
-          player2_id: user.id, // For simplicity, player is battling themselves
+          player2_id: isAIOpponent ? null : user.id, // For AI opponent, set to null
           player1_teddy_id: playerTeddy.teddy_id,
-          player2_teddy_id: playerTeddy.teddy_id,
+          player2_teddy_id: isAIOpponent ? AIOpponent.generateTeddy().id : playerTeddy.teddy_id,
           current_turn: user.id,
+          is_ai_opponent: isAIOpponent,
+          ai_difficulty: isAIOpponent ? aiDifficulty : null,
         })
         .select()
         .single();
@@ -92,7 +97,18 @@ const BattleArena = () => {
     };
 
     createBattle();
-  }, []);
+  }, [isAIOpponent, aiDifficulty]);
+
+  const handleAction = (action) => {
+    battleActionMutation.mutate({ action });
+    if (isAIOpponent) {
+      // Simulate AI turn after player's turn
+      setTimeout(() => {
+        const aiAction = AIOpponent.chooseAction(battle.player2_teddy, battle.player1_teddy, aiDifficulty);
+        battleActionMutation.mutate({ action: aiAction });
+      }, 1000);
+    }
+  };
 
   if (isLoading) return <div>Loading battle...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -110,22 +126,36 @@ const BattleArena = () => {
           <p>Health: {battle.player1_health}/30</p>
         </div>
         <div>
-          <h2 className="text-xl font-bold mb-2">Player 2</h2>
+          <h2 className="text-xl font-bold mb-2">{isAIOpponent ? 'AI Opponent' : 'Player 2'}</h2>
           {battle.player2_teddy && <TeddyCard teddy={battle.player2_teddy} />}
           <p>Health: {battle.player2_health}/30</p>
         </div>
       </div>
       <div className="mb-4">
         <Button 
-          onClick={() => battleActionMutation.mutate({ action: 'attack' })}
-          disabled={battleActionMutation.isLoading || battle.status === 'finished'}
+          onClick={() => handleAction('attack')}
+          disabled={battleActionMutation.isLoading || battle.status === 'finished' || !isPlayer1Turn}
         >
           Attack
+        </Button>
+        <Button 
+          onClick={() => handleAction('defend')}
+          disabled={battleActionMutation.isLoading || battle.status === 'finished' || !isPlayer1Turn}
+          className="ml-2"
+        >
+          Defend
+        </Button>
+        <Button 
+          onClick={() => handleAction('special')}
+          disabled={battleActionMutation.isLoading || battle.status === 'finished' || !isPlayer1Turn}
+          className="ml-2"
+        >
+          Special Move
         </Button>
       </div>
       <div>
         <h3 className="text-lg font-bold mb-2">Battle Status</h3>
-        <p>Current Turn: {isPlayer1Turn ? 'Player 1' : 'Player 2'}</p>
+        <p>Current Turn: {isPlayer1Turn ? 'Player 1' : (isAIOpponent ? 'AI Opponent' : 'Player 2')}</p>
         <p>Status: {battle.status}</p>
       </div>
     </div>
