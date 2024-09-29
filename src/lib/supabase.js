@@ -11,15 +11,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const initializeSupabase = async () => {
   try {
-    const { data, error } = await supabase.from('player_teddies').select('*').limit(1);
-    if (error) {
-      console.error('Error checking Supabase connection:', error);
-      return false;
-    }
+    const { data, error } = await supabase.from('terrible_teddies').select('*').limit(1);
+    if (error) throw error;
     console.log('Supabase connection successful');
     return true;
   } catch (error) {
-    console.error('Error initializing Supabase:', error);
+    console.error('Error initializing Supabase:', error.message);
     return false;
   }
 };

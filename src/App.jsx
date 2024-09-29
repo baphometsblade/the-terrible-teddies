@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { runMigrations } from './utils/dbMigrations';
+import { initializeSupabase } from './lib/supabase';
 import Home from './components/Home';
 import Game from './components/Game';
 import Shop from './components/Shop';
@@ -14,6 +15,10 @@ function App() {
   useEffect(() => {
     const initializeDb = async () => {
       try {
+        const isSupabaseInitialized = await initializeSupabase();
+        if (!isSupabaseInitialized) {
+          throw new Error('Failed to initialize Supabase connection');
+        }
         await runMigrations();
         setIsDbReady(true);
       } catch (error) {

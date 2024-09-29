@@ -3,35 +3,14 @@ import { supabase } from '../lib/supabase';
 export const runMigrations = async () => {
   console.log('Starting database migrations...');
 
-  const timeout = setTimeout(() => {
-    console.error('Database migration timed out after 30 seconds');
-    throw new Error('Database migration timeout');
-  }, 30000);
-
   try {
-    console.log('Checking if player_teddies table exists...');
-    const { data, error } = await supabase
-      .from('player_teddies')
-      .select('id')
-      .limit(1);
-
-    if (error) {
-      if (error.code === '42P01') {
-        console.log('player_teddies table does not exist. Creating it now...');
-        await createPlayerTeddiesTable();
-      } else {
-        throw new Error(`Error checking player_teddies table: ${error.message}`);
-      }
-    } else {
-      console.log('player_teddies table already exists');
-    }
-
-    console.log('Database migrations completed successfully');
+    const { data, error } = await supabase.rpc('run_migrations');
+    if (error) throw error;
+    console.log('Migrations completed successfully:', data);
+    return true;
   } catch (error) {
     console.error('Error during database migration:', error.message);
     throw error;
-  } finally {
-    clearTimeout(timeout);
   }
 };
 
