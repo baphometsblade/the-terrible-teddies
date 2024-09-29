@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 export const AssetGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentTask, setCurrentTask] = useState('');
   const { toast } = useToast();
 
   const handleGenerateAssets = async () => {
@@ -27,6 +28,7 @@ export const AssetGenerator = () => {
       ];
 
       for (let i = 0; i < backgroundDescriptions.length; i++) {
+        setCurrentTask(`Generating background ${i + 1} of ${backgroundDescriptions.length}`);
         const description = backgroundDescriptions[i];
         const imageUrl = await generateBackgroundImage(description);
         if (imageUrl) {
@@ -41,6 +43,7 @@ export const AssetGenerator = () => {
 
       // Generate teddy bears
       for (let i = 0; i < 50; i++) {
+        setCurrentTask(`Generating teddy bear ${i + 1} of 50`);
         const bear = await generateTeddyBear();
         const { data, error } = await supabase.from('terrible_teddies').insert([bear]);
         if (error) {
@@ -66,6 +69,7 @@ export const AssetGenerator = () => {
       });
     } finally {
       setIsGenerating(false);
+      setCurrentTask('');
     }
   };
 
@@ -80,7 +84,11 @@ export const AssetGenerator = () => {
         {isGenerating ? 'Generating...' : 'Generate Assets'}
       </Button>
       {isGenerating && (
-        <Progress value={progress} className="w-full" />
+        <div>
+          <Progress value={progress} className="w-full mb-2" />
+          <p className="text-sm text-gray-600">{currentTask}</p>
+          <p className="text-sm text-gray-600">{Math.round(progress)}% complete</p>
+        </div>
       )}
     </div>
   );
