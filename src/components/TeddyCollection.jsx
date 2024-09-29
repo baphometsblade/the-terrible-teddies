@@ -3,20 +3,23 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import TeddyCard from './TeddyCard';
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSupabaseAuth } from '../integrations/supabase/auth';
 
 const TeddyCollection = () => {
+  const { session } = useSupabaseAuth();
+
   const { data: teddies, isLoading, error } = useQuery({
-    queryKey: ['playerTeddies'],
+    queryKey: ['playerTeddies', session?.user?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!session?.user?.id) throw new Error('User not authenticated');
       const { data, error } = await supabase
         .from('player_teddies')
         .select('*, terrible_teddies(*)')
-        .eq('player_id', user.id);
+        .eq('player_id', session.user.id);
       if (error) throw error;
       return data.map(item => item.terrible_teddies);
     },
+    enabled: !!session?.user?.id,
   });
 
   if (isLoading) {
