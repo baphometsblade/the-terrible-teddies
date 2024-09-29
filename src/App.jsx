@@ -18,7 +18,7 @@ function App() {
         setIsDbReady(true);
       } catch (error) {
         console.error('Failed to initialize database:', error);
-        setError('Failed to initialize database. Please try refreshing the page.');
+        setError(`Failed to initialize database: ${error.message}. Please try refreshing the page or contact support if the issue persists.`);
       }
     };
     initializeDb();

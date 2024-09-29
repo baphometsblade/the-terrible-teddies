@@ -15,11 +15,13 @@ export const runMigrations = async () => {
       .select('id')
       .limit(1);
 
-    if (error && error.code === '42P01') {
-      console.log('player_teddies table does not exist. Creating it now...');
-      await createPlayerTeddiesTable();
-    } else if (error) {
-      throw error;
+    if (error) {
+      if (error.code === '42P01') {
+        console.log('player_teddies table does not exist. Creating it now...');
+        await createPlayerTeddiesTable();
+      } else {
+        throw new Error(`Error checking player_teddies table: ${error.message}`);
+      }
     } else {
       console.log('player_teddies table already exists');
     }
@@ -61,6 +63,6 @@ const createPlayerTeddiesTable = async () => {
   `;
 
   const { error } = await supabase.rpc('exec_sql', { sql: createTableSQL });
-  if (error) throw error;
+  if (error) throw new Error(`Error creating player_teddies table: ${error.message}`);
   console.log('player_teddies table created successfully');
 };
