@@ -14,7 +14,16 @@ export const initializeSupabase = async () => {
   try {
     await runMigrations();
     const { data, error } = await supabase.from('terrible_teddies').select('*').limit(1);
-    if (error) throw error;
+    
+    if (error) {
+      console.error('Error fetching data:', error);
+      throw new Error(`Failed to fetch data: ${error.message}`);
+    }
+    
+    if (!data) {
+      throw new Error('No data returned from the query');
+    }
+    
     console.log('Supabase connection successful');
     return true;
   } catch (error) {
