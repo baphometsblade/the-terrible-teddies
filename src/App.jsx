@@ -12,7 +12,10 @@ const queryClient = new QueryClient();
 
 function App() {
   useEffect(() => {
-    setupDatabase();
+    setupDatabase().catch(error => {
+      console.error('Failed to set up database:', error);
+      // You might want to show an error message to the user here
+    });
   }, []);
 
   return (
