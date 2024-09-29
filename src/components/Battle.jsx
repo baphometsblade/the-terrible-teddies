@@ -3,8 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import TeddyCard from './TeddyCard';
-import { calculateDamage } from '../utils/battleSystem';
-import AIOpponent from './AIOpponent';
+import { calculateDamage } from '../utils/gameLogic';
+import AIOpponent from '../utils/AIOpponent';
+import { useToast } from "@/components/ui/use-toast";
 
 const Battle = () => {
   const [playerTeddy, setPlayerTeddy] = useState(null);
@@ -15,6 +16,7 @@ const Battle = () => {
   const [playerEnergy, setPlayerEnergy] = useState(3);
   const [opponentEnergy, setOpponentEnergy] = useState(3);
   const [battleLog, setBattleLog] = useState([]);
+  const { toast } = useToast();
 
   const { data: playerTeddies, isLoading, error } = useQuery({
     queryKey: ['playerTeddies'],

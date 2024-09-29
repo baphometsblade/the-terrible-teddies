@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import TeddyCard from './TeddyCard';
-import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 
 const Collection = () => {
