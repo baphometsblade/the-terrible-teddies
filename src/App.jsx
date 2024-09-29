@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
@@ -11,10 +11,15 @@ import Leaderboard from './components/Leaderboard';
 import Profile from './components/Profile';
 import Auth from './components/Auth';
 import DailyChallenge from './components/DailyChallenge';
+import { initializeDatabase } from './utils/setupDatabase';
 
 const queryClient = new QueryClient();
 
 function App() {
+  useEffect(() => {
+    initializeDatabase();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <SupabaseProvider>

@@ -2,21 +2,33 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import TeddyCard from "./TeddyCard";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const fetchTeddies = async () => {
-  const { data, error } = await supabase.from("player_teddies").select("*");
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("User not authenticated");
+
+  const { data, error } = await supabase
+    .from("player_teddies")
+    .select(`
+      id,
+      terrible_teddies (*)
+    `)
+    .eq("player_id", user.id);
+
   if (error) throw error;
-  return data;
+  return data.map(item => item.terrible_teddies);
 };
 
 const TeddyCollection = () => {
   const { data: teddies, isLoading, error } = useQuery({
-    queryKey: ["teddies"],
+    queryKey: ["player_teddies"],
     queryFn: fetchTeddies,
   });
 
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error loading collection: {error.message}</div>;
+  if (isLoading) return <div className="text-center mt-8">Loading your collection...</div>;
+  if (error) return <div className="text-center mt-8 text-red-500">Error loading collection: {error.message}</div>;
 
   return (
     <div className="container mx-auto p-4">
@@ -28,7 +40,12 @@ const TeddyCollection = () => {
           ))}
         </div>
       ) : (
-        <p>You don't have any teddies yet. Visit the shop to get some!</p>
+        <div className="text-center">
+          <p className="mb-4">You don't have any teddies yet. Visit the shop to get some!</p>
+          <Link to="/shop">
+            <Button>Go to Shop</Button>
+          </Link>
+        </div>
       )}
     </div>
   );
