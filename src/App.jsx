@@ -6,16 +6,25 @@ import Home from './components/Home';
 import Game from './components/Game';
 import Shop from './components/Shop';
 import { Toaster } from "@/components/ui/toaster";
-import { setupDatabase } from './utils/setupDatabase';
+import { setupDatabase, verifyPlayerTeddiesTable } from './utils/setupDatabase';
 
 const queryClient = new QueryClient();
 
 function App() {
   useEffect(() => {
-    setupDatabase().catch(error => {
-      console.error('Failed to set up database:', error);
-      // You might want to show an error message to the user here
-    });
+    const initializeDatabase = async () => {
+      try {
+        await setupDatabase();
+        const tableExists = await verifyPlayerTeddiesTable();
+        if (!tableExists) {
+          console.error('player_teddies table does not exist after setup');
+        }
+      } catch (error) {
+        console.error('Failed to set up database:', error);
+      }
+    };
+
+    initializeDatabase();
   }, []);
 
   return (

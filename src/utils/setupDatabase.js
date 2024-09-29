@@ -38,7 +38,6 @@ export const setupDatabase = async () => {
           FOR DELETE USING (auth.uid() = player_id);
       `
     },
-    // Add more migrations here if needed
   ];
 
   for (const migration of migrations) {
@@ -54,4 +53,20 @@ export const setupDatabase = async () => {
   }
 
   console.log('Database setup completed');
+};
+
+// Add this function to verify the table exists
+export const verifyPlayerTeddiesTable = async () => {
+  const { data, error } = await supabase
+    .from('player_teddies')
+    .select('count')
+    .limit(1);
+  
+  if (error) {
+    console.error('Error verifying player_teddies table:', error);
+    return false;
+  }
+  
+  console.log('player_teddies table verified successfully');
+  return true;
 };
