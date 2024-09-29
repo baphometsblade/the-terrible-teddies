@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useSupabaseAuth } from "../hooks/useSupabaseAuth";
 import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
 const MatchmakingSystem = ({ onMatchFound }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [matchmakingChannel, setMatchmakingChannel] = useState(null);
-  const { session } = useSupabaseAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isSearching) {
@@ -15,10 +15,8 @@ const MatchmakingSystem = ({ onMatchFound }) => {
 
       channel
         .on('broadcast', { event: 'match_found' }, ({ payload }) => {
-          if (payload.player1Id === session.user.id || payload.player2Id === session.user.id) {
-            setIsSearching(false);
-            onMatchFound(payload);
-          }
+          setIsSearching(false);
+          onMatchFound(payload);
         })
         .subscribe();
 
@@ -26,16 +24,38 @@ const MatchmakingSystem = ({ onMatchFound }) => {
         channel.unsubscribe();
       };
     }
-  }, [isSearching, session, onMatchFound]);
+  }, [isSearching, onMatchFound]);
 
   const startMatchmaking = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "Please sign in to start matchmaking.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSearching(true);
-    await supabase.rpc('join_matchmaking', { player_id: session.user.id });
+    const { error } = await supabase.rpc('join_matchmaking', { player_id: user.id });
+    if (error) {
+      console.error('Error joining matchmaking:', error);
+      setIsSearching(false);
+      toast({
+        title: "Matchmaking Error",
+        description: "An error occurred while joining matchmaking. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const cancelMatchmaking = async () => {
     setIsSearching(false);
-    await supabase.rpc('leave_matchmaking', { player_id: session.user.id });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.rpc('leave_matchmaking', { player_id: user.id });
+    }
   };
 
   return (

@@ -7,6 +7,9 @@ import BattleArena from './components/BattleArena';
 import Auth from './components/Auth';
 import TeddyCollection from './components/TeddyCollection';
 import Shop from './components/Shop';
+import Leaderboard from './components/Leaderboard';
+import PlayerProfile from './components/PlayerProfile';
+import MatchmakingSystem from './components/MatchmakingSystem';
 
 function App() {
   return (
@@ -19,6 +22,9 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/collection" element={<TeddyCollection />} />
           <Route path="/shop" element={<Shop />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/profile" element={<PlayerProfile />} />
+          <Route path="/matchmaking" element={<MatchmakingSystem />} />
         </Routes>
       </div>
       <Toaster />
