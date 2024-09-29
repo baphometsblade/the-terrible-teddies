@@ -15,10 +15,7 @@ function App() {
   useEffect(() => {
     const initializeDb = async () => {
       try {
-        const isSupabaseInitialized = await initializeSupabase();
-        if (!isSupabaseInitialized) {
-          throw new Error('Failed to initialize Supabase connection');
-        }
+        await initializeSupabase();
         await runMigrations();
         setIsDbReady(true);
       } catch (error) {

@@ -17,6 +17,6 @@ export const initializeSupabase = async () => {
     return true;
   } catch (error) {
     console.error('Error initializing Supabase:', error.message);
-    return false;
+    throw new Error(`Failed to initialize Supabase: ${error.message}`);
   }
 };
