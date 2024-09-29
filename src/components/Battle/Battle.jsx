@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { calculateDamage } from '../../utils/battleSystem';
-import BattleField from './BattleField';
-import ActionButtons from './ActionButtons';
-import BattleLog from './BattleLog';
+import TeddyCard from '../TeddyCard';
+import { calculateDamage } from '../../utils/battleUtils';
+import { Button } from "@/components/ui/button";
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const [playerHealth, setPlayerHealth] = useState(30);
@@ -12,7 +11,6 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const [opponentEnergy, setOpponentEnergy] = useState(3);
   const [currentTurn, setCurrentTurn] = useState('player');
   const [battleLog, setBattleLog] = useState([]);
-  const [isAnimating, setIsAnimating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -22,9 +20,8 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   }, [currentTurn]);
 
   const performAction = (action) => {
-    if (currentTurn !== 'player' || isAnimating) return;
+    if (currentTurn !== 'player') return;
 
-    setIsAnimating(true);
     let damage = 0;
     switch (action) {
       case 'attack':
@@ -47,21 +44,16 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
             description: "You need 2 energy to use a special move.",
             variant: "destructive",
           });
-          setIsAnimating(false);
           return;
         }
         break;
     }
 
-    setTimeout(() => {
-      checkGameOver();
-      setCurrentTurn('opponent');
-      setIsAnimating(false);
-    }, 1000);
+    checkGameOver();
+    setCurrentTurn('opponent');
   };
 
   const opponentTurn = () => {
-    setIsAnimating(true);
     const action = Math.random() > 0.3 ? 'attack' : 'defend';
     let damage = 0;
 
@@ -74,11 +66,8 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
       addToBattleLog(`${opponentTeddy.name} increases defense by 2!`);
     }
 
-    setTimeout(() => {
-      checkGameOver();
-      setCurrentTurn('player');
-      setIsAnimating(false);
-    }, 1000);
+    checkGameOver();
+    setCurrentTurn('player');
   };
 
   const addToBattleLog = (message) => {
@@ -106,21 +95,33 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-4">Battle Arena</h1>
-      <BattleField 
-        playerTeddy={playerTeddy}
-        opponentTeddy={opponentTeddy}
-        playerHealth={playerHealth}
-        opponentHealth={opponentHealth}
-        playerEnergy={playerEnergy}
-        opponentEnergy={opponentEnergy}
-        currentTurn={currentTurn}
-      />
-      <ActionButtons 
-        onAction={performAction}
-        isDisabled={currentTurn !== 'player' || isAnimating}
-        playerEnergy={playerEnergy}
-      />
-      <BattleLog log={battleLog} />
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <h2 className="text-xl font-bold mb-2">Your Teddy</h2>
+          <TeddyCard teddy={playerTeddy} />
+          <p>Health: {playerHealth}/30</p>
+          <p>Energy: {playerEnergy}/3</p>
+        </div>
+        <div>
+          <h2 className="text-xl font-bold mb-2">Opponent's Teddy</h2>
+          <TeddyCard teddy={opponentTeddy} />
+          <p>Health: {opponentHealth}/30</p>
+          <p>Energy: {opponentEnergy}/3</p>
+        </div>
+      </div>
+      <div className="mb-4">
+        <Button onClick={() => performAction('attack')} disabled={currentTurn !== 'player'}>Attack</Button>
+        <Button onClick={() => performAction('defend')} disabled={currentTurn !== 'player'}>Defend</Button>
+        <Button onClick={() => performAction('special')} disabled={currentTurn !== 'player' || playerEnergy < 2}>Special Move</Button>
+      </div>
+      <div>
+        <h3 className="text-lg font-bold mb-2">Battle Log</h3>
+        <ul className="list-disc list-inside">
+          {battleLog.map((log, index) => (
+            <li key={index}>{log}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };
