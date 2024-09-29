@@ -5,7 +5,6 @@ export const initializeDatabase = async () => {
   try {
     console.log('Initializing Replit database...');
     await createTables();
-    await insertInitialData();
     console.log('Replit database initialization successful');
     return true;
   } catch (error) {
@@ -18,66 +17,9 @@ const createTables = async () => {
   // In Replit's key-value database, we don't create tables in the traditional sense.
   // Instead, we'll use prefixes to organize our data.
   console.log('Setting up data structure...');
-};
-
-const insertInitialData = async () => {
-  const teddies = await db.get('terrible_teddies');
-  if (!teddies || teddies.length === 0) {
-    const initialTeddies = [
-      {
-        id: 1,
-        name: "Whiskey Whiskers",
-        title: "The Smooth Operator",
-        description: "A suave bear with a penchant for fine spirits and even finer company.",
-        attack: 6,
-        defense: 5,
-        special_move: "On the Rocks",
-        image_url: null
-      },
-      {
-        id: 2,
-        name: "Madame Mistletoe",
-        title: "The Festive Flirt",
-        description: "Always ready with a sly wink and a sprig of mistletoe.",
-        attack: 5,
-        defense: 6,
-        special_move: "Sneak Kiss",
-        image_url: null
-      },
-      {
-        id: 3,
-        name: "Baron Von Blubber",
-        title: "The Inflated Ego",
-        description: "A pompous bear with an oversized monocle and a belly that's one puff away from popping.",
-        attack: 7,
-        defense: 4,
-        special_move: "Burst Bubble",
-        image_url: null
-      },
-      {
-        id: 4,
-        name: "Icy Ivan",
-        title: "The Frosty Fighter",
-        description: "A bear with fur as white as snow and eyes as cold as ice.",
-        attack: 6,
-        defense: 7,
-        special_move: "Ice Age",
-        image_url: null
-      },
-      {
-        id: 5,
-        name: "Lady Lush",
-        title: "The Party Animal",
-        description: "This bear's fur is a mess of glitter and confetti.",
-        attack: 7,
-        defense: 5,
-        special_move: "Drunken Master",
-        image_url: null
-      }
-    ];
-    await db.set('terrible_teddies', initialTeddies);
-    console.log('Initial teddies data inserted');
-  }
+  await db.set('terrible_teddies', []);
+  await db.set('players', []);
+  await db.set('battles', []);
 };
 
 export const getTeddies = async () => {

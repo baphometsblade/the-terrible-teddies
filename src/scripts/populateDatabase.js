@@ -1,12 +1,12 @@
 import { initializeDatabase } from '../lib/database';
 
-const populateDatabase = async () => {
+const setupDatabase = async () => {
   try {
     await initializeDatabase();
-    console.log('Database populated successfully');
+    console.log('Database structure set up successfully');
   } catch (error) {
-    console.error('Error populating database:', error);
+    console.error('Error setting up database structure:', error);
   }
 };
 
-populateDatabase();
+setupDatabase();
