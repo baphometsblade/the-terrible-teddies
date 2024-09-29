@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { useEvolveCard } from '../hooks/useEvolveCard';
+import { useEvolveCard } from "../hooks/useEvolveCard";
 
 export const CardEvolution = ({ card, onEvolve }) => {
   const [isEvolving, setIsEvolving] = useState(false);

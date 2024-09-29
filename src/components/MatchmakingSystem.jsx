@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useSupabaseAuth } from "../hooks/useSupabaseAuth";
 import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 
