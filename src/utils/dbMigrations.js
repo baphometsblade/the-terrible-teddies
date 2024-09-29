@@ -1,5 +1,14 @@
 import { supabase } from '../lib/supabase';
 
+const createMigrationFunction = `
+CREATE OR REPLACE FUNCTION public.run_sql_migration(sql text)
+RETURNS void AS $$
+BEGIN
+  EXECUTE sql;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+`;
+
 const migrations = [
   `
   CREATE TABLE IF NOT EXISTS public.terrible_teddies (
@@ -37,6 +46,12 @@ export const runMigrations = async () => {
   console.log('Starting database migrations...');
 
   try {
+    // Create the migration function
+    const { error: functionError } = await supabase.rpc('run_sql_migration', { sql: createMigrationFunction });
+    if (functionError) throw new Error(`Error creating migration function: ${functionError.message}`);
+    console.log('Migration function created successfully');
+
+    // Run migrations
     for (const [index, migration] of migrations.entries()) {
       const { error } = await supabase.rpc('run_sql_migration', { sql: migration });
       if (error) throw new Error(`Migration ${index + 1} error: ${error.message}`);
