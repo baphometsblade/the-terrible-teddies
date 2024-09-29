@@ -1,57 +1,45 @@
 import { supabase } from '../lib/supabase';
 
-const migrations = [
-  `
-  CREATE TABLE IF NOT EXISTS public.terrible_teddies (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    name TEXT NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    attack INTEGER NOT NULL,
-    defense INTEGER NOT NULL,
-    special_move TEXT NOT NULL,
-    image_url TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-  );
-  `,
-  // Add more migration SQL statements here as needed
-];
-
 export const runMigrations = async () => {
-  console.log('Starting database migrations...');
+  console.log('Running database migrations...');
 
-  try {
-    for (const [index, migration] of migrations.entries()) {
-      console.log(`Executing migration ${index + 1}...`);
-      const { error } = await supabase.rpc('run_sql_migration', { sql: migration });
-      if (error) {
-        console.error(`Migration ${index + 1} error:`, error);
-        throw error;
-      }
-      console.log(`Migration ${index + 1} completed successfully`);
-    }
+  const migrations = [
+    createTableIfNotExists,
+    createPolicyIfNotExists
+  ];
 
-    console.log('All migrations completed successfully');
-    return true;
-  } catch (error) {
-    console.error('Error during database migration:', error);
-    return false;
+  for (const migration of migrations) {
+    await migration();
   }
+
+  console.log('Database migrations completed successfully');
+};
+
+const createTableIfNotExists = async () => {
+  const { error } = await supabase.rpc('create_function_create_table_if_not_exists');
+  if (error) throw new Error(`Error creating create_table_if_not_exists function: ${error.message}`);
+};
+
+const createPolicyIfNotExists = async () => {
+  const { error } = await supabase.rpc('create_function_create_policy_if_not_exists');
+  if (error) throw new Error(`Error creating create_policy_if_not_exists function: ${error.message}`);
 };
 
 export const verifyTables = async () => {
-  try {
+  const tables = ['terrible_teddies', 'players', 'player_teddies', 'battles', 'player_submissions'];
+  
+  for (const table of tables) {
     const { data, error } = await supabase
-      .from('terrible_teddies')
+      .from(table)
       .select('count')
       .limit(1);
     
-    if (error) throw error;
-    
-    console.log('Table verification successful');
-    return true;
-  } catch (error) {
-    console.error('Error verifying tables:', error);
-    return false;
+    if (error) {
+      console.error(`Error verifying ${table} table:`, error);
+      return false;
+    }
   }
+  
+  console.log('All tables verified successfully');
+  return true;
 };
