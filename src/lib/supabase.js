@@ -12,6 +12,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export const initializeSupabase = async () => {
   try {
     console.log('Initializing Supabase...');
+    await createFunctions();
     await createTables();
     await setupPolicies();
     await insertInitialData();
@@ -23,11 +24,30 @@ export const initializeSupabase = async () => {
   }
 };
 
+const createFunctions = async () => {
+  const createTableFunction = `
+    CREATE OR REPLACE FUNCTION public.create_table_if_not_exists(
+      table_name text,
+      table_definition text
+    )
+    RETURNS void AS $$
+    BEGIN
+      IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1) THEN
+        EXECUTE 'CREATE TABLE ' || quote_ident($1) || ' (' || $2 || ')';
+      END IF;
+    END;
+    $$ LANGUAGE plpgsql SECURITY DEFINER;
+  `;
+
+  const { error } = await supabase.rpc('run_sql', { sql: createTableFunction });
+  if (error) throw new Error(`Error creating function: ${error.message}`);
+};
+
 const createTables = async () => {
   const tables = [
     {
       name: 'terrible_teddies',
-      columns: `
+      definition: `
         id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
         name TEXT NOT NULL,
         title TEXT NOT NULL,
@@ -41,7 +61,7 @@ const createTables = async () => {
     },
     {
       name: 'players',
-      columns: `
+      definition: `
         id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
         user_id UUID REFERENCES auth.users(id),
         username TEXT UNIQUE NOT NULL,
@@ -50,36 +70,12 @@ const createTables = async () => {
       `
     },
     {
-      name: 'player_teddies',
-      columns: `
-        id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-        player_id UUID REFERENCES players(id),
-        teddy_id UUID REFERENCES terrible_teddies(id),
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      `
-    },
-    {
       name: 'battles',
-      columns: `
+      definition: `
         id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
         player1_id UUID REFERENCES players(id),
         player2_id UUID REFERENCES players(id),
         winner_id UUID REFERENCES players(id),
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      `
-    },
-    {
-      name: 'player_submissions',
-      columns: `
-        id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-        player_id UUID REFERENCES players(id),
-        name TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT,
-        attack INTEGER NOT NULL,
-        defense INTEGER NOT NULL,
-        special_move TEXT NOT NULL,
-        status TEXT DEFAULT 'pending',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       `
     }
@@ -88,7 +84,7 @@ const createTables = async () => {
   for (const table of tables) {
     const { error } = await supabase.rpc('create_table_if_not_exists', {
       table_name: table.name,
-      table_definition: table.columns
+      table_definition: table.definition
     });
     if (error) throw new Error(`Error creating ${table.name} table: ${error.message}`);
   }
@@ -107,28 +103,14 @@ const setupPolicies = async () => {
       definition: `CREATE POLICY "Allow users to read own data" ON players FOR SELECT USING (auth.uid() = user_id)`
     },
     {
-      table: 'player_teddies',
-      name: 'Allow users to read own teddies',
-      definition: `CREATE POLICY "Allow users to read own teddies" ON player_teddies FOR SELECT USING (auth.uid() = (SELECT user_id FROM players WHERE id = player_id))`
-    },
-    {
       table: 'battles',
       name: 'Allow users to read own battles',
       definition: `CREATE POLICY "Allow users to read own battles" ON battles FOR SELECT USING (auth.uid() IN (SELECT user_id FROM players WHERE id IN (player1_id, player2_id)))`
-    },
-    {
-      table: 'player_submissions',
-      name: 'Allow users to read own submissions',
-      definition: `CREATE POLICY "Allow users to read own submissions" ON player_submissions FOR SELECT USING (auth.uid() = (SELECT user_id FROM players WHERE id = player_id))`
     }
   ];
 
   for (const policy of policies) {
-    const { error } = await supabase.rpc('create_policy_if_not_exists', {
-      table_name: policy.table,
-      policy_name: policy.name,
-      policy_definition: policy.definition
-    });
+    const { error } = await supabase.rpc('run_sql', { sql: policy.definition });
     if (error) throw new Error(`Error creating policy for ${policy.table}: ${error.message}`);
   }
 };
