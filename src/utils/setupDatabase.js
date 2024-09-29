@@ -48,15 +48,15 @@ export const setupDatabase = async () => {
       console.log(`Migration ${migration.name} completed successfully`);
     } catch (error) {
       console.error(`Error in migration ${migration.name}:`, error);
-      throw error; // Re-throw the error to stop the setup process
+      throw error;
     }
   }
 
   console.log('Database setup completed');
 };
 
-// Add this function to verify the table exists
 export const verifyPlayerTeddiesTable = async () => {
+  console.log('Verifying player_teddies table...');
   const { data, error } = await supabase
     .from('player_teddies')
     .select('count')
