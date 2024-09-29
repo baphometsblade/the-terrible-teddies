@@ -5,13 +5,23 @@ export const setupDatabase = async () => {
 
   const { error } = await supabase.rpc('run_sql_migration', {
     sql: `
+      CREATE TABLE IF NOT EXISTS public.terrible_teddies (
+        id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+        name TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        attack INTEGER NOT NULL,
+        defense INTEGER NOT NULL,
+        special_move TEXT NOT NULL,
+        image_url TEXT
+      );
+
       CREATE TABLE IF NOT EXISTS public.player_teddies (
         id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
         player_id UUID NOT NULL,
-        teddy_id UUID NOT NULL,
+        teddy_id UUID NOT NULL REFERENCES public.terrible_teddies(id),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (player_id) REFERENCES auth.users(id) ON DELETE CASCADE,
-        FOREIGN KEY (teddy_id) REFERENCES public.terrible_teddies(id) ON DELETE CASCADE
+        FOREIGN KEY (player_id) REFERENCES auth.users(id) ON DELETE CASCADE
       );
 
       CREATE INDEX IF NOT EXISTS idx_player_teddies_player_id ON public.player_teddies(player_id);

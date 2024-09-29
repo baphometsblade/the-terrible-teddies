@@ -13,6 +13,7 @@ const fetchTeddies = async () => {
     .from("player_teddies")
     .select(`
       id,
+      teddy_id,
       terrible_teddies (*)
     `)
     .eq("player_id", user.id);
