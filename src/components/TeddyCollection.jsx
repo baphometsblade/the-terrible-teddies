@@ -5,27 +5,25 @@ import TeddyCard from "./TeddyCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-const fetchTeddies = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("User not authenticated");
-
-  const { data, error } = await supabase
-    .from("player_teddies")
-    .select(`
-      id,
-      teddy_id,
-      terrible_teddies (*)
-    `)
-    .eq("player_id", user.id);
-
-  if (error) throw error;
-  return data.map(item => item.terrible_teddies);
-};
-
 const TeddyCollection = () => {
   const { data: teddies, isLoading, error } = useQuery({
     queryKey: ["player_teddies"],
-    queryFn: fetchTeddies,
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const { data, error } = await supabase
+        .from("player_teddies")
+        .select(`
+          id,
+          teddy_id,
+          terrible_teddies (*)
+        `)
+        .eq("player_id", user.id);
+
+      if (error) throw error;
+      return data.map(item => item.terrible_teddies);
+    },
   });
 
   if (isLoading) return <div className="text-center mt-8">Loading your collection...</div>;
