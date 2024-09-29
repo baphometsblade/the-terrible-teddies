@@ -43,6 +43,36 @@ const insertInitialData = async () => {
         defense: 6,
         special_move: "Sneak Kiss",
         image_url: null
+      },
+      {
+        id: 3,
+        name: "Baron Von Blubber",
+        title: "The Inflated Ego",
+        description: "A pompous bear with an oversized monocle and a belly that's one puff away from popping.",
+        attack: 7,
+        defense: 4,
+        special_move: "Burst Bubble",
+        image_url: null
+      },
+      {
+        id: 4,
+        name: "Icy Ivan",
+        title: "The Frosty Fighter",
+        description: "A bear with fur as white as snow and eyes as cold as ice.",
+        attack: 6,
+        defense: 7,
+        special_move: "Ice Age",
+        image_url: null
+      },
+      {
+        id: 5,
+        name: "Lady Lush",
+        title: "The Party Animal",
+        description: "This bear's fur is a mess of glitter and confetti.",
+        attack: 7,
+        defense: 5,
+        special_move: "Drunken Master",
+        image_url: null
       }
     ];
     await db.set('terrible_teddies', initialTeddies);
