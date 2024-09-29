@@ -9,6 +9,7 @@ import { SupabaseProvider } from './utils/supabaseClient.jsx';
 
 function App() {
   const [isDbReady, setIsDbReady] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const initializeDb = async () => {
@@ -17,14 +18,18 @@ function App() {
         setIsDbReady(true);
       } catch (error) {
         console.error('Failed to initialize database:', error);
-        // Handle the error appropriately, e.g., show an error message to the user
+        setError('Failed to initialize database. Please try refreshing the page.');
       }
     };
     initializeDb();
   }, []);
 
+  if (error) {
+    return <div className="text-center mt-8 text-red-600">{error}</div>;
+  }
+
   if (!isDbReady) {
-    return <div>Initializing database...</div>;
+    return <div className="text-center mt-8">Initializing database... This may take a few moments.</div>;
   }
 
   return (
