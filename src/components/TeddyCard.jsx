@@ -1,29 +1,17 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
-const TeddyCard = ({ teddy, onSelect, isSelected }) => {
+const TeddyCard = ({ teddy }) => {
   return (
-    <Card className={`w-64 ${isSelected ? 'border-4 border-blue-500' : ''}`}>
-      <CardHeader>
-        <CardTitle>{teddy.name}</CardTitle>
-        <CardDescription>{teddy.title}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <img src={teddy.imageUrl} alt={teddy.name} className="w-full h-32 object-cover mb-2 rounded" />
-        <p className="text-sm mb-2">{teddy.description}</p>
+    <div className="teddy-card border p-4 rounded-lg">
+      <h3 className="text-lg font-bold">{teddy.name}</h3>
+      <p className="text-sm italic">{teddy.title}</p>
+      <p className="mt-2">{teddy.description}</p>
+      <div className="mt-2">
         <p>Attack: {teddy.attack}</p>
         <p>Defense: {teddy.defense}</p>
-        <p>Special Move: {teddy.specialMove}</p>
-      </CardContent>
-      {onSelect && (
-        <CardFooter>
-          <Button onClick={() => onSelect(teddy)} className="w-full">
-            {isSelected ? 'Selected' : 'Select'}
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
+        <p>Special Move: {teddy.special_move}</p>
+      </div>
+    </div>
   );
 };
 
