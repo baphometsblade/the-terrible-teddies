@@ -10,6 +10,7 @@ import Shop from './components/Shop';
 import Leaderboard from './components/Leaderboard';
 import PlayerProfile from './components/PlayerProfile';
 import MatchmakingSystem from './components/MatchmakingSystem';
+import DailyChallenge from './components/DailyChallenge';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<PlayerProfile />} />
           <Route path="/matchmaking" element={<MatchmakingSystem />} />
+          <Route path="/daily-challenge" element={<DailyChallenge />} />
         </Routes>
       </div>
       <Toaster />
