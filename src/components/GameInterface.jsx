@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { getTeddies } from '../lib/database';
 import { Button } from "@/components/ui/button";
 import TeddyCard from './TeddyCard';
 
@@ -12,18 +12,11 @@ const GameInterface = () => {
   }, []);
 
   const fetchPlayerTeddies = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data, error } = await supabase
-        .from('player_teddies')
-        .select('*, terrible_teddies(*)')
-        .eq('player_id', user.id);
-
-      if (error) {
-        console.error('Error fetching player teddies:', error);
-      } else {
-        setPlayerTeddies(data.map(pt => pt.terrible_teddies));
-      }
+    try {
+      const teddies = await getTeddies();
+      setPlayerTeddies(teddies);
+    } catch (error) {
+      console.error('Error fetching player teddies:', error);
     }
   };
 
