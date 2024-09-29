@@ -2,19 +2,31 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const { toast } = useToast();
 
   const handleSignUp = async (e) => {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signUp({ email, password });
-    if (error) setMessage(error.message);
-    else setMessage('Check your email for the confirmation link!');
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Check your email for the confirmation link!",
+        variant: "success",
+      });
+    }
     setLoading(false);
   };
 
@@ -22,8 +34,19 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setMessage(error.message);
-    else setMessage('Signed in successfully!');
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Signed in successfully!",
+        variant: "success",
+      });
+    }
     setLoading(false);
   };
 
@@ -54,7 +77,6 @@ const Auth = () => {
           </Button>
         </div>
       </form>
-      {message && <p className="mt-4 text-sm text-gray-600">{message}</p>}
     </div>
   );
 };
