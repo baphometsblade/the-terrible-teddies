@@ -15,6 +15,7 @@ export const generateBackgroundImage = async (description) => {
     });
 
     const imageUrl = response.data[0].url;
+    console.log('Generated image URL:', imageUrl);
     return imageUrl;
   } catch (error) {
     console.error('Error generating background image:', error);
@@ -25,6 +26,9 @@ export const generateBackgroundImage = async (description) => {
 export const saveBackgroundImage = async (description, imageUrl) => {
   try {
     const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     const blob = await response.blob();
     const fileName = `background-${description.replace(/\s+/g, '-').toLowerCase()}.png`;
 
@@ -41,6 +45,8 @@ export const saveBackgroundImage = async (description, imageUrl) => {
       .from('game-backgrounds')
       .getPublicUrl(fileName);
 
+    console.log('Public URL:', publicUrlData.publicUrl);
+
     // Save background info to the database
     const { data: bgData, error: bgError } = await supabase
       .from('game_backgrounds')
@@ -50,6 +56,8 @@ export const saveBackgroundImage = async (description, imageUrl) => {
       });
 
     if (bgError) throw bgError;
+
+    console.log('Background saved to database:', bgData);
 
     return publicUrlData.publicUrl;
   } catch (error) {

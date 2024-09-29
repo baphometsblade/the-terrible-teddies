@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
-import { generateTeddyImage, saveTeddyImage } from '../utils/imageGenerator';
 import { generateBackgroundImage, saveBackgroundImage } from '../utils/backgroundGenerator';
 import { supabase } from '../lib/supabase';
 
@@ -25,9 +24,6 @@ export const AssetGenerator = () => {
     const generatedAssets = [];
 
     try {
-      // Generate teddy bears (assuming this part is already implemented)
-      // ...
-
       // Generate background images
       for (let i = 0; i < backgroundDescriptions.length; i++) {
         const description = backgroundDescriptions[i];
@@ -36,7 +32,12 @@ export const AssetGenerator = () => {
           const savedUrl = await saveBackgroundImage(description, imageUrl);
           if (savedUrl) {
             generatedAssets.push({ type: 'background', description, url: savedUrl });
+            console.log(`Generated and saved background: ${description}`);
+          } else {
+            console.error(`Failed to save background: ${description}`);
           }
+        } else {
+          console.error(`Failed to generate background: ${description}`);
         }
         setProgress(((i + 1) / backgroundDescriptions.length) * 100);
       }
