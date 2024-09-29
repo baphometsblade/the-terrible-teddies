@@ -1,21 +1,12 @@
 import { supabase } from '../lib/supabase';
-import runPublicFunctions from '../db/migrations/012_run_public_functions';
 
 export const setupDatabase = async () => {
   console.log('Starting database setup...');
 
   const migrations = [
-    '001_initial_setup.sql',
-    '002_create_player_teddies.sql',
-    '003_create_terrible_teddies.sql',
-    '004_create_player_teddies.sql',
-    '005_create_player_teddies.sql',
-    '006_create_shop_items.sql',
-    '007_create_shop_items.sql',
-    '008_create_players_table.sql',
-    '009_update_player_teddies_relation.sql',
-    '010_create_players_table.sql',
-    '011_fix_player_teddies_relation.sql'
+    '001_create_tables.sql',
+    '002_create_functions.sql',
+    '003_create_policies.sql'
   ];
 
   for (const migration of migrations) {
@@ -29,9 +20,6 @@ export const setupDatabase = async () => {
       console.log(`Successfully ran migration ${migration}`);
     }
   }
-
-  // Run the new public functions migration
-  await runPublicFunctions();
 
   console.log('Database setup completed');
 };
