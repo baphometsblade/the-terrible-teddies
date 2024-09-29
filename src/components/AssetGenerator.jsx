@@ -2,62 +2,22 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
-import { generateBackgroundImage, saveBackgroundImage } from '../utils/backgroundGenerator';
-import { generateTeddyBear } from '../utils/teddyGenerator';
-import { supabase } from '../lib/supabase';
+import { generateAllAssets } from '../utils/assetGenerator';
 
 export const AssetGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [currentTask, setCurrentTask] = useState('');
   const { toast } = useToast();
 
   const handleGenerateAssets = async () => {
     setIsGenerating(true);
     setProgress(0);
-    const generatedAssets = [];
-
     try {
-      // Generate background images
-      const backgroundDescriptions = [
-        "A messy bedroom with adult toys scattered around",
-        "A chaotic living room after a wild teddy bear party",
-        "A naughty teddy bear nightclub with dim lighting",
-        "A steamy teddy bear spa with bubbling hot tubs",
-        "A mischievous teddy bear casino with card tables"
-      ];
-
-      for (let i = 0; i < backgroundDescriptions.length; i++) {
-        setCurrentTask(`Generating background ${i + 1} of ${backgroundDescriptions.length}`);
-        const description = backgroundDescriptions[i];
-        const imageUrl = await generateBackgroundImage(description);
-        if (imageUrl) {
-          const savedUrl = await saveBackgroundImage(description, imageUrl);
-          if (savedUrl) {
-            generatedAssets.push({ type: 'background', description, url: savedUrl });
-            console.log(`Generated and saved background: ${description}`);
-          }
-        }
-        setProgress(((i + 1) / (backgroundDescriptions.length + 50)) * 100);
-      }
-
-      // Generate teddy bears
-      for (let i = 0; i < 50; i++) {
-        setCurrentTask(`Generating teddy bear ${i + 1} of 50`);
-        const bear = await generateTeddyBear();
-        const { data, error } = await supabase.from('terrible_teddies').insert([bear]);
-        if (error) {
-          console.error('Error storing bear data:', error);
-        } else {
-          generatedAssets.push({ type: 'teddy', ...bear });
-          console.log(`Generated and saved teddy: ${bear.name}`);
-        }
-        setProgress(((backgroundDescriptions.length + i + 1) / (backgroundDescriptions.length + 50)) * 100);
-      }
-
+      const assets = await generateAllAssets();
+      setProgress(100);
       toast({
         title: "Assets Generated",
-        description: `Successfully generated ${generatedAssets.length} assets!`,
+        description: `Successfully generated ${assets.length} assets!`,
         variant: "success",
       });
     } catch (error) {
@@ -69,7 +29,6 @@ export const AssetGenerator = () => {
       });
     } finally {
       setIsGenerating(false);
-      setCurrentTask('');
     }
   };
 
@@ -86,7 +45,6 @@ export const AssetGenerator = () => {
       {isGenerating && (
         <div>
           <Progress value={progress} className="w-full mb-2" />
-          <p className="text-sm text-gray-600">{currentTask}</p>
           <p className="text-sm text-gray-600">{Math.round(progress)}% complete</p>
         </div>
       )}
