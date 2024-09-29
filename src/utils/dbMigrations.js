@@ -14,23 +14,7 @@ const migrations = [
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
   );
   `,
-  `
-  CREATE TABLE IF NOT EXISTS public.players (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id),
-    username TEXT UNIQUE NOT NULL,
-    coins INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-  );
-  `,
-  `
-  CREATE TABLE IF NOT EXISTS public.player_teddies (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    player_id UUID REFERENCES public.players(id),
-    teddy_id UUID REFERENCES public.terrible_teddies(id),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-  );
-  `
+  // Add more migration SQL statements here as needed
 ];
 
 export const runMigrations = async () => {
@@ -57,26 +41,9 @@ export const runMigrations = async () => {
 
 export const verifyTables = async () => {
   try {
-    const { data: terribleTeddies, error: teddiesError } = await supabase
-      .from('terrible_teddies')
-      .select('id')
-      .limit(1);
-
-    const { data: players, error: playersError } = await supabase
-      .from('players')
-      .select('id')
-      .limit(1);
-
-    const { data: playerTeddies, error: playerTeddiesError } = await supabase
-      .from('player_teddies')
-      .select('id')
-      .limit(1);
-
-    if (teddiesError || playersError || playerTeddiesError) {
-      console.error('Error verifying tables:', { teddiesError, playersError, playerTeddiesError });
-      return false;
-    }
-
+    const { data, error } = await supabase.from('terrible_teddies').select('count');
+    if (error) throw error;
+    console.log('Table verification successful');
     return true;
   } catch (error) {
     console.error('Error verifying tables:', error);

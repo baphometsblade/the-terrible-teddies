@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { runMigrations, verifyTables } from '../utils/dbMigrations';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -13,18 +12,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export const initializeSupabase = async () => {
   try {
     console.log('Initializing Supabase...');
-    
-    const migrationsSuccessful = await runMigrations();
-    if (!migrationsSuccessful) {
-      throw new Error('Failed to run migrations');
-    }
-    
-    const tablesVerified = await verifyTables();
-    if (!tablesVerified) {
-      throw new Error('Failed to verify database tables');
-    }
-    
-    console.log('Supabase initialization successful');
+    const { data, error } = await supabase.from('terrible_teddies').select('count');
+    if (error) throw error;
+    console.log('Supabase connection successful');
     return true;
   } catch (error) {
     console.error('Error initializing Supabase:', error.message);

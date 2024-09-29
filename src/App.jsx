@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { runMigrations } from './utils/dbMigrations';
 import { initializeSupabase } from './lib/supabase';
+import { runMigrations, verifyTables } from './utils/dbMigrations';
 import GameInterface from './components/GameInterface';
 import { SupabaseProvider } from './utils/supabaseClient.jsx';
 
@@ -13,6 +13,10 @@ function App() {
       try {
         await initializeSupabase();
         await runMigrations();
+        const tablesVerified = await verifyTables();
+        if (!tablesVerified) {
+          throw new Error('Failed to verify database tables');
+        }
         setIsDbReady(true);
       } catch (error) {
         console.error('Failed to initialize database:', error);
