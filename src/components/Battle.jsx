@@ -3,19 +3,28 @@ import TeddyCard from './TeddyCard';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { calculateDamage } from '../utils/battleSystem';
+import { motion } from 'framer-motion';
 
-const Battle = ({ playerTeddy, opponentTeddy }) => {
+const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const [playerHealth, setPlayerHealth] = useState(30);
   const [opponentHealth, setOpponentHealth] = useState(30);
   const [playerEnergy, setPlayerEnergy] = useState(3);
   const [opponentEnergy, setOpponentEnergy] = useState(3);
   const [currentTurn, setCurrentTurn] = useState('player');
   const [battleLog, setBattleLog] = useState([]);
+  const [isAnimating, setIsAnimating] = useState(false);
   const { toast } = useToast();
 
-  const performAction = (action) => {
-    if (currentTurn !== 'player') return;
+  useEffect(() => {
+    if (currentTurn === 'opponent') {
+      setTimeout(opponentTurn, 1000);
+    }
+  }, [currentTurn]);
 
+  const performAction = (action) => {
+    if (currentTurn !== 'player' || isAnimating) return;
+
+    setIsAnimating(true);
     let damage = 0;
     switch (action) {
       case 'attack':
@@ -38,17 +47,21 @@ const Battle = ({ playerTeddy, opponentTeddy }) => {
             description: "You need 2 energy to use a special move.",
             variant: "destructive",
           });
+          setIsAnimating(false);
           return;
         }
         break;
     }
 
-    checkGameOver();
-    setCurrentTurn('opponent');
-    setTimeout(opponentTurn, 1000);
+    setTimeout(() => {
+      checkGameOver();
+      setCurrentTurn('opponent');
+      setIsAnimating(false);
+    }, 1000);
   };
 
   const opponentTurn = () => {
+    setIsAnimating(true);
     const action = Math.random() > 0.3 ? 'attack' : 'defend';
     let damage = 0;
 
@@ -61,8 +74,11 @@ const Battle = ({ playerTeddy, opponentTeddy }) => {
       addToBattleLog(`${opponentTeddy.name} increases defense by 2!`);
     }
 
-    checkGameOver();
-    setCurrentTurn('player');
+    setTimeout(() => {
+      checkGameOver();
+      setCurrentTurn('player');
+      setIsAnimating(false);
+    }, 1000);
   };
 
   const addToBattleLog = (message) => {
@@ -76,12 +92,14 @@ const Battle = ({ playerTeddy, opponentTeddy }) => {
         description: "You lost the battle!",
         variant: "destructive",
       });
+      onBattleEnd('loss');
     } else if (opponentHealth <= 0) {
       toast({
         title: "Victory!",
         description: "You won the battle!",
         variant: "success",
       });
+      onBattleEnd('win');
     }
   };
 
@@ -91,21 +109,31 @@ const Battle = ({ playerTeddy, opponentTeddy }) => {
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <h2 className="text-xl font-bold mb-2">Your Teddy</h2>
-          {playerTeddy && <TeddyCard teddy={playerTeddy} />}
+          <motion.div
+            animate={{ scale: currentTurn === 'player' ? 1.05 : 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            {playerTeddy && <TeddyCard teddy={playerTeddy} />}
+          </motion.div>
           <p>Health: {playerHealth}/30</p>
           <p>Energy: {playerEnergy}/3</p>
         </div>
         <div>
           <h2 className="text-xl font-bold mb-2">Opponent's Teddy</h2>
-          {opponentTeddy && <TeddyCard teddy={opponentTeddy} />}
+          <motion.div
+            animate={{ scale: currentTurn === 'opponent' ? 1.05 : 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            {opponentTeddy && <TeddyCard teddy={opponentTeddy} />}
+          </motion.div>
           <p>Health: {opponentHealth}/30</p>
           <p>Energy: {opponentEnergy}/3</p>
         </div>
       </div>
       <div className="mb-4">
-        <Button onClick={() => performAction('attack')} disabled={currentTurn !== 'player'} className="mr-2">Attack</Button>
-        <Button onClick={() => performAction('defend')} disabled={currentTurn !== 'player'} className="mr-2">Defend</Button>
-        <Button onClick={() => performAction('special')} disabled={currentTurn !== 'player' || playerEnergy < 2}>Special Move</Button>
+        <Button onClick={() => performAction('attack')} disabled={currentTurn !== 'player' || isAnimating} className="mr-2">Attack</Button>
+        <Button onClick={() => performAction('defend')} disabled={currentTurn !== 'player' || isAnimating} className="mr-2">Defend</Button>
+        <Button onClick={() => performAction('special')} disabled={currentTurn !== 'player' || isAnimating || playerEnergy < 2}>Special Move</Button>
       </div>
       <div>
         <h3 className="text-lg font-bold mb-2">Battle Log</h3>

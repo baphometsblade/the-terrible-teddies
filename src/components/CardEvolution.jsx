@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/components/ui/use-toast";
-import { useEvolveCard } from '../integrations/supabase';
+import { useEvolveCard } from '../hooks/useEvolveCard';
 
 export const CardEvolution = ({ card, onEvolve }) => {
   const [isEvolving, setIsEvolving] = useState(false);
@@ -32,7 +32,7 @@ export const CardEvolution = ({ card, onEvolve }) => {
   return (
     <Card className="w-64 bg-gradient-to-br from-purple-100 to-pink-100">
       <CardContent className="p-4">
-        <img src={card.url} alt={card.name} className="w-full h-40 object-cover rounded mb-2" />
+        <img src={card.imageUrl} alt={card.name} className="w-full h-40 object-cover rounded mb-2" />
         <h3 className="text-lg font-bold mb-1">{card.name}</h3>
         <p className="text-sm mb-2">Level: {card.level || 1}</p>
         <Button 
