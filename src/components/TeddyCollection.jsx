@@ -12,7 +12,7 @@ const fetchTeddies = async () => {
 const TeddyCollection = () => {
   const { data: teddies, isLoading, error } = useQuery({
     queryKey: ["teddies"],
-    queryFn: fetchTeddies
+    queryFn: fetchTeddies,
   });
 
   if (isLoading) return <div>Loading...</div>;
