@@ -3,20 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { generateBackgroundImage, saveBackgroundImage } from '../utils/backgroundGenerator';
+import { generateTeddyBear } from '../utils/teddyGenerator';
 import { supabase } from '../lib/supabase';
 
 export const AssetGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const { toast } = useToast();
-
-  const backgroundDescriptions = [
-    "A messy bedroom with adult toys scattered around",
-    "A chaotic living room after a wild teddy bear party",
-    "A naughty teddy bear nightclub with dim lighting",
-    "A steamy teddy bear spa with bubbling hot tubs",
-    "A mischievous teddy bear casino with card tables"
-  ];
 
   const handleGenerateAssets = async () => {
     setIsGenerating(true);
@@ -25,6 +18,14 @@ export const AssetGenerator = () => {
 
     try {
       // Generate background images
+      const backgroundDescriptions = [
+        "A messy bedroom with adult toys scattered around",
+        "A chaotic living room after a wild teddy bear party",
+        "A naughty teddy bear nightclub with dim lighting",
+        "A steamy teddy bear spa with bubbling hot tubs",
+        "A mischievous teddy bear casino with card tables"
+      ];
+
       for (let i = 0; i < backgroundDescriptions.length; i++) {
         const description = backgroundDescriptions[i];
         const imageUrl = await generateBackgroundImage(description);
@@ -33,13 +34,22 @@ export const AssetGenerator = () => {
           if (savedUrl) {
             generatedAssets.push({ type: 'background', description, url: savedUrl });
             console.log(`Generated and saved background: ${description}`);
-          } else {
-            console.error(`Failed to save background: ${description}`);
           }
-        } else {
-          console.error(`Failed to generate background: ${description}`);
         }
-        setProgress(((i + 1) / backgroundDescriptions.length) * 100);
+        setProgress(((i + 1) / (backgroundDescriptions.length + 50)) * 100);
+      }
+
+      // Generate teddy bears
+      for (let i = 0; i < 50; i++) {
+        const bear = await generateTeddyBear();
+        const { data, error } = await supabase.from('terrible_teddies').insert([bear]);
+        if (error) {
+          console.error('Error storing bear data:', error);
+        } else {
+          generatedAssets.push({ type: 'teddy', ...bear });
+          console.log(`Generated and saved teddy: ${bear.name}`);
+        }
+        setProgress(((backgroundDescriptions.length + i + 1) / (backgroundDescriptions.length + 50)) * 100);
       }
 
       toast({
