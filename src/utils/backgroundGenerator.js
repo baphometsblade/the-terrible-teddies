@@ -1,65 +1,26 @@
-import OpenAI from 'openai';
 import { supabase } from '../lib/supabase';
 
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-});
-
 export const generateBackgroundImage = async (description) => {
-  try {
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: `Create a hyper-realistic, detailed background image for an adult-themed card game called "Terrible Teddies". The scene should be ${description}. The style should be slightly provocative and humorous, suitable for an adult audience. Ensure the image is high resolution with intricate details that match the description.`,
-      n: 1,
-      size: "1024x1024",
-    });
-
-    const imageUrl = response.data[0].url;
-    console.log('Generated image URL:', imageUrl);
-    return imageUrl;
-  } catch (error) {
-    console.error('Error generating background image:', error);
-    return null;
-  }
+  // This is a placeholder function. In a real implementation, you would use an AI image generation service.
+  console.log(`Generating background image for: ${description}`);
+  return `https://placekitten.com/800/600?text=${encodeURIComponent(description)}`;
 };
 
 export const saveBackgroundImage = async (description, imageUrl) => {
   try {
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const blob = await response.blob();
-    const fileName = `background-${description.replace(/\s+/g, '-').toLowerCase()}.png`;
-
     const { data, error } = await supabase.storage
-      .from('game-backgrounds')
-      .upload(fileName, blob, {
-        contentType: 'image/png',
-        upsert: true
+      .from('backgrounds')
+      .upload(`${Date.now()}-${description}.jpg`, await (await fetch(imageUrl)).blob(), {
+        contentType: 'image/jpeg'
       });
 
     if (error) throw error;
 
-    const { data: publicUrlData } = supabase.storage
-      .from('game-backgrounds')
-      .getPublicUrl(fileName);
+    const { data: { publicUrl } } = supabase.storage
+      .from('backgrounds')
+      .getPublicUrl(data.path);
 
-    console.log('Public URL:', publicUrlData.publicUrl);
-
-    // Save background info to the database
-    const { data: bgData, error: bgError } = await supabase
-      .from('game_backgrounds')
-      .insert({
-        description: description,
-        image_url: publicUrlData.publicUrl
-      });
-
-    if (bgError) throw bgError;
-
-    console.log('Background saved to database:', bgData);
-
-    return publicUrlData.publicUrl;
+    return publicUrl;
   } catch (error) {
     console.error('Error saving background image:', error);
     return null;
