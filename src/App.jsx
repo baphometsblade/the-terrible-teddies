@@ -1,35 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { initializeDatabase } from './lib/database';
+import { supabase } from './lib/supabase';
+import { initDatabase } from './utils/initDatabase';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
 import GameInterface from './components/GameInterface';
 
 function App() {
+  const [session, setSession] = useState(null);
   const [isDbReady, setIsDbReady] = useState(false);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const initializeDb = async () => {
-      try {
-        await initializeDatabase();
-        setIsDbReady(true);
-      } catch (error) {
-        console.error('Failed to initialize database:', error);
-        setError(`Failed to initialize database: ${error.message}. Please try refreshing the page or contact support if the issue persists.`);
-      }
-    };
-    initializeDb();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    initDatabase().then(() => setIsDbReady(true));
   }, []);
 
-  if (error) {
-    return <div className="text-center mt-8 text-red-600">{error}</div>;
+  if (!isDbReady) {
+    return <div>Loading...</div>;
   }
 
-  if (!isDbReady) {
-    return <div className="text-center mt-8">Initializing database... This may take a few moments.</div>;
+  if (!session) {
+    return (
+      <Auth
+        supabaseClient={supabase}
+        appearance={{ theme: ThemeSupa }}
+        providers={['google', 'facebook']}
+      />
+    );
   }
 
   return (
     <div className="App">
-      <GameInterface />
+      <GameInterface session={session} />
     </div>
   );
 }

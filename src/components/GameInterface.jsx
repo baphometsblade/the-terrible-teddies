@@ -1,54 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { getTeddies } from '../lib/database';
-import { Button } from "@/components/ui/button";
-import TeddyCard from './TeddyCard';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
-const GameInterface = () => {
+const GameInterface = ({ session }) => {
   const [playerTeddies, setPlayerTeddies] = useState([]);
-  const [selectedTeddy, setSelectedTeddy] = useState(null);
 
   useEffect(() => {
     fetchPlayerTeddies();
   }, []);
 
   const fetchPlayerTeddies = async () => {
-    try {
-      const teddies = await getTeddies();
-      setPlayerTeddies(teddies);
-    } catch (error) {
+    const { data, error } = await supabase
+      .from('player_teddies')
+      .select(`
+        id,
+        terrible_teddies (*)
+      `)
+      .eq('player_id', session.user.id);
+
+    if (error) {
       console.error('Error fetching player teddies:', error);
-    }
-  };
-
-  const handleTeddySelect = (teddy) => {
-    setSelectedTeddy(teddy);
-  };
-
-  const handleBattleStart = () => {
-    if (selectedTeddy) {
-      console.log('Starting battle with:', selectedTeddy);
-      // Implement battle logic here
     } else {
-      console.log('Please select a teddy first');
+      setPlayerTeddies(data.map(item => item.terrible_teddies));
     }
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4">Terrible Teddies</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-        {playerTeddies.map(teddy => (
-          <TeddyCard
-            key={teddy.id}
-            teddy={teddy}
-            onSelect={() => handleTeddySelect(teddy)}
-            isSelected={selectedTeddy && selectedTeddy.id === teddy.id}
-          />
-        ))}
-      </div>
-      <Button onClick={handleBattleStart} disabled={!selectedTeddy}>
-        Start Battle
-      </Button>
+    <div>
+      <h1>Welcome to Terrible Teddies!</h1>
+      <h2>Your Teddies:</h2>
+      {playerTeddies.map(teddy => (
+        <div key={teddy.id}>
+          <h3>{teddy.name}</h3>
+          <p>{teddy.description}</p>
+          <p>Attack: {teddy.attack}</p>
+          <p>Defense: {teddy.defense}</p>
+        </div>
+      ))}
     </div>
   );
 };
