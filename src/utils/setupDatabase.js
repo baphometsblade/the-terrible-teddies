@@ -1,10 +1,12 @@
 import { supabase } from '../lib/supabase';
+import fs from 'fs';
+import path from 'path';
 
 export const setupDatabase = async () => {
   console.log('Starting database setup...');
 
-  // Create tables
-  await createTables();
+  // Run migrations
+  await runMigrations();
 
   // Populate initial data
   await populateInitialData();
@@ -12,53 +14,38 @@ export const setupDatabase = async () => {
   console.log('Database setup completed');
 };
 
-const createTables = async () => {
-  const { error: terribleTeddiesError } = await supabase.rpc('run_sql_migration', {
-    sql: `
-      CREATE TABLE IF NOT EXISTS terrible_teddies (
-        id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-        name TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT,
-        attack INTEGER NOT NULL,
-        defense INTEGER NOT NULL,
-        special_move TEXT NOT NULL,
-        image_url TEXT
-      );
-    `
-  });
+const runMigrations = async () => {
+  const migrationFiles = fs.readdirSync(path.join(__dirname, '../db/migrations'))
+    .filter(file => file.endsWith('.sql'))
+    .sort();
 
-  if (terribleTeddiesError) console.error('Error creating terrible_teddies table:', terribleTeddiesError);
-
-  const { error: playersError } = await supabase.rpc('run_sql_migration', {
-    sql: `
-      CREATE TABLE IF NOT EXISTS players (
-        id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-        user_id UUID REFERENCES auth.users(id),
-        username TEXT UNIQUE NOT NULL,
-        coins INTEGER DEFAULT 0,
-        wins INTEGER DEFAULT 0,
-        losses INTEGER DEFAULT 0
-      );
-    `
-  });
-
-  if (playersError) console.error('Error creating players table:', playersError);
-
-  const { error: playerTeddiesError } = await supabase.rpc('run_sql_migration', {
-    sql: `
-      CREATE TABLE IF NOT EXISTS player_teddies (
-        id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-        player_id UUID REFERENCES players(id),
-        teddy_id UUID REFERENCES terrible_teddies(id)
-      );
-    `
-  });
-
-  if (playerTeddiesError) console.error('Error creating player_teddies table:', playerTeddiesError);
+  for (const file of migrationFiles) {
+    const migrationContent = fs.readFileSync(path.join(__dirname, '../db/migrations', file), 'utf8');
+    const { error } = await supabase.rpc('run_sql_migration', { sql: migrationContent });
+    if (error) {
+      console.error(`Error running migration ${file}:`, error);
+      throw error;
+    }
+    console.log(`Migration ${file} completed successfully`);
+  }
 };
 
 const populateInitialData = async () => {
+  const { data: existingTeddies, error: checkError } = await supabase
+    .from('terrible_teddies')
+    .select('id')
+    .limit(1);
+
+  if (checkError) {
+    console.error('Error checking existing teddies:', checkError);
+    return;
+  }
+
+  if (existingTeddies && existingTeddies.length > 0) {
+    console.log('Terrible teddies table already contains data');
+    return;
+  }
+
   const initialTeddies = [
     {
       name: "Whiskey Whiskers",
