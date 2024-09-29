@@ -2,9 +2,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const TeddyCard = ({ teddy, onSelect }) => {
+const TeddyCard = ({ teddy, onSelect, isSelected }) => {
   return (
-    <Card className="w-64 bg-white shadow-lg rounded-lg overflow-hidden">
+    <Card className={`w-64 bg-white shadow-lg rounded-lg overflow-hidden ${isSelected ? 'border-4 border-blue-500' : ''}`}>
       <CardHeader>
         <h3 className="text-xl font-bold">{teddy.name}</h3>
         <p className="text-sm text-gray-600">{teddy.title}</p>

@@ -1,90 +1,68 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import TeddyCard from './TeddyCard';
+
+const fetchShopTeddies = async () => {
+  const { data, error } = await supabase
+    .from('terrible_teddies')
+    .select('*')
+    .limit(5);
+  if (error) throw error;
+  return data;
+};
 
 const Shop = () => {
-  const [items, setItems] = useState([]);
-  const [playerCoins, setPlayerCoins] = useState(0);
+  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { data: shopTeddies, isLoading, error } = useQuery({
+    queryKey: ['shopTeddies'],
+    queryFn: fetchShopTeddies,
+  });
 
-  useEffect(() => {
-    fetchShopItems();
-    fetchPlayerCoins();
-  }, []);
-
-  const fetchShopItems = async () => {
-    const { data, error } = await supabase.from('shop_items').select('*');
-    if (error) console.error('Error fetching shop items:', error);
-    else setItems(data);
-  };
-
-  const fetchPlayerCoins = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+  const purchaseMutation = useMutation({
+    mutationFn: async (teddyId) => {
       const { data, error } = await supabase
-        .from('players')
-        .select('coins')
-        .eq('id', user.id)
-        .single();
-      if (error) console.error('Error fetching player coins:', error);
-      else setPlayerCoins(data.coins);
-    }
-  };
-
-  const purchaseItem = async (item) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast({
-        title: "Authentication Error",
-        description: "Please sign in to make a purchase.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (playerCoins < item.price) {
-      toast({
-        title: "Insufficient Funds",
-        description: "You don't have enough coins to purchase this item.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const { data, error } = await supabase.rpc('purchase_item', {
-      item_id: item.id,
-      user_id: user.id
-    });
-
-    if (error) {
-      console.error('Error purchasing item:', error);
-      toast({
-        title: "Purchase Failed",
-        description: "An error occurred while processing your purchase. Please try again.",
-        variant: "destructive",
-      });
-    } else {
+        .from('player_teddies')
+        .insert([{ teddy_id: teddyId }]);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries('playerDeck');
       toast({
         title: "Purchase Successful",
-        description: `You have successfully purchased ${item.name}!`,
+        description: "You've added a new teddy to your collection!",
         variant: "success",
       });
-      setPlayerCoins(prevCoins => prevCoins - item.price);
-    }
-  };
+    },
+    onError: (error) => {
+      toast({
+        title: "Purchase Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  if (isLoading) return <div>Loading shop...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Shop</h2>
-      <p className="mb-4">Your Coins: {playerCoins}</p>
-      <div className="grid grid-cols-3 gap-4">
-        {items.map(item => (
-          <div key={item.id} className="border p-4 rounded">
-            <h3 className="text-lg font-semibold">{item.name}</h3>
-            <p>{item.description}</p>
-            <p className="font-bold mt-2">${item.price}</p>
-            <Button onClick={() => purchaseItem(item)} className="mt-2">Purchase</Button>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-4">Teddy Shop</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {shopTeddies.map(teddy => (
+          <div key={teddy.id} className="flex flex-col items-center">
+            <TeddyCard teddy={teddy} />
+            <Button
+              onClick={() => purchaseMutation.mutate(teddy.id)}
+              className="mt-2"
+            >
+              Purchase
+            </Button>
           </div>
         ))}
       </div>

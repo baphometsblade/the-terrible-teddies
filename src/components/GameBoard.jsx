@@ -2,17 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import TeddyCard from './TeddyCard';
+import PlayerHand from './PlayerHand';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { calculateDamage } from '../utils/gameLogic';
+import { calculateDamage } from '../utils/battleSystem';
 
 const fetchPlayerDeck = async () => {
   const { data, error } = await supabase
-    .from('player_decks')
+    .from('player_teddies')
     .select('*')
-    .single();
+    .limit(5);
   if (error) throw error;
-  return data.deck;
+  return data;
 };
 
 const GameBoard = () => {
@@ -34,9 +35,9 @@ const GameBoard = () => {
 
   useEffect(() => {
     if (playerDeck) {
-      const shuffledDeck = [...playerDeck].sort(() => Math.random() - 0.5);
-      setPlayerHand(shuffledDeck.slice(0, 5));
-      setOpponentHand(shuffledDeck.slice(5, 10)); // Simplified opponent hand
+      setPlayerHand(playerDeck);
+      // For now, we'll use the same deck for the opponent
+      setOpponentHand([...playerDeck].sort(() => Math.random() - 0.5));
     }
   }, [playerDeck]);
 
@@ -125,16 +126,11 @@ const GameBoard = () => {
       {gameState === 'drawing' && (
         <div>
           <h2 className="text-2xl font-bold mb-2">Your Hand</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-            {playerHand.map(teddy => (
-              <TeddyCard 
-                key={teddy.id} 
-                teddy={teddy} 
-                onClick={() => selectTeddy(teddy)}
-                selected={selectedTeddy?.id === teddy.id}
-              />
-            ))}
-          </div>
+          <PlayerHand
+            hand={playerHand}
+            onSelectTeddy={selectTeddy}
+            selectedTeddy={selectedTeddy}
+          />
           <Button onClick={startBattle} className="mt-4" disabled={!selectedTeddy}>Start Battle</Button>
         </div>
       )}
