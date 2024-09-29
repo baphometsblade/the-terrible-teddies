@@ -11,6 +11,7 @@ import Leaderboard from './components/Leaderboard';
 import Profile from './components/Profile';
 import Auth from './components/Auth';
 import DailyChallenge from './components/DailyChallenge';
+import Header from './components/Header';
 import { initializeDatabase } from './utils/setupDatabase';
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ function App() {
       <SupabaseProvider>
         <Router>
           <div className="App bg-gray-100 min-h-screen">
+            <Header />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/game" element={<GameBoard />} />

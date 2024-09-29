@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { useSupabaseAuth } from '../utils/supabaseClient.jsx';
+import { useSupabaseAuth } from '../integrations/supabase/auth';
 
 const Header = () => {
   const { session, logout } = useSupabaseAuth();
@@ -12,7 +12,7 @@ const Header = () => {
         <Link to="/">
           <Button variant="ghost" className="text-white">Home</Button>
         </Link>
-        <Link to="/battle">
+        <Link to="/game">
           <Button variant="ghost" className="text-white">Battle</Button>
         </Link>
         <Link to="/collection">
@@ -22,7 +22,12 @@ const Header = () => {
           <Button variant="ghost" className="text-white">Shop</Button>
         </Link>
         {session ? (
-          <Button variant="ghost" className="text-white" onClick={logout}>Logout</Button>
+          <>
+            <Link to="/profile">
+              <Button variant="ghost" className="text-white">Profile</Button>
+            </Link>
+            <Button variant="ghost" className="text-white" onClick={logout}>Logout</Button>
+          </>
         ) : (
           <Link to="/auth">
             <Button variant="ghost" className="text-white">Login</Button>

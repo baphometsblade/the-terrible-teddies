@@ -3,21 +3,24 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useSupabaseAuth } from '../integrations/supabase/auth';
 
 const Profile = () => {
+  const { session, logout } = useSupabaseAuth();
+
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!session?.user) throw new Error('Not authenticated');
       const { data, error } = await supabase
         .from('players')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', session.user.id)
         .single();
       if (error) throw error;
       return data;
     },
+    enabled: !!session?.user,
   });
 
   if (isLoading) return <div className="text-center mt-8">Loading profile...</div>;
@@ -29,13 +32,13 @@ const Profile = () => {
       {profile && (
         <Card className="max-w-md mx-auto">
           <CardHeader>
-            <h2 className="text-2xl font-bold">{profile.username}</h2>
+            <h2 className="text-2xl font-bold">{profile.username || session.user.email}</h2>
           </CardHeader>
           <CardContent>
-            <p className="mb-2">Wins: {profile.wins}</p>
-            <p className="mb-2">Losses: {profile.losses}</p>
-            <p className="mb-2">Coins: {profile.coins}</p>
-            <Button onClick={() => supabase.auth.signOut()} className="mt-4">Sign Out</Button>
+            <p className="mb-2">Wins: {profile.wins || 0}</p>
+            <p className="mb-2">Losses: {profile.losses || 0}</p>
+            <p className="mb-2">Coins: {profile.coins || 0}</p>
+            <Button onClick={logout} className="mt-4">Sign Out</Button>
           </CardContent>
         </Card>
       )}
