@@ -15,9 +15,27 @@ const Profile = () => {
       const { data, error } = await supabase
         .from('players')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('user_id', session.user.id)
         .single();
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42P01') {
+          // Table doesn't exist, create a new player profile
+          const newProfile = {
+            user_id: session.user.id,
+            username: session.user.email.split('@')[0],
+            coins: 0,
+            wins: 0,
+            losses: 0
+          };
+          const { data: createdProfile, error: insertError } = await supabase
+            .from('players')
+            .insert(newProfile)
+            .single();
+          if (insertError) throw insertError;
+          return createdProfile;
+        }
+        throw error;
+      }
       return data;
     },
     enabled: !!session?.user,
