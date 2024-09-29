@@ -1,39 +1,30 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { Button } from "@/components/ui/button";
-import { useSupabaseAuth } from '../integrations/supabase/auth';
 
 const Header = () => {
-  const { session, logout } = useSupabaseAuth();
+  const { session, signOut } = useSupabaseAuth();
 
   return (
-    <header className="bg-purple-800 p-4">
-      <nav className="container mx-auto flex justify-between items-center">
-        <Link to="/">
-          <Button variant="ghost" className="text-white">Home</Button>
-        </Link>
-        <Link to="/game">
-          <Button variant="ghost" className="text-white">Battle</Button>
-        </Link>
-        <Link to="/collection">
-          <Button variant="ghost" className="text-white">Collection</Button>
-        </Link>
-        <Link to="/shop">
-          <Button variant="ghost" className="text-white">Shop</Button>
-        </Link>
-        {session ? (
-          <>
-            <Link to="/profile">
-              <Button variant="ghost" className="text-white">Profile</Button>
-            </Link>
-            <Button variant="ghost" className="text-white" onClick={logout}>Logout</Button>
-          </>
-        ) : (
-          <Link to="/auth">
-            <Button variant="ghost" className="text-white">Login</Button>
-          </Link>
-        )}
-      </nav>
+    <header className="bg-purple-600 text-white p-4">
+      <div className="container mx-auto flex justify-between items-center">
+        <Link to="/" className="text-2xl font-bold">Terrible Teddies</Link>
+        <nav>
+          <ul className="flex space-x-4">
+            <li><Link to="/battle">Battle Arena</Link></li>
+            <li><Link to="/collection">Collection</Link></li>
+            <li><Link to="/shop">Shop</Link></li>
+            {session ? (
+              <li>
+                <Button onClick={signOut} variant="outline">Sign Out</Button>
+              </li>
+            ) : (
+              <li><Link to="/auth">Sign In</Link></li>
+            )}
+          </ul>
+        </nav>
+      </div>
     </header>
   );
 };
