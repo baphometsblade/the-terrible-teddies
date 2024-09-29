@@ -7,7 +7,8 @@ export const setupDatabase = async () => {
     '001_initial_setup.sql',
     '002_create_player_teddies.sql',
     '003_create_terrible_teddies.sql',
-    '004_create_player_teddies.sql'
+    '004_create_player_teddies.sql',
+    '005_create_player_teddies.sql'  // Add this new migration file
   ];
 
   for (const file of migrationFiles) {
