@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import Collection from './Collection';
 import Shop from './Shop';
 import Battle from './Battle';
+import PlayerProfile from './PlayerProfile';
+import Leaderboard from './Leaderboard';
+import DailyChallenge from './DailyChallenge';
 
 const Home = () => {
   const [currentView, setCurrentView] = useState('collection');
@@ -11,7 +14,7 @@ const Home = () => {
   const renderView = () => {
     switch (currentView) {
       case 'collection':
-        return <Collection />;
+        return <Collection onSelectTeddy={setSelectedTeddy} />;
       case 'shop':
         return <Shop />;
       case 'battle':
@@ -30,6 +33,12 @@ const Home = () => {
         ) : (
           <div>Please select a teddy from your collection first.</div>
         );
+      case 'profile':
+        return <PlayerProfile />;
+      case 'leaderboard':
+        return <Leaderboard />;
+      case 'dailyChallenge':
+        return <DailyChallenge />;
       default:
         return <div>Invalid view</div>;
     }
@@ -42,6 +51,9 @@ const Home = () => {
         <Button onClick={() => setCurrentView('collection')}>Collection</Button>
         <Button onClick={() => setCurrentView('shop')}>Shop</Button>
         <Button onClick={() => setCurrentView('battle')}>Battle</Button>
+        <Button onClick={() => setCurrentView('profile')}>Profile</Button>
+        <Button onClick={() => setCurrentView('leaderboard')}>Leaderboard</Button>
+        <Button onClick={() => setCurrentView('dailyChallenge')}>Daily Challenge</Button>
       </div>
       {renderView()}
     </div>
