@@ -18,8 +18,8 @@ const Profile = () => {
         .eq('user_id', session.user.id)
         .single();
       if (error) {
-        if (error.code === '42P01') {
-          // Table doesn't exist, create a new player profile
+        if (error.code === 'PGRST116') {
+          // Player profile doesn't exist, create a new one
           const newProfile = {
             user_id: session.user.id,
             username: session.user.email.split('@')[0],
