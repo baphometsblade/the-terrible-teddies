@@ -31,6 +31,7 @@ const runMigrations = async () => {
 };
 
 const populateInitialData = async () => {
+  // Populate terrible_teddies table if it's empty
   const { data: existingTeddies, error: checkError } = await supabase
     .from('terrible_teddies')
     .select('id')
@@ -41,41 +42,40 @@ const populateInitialData = async () => {
     return;
   }
 
-  if (existingTeddies && existingTeddies.length > 0) {
-    console.log('Terrible teddies table already contains data');
-    return;
-  }
+  if (!existingTeddies || existingTeddies.length === 0) {
+    const initialTeddies = [
+      {
+        name: "Whiskey Whiskers",
+        title: "The Smooth Operator",
+        description: "A suave bear with a penchant for fine spirits and even finer company.",
+        attack: 6,
+        defense: 5,
+        special_move: "On the Rocks",
+        image_url: "https://example.com/whiskey_whiskers.png"
+      },
+      {
+        name: "Madame Mistletoe",
+        title: "The Festive Flirt",
+        description: "She carries mistletoe year-round, believing every moment is an opportunity for a sly kiss.",
+        attack: 5,
+        defense: 6,
+        special_move: "Sneak Kiss",
+        image_url: "https://example.com/madame_mistletoe.png"
+      }
+      // Add more initial teddies here
+    ];
 
-  const initialTeddies = [
-    {
-      name: "Whiskey Whiskers",
-      title: "The Smooth Operator",
-      description: "A suave bear with a penchant for fine spirits and even finer company.",
-      attack: 6,
-      defense: 5,
-      special_move: "On the Rocks",
-      image_url: "https://example.com/whiskey_whiskers.png"
-    },
-    {
-      name: "Madame Mistletoe",
-      title: "The Festive Flirt",
-      description: "She carries mistletoe year-round, believing every moment is an opportunity for a sly kiss.",
-      attack: 5,
-      defense: 6,
-      special_move: "Sneak Kiss",
-      image_url: "https://example.com/madame_mistletoe.png"
+    const { error: insertError } = await supabase
+      .from('terrible_teddies')
+      .insert(initialTeddies);
+
+    if (insertError) {
+      console.error('Error populating terrible_teddies:', insertError);
+    } else {
+      console.log('Initial teddies populated successfully');
     }
-    // Add more initial teddies here
-  ];
-
-  const { error: insertError } = await supabase
-    .from('terrible_teddies')
-    .insert(initialTeddies);
-
-  if (insertError) {
-    console.error('Error populating terrible_teddies:', insertError);
   } else {
-    console.log('Initial teddies populated successfully');
+    console.log('Terrible teddies table already contains data');
   }
 };
 
