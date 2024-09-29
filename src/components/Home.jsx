@@ -1,34 +1,49 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { AssetGenerator } from './AssetGenerator';
+import Collection from './Collection';
+import Shop from './Shop';
+import Battle from './Battle';
 
 const Home = () => {
+  const [currentView, setCurrentView] = useState('collection');
+  const [selectedTeddy, setSelectedTeddy] = useState(null);
+
+  const renderView = () => {
+    switch (currentView) {
+      case 'collection':
+        return <Collection />;
+      case 'shop':
+        return <Shop />;
+      case 'battle':
+        return selectedTeddy ? (
+          <Battle 
+            playerTeddy={selectedTeddy} 
+            opponentTeddy={{
+              name: "Evil McFluffles",
+              title: "The Diabolical Cuddle Master",
+              attack: 5,
+              defense: 5,
+              specialMove: "Fluff Explosion",
+              imageUrl: "https://placeholder.com/150" // Replace with actual image URL
+            }} 
+          />
+        ) : (
+          <div>Please select a teddy from your collection first.</div>
+        );
+      default:
+        return <div>Invalid view</div>;
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8 text-center">Welcome to Terrible Teddies</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <h2 className="text-2xl font-bold mb-4">Game Options</h2>
-          <div className="space-y-4">
-            <Link to="/battle">
-              <Button className="w-full">Play Game</Button>
-            </Link>
-            <Link to="/deck-builder">
-              <Button className="w-full">Deck Builder</Button>
-            </Link>
-            <Link to="/shop">
-              <Button className="w-full">Shop</Button>
-            </Link>
-            <Link to="/leaderboard">
-              <Button className="w-full">Leaderboard</Button>
-            </Link>
-          </div>
-        </div>
-        <div>
-          <AssetGenerator />
-        </div>
+      <h1 className="text-4xl font-bold mb-8 text-center">Terrible Teddies</h1>
+      <div className="flex justify-center space-x-4 mb-8">
+        <Button onClick={() => setCurrentView('collection')}>Collection</Button>
+        <Button onClick={() => setCurrentView('shop')}>Shop</Button>
+        <Button onClick={() => setCurrentView('battle')}>Battle</Button>
       </div>
+      {renderView()}
     </div>
   );
 };

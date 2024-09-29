@@ -1,13 +1,13 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 const TeddyCard = ({ teddy, onSelect, isSelected }) => {
   return (
     <Card className={`w-64 ${isSelected ? 'border-4 border-blue-500' : ''}`}>
       <CardHeader>
-        <h3 className="text-xl font-bold">{teddy.name}</h3>
-        <p className="text-sm text-gray-500">{teddy.title}</p>
+        <CardTitle>{teddy.name}</CardTitle>
+        <CardDescription>{teddy.title}</CardDescription>
       </CardHeader>
       <CardContent>
         <img src={teddy.imageUrl} alt={teddy.name} className="w-full h-32 object-cover mb-2 rounded" />

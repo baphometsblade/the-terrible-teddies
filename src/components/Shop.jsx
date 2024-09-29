@@ -1,73 +1,64 @@
 import React from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import TeddyCard from './TeddyCard';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { motion } from 'framer-motion';
 
 const Shop = () => {
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: shopItems, isLoading, error } = useQuery({
-    queryKey: ['shopItems'],
+  const { data: shopTeddies, isLoading, error } = useQuery({
+    queryKey: ['shopTeddies'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('shop_items')
+        .from('terrible_teddies')
         .select('*')
+        .limit(5);
       if (error) throw error;
       return data;
     },
   });
 
   const purchaseMutation = useMutation({
-    mutationFn: async (itemId) => {
-      // Here you would implement the logic to purchase an item
-      // This is a placeholder implementation
+    mutationFn: async (teddyId) => {
       const { data, error } = await supabase
-        .from('player_items')
-        .insert({ user_id: (await supabase.auth.getUser()).data.user.id, item_id: itemId })
+        .from('player_teddies')
+        .insert({ teddy_id: teddyId, player_id: (await supabase.auth.getUser()).data.user.id });
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries('playerTeddies');
       toast({
         title: "Purchase Successful",
-        description: "You've successfully purchased the item!",
+        description: "New teddy added to your collection!",
         variant: "success",
       });
     },
     onError: (error) => {
       toast({
         title: "Purchase Failed",
-        description: `Failed to purchase item: ${error.message}`,
+        description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  if (isLoading) return <div>Loading shop items...</div>;
+  if (isLoading) return <div>Loading shop...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4">Terrible Teddies Shop</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {shopItems.map((item) => (
-          <motion.div
-            key={item.id}
-            className="bg-white p-4 rounded shadow"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <h2 className="text-xl font-bold mb-2">{item.name}</h2>
-            <p className="mb-2">{item.description}</p>
-            <p className="mb-2 font-bold">Price: {item.price} coins</p>
-            <Button onClick={() => purchaseMutation.mutate(item.id)} disabled={purchaseMutation.isLoading}>
-              {purchaseMutation.isLoading ? 'Purchasing...' : 'Purchase'}
-            </Button>
-          </motion.div>
-        ))}
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {shopTeddies.map(teddy => (
+        <div key={teddy.id}>
+          <TeddyCard teddy={teddy} />
+          <Button onClick={() => purchaseMutation.mutate(teddy.id)} className="w-full mt-2">
+            Purchase
+          </Button>
+        </div>
+      ))}
     </div>
   );
 };
