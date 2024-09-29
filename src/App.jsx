@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { runMigrations } from './utils/dbMigrations';
 import { initializeSupabase } from './lib/supabase';
-import Home from './components/Home';
-import Game from './components/Game';
-import Shop from './components/Shop';
-import { SupabaseAuthUI } from './integrations/supabase/auth.jsx';
+import GameInterface from './components/GameInterface';
 import { SupabaseProvider } from './utils/supabaseClient.jsx';
 
 function App() {
@@ -36,16 +32,9 @@ function App() {
 
   return (
     <SupabaseProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/game" element={<Game />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/auth" element={<SupabaseAuthUI />} />
-          </Routes>
-        </div>
-      </Router>
+      <div className="App">
+        <GameInterface />
+      </div>
     </SupabaseProvider>
   );
 }

@@ -4,25 +4,23 @@ import { Button } from "@/components/ui/button";
 
 const TeddyCard = ({ teddy, onSelect, isSelected }) => {
   return (
-    <Card className={`w-64 bg-white shadow-lg rounded-lg overflow-hidden ${isSelected ? 'border-4 border-blue-500' : ''}`}>
+    <Card className={`w-64 ${isSelected ? 'border-4 border-blue-500' : ''}`}>
       <CardHeader>
         <h3 className="text-xl font-bold">{teddy.name}</h3>
-        <p className="text-sm text-gray-600">{teddy.title}</p>
+        <p className="text-sm text-gray-500">{teddy.title}</p>
       </CardHeader>
       <CardContent>
-        <img src={teddy.imageUrl} alt={teddy.name} className="w-full h-32 object-cover mb-2 rounded" />
+        <img src={teddy.image_url} alt={teddy.name} className="w-full h-32 object-cover mb-2" />
         <p className="text-sm mb-2">{teddy.description}</p>
-        <div className="grid grid-cols-2 gap-2">
-          <p>Attack: {teddy.attack}</p>
-          <p>Defense: {teddy.defense}</p>
-        </div>
-        <p className="mt-2">Special: {teddy.specialMove}</p>
+        <p>Attack: {teddy.attack}</p>
+        <p>Defense: {teddy.defense}</p>
+        <p>Special Move: {teddy.special_move}</p>
       </CardContent>
-      {onSelect && (
-        <CardFooter>
-          <Button onClick={() => onSelect(teddy)} className="w-full">Select</Button>
-        </CardFooter>
-      )}
+      <CardFooter>
+        <Button onClick={() => onSelect(teddy)} className="w-full">
+          {isSelected ? 'Selected' : 'Select'}
+        </Button>
+      </CardFooter>
     </Card>
   );
 };
