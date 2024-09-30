@@ -2,49 +2,39 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import TeddyCard from './TeddyCard';
-import { Skeleton } from "@/components/ui/skeleton";
-import { useSupabaseAuth } from '../integrations/supabase/auth';
+import { Button } from "@/components/ui/button";
+import { uploadTeddyImages } from '../utils/imageUpload';
 
 const TeddyCollection = () => {
-  const { session } = useSupabaseAuth();
-
   const { data: teddies, isLoading, error } = useQuery({
-    queryKey: ['playerTeddies', session?.user?.id],
+    queryKey: ['teddies'],
     queryFn: async () => {
-      if (!session?.user?.id) throw new Error('User not authenticated');
       const { data, error } = await supabase
-        .from('player_teddies')
-        .select('*, terrible_teddies(*)')
-        .eq('player_id', session.user.id);
+        .from('terrible_teddies')
+        .select('*');
       if (error) throw error;
-      return data.map(item => item.terrible_teddies);
+      return data;
     },
-    enabled: !!session?.user?.id,
   });
 
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(6)].map((_, index) => (
-          <Skeleton key={index} className="h-[200px] w-full" />
-        ))}
-      </div>
-    );
-  }
+  const handleUploadImages = async () => {
+    await uploadTeddyImages();
+    // Refetch the teddies to update the UI with new image URLs
+    await refetch();
+  };
 
-  if (error) {
-    return <div className="text-red-500">Error: {error.message}</div>;
-  }
-
-  if (!teddies || teddies.length === 0) {
-    return <div className="text-center">No teddies found. Start collecting!</div>;
-  }
+  if (isLoading) return <div>Loading teddies...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {teddies.map(teddy => (
-        <TeddyCard key={teddy.id} teddy={teddy} />
-      ))}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-4">Teddy Collection</h1>
+      <Button onClick={handleUploadImages} className="mb-4">Upload Images to Storage</Button>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {teddies.map(teddy => (
+          <TeddyCard key={teddy.id} teddy={teddy} />
+        ))}
+      </div>
     </div>
   );
 };
