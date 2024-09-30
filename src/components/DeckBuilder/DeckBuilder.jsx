@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { useToast } from "@/components/ui/use-toast";
-import { DragDropContext } from 'react-beautiful-dnd';
-import CollectionArea from './CollectionArea';
-import DeckArea from './DeckArea';
-import SaveDeckButton from './SaveDeckButton';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import TeddyCard from '../TeddyCard';
+import { Button } from "@/components/ui/button";
 
 const DeckBuilder = () => {
   const [deck, setDeck] = useState([]);
@@ -96,10 +95,52 @@ const DeckBuilder = () => {
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-4">Deck Builder</h1>
         <div className="grid grid-cols-2 gap-4">
-          <CollectionArea collection={collection} />
-          <DeckArea deck={deck} />
+          <Droppable droppableId="collection">
+            {(provided) => (
+              <div {...provided.droppableProps} ref={provided.innerRef} className="bg-gray-100 p-4 rounded">
+                <h2 className="text-2xl font-bold mb-2">Your Collection</h2>
+                {collection.map((teddy, index) => (
+                  <Draggable key={teddy.id} draggableId={teddy.id} index={index}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className="mb-2"
+                      >
+                        <TeddyCard teddy={teddy} />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+          <Droppable droppableId="deck">
+            {(provided) => (
+              <div {...provided.droppableProps} ref={provided.innerRef} className="bg-gray-100 p-4 rounded">
+                <h2 className="text-2xl font-bold mb-2">Your Deck ({deck.length}/10)</h2>
+                {deck.map((teddy, index) => (
+                  <Draggable key={teddy.id} draggableId={teddy.id} index={index}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className="mb-2"
+                      >
+                        <TeddyCard teddy={teddy} />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
         </div>
-        <SaveDeckButton onSave={saveDeck} isLoading={saveDeckMutation.isLoading} />
+        <Button onClick={saveDeck} className="mt-4">Save Deck</Button>
       </div>
     </DragDropContext>
   );

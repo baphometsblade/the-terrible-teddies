@@ -3,6 +3,7 @@ import { useToast } from "@/components/ui/use-toast";
 import TeddyCard from '../TeddyCard';
 import { calculateDamage } from '../../utils/battleUtils';
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const [playerHealth, setPlayerHealth] = useState(30);
@@ -51,6 +52,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
 
     checkGameOver();
     setCurrentTurn('opponent');
+    setPlayerEnergy(prev => Math.min(prev + 1, 3));
   };
 
   const opponentTurn = () => {
@@ -68,6 +70,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
 
     checkGameOver();
     setCurrentTurn('player');
+    setOpponentEnergy(prev => Math.min(prev + 1, 3));
   };
 
   const addToBattleLog = (message) => {
@@ -99,20 +102,22 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
         <div>
           <h2 className="text-xl font-bold mb-2">Your Teddy</h2>
           <TeddyCard teddy={playerTeddy} />
+          <Progress value={(playerHealth / 30) * 100} className="mt-2" />
           <p>Health: {playerHealth}/30</p>
           <p>Energy: {playerEnergy}/3</p>
         </div>
         <div>
           <h2 className="text-xl font-bold mb-2">Opponent's Teddy</h2>
           <TeddyCard teddy={opponentTeddy} />
+          <Progress value={(opponentHealth / 30) * 100} className="mt-2" />
           <p>Health: {opponentHealth}/30</p>
           <p>Energy: {opponentEnergy}/3</p>
         </div>
       </div>
       <div className="mb-4">
         <Button onClick={() => performAction('attack')} disabled={currentTurn !== 'player'}>Attack</Button>
-        <Button onClick={() => performAction('defend')} disabled={currentTurn !== 'player'}>Defend</Button>
-        <Button onClick={() => performAction('special')} disabled={currentTurn !== 'player' || playerEnergy < 2}>Special Move</Button>
+        <Button onClick={() => performAction('defend')} disabled={currentTurn !== 'player'} className="ml-2">Defend</Button>
+        <Button onClick={() => performAction('special')} disabled={currentTurn !== 'player' || playerEnergy < 2} className="ml-2">Special Move</Button>
       </div>
       <div>
         <h3 className="text-lg font-bold mb-2">Battle Log</h3>
