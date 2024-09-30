@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import TeddyCard from './TeddyCard';
 import { Button } from "@/components/ui/button";
 import { uploadTeddyImages } from '../utils/imageUpload';
+import { useToast } from "@/components/ui/use-toast";
 
-const TeddyCollection = () => {
-  const { data: teddies, isLoading, error } = useQuery({
+const TeddyCollection = ({ onSelectTeddy }) => {
+  const [selectedTeddy, setSelectedTeddy] = useState(null);
+  const { toast } = useToast();
+
+  const { data: teddies, isLoading, error, refetch } = useQuery({
     queryKey: ['teddies'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -19,8 +23,18 @@ const TeddyCollection = () => {
 
   const handleUploadImages = async () => {
     await uploadTeddyImages();
-    // Refetch the teddies to update the UI with new image URLs
-    await refetch();
+    toast({
+      title: "Images Uploaded",
+      description: "Teddy images have been uploaded to storage.",
+    });
+    refetch();
+  };
+
+  const handleSelectTeddy = (teddy) => {
+    setSelectedTeddy(teddy);
+    if (onSelectTeddy) {
+      onSelectTeddy(teddy);
+    }
   };
 
   if (isLoading) return <div>Loading teddies...</div>;
@@ -32,9 +46,21 @@ const TeddyCollection = () => {
       <Button onClick={handleUploadImages} className="mb-4">Upload Images to Storage</Button>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {teddies.map(teddy => (
-          <TeddyCard key={teddy.id} teddy={teddy} />
+          <div 
+            key={teddy.id} 
+            className={`cursor-pointer ${selectedTeddy?.id === teddy.id ? 'border-2 border-blue-500' : ''}`}
+            onClick={() => handleSelectTeddy(teddy)}
+          >
+            <TeddyCard teddy={teddy} />
+          </div>
         ))}
       </div>
+      {selectedTeddy && (
+        <div className="mt-4">
+          <h2 className="text-2xl font-bold">Selected Teddy</h2>
+          <TeddyCard teddy={selectedTeddy} />
+        </div>
+      )}
     </div>
   );
 };
