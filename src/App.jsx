@@ -4,11 +4,13 @@ import { Toaster } from "@/components/ui/toaster";
 import Home from './components/Home';
 import Battle from './components/Battle';
 import TeddyCollection from './components/TeddyCollection';
+import Header from './components/Header';
 
 function App() {
   return (
     <Router>
       <div className="App bg-gray-100 min-h-screen">
+        <Header />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/battle" element={<Battle />} />
