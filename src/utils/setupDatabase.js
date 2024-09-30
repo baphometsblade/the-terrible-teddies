@@ -23,44 +23,12 @@ export const setupDatabase = async () => {
       sql: await import('../db/migrations/005_create_player_teddies.sql?raw')
     },
     {
-      name: '006_create_player_teddies',
-      sql: await import('../db/migrations/006_create_player_teddies.sql?raw')
-    },
-    {
-      name: '007_create_player_teddies',
-      sql: await import('../db/migrations/007_create_player_teddies.sql?raw')
-    },
-    {
-      name: '008_create_player_teddies',
-      sql: await import('../db/migrations/008_create_player_teddies.sql?raw')
-    },
-    {
       name: '009_update_player_teddies_relation',
       sql: await import('../db/migrations/009_update_player_teddies_relation.sql?raw')
     },
     {
-      name: '010_create_player_teddies',
-      sql: await import('../db/migrations/010_create_player_teddies.sql?raw')
-    },
-    {
       name: '011_fix_player_teddies_relation',
       sql: await import('../db/migrations/011_fix_player_teddies_relation.sql?raw')
-    },
-    {
-      name: '012_create_player_teddies',
-      sql: await import('../db/migrations/012_create_player_teddies.sql?raw')
-    },
-    {
-      name: '013_create_player_teddies_table',
-      sql: await import('../db/migrations/013_create_player_teddies_table.sql?raw')
-    },
-    {
-      name: '014_create_player_teddies_table',
-      sql: await import('../db/migrations/014_create_player_teddies_table.sql?raw')
-    },
-    {
-      name: '015_create_player_teddies_table',
-      sql: await import('../db/migrations/015_create_player_teddies_table.sql?raw')
     },
     {
       name: '016_update_player_teddies_relation',
@@ -71,8 +39,8 @@ export const setupDatabase = async () => {
       sql: await import('../db/migrations/017_create_terrible_teddies_table.sql?raw')
     },
     {
-      name: '018_create_player_teddies_table',
-      sql: await import('../db/migrations/018_create_player_teddies_table.sql?raw')
+      name: '018_create_players_table',
+      sql: await import('../db/migrations/018_create_players_table.sql?raw')
     },
     {
       name: '019_create_player_teddies_table',
@@ -87,10 +55,6 @@ export const setupDatabase = async () => {
       sql: await import('../db/migrations/021_create_player_teddies_table.sql?raw')
     },
     {
-      name: '022_create_player_teddies_table',
-      sql: await import('../db/migrations/022_create_player_teddies_table.sql?raw')
-    },
-    {
       name: '023_create_game_tables',
       sql: await import('../db/migrations/023_create_game_tables.sql?raw')
     },
@@ -101,10 +65,6 @@ export const setupDatabase = async () => {
     {
       name: '025_add_player_teddies_foreign_key',
       sql: await import('../db/migrations/025_add_player_teddies_foreign_key.sql?raw')
-    },
-    {
-      name: '026_add_player_teddies_foreign_key',
-      sql: await import('../db/migrations/026_add_player_teddies_foreign_key.sql?raw')
     },
     {
       name: '027_add_player_teddies_foreign_key',
