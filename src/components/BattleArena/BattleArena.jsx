@@ -5,12 +5,14 @@ import { useToast } from "@/components/ui/use-toast";
 import BattleField from './BattleField';
 import ActionButtons from './ActionButtons';
 import BattleStatus from './BattleStatus';
+import BattleLog from './BattleLog';
 import AIOpponent from '../../utils/AIOpponent';
 
 const BattleArena = () => {
   const [battleId, setBattleId] = useState(null);
   const [isAIOpponent, setIsAIOpponent] = useState(false);
   const [aiDifficulty, setAiDifficulty] = useState('medium');
+  const [battleLog, setBattleLog] = useState([]);
   const { toast } = useToast();
 
   const { data: battle, isLoading, error, refetch } = useQuery({
@@ -49,8 +51,9 @@ const BattleArena = () => {
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       refetch();
+      setBattleLog(prevLog => [...prevLog, data.actionResult]);
     },
     onError: (error) => {
       toast({
@@ -123,6 +126,7 @@ const BattleArena = () => {
         isDisabled={battleActionMutation.isLoading || battle.status === 'finished' || battle.current_turn !== battle.player1_id}
       />
       <BattleStatus battle={battle} />
+      <BattleLog log={battleLog} />
     </div>
   );
 };

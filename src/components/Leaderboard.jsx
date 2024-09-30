@@ -1,6 +1,15 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const Leaderboard = () => {
   const { data: leaderboard, isLoading, error } = useQuery({
@@ -8,9 +17,9 @@ const Leaderboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('players')
-        .select('id, username, wins, losses')
+        .select('id, username, wins, losses, rank')
         .order('wins', { ascending: false })
-        .limit(10);
+        .limit(100);
       if (error) throw error;
       return data;
     },
@@ -20,27 +29,31 @@ const Leaderboard = () => {
   if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white">
-        <thead>
-          <tr>
-            <th className="px-4 py-2">Rank</th>
-            <th className="px-4 py-2">Username</th>
-            <th className="px-4 py-2">Wins</th>
-            <th className="px-4 py-2">Losses</th>
-          </tr>
-        </thead>
-        <tbody>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-4">Leaderboard</h1>
+      <Table>
+        <TableCaption>Top 100 Terrible Teddies Players</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">Rank</TableHead>
+            <TableHead>Username</TableHead>
+            <TableHead>Wins</TableHead>
+            <TableHead>Losses</TableHead>
+            <TableHead>Rank</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {leaderboard.map((player, index) => (
-            <tr key={player.id} className={index % 2 === 0 ? 'bg-gray-100' : ''}>
-              <td className="px-4 py-2">{index + 1}</td>
-              <td className="px-4 py-2">{player.username}</td>
-              <td className="px-4 py-2">{player.wins}</td>
-              <td className="px-4 py-2">{player.losses}</td>
-            </tr>
+            <TableRow key={player.id}>
+              <TableCell className="font-medium">{index + 1}</TableCell>
+              <TableCell>{player.username}</TableCell>
+              <TableCell>{player.wins}</TableCell>
+              <TableCell>{player.losses}</TableCell>
+              <TableCell>{player.rank}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 };

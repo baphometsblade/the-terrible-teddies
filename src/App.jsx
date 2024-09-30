@@ -3,13 +3,12 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import Home from './components/Home';
 import Header from './components/Header';
-import BattleArena from './components/BattleArena';
+import BattleArena from './components/BattleArena/BattleArena';
 import Auth from './components/Auth';
 import TeddyCollection from './components/TeddyCollection';
 import Shop from './components/Shop';
 import Leaderboard from './components/Leaderboard';
 import PlayerProfile from './components/PlayerProfile';
-import MatchmakingSystem from './components/MatchmakingSystem';
 import DailyChallenge from './components/DailyChallenge';
 
 function App() {
@@ -25,7 +24,6 @@ function App() {
           <Route path="/shop" element={<Shop />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<PlayerProfile />} />
-          <Route path="/matchmaking" element={<MatchmakingSystem />} />
           <Route path="/daily-challenge" element={<DailyChallenge />} />
         </Routes>
       </div>
