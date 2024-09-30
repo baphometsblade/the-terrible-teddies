@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TeddyCard from './TeddyCard';
 
 const Shop = () => {
-  const [activeTab, setActiveTab] = useState('teddies');
+  const [activeTab, setActiveTab] = useState('packs');
   const { toast } = useToast();
 
   const { data: shopItems, isLoading, error } = useQuery({
@@ -50,26 +50,27 @@ const Shop = () => {
   if (isLoading) return <div>Loading shop...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
-  const teddies = shopItems.filter(item => item.type === 'teddy');
-  const cosmetics = shopItems.filter(item => item.type === 'cosmetic');
   const packs = shopItems.filter(item => item.type === 'pack');
+  const cosmetics = shopItems.filter(item => item.type === 'cosmetic');
+  const consumables = shopItems.filter(item => item.type === 'consumable');
 
   return (
     <div className="shop container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-4">Terrible Teddies Shop</h1>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="teddies">Teddies</TabsTrigger>
-          <TabsTrigger value="cosmetics">Cosmetics</TabsTrigger>
           <TabsTrigger value="packs">Packs</TabsTrigger>
+          <TabsTrigger value="cosmetics">Cosmetics</TabsTrigger>
+          <TabsTrigger value="consumables">Consumables</TabsTrigger>
         </TabsList>
-        <TabsContent value="teddies">
+        <TabsContent value="packs">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {teddies.map(teddy => (
-              <div key={teddy.id} className="border p-4 rounded-lg">
-                <TeddyCard teddy={teddy} />
-                <Button onClick={() => handlePurchase(teddy)} className="mt-2 w-full">
-                  Buy for {teddy.price} coins
+            {packs.map(pack => (
+              <div key={pack.id} className="border p-4 rounded-lg">
+                <h3 className="font-bold text-xl mb-2">{pack.name}</h3>
+                <p>{pack.description}</p>
+                <Button onClick={() => handlePurchase(pack)} className="mt-4 w-full">
+                  Buy for {pack.price} coins
                 </Button>
               </div>
             ))}
@@ -89,14 +90,15 @@ const Shop = () => {
             ))}
           </div>
         </TabsContent>
-        <TabsContent value="packs">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {packs.map(pack => (
-              <div key={pack.id} className="border p-4 rounded-lg">
-                <h3 className="font-bold text-xl mb-2">{pack.name}</h3>
-                <p>{pack.description}</p>
-                <Button onClick={() => handlePurchase(pack)} className="mt-4 w-full">
-                  Buy for {pack.price} coins
+        <TabsContent value="consumables">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {consumables.map(consumable => (
+              <div key={consumable.id} className="border p-4 rounded-lg">
+                <img src={consumable.image_url} alt={consumable.name} className="w-full h-32 object-cover mb-2" />
+                <h3 className="font-bold">{consumable.name}</h3>
+                <p>{consumable.description}</p>
+                <Button onClick={() => handlePurchase(consumable)} className="mt-2 w-full">
+                  Buy for {consumable.price} coins
                 </Button>
               </div>
             ))}

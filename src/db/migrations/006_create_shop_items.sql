@@ -15,7 +15,13 @@ VALUES
   ('Standard Bear Pack', 'Contains 5 random bears', 500, 'pack', 'https://example.com/standard_pack.png'),
   ('Premium Bear Pack', 'Contains 10 random bears with a guaranteed rare', 1000, 'pack', 'https://example.com/premium_pack.png'),
   ('Golden Card Frame', 'A luxurious frame for your favorite bear', 250, 'cosmetic', 'https://example.com/golden_frame.png'),
-  ('Energy Boost', 'Instantly refill your energy in battle', 100, 'consumable', 'https://example.com/energy_boost.png');
+  ('Energy Boost', 'Instantly refill your energy in battle', 100, 'consumable', 'https://example.com/energy_boost.png'),
+  ('Legendary Bear Pack', 'Contains 5 bears with a guaranteed legendary', 2000, 'pack', 'https://example.com/legendary_pack.png'),
+  ('Rainbow Aura', 'A colorful aura for your bear', 300, 'cosmetic', 'https://example.com/rainbow_aura.png'),
+  ('XP Booster', 'Double XP for your next 5 battles', 150, 'consumable', 'https://example.com/xp_booster.png'),
+  ('Seasonal Halloween Pack', 'Limited edition spooky bears', 1500, 'pack', 'https://example.com/halloween_pack.png'),
+  ('Neon Card Border', 'Make your cards glow with this neon border', 200, 'cosmetic', 'https://example.com/neon_border.png'),
+  ('Lucky Charm', 'Increases rare bear drop rate for your next pack opening', 300, 'consumable', 'https://example.com/lucky_charm.png');
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.shop_items ENABLE ROW LEVEL SECURITY;
