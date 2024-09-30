@@ -1,22 +1,23 @@
 import OpenAI from 'openai';
 import { supabase } from '../lib/supabase';
-import { uploadBearImage } from './imageUpload';
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
 });
 
-const generateTeddyBear = async () => {
-  const names = ["Whiskey Whiskers", "Madame Mistletoe", "Baron Von Blubber", "Bella Bombshell", "Professor Playful"];
-  const titles = ["The Smooth Operator", "The Festive Flirt", "The Inflated Ego", "The Dynamite Diva", "The Teasing Tutor"];
-  const specialMoves = ["On the Rocks", "Sneak Kiss", "Burst Bubble", "Heart Stopper", "Mind Game"];
+const generateBearDescription = async (name) => {
+  const prompt = `Create a humorous, adult-themed description for a teddy bear named "${name}" for the game Terrible Teddies. The description should be cheeky and irreverent, suitable for mature audiences.`;
+  
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [{ role: "user", content: prompt }],
+  });
 
-  const randomIndex = Math.floor(Math.random() * names.length);
-  const name = names[randomIndex];
-  const title = titles[randomIndex];
-  const specialMove = specialMoves[randomIndex];
+  return response.choices[0].message.content.trim();
+};
 
-  const prompt = `Create a hyper-realistic, ultra-detailed image of a mischievous teddy bear named "${name}" (${title}) for the adult card game "Terrible Teddies". The bear should embody cheeky, tongue-in-cheek humor with a hint of naughtiness. Make it visually striking and slightly provocative, suitable for an adult audience. Ensure the bear's expression and pose reflect its title and personality. The image should be high resolution with intricate details of the bear's fur, accessories, and surroundings that match its character.`;
+const generateBearImage = async (name, description) => {
+  const prompt = `Create a hyper-realistic, ultra-detailed image of a mischievous teddy bear named "${name}" for the adult card game "Terrible Teddies". The bear should embody cheeky, tongue-in-cheek humor with a hint of naughtiness. Make it visually striking and slightly provocative, suitable for an adult audience. Ensure the bear's expression and pose reflect its personality: ${description}`;
 
   const response = await openai.images.generate({
     model: "dall-e-3",
@@ -25,36 +26,62 @@ const generateTeddyBear = async () => {
     size: "1024x1024",
   });
 
-  const imageUrl = response.data[0].url;
-
-  // Upload the image to Supabase Storage
-  const supabaseImageUrl = await uploadBearImage(name, imageUrl);
-
-  return {
-    name,
-    title,
-    description: `A cheeky teddy with a knack for ${specialMove.toLowerCase()}.`,
-    attack: Math.floor(Math.random() * 3) + 4, // 4-6
-    defense: Math.floor(Math.random() * 3) + 4, // 4-6
-    specialMove,
-    imageUrl: supabaseImageUrl
-  };
+  return response.data[0].url;
 };
 
-export const generateAllAssets = async (count = 50) => {
-  const generatedAssets = [];
+const uploadBearImage = async (name, imageUrl) => {
+  const response = await fetch(imageUrl);
+  const blob = await response.blob();
+  const fileName = `${name.replace(/\s+/g, '-').toLowerCase()}.png`;
+  const filePath = `bears/${fileName}`;
+
+  const { data, error } = await supabase.storage
+    .from('teddy-images')
+    .upload(filePath, blob, {
+      contentType: 'image/png',
+      upsert: true
+    });
+
+  if (error) throw error;
+
+  const { data: publicUrlData } = supabase.storage
+    .from('teddy-images')
+    .getPublicUrl(filePath);
+
+  return publicUrlData.publicUrl;
+};
+
+export const generateBear = async () => {
+  const names = ["Whiskey Whiskers", "Madame Mistletoe", "Baron Von Blubber", "Icy Ivan", "Lady Lush"];
+  const name = names[Math.floor(Math.random() * names.length)];
+  
+  const description = await generateBearDescription(name);
+  const imageUrl = await generateBearImage(name, description);
+  const supabaseImageUrl = await uploadBearImage(name, imageUrl);
+
+  const bear = {
+    name,
+    description,
+    attack: Math.floor(Math.random() * 3) + 4, // 4-6
+    defense: Math.floor(Math.random() * 3) + 4, // 4-6
+    specialMove: `${name}'s Special Move`,
+    imageUrl: supabaseImageUrl
+  };
+
+  const { data, error } = await supabase
+    .from('terrible_teddies')
+    .insert([bear]);
+
+  if (error) throw error;
+
+  return bear;
+};
+
+export const generateInitialBears = async (count = 50) => {
+  const bears = [];
   for (let i = 0; i < count; i++) {
-    const bear = await generateTeddyBear();
-    generatedAssets.push(bear);
-
-    // Store the bear data in Supabase
-    const { data, error } = await supabase
-      .from('terrible_teddies')
-      .insert([bear]);
-
-    if (error) {
-      console.error('Error storing bear data:', error);
-    }
+    const bear = await generateBear();
+    bears.push(bear);
   }
-  return generatedAssets;
+  return bears;
 };
