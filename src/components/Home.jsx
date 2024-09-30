@@ -1,29 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { runAllScripts } from '../utils/runAllScripts';
-import { useToast } from "@/components/ui/use-toast";
 
 const Home = () => {
-  const { toast } = useToast();
-
-  const handleRunScripts = async () => {
-    try {
-      const result = await runAllScripts();
-      toast({
-        title: "Scripts Executed",
-        description: result,
-        variant: "success",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to run scripts: ${error.message}`,
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8 text-center">Welcome to Terrible Teddies</h1>
@@ -41,12 +20,6 @@ const Home = () => {
           <Button className="w-full">Leaderboard</Button>
         </Link>
       </div>
-      <Button 
-        className="w-full bg-purple-600 hover:bg-purple-700"
-        onClick={handleRunScripts}
-      >
-        Run All Scripts
-      </Button>
     </div>
   );
 };
