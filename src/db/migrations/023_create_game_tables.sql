@@ -1,85 +1,88 @@
--- Create the terrible_teddies table
-CREATE TABLE public.terrible_teddies (
+-- Create daily_challenges table
+CREATE TABLE IF NOT EXISTS public.daily_challenges (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  name TEXT NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT,
-  attack INTEGER NOT NULL,
-  defense INTEGER NOT NULL,
-  special_move TEXT NOT NULL,
-  image_url TEXT,
+  date DATE NOT NULL UNIQUE,
+  opponent_teddy_id UUID REFERENCES public.terrible_teddies(id),
+  reward_coins INTEGER NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create the players table
-CREATE TABLE public.players (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id),
-  username TEXT UNIQUE NOT NULL,
-  coins INTEGER DEFAULT 0,
-  wins INTEGER DEFAULT 0,
-  losses INTEGER DEFAULT 0,
-  rank TEXT DEFAULT 'Novice',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create the player_teddies table
-CREATE TABLE public.player_teddies (
+-- Create player_challenge_completions table
+CREATE TABLE IF NOT EXISTS public.player_challenge_completions (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   player_id UUID REFERENCES public.players(id),
-  teddy_id UUID REFERENCES public.terrible_teddies(id),
-  level INTEGER DEFAULT 1,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  challenge_id UUID REFERENCES public.daily_challenges(id),
+  completed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(player_id, challenge_id)
 );
 
--- Create the battles table
-CREATE TABLE public.battles (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  player1_id UUID REFERENCES public.players(id),
-  player2_id UUID REFERENCES public.players(id),
-  player1_teddy_id UUID REFERENCES public.terrible_teddies(id),
-  player2_teddy_id UUID REFERENCES public.terrible_teddies(id),
-  player1_health INTEGER DEFAULT 30,
-  player2_health INTEGER DEFAULT 30,
-  current_turn UUID,
-  status TEXT DEFAULT 'ongoing',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+-- Add level column to player_teddies table
+ALTER TABLE public.player_teddies ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1;
 
--- Create the player_submissions table
-CREATE TABLE public.player_submissions (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  player_id UUID REFERENCES public.players(id),
-  name TEXT NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT,
-  attack INTEGER NOT NULL,
-  defense INTEGER NOT NULL,
-  special_move TEXT NOT NULL,
-  image_url TEXT,
-  status TEXT DEFAULT 'pending',
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+-- Create function to get daily challenge
+CREATE OR REPLACE FUNCTION public.get_daily_challenge()
+RETURNS TABLE (
+  id UUID,
+  date DATE,
+  opponent_teddy_id UUID,
+  reward_coins INTEGER,
+  opponent_teddy JSON
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    dc.id, 
+    dc.date, 
+    dc.opponent_teddy_id, 
+    dc.reward_coins,
+    row_to_json(tt.*) as opponent_teddy
+  FROM 
+    public.daily_challenges dc
+  JOIN 
+    public.terrible_teddies tt ON dc.opponent_teddy_id = tt.id
+  WHERE 
+    dc.date = CURRENT_DATE;
+END;
+$$;
 
--- Enable Row Level Security on all tables
-ALTER TABLE public.terrible_teddies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.players ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.player_teddies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.battles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.player_submissions ENABLE ROW LEVEL SECURITY;
-
--- Create policies for each table
-CREATE POLICY "Allow read access for all authenticated users" ON public.terrible_teddies FOR SELECT USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Allow read access for own data" ON public.players FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Allow update for own data" ON public.players FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Allow read access for own teddies" ON public.player_teddies FOR SELECT USING (auth.uid() = (SELECT user_id FROM public.players WHERE id = player_id));
-CREATE POLICY "Allow insert for own teddies" ON public.player_teddies FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM public.players WHERE id = player_id));
-
-CREATE POLICY "Allow read access for own battles" ON public.battles FOR SELECT USING (auth.uid() IN (SELECT user_id FROM public.players WHERE id IN (player1_id, player2_id)));
-CREATE POLICY "Allow update for own battles" ON public.battles FOR UPDATE USING (auth.uid() IN (SELECT user_id FROM public.players WHERE id IN (player1_id, player2_id)));
-
-CREATE POLICY "Allow read access for own submissions" ON public.player_submissions FOR SELECT USING (auth.uid() = (SELECT user_id FROM public.players WHERE id = player_id));
-CREATE POLICY "Allow insert for own submissions" ON public.player_submissions FOR INSERT WITH CHECK (auth.uid() = (SELECT user_id FROM public.players WHERE id = player_id));
+-- Create function to complete daily challenge
+CREATE OR REPLACE FUNCTION public.complete_daily_challenge(player_teddy_id UUID)
+RETURNS TABLE (success BOOLEAN, reward_coins INTEGER)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_player_id UUID;
+  v_challenge_id UUID;
+  v_reward_coins INTEGER;
+BEGIN
+  -- Get player_id from player_teddy_id
+  SELECT player_id INTO v_player_id FROM public.player_teddies WHERE id = player_teddy_id;
+  
+  -- Get today's challenge
+  SELECT id, reward_coins INTO v_challenge_id, v_reward_coins
+  FROM public.daily_challenges
+  WHERE date = CURRENT_DATE;
+  
+  -- Check if player has already completed the challenge
+  IF EXISTS (
+    SELECT 1 FROM public.player_challenge_completions
+    WHERE player_id = v_player_id AND challenge_id = v_challenge_id
+  ) THEN
+    RETURN QUERY SELECT false::BOOLEAN, 0::INTEGER;
+    RETURN;
+  END IF;
+  
+  -- Record challenge completion
+  INSERT INTO public.player_challenge_completions (player_id, challenge_id)
+  VALUES (v_player_id, v_challenge_id);
+  
+  -- Award coins to player
+  UPDATE public.players
+  SET coins = coins + v_reward_coins
+  WHERE id = v_player_id;
+  
+  RETURN QUERY SELECT true::BOOLEAN, v_reward_coins::INTEGER;
+END;
+$$;
