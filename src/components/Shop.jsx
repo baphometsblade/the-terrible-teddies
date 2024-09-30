@@ -1,54 +1,108 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import TeddyCard from './TeddyCard';
+import React, { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TeddyCard from './TeddyCard';
 
 const Shop = () => {
-  const [shopTeddies, setShopTeddies] = useState([]);
-  const [playerCoins, setPlayerCoins] = useState(100);
+  const [activeTab, setActiveTab] = useState('teddies');
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Simulating fetching shop teddies from an API or database
-    setShopTeddies([
-      { id: 4, name: "Captain Cuddles", attack: 6, defense: 7, specialMove: "Hug of Doom", price: 50 },
-      { id: 5, name: "Sir Fluffington", attack: 8, defense: 5, specialMove: "Royal Decree", price: 75 },
-      { id: 6, name: "Ninja Nuzzles", attack: 9, defense: 3, specialMove: "Shadow Snuggle", price: 100 },
-    ]);
-  }, []);
+  const { data: shopItems, isLoading, error } = useQuery({
+    queryKey: ['shopItems'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('shop_items')
+        .select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  const handlePurchase = (teddy) => {
-    if (playerCoins >= teddy.price) {
-      setPlayerCoins(prev => prev - teddy.price);
-      setShopTeddies(prev => prev.filter(t => t.id !== teddy.id));
+  const purchaseMutation = useMutation({
+    mutationFn: async (item) => {
+      // Here you would typically make an API call to process the purchase
+      // For now, we'll just simulate a successful purchase
+      return new Promise((resolve) => setTimeout(() => resolve(item), 1000));
+    },
+    onSuccess: (item) => {
       toast({
         title: "Purchase Successful",
-        description: `You bought ${teddy.name} for ${teddy.price} coins!`,
+        description: `You bought ${item.name} for ${item.price} coins!`,
         variant: "success",
       });
-    } else {
+    },
+    onError: (error) => {
       toast({
         title: "Purchase Failed",
-        description: "Not enough coins!",
+        description: error.message,
         variant: "destructive",
       });
-    }
+    },
+  });
+
+  const handlePurchase = (item) => {
+    purchaseMutation.mutate(item);
   };
 
+  if (isLoading) return <div>Loading shop...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  const teddies = shopItems.filter(item => item.type === 'teddy');
+  const cosmetics = shopItems.filter(item => item.type === 'cosmetic');
+  const packs = shopItems.filter(item => item.type === 'pack');
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Teddy Shop</h1>
-      <p className="mb-4">Your Coins: {playerCoins}</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {shopTeddies.map(teddy => (
-          <div key={teddy.id} className="flex flex-col">
-            <TeddyCard teddy={teddy} />
-            <Button onClick={() => handlePurchase(teddy)} className="mt-2">
-              Buy for {teddy.price} coins
-            </Button>
+    <div className="shop container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-4">Terrible Teddies Shop</h1>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="teddies">Teddies</TabsTrigger>
+          <TabsTrigger value="cosmetics">Cosmetics</TabsTrigger>
+          <TabsTrigger value="packs">Packs</TabsTrigger>
+        </TabsList>
+        <TabsContent value="teddies">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {teddies.map(teddy => (
+              <div key={teddy.id} className="border p-4 rounded-lg">
+                <TeddyCard teddy={teddy} />
+                <Button onClick={() => handlePurchase(teddy)} className="mt-2 w-full">
+                  Buy for {teddy.price} coins
+                </Button>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </TabsContent>
+        <TabsContent value="cosmetics">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {cosmetics.map(cosmetic => (
+              <div key={cosmetic.id} className="border p-4 rounded-lg">
+                <img src={cosmetic.image_url} alt={cosmetic.name} className="w-full h-32 object-cover mb-2" />
+                <h3 className="font-bold">{cosmetic.name}</h3>
+                <p>{cosmetic.description}</p>
+                <Button onClick={() => handlePurchase(cosmetic)} className="mt-2 w-full">
+                  Buy for {cosmetic.price} coins
+                </Button>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+        <TabsContent value="packs">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {packs.map(pack => (
+              <div key={pack.id} className="border p-4 rounded-lg">
+                <h3 className="font-bold text-xl mb-2">{pack.name}</h3>
+                <p>{pack.description}</p>
+                <Button onClick={() => handlePurchase(pack)} className="mt-4 w-full">
+                  Buy for {pack.price} coins
+                </Button>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

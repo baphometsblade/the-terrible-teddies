@@ -6,6 +6,10 @@ import Battle from './components/Battle';
 import TeddyCollection from './components/TeddyCollection';
 import Shop from './components/Shop';
 import Header from './components/Header';
+import PlayerProfile from './components/PlayerProfile';
+import Leaderboard from './components/Leaderboard';
+import PlayerSubmission from './components/PlayerSubmission';
+import BearEvolution from './components/BearEvolution';
 
 function App() {
   return (
@@ -17,6 +21,10 @@ function App() {
           <Route path="/battle" element={<Battle />} />
           <Route path="/collection" element={<TeddyCollection />} />
           <Route path="/shop" element={<Shop />} />
+          <Route path="/profile" element={<PlayerProfile />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/submit" element={<PlayerSubmission />} />
+          <Route path="/evolve/:teddyId" element={<BearEvolution />} />
         </Routes>
       </div>
       <Toaster />
