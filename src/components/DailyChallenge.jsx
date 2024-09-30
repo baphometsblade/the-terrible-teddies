@@ -12,11 +12,7 @@ const DailyChallenge = () => {
   const { data: challenge, isLoading, error } = useQuery({
     queryKey: ['dailyChallenge'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('daily_challenges')
-        .select('*, opponent_teddy:opponent_teddy_id(*)')
-        .eq('date', new Date().toISOString().split('T')[0])
-        .single();
+      const { data, error } = await supabase.rpc('get_daily_challenge');
       if (error) throw error;
       return data;
     },

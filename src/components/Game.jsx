@@ -5,11 +5,7 @@ import TeddyCard from './TeddyCard';
 import PlayerHand from './PlayerHand';
 import Battle from './Battle/Battle';
 import Shop from './Shop';
-import PlayerProfile from './PlayerProfile';
 import DailyChallenge from './DailyChallenge';
-import DeckBuilder from './DeckBuilder/DeckBuilder';
-import Leaderboard from './Leaderboard';
-import PlayerSubmission from './PlayerSubmission';
 import BearEvolution from './BearEvolution';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -53,6 +49,7 @@ const Game = () => {
 
   const handleBattleEnd = (result) => {
     setGameState('menu');
+    // Here you could add logic to update player stats, give rewards, etc.
   };
 
   const renderGameContent = () => {
@@ -67,18 +64,11 @@ const Game = () => {
         );
       case 'shop':
         return <Shop />;
-      case 'profile':
-        return <PlayerProfile />;
       case 'challenge':
         return <DailyChallenge />;
-      case 'deckBuilder':
-        return <DeckBuilder />;
-      case 'leaderboard':
-        return <Leaderboard />;
-      case 'submission':
-        return <PlayerSubmission />;
       case 'evolution':
         return <BearEvolution teddy={selectedCard} onEvolve={(evolvedTeddy) => {
+          // Here you could update the player's deck with the evolved teddy
           setGameState('menu');
         }} />;
       default:
@@ -86,11 +76,7 @@ const Game = () => {
           <div className="flex flex-col space-y-4">
             <Button onClick={() => setGameState('battle')}>Start Battle</Button>
             <Button onClick={() => setGameState('shop')}>Visit Shop</Button>
-            <Button onClick={() => setGameState('profile')}>View Profile</Button>
             <Button onClick={() => setGameState('challenge')}>Daily Challenge</Button>
-            <Button onClick={() => setGameState('deckBuilder')}>Deck Builder</Button>
-            <Button onClick={() => setGameState('leaderboard')}>Leaderboard</Button>
-            <Button onClick={() => setGameState('submission')}>Submit Teddy Idea</Button>
             <Button onClick={() => setGameState('evolution')} disabled={!selectedCard}>Evolve Teddy</Button>
           </div>
         );
@@ -103,7 +89,7 @@ const Game = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-4">Terrible Teddies</h1>
-      {gameState !== 'battle' && gameState !== 'deckBuilder' && (
+      {gameState !== 'battle' && (
         <PlayerHand hand={playerHand} onCardSelect={handleCardSelect} />
       )}
       {renderGameContent()}

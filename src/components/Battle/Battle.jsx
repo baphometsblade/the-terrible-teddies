@@ -4,6 +4,7 @@ import TeddyCard from '../TeddyCard';
 import { calculateDamage } from '../../utils/battleUtils';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import BattleLog from './BattleLog';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const [playerHealth, setPlayerHealth] = useState(30);
@@ -119,14 +120,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
         <Button onClick={() => performAction('defend')} disabled={currentTurn !== 'player'} className="ml-2">Defend</Button>
         <Button onClick={() => performAction('special')} disabled={currentTurn !== 'player' || playerEnergy < 2} className="ml-2">Special Move</Button>
       </div>
-      <div>
-        <h3 className="text-lg font-bold mb-2">Battle Log</h3>
-        <ul className="list-disc list-inside">
-          {battleLog.map((log, index) => (
-            <li key={index}>{log}</li>
-          ))}
-        </ul>
-      </div>
+      <BattleLog log={battleLog} />
     </div>
   );
 };
