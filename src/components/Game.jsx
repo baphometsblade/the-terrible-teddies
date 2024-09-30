@@ -12,13 +12,15 @@ import Leaderboard from './Leaderboard';
 import PlayerSubmission from './PlayerSubmission';
 import BearEvolution from './BearEvolution';
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
 const Game = () => {
   const [playerDeck, setPlayerDeck] = useState([]);
   const [opponentDeck, setOpponentDeck] = useState([]);
   const [playerHand, setPlayerHand] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
-  const [gameState, setGameState] = useState('menu'); // 'menu', 'battle', 'shop', 'profile', 'challenge', 'deckBuilder', 'leaderboard', 'submission', 'evolution'
+  const [gameState, setGameState] = useState('menu');
+  const { toast } = useToast();
 
   const { data: teddies, isLoading, error } = useQuery({
     queryKey: ['teddies'],
@@ -26,6 +28,13 @@ const Game = () => {
       const { data, error } = await supabase.from('terrible_teddies').select('*');
       if (error) throw error;
       return data;
+    },
+    onError: (error) => {
+      toast({
+        title: "Error fetching teddies",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -43,7 +52,6 @@ const Game = () => {
   };
 
   const handleBattleEnd = (result) => {
-    // Handle battle result (e.g., update player stats, give rewards)
     setGameState('menu');
   };
 
@@ -71,7 +79,6 @@ const Game = () => {
         return <PlayerSubmission />;
       case 'evolution':
         return <BearEvolution teddy={selectedCard} onEvolve={(evolvedTeddy) => {
-          // Update the player's teddy in the state or refetch the player's teddies
           setGameState('menu');
         }} />;
       default:

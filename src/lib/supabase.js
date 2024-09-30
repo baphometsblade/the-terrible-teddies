@@ -8,3 +8,23 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export const initSupabase = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('terrible_teddies')
+      .select('*')
+      .limit(1);
+    
+    if (error) {
+      console.error('Error connecting to Supabase:', error.message);
+      return false;
+    }
+    
+    console.log('Successfully connected to Supabase');
+    return true;
+  } catch (error) {
+    console.error('Unexpected error:', error.message);
+    return false;
+  }
+};
