@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { initSupabase } from './lib/supabase';
 import Game from './components/Game';
 import ErrorBoundary from './components/ErrorBoundary';
+import { useToast } from "@/components/ui/use-toast";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,14 +16,31 @@ const queryClient = new QueryClient({
 
 function App() {
   const [isSupabaseInitialized, setIsSupabaseInitialized] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const init = async () => {
-      const initialized = await initSupabase();
-      setIsSupabaseInitialized(initialized);
+      try {
+        const initialized = await initSupabase();
+        setIsSupabaseInitialized(initialized);
+        if (!initialized) {
+          toast({
+            title: "Initialization Error",
+            description: "Failed to connect to the database. Please try again later.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Initialization error:', error);
+        toast({
+          title: "Initialization Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     };
     init();
-  }, []);
+  }, [toast]);
 
   if (!isSupabaseInitialized) {
     return <div>Initializing application...</div>;
