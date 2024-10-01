@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 import TeddyCard from './TeddyCard';
 
 const DailyChallenge = () => {
@@ -43,6 +43,7 @@ const DailyChallenge = () => {
       toast({
         title: "Challenge Completed!",
         description: `You earned ${data.reward_coins} coins!`,
+        variant: "success",
       });
     },
     onError: (error) => {
@@ -58,14 +59,14 @@ const DailyChallenge = () => {
   if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4">Daily Challenge</h1>
+    <div className="daily-challenge p-4 bg-gray-100 rounded-lg">
+      <h2 className="text-2xl font-bold mb-4">Daily Challenge</h2>
       <div className="mb-4">
-        <h2 className="text-2xl font-bold">Opponent Teddy</h2>
+        <h3 className="text-xl font-bold">Opponent Teddy</h3>
         <TeddyCard teddy={challenge.opponent_teddy} />
       </div>
       <div className="mb-4">
-        <h2 className="text-2xl font-bold">Select Your Teddy</h2>
+        <h3 className="text-xl font-bold">Select Your Teddy</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {playerTeddies.map(teddy => (
             <div
