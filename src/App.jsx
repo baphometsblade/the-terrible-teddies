@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { initSupabase } from './lib/supabase';
+import { initSupabase, setupTerribleTeddies } from './lib/supabase';
 import { useToast } from "@/components/ui/use-toast";
 import Header from './components/Header';
 import Auth from './components/Auth';
@@ -9,6 +9,7 @@ import PlayerProfile from './components/PlayerProfile';
 import Shop from './components/Shop';
 import Leaderboard from './components/Leaderboard';
 import DailyChallenge from './components/DailyChallenge';
+import { initPostHog } from './utils/posthog';
 
 function App() {
   const [isSupabaseInitialized, setIsSupabaseInitialized] = useState(false);
@@ -17,6 +18,8 @@ function App() {
   useEffect(() => {
     const init = async () => {
       try {
+        initPostHog();
+        await setupTerribleTeddies();
         const initialized = await initSupabase();
         setIsSupabaseInitialized(initialized);
         if (!initialized) {

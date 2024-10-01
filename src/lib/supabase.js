@@ -28,3 +28,13 @@ export const initSupabase = async () => {
     return false;
   }
 };
+
+export const setupTerribleTeddies = async () => {
+  const { error } = await supabase.rpc('create_terrible_teddies_table');
+  if (error) {
+    console.error('Error creating terrible_teddies table:', error);
+    return false;
+  }
+  console.log('terrible_teddies table created or already exists');
+  return true;
+};

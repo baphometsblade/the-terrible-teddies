@@ -1,27 +1,22 @@
-let posthog;
+import posthog from 'posthog-js';
 
-export const initPostHog = async () => {
-  if (import.meta.env.VITE_POSTHOG_KEY) {
-    try {
-      const PostHogModule = await import('posthog-js');
-      posthog = PostHogModule.default;
-      posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
-        api_host: 'https://app.posthog.com',
-        loaded: (loadedPostHog) => {
-          console.log('PostHog loaded successfully');
-        },
-        autocapture: false,
-        capture_pageview: false,
-        capture_pageleave: false,
-        disable_session_recording: true,
-        xhr_headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-      });
-    } catch (error) {
-      console.error('Failed to initialize PostHog:', error);
-    }
+export const initPostHog = () => {
+  const posthogKey = import.meta.env.VITE_POSTHOG_KEY;
+  if (posthogKey) {
+    posthog.init(posthogKey, {
+      api_host: 'https://app.posthog.com',
+      loaded: (loadedPostHog) => {
+        console.log('PostHog loaded successfully');
+      },
+      autocapture: false,
+      capture_pageview: false,
+      capture_pageleave: false,
+      disable_session_recording: true,
+      xhr_headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+    });
   } else {
     console.warn('PostHog key not found in environment variables');
   }
