@@ -1,12 +1,10 @@
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 import { supabase } from '../lib/supabase';
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
   dangerouslyAllowBrowser: true
 });
-
-const openai = new OpenAIApi(configuration);
 
 const teddyBears = [
   { name: "Whiskey Whiskers", title: "The Smooth Operator" },
@@ -61,13 +59,13 @@ export async function generateGameAssets(onProgress) {
 }
 
 async function generateTeddyImage(bear) {
-  const response = await openai.createImage({
+  const response = await openai.images.generate({
     prompt: generatePrompt(bear),
     n: 1,
     size: "1024x1024",
   });
 
-  const imageUrl = response.data.data[0].url;
+  const imageUrl = response.data[0].url;
   const { data, error } = await supabase.storage
     .from('teddy-images')
     .upload(`${bear.name.replace(/\s+/g, '-').toLowerCase()}.png`, await (await fetch(imageUrl)).blob(), {
