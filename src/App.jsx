@@ -1,19 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Routes, Route } from 'react-router-dom';
 import { initSupabase } from './lib/supabase';
-import Game from './components/Game';
-import ErrorBoundary from './components/ErrorBoundary';
 import { useToast } from "@/components/ui/use-toast";
-import ScriptRunner from './components/ScriptRunner';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+import Header from './components/Header';
+import Auth from './components/Auth';
+import Game from './components/Game';
+import PlayerProfile from './components/PlayerProfile';
+import Shop from './components/Shop';
+import Leaderboard from './components/Leaderboard';
 
 function App() {
   const [isSupabaseInitialized, setIsSupabaseInitialized] = useState(false);
@@ -48,14 +42,16 @@ function App() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
-        <div className="App">
-          <ScriptRunner />
-          <Game />
-        </div>
-      </ErrorBoundary>
-    </QueryClientProvider>
+    <div className="App">
+      <Header />
+      <Routes>
+        <Route path="/" element={<Game />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/profile" element={<PlayerProfile />} />
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+      </Routes>
+    </div>
   );
 }
 
