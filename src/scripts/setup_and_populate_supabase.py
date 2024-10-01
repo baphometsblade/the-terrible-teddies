@@ -16,24 +16,41 @@ url: str = os.environ.get("VITE_SUPABASE_URL")
 key: str = os.environ.get("VITE_SUPABASE_ANON_KEY")
 supabase: Client = create_client(url, key)
 
+def verify_connection():
+    try:
+        response = supabase.table('terrible_teddies').select('count').limit(1).execute()
+        logger.info(f"Connection verified. Response: {response}")
+        return True
+    except Exception as e:
+        logger.error(f"Connection verification failed: {str(e)}")
+        return False
+
+def check_function_exists(function_name):
+    try:
+        response = supabase.rpc(function_name).execute()
+        logger.info(f"Function {function_name} exists. Response: {response}")
+        return True
+    except Exception as e:
+        logger.error(f"Function {function_name} does not exist or is not accessible: {str(e)}")
+        return False
+
 def create_tables():
     try:
-        logger.info("Creating terrible_teddies table...")
-        response = supabase.table("terrible_teddies").insert({
-            "id": "dummy",
-            "name": "Dummy Bear",
-            "title": "The Placeholder",
-            "description": "A temporary bear for table creation",
-            "attack": 1,
-            "defense": 1,
-            "special_move": "Vanish",
-            "image_url": "https://example.com/dummy.png"
+        logger.info("Attempting to create terrible_teddies table...")
+        response = supabase.rpc('create_table_if_not_exists', {
+            'table_name': 'terrible_teddies',
+            'table_definition': '''
+                id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+                name TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT,
+                attack INTEGER NOT NULL,
+                defense INTEGER NOT NULL,
+                special_move TEXT NOT NULL,
+                image_url TEXT
+            '''
         }).execute()
-        logger.info(f"Response: {json.dumps(response.dict(), indent=2)}")
-        
-        logger.info("Removing dummy data...")
-        supabase.table("terrible_teddies").delete().eq("id", "dummy").execute()
-        logger.info("Dummy data removed successfully")
+        logger.info(f"Table creation response: {json.dumps(response.dict(), indent=2)}")
     except Exception as e:
         logger.error(f"Error in create_tables: {str(e)}")
         if hasattr(e, 'response'):
@@ -77,10 +94,13 @@ def populate_teddies():
 def main():
     logger.info("Setting up and populating Supabase...")
     try:
-        # Test connection
-        response = supabase.table("terrible_teddies").select("*").limit(1).execute()
-        logger.info("Successfully connected to Supabase")
-        logger.info(f"Test query response: {json.dumps(response.dict(), indent=2)}")
+        if not verify_connection():
+            logger.error("Failed to connect to Supabase. Please check your credentials.")
+            return
+
+        if not check_function_exists('create_table_if_not_exists'):
+            logger.error("The 'create_table_if_not_exists' function does not exist in Supabase.")
+            return
 
         create_tables()
         populate_teddies()
