@@ -1,62 +1,76 @@
-import React, { useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import { initSupabase, setupTerribleTeddies } from './lib/supabase';
-import { useToast } from "@/components/ui/use-toast";
-import Header from './components/Header';
-import Auth from './components/Auth';
-import Game from './components/Game';
-import PlayerProfile from './components/PlayerProfile';
+import React, { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from "@/components/ui/toaster";
+import TeddyCard from './components/TeddyCard';
+import Battle from './components/Battle';
+import BearEvolution from './components/BearEvolution';
 import Shop from './components/Shop';
-import Leaderboard from './components/Leaderboard';
-import DailyChallenge from './components/DailyChallenge';
-import { initPostHog } from './utils/posthog';
+
+const queryClient = new QueryClient();
 
 function App() {
-  const [isSupabaseInitialized, setIsSupabaseInitialized] = useState(false);
-  const { toast } = useToast();
+  const [selectedTeddy, setSelectedTeddy] = useState(null);
+  const [gameState, setGameState] = useState('collection'); // 'collection', 'battle', 'evolution', 'shop'
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        initPostHog();
-        await setupTerribleTeddies();
-        const initialized = await initSupabase();
-        setIsSupabaseInitialized(initialized);
-        if (!initialized) {
-          toast({
-            title: "Initialization Error",
-            description: "Failed to connect to the database. Please try again later.",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error('Initialization error:', error);
-        toast({
-          title: "Initialization Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    };
-    init();
-  }, [toast]);
+  const dummyTeddy = {
+    id: 1,
+    name: "Whiskey Whiskers",
+    title: "The Smooth Operator",
+    description: "A suave bear with a penchant for fine spirits and even finer company.",
+    attack: 6,
+    defense: 5,
+    specialMove: "On the Rocks",
+    specialMoveDescription: "Lowers the opponent's defense by 2 with his intoxicating charisma.",
+    imageUrl: "https://example.com/whiskey-whiskers.jpg",
+  };
 
-  if (!isSupabaseInitialized) {
-    return <div>Initializing application...</div>;
-  }
+  const handleTeddySelect = (teddy) => {
+    setSelectedTeddy(teddy);
+  };
+
+  const handleBattleEnd = (result) => {
+    // Handle battle end logic here
+    setGameState('collection');
+  };
+
+  const handleEvolve = (evolvedTeddy) => {
+    setSelectedTeddy(evolvedTeddy);
+    setGameState('collection');
+  };
 
   return (
-    <div className="App">
-      <Header />
-      <Routes>
-        <Route path="/" element={<Game />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/profile" element={<PlayerProfile />} />
-        <Route path="/shop" element={<Shop />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/daily-challenge" element={<DailyChallenge />} />
-      </Routes>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <div className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-4">Terrible Teddies</h1>
+        {gameState === 'collection' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Your Collection</h2>
+            <div className="flex space-x-4 mb-4">
+              <TeddyCard teddy={dummyTeddy} onClick={() => handleTeddySelect(dummyTeddy)} />
+            </div>
+            <div className="flex space-x-2">
+              <button onClick={() => setGameState('battle')} className="px-4 py-2 bg-blue-500 text-white rounded">Battle</button>
+              <button onClick={() => setGameState('evolution')} className="px-4 py-2 bg-green-500 text-white rounded">Evolve</button>
+              <button onClick={() => setGameState('shop')} className="px-4 py-2 bg-purple-500 text-white rounded">Shop</button>
+            </div>
+          </div>
+        )}
+        {gameState === 'battle' && selectedTeddy && (
+          <Battle 
+            playerTeddy={selectedTeddy} 
+            opponentTeddy={dummyTeddy} 
+            onBattleEnd={handleBattleEnd} 
+          />
+        )}
+        {gameState === 'evolution' && selectedTeddy && (
+          <BearEvolution teddy={selectedTeddy} onEvolve={handleEvolve} />
+        )}
+        {gameState === 'shop' && (
+          <Shop />
+        )}
+      </div>
+      <Toaster />
+    </QueryClientProvider>
   );
 }
 

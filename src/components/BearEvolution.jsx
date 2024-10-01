@@ -1,62 +1,41 @@
 import React, { useState } from 'react';
-import { useToast } from "@/components/ui/use-toast";
-import { useMutation } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
-import TeddyCard from './TeddyCard';
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/components/ui/use-toast";
+import TeddyCard from './TeddyCard';
 
 const BearEvolution = ({ teddy, onEvolve }) => {
   const [isEvolving, setIsEvolving] = useState(false);
   const { toast } = useToast();
 
-  const evolutionMutation = useMutation({
-    mutationFn: async (teddyId) => {
-      const { data, error } = await supabase
-        .rpc('evolve_teddy', { teddy_id: teddyId });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (evolvedTeddy) => {
-      onEvolve(evolvedTeddy);
-      toast({
-        title: "Evolution Complete!",
-        description: `${teddy.name} has evolved and become stronger!`,
-        variant: "success",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Evolution Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      setIsEvolving(false);
-    },
-  });
-
   const handleEvolve = () => {
     setIsEvolving(true);
-    evolutionMutation.mutate(teddy.id);
+    // Simulate evolution process
+    setTimeout(() => {
+      const evolvedTeddy = {
+        ...teddy,
+        attack: teddy.attack + 2,
+        defense: teddy.defense + 2,
+        level: (teddy.level || 1) + 1,
+      };
+      onEvolve(evolvedTeddy);
+      toast({
+        title: "Evolution Complete",
+        description: `${teddy.name} has evolved to level ${evolvedTeddy.level}!`,
+        variant: "success",
+      });
+      setIsEvolving(false);
+    }, 2000);
   };
 
   return (
-    <div className="bear-evolution">
-      <h2 className="text-2xl font-bold mb-4">Bear Evolution</h2>
+    <div className="flex flex-col items-center">
       <TeddyCard teddy={teddy} />
-      <div className="mt-4">
-        <p>Evolution Progress</p>
-        <Progress value={(teddy.experience / teddy.experience_to_evolve) * 100} className="mt-2" />
-        <p>{teddy.experience} / {teddy.experience_to_evolve} XP</p>
-      </div>
       <Button 
         onClick={handleEvolve} 
-        disabled={isEvolving || teddy.experience < teddy.experience_to_evolve}
+        disabled={isEvolving || (teddy.level && teddy.level >= 3)}
         className="mt-4"
       >
-        {isEvolving ? 'Evolving...' : 'Evolve Bear'}
+        {isEvolving ? "Evolving..." : "Evolve"}
       </Button>
     </div>
   );
