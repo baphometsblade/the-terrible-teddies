@@ -9,6 +9,13 @@ export const initializePostHog = () => {
           posthog.opt_out_capturing();
         }
       },
+      autocapture: false,
+      capture_pageview: false,
+      disable_session_recording: true,
+      xhr_headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
     });
   } catch (error) {
     console.error('Failed to initialize PostHog:', error);
@@ -17,7 +24,9 @@ export const initializePostHog = () => {
 
 export const trackEvent = (eventName, properties = {}) => {
   try {
-    posthog.capture(eventName, properties);
+    if (posthog && posthog.capture) {
+      posthog.capture(eventName, properties);
+    }
   } catch (error) {
     console.error('Failed to track event:', error);
   }
