@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import logging
+import json
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -28,13 +29,15 @@ def create_tables():
             "special_move": "Vanish",
             "image_url": "https://example.com/dummy.png"
         }).execute()
-        logger.info(f"Response: {response}")
+        logger.info(f"Response: {json.dumps(response.dict(), indent=2)}")
         
         logger.info("Removing dummy data...")
         supabase.table("terrible_teddies").delete().eq("id", "dummy").execute()
         logger.info("Dummy data removed successfully")
     except Exception as e:
         logger.error(f"Error in create_tables: {str(e)}")
+        if hasattr(e, 'response'):
+            logger.error(f"Response content: {e.response.content}")
         raise
 
 def populate_teddies():
@@ -64,19 +67,28 @@ def populate_teddies():
         for teddy in teddies:
             response = supabase.table("terrible_teddies").insert(teddy).execute()
             logger.info(f"Inserted teddy: {teddy['name']}")
-            logger.info(f"Response: {response}")
+            logger.info(f"Response: {json.dumps(response.dict(), indent=2)}")
     except Exception as e:
         logger.error(f"Error in populate_teddies: {str(e)}")
+        if hasattr(e, 'response'):
+            logger.error(f"Response content: {e.response.content}")
         raise
 
 def main():
     logger.info("Setting up and populating Supabase...")
     try:
+        # Test connection
+        response = supabase.table("terrible_teddies").select("*").limit(1).execute()
+        logger.info("Successfully connected to Supabase")
+        logger.info(f"Test query response: {json.dumps(response.dict(), indent=2)}")
+
         create_tables()
         populate_teddies()
         logger.info("Setup and population complete!")
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
+        if hasattr(e, 'response'):
+            logger.error(f"Response content: {e.response.content}")
 
 if __name__ == "__main__":
     main()
