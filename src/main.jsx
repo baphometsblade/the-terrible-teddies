@@ -9,7 +9,12 @@ import { initPostHog } from './utils/posthog'
 
 const queryClient = new QueryClient()
 
-initPostHog();
+// Conditionally initialize PostHog
+if (import.meta.env.VITE_POSTHOG_KEY) {
+  initPostHog().catch(console.error);
+} else {
+  console.warn('PostHog key not found in environment variables');
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
