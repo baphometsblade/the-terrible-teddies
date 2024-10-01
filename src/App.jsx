@@ -4,6 +4,7 @@ import { initSupabase } from './lib/supabase';
 import Game from './components/Game';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useToast } from "@/components/ui/use-toast";
+import ScriptRunner from './components/ScriptRunner';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +51,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
         <div className="App">
+          <ScriptRunner />
           <Game />
         </div>
       </ErrorBoundary>
