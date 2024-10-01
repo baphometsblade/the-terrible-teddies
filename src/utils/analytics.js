@@ -2,10 +2,12 @@ import posthog from 'posthog-js';
 
 export const initializePostHog = () => {
   try {
-    posthog.init(process.env.REACT_APP_POSTHOG_KEY, {
+    posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
       api_host: 'https://app.posthog.com',
       loaded: (posthog) => {
-        if (process.env.NODE_ENV === 'development') posthog.opt_out_capturing();
+        if (import.meta.env.DEV) {
+          posthog.opt_out_capturing();
+        }
       },
     });
   } catch (error) {
