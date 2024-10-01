@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import ScriptRunner from './ScriptRunner';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -71,7 +72,7 @@ const Auth = () => {
           onChange={(e) => setPassword(e.target.value)}
           className="mb-4"
         />
-        <div className="flex space-x-4">
+        <div className="flex space-x-4 mb-4">
           <Button onClick={handleSignUp} disabled={loading}>
             Sign Up
           </Button>
@@ -80,6 +81,7 @@ const Auth = () => {
           </Button>
         </div>
       </form>
+      <ScriptRunner />
     </div>
   );
 };
