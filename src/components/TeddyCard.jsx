@@ -1,11 +1,10 @@
 import React from 'react';
-import Image from 'next/image';
 
 const TeddyCard = ({ teddy }) => {
   return (
     <div className="teddy-card">
       <h2>{teddy.name}</h2>
-      <Image
+      <img
         src={teddy.imageUrl}
         alt={teddy.name}
         width={200}
