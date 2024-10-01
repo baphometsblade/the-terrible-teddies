@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import ScriptRunner from './ScriptRunner';
+import { runAllScripts } from '../utils/runAllScripts';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -54,6 +54,26 @@ const Auth = () => {
     setLoading(false);
   };
 
+  const handleRunScripts = async () => {
+    setLoading(true);
+    try {
+      const result = await runAllScripts();
+      toast({
+        title: "Scripts Executed",
+        description: result,
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-xl">
       <h2 className="text-2xl font-bold mb-4">Authentication</h2>
@@ -81,7 +101,9 @@ const Auth = () => {
           </Button>
         </div>
       </form>
-      <ScriptRunner />
+      <Button onClick={handleRunScripts} disabled={loading} className="w-full">
+        Run All Scripts
+      </Button>
     </div>
   );
 };
