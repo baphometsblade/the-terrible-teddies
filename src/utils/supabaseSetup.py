@@ -1,11 +1,17 @@
-from supabase import create_client, Client
 import os
 from dotenv import load_dotenv
+from supabase import create_client, Client
 
+# Load environment variables
 load_dotenv()
 
-url: str = os.environ.get("VITE_SUPABASE_URL")
-key: str = os.environ.get("VITE_SUPABASE_ANON_KEY")
+# Use Replit's environment variables if available, otherwise use .env file
+url: str = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_KEY") or os.environ.get("VITE_SUPABASE_ANON_KEY")
+
+if not url or not key:
+    raise ValueError("Supabase URL and key must be set in environment variables")
+
 supabase: Client = create_client(url, key)
 
 def setupTerribleTeddies():
