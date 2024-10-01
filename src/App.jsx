@@ -8,6 +8,7 @@ import Game from './components/Game';
 import PlayerProfile from './components/PlayerProfile';
 import Shop from './components/Shop';
 import Leaderboard from './components/Leaderboard';
+import DailyChallenge from './components/DailyChallenge';
 
 function App() {
   const [isSupabaseInitialized, setIsSupabaseInitialized] = useState(false);
@@ -50,6 +51,7 @@ function App() {
         <Route path="/profile" element={<PlayerProfile />} />
         <Route path="/shop" element={<Shop />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/daily-challenge" element={<DailyChallenge />} />
       </Routes>
     </div>
   );
