@@ -14,8 +14,9 @@ export const initializePostHog = () => {
       disable_session_recording: true,
       xhr_headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
       },
+      cross_subdomain_cookie: false,
+      secure_cookie: true,
     });
   } catch (error) {
     console.error('Failed to initialize PostHog:', error);
