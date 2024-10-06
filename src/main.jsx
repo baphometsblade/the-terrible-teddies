@@ -8,14 +8,19 @@ import { initializePostHog } from './utils/analytics.js'
 import { initializeErrorReporting } from './utils/errorReporting.js'
 import ErrorBoundary from './components/ErrorBoundary'
 
-console.log('Main.jsx is running');
+console.log('Main.jsx is starting execution');
 
 initializePostHog();
+console.log('PostHog initialized');
+
 initializeErrorReporting();
+console.log('Error reporting initialized');
 
 const queryClient = new QueryClient()
+console.log('QueryClient created');
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+console.log('React root created');
 
 root.render(
   <React.StrictMode>

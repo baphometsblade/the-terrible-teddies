@@ -20,8 +20,8 @@ function App() {
         console.log('Supabase initialization result:', supabaseInitialized);
         
         if (supabaseInitialized) {
-          await setupTerribleTeddies();
-          console.log('Terrible Teddies setup complete');
+          const setupResult = await setupTerribleTeddies();
+          console.log('Terrible Teddies setup result:', setupResult);
           setIsSupabaseReady(true);
         } else {
           console.error('Failed to initialize Supabase');
@@ -37,7 +37,7 @@ function App() {
   console.log('App rendering, isSupabaseReady:', isSupabaseReady);
 
   if (!isSupabaseReady) {
-    return <div>Loading...</div>;
+    return <div>Loading... Please check the console for any error messages.</div>;
   }
 
   return (
