@@ -7,11 +7,13 @@ import TeddyCard from './TeddyCard';
 import Battle from './Battle/Battle';
 import Shop from './Shop';
 import DeckBuilder from './DeckBuilder/DeckBuilder';
+import BattleStats from './Battle/BattleStats';
 
 const TerribleTeddiesGame = () => {
-  const [gameState, setGameState] = useState('menu'); // 'menu', 'battle', 'shop', 'deckBuilder'
+  const [gameState, setGameState] = useState('menu');
   const [playerTeddies, setPlayerTeddies] = useState([]);
   const [selectedTeddy, setSelectedTeddy] = useState(null);
+  const [battleStats, setBattleStats] = useState(null);
   const { toast } = useToast();
 
   const { data: fetchedTeddies, isLoading, error } = useQuery({
@@ -45,6 +47,17 @@ const TerribleTeddiesGame = () => {
       return;
     }
     setGameState('battle');
+    setBattleStats(null);
+  };
+
+  const handleBattleEnd = (result, stats) => {
+    setGameState('battleResults');
+    setBattleStats(stats);
+    toast({
+      title: result === 'win' ? "Victory!" : "Defeat",
+      description: result === 'win' ? "You won the battle!" : "You lost the battle.",
+      variant: result === 'win' ? "success" : "destructive",
+    });
   };
 
   const renderGameContent = () => {
@@ -54,15 +67,16 @@ const TerribleTeddiesGame = () => {
           <Battle
             playerTeddy={selectedTeddy}
             opponentTeddy={playerTeddies[Math.floor(Math.random() * playerTeddies.length)]}
-            onBattleEnd={(result) => {
-              setGameState('menu');
-              toast({
-                title: result === 'win' ? "Victory!" : "Defeat",
-                description: result === 'win' ? "You won the battle!" : "You lost the battle.",
-                variant: result === 'win' ? "success" : "destructive",
-              });
-            }}
+            onBattleEnd={handleBattleEnd}
           />
+        );
+      case 'battleResults':
+        return (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Battle Results</h2>
+            {battleStats && <BattleStats playerStats={battleStats.player} opponentStats={battleStats.opponent} />}
+            <Button onClick={() => setGameState('menu')} className="mt-4">Back to Menu</Button>
+          </div>
         );
       case 'shop':
         return <Shop />;
@@ -100,7 +114,7 @@ const TerribleTeddiesGame = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8">Terrible Teddies</h1>
       {renderGameContent()}
-      {gameState !== 'menu' && (
+      {gameState !== 'menu' && gameState !== 'battleResults' && (
         <Button onClick={() => setGameState('menu')} className="mt-4">
           Back to Menu
         </Button>

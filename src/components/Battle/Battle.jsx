@@ -16,7 +16,10 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
     opponentHealth: 30,
     playerStuffing: 3,
     opponentStuffing: 3,
+    playerDefenseBoost: 0,
+    opponentDefenseBoost: 0,
     currentTurn: 'player',
+    roundCount: 1,
     battleLog: [],
   });
 
@@ -39,7 +42,6 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
   }, [playerTeddy, opponentTeddy]);
 
   const initializeHands = () => {
-    // In a real implementation, you'd fetch these from the player's deck
     setPlayerHand([
       { id: 1, name: "Spanking Spree", type: "action", stuffingCost: 2, effect: "damage", value: 3 },
       { id: 2, name: "Furry Handcuffs", type: "equipment", stuffingCost: 1, effect: "defense", value: 2 },
@@ -55,10 +57,8 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
   const battleActionMutation = useMutation({
     mutationFn: async ({ action, cardId }) => {
       if (isAIOpponent) {
-        // Simulate AI action locally
         return simulateAIAction(action, cardId);
       } else {
-        // Send action to server for multiplayer
         const { data, error } = await supabase.rpc('battle_action', {
           player_teddy_id: playerTeddy?.id || null,
           opponent_teddy_id: opponentTeddy?.id || null,
@@ -77,7 +77,10 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
         opponentHealth: data.opponent_health,
         playerStuffing: data.player_stuffing,
         opponentStuffing: data.opponent_stuffing,
+        playerDefenseBoost: data.player_defense_boost,
+        opponentDefenseBoost: data.opponent_defense_boost,
         currentTurn: data.next_turn,
+        roundCount: data.round_count,
       }));
       addToBattleLog(data.battle_log);
     },
@@ -95,7 +98,15 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
       throw new Error("Missing teddy information");
     }
 
-    let { playerHealth, opponentHealth, playerStuffing, opponentStuffing } = battleState;
+    let {
+      playerHealth,
+      opponentHealth,
+      playerStuffing,
+      opponentStuffing,
+      playerDefenseBoost,
+      opponentDefenseBoost,
+      roundCount
+    } = battleState;
     let battleLog = [];
 
     // Player action
@@ -103,10 +114,11 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
     if (playerCard && playerStuffing >= playerCard.stuffingCost) {
       playerStuffing -= playerCard.stuffingCost;
       if (playerCard.effect === 'damage') {
-        opponentHealth -= playerCard.value;
-        battleLog.push(`You used ${playerCard.name} for ${playerCard.value} damage!`);
+        const damage = calculateDamage(playerTeddy.attack + playerCard.value, opponentTeddy.defense + opponentDefenseBoost);
+        opponentHealth -= damage;
+        battleLog.push(`You used ${playerCard.name} for ${damage} damage!`);
       } else if (playerCard.effect === 'defense') {
-        playerTeddy.defense += playerCard.value;
+        playerDefenseBoost += playerCard.value;
         battleLog.push(`You used ${playerCard.name} to increase your defense by ${playerCard.value}!`);
       } else if (playerCard.effect === 'stuffing') {
         playerStuffing += playerCard.value;
@@ -120,24 +132,30 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
     if (aiCard && opponentStuffing >= aiCard.stuffingCost) {
       opponentStuffing -= aiCard.stuffingCost;
       if (aiCard.effect === 'damage') {
-        playerHealth -= aiCard.value;
-        battleLog.push(`Opponent used ${aiCard.name} for ${aiCard.value} damage!`);
+        const damage = calculateDamage(opponentTeddy.attack + aiCard.value, playerTeddy.defense + playerDefenseBoost);
+        playerHealth -= damage;
+        battleLog.push(`Opponent used ${aiCard.name} for ${damage} damage!`);
       } else if (aiCard.effect === 'attack') {
         opponentTeddy.attack += aiCard.value;
         battleLog.push(`Opponent used ${aiCard.name} to increase their attack by ${aiCard.value}!`);
       } else if (aiCard.effect === 'health') {
-        opponentHealth += aiCard.value;
+        opponentHealth = Math.min(30, opponentHealth + aiCard.value);
         battleLog.push(`Opponent used ${aiCard.name} to heal for ${aiCard.value}!`);
       }
       setOpponentHand(prev => prev.filter(card => card.id !== aiCard.id));
     }
+
+    roundCount++;
 
     return {
       player_health: playerHealth,
       opponent_health: opponentHealth,
       player_stuffing: playerStuffing,
       opponent_stuffing: opponentStuffing,
+      player_defense_boost: playerDefenseBoost,
+      opponent_defense_boost: opponentDefenseBoost,
       next_turn: 'player',
+      round_count: roundCount,
       battle_log: battleLog.join('\n'),
     };
   };
@@ -176,7 +194,10 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
         opponentHealth={battleState.opponentHealth}
         playerStuffing={battleState.playerStuffing}
         opponentStuffing={battleState.opponentStuffing}
+        playerDefenseBoost={battleState.playerDefenseBoost}
+        opponentDefenseBoost={battleState.opponentDefenseBoost}
         currentTurn={battleState.currentTurn}
+        roundCount={battleState.roundCount}
       />
       <div className="player-hand mt-4">
         <h3 className="text-xl font-bold mb-2">Your Hand</h3>
