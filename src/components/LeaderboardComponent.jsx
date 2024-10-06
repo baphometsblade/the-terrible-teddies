@@ -1,50 +1,54 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const fetchLeaderboard = async () => {
-  const { data, error } = await supabase
-    .from('user_stats')
-    .select('username, games_won, games_played')
-    .order('games_won', { ascending: false })
-    .limit(10);
-
-  if (error) throw error;
-  return data;
-};
-
-export const LeaderboardComponent = () => {
-  const { data: leaderboard, isLoading, error } = useQuery({
+const LeaderboardComponent = () => {
+  const { data: leaderboardData, isLoading, error } = useQuery({
     queryKey: ['leaderboard'],
-    queryFn: fetchLeaderboard,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('players')
+        .select('username, wins, losses, rank')
+        .order('wins', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data;
+    },
   });
 
   if (isLoading) return <div>Loading leaderboard...</div>;
   if (error) return <div>Error loading leaderboard: {error.message}</div>;
 
   return (
-    <div>
+    <div className="leaderboard p-4 bg-gray-100 rounded-lg">
       <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
-      <table className="w-full">
-        <thead>
-          <tr>
-            <th className="text-left">Rank</th>
-            <th className="text-left">Username</th>
-            <th className="text-left">Wins</th>
-            <th className="text-left">Games Played</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leaderboard.map((player, index) => (
-            <tr key={player.username}>
-              <td>{index + 1}</td>
-              <td>{player.username}</td>
-              <td>{player.games_won}</td>
-              <td>{player.games_played}</td>
-            </tr>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Rank</TableHead>
+            <TableHead>Username</TableHead>
+            <TableHead>Wins</TableHead>
+            <TableHead>Losses</TableHead>
+            <TableHead>Win Rate</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {leaderboardData.map((player, index) => (
+            <TableRow key={player.username}>
+              <TableCell>{index + 1}</TableCell>
+              <TableCell>{player.username}</TableCell>
+              <TableCell>{player.wins}</TableCell>
+              <TableCell>{player.losses}</TableCell>
+              <TableCell>
+                {((player.wins / (player.wins + player.losses)) * 100).toFixed(2)}%
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 };
+
+export default LeaderboardComponent;

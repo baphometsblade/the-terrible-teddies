@@ -7,10 +7,10 @@ import TeddyCard from '../TeddyCard';
 import BattleLog from './BattleLog';
 import BattleField from './BattleField';
 import ActionButtons from './ActionButtons';
-import { calculateDamage, calculateSpecialMoveDamage, calculateDefenseBoost } from '../../utils/battleUtils';
+import { calculateDamage, calculateSpecialMoveDamage, calculateDefenseBoost, isActionSuccessful } from '../../utils/battleUtils';
 import { captureEvent } from '../../utils/posthog';
 
-const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
+const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }) => {
   const [battleState, setBattleState] = useState({
     playerHealth: 30,
     opponentHealth: 30,
@@ -31,14 +31,20 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
 
   const battleActionMutation = useMutation({
     mutationFn: async ({ action }) => {
-      const { data, error } = await supabase.rpc('battle_action', {
-        player_teddy_id: playerTeddy.id,
-        opponent_teddy_id: opponentTeddy.id,
-        action: action,
-        ...battleState,
-      });
-      if (error) throw error;
-      return data;
+      if (isAIOpponent) {
+        // Simulate AI action locally
+        return simulateAIAction(action);
+      } else {
+        // Send action to server for multiplayer
+        const { data, error } = await supabase.rpc('battle_action', {
+          player_teddy_id: playerTeddy.id,
+          opponent_teddy_id: opponentTeddy.id,
+          action: action,
+          ...battleState,
+        });
+        if (error) throw error;
+        return data;
+      }
     },
     onSuccess: (data) => {
       setBattleState(prev => ({
@@ -60,6 +66,53 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
     },
   });
 
+  const simulateAIAction = (playerAction) => {
+    let { playerHealth, opponentHealth, playerEnergy, opponentEnergy } = battleState;
+    let battleLog = [];
+
+    // Player action
+    if (playerAction === 'attack') {
+      const damage = calculateDamage(playerTeddy, opponentTeddy);
+      opponentHealth -= damage;
+      battleLog.push(`You attacked for ${damage} damage!`);
+    } else if (playerAction === 'defend') {
+      const defenseBoost = calculateDefenseBoost(playerTeddy);
+      playerTeddy.defense += defenseBoost;
+      battleLog.push(`You increased your defense by ${defenseBoost}!`);
+    } else if (playerAction === 'special' && playerEnergy >= 2) {
+      const specialDamage = calculateSpecialMoveDamage(playerTeddy);
+      opponentHealth -= specialDamage;
+      playerEnergy -= 2;
+      battleLog.push(`You used your special move for ${specialDamage} damage!`);
+    }
+
+    // AI action
+    const aiAction = calculateAIAction(opponentTeddy, playerTeddy, opponentEnergy);
+    if (aiAction === 'attack') {
+      const damage = calculateDamage(opponentTeddy, playerTeddy);
+      playerHealth -= damage;
+      battleLog.push(`Opponent attacked for ${damage} damage!`);
+    } else if (aiAction === 'defend') {
+      const defenseBoost = calculateDefenseBoost(opponentTeddy);
+      opponentTeddy.defense += defenseBoost;
+      battleLog.push(`Opponent increased their defense by ${defenseBoost}!`);
+    } else if (aiAction === 'special' && opponentEnergy >= 2) {
+      const specialDamage = calculateSpecialMoveDamage(opponentTeddy);
+      playerHealth -= specialDamage;
+      opponentEnergy -= 2;
+      battleLog.push(`Opponent used their special move for ${specialDamage} damage!`);
+    }
+
+    return {
+      player_health: playerHealth,
+      opponent_health: opponentHealth,
+      player_energy: playerEnergy,
+      opponent_energy: opponentEnergy,
+      next_turn: 'player',
+      battle_log: battleLog.join('\n'),
+    };
+  };
+
   useEffect(() => {
     const { playerHealth, opponentHealth } = battleState;
     if (playerHealth <= 0 || opponentHealth <= 0) {
@@ -73,16 +126,6 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
     battleActionMutation.mutate({ action });
     captureEvent('Player_Action', { action });
   };
-
-  useEffect(() => {
-    if (battleState.currentTurn === 'opponent') {
-      setTimeout(() => {
-        const aiAction = calculateAIAction(opponentTeddy, playerTeddy, battleState.opponentEnergy);
-        battleActionMutation.mutate({ action: aiAction });
-        captureEvent('AI_Action', { action: aiAction });
-      }, 1000);
-    }
-  }, [battleState.currentTurn]);
 
   const calculateAIAction = (aiTeddy, playerTeddy, energy) => {
     if (energy >= 2 && Math.random() > 0.7) return 'special';

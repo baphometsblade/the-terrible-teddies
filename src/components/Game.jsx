@@ -6,7 +6,7 @@ import Shop from './Shop';
 import DailyChallenge from './DailyChallenge';
 import BearEvolution from './BearEvolution';
 import PlayerProfile from './PlayerProfile';
-import Leaderboard from './Leaderboard';
+import LeaderboardComponent from './LeaderboardComponent';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { captureEvent } from '../utils/posthog';
@@ -67,7 +67,7 @@ const Game = () => {
       case 'profile':
         return <PlayerProfile />;
       case 'leaderboard':
-        return <Leaderboard />;
+        return <LeaderboardComponent />;
       default:
         return (
           <div className="menu flex flex-col space-y-4">
