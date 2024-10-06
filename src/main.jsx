@@ -10,28 +10,32 @@ import ErrorBoundary from './components/ErrorBoundary'
 
 console.log('Main.jsx is starting execution');
 
-initializePostHog();
-console.log('PostHog initialized');
+try {
+  initializePostHog();
+  console.log('PostHog initialized');
 
-initializeErrorReporting();
-console.log('Error reporting initialized');
+  initializeErrorReporting();
+  console.log('Error reporting initialized');
 
-const queryClient = new QueryClient()
-console.log('QueryClient created');
+  const queryClient = new QueryClient()
+  console.log('QueryClient created');
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-console.log('React root created');
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  console.log('React root created');
 
-root.render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </QueryClientProvider>
-    </ErrorBoundary>
-  </React.StrictMode>
-);
+  root.render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </React.StrictMode>
+  );
 
-console.log('React app rendered');
+  console.log('React app rendered');
+} catch (error) {
+  console.error('Error in main.jsx:', error);
+}

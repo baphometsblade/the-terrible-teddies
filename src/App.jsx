@@ -7,6 +7,7 @@ import { initSupabase, setupTerribleTeddies } from './lib/supabase';
 
 function App() {
   const [isSupabaseReady, setIsSupabaseReady] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -24,10 +25,11 @@ function App() {
           console.log('Terrible Teddies setup result:', setupResult);
           setIsSupabaseReady(true);
         } else {
-          console.error('Failed to initialize Supabase');
+          setError('Failed to initialize Supabase');
         }
       } catch (error) {
         console.error('Error during app initialization:', error);
+        setError(error.message);
       }
     };
 
@@ -35,6 +37,10 @@ function App() {
   }, []);
 
   console.log('App rendering, isSupabaseReady:', isSupabaseReady);
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   if (!isSupabaseReady) {
     return <div>Loading... Please check the console for any error messages.</div>;
