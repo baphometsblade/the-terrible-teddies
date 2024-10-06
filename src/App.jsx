@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Toaster } from "@/components/ui/toaster";
-import Game from './components/Game';
+import TerribleTeddiesGame from './components/TerribleTeddiesGame';
 import { SupabaseProvider } from './integrations/supabase/auth';
 import { initPostHog, captureEvent } from './utils/posthog';
 import { initSupabase, setupTerribleTeddies } from './lib/supabase';
@@ -49,8 +49,7 @@ function App() {
   return (
     <SupabaseProvider>
       <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-4">Terrible Teddies</h1>
-        <Game />
+        <TerribleTeddiesGame />
       </div>
       <Toaster />
     </SupabaseProvider>
