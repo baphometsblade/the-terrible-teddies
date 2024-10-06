@@ -7,18 +7,25 @@ import TeddyCard from '../TeddyCard';
 import BattleLog from './BattleLog';
 import { calculateDamage } from '../../utils/battleUtils';
 import { captureEvent } from '../../utils/posthog';
+import { motion } from 'framer-motion';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
-  const [playerHealth, setPlayerHealth] = useState(30);
-  const [opponentHealth, setOpponentHealth] = useState(30);
-  const [playerEnergy, setPlayerEnergy] = useState(3);
-  const [opponentEnergy, setOpponentEnergy] = useState(3);
-  const [currentTurn, setCurrentTurn] = useState('player');
-  const [battleLog, setBattleLog] = useState([]);
+  const [battleState, setBattleState] = useState({
+    playerHealth: 30,
+    opponentHealth: 30,
+    playerEnergy: 3,
+    opponentEnergy: 3,
+    currentTurn: 'player',
+    battleLog: [],
+  });
+
   const { toast } = useToast();
 
   const addToBattleLog = (message) => {
-    setBattleLog(prevLog => [...prevLog, message]);
+    setBattleState(prev => ({
+      ...prev,
+      battleLog: [...prev.battleLog, message],
+    }));
   };
 
   const battleActionMutation = useMutation({
@@ -27,20 +34,20 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
         player_teddy_id: playerTeddy.id,
         opponent_teddy_id: opponentTeddy.id,
         action: action,
-        player_health: playerHealth,
-        opponent_health: opponentHealth,
-        player_energy: playerEnergy,
-        opponent_energy: opponentEnergy
+        ...battleState,
       });
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
-      setPlayerHealth(data.player_health);
-      setOpponentHealth(data.opponent_health);
-      setPlayerEnergy(data.player_energy);
-      setOpponentEnergy(data.opponent_energy);
-      setCurrentTurn(data.next_turn);
+      setBattleState(prev => ({
+        ...prev,
+        playerHealth: data.player_health,
+        opponentHealth: data.opponent_health,
+        playerEnergy: data.player_energy,
+        opponentEnergy: data.opponent_energy,
+        currentTurn: data.next_turn,
+      }));
       addToBattleLog(data.battle_log);
     },
     onError: (error) => {
@@ -53,49 +60,81 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   });
 
   useEffect(() => {
+    const { playerHealth, opponentHealth } = battleState;
     if (playerHealth <= 0 || opponentHealth <= 0) {
       onBattleEnd(playerHealth > opponentHealth ? 'win' : 'lose');
+      captureEvent('Battle_Ended', { result: playerHealth > opponentHealth ? 'win' : 'lose' });
     }
-  }, [playerHealth, opponentHealth]);
+  }, [battleState.playerHealth, battleState.opponentHealth]);
 
   const handleAction = (action) => {
-    if (currentTurn !== 'player') return;
+    if (battleState.currentTurn !== 'player') return;
     battleActionMutation.mutate({ action });
+    captureEvent('Player_Action', { action });
   };
 
   useEffect(() => {
-    if (currentTurn === 'opponent') {
+    if (battleState.currentTurn === 'opponent') {
       setTimeout(() => {
-        const aiAction = calculateAIAction(opponentTeddy, playerTeddy, opponentEnergy);
+        const aiAction = calculateAIAction(opponentTeddy, playerTeddy, battleState.opponentEnergy);
         battleActionMutation.mutate({ action: aiAction });
+        captureEvent('AI_Action', { action: aiAction });
       }, 1000);
     }
-  }, [currentTurn]);
+  }, [battleState.currentTurn]);
+
+  const calculateAIAction = (aiTeddy, playerTeddy, energy) => {
+    // Simple AI logic
+    if (energy >= 2 && Math.random() > 0.7) return 'special';
+    return Math.random() > 0.5 ? 'attack' : 'defend';
+  };
 
   return (
     <div className="battle-arena p-4 bg-gray-100 rounded-lg">
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <h3 className="text-xl font-bold mb-2">Your Teddy</h3>
-          <TeddyCard teddy={playerTeddy} />
-          <p>Health: {playerHealth}/30</p>
-          <p>Energy: {playerEnergy}/3</p>
-        </div>
-        <div>
-          <h3 className="text-xl font-bold mb-2">Opponent's Teddy</h3>
-          <TeddyCard teddy={opponentTeddy} />
-          <p>Health: {opponentHealth}/30</p>
-          <p>Energy: {opponentEnergy}/3</p>
-        </div>
+        <BattleParticipant
+          teddy={playerTeddy}
+          health={battleState.playerHealth}
+          energy={battleState.playerEnergy}
+          isPlayer={true}
+        />
+        <BattleParticipant
+          teddy={opponentTeddy}
+          health={battleState.opponentHealth}
+          energy={battleState.opponentEnergy}
+          isPlayer={false}
+        />
       </div>
-      <div className="action-buttons mb-4">
-        <Button onClick={() => handleAction('attack')} disabled={currentTurn !== 'player' || battleActionMutation.isLoading}>Attack</Button>
-        <Button onClick={() => handleAction('defend')} disabled={currentTurn !== 'player' || battleActionMutation.isLoading}>Defend</Button>
-        <Button onClick={() => handleAction('special')} disabled={currentTurn !== 'player' || playerEnergy < 2 || battleActionMutation.isLoading}>Special Move</Button>
-      </div>
-      <BattleLog log={battleLog} />
+      <ActionButtons
+        onAction={handleAction}
+        isPlayerTurn={battleState.currentTurn === 'player'}
+        playerEnergy={battleState.playerEnergy}
+        isLoading={battleActionMutation.isLoading}
+      />
+      <BattleLog log={battleState.battleLog} />
     </div>
   );
 };
+
+const BattleParticipant = ({ teddy, health, energy, isPlayer }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+  >
+    <h3 className="text-xl font-bold mb-2">{isPlayer ? 'Your Teddy' : "Opponent's Teddy"}</h3>
+    <TeddyCard teddy={teddy} />
+    <p>Health: {health}/30</p>
+    <p>Energy: {energy}/3</p>
+  </motion.div>
+);
+
+const ActionButtons = ({ onAction, isPlayerTurn, playerEnergy, isLoading }) => (
+  <div className="action-buttons mb-4">
+    <Button onClick={() => onAction('attack')} disabled={!isPlayerTurn || isLoading}>Attack</Button>
+    <Button onClick={() => onAction('defend')} disabled={!isPlayerTurn || isLoading}>Defend</Button>
+    <Button onClick={() => onAction('special')} disabled={!isPlayerTurn || playerEnergy < 2 || isLoading}>Special Move</Button>
+  </div>
+);
 
 export default Battle;
