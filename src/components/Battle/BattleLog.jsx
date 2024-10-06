@@ -4,7 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const BattleLog = ({ log }) => {
   return (
-    <ScrollArea className="h-40 w-full rounded-md border p-4">
+    <ScrollArea className="h-40 w-full rounded-md border p-4 mt-4">
       <h3 className="text-lg font-semibold mb-2">Battle Log</h3>
       {log.map((entry, index) => (
         <motion.div
