@@ -10,24 +10,27 @@ import LeaderboardComponent from './LeaderboardComponent';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { captureEvent } from '../utils/posthog';
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import Auth from './Auth';
 
 const Game = () => {
   const [gameState, setGameState] = useState('menu');
   const [selectedTeddy, setSelectedTeddy] = useState(null);
   const { toast } = useToast();
+  const { session } = useSupabaseAuth();
 
   const { data: playerTeddies, isLoading, error } = useQuery({
-    queryKey: ['playerTeddies'],
+    queryKey: ['playerTeddies', session?.user?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
+      if (!session?.user) throw new Error("User not authenticated");
       const { data, error } = await supabase
         .from('player_teddies')
         .select('*, terrible_teddies(*)')
-        .eq('player_id', user.id);
+        .eq('player_id', session.user.id);
       if (error) throw error;
       return data.map(item => item.terrible_teddies);
     },
+    enabled: !!session?.user,
   });
 
   useEffect(() => {
@@ -58,6 +61,10 @@ const Game = () => {
     setGameState('battle');
     captureEvent('Battle_Started');
   };
+
+  if (!session) {
+    return <Auth />;
+  }
 
   if (isLoading) return <div>Loading game...</div>;
   if (error) return <div>Error: {error.message}</div>;
