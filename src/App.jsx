@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from './components/ErrorBoundary';
 import Game from './components/Game';
 import { SupabaseProvider } from './integrations/supabase/auth';
 import { initPostHog, captureEvent } from './utils/posthog';
+import { initSupabase, setupTerribleTeddies } from './lib/supabase';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,11 +17,29 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  const [isSupabaseReady, setIsSupabaseReady] = useState(false);
+
   useEffect(() => {
-    initPostHog();
-    captureEvent('App_Loaded');
-    console.log('App component mounted');
+    const initializeApp = async () => {
+      initPostHog();
+      captureEvent('App_Loaded');
+      console.log('App component mounted');
+
+      const supabaseInitialized = await initSupabase();
+      if (supabaseInitialized) {
+        await setupTerribleTeddies();
+        setIsSupabaseReady(true);
+      } else {
+        console.error('Failed to initialize Supabase');
+      }
+    };
+
+    initializeApp();
   }, []);
+
+  if (!isSupabaseReady) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <ErrorBoundary>
