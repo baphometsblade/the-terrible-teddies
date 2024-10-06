@@ -10,21 +10,31 @@ function App() {
 
   useEffect(() => {
     const initializeApp = async () => {
-      initPostHog();
-      captureEvent('App_Loaded');
-      console.log('App component mounted');
+      console.log('Initializing app...');
+      try {
+        initPostHog();
+        captureEvent('App_Loaded');
+        console.log('PostHog initialized');
 
-      const supabaseInitialized = await initSupabase();
-      if (supabaseInitialized) {
-        await setupTerribleTeddies();
-        setIsSupabaseReady(true);
-      } else {
-        console.error('Failed to initialize Supabase');
+        const supabaseInitialized = await initSupabase();
+        console.log('Supabase initialization result:', supabaseInitialized);
+        
+        if (supabaseInitialized) {
+          await setupTerribleTeddies();
+          console.log('Terrible Teddies setup complete');
+          setIsSupabaseReady(true);
+        } else {
+          console.error('Failed to initialize Supabase');
+        }
+      } catch (error) {
+        console.error('Error during app initialization:', error);
       }
     };
 
     initializeApp();
   }, []);
+
+  console.log('App rendering, isSupabaseReady:', isSupabaseReady);
 
   if (!isSupabaseReady) {
     return <div>Loading...</div>;

@@ -8,12 +8,16 @@ import { initializePostHog } from './utils/analytics.js'
 import { initializeErrorReporting } from './utils/errorReporting.js'
 import ErrorBoundary from './components/ErrorBoundary'
 
+console.log('Main.jsx is running');
+
 initializePostHog();
 initializeErrorReporting();
 
 const queryClient = new QueryClient()
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const root = ReactDOM.createRoot(document.getElementById('root'));
+
+root.render(
   <React.StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -22,5 +26,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
-  </React.StrictMode>,
-)
+  </React.StrictMode>
+);
+
+console.log('React app rendered');
