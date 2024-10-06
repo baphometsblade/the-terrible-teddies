@@ -22,7 +22,7 @@ const Game = () => {
   const { data: playerTeddies, isLoading, error } = useQuery({
     queryKey: ['playerTeddies', session?.user?.id],
     queryFn: async () => {
-      if (!session?.user) throw new Error("User not authenticated");
+      if (!session?.user) return null;
       const { data, error } = await supabase
         .from('player_teddies')
         .select('*, terrible_teddies(*)')
@@ -67,12 +67,13 @@ const Game = () => {
   }
 
   if (isLoading) return <div>Loading game...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (error) return <div>Error loading game data: {error.message}</div>;
+  if (!playerTeddies) return <div>No teddies found. Please contact support.</div>;
 
   const renderGameContent = () => {
     switch (gameState) {
       case 'battle':
-        return playerTeddies && playerTeddies.length > 0 ? (
+        return playerTeddies.length > 0 ? (
           <Battle
             playerTeddy={selectedTeddy}
             opponentTeddy={playerTeddies[Math.floor(Math.random() * playerTeddies.length)]}
