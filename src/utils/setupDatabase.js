@@ -1,15 +1,19 @@
 import { supabase } from '../lib/supabase';
 import { generateMockTeddies, generateMockShopItems } from './mockDataGenerator';
+import { populateTeddies } from '../scripts/populateTeddies';
 
 export const setupDatabase = async () => {
   try {
     // Create tables if they don't exist
     await createTables();
 
-    // Populate tables with mock data
+    // Populate tables with new teddies
+    await populateTeddies();
+
+    // Populate tables with mock data (if needed)
     await populateMockData();
 
-    console.log('Database setup and mock data population complete');
+    console.log('Database setup and data population complete');
   } catch (error) {
     console.error('Error setting up database:', error);
   }
