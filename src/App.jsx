@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from './components/ErrorBoundary';
@@ -16,7 +16,7 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  React.useEffect(() => {
+  useEffect(() => {
     initPostHog();
     captureEvent('App_Loaded');
     console.log('App component mounted');
