@@ -6,6 +6,7 @@ import Shop from './Shop';
 import DailyChallenge from './DailyChallenge';
 import BearEvolution from './BearEvolution';
 import PlayerProfile from './PlayerProfile';
+import Leaderboard from './Leaderboard';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { captureEvent } from '../utils/posthog';
@@ -65,6 +66,8 @@ const Game = () => {
         return <BearEvolution teddy={selectedTeddy} />;
       case 'profile':
         return <PlayerProfile />;
+      case 'leaderboard':
+        return <Leaderboard />;
       default:
         return (
           <div className="menu flex flex-col space-y-4">
@@ -88,6 +91,10 @@ const Game = () => {
               setGameState('profile');
               captureEvent('Profile_Viewed');
             }}>View Profile</Button>
+            <Button onClick={() => {
+              setGameState('leaderboard');
+              captureEvent('Leaderboard_Viewed');
+            }}>Leaderboard</Button>
           </div>
         );
     }

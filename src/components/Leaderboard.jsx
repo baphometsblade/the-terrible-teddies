@@ -1,15 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const Leaderboard = () => {
   const { data: leaderboardData, isLoading, error } = useQuery({
@@ -19,41 +11,38 @@ const Leaderboard = () => {
         .from('players')
         .select('username, wins, losses, rank')
         .order('wins', { ascending: false })
-        .limit(100);
+        .limit(10);
       if (error) throw error;
       return data;
     },
   });
 
   if (isLoading) return <div>Loading leaderboard...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (error) return <div>Error loading leaderboard: {error.message}</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4">Leaderboard</h1>
+    <div className="leaderboard p-4 bg-gray-100 rounded-lg">
+      <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
       <Table>
-        <TableCaption>Top 100 Terrible Teddies Players</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Rank</TableHead>
+            <TableHead>Rank</TableHead>
             <TableHead>Username</TableHead>
             <TableHead>Wins</TableHead>
             <TableHead>Losses</TableHead>
             <TableHead>Win Rate</TableHead>
-            <TableHead>Rank</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {leaderboardData.map((player, index) => (
             <TableRow key={player.username}>
-              <TableCell className="font-medium">{index + 1}</TableCell>
+              <TableCell>{index + 1}</TableCell>
               <TableCell>{player.username}</TableCell>
               <TableCell>{player.wins}</TableCell>
               <TableCell>{player.losses}</TableCell>
               <TableCell>
                 {((player.wins / (player.wins + player.losses)) * 100).toFixed(2)}%
               </TableCell>
-              <TableCell>{player.rank}</TableCell>
             </TableRow>
           ))}
         </TableBody>
