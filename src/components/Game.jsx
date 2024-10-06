@@ -38,11 +38,24 @@ const Game = () => {
   const handleBattleEnd = (result) => {
     setGameState('menu');
     toast({
-      title: result === 'win' ? "Victory!" : "Defeat",
-      description: result === 'win' ? "You won the battle!" : "You lost the battle.",
-      variant: result === 'win' ? "success" : "destructive",
+      title: result === 'win' ? "Victory!" : result === 'lose' ? "Defeat" : "Battle Ended",
+      description: result === 'win' ? "You won the battle!" : result === 'lose' ? "You lost the battle." : "The battle has ended.",
+      variant: result === 'win' ? "success" : result === 'lose' ? "destructive" : "default",
     });
     captureEvent('Battle_Ended', { result });
+  };
+
+  const startBattle = () => {
+    if (!selectedTeddy) {
+      toast({
+        title: "Error",
+        description: "Please select a teddy before starting a battle.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setGameState('battle');
+    captureEvent('Battle_Started');
   };
 
   if (isLoading) return <div>Loading game...</div>;
@@ -63,7 +76,7 @@ const Game = () => {
       case 'challenge':
         return <DailyChallenge />;
       case 'evolution':
-        return <BearEvolution teddy={selectedTeddy} />;
+        return selectedTeddy ? <BearEvolution teddy={selectedTeddy} /> : <div>Please select a teddy first.</div>;
       case 'profile':
         return <PlayerProfile />;
       case 'leaderboard':
@@ -71,10 +84,7 @@ const Game = () => {
       default:
         return (
           <div className="menu flex flex-col space-y-4">
-            <Button onClick={() => {
-              setGameState('battle');
-              captureEvent('Battle_Started');
-            }}>Start Battle</Button>
+            <Button onClick={startBattle}>Start Battle</Button>
             <Button onClick={() => {
               setGameState('shop');
               captureEvent('Shop_Opened');
@@ -84,9 +94,17 @@ const Game = () => {
               captureEvent('Daily_Challenge_Started');
             }}>Daily Challenge</Button>
             <Button onClick={() => {
-              setGameState('evolution');
-              captureEvent('Evolution_Started');
-            }} disabled={!selectedTeddy}>Evolve Teddy</Button>
+              if (selectedTeddy) {
+                setGameState('evolution');
+                captureEvent('Evolution_Started');
+              } else {
+                toast({
+                  title: "Error",
+                  description: "Please select a teddy first.",
+                  variant: "destructive",
+                });
+              }
+            }}>Evolve Teddy</Button>
             <Button onClick={() => {
               setGameState('profile');
               captureEvent('Profile_Viewed');

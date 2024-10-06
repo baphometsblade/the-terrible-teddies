@@ -22,6 +22,18 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
 
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (!playerTeddy || !opponentTeddy) {
+      toast({
+        title: "Error",
+        description: "Unable to start battle. Missing teddy information.",
+        variant: "destructive",
+      });
+      onBattleEnd('error');
+      return;
+    }
+  }, [playerTeddy, opponentTeddy]);
+
   const addToBattleLog = (message) => {
     setBattleState(prev => ({
       ...prev,
@@ -37,8 +49,8 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
       } else {
         // Send action to server for multiplayer
         const { data, error } = await supabase.rpc('battle_action', {
-          player_teddy_id: playerTeddy.id,
-          opponent_teddy_id: opponentTeddy.id,
+          player_teddy_id: playerTeddy?.id,
+          opponent_teddy_id: opponentTeddy?.id,
           action: action,
           ...battleState,
         });
@@ -67,6 +79,10 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
   });
 
   const simulateAIAction = (playerAction) => {
+    if (!playerTeddy || !opponentTeddy) {
+      throw new Error("Missing teddy information");
+    }
+
     let { playerHealth, opponentHealth, playerEnergy, opponentEnergy } = battleState;
     let battleLog = [];
 
@@ -131,6 +147,10 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
     if (energy >= 2 && Math.random() > 0.7) return 'special';
     return Math.random() > 0.5 ? 'attack' : 'defend';
   };
+
+  if (!playerTeddy || !opponentTeddy) {
+    return <div>Error: Missing teddy information. Unable to start battle.</div>;
+  }
 
   return (
     <div className="battle-arena p-4 bg-gray-100 rounded-lg">
