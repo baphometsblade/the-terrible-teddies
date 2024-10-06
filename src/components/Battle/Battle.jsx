@@ -142,6 +142,13 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
     return Math.random() > 0.5 ? 'attack' : 'defend';
   };
 
+  const addToBattleLog = (logEntry) => {
+    setBattleState(prev => ({
+      ...prev,
+      battleLog: [...prev.battleLog, logEntry],
+    }));
+  };
+
   if (!playerTeddy || !opponentTeddy) {
     return <div>Error: Missing teddy information. Unable to start battle.</div>;
   }

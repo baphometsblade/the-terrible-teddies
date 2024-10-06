@@ -20,6 +20,7 @@ const Game = () => {
     queryKey: ['playerTeddies'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
       const { data, error } = await supabase
         .from('player_teddies')
         .select('*, terrible_teddies(*)')
@@ -64,12 +65,14 @@ const Game = () => {
   const renderGameContent = () => {
     switch (gameState) {
       case 'battle':
-        return (
+        return playerTeddies && playerTeddies.length > 0 ? (
           <Battle
             playerTeddy={selectedTeddy}
             opponentTeddy={playerTeddies[Math.floor(Math.random() * playerTeddies.length)]}
             onBattleEnd={handleBattleEnd}
           />
+        ) : (
+          <div>Error: No teddies available for battle</div>
         );
       case 'shop':
         return <Shop />;
@@ -84,7 +87,7 @@ const Game = () => {
       default:
         return (
           <div className="menu flex flex-col space-y-4">
-            <Button onClick={startBattle}>Start Battle</Button>
+            <Button onClick={startBattle} disabled={!selectedTeddy}>Start Battle</Button>
             <Button onClick={() => {
               setGameState('shop');
               captureEvent('Shop_Opened');
