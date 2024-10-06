@@ -1,30 +1,24 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import TeddyCard from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
 
-const BattleField = ({
-  playerTeddy,
-  opponentTeddy,
-  playerHealth,
-  opponentHealth,
-  playerStuffing,
-  opponentStuffing,
-  playerDefenseBoost,
-  opponentDefenseBoost,
-  currentTurn,
-  roundCount
-}) => {
+const BattleField = ({ playerTeddy, opponentTeddy, battleState }) => {
+  const {
+    playerHealth,
+    opponentHealth,
+    playerStuffing,
+    opponentStuffing,
+    playerDefenseBoost,
+    opponentDefenseBoost,
+    currentTurn,
+    roundCount
+  } = battleState;
+
   return (
     <div className="grid grid-cols-2 gap-4 mb-4">
       <div>
         <h2 className="text-xl font-bold mb-2">Your Teddy</h2>
-        <motion.div
-          animate={{ scale: currentTurn === 'player' ? 1.05 : 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <TeddyCard teddy={playerTeddy} />
-        </motion.div>
+        <TeddyCard teddy={playerTeddy} />
         <p>Health: {playerHealth}/30</p>
         <Progress value={(playerHealth / 30) * 100} className="w-full h-2 mt-1" />
         <p>Stuffing Points: {playerStuffing}/3</p>
@@ -33,12 +27,7 @@ const BattleField = ({
       </div>
       <div>
         <h2 className="text-xl font-bold mb-2">Opponent's Teddy</h2>
-        <motion.div
-          animate={{ scale: currentTurn === 'opponent' ? 1.05 : 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <TeddyCard teddy={opponentTeddy} />
-        </motion.div>
+        <TeddyCard teddy={opponentTeddy} />
         <p>Health: {opponentHealth}/30</p>
         <Progress value={(opponentHealth / 30) * 100} className="w-full h-2 mt-1" />
         <p>Stuffing Points: {opponentStuffing}/3</p>
