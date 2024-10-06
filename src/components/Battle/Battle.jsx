@@ -34,13 +34,6 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
     }
   }, [playerTeddy, opponentTeddy]);
 
-  const addToBattleLog = (message) => {
-    setBattleState(prev => ({
-      ...prev,
-      battleLog: [...prev.battleLog, message],
-    }));
-  };
-
   const battleActionMutation = useMutation({
     mutationFn: async ({ action }) => {
       if (isAIOpponent) {
@@ -49,8 +42,8 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
       } else {
         // Send action to server for multiplayer
         const { data, error } = await supabase.rpc('battle_action', {
-          player_teddy_id: playerTeddy?.id,
-          opponent_teddy_id: opponentTeddy?.id,
+          player_teddy_id: playerTeddy?.id || null,
+          opponent_teddy_id: opponentTeddy?.id || null,
           action: action,
           ...battleState,
         });
@@ -144,6 +137,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
   };
 
   const calculateAIAction = (aiTeddy, playerTeddy, energy) => {
+    if (!aiTeddy || !playerTeddy) return 'attack'; // Default to attack if teddies are missing
     if (energy >= 2 && Math.random() > 0.7) return 'special';
     return Math.random() > 0.5 ? 'attack' : 'defend';
   };
