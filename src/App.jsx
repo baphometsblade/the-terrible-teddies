@@ -11,19 +11,19 @@ function App() {
 
   useEffect(() => {
     const initializeApp = async () => {
-      console.log('Initializing app...');
       try {
         initPostHog();
         captureEvent('App_Loaded');
-        console.log('PostHog initialized');
 
         const supabaseInitialized = await initSupabase();
-        console.log('Supabase initialization result:', supabaseInitialized);
         
         if (supabaseInitialized) {
           const setupResult = await setupTerribleTeddies();
-          console.log('Terrible Teddies setup result:', setupResult);
-          setIsSupabaseReady(true);
+          if (setupResult) {
+            setIsSupabaseReady(true);
+          } else {
+            setError('Failed to set up Terrible Teddies table');
+          }
         } else {
           setError('Failed to initialize Supabase');
         }
@@ -36,14 +36,12 @@ function App() {
     initializeApp();
   }, []);
 
-  console.log('App rendering, isSupabaseReady:', isSupabaseReady);
-
   if (error) {
     return <div>Error: {error}</div>;
   }
 
   if (!isSupabaseReady) {
-    return <div>Loading... Please check the console for any error messages.</div>;
+    return <div>Loading... Please wait while we set up the game.</div>;
   }
 
   return (
