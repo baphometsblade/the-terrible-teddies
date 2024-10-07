@@ -4,7 +4,8 @@ import { useToast } from "@/components/ui/use-toast";
 import BattleField from './BattleField';
 import BattleLog from './BattleLog';
 import PlayerHand from './PlayerHand';
-import { simulateAIAction } from '../../utils/battleUtils';
+import ActionButtons from './ActionButtons';
+import { simulateAIAction, drawCard } from '../../utils/battleUtils';
 import { captureEvent } from '../../utils/posthog';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }) => {
@@ -38,16 +39,8 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
   }, [playerTeddy, opponentTeddy]);
 
   const initializeHands = () => {
-    setPlayerHand([
-      { id: 1, name: "Spanking Spree", type: "action", stuffingCost: 2, effect: "damage", value: 3 },
-      { id: 2, name: "Furry Handcuffs", type: "equipment", stuffingCost: 1, effect: "defense", value: 2 },
-      { id: 3, name: "Seedy Motel", type: "location", stuffingCost: 1, effect: "stuffing", value: 1 },
-    ]);
-    setOpponentHand([
-      { id: 4, name: "Naughty Nibble", type: "action", stuffingCost: 1, effect: "damage", value: 2 },
-      { id: 5, name: "Leather Vest", type: "equipment", stuffingCost: 2, effect: "attack", value: 2 },
-      { id: 6, name: "Red Light District", type: "location", stuffingCost: 2, effect: "health", value: 3 },
-    ]);
+    setPlayerHand(drawCard(3));
+    setOpponentHand(drawCard(3));
   };
 
   const battleActionMutation = useMutation({
@@ -61,16 +54,25 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
     onSuccess: (data) => {
       setBattleState(prev => ({
         ...prev,
-        playerHealth: data.player_health,
-        opponentHealth: data.opponent_health,
-        playerStuffing: data.player_stuffing,
-        opponentStuffing: data.opponent_stuffing,
-        playerDefenseBoost: data.player_defense_boost,
-        opponentDefenseBoost: data.opponent_defense_boost,
-        currentTurn: data.next_turn,
-        roundCount: data.round_count,
+        playerHealth: data.playerHealth,
+        opponentHealth: data.opponentHealth,
+        playerStuffing: data.playerStuffing,
+        opponentStuffing: data.opponentStuffing,
+        playerDefenseBoost: data.playerDefenseBoost,
+        opponentDefenseBoost: data.opponentDefenseBoost,
+        currentTurn: data.currentTurn,
+        roundCount: data.roundCount,
       }));
-      addToBattleLog(data.battle_log);
+      setPlayerHand(data.updatedPlayerHand);
+      setOpponentHand(data.updatedOpponentHand);
+      addToBattleLog(data.battleLog);
+
+      // Draw a new card at the end of each round
+      if (data.currentTurn === 'player') {
+        setPlayerHand(prev => [...prev, ...drawCard(1)]);
+      } else {
+        setOpponentHand(prev => [...prev, ...drawCard(1)]);
+      }
     },
     onError: (error) => {
       toast({
@@ -117,6 +119,11 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }
         hand={playerHand}
         onPlayCard={handleAction}
         isPlayerTurn={battleState.currentTurn === 'player'}
+        playerStuffing={battleState.playerStuffing}
+      />
+      <ActionButtons
+        onAction={handleAction}
+        isDisabled={battleState.currentTurn !== 'player'}
         playerStuffing={battleState.playerStuffing}
       />
       <BattleLog log={battleState.battleLog} />

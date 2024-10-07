@@ -1,28 +1,32 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 
-const ActionButtons = ({ onAction, isDisabled, playerEnergy }) => {
+const ActionButtons = ({ onAction, isDisabled, playerStuffing }) => {
   return (
-    <div className="mb-4">
+    <div className="mb-4 flex flex-wrap gap-2">
       <Button 
         onClick={() => onAction('attack')}
-        disabled={isDisabled}
-        className="mr-2"
+        disabled={isDisabled || playerStuffing < 1}
       >
-        Attack
+        Attack (1 SP)
       </Button>
       <Button 
         onClick={() => onAction('defend')}
-        disabled={isDisabled}
-        className="mr-2"
+        disabled={isDisabled || playerStuffing < 1}
       >
-        Defend
+        Defend (1 SP)
+      </Button>
+      <Button 
+        onClick={() => onAction('heal')}
+        disabled={isDisabled || playerStuffing < 2}
+      >
+        Heal (2 SP)
       </Button>
       <Button 
         onClick={() => onAction('special')}
-        disabled={isDisabled || playerEnergy < 2}
+        disabled={isDisabled || playerStuffing < 3}
       >
-        Special Move
+        Special Move (3 SP)
       </Button>
     </div>
   );
