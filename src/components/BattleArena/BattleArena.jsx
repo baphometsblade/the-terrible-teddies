@@ -12,6 +12,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useBattleLogic } from '../../hooks/useBattleLogic';
 import BattleRewards from './BattleRewards';
 import AchievementPopup from './AchievementPopup';
+import BattleEffects from './BattleEffects';
+import TeddyTraits from './TeddyTraits';
 
 const BattleArena = () => {
   const [battleId, setBattleId] = useState(null);
@@ -108,11 +110,13 @@ const BattleArena = () => {
           exit={{ y: 50, opacity: 0 }}
           className="mb-4 p-2 bg-purple-100 rounded-lg"
         >
-          <h2 className="text-xl font-semibold">{battleEffect?.name}</h2>
-          <p>{battleEffect?.description}</p>
+          <BattleEffects effect={battleEffect} />
         </motion.div>
       </AnimatePresence>
-      <BattleField battle={battle} animationState={animationState} battleEffect={battleEffect} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <BattleField battle={battle} animationState={animationState} battleEffect={battleEffect} />
+        <TeddyTraits teddy={battle.player1_teddy} />
+      </div>
       <div className="flex justify-between mb-4">
         <PowerUpMeter powerUpMeter={powerUpMeter} onPowerUp={handlePowerUp} />
         <ComboMeter comboMeter={comboMeter} onCombo={handleCombo} />
