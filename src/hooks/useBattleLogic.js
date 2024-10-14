@@ -5,7 +5,7 @@ import { getSpecialAbility } from '../utils/specialAbilities';
 import { applyBattleEvent } from '../utils/battleEvents';
 import { getWeatherEffect } from '../utils/weatherEffects';
 import { applyWeatherEffect, applyStatusEffects } from '../utils/battleEffects';
-import { calculateDamage } from '../utils/battleUtils';
+import { calculateDamage, rollForCritical } from '../utils/battleUtils';
 import { getAIAction } from '../utils/AIOpponent';
 
 export const useBattleLogic = (playerTeddy, opponentTeddy) => {
@@ -78,18 +78,28 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     setBattleState(statusUpdatedState);
   }, [battleState.roundCount, battleState.weatherEffect, playerTeddyData, opponentTeddyData]);
 
+    // Add random events
+    if (Math.random() < 0.1) { // 10% chance of a random event each round
+      const randomEvent = getRandomEvent();
+      const updatedState = applyRandomEvent(battleState, randomEvent);
+      setBattleState(updatedState);
+    }
+  }, [battleState.roundCount, battleState.weatherEffect, playerTeddyData, opponentTeddyData]);
+
   const handleAction = async (action) => {
     let newState = { ...battleState };
     let damage = 0;
 
     if (action === 'attack') {
-      damage = calculateDamage(playerTeddyData, opponentTeddyData, newState.weatherEffect);
+      const isCritical = rollForCritical(playerTeddyData);
+      damage = calculateDamage(playerTeddyData, opponentTeddyData, newState.weatherEffect, isCritical);
       newState.opponentHealth -= damage;
-      newState.battleLog.push(`${playerTeddyData.name} attacks for ${damage} damage!`);
+      newState.battleLog.push(`${playerTeddyData.name} attacks for ${damage} damage!${isCritical ? ' Critical hit!' : ''}`);
       newState.playerCombo.push('attack');
     } else if (action === 'defend') {
       newState.playerEnergy += 1;
-      newState.battleLog.push(`${playerTeddyData.name} defends and gains 1 energy!`);
+      newState.playerDefenseBoost += Math.floor(playerTeddyData.defense * 0.2);
+      newState.battleLog.push(`${playerTeddyData.name} defends and gains 1 energy and ${newState.playerDefenseBoost} defense!`);
       newState.playerCombo.push('defend');
     } else if (action === 'special' && newState.playerEnergy >= 2) {
       const specialAbility = playerTeddyData.specialAbility;
@@ -106,6 +116,14 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
 
     if (newState.playerCombo.length > 3) {
       newState.playerCombo.shift();
+    }
+
+    // Check for combo
+    if (newState.playerCombo.length >= 3) {
+      const comboEffect = checkForCombo(newState.playerCombo);
+      if (comboEffect) {
+        newState = applyComboEffect(newState, comboEffect, playerTeddyData, opponentTeddyData);
+      }
     }
 
     setBattleState(newState);
@@ -159,13 +177,6 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
       newState.opponentCombo.push('special');
     }
 
-    newState.currentTurn = 'player';
-    newState.roundCount += 1;
-
-    if (newState.opponentCombo.length > 3) {
-      newState.opponentCombo.shift();
-    }
-
     setBattleState(newState);
     return { action, newState };
   };
@@ -181,4 +192,44 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     playerTeddyData,
     opponentTeddyData,
   };
+};
+
+const getRandomEvent = () => {
+  const events = [
+    { name: 'Sudden Gust', effect: (state) => ({ ...state, playerDefenseBoost: state.playerDefenseBoost - 2, opponentDefenseBoost: state.opponentDefenseBoost - 2 }) },
+    { name: 'Energy Surge', effect: (state) => ({ ...state, playerEnergy: state.playerEnergy + 1, opponentEnergy: state.opponentEnergy + 1 }) },
+    { name: 'Healing Mist', effect: (state) => ({ ...state, playerHealth: Math.min(100, state.playerHealth + 10), opponentHealth: Math.min(100, state.opponentHealth + 10) }) },
+  ];
+  return events[Math.floor(Math.random() * events.length)];
+};
+
+const applyRandomEvent = (state, event) => {
+  const newState = event.effect(state);
+  newState.battleLog.push(`Random event: ${event.name}!`);
+  return newState;
+};
+
+const checkForCombo = (combo) => {
+  const comboEffects = {
+    'attack,attack,attack': { name: 'Triple Strike', effect: (damage) => damage * 1.5 },
+    'defend,defend,defend': { name: 'Iron Wall', effect: (defense) => defense * 2 },
+    'special,special,special': { name: 'Ultimate Power', effect: (damage) => damage * 2 },
+    'attack,defend,special': { name: 'Balanced Assault', effect: (state) => ({ ...state, playerEnergy: state.playerEnergy + 2 }) },
+  };
+  return comboEffects[combo.join(',')];
+};
+
+const applyComboEffect = (state, comboEffect, attacker, defender) => {
+  let newState = { ...state };
+  if (comboEffect.name === 'Triple Strike' || comboEffect.name === 'Ultimate Power') {
+    const damage = calculateDamage(attacker, defender, state.weatherEffect);
+    newState.opponentHealth -= Math.floor(comboEffect.effect(damage));
+  } else if (comboEffect.name === 'Iron Wall') {
+    newState.playerDefenseBoost = Math.floor(comboEffect.effect(newState.playerDefenseBoost));
+  } else if (comboEffect.name === 'Balanced Assault') {
+    newState = comboEffect.effect(newState);
+  }
+  newState.battleLog.push(`${attacker.name} unleashes the ${comboEffect.name} combo!`);
+  newState.playerCombo = [];
+  return newState;
 };

@@ -7,11 +7,11 @@ import BattleLog from './BattleLog';
 import PowerUpMeter from './PowerUpMeter';
 import ComboMeter from './ComboMeter';
 import WeatherEffect from './WeatherEffect';
-import AIOpponent from './AIOpponent';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { useBattleLogic } from '../../hooks/useBattleLogic';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import BattleAnimation from './BattleAnimation';
 
 const BattleSystem = ({ playerTeddy }) => {
   const [opponentTeddy, setOpponentTeddy] = useState(null);
@@ -29,6 +29,7 @@ const BattleSystem = ({ playerTeddy }) => {
   } = useBattleLogic(playerTeddy, opponentTeddy);
 
   const [battleAnimation, setBattleAnimation] = useState(null);
+  const [showRewards, setShowRewards] = useState(false);
 
   const { data: opponents, isLoading: isLoadingOpponents } = useQuery({
     queryKey: ['opponents'],
@@ -43,12 +44,6 @@ const BattleSystem = ({ playerTeddy }) => {
     },
     enabled: !!playerTeddy,
   });
-
-  useEffect(() => {
-    if (opponents && opponents.length > 0) {
-      setOpponentTeddy(opponents[Math.floor(Math.random() * opponents.length)]);
-    }
-  }, [opponents]);
 
   const handleBattleEnd = async (result) => {
     toast({
@@ -81,18 +76,29 @@ const BattleSystem = ({ playerTeddy }) => {
         .update({ xp: playerTeddy.xp + 10 })
         .eq('id', playerTeddy.id);
     }
+
+    setShowRewards(true);
   };
 
   const handlePlayerAction = async (action) => {
     setBattleAnimation(action);
-    await handleAction(action);
+    const newState = await handleAction(action);
     setTimeout(() => setBattleAnimation(null), 1000);
+
+    if (newState.opponentHealth <= 0) {
+      handleBattleEnd('win');
+      return;
+    }
 
     // AI opponent's turn
     setTimeout(async () => {
       const aiActionResult = await aiAction();
       setBattleAnimation(aiActionResult.action);
       setTimeout(() => setBattleAnimation(null), 1000);
+
+      if (aiActionResult.newState.playerHealth <= 0) {
+        handleBattleEnd('lose');
+      }
     }, 1500);
   };
 
@@ -112,8 +118,15 @@ const BattleSystem = ({ playerTeddy }) => {
         battleState={battleState}
         playerTeddyData={playerTeddyData}
         opponentTeddyData={opponentTeddyData}
-        battleAnimation={battleAnimation}
       />
+      <AnimatePresence>
+        {battleAnimation && (
+          <BattleAnimation
+            action={battleAnimation}
+            attacker={battleState.currentTurn === 'player' ? playerTeddyData : opponentTeddyData}
+          />
+        )}
+      </AnimatePresence>
       <BattleActions
         currentTurn={battleState.currentTurn}
         playerEnergy={battleState.playerEnergy}
@@ -124,12 +137,20 @@ const BattleSystem = ({ playerTeddy }) => {
         <ComboMeter value={battleState.comboMeter} onCombo={handleCombo} />
       </div>
       <BattleLog battleLog={battleState.battleLog} />
-      <Button 
-        onClick={() => handleBattleEnd(battleState.playerHealth > 0 ? 'win' : 'lose')}
-        className="mt-4"
-      >
-        End Battle
-      </Button>
+      {showRewards && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+        >
+          <div className="bg-white p-6 rounded-lg shadow-xl">
+            <h2 className="text-2xl font-bold mb-4">Battle Rewards</h2>
+            {/* Add reward details here */}
+            <Button onClick={() => setShowRewards(false)}>Close</Button>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 };

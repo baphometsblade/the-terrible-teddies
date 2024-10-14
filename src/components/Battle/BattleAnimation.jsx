@@ -4,18 +4,18 @@ import { motion } from 'framer-motion';
 const BattleAnimation = ({ action, attacker }) => {
   const animations = {
     attack: {
-      initial: { scale: 1, x: 0 },
-      animate: { scale: [1, 1.2, 1], x: [0, 50, 0] },
+      initial: { x: 0, opacity: 1 },
+      animate: { x: [0, 100, 0], opacity: [1, 0.5, 1] },
       transition: { duration: 0.5 },
     },
     defend: {
-      initial: { opacity: 0, scale: 0 },
-      animate: { opacity: [0, 1, 0], scale: [0, 1.5, 0] },
+      initial: { scale: 1 },
+      animate: { scale: [1, 1.2, 1] },
       transition: { duration: 0.5 },
     },
     special: {
-      initial: { opacity: 0, scale: 0, rotate: 0 },
-      animate: { opacity: [0, 1, 0], scale: [0, 2, 0], rotate: [0, 360, 0] },
+      initial: { rotate: 0, scale: 1 },
+      animate: { rotate: 360, scale: [1, 1.5, 1] },
       transition: { duration: 0.8 },
     },
   };
