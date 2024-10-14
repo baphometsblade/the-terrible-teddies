@@ -30,18 +30,17 @@ export const setupTerribleTeddies = async () => {
     }
 
     // Check if the table is empty
-    const { data, error: countError } = await supabase
+    const { count, error: countError } = await supabase
       .from('terrible_teddies')
-      .select('count')
-      .single();
+      .select('*', { count: 'exact', head: true });
 
-    if (countError && countError.code !== 'PGRST116') {
+    if (countError) {
       console.error('Error checking terrible_teddies table:', countError);
       return false;
     }
 
     // If the table is empty, populate it
-    if (!data || data.count === 0) {
+    if (count === 0) {
       return populateTerribleTeddies();
     }
 
@@ -55,21 +54,57 @@ export const setupTerribleTeddies = async () => {
 
 const populateTerribleTeddies = async () => {
   try {
-    const { data: teddyCards } = await import('../data/teddyCards.js');
-    
-    const teddies = teddyCards.map(card => ({
-      name: card.name,
-      title: card.type,
-      description: `A ${card.type} card with ${card.effect} effect`,
-      attack: card.effect === 'damage' ? card.value : 0,
-      defense: card.effect === 'defense' ? card.value : 0,
-      special_move: card.name,
-      image_url: `https://example.com/${card.name.toLowerCase().replace(/\s+/g, '-')}.png`
-    }));
+    const initialTeddies = [
+      {
+        name: "Whiskey Whiskers",
+        title: "The Smooth Operator",
+        description: "A suave bear with a penchant for fine spirits and even finer company.",
+        attack: 6,
+        defense: 5,
+        special_move: "On the Rocks",
+        image_url: "https://example.com/whiskey_whiskers.png"
+      },
+      {
+        name: "Madame Mistletoe",
+        title: "The Festive Flirt",
+        description: "She carries mistletoe year-round, believing every moment is an opportunity for a sly kiss.",
+        attack: 5,
+        defense: 6,
+        special_move: "Sneak Kiss",
+        image_url: "https://example.com/madame_mistletoe.png"
+      },
+      {
+        name: "Baron Von Blubber",
+        title: "The Inflated Ego",
+        description: "A pompous bear with an oversized monocle and a belly that's one puff away from popping.",
+        attack: 7,
+        defense: 4,
+        special_move: "Burst Bubble",
+        image_url: "https://example.com/baron_von_blubber.png"
+      },
+      {
+        name: "Icy Ivan",
+        title: "The Frosty Fighter",
+        description: "A bear with fur as white as snow and eyes as cold as ice. He's wearing nothing but a tiny Speedo.",
+        attack: 6,
+        defense: 7,
+        special_move: "Ice Age",
+        image_url: "https://example.com/icy_ivan.png"
+      },
+      {
+        name: "Lady Lush",
+        title: "The Party Animal",
+        description: "This bear's fur is a mess of glitter and confetti. She's always ready for a good time.",
+        attack: 5,
+        defense: 5,
+        special_move: "Drunken Master",
+        image_url: "https://example.com/lady_lush.png"
+      }
+    ];
 
     const { error } = await supabase
       .from('terrible_teddies')
-      .insert(teddies);
+      .insert(initialTeddies);
 
     if (error) {
       console.error('Error populating terrible_teddies:', error);
