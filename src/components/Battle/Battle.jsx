@@ -9,6 +9,7 @@ import PowerUpMeter from './PowerUpMeter';
 import ComboMeter from './ComboMeter';
 import { useBattleLogic } from '../../hooks/useBattleLogic';
 import { motion } from 'framer-motion';
+import { getWeatherEffect } from '../../utils/battleUtils';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const {
@@ -24,11 +25,21 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
     error
   } = useBattleLogic(playerTeddy, opponentTeddy);
 
+  const [weatherEffect, setWeatherEffect] = useState(null);
+
   useEffect(() => {
     if (battleState.playerHealth <= 0 || battleState.opponentHealth <= 0) {
       onBattleEnd(battleState.playerHealth > 0 ? 'win' : 'lose');
     }
   }, [battleState.playerHealth, battleState.opponentHealth, onBattleEnd]);
+
+  useEffect(() => {
+    // Change weather every 5 rounds
+    if (battleState.roundCount % 5 === 0) {
+      const newWeather = getWeatherEffect();
+      setWeatherEffect(newWeather);
+    }
+  }, [battleState.roundCount]);
 
   if (isLoading) return <div>Loading battle data...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -40,7 +51,12 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <BattleField battleState={battleState} />
+      <div className="mb-4">
+        <h2 className="text-xl font-bold">Current Weather: {weatherEffect ? weatherEffect.name : 'Normal'}</h2>
+        <p>{weatherEffect && weatherEffect.description}</p>
+      </div>
+
+      <BattleField battleState={battleState} weatherEffect={weatherEffect} />
       
       <div className="battle-actions mb-4">
         {currentTurn === 'player' && (

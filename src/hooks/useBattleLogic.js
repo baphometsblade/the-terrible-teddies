@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { calculateDamage, applyPowerUp, checkForCombo } from '../utils/battleUtils';
+import { calculateDamage, applyPowerUp, checkForCombo, applyComboEffect, applyStatusEffect, rollForCritical } from '../utils/battleUtils';
 import { checkAchievements } from '../utils/achievementSystem';
 import { useToast } from "@/components/ui/use-toast";
 import AIOpponent from '../utils/AIOpponent';
@@ -12,6 +12,8 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     opponentHealth: 100,
     playerDefenseBoost: 0,
     opponentDefenseBoost: 0,
+    playerStatusEffect: null,
+    opponentStatusEffect: null,
     currentTurn: 'player',
     roundCount: 0
   });
@@ -53,16 +55,19 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     let damage = 0;
     let logMessage = '';
 
+    const isCritical = rollForCritical(playerTeddyData);
+
     if (action === 'attack') {
-      damage = calculateDamage(playerTeddyData, opponentTeddyData, newBattleState.opponentDefenseBoost);
+      damage = calculateDamage(playerTeddyData, opponentTeddyData, newBattleState.opponentDefenseBoost, isCritical);
       newBattleState.opponentHealth -= damage;
-      logMessage = `${playerTeddyData.name} attacks for ${damage} damage!`;
+      logMessage = `${playerTeddyData.name} attacks for ${damage} damage!${isCritical ? ' Critical hit!' : ''}`;
     } else if (action === 'special') {
       damage = calculateDamage(playerTeddyData, opponentTeddyData, newBattleState.opponentDefenseBoost) * 1.5;
       newBattleState.opponentHealth -= damage;
-      logMessage = `${playerTeddyData.name} uses ${playerTeddyData.special_move} for ${damage} damage!`;
+      newBattleState.opponentStatusEffect = 'elemental';
+      logMessage = `${playerTeddyData.name} uses ${playerTeddyData.special_move} for ${damage} damage and applies elemental effect!`;
     } else if (action === 'defend') {
-      const defenseBoost = Math.floor(Math.random() * 10) + 5;
+      const defenseBoost = Math.floor(playerTeddyData.defense * 0.5);
       newBattleState.playerDefenseBoost += defenseBoost;
       logMessage = `${playerTeddyData.name} increases defense by ${defenseBoost}!`;
     }
@@ -74,9 +79,18 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     const combo = checkForCombo(moveHistory);
     if (combo) {
       setComboMeter(0);
+      const comboEffect = applyComboEffect(combo, playerTeddyData, opponentTeddyData);
       const comboMessage = `${playerTeddyData.name} activates ${combo.name} combo!`;
       setBattleLog(prev => [...prev, comboMessage]);
-      // Apply combo effect
+      if (comboEffect.damage) {
+        newBattleState.opponentHealth -= comboEffect.damage;
+      }
+      if (comboEffect.defenseBoost) {
+        newBattleState.playerDefenseBoost += comboEffect.defenseBoost;
+      }
+      if (comboEffect.statusEffect) {
+        newBattleState.opponentStatusEffect = comboEffect.statusEffect;
+      }
     } else {
       setComboMeter(prev => Math.min(prev + 20, 100));
     }
@@ -92,6 +106,18 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
       });
     }
 
+    // Apply status effects
+    if (newBattleState.playerStatusEffect) {
+      const updatedPlayerTeddy = applyStatusEffect(playerTeddyData, newBattleState.playerStatusEffect);
+      newBattleState.playerHealth = updatedPlayerTeddy.health;
+      setBattleLog(prev => [...prev, `${playerTeddyData.name} is affected by ${newBattleState.playerStatusEffect}!`]);
+    }
+    if (newBattleState.opponentStatusEffect) {
+      const updatedOpponentTeddy = applyStatusEffect(opponentTeddyData, newBattleState.opponentStatusEffect);
+      newBattleState.opponentHealth = updatedOpponentTeddy.health;
+      setBattleLog(prev => [...prev, `${opponentTeddyData.name} is affected by ${newBattleState.opponentStatusEffect}!`]);
+    }
+
     newBattleState.currentTurn = 'opponent';
     newBattleState.roundCount++;
     setBattleState(newBattleState);
@@ -105,21 +131,21 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
 
   const performAIAction = (action) => {
     let newBattleState = { ...battleState };
-    let damage = 0;
-    let logMessage = '';
+    const aiActionResult = AIOpponent.performAction(action, opponentTeddyData, playerTeddyData, newBattleState);
 
+    newBattleState.playerHealth -= aiActionResult.damage;
+    newBattleState.opponentDefenseBoost += aiActionResult.defenseBoost;
+    if (aiActionResult.statusEffect) {
+      newBattleState.playerStatusEffect = aiActionResult.statusEffect;
+    }
+
+    let logMessage = '';
     if (action === 'attack') {
-      damage = calculateDamage(opponentTeddyData, playerTeddyData, newBattleState.playerDefenseBoost);
-      newBattleState.playerHealth -= damage;
-      logMessage = `${opponentTeddyData.name} attacks for ${damage} damage!`;
+      logMessage = `${opponentTeddyData.name} attacks for ${aiActionResult.damage} damage!`;
     } else if (action === 'special') {
-      damage = calculateDamage(opponentTeddyData, playerTeddyData, newBattleState.playerDefenseBoost) * 1.5;
-      newBattleState.playerHealth -= damage;
-      logMessage = `${opponentTeddyData.name} uses ${opponentTeddyData.special_move} for ${damage} damage!`;
+      logMessage = `${opponentTeddyData.name} uses ${opponentTeddyData.special_move} for ${aiActionResult.damage} damage!`;
     } else if (action === 'defend') {
-      const defenseBoost = Math.floor(Math.random() * 10) + 5;
-      newBattleState.opponentDefenseBoost += defenseBoost;
-      logMessage = `${opponentTeddyData.name} increases defense by ${defenseBoost}!`;
+      logMessage = `${opponentTeddyData.name} increases defense by ${aiActionResult.defenseBoost}!`;
     }
 
     setBattleLog(prev => [...prev, logMessage]);
@@ -132,7 +158,7 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
       const powerUp = applyPowerUp(playerTeddyData);
       setBattleLog(prev => [...prev, `${playerTeddyData.name} activates ${powerUp.name}!`]);
       setPowerUpMeter(0);
-      // Apply power-up effect
+      // Apply power-up effect to playerTeddyData
     }
   };
 
