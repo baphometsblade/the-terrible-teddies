@@ -14,10 +14,13 @@ import BattleRewards from './BattleRewards';
 import AchievementPopup from './AchievementPopup';
 import BattleEffects from './BattleEffects';
 import TeddyTraits from './TeddyTraits';
+import BattleTimer from './BattleTimer';
+import { getRandomPowerUp, applyPowerUp } from '../../utils/powerUps';
 
 const BattleArena = () => {
   const [battleId, setBattleId] = useState(null);
   const [showAchievement, setShowAchievement] = useState(false);
+  const [activePowerUp, setActivePowerUp] = useState(null);
   const { toast } = useToast();
 
   const {
@@ -79,7 +82,6 @@ const BattleArena = () => {
         variant: "info",
       });
     };
-
     createBattle();
   }, []);
 
@@ -89,6 +91,26 @@ const BattleArena = () => {
       setTimeout(() => setShowAchievement(false), 3000);
     }
   }, [achievements]);
+
+  const handleTimeUp = () => {
+    // Auto-select a random action when time is up
+    const actions = ['attack', 'defend', 'special'];
+    const randomAction = actions[Math.floor(Math.random() * actions.length)];
+    handleAction(randomAction);
+  };
+
+  const activatePowerUp = () => {
+    if (powerUpMeter >= 100) {
+      const powerUp = getRandomPowerUp();
+      setActivePowerUp(powerUp);
+      applyPowerUp(battle.player1_teddy, powerUp);
+      toast({
+        title: "Power-Up Activated!",
+        description: `${powerUp.name}: ${powerUp.description}`,
+        variant: "success",
+      });
+    }
+  };
 
   if (isLoading) return <div>Loading battle...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -102,23 +124,16 @@ const BattleArena = () => {
       transition={{ duration: 0.5 }}
     >
       <h1 className="text-3xl font-bold mb-4">Battle Arena</h1>
-      <AnimatePresence>
-        <motion.div
-          key={battleEffect?.name}
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 50, opacity: 0 }}
-          className="mb-4 p-2 bg-purple-100 rounded-lg"
-        >
-          <BattleEffects effect={battleEffect} />
-        </motion.div>
-      </AnimatePresence>
+      <div className="flex justify-between items-center mb-4">
+        <BattleTimer duration={30} onTimeUp={handleTimeUp} />
+        <BattleEffects effect={battleEffect} />
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <BattleField battle={battle} animationState={animationState} battleEffect={battleEffect} />
         <TeddyTraits teddy={battle.player1_teddy} />
       </div>
       <div className="flex justify-between mb-4">
-        <PowerUpMeter powerUpMeter={powerUpMeter} onPowerUp={handlePowerUp} />
+        <PowerUpMeter powerUpMeter={powerUpMeter} onPowerUp={activatePowerUp} />
         <ComboMeter comboMeter={comboMeter} onCombo={handleCombo} />
       </div>
       <ActionButtons 
@@ -133,6 +148,17 @@ const BattleArena = () => {
       <AnimatePresence>
         {showAchievement && (
           <AchievementPopup achievement={achievements[achievements.length - 1]} />
+        )}
+        {activePowerUp && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-4 right-4 bg-green-100 p-4 rounded-lg shadow-lg"
+          >
+            <h3 className="text-lg font-bold">{activePowerUp.name}</h3>
+            <p>{activePowerUp.description}</p>
+          </motion.div>
         )}
       </AnimatePresence>
     </motion.div>

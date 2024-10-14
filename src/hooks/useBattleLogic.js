@@ -6,6 +6,7 @@ import { generateRandomBattleEffect, applyBattleEffect } from '../utils/battleEf
 import AIOpponent from '../utils/AIOpponent';
 import { checkForCombo, applyComboEffect } from '../utils/comboSystem';
 import { checkAchievements } from '../utils/achievementSystem';
+import { getRandomPowerUp, applyPowerUp } from '../utils/powerUps';
 
 export const useBattleLogic = (battleId) => {
   const [animationState, setAnimationState] = useState('idle');
@@ -16,6 +17,8 @@ export const useBattleLogic = (battleId) => {
   const [moveHistory, setMoveHistory] = useState([]);
 
   const [achievements, setAchievements] = useState([]);
+
+  const [activePowerUps, setActivePowerUps] = useState([]);
 
   const { data: battle, isLoading, error, refetch } = useQuery({
     queryKey: ['battle', battleId],
@@ -97,6 +100,17 @@ export const useBattleLogic = (battleId) => {
     }
     setPowerUpMeter(prev => Math.min(prev + 10, 100));
     
+    // Apply active power-ups
+    activePowerUps.forEach(powerUp => {
+      applyPowerUp(battle.player1_teddy, powerUp);
+    });
+    
+    // Decrease power-up durations and remove expired ones
+    setActivePowerUps(prev => 
+      prev.map(p => ({ ...p, duration: p.duration - 1 }))
+         .filter(p => p.duration > 0)
+    );
+    
     // Check for achievements after each action
     const newAchievements = checkAchievements(battle, action);
     if (newAchievements.length > 0) {
@@ -106,19 +120,13 @@ export const useBattleLogic = (battleId) => {
 
   const handlePowerUp = () => {
     if (powerUpMeter === 100) {
-      const powerUpEffect = {
-        name: "Ultimate Power-Up",
-        description: "Your teddy's stats are doubled for this turn!",
-        effect: (attacker) => {
-          attacker.attack *= 2;
-          attacker.defense *= 2;
-        }
-      };
-      applyBattleEffect(powerUpEffect, battle.player1_teddy, battle.player2_teddy);
+      const newPowerUp = getRandomPowerUp();
+      setActivePowerUps(prev => [...prev, newPowerUp]);
+      applyPowerUp(battle.player1_teddy, newPowerUp);
       setPowerUpMeter(0);
       toast({
         title: "Power-Up Activated!",
-        description: powerUpEffect.description,
+        description: `${newPowerUp.name}: ${newPowerUp.description}`,
         variant: "success",
       });
     }
@@ -147,6 +155,7 @@ export const useBattleLogic = (battleId) => {
     powerUpMeter,
     comboMeter,
     battleLog,
-    achievements
+    achievements,
+    activePowerUps
   };
 };
