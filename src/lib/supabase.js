@@ -136,27 +136,3 @@ export const checkTableExists = async () => {
     throw error;
   }
 };
-
-export const generateRandomTeddy = () => {
-  const adjectives = ['Grumpy', 'Sassy', 'Cheeky', 'Mischievous', 'Snarky'];
-  const nouns = ['Whiskers', 'Fluff', 'Cuddles', 'Snuggles', 'Paws'];
-  const specialMoves = ['Tickle Attack', 'Fur Missile', 'Cuddle Crush', 'Honey Heist', 'Paw-er Punch'];
-
-  const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
-  const title = `The ${adjectives[Math.floor(Math.random() * adjectives.length)]} One`;
-  const description = `This bear is known for its ${adjectives[Math.floor(Math.random() * adjectives.length)].toLowerCase()} attitude and ${nouns[Math.floor(Math.random() * nouns.length)].toLowerCase()}-like appearance.`;
-  const attack = Math.floor(Math.random() * 5) + 3; // 3-7
-  const defense = Math.floor(Math.random() * 5) + 3; // 3-7
-  const specialMove = specialMoves[Math.floor(Math.random() * specialMoves.length)];
-
-  return {
-    id: uuidv4(),
-    name,
-    title,
-    description,
-    attack,
-    defense,
-    special_move: specialMove,
-    image_url: `https://example.com/${name.toLowerCase().replace(' ', '_')}.png` // Placeholder URL
-  };
-};

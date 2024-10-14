@@ -1,7 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { generateRandomTeddy } from '../lib/supabase';
 
 const TeddyDisplay = () => {
   const { data: teddies, isLoading, error } = useQuery({
@@ -15,15 +14,6 @@ const TeddyDisplay = () => {
       return data;
     },
   });
-
-  const handleGenerateNewTeddy = async () => {
-    const newTeddy = generateRandomTeddy();
-    const { data, error } = await supabase
-      .from('terrible_teddies')
-      .insert([newTeddy]);
-    if (error) console.error('Error inserting new teddy:', error);
-    else console.log('New teddy inserted:', data);
-  };
 
   if (isLoading) return <div>Loading teddies...</div>;
   if (error) return <div>Error loading teddies: {error.message}</div>;
@@ -45,12 +35,6 @@ const TeddyDisplay = () => {
           </div>
         ))}
       </div>
-      <button 
-        className="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-        onClick={handleGenerateNewTeddy}
-      >
-        Generate New Teddy
-      </button>
     </div>
   );
 };
