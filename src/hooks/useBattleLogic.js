@@ -5,6 +5,7 @@ import { useBattleState } from './useBattleState';
 import { useBattleActions } from './useBattleActions';
 import { getWeatherEffect } from '../utils/battleUtils';
 import { applyBattleEvent } from '../utils/battleEvents';
+import { getRandomTrait, applyTrait } from '../utils/teddyTraits';
 
 export const useBattleLogic = (playerTeddy, opponentTeddy) => {
   const [battleState, updateBattleState] = useBattleState();
@@ -18,7 +19,7 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
         .eq('id', playerTeddy.id)
         .single();
       if (error) throw error;
-      return data;
+      return applyTrait(data, getRandomTrait());
     },
   });
 
@@ -31,7 +32,7 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
         .eq('id', opponentTeddy.id)
         .single();
       if (error) throw error;
-      return data;
+      return applyTrait(data, getRandomTrait());
     },
   });
 
@@ -64,7 +65,26 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
       const updatedState = applyBattleEvent(battleState);
       updateBattleState(updatedState);
     }
-  }, [battleState.roundCount, updateBattleState]);
+
+    // Apply trait effects at the end of each round
+    if (playerTeddyData && playerTeddyData.healthRecovery) {
+      const healAmount = Math.floor(playerTeddyData.maxHealth * playerTeddyData.healthRecovery);
+      updateBattleState(prevState => ({
+        ...prevState,
+        playerHealth: Math.min(prevState.playerHealth + healAmount, playerTeddyData.maxHealth),
+        battleLog: [...prevState.battleLog, `${playerTeddyData.name} recovers ${healAmount} health due to Resilient trait!`]
+      }));
+    }
+
+    if (opponentTeddyData && opponentTeddyData.healthRecovery) {
+      const healAmount = Math.floor(opponentTeddyData.maxHealth * opponentTeddyData.healthRecovery);
+      updateBattleState(prevState => ({
+        ...prevState,
+        opponentHealth: Math.min(prevState.opponentHealth + healAmount, opponentTeddyData.maxHealth),
+        battleLog: [...prevState.battleLog, `${opponentTeddyData.name} recovers ${healAmount} health due to Resilient trait!`]
+      }));
+    }
+  }, [battleState.roundCount, updateBattleState, playerTeddyData, opponentTeddyData]);
 
   return {
     battleState,

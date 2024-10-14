@@ -8,6 +8,10 @@ const BattleStats = ({ battleState }) => {
     { label: 'Player XP', value: `${battleState.playerExperience}/${battleState.playerLevel * 100}` },
     { label: 'Combos Used', value: battleState.combosUsed || 0 },
     { label: 'Power-Ups Activated', value: battleState.powerUpsActivated || 0 },
+    { label: 'Items Used', value: battleState.itemsUsed || 0 },
+    { label: 'Critical Hits', value: battleState.criticalHits || 0 },
+    { label: 'Damage Dealt', value: battleState.damageDealt || 0 },
+    { label: 'Damage Taken', value: battleState.damageTaken || 0 },
   ];
 
   return (
@@ -18,7 +22,7 @@ const BattleStats = ({ battleState }) => {
       transition={{ duration: 0.5 }}
     >
       <h3 className="text-lg font-semibold mb-2">Battle Statistics</h3>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {stats.map((stat, index) => (
           <div key={index} className="flex justify-between">
             <span className="font-medium">{stat.label}:</span>

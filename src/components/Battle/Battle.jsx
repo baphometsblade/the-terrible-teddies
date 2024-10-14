@@ -15,6 +15,8 @@ import BattleAnimation from './BattleAnimation';
 import BattleItems from './BattleItems';
 import WeatherEffect from './WeatherEffect';
 import BattleStats from './BattleStats';
+import CrowdReaction from './CrowdReaction';
+import WeatherForecast from './WeatherForecast';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const {
@@ -27,6 +29,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   } = useBattleLogic(playerTeddy, opponentTeddy);
 
   const [animation, setAnimation] = useState(null);
+  const [crowdMood, setCrowdMood] = useState('neutral');
   const { playSound } = useSound();
 
   useEffect(() => {
@@ -41,6 +44,17 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
       playSound('weatherChange');
     }
   }, [battleState.roundCount, playSound]);
+
+  useEffect(() => {
+    // Update crowd mood based on battle state
+    if (battleState.playerHealth > battleState.opponentHealth + 20) {
+      setCrowdMood('excited');
+    } else if (battleState.opponentHealth > battleState.playerHealth + 20) {
+      setCrowdMood('worried');
+    } else {
+      setCrowdMood('neutral');
+    }
+  }, [battleState.playerHealth, battleState.opponentHealth]);
 
   const handleActionWithAnimation = (action) => {
     setAnimation(action);
@@ -60,6 +74,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
       transition={{ duration: 0.5 }}
     >
       <WeatherEffect weatherEffect={battleState.weatherEffect} />
+      <WeatherForecast currentWeather={battleState.weatherEffect} roundCount={battleState.roundCount} />
 
       <BattleField battleState={battleState} />
       
@@ -94,6 +109,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
 
       <BattleLog log={battleState.battleLog} />
       <BattleStats battleState={battleState} />
+      <CrowdReaction mood={crowdMood} />
     </motion.div>
   );
 };
