@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getWeatherEffect } from '../../utils/battleUtils';
 import { useSound } from '../../hooks/useSound';
 import BattleAnimation from './BattleAnimation';
+import BattleItems from './BattleItems';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const {
@@ -19,17 +20,11 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
     performAction,
     handlePowerUp,
     handleCombo,
-    battleLog,
-    powerUpMeter,
-    comboMeter,
-    currentTurn,
     isLoading,
     error
   } = useBattleLogic(playerTeddy, opponentTeddy);
 
-  const [weatherEffect, setWeatherEffect] = useState(null);
   const [animation, setAnimation] = useState(null);
-
   const { playSound } = useSound();
 
   useEffect(() => {
@@ -41,8 +36,6 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
 
   useEffect(() => {
     if (battleState.roundCount % 5 === 0) {
-      const newWeather = getWeatherEffect();
-      setWeatherEffect(newWeather);
       playSound('weatherChange');
     }
   }, [battleState.roundCount, playSound]);
@@ -65,36 +58,42 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
       transition={{ duration: 0.5 }}
     >
       <div className="mb-4">
-        <h2 className="text-xl font-bold">Current Weather: {weatherEffect ? weatherEffect.name : 'Normal'}</h2>
-        <p>{weatherEffect && weatherEffect.description}</p>
+        <h2 className="text-xl font-bold">Current Weather: {battleState.weatherEffect ? battleState.weatherEffect.name : 'Normal'}</h2>
+        <p>{battleState.weatherEffect && battleState.weatherEffect.description}</p>
       </div>
 
-      <BattleField battleState={battleState} weatherEffect={weatherEffect} />
+      <BattleField battleState={battleState} />
       
       <AnimatePresence>
         {animation && (
-          <BattleAnimation action={animation} attacker={currentTurn === 'player' ? playerTeddy : opponentTeddy} />
+          <BattleAnimation action={animation} attacker={battleState.currentTurn === 'player' ? playerTeddy : opponentTeddy} />
         )}
       </AnimatePresence>
 
       <div className="battle-actions mb-4">
-        {currentTurn === 'player' && (
-          <ActionButtons 
-            onAction={handleActionWithAnimation}
-            onPowerUp={handlePowerUp}
-            onCombo={handleCombo}
-            powerUpReady={powerUpMeter === 100}
-            comboReady={comboMeter === 100}
-          />
+        {battleState.currentTurn === 'player' && (
+          <>
+            <ActionButtons 
+              onAction={handleActionWithAnimation}
+              onPowerUp={handlePowerUp}
+              onCombo={handleCombo}
+              powerUpReady={battleState.powerUpMeter === 100}
+              comboReady={battleState.comboMeter === 100}
+            />
+            <BattleItems 
+              items={battleState.playerItems}
+              onUseItem={(index) => handleActionWithAnimation(`use_item_${index}`)}
+            />
+          </>
         )}
       </div>
 
       <div className="flex justify-between mb-4">
-        <PowerUpMeter value={powerUpMeter} />
-        <ComboMeter value={comboMeter} />
+        <PowerUpMeter value={battleState.powerUpMeter} />
+        <ComboMeter value={battleState.comboMeter} />
       </div>
 
-      <BattleLog log={battleLog} />
+      <BattleLog log={battleState.battleLog} />
     </motion.div>
   );
 };
