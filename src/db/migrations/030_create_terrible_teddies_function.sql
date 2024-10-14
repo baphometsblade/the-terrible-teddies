@@ -4,9 +4,16 @@ DROP FUNCTION IF EXISTS create_terrible_teddies_table();
 -- Create or replace the function to create the terrible_teddies table
 CREATE OR REPLACE FUNCTION create_terrible_teddies_table()
 RETURNS boolean AS $$
+DECLARE
+  table_exists boolean;
 BEGIN
   -- Check if the table exists
-  IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'terrible_teddies') THEN
+  SELECT EXISTS (
+    SELECT FROM information_schema.tables 
+    WHERE table_schema = 'public' AND table_name = 'terrible_teddies'
+  ) INTO table_exists;
+
+  IF NOT table_exists THEN
     -- Create the table if it doesn't exist
     CREATE TABLE public.terrible_teddies (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -66,7 +66,7 @@ const createTerribleTeddiesTable = async () => {
 const populateTerribleTeddies = async () => {
   const { data, error } = await supabase
     .from('terrible_teddies')
-    .insert(initialTeddies);
+    .upsert(initialTeddies, { onConflict: 'name' });
 
   if (error) {
     console.error('Error populating terrible_teddies:', error);
@@ -99,7 +99,7 @@ export const setupTerribleTeddies = async () => {
     }
 
     if (data && data.length > 0) {
-      console.log(`Terrible Teddies table already contains data`);
+      console.log('Terrible Teddies table already contains data');
       return true;
     } else {
       console.log('Terrible Teddies table is empty. Populating...');
@@ -115,17 +115,27 @@ export const setupTerribleTeddies = async () => {
   }
 };
 
-// Add this function to check if the table exists
 export const checkTableExists = async () => {
-  const { data, error } = await supabase
-    .from('terrible_teddies')
-    .select('id')
-    .limit(1);
+  try {
+    const { data, error } = await supabase
+      .from('terrible_teddies')
+      .select('id')
+      .limit(1);
 
-  if (error) {
-    console.error('Error checking if table exists:', error);
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // Table doesn't exist
+        console.log('Terrible Teddies table does not exist');
+        return false;
+      }
+      console.error('Error checking if table exists:', error);
+      throw error;
+    }
+
+    console.log('Terrible Teddies table exists');
+    return true;
+  } catch (error) {
+    console.error('Unexpected error checking table existence:', error);
     return false;
   }
-
-  return true;
 };
