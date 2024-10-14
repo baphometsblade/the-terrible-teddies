@@ -37,6 +37,12 @@ const AIOpponent = {
       weights[1] += 0.2; // Increase chance of special move to potentially trigger combo
     }
 
+    // Consider using items
+    if (battleState.opponentItems.length > 0) {
+      actions.push('use_item');
+      weights.push(battleState.opponentHealth < 30 ? 0.4 : 0.2);
+    }
+
     const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
     const randomValue = Math.random() * totalWeight;
     let weightSum = 0;
@@ -44,6 +50,9 @@ const AIOpponent = {
     for (let i = 0; i < actions.length; i++) {
       weightSum += weights[i];
       if (randomValue <= weightSum) {
+        if (actions[i] === 'use_item') {
+          return `use_item_${Math.floor(Math.random() * battleState.opponentItems.length)}`;
+        }
         return actions[i];
       }
     }
@@ -71,6 +80,12 @@ const AIOpponent = {
       case 'defend':
         defenseBoost = Math.floor(aiTeddy.defense * 0.5);
         break;
+      default:
+        if (action.startsWith('use_item_')) {
+          const itemIndex = parseInt(action.split('_')[2]);
+          const item = battleState.opponentItems[itemIndex];
+          return item.effect(battleState, false);
+        }
     }
 
     return { damage, defenseBoost, statusEffect };

@@ -1,32 +1,32 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion } from 'framer-motion';
 
-const BattleStats = ({ playerStats, opponentStats }) => {
+const BattleStats = ({ battleState }) => {
+  const stats = [
+    { label: 'Rounds', value: battleState.roundCount },
+    { label: 'Player Level', value: battleState.playerLevel },
+    { label: 'Player XP', value: `${battleState.playerExperience}/${battleState.playerLevel * 100}` },
+    { label: 'Combos Used', value: battleState.combosUsed || 0 },
+    { label: 'Power-Ups Activated', value: battleState.powerUpsActivated || 0 },
+  ];
+
   return (
-    <div className="grid grid-cols-2 gap-4 mt-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Stats</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Damage Dealt: {playerStats.damageDealt}</p>
-          <p>Damage Taken: {playerStats.damageTaken}</p>
-          <p>Healing Done: {playerStats.healingDone}</p>
-          <p>Stuffing Gained: {playerStats.stuffingGained}</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Opponent Stats</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>Damage Dealt: {opponentStats.damageDealt}</p>
-          <p>Damage Taken: {opponentStats.damageTaken}</p>
-          <p>Healing Done: {opponentStats.healingDone}</p>
-          <p>Stuffing Gained: {opponentStats.stuffingGained}</p>
-        </CardContent>
-      </Card>
-    </div>
+    <motion.div
+      className="battle-stats mt-4 p-4 bg-gray-200 rounded-lg"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h3 className="text-lg font-semibold mb-2">Battle Statistics</h3>
+      <div className="grid grid-cols-2 gap-2">
+        {stats.map((stat, index) => (
+          <div key={index} className="flex justify-between">
+            <span className="font-medium">{stat.label}:</span>
+            <span>{stat.value}</span>
+          </div>
+        ))}
+      </div>
+    </motion.div>
   );
 };
 

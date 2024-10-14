@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useBattleState } from './useBattleState';
 import { useBattleActions } from './useBattleActions';
 import { getWeatherEffect } from '../utils/battleUtils';
+import { applyBattleEvent } from '../utils/battleEvents';
 
 export const useBattleLogic = (playerTeddy, opponentTeddy) => {
   const [battleState, updateBattleState] = useBattleState();
@@ -57,6 +58,11 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     if (battleState.roundCount % 5 === 0) {
       const newWeather = getWeatherEffect();
       updateBattleState({ weatherEffect: newWeather });
+    }
+
+    if (battleState.roundCount % 3 === 0) {
+      const updatedState = applyBattleEvent(battleState);
+      updateBattleState(updatedState);
     }
   }, [battleState.roundCount, updateBattleState]);
 

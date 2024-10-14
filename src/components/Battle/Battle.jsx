@@ -13,6 +13,8 @@ import { getWeatherEffect } from '../../utils/battleUtils';
 import { useSound } from '../../hooks/useSound';
 import BattleAnimation from './BattleAnimation';
 import BattleItems from './BattleItems';
+import WeatherEffect from './WeatherEffect';
+import BattleStats from './BattleStats';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const {
@@ -57,10 +59,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="mb-4">
-        <h2 className="text-xl font-bold">Current Weather: {battleState.weatherEffect ? battleState.weatherEffect.name : 'Normal'}</h2>
-        <p>{battleState.weatherEffect && battleState.weatherEffect.description}</p>
-      </div>
+      <WeatherEffect weatherEffect={battleState.weatherEffect} />
 
       <BattleField battleState={battleState} />
       
@@ -94,6 +93,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
       </div>
 
       <BattleLog log={battleState.battleLog} />
+      <BattleStats battleState={battleState} />
     </motion.div>
   );
 };
