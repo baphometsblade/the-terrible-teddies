@@ -7,7 +7,8 @@ import ActionButtons from './ActionButtons';
 import BattleStatus from './BattleStatus';
 import BattleLog from './BattleLog';
 import AIOpponent from '../../utils/AIOpponent';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { generateRandomBattleEffect } from '../../utils/battleEffects';
 
 const BattleArena = () => {
   const [battleId, setBattleId] = useState(null);
@@ -15,6 +16,7 @@ const BattleArena = () => {
   const [aiDifficulty, setAiDifficulty] = useState('medium');
   const [battleLog, setBattleLog] = useState([]);
   const [animationState, setAnimationState] = useState('idle');
+  const [battleEffect, setBattleEffect] = useState(null);
   const { toast } = useToast();
 
   const { data: battle, isLoading, error, refetch } = useQuery({
@@ -45,6 +47,7 @@ const BattleArena = () => {
           battleId,
           action,
           playerId: user.id,
+          battleEffect: battleEffect,
         }),
       });
       if (!response.ok) {
@@ -58,6 +61,15 @@ const BattleArena = () => {
       setBattleLog(prevLog => [...prevLog, data.actionResult]);
       setAnimationState('attack');
       setTimeout(() => setAnimationState('idle'), 1000);
+      
+      // Generate a new random battle effect after each action
+      const newEffect = generateRandomBattleEffect();
+      setBattleEffect(newEffect);
+      toast({
+        title: "Battle Effect",
+        description: newEffect.description,
+        variant: "info",
+      });
     },
     onError: (error) => {
       toast({
@@ -102,6 +114,15 @@ const BattleArena = () => {
       }
 
       setBattleId(battle.id);
+      
+      // Set initial battle effect
+      const initialEffect = generateRandomBattleEffect();
+      setBattleEffect(initialEffect);
+      toast({
+        title: "Initial Battle Effect",
+        description: initialEffect.description,
+        variant: "info",
+      });
     };
 
     createBattle();
@@ -129,7 +150,7 @@ const BattleArena = () => {
       transition={{ duration: 0.5 }}
     >
       <h1 className="text-3xl font-bold mb-4">Battle Arena</h1>
-      <BattleField battle={battle} animationState={animationState} />
+      <BattleField battle={battle} animationState={animationState} battleEffect={battleEffect} />
       <ActionButtons 
         onAction={handleAction} 
         isDisabled={battleActionMutation.isLoading || battle.status === 'finished' || battle.current_turn !== battle.player1_id}

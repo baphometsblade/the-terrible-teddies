@@ -4,12 +4,13 @@ import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import TeddyCard from './TeddyCard';
-import Battle from './Battle/Battle';
+import BattleArena from './BattleArena/BattleArena';
 import Shop from './Shop';
 import DeckBuilder from './DeckBuilder/DeckBuilder';
 import BattleStats from './Battle/BattleStats';
 import Evolution from './Evolution';
 import DailyChallenge from './DailyChallenge';
+import SeasonalEvent from './SeasonalEvent';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const TerribleTeddiesGame = () => {
@@ -63,7 +64,7 @@ const TerribleTeddiesGame = () => {
     switch (gameState) {
       case 'battle':
         return (
-          <Battle
+          <BattleArena
             playerTeddy={selectedTeddy}
             opponentTeddy={playerTeddies[Math.floor(Math.random() * playerTeddies.length)]}
             onBattleEnd={handleBattleEnd}
@@ -85,6 +86,8 @@ const TerribleTeddiesGame = () => {
         return selectedTeddy && <Evolution teddy={selectedTeddy} />;
       case 'dailyChallenge':
         return <DailyChallenge />;
+      case 'seasonalEvent':
+        return <SeasonalEvent />;
       default:
         return (
           <div className="flex flex-col space-y-4">
@@ -108,6 +111,7 @@ const TerribleTeddiesGame = () => {
               <Button onClick={() => setGameState('deckBuilder')}>Deck Builder</Button>
               <Button onClick={() => setGameState('evolution')}>Evolve Teddy</Button>
               <Button onClick={() => setGameState('dailyChallenge')}>Daily Challenge</Button>
+              <Button onClick={() => setGameState('seasonalEvent')}>Seasonal Event</Button>
             </div>
           </div>
         );

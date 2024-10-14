@@ -3,10 +3,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Progress } from "@/components/ui/progress";
 
 const Evolution = ({ teddy }) => {
   const [isEvolving, setIsEvolving] = useState(false);
+  const [evolutionProgress, setEvolutionProgress] = useState(0);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -16,14 +18,27 @@ const Evolution = ({ teddy }) => {
       if (error) throw error;
       return data;
     },
+    onMutate: () => {
+      setIsEvolving(true);
+      const evolutionInterval = setInterval(() => {
+        setEvolutionProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(evolutionInterval);
+            return 100;
+          }
+          return prev + 10;
+        });
+      }, 200);
+    },
     onSuccess: (evolvedTeddy) => {
       queryClient.invalidateQueries('playerTeddies');
       toast({
         title: "Evolution Successful!",
-        description: `${teddy.name} has evolved!`,
+        description: `${teddy.name} has evolved to level ${evolvedTeddy.level}!`,
         variant: "success",
       });
       setIsEvolving(false);
+      setEvolutionProgress(0);
     },
     onError: (error) => {
       toast({
@@ -32,11 +47,11 @@ const Evolution = ({ teddy }) => {
         variant: "destructive",
       });
       setIsEvolving(false);
+      setEvolutionProgress(0);
     },
   });
 
   const handleEvolve = () => {
-    setIsEvolving(true);
     evolveMutation.mutate();
   };
 
@@ -49,14 +64,25 @@ const Evolution = ({ teddy }) => {
     >
       <h2 className="text-2xl font-bold mb-4">Evolve {teddy.name}</h2>
       <p className="mb-4">Current Level: {teddy.level}</p>
+      <AnimatePresence>
+        {isEvolving && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <Progress value={evolutionProgress} className="w-full mb-4" />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <Button 
         onClick={handleEvolve} 
-        disabled={isEvolving || teddy.level >= 3}
+        disabled={isEvolving || teddy.level >= 10}
         className="w-full"
       >
         {isEvolving ? 'Evolving...' : 'Evolve'}
       </Button>
-      {teddy.level >= 3 && (
+      {teddy.level >= 10 && (
         <p className="mt-2 text-sm text-gray-500">
           This teddy has reached maximum evolution.
         </p>
