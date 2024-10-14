@@ -15,8 +15,15 @@ const TeddyCard = ({ teddy }) => {
           <CardTitle>{teddy.name}</CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          <img src={teddy.imageUrl} alt={teddy.name} className="w-full h-48 object-cover rounded mb-4" />
-          <p className="text-sm text-gray-600 mb-2">{teddy.title}</p>
+          <div className="relative w-full h-48 mb-4 overflow-hidden rounded-lg">
+            <img 
+              src={teddy.imageUrl} 
+              alt={teddy.name} 
+              className="absolute inset-0 w-full h-full object-cover transform hover:scale-110 transition-transform duration-300 ease-in-out"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-50"></div>
+            <p className="absolute bottom-2 left-2 text-white text-sm font-bold">{teddy.title}</p>
+          </div>
           <p className="text-sm mb-4">{teddy.description}</p>
           <div className="flex justify-between mb-2">
             <Badge variant="secondary">Attack: {teddy.attack}</Badge>
