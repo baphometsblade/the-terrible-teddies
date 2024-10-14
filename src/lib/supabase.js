@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -54,64 +55,62 @@ const initialTeddies = [
 ];
 
 const createTerribleTeddiesTable = async () => {
-  const { data, error } = await supabase.rpc('create_terrible_teddies_table');
-  if (error) {
+  try {
+    const { data, error } = await supabase.rpc('create_terrible_teddies_table');
+    if (error) throw error;
+    console.log('Table creation result:', data);
+    return data;
+  } catch (error) {
     console.error('Error creating terrible_teddies table:', error);
-    return false;
+    throw error;
   }
-  console.log('Table creation result:', data);
-  return true;
 };
 
 const populateTerribleTeddies = async () => {
-  const { data, error } = await supabase
-    .from('terrible_teddies')
-    .upsert(initialTeddies, { onConflict: 'name' });
+  try {
+    const { data, error } = await supabase
+      .from('terrible_teddies')
+      .upsert(initialTeddies, { onConflict: 'name' });
 
-  if (error) {
+    if (error) throw error;
+
+    console.log('Terrible Teddies populated successfully');
+    return true;
+  } catch (error) {
     console.error('Error populating terrible_teddies:', error);
-    return false;
+    throw error;
   }
-
-  console.log('Terrible Teddies populated successfully');
-  return true;
 };
 
 export const setupTerribleTeddies = async () => {
   try {
     console.log('Setting up Terrible Teddies...');
     
-    // Ensure the table exists
-    const tableCreated = await createTerribleTeddiesTable();
-    if (!tableCreated) {
-      throw new Error('Failed to create terrible_teddies table');
-    }
-
-    // Check if the table is empty
-    const { data, error } = await supabase
-      .from('terrible_teddies')
-      .select('id')
-      .limit(1);
-
-    if (error) {
-      console.error('Error checking table contents:', error);
-      throw error;
-    }
-
-    if (data && data.length > 0) {
-      console.log('Terrible Teddies table already contains data');
-      return true;
-    } else {
-      console.log('Terrible Teddies table is empty. Populating...');
-      const populated = await populateTerribleTeddies();
-      if (!populated) {
-        throw new Error('Failed to populate terrible_teddies table');
+    const tableExists = await checkTableExists();
+    if (!tableExists) {
+      const tableCreated = await createTerribleTeddiesTable();
+      if (!tableCreated) {
+        throw new Error('Failed to create terrible_teddies table');
       }
-      return true;
     }
+
+    const { count, error } = await supabase
+      .from('terrible_teddies')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) throw error;
+
+    if (count === 0) {
+      console.log('Terrible Teddies table is empty. Populating...');
+      await populateTerribleTeddies();
+    } else {
+      console.log(`Terrible Teddies table contains ${count} records`);
+    }
+
+    return true;
   } catch (error) {
     console.error('Error in setupTerribleTeddies:', error);
-    return false;
+    throw error;
   }
 };
 
@@ -124,11 +123,9 @@ export const checkTableExists = async () => {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        // Table doesn't exist
         console.log('Terrible Teddies table does not exist');
         return false;
       }
-      console.error('Error checking if table exists:', error);
       throw error;
     }
 
@@ -136,6 +133,30 @@ export const checkTableExists = async () => {
     return true;
   } catch (error) {
     console.error('Unexpected error checking table existence:', error);
-    return false;
+    throw error;
   }
+};
+
+export const generateRandomTeddy = () => {
+  const adjectives = ['Grumpy', 'Sassy', 'Cheeky', 'Mischievous', 'Snarky'];
+  const nouns = ['Whiskers', 'Fluff', 'Cuddles', 'Snuggles', 'Paws'];
+  const specialMoves = ['Tickle Attack', 'Fur Missile', 'Cuddle Crush', 'Honey Heist', 'Paw-er Punch'];
+
+  const name = `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
+  const title = `The ${adjectives[Math.floor(Math.random() * adjectives.length)]} One`;
+  const description = `This bear is known for its ${adjectives[Math.floor(Math.random() * adjectives.length)].toLowerCase()} attitude and ${nouns[Math.floor(Math.random() * nouns.length)].toLowerCase()}-like appearance.`;
+  const attack = Math.floor(Math.random() * 5) + 3; // 3-7
+  const defense = Math.floor(Math.random() * 5) + 3; // 3-7
+  const specialMove = specialMoves[Math.floor(Math.random() * specialMoves.length)];
+
+  return {
+    id: uuidv4(),
+    name,
+    title,
+    description,
+    attack,
+    defense,
+    special_move: specialMove,
+    image_url: `https://example.com/${name.toLowerCase().replace(' ', '_')}.png` // Placeholder URL
+  };
 };
