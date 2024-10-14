@@ -7,7 +7,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const setupTerribleTeddies = async () => {
   try {
-    // Check if the table exists
+    // Ensure the function exists
+    await createTerribleTeddiesTable();
+
+    // Check if the table exists and has data
     const { data, error } = await supabase
       .from('terrible_teddies')
       .select('count')
@@ -18,17 +21,7 @@ export const setupTerribleTeddies = async () => {
       return false;
     }
 
-    // If the table doesn't exist, create it
-    if (error && error.code === 'PGRST116') {
-      const { error: createError } = await supabase.rpc('create_terrible_teddies_table');
-      if (createError) {
-        console.error('Error creating terrible_teddies table:', createError);
-        return false;
-      }
-      console.log('terrible_teddies table created successfully');
-    }
-
-    // Populate the table if it's empty
+    // If the table is empty or doesn't exist, populate it
     if (!data || data.count === 0) {
       return populateTerribleTeddies();
     }
@@ -74,10 +67,16 @@ const populateTerribleTeddies = async () => {
 
 // Function to create the terrible_teddies table
 export const createTerribleTeddiesTable = async () => {
-  const { error } = await supabase.rpc('create_terrible_teddies_table');
-  if (error) {
-    console.error('Error creating terrible_teddies table:', error);
+  try {
+    const { error } = await supabase.rpc('create_terrible_teddies_table');
+    if (error) {
+      console.error('Error creating terrible_teddies table:', error);
+      return false;
+    }
+    console.log('create_terrible_teddies_table function executed successfully');
+    return true;
+  } catch (error) {
+    console.error('Error executing create_terrible_teddies_table function:', error);
     return false;
   }
-  return true;
 };

@@ -1,4 +1,7 @@
--- Function to create the terrible_teddies table
+-- Drop the function if it exists to avoid conflicts
+DROP FUNCTION IF EXISTS create_terrible_teddies_table();
+
+-- Create or replace the function to create the terrible_teddies table
 CREATE OR REPLACE FUNCTION create_terrible_teddies_table()
 RETURNS void AS $$
 BEGIN
@@ -15,3 +18,6 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql;
+
+-- Execute the function to ensure the table is created
+SELECT create_terrible_teddies_table();
