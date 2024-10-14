@@ -1,108 +1,39 @@
-import { calculateDamage, rollForCritical } from './battleUtils';
-import { getSpecialAbility } from './specialAbilities';
+import { calculateDamage } from './battleUtils';
 
-const difficultyLevels = {
-  easy: 0.7,
-  medium: 1,
-  hard: 1.3,
-};
+export const getAIAction = (aiTeddy, playerTeddy, battleState) => {
+  const actions = ['attack', 'defend', 'special'];
+  let weights = [0.6, 0.3, 0.1];
 
-const AIOpponent = {
-  chooseAction: (aiTeddy, playerTeddy, battleState, difficulty = 'medium') => {
-    const actions = ['attack', 'defend', 'special'];
-    let weights = [
-      battleState.opponentHealth > 50 ? 0.6 : 0.3,
-      battleState.opponentHealth > 30 ? 0.3 : 0.5,
-      battleState.opponentHealth < 30 ? 0.5 : 0.2
-    ];
-    
-    // Adjust weights based on player's health
-    if (battleState.playerHealth < 20) {
-      weights[0] += 0.2; // Increase chance of attack when player is low on health
-      weights[1] += 0.1; // Slightly increase chance of special move
-    }
-
-    // Adjust weights based on AI's defense boost
-    if (battleState.opponentDefenseBoost < 10) {
-      weights[2] += 0.2; // Increase chance of defend if defense boost is low
-    }
-
-    // Consider status effects
-    if (battleState.opponentStatusEffect === 'burn' || battleState.opponentStatusEffect === 'poison') {
-      weights[2] += 0.3; // Increase chance of defend if affected by damaging status
-    }
-
-    // Consider weather effects
-    if (battleState.weatherEffect === 'Sunny') {
-      weights[0] += 0.1; // Increase chance of attack in sunny weather
-    } else if (battleState.weatherEffect === 'Rainy') {
-      weights[2] += 0.1; // Increase chance of defend in rainy weather
-    }
-
-    // Consider combo potential
-    if (battleState.aiComboMeter >= 80) {
-      weights[1] += 0.2; // Increase chance of special move to potentially trigger combo
-    }
-
-    // Consider using items
-    if (battleState.opponentItems.length > 0) {
-      actions.push('use_item');
-      weights.push(battleState.opponentHealth < 30 ? 0.4 : 0.2);
-    }
-
-    // Apply difficulty modifier
-    const difficultyModifier = difficultyLevels[difficulty];
-    weights = weights.map(w => w * difficultyModifier);
-
-    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-    const randomValue = Math.random() * totalWeight;
-    let weightSum = 0;
-    
-    for (let i = 0; i < actions.length; i++) {
-      weightSum += weights[i];
-      if (randomValue <= weightSum) {
-        if (actions[i] === 'use_item') {
-          return `use_item_${Math.floor(Math.random() * battleState.opponentItems.length)}`;
-        }
-        return actions[i];
-      }
-    }
-    
-    return 'attack'; // Fallback
-  },
-
-  performAction: (action, aiTeddy, playerTeddy, battleState) => {
-    let damage = 0;
-    let defenseBoost = 0;
-    let statusEffect = null;
-
-    switch (action) {
-      case 'attack':
-        const isCritical = rollForCritical(aiTeddy);
-        damage = calculateDamage(aiTeddy, playerTeddy, battleState.playerDefenseBoost, isCritical);
-        if (Math.random() < 0.2) { // 20% chance to apply a status effect on attack
-          statusEffect = ['burn', 'freeze', 'poison'][Math.floor(Math.random() * 3)];
-        }
-        break;
-      case 'special':
-        const specialAbility = getSpecialAbility(aiTeddy.name);
-        const specialResult = specialAbility.effect(aiTeddy, playerTeddy, battleState);
-        damage = specialResult.damage;
-        statusEffect = specialResult.statusEffect;
-        break;
-      case 'defend':
-        defenseBoost = Math.floor(aiTeddy.defense * 0.5);
-        break;
-      default:
-        if (action.startsWith('use_item_')) {
-          const itemIndex = parseInt(action.split('_')[2]);
-          const item = battleState.opponentItems[itemIndex];
-          return item.effect(battleState, false);
-        }
-    }
-
-    return { damage, defenseBoost, statusEffect };
+  // Adjust weights based on battle state
+  if (battleState.opponentHealth < 30) {
+    weights = [0.4, 0.4, 0.2]; // More defensive when low on health
   }
-};
 
-export default AIOpponent;
+  if (battleState.opponentEnergy >= 2) {
+    weights[2] += 0.2; // Increase chance of special move when energy is available
+  }
+
+  if (battleState.playerHealth < 20) {
+    weights[0] += 0.2; // Increase chance of attack when player is low on health
+  }
+
+  // Consider combo potential
+  const lastTwoMoves = battleState.opponentCombo.slice(-2);
+  if (lastTwoMoves.length === 2 && lastTwoMoves[0] === lastTwoMoves[1]) {
+    weights[actions.indexOf(lastTwoMoves[0])] += 0.1; // Slightly increase chance of continuing the combo
+  }
+
+  // Make decision
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  const randomValue = Math.random() * totalWeight;
+  let cumulativeWeight = 0;
+
+  for (let i = 0; i < actions.length; i++) {
+    cumulativeWeight += weights[i];
+    if (randomValue <= cumulativeWeight) {
+      return actions[i];
+    }
+  }
+
+  return 'attack'; // Fallback
+};

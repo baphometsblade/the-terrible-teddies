@@ -1,28 +1,25 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion, AnimatePresence } from 'framer-motion';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const BattleLog = ({ battleLog }) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Battle Log</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="list-disc pl-5">
-          {battleLog.slice(-5).map((log, index) => (
-            <motion.li
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              {log}
-            </motion.li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+    <ScrollArea className="h-40 w-full border rounded-md p-4">
+      <AnimatePresence>
+        {battleLog.map((log, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+            className="mb-2"
+          >
+            {log}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </ScrollArea>
   );
 };
 

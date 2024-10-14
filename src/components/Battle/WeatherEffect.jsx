@@ -1,75 +1,54 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const WeatherEffect = ({ weatherEffect }) => {
-  if (!weatherEffect) return null;
+const WeatherEffect = ({ weather }) => {
+  if (!weather) return null;
 
   const weatherAnimations = {
-    Sunny: {
+    'Sunny': {
       component: (
         <motion.div
           className="absolute inset-0 bg-yellow-200 opacity-30"
-          animate={{ opacity: [0.2, 0.4, 0.2] }}
-          transition={{ repeat: Infinity, duration: 2 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.3 }}
+          transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse' }}
         />
       ),
+      description: 'The warm sun energizes the teddies.'
     },
-    Rainy: {
+    'Rainy': {
       component: (
         <motion.div
-          className="absolute inset-0"
-          initial={{ backgroundPosition: '0 -100%' }}
-          animate={{ backgroundPosition: '0 100%' }}
-          transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-          style={{
-            backgroundImage: 'url("/images/rain.png")',
-            backgroundSize: '200px 200px',
-            opacity: 0.3,
-          }}
+          className="absolute inset-0 bg-blue-200 opacity-30"
+          initial={{ y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 0.3 }}
+          transition={{ duration: 1, repeat: Infinity }}
         />
       ),
+      description: 'The rain dampens the teddies\' spirits.'
     },
-    Windy: {
+    'Windy': {
       component: (
         <motion.div
-          className="absolute inset-0"
-          animate={{ x: [-10, 10, -10] }}
-          transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-          style={{
-            backgroundImage: 'url("/images/wind.png")',
-            backgroundSize: 'cover',
-            opacity: 0.2,
-          }}
-        />
+          className="absolute inset-0 flex items-center justify-center"
+          initial={{ rotate: 0 }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+        >
+          <div className="w-20 h-20 border-t-4 border-blue-500 rounded-full" />
+        </motion.div>
       ),
+      description: 'Strong winds make it harder for the teddies to move.'
     },
-    Stormy: {
-      component: (
-        <>
-          <motion.div
-            className="absolute inset-0 bg-gray-800 opacity-40"
-            animate={{ opacity: [0.3, 0.5, 0.3] }}
-            transition={{ repeat: Infinity, duration: 3 }}
-          />
-          <motion.div
-            className="absolute inset-0"
-            animate={{ opacity: [0, 1, 0] }}
-            transition={{ repeat: Infinity, duration: 0.5, times: [0, 0.1, 1] }}
-            style={{
-              backgroundImage: 'url("/images/lightning.png")',
-              backgroundSize: 'cover',
-            }}
-          />
-        </>
-      ),
-    },
+    // Add more weather effects here
   };
+
+  const currentWeather = weatherAnimations[weather.name];
 
   return (
     <div className="relative">
-      <h2 className="text-xl font-bold mb-2">Current Weather: {weatherEffect.name}</h2>
-      <p className="mb-4">{weatherEffect.description}</p>
-      {weatherAnimations[weatherEffect.name].component}
+      {currentWeather.component}
+      <p className="text-center mt-2">{currentWeather.description}</p>
     </div>
   );
 };

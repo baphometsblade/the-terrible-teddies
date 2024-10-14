@@ -7,9 +7,11 @@ import BattleLog from './BattleLog';
 import PowerUpMeter from './PowerUpMeter';
 import ComboMeter from './ComboMeter';
 import WeatherEffect from './WeatherEffect';
+import AIOpponent from './AIOpponent';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { useBattleLogic } from '../../hooks/useBattleLogic';
+import { motion } from 'framer-motion';
 
 const BattleSystem = ({ playerTeddy }) => {
   const [opponentTeddy, setOpponentTeddy] = useState(null);
@@ -21,7 +23,12 @@ const BattleSystem = ({ playerTeddy }) => {
     handleCombo,
     isLoadingPlayerTeddy,
     isLoadingOpponentTeddy,
+    playerTeddyData,
+    opponentTeddyData,
+    aiAction,
   } = useBattleLogic(playerTeddy, opponentTeddy);
+
+  const [battleAnimation, setBattleAnimation] = useState(null);
 
   const { data: opponents, isLoading: isLoadingOpponents } = useQuery({
     queryKey: ['opponents'],
@@ -76,22 +83,41 @@ const BattleSystem = ({ playerTeddy }) => {
     }
   };
 
+  const handlePlayerAction = async (action) => {
+    setBattleAnimation(action);
+    await handleAction(action);
+    setTimeout(() => setBattleAnimation(null), 1000);
+
+    // AI opponent's turn
+    setTimeout(async () => {
+      const aiActionResult = await aiAction();
+      setBattleAnimation(aiActionResult.action);
+      setTimeout(() => setBattleAnimation(null), 1000);
+    }, 1500);
+  };
+
   if (isLoadingPlayerTeddy || isLoadingOpponentTeddy || isLoadingOpponents) {
     return <div>Loading battle data...</div>;
   }
 
   return (
-    <div className="battle-system p-4 bg-gray-100 rounded-lg shadow-lg">
+    <motion.div 
+      className="battle-system p-4 bg-gray-100 rounded-lg shadow-lg"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <WeatherEffect weather={battleState.weatherEffect} />
       <BattleField
         battleState={battleState}
-        playerTeddyData={playerTeddy}
-        opponentTeddyData={opponentTeddy}
+        playerTeddyData={playerTeddyData}
+        opponentTeddyData={opponentTeddyData}
+        battleAnimation={battleAnimation}
       />
       <BattleActions
         currentTurn={battleState.currentTurn}
         playerEnergy={battleState.playerEnergy}
-        onAction={handleAction}
+        onAction={handlePlayerAction}
       />
       <div className="flex justify-between mt-4">
         <PowerUpMeter value={battleState.powerUpMeter} onPowerUp={handlePowerUp} />
@@ -104,7 +130,7 @@ const BattleSystem = ({ playerTeddy }) => {
       >
         End Battle
       </Button>
-    </div>
+    </motion.div>
   );
 };
 

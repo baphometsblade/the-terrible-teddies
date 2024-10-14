@@ -6,6 +6,7 @@ import { applyBattleEvent } from '../utils/battleEvents';
 import { getWeatherEffect } from '../utils/weatherEffects';
 import { applyWeatherEffect, applyStatusEffects } from '../utils/battleEffects';
 import { calculateDamage } from '../utils/battleUtils';
+import { getAIAction } from '../utils/AIOpponent';
 
 export const useBattleLogic = (playerTeddy, opponentTeddy) => {
   const [battleState, setBattleState] = useState({
@@ -19,6 +20,10 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     comboMeter: 0,
     battleLog: [],
     roundCount: 0,
+    playerStatusEffects: [],
+    opponentStatusEffects: [],
+    playerCombo: [],
+    opponentCombo: [],
   });
 
   const { data: playerTeddyData, isLoading: isLoadingPlayerTeddy } = useQuery({
@@ -73,22 +78,25 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     setBattleState(statusUpdatedState);
   }, [battleState.roundCount, battleState.weatherEffect, playerTeddyData, opponentTeddyData]);
 
-  const handleAction = (action) => {
+  const handleAction = async (action) => {
     let newState = { ...battleState };
     let damage = 0;
 
     if (action === 'attack') {
-      damage = calculateDamage(playerTeddyData, opponentTeddyData);
+      damage = calculateDamage(playerTeddyData, opponentTeddyData, newState.weatherEffect);
       newState.opponentHealth -= damage;
       newState.battleLog.push(`${playerTeddyData.name} attacks for ${damage} damage!`);
+      newState.playerCombo.push('attack');
     } else if (action === 'defend') {
       newState.playerEnergy += 1;
       newState.battleLog.push(`${playerTeddyData.name} defends and gains 1 energy!`);
+      newState.playerCombo.push('defend');
     } else if (action === 'special' && newState.playerEnergy >= 2) {
       const specialAbility = playerTeddyData.specialAbility;
       const specialResult = specialAbility.effect(playerTeddyData, opponentTeddyData, newState);
       newState = { ...newState, ...specialResult };
       newState.playerEnergy -= 2;
+      newState.playerCombo.push('special');
     }
 
     newState.powerUpMeter = Math.min(newState.powerUpMeter + 10, 100);
@@ -96,7 +104,12 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     newState.currentTurn = 'opponent';
     newState.roundCount += 1;
 
+    if (newState.playerCombo.length > 3) {
+      newState.playerCombo.shift();
+    }
+
     setBattleState(newState);
+    return newState;
   };
 
   const handlePowerUp = () => {
@@ -124,11 +137,45 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     }
   };
 
+  const aiAction = async () => {
+    const action = getAIAction(opponentTeddyData, playerTeddyData, battleState);
+    let newState = { ...battleState };
+    let damage = 0;
+
+    if (action === 'attack') {
+      damage = calculateDamage(opponentTeddyData, playerTeddyData, newState.weatherEffect);
+      newState.playerHealth -= damage;
+      newState.battleLog.push(`${opponentTeddyData.name} attacks for ${damage} damage!`);
+      newState.opponentCombo.push('attack');
+    } else if (action === 'defend') {
+      newState.opponentEnergy += 1;
+      newState.battleLog.push(`${opponentTeddyData.name} defends and gains 1 energy!`);
+      newState.opponentCombo.push('defend');
+    } else if (action === 'special' && newState.opponentEnergy >= 2) {
+      const specialAbility = opponentTeddyData.specialAbility;
+      const specialResult = specialAbility.effect(opponentTeddyData, playerTeddyData, newState);
+      newState = { ...newState, ...specialResult };
+      newState.opponentEnergy -= 2;
+      newState.opponentCombo.push('special');
+    }
+
+    newState.currentTurn = 'player';
+    newState.roundCount += 1;
+
+    if (newState.opponentCombo.length > 3) {
+      newState.opponentCombo.shift();
+    }
+
+    setBattleState(newState);
+    return { action, newState };
+  };
+
   return {
     battleState,
     handleAction,
     handlePowerUp,
     handleCombo,
+    aiAction,
     isLoadingPlayerTeddy,
     isLoadingOpponentTeddy,
     playerTeddyData,
