@@ -104,9 +104,25 @@ export const useBattleLogic = (battleId) => {
          .filter(p => p.duration > 0)
     );
 
+    setMoveHistory(prev => [...prev, action]);
+    const combo = checkForCombo(moveHistory);
+    if (combo) {
+      const comboResult = applyComboEffect(combo, battle.player1_teddy, battle.player2_teddy);
+      setBattleLog(prevLog => [...prevLog, comboResult]);
+      setComboMeter(0);
+    } else {
+      setComboMeter(prev => Math.min(prev + 20, 100));
+    }
+
     if (action === 'special') {
       const specialAbilityResult = useSpecialAbility(battle.player1_teddy, battle.player2_teddy, battle);
       setBattleLog(prevLog => [...prevLog, specialAbilityResult]);
+    }
+
+    // Check for achievements after each action
+    const newAchievements = checkAchievements(battle, action);
+    if (newAchievements.length > 0) {
+      setAchievements(prev => [...prev, ...newAchievements]);
     }
   };
 
@@ -128,12 +144,13 @@ export const useBattleLogic = (battleId) => {
     if (comboMeter === 100) {
       const combo = checkForCombo(moveHistory);
       if (combo) {
-        applyComboEffect(combo, battle.player1_teddy, battle.player2_teddy);
-        setBattleLog(prevLog => [...prevLog, `Combo activated: ${combo.name}`]);
+        const comboResult = applyComboEffect(combo, battle.player1_teddy, battle.player2_teddy);
+        setBattleLog(prevLog => [...prevLog, comboResult]);
         setComboMeter(0);
       }
     }
   };
+
   return {
     battle,
     isLoading,

@@ -145,7 +145,7 @@ const BattleArena = () => {
         <TeddyTraits teddy={battle.player1_teddy} />
       </div>
       <div className="flex justify-between mb-4">
-        <PowerUpMeter powerUpMeter={powerUpMeter} onPowerUp={activatePowerUp} />
+        <PowerUpMeter powerUpMeter={powerUpMeter} onPowerUp={handlePowerUp} />
         <ComboMeter comboMeter={comboMeter} onCombo={handleCombo} />
       </div>
       <ActionButtons 
