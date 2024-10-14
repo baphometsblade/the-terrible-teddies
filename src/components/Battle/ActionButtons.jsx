@@ -1,32 +1,37 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
+import { Sword, Shield, Zap, Sparkles } from 'lucide-react';
 
-const ActionButtons = ({ onAction, isDisabled, playerStuffing }) => {
+const ActionButtons = ({ onAction, onPowerUp, onCombo, powerUpReady, comboReady, isDisabled }) => {
   return (
-    <div className="mb-4 flex flex-wrap gap-2">
+    <div className="action-buttons grid grid-cols-2 gap-2 mb-4">
       <Button 
         onClick={() => onAction('attack')}
-        disabled={isDisabled || playerStuffing < 1}
+        disabled={isDisabled}
+        className="bg-red-500 hover:bg-red-600 text-white"
       >
-        Attack (1 SP)
+        <Sword className="mr-2 h-4 w-4" /> Attack
       </Button>
       <Button 
         onClick={() => onAction('defend')}
-        disabled={isDisabled || playerStuffing < 1}
+        disabled={isDisabled}
+        className="bg-blue-500 hover:bg-blue-600 text-white"
       >
-        Defend (1 SP)
+        <Shield className="mr-2 h-4 w-4" /> Defend
       </Button>
       <Button 
-        onClick={() => onAction('heal')}
-        disabled={isDisabled || playerStuffing < 2}
+        onClick={onPowerUp}
+        disabled={isDisabled || !powerUpReady}
+        className="bg-yellow-500 hover:bg-yellow-600 text-white"
       >
-        Heal (2 SP)
+        <Zap className="mr-2 h-4 w-4" /> Power-Up
       </Button>
       <Button 
-        onClick={() => onAction('special')}
-        disabled={isDisabled || playerStuffing < 3}
+        onClick={onCombo}
+        disabled={isDisabled || !comboReady}
+        className="bg-purple-500 hover:bg-purple-600 text-white"
       >
-        Special Move (3 SP)
+        <Sparkles className="mr-2 h-4 w-4" /> Combo
       </Button>
     </div>
   );

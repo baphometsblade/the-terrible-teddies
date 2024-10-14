@@ -19,6 +19,9 @@ import SpecialAbility from './SpecialAbility';
 import { checkAchievements } from '../../utils/achievementSystem';
 import { applyBattleEvent } from '../../utils/battleEvents';
 import { checkForCombo, applyComboEffect } from '../../utils/comboSystem';
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Zap, Shield, Swords } from 'lucide-react';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const {
@@ -52,8 +55,6 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
     if (battleState.roundCount % 3 === 0) {
       const updatedState = applyBattleEvent(battleState);
       // Update the battle state with the new event effects
-      // This would typically be done through a state update function
-      // that's part of the useBattleLogic hook
     }
   }, [battleState.roundCount, playSound]);
 
@@ -78,14 +79,12 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
     if (combo) {
       const comboEffect = applyComboEffect(combo, playerTeddy, opponentTeddy);
       // Apply combo effect to battle state
-      // This would typically be done through a state update function
-      // that's part of the useBattleLogic hook
       playSound('combo');
     }
   };
 
-  if (isLoading) return <div>Loading battle data...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (isLoading) return <div className="text-center p-8">Loading battle data...</div>;
+  if (error) return <div className="text-center p-8 text-red-500">Error: {error.message}</div>;
 
   return (
     <motion.div 
@@ -100,9 +99,29 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
         <WeatherEffect weatherEffect={battleState.weatherEffect} />
         <WeatherForecast currentWeather={battleState.weatherEffect} roundCount={battleState.roundCount} />
 
-        <div className="flex justify-between mb-4">
-          <TeddyEvolution teddy={playerTeddy} isEvolved={battleState.playerIsEvolved} />
-          <TeddyEvolution teddy={opponentTeddy} isEvolved={battleState.opponentIsEvolved} />
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <Card>
+            <CardContent className="p-4">
+              <TeddyEvolution teddy={playerTeddy} isEvolved={battleState.playerIsEvolved} />
+              <Progress value={(battleState.playerHealth / playerTeddy.maxHealth) * 100} className="mt-2" />
+              <div className="flex justify-between mt-2">
+                <span><Zap className="inline mr-1" /> {battleState.playerEnergy}</span>
+                <span><Shield className="inline mr-1" /> {battleState.playerDefense}</span>
+                <span><Swords className="inline mr-1" /> {battleState.playerAttack}</span>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <TeddyEvolution teddy={opponentTeddy} isEvolved={battleState.opponentIsEvolved} />
+              <Progress value={(battleState.opponentHealth / opponentTeddy.maxHealth) * 100} className="mt-2" />
+              <div className="flex justify-between mt-2">
+                <span><Zap className="inline mr-1" /> {battleState.opponentEnergy}</span>
+                <span><Shield className="inline mr-1" /> {battleState.opponentDefense}</span>
+                <span><Swords className="inline mr-1" /> {battleState.opponentAttack}</span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <BattleField battleState={battleState} />
@@ -136,7 +155,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
           )}
         </div>
 
-        <div className="flex justify-between mb-4">
+        <div className="grid grid-cols-2 gap-4 mb-4">
           <PowerUpMeter value={battleState.powerUpMeter} />
           <ComboMeter value={battleState.comboMeter} />
         </div>
