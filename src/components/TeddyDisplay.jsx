@@ -2,9 +2,10 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { ImageOff } from 'lucide-react';
 
-const TeddyDisplay = () => {
+const TeddyDisplay = ({ onSelect }) => {
   const { data: teddies, isLoading, error } = useQuery({
     queryKey: ['teddies'],
     queryFn: async () => {
@@ -22,7 +23,7 @@ const TeddyDisplay = () => {
 
   return (
     <div className="mt-8">
-      <h2 className="text-2xl font-bold mb-4">Terrible Teddies</h2>
+      <h2 className="text-2xl font-bold mb-4">Your Terrible Teddies</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {teddies.map(teddy => (
           <Card key={teddy.id} className="overflow-hidden">
@@ -53,6 +54,9 @@ const TeddyDisplay = () => {
                 <span><strong>Defense:</strong> {teddy.defense}</span>
               </div>
               <p className="mt-2 text-sm"><strong>Special Move:</strong> {teddy.special_move}</p>
+              <Button onClick={() => onSelect(teddy)} className="mt-4 w-full">
+                Select
+              </Button>
             </CardContent>
           </Card>
         ))}
