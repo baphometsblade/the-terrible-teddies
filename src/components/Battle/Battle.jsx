@@ -18,6 +18,7 @@ import BattleArenaBackground from './BattleArenaBackground';
 import SpecialAbility from './SpecialAbility';
 import { checkAchievements } from '../../utils/achievementSystem';
 import { applyBattleEvent } from '../../utils/battleEvents';
+import { checkForCombo, applyComboEffect } from '../../utils/comboSystem';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const {
@@ -34,6 +35,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const [crowdMood, setCrowdMood] = useState('neutral');
   const { playSound } = useSound();
   const [achievements, setAchievements] = useState([]);
+  const [comboMoves, setComboMoves] = useState([]);
 
   useEffect(() => {
     if (battleState.playerHealth <= 0 || battleState.opponentHealth <= 0) {
@@ -69,7 +71,17 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
     setAnimation(action);
     performAction(action);
     playSound(action);
+    setComboMoves([...comboMoves, action]);
     setTimeout(() => setAnimation(null), 1000);
+
+    const combo = checkForCombo(comboMoves);
+    if (combo) {
+      const comboEffect = applyComboEffect(combo, playerTeddy, opponentTeddy);
+      // Apply combo effect to battle state
+      // This would typically be done through a state update function
+      // that's part of the useBattleLogic hook
+      playSound('combo');
+    }
   };
 
   if (isLoading) return <div>Loading battle data...</div>;
