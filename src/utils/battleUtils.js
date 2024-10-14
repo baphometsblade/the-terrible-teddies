@@ -31,7 +31,6 @@ export const calculateHealAmount = (baseHeal, currentHealth, maxHealth) => {
   return Math.round(actualHeal * randomFactor);
 };
 
-
 export const drawCard = (count) => {
   const drawnCards = [];
   for (let i = 0; i < count; i++) {
@@ -41,7 +40,6 @@ export const drawCard = (count) => {
   return drawnCards;
 };
 
-export const simulateAIAction = (battleState, playerTeddy, opponentTeddy, playerHand, opponentHand, playerAction, playerCardId) => {
 export const simulateAIAction = (battleState, playerTeddy, opponentTeddy, playerHand, opponentHand, playerAction, playerCardId) => {
   if (!playerTeddy || !opponentTeddy) {
     throw new Error("Missing teddy information");
@@ -133,5 +131,3 @@ export const simulateAIAction = (battleState, playerTeddy, opponentTeddy, player
     updatedOpponentHand,
   };
 };
-
-// ... keep existing code
