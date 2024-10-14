@@ -23,9 +23,29 @@ const traits = [
     name: "Energetic",
     description: "Starts battle with 1 extra energy",
     effect: (teddy) => ({ ...teddy, initialEnergy: (teddy.initialEnergy || 3) + 1 })
+  },
+  {
+    name: "Berserker",
+    description: "Gains 5% attack for each 10% health lost",
+    effect: (teddy) => ({ ...teddy, berserk: true })
+  },
+  {
+    name: "Vampiric",
+    description: "Heals for 10% of damage dealt",
+    effect: (teddy) => ({ ...teddy, vampiric: 0.1 })
+  },
+  {
+    name: "Thorny",
+    description: "Reflects 10% of received damage back to the attacker",
+    effect: (teddy) => ({ ...teddy, thornDamage: 0.1 })
   }
 ];
 
 export const getRandomTrait = () => traits[Math.floor(Math.random() * traits.length)];
 
 export const applyTrait = (teddy, trait) => trait.effect(teddy);
+
+export const getTraitDescription = (traitName) => {
+  const trait = traits.find(t => t.name === traitName);
+  return trait ? trait.description : "Unknown trait";
+};

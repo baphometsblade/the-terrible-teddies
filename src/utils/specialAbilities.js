@@ -1,35 +1,28 @@
 const specialAbilities = {
   "Whiskey Whiskers": {
-    name: "Intoxicating Aroma",
-    description: "Releases a potent whiskey scent, confusing the opponent and reducing their attack by 25% for 2 turns.",
-    effect: (user, target, battle) => {
-      target.attack *= 0.75;
-      battle.addEffect({
-        name: "Intoxicated",
-        duration: 2,
-        endTurn: () => {
-          target.attack /= 0.75;
-        }
-      });
-      return `${user.name} used Intoxicating Aroma! ${target.name}'s attack was reduced!`;
-    }
+    name: "On the Rocks",
+    description: "Lowers the opponent's defense by 2 with his intoxicating charisma.",
+    energyCost: 2,
+    effect: (attacker, defender, battleState) => {
+      const newDefense = Math.max(0, defender.defense - 2);
+      return {
+        ...battleState,
+        opponentDefense: newDefense,
+        battleLog: [...battleState.battleLog, `${attacker.name} uses On the Rocks, lowering ${defender.name}'s defense to ${newDefense}!`],
+      };
+    },
   },
   "Madame Mistletoe": {
-    name: "Festive Frenzy",
-    description: "Throws a barrage of ornaments, dealing damage and potentially stunning the opponent for 1 turn.",
-    effect: (user, target, battle) => {
-      const damage = Math.floor(user.attack * 1.2);
-      target.health -= damage;
-      if (Math.random() < 0.3) {
-        battle.addEffect({
-          name: "Stunned",
-          duration: 1,
-          startTurn: () => false // Prevent turn
-        });
-        return `${user.name} used Festive Frenzy! ${target.name} took ${damage} damage and was stunned!`;
-      }
-      return `${user.name} used Festive Frenzy! ${target.name} took ${damage} damage!`;
-    }
+    name: "Sneak Kiss",
+    description: "Stuns the opponent with a surprise smooch, causing them to skip their next turn.",
+    energyCost: 3,
+    effect: (attacker, defender, battleState) => {
+      return {
+        ...battleState,
+        opponentStunned: true,
+        battleLog: [...battleState.battleLog, `${attacker.name} uses Sneak Kiss, stunning ${defender.name} for the next turn!`],
+      };
+    },
   },
   "Baron Von Blubber": {
     name: "Pompous Proclamation",
@@ -86,10 +79,9 @@ export const getSpecialAbility = (teddyName) => {
   return specialAbilities[teddyName] || null;
 };
 
-export const useSpecialAbility = (user, target, battle) => {
-  const ability = getSpecialAbility(user.name);
-  if (!ability) {
-    return `${user.name} doesn't have a special ability!`;
-  }
-  return ability.effect(user, target, battle);
+export const useSpecialAbility = (attacker, defender, battleState) => {
+  const ability = getSpecialAbility(attacker.name);
+  if (!ability) return battleState;
+
+  return ability.effect(attacker, defender, battleState);
 };
