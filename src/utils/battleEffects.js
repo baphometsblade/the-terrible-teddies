@@ -38,6 +38,27 @@ const battleEffects = [
       attacker.specialMultiplier = 2;
       defender.specialMultiplier = 2;
     }
+  },
+  {
+    name: "Fluff Frenzy",
+    description: "A whirlwind of fluff surrounds the battlefield, swapping the attack and defense values of both teddies.",
+    effect: (attacker, defender) => {
+      [attacker.attack, attacker.defense] = [attacker.defense, attacker.attack];
+      [defender.attack, defender.defense] = [defender.defense, defender.attack];
+    }
+  },
+  {
+    name: "Cuddle Confusion",
+    description: "A wave of cuddliness washes over the teddies, causing them to forget their moves. Randomly reassign attack and defense values.",
+    effect: (attacker, defender) => {
+      const reassignStats = (teddy) => {
+        const totalStats = teddy.attack + teddy.defense;
+        teddy.attack = Math.floor(Math.random() * totalStats);
+        teddy.defense = totalStats - teddy.attack;
+      };
+      reassignStats(attacker);
+      reassignStats(defender);
+    }
   }
 ];
 
@@ -47,4 +68,8 @@ export const generateRandomBattleEffect = () => {
 
 export const applyBattleEffect = (effect, attacker, defender) => {
   effect.effect(attacker, defender);
+};
+
+export const describeBattleEffect = (effect) => {
+  return `${effect.name}: ${effect.description}`;
 };

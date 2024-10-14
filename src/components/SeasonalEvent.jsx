@@ -4,9 +4,11 @@ import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from 'framer-motion';
+import SeasonalEventShop from './SeasonalEventShop';
 
 const SeasonalEvent = () => {
   const [participation, setParticipation] = useState(false);
+  const [showShop, setShowShop] = useState(false);
   const { toast } = useToast();
 
   const { data: event, isLoading, error } = useQuery({
@@ -86,7 +88,13 @@ const SeasonalEvent = () => {
           {participateMutation.isLoading ? 'Joining...' : 'Join Event'}
         </Button>
       ) : (
-        <p className="text-green-500 font-bold">You're participating in this event!</p>
+        <>
+          <p className="text-green-500 font-bold mb-4">You're participating in this event!</p>
+          <Button onClick={() => setShowShop(!showShop)} className="mb-4">
+            {showShop ? 'Hide Event Shop' : 'Show Event Shop'}
+          </Button>
+          {showShop && <SeasonalEventShop eventId={event.id} />}
+        </>
       )}
     </motion.div>
   );

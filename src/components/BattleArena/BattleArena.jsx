@@ -8,7 +8,8 @@ import BattleStatus from './BattleStatus';
 import BattleLog from './BattleLog';
 import AIOpponent from '../../utils/AIOpponent';
 import { motion, AnimatePresence } from 'framer-motion';
-import { generateRandomBattleEffect } from '../../utils/battleEffects';
+import { generateRandomBattleEffect, applyBattleEffect } from '../../utils/battleEffects';
+import { Button } from "@/components/ui/button";
 
 const BattleArena = () => {
   const [battleId, setBattleId] = useState(null);
@@ -17,6 +18,7 @@ const BattleArena = () => {
   const [battleLog, setBattleLog] = useState([]);
   const [animationState, setAnimationState] = useState('idle');
   const [battleEffect, setBattleEffect] = useState(null);
+  const [powerUpMeter, setPowerUpMeter] = useState(0);
   const { toast } = useToast();
 
   const { data: battle, isLoading, error, refetch } = useQuery({
@@ -136,6 +138,29 @@ const BattleArena = () => {
         battleActionMutation.mutate({ action: aiAction });
       }, 1000);
     }
+    // Increase power-up meter
+    setPowerUpMeter(prev => Math.min(prev + 10, 100));
+  };
+
+  const handlePowerUp = () => {
+    if (powerUpMeter === 100) {
+      // Apply power-up effect
+      const powerUpEffect = {
+        name: "Ultimate Power-Up",
+        description: "Your teddy's stats are doubled for this turn!",
+        effect: (attacker) => {
+          attacker.attack *= 2;
+          attacker.defense *= 2;
+        }
+      };
+      applyBattleEffect(powerUpEffect, battle.player1_teddy, battle.player2_teddy);
+      setPowerUpMeter(0);
+      toast({
+        title: "Power-Up Activated!",
+        description: powerUpEffect.description,
+        variant: "success",
+      });
+    }
   };
 
   if (isLoading) return <div>Loading battle...</div>;
@@ -151,6 +176,19 @@ const BattleArena = () => {
     >
       <h1 className="text-3xl font-bold mb-4">Battle Arena</h1>
       <BattleField battle={battle} animationState={animationState} battleEffect={battleEffect} />
+      <div className="mb-4">
+        <h2 className="text-xl font-bold">Power-Up Meter</h2>
+        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+          <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${powerUpMeter}%` }}></div>
+        </div>
+        <Button 
+          onClick={handlePowerUp} 
+          disabled={powerUpMeter < 100}
+          className="mt-2"
+        >
+          Activate Power-Up
+        </Button>
+      </div>
       <ActionButtons 
         onAction={handleAction} 
         isDisabled={battleActionMutation.isLoading || battle.status === 'finished' || battle.current_turn !== battle.player1_id}

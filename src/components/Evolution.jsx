@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 const Evolution = ({ teddy }) => {
   const [isEvolving, setIsEvolving] = useState(false);
   const [evolutionProgress, setEvolutionProgress] = useState(0);
+  const [evolutionStage, setEvolutionStage] = useState(1);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -39,6 +40,7 @@ const Evolution = ({ teddy }) => {
       });
       setIsEvolving(false);
       setEvolutionProgress(0);
+      setEvolutionStage(evolvedTeddy.level);
     },
     onError: (error) => {
       toast({
@@ -55,6 +57,16 @@ const Evolution = ({ teddy }) => {
     evolveMutation.mutate();
   };
 
+  const getEvolutionStageDescription = (stage) => {
+    switch (stage) {
+      case 1: return "Cute and Cuddly";
+      case 2: return "Mischievous Prankster";
+      case 3: return "Battle-Hardened Warrior";
+      case 4: return "Legendary Champion";
+      default: return "Ultimate Teddy God";
+    }
+  };
+
   return (
     <motion.div 
       className="evolution-container p-4 bg-gray-100 rounded-lg"
@@ -63,7 +75,8 @@ const Evolution = ({ teddy }) => {
       transition={{ duration: 0.3 }}
     >
       <h2 className="text-2xl font-bold mb-4">Evolve {teddy.name}</h2>
-      <p className="mb-4">Current Level: {teddy.level}</p>
+      <p className="mb-2">Current Level: {teddy.level}</p>
+      <p className="mb-4">Evolution Stage: {getEvolutionStageDescription(evolutionStage)}</p>
       <AnimatePresence>
         {isEvolving && (
           <motion.div
@@ -77,12 +90,12 @@ const Evolution = ({ teddy }) => {
       </AnimatePresence>
       <Button 
         onClick={handleEvolve} 
-        disabled={isEvolving || teddy.level >= 10}
+        disabled={isEvolving || teddy.level >= 5}
         className="w-full"
       >
         {isEvolving ? 'Evolving...' : 'Evolve'}
       </Button>
-      {teddy.level >= 10 && (
+      {teddy.level >= 5 && (
         <p className="mt-2 text-sm text-gray-500">
           This teddy has reached maximum evolution.
         </p>
