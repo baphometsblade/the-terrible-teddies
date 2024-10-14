@@ -32,6 +32,11 @@ const AIOpponent = {
       weights[2] += 0.1; // Increase chance of defend in rainy weather
     }
 
+    // Consider combo potential
+    if (battleState.aiComboMeter >= 80) {
+      weights[1] += 0.2; // Increase chance of special move to potentially trigger combo
+    }
+
     const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
     const randomValue = Math.random() * totalWeight;
     let weightSum = 0;

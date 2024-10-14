@@ -8,8 +8,10 @@ import BattleLog from './BattleLog';
 import PowerUpMeter from './PowerUpMeter';
 import ComboMeter from './ComboMeter';
 import { useBattleLogic } from '../../hooks/useBattleLogic';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getWeatherEffect } from '../../utils/battleUtils';
+import { useSound } from '../../hooks/useSound';
+import BattleAnimation from './BattleAnimation';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const {
@@ -26,20 +28,31 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   } = useBattleLogic(playerTeddy, opponentTeddy);
 
   const [weatherEffect, setWeatherEffect] = useState(null);
+  const [animation, setAnimation] = useState(null);
+
+  const { playSound } = useSound();
 
   useEffect(() => {
     if (battleState.playerHealth <= 0 || battleState.opponentHealth <= 0) {
+      playSound(battleState.playerHealth > 0 ? 'victory' : 'defeat');
       onBattleEnd(battleState.playerHealth > 0 ? 'win' : 'lose');
     }
-  }, [battleState.playerHealth, battleState.opponentHealth, onBattleEnd]);
+  }, [battleState.playerHealth, battleState.opponentHealth, onBattleEnd, playSound]);
 
   useEffect(() => {
-    // Change weather every 5 rounds
     if (battleState.roundCount % 5 === 0) {
       const newWeather = getWeatherEffect();
       setWeatherEffect(newWeather);
+      playSound('weatherChange');
     }
-  }, [battleState.roundCount]);
+  }, [battleState.roundCount, playSound]);
+
+  const handleActionWithAnimation = (action) => {
+    setAnimation(action);
+    performAction(action);
+    playSound(action);
+    setTimeout(() => setAnimation(null), 1000);
+  };
 
   if (isLoading) return <div>Loading battle data...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -58,10 +71,16 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
 
       <BattleField battleState={battleState} weatherEffect={weatherEffect} />
       
+      <AnimatePresence>
+        {animation && (
+          <BattleAnimation action={animation} attacker={currentTurn === 'player' ? playerTeddy : opponentTeddy} />
+        )}
+      </AnimatePresence>
+
       <div className="battle-actions mb-4">
         {currentTurn === 'player' && (
           <ActionButtons 
-            onAction={performAction}
+            onAction={handleActionWithAnimation}
             onPowerUp={handlePowerUp}
             onCombo={handleCombo}
             powerUpReady={powerUpMeter === 100}

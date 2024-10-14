@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { calculateDamage, applyPowerUp, checkForCombo, applyComboEffect, applyStatusEffect, rollForCritical } from '../utils/battleUtils';
 import { checkAchievements } from '../utils/achievementSystem';
@@ -15,7 +15,9 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     playerStatusEffect: null,
     opponentStatusEffect: null,
     currentTurn: 'player',
-    roundCount: 0
+    roundCount: 0,
+    playerExperience: 0,
+    playerLevel: 1,
   });
   const [battleLog, setBattleLog] = useState([]);
   const [powerUpMeter, setPowerUpMeter] = useState(0);
@@ -45,6 +47,17 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
         .select('*')
         .eq('id', opponentTeddy.id)
         .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const updatePlayerTeddyMutation = useMutation({
+    mutationFn: async (updatedTeddy) => {
+      const { data, error } = await supabase
+        .from('terrible_teddies')
+        .update(updatedTeddy)
+        .eq('id', playerTeddy.id);
       if (error) throw error;
       return data;
     },
@@ -116,6 +129,27 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
       const updatedOpponentTeddy = applyStatusEffect(opponentTeddyData, newBattleState.opponentStatusEffect);
       newBattleState.opponentHealth = updatedOpponentTeddy.health;
       setBattleLog(prev => [...prev, `${opponentTeddyData.name} is affected by ${newBattleState.opponentStatusEffect}!`]);
+    }
+
+    // Gain experience
+    newBattleState.playerExperience += Math.floor(damage / 2);
+    
+    // Check for level up
+    if (newBattleState.playerExperience >= newBattleState.playerLevel * 100) {
+      newBattleState.playerLevel++;
+      newBattleState.playerExperience -= (newBattleState.playerLevel - 1) * 100;
+      toast({
+        title: "Level Up!",
+        description: `${playerTeddyData.name} has reached level ${newBattleState.playerLevel}!`,
+      });
+      
+      // Update player teddy stats
+      const updatedTeddy = {
+        ...playerTeddyData,
+        attack: playerTeddyData.attack + 1,
+        defense: playerTeddyData.defense + 1,
+      };
+      updatePlayerTeddyMutation.mutate(updatedTeddy);
     }
 
     newBattleState.currentTurn = 'opponent';
