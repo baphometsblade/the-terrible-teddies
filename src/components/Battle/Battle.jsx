@@ -9,16 +9,20 @@ import ComboMeter from './ComboMeter';
 import BattleAnimation from './BattleAnimation';
 import WeatherEffect from './WeatherEffect';
 import { useToast } from "@/components/ui/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
+  const [difficulty, setDifficulty] = useState('medium');
   const {
     battleState,
     handleAction,
+    handlePowerUp,
+    handleCombo,
     isLoadingPlayerTeddy,
     isLoadingOpponentTeddy,
     playerTeddyData,
     opponentTeddyData
-  } = useBattleLogic(playerTeddy, opponentTeddy);
+  } = useBattleLogic(playerTeddy, opponentTeddy, difficulty);
 
   const [animation, setAnimation] = useState(null);
   const { toast } = useToast();
@@ -47,6 +51,18 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
 
   return (
     <div className="battle-container p-4 bg-gray-100 rounded-lg shadow-lg">
+      <div className="mb-4">
+        <Select onValueChange={setDifficulty} defaultValue={difficulty}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select difficulty" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="easy">Easy</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="hard">Hard</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <WeatherEffect weather={battleState.weatherEffect} />
       <BattleField
         battleState={battleState}
@@ -65,8 +81,8 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
           onAction={handleActionWithAnimation}
         />
         <div className="flex justify-between mt-2">
-          <PowerUpMeter value={battleState.powerUpMeter} />
-          <ComboMeter value={battleState.comboMeter} />
+          <PowerUpMeter value={battleState.powerUpMeter} onPowerUp={handlePowerUp} />
+          <ComboMeter value={battleState.comboMeter} onCombo={handleCombo} />
         </div>
       </div>
       <BattleLog battleLog={battleState.battleLog} />

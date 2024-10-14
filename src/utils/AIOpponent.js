@@ -1,8 +1,15 @@
 import { calculateDamage, rollForCritical } from './battleUtils';
+import { getSpecialAbility } from './specialAbilities';
+
+const difficultyLevels = {
+  easy: 0.7,
+  medium: 1,
+  hard: 1.3,
+};
 
 const AIOpponent = {
-  chooseAction: (aiTeddy, playerTeddy, battleState) => {
-    const actions = ['attack', 'special', 'defend'];
+  chooseAction: (aiTeddy, playerTeddy, battleState, difficulty = 'medium') => {
+    const actions = ['attack', 'defend', 'special'];
     let weights = [
       battleState.opponentHealth > 50 ? 0.6 : 0.3,
       battleState.opponentHealth > 30 ? 0.3 : 0.5,
@@ -43,6 +50,10 @@ const AIOpponent = {
       weights.push(battleState.opponentHealth < 30 ? 0.4 : 0.2);
     }
 
+    // Apply difficulty modifier
+    const difficultyModifier = difficultyLevels[difficulty];
+    weights = weights.map(w => w * difficultyModifier);
+
     const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
     const randomValue = Math.random() * totalWeight;
     let weightSum = 0;
@@ -74,8 +85,10 @@ const AIOpponent = {
         }
         break;
       case 'special':
-        damage = calculateDamage(aiTeddy, playerTeddy, battleState.playerDefenseBoost) * 1.5;
-        statusEffect = 'elemental';
+        const specialAbility = getSpecialAbility(aiTeddy.name);
+        const specialResult = specialAbility.effect(aiTeddy, playerTeddy, battleState);
+        damage = specialResult.damage;
+        statusEffect = specialResult.statusEffect;
         break;
       case 'defend':
         defenseBoost = Math.floor(aiTeddy.defense * 0.5);

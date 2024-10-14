@@ -7,8 +7,9 @@ import { getSpecialAbility } from '../utils/specialAbilities';
 import { applyBattleEvent } from '../utils/battleEvents';
 import { getWeatherEffect } from '../utils/weatherEffects';
 import { applyWeatherEffect, applyStatusEffects } from '../utils/battleEffects';
+import AIOpponent from '../utils/AIOpponent';
 
-export const useBattleLogic = (playerTeddy, opponentTeddy) => {
+export const useBattleLogic = (playerTeddy, opponentTeddy, difficulty = 'medium') => {
   const [battleState, updateBattleState] = useBattleState();
   
   const { data: playerTeddyData, isLoading: isLoadingPlayerTeddy } = useQuery({
@@ -60,6 +61,19 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     updateBattleMutation
   );
 
+  const handlePlayerAction = (action) => {
+    const newState = performAction(action);
+    updateBattleState(newState);
+
+    // AI opponent's turn
+    setTimeout(() => {
+      const aiAction = AIOpponent.chooseAction(opponentTeddyData, playerTeddyData, newState, difficulty);
+      const aiActionResult = AIOpponent.performAction(aiAction, opponentTeddyData, playerTeddyData, newState);
+      const finalState = performAction(aiAction, aiActionResult);
+      updateBattleState(finalState);
+    }, 1000);
+  };
+
   useEffect(() => {
     if (battleState.playerHealth <= 0 || battleState.opponentHealth <= 0) {
       const winner = battleState.playerHealth > 0 ? playerTeddyData.name : opponentTeddyData.name;
@@ -99,7 +113,7 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
 
   return {
     battleState,
-    handleAction: performAction,
+    handleAction: handlePlayerAction,
     handlePowerUp,
     handleCombo,
     isLoadingPlayerTeddy,
