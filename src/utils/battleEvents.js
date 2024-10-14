@@ -29,16 +29,7 @@ const battleEvents = [
       battleLog: [...battleState.battleLog, "A Fabric Frenzy increases dodge chances!"],
     }),
   },
-  {
-    name: "Seam Surge",
-    description: "Energy surges through the teddies' seams, boosting special move damage by 50% this turn.",
-    effect: (battleState) => ({
-      ...battleState,
-      playerSpecialModifier: 1.5,
-      opponentSpecialModifier: 1.5,
-      battleLog: [...battleState.battleLog, "A Seam Surge boosts special move damage!"],
-    }),
-  },
+  // Add more battle events here
 ];
 
 export const generateRandomBattleEvent = () => {

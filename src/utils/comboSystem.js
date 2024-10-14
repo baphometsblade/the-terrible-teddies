@@ -4,18 +4,22 @@ const comboMoves = {
     description: 'Perform two quick attacks in succession',
     effect: (attacker, defender) => {
       const damage = attacker.attack * 1.5;
-      defender.health -= damage;
-      return `${attacker.name} unleashes a Double Strike, dealing ${damage} damage!`;
+      return {
+        opponentHealth: (prevHealth) => Math.max(0, prevHealth - damage),
+        battleLog: [`${attacker.name} unleashes a Double Strike, dealing ${damage} damage!`],
+      };
     }
   },
   'defend-attack': {
     name: 'Counter Strike',
     description: 'Block an incoming attack and counter with a powerful blow',
     effect: (attacker, defender) => {
-      attacker.defense += 2;
       const damage = attacker.attack * 1.2;
-      defender.health -= damage;
-      return `${attacker.name} performs a Counter Strike, increasing defense by 2 and dealing ${damage} damage!`;
+      return {
+        playerStatusEffect: 'defended',
+        opponentHealth: (prevHealth) => Math.max(0, prevHealth - damage),
+        battleLog: [`${attacker.name} performs a Counter Strike, increasing defense and dealing ${damage} damage!`],
+      };
     }
   },
   'special-attack': {
@@ -23,8 +27,10 @@ const comboMoves = {
     description: 'Channel energy into a devastating attack',
     effect: (attacker, defender) => {
       const damage = attacker.attack * 2;
-      defender.health -= damage;
-      return `${attacker.name} launches an Empowered Assault, dealing a massive ${damage} damage!`;
+      return {
+        opponentHealth: (prevHealth) => Math.max(0, prevHealth - damage),
+        battleLog: [`${attacker.name} launches an Empowered Assault, dealing a massive ${damage} damage!`],
+      };
     }
   }
 };
