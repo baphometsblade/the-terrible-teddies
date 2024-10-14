@@ -10,6 +10,8 @@ import BattleAnimation from './BattleAnimation';
 import WeatherEffect from './WeatherEffect';
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import confetti from 'canvas-confetti';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const [difficulty, setDifficulty] = useState('medium');
@@ -35,6 +37,13 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
         description: `${winner} wins the battle!`,
         variant: winner === playerTeddyData.name ? "success" : "destructive",
       });
+      if (winner === playerTeddyData.name) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
       onBattleEnd(battleState.playerHealth > 0 ? 'win' : 'lose');
     }
   }, [battleState.playerHealth, battleState.opponentHealth, playerTeddyData, opponentTeddyData, onBattleEnd, toast]);
@@ -86,6 +95,16 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
         </div>
       </div>
       <BattleLog battleLog={battleState.battleLog} />
+      <motion.div
+        className="mt-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <Button onClick={() => onBattleEnd('forfeit')} variant="outline">
+          Forfeit Battle
+        </Button>
+      </motion.div>
     </div>
   );
 };

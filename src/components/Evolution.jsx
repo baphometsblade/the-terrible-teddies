@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Progress } from "@/components/ui/progress";
+import { getNextEvolution } from '../utils/evolutionPaths';
 
 const Evolution = ({ teddy }) => {
   const [isEvolving, setIsEvolving] = useState(false);
   const [evolutionProgress, setEvolutionProgress] = useState(0);
-  const [evolutionStage, setEvolutionStage] = useState(1);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const nextEvolution = getNextEvolution(teddy.type, teddy.level);
 
   const evolveMutation = useMutation({
     mutationFn: async () => {
@@ -35,12 +37,11 @@ const Evolution = ({ teddy }) => {
       queryClient.invalidateQueries('playerTeddies');
       toast({
         title: "Evolution Successful!",
-        description: `${teddy.name} has evolved to level ${evolvedTeddy.level}!`,
+        description: `${teddy.name} has evolved to ${nextEvolution.name}!`,
         variant: "success",
       });
       setIsEvolving(false);
       setEvolutionProgress(0);
-      setEvolutionStage(evolvedTeddy.level);
     },
     onError: (error) => {
       toast({
@@ -57,16 +58,6 @@ const Evolution = ({ teddy }) => {
     evolveMutation.mutate();
   };
 
-  const getEvolutionStageDescription = (stage) => {
-    switch (stage) {
-      case 1: return "Cute and Cuddly";
-      case 2: return "Mischievous Prankster";
-      case 3: return "Battle-Hardened Warrior";
-      case 4: return "Legendary Champion";
-      default: return "Ultimate Teddy God";
-    }
-  };
-
   return (
     <motion.div 
       className="evolution-container p-4 bg-gray-100 rounded-lg"
@@ -76,7 +67,16 @@ const Evolution = ({ teddy }) => {
     >
       <h2 className="text-2xl font-bold mb-4">Evolve {teddy.name}</h2>
       <p className="mb-2">Current Level: {teddy.level}</p>
-      <p className="mb-4">Evolution Stage: {getEvolutionStageDescription(evolutionStage)}</p>
+      <p className="mb-4">Current Form: {teddy.name}</p>
+      {nextEvolution && (
+        <div className="mb-4">
+          <h3 className="text-xl font-semibold">Next Evolution:</h3>
+          <p>Name: {nextEvolution.name}</p>
+          <p>Attack: {nextEvolution.attack}</p>
+          <p>Defense: {nextEvolution.defense}</p>
+          <p>Special Move: {nextEvolution.special}</p>
+        </div>
+      )}
       <AnimatePresence>
         {isEvolving && (
           <motion.div
