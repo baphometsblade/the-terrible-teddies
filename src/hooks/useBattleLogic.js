@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { generateRandomBattleEffect, applyBattleEffect } from '../utils/battleEffects';
 import AIOpponent from '../utils/AIOpponent';
 import { checkForCombo, applyComboEffect } from '../utils/comboSystem';
+import { checkAchievements } from '../utils/achievementSystem';
 
 export const useBattleLogic = (battleId) => {
   const [animationState, setAnimationState] = useState('idle');
@@ -13,7 +14,8 @@ export const useBattleLogic = (battleId) => {
   const [comboMeter, setComboMeter] = useState(0);
   const [battleLog, setBattleLog] = useState([]);
   const [moveHistory, setMoveHistory] = useState([]);
-  const { toast } = useToast();
+
+  const [achievements, setAchievements] = useState([]);
 
   const { data: battle, isLoading, error, refetch } = useQuery({
     queryKey: ['battle', battleId],
@@ -94,6 +96,12 @@ export const useBattleLogic = (battleId) => {
       }, 1000);
     }
     setPowerUpMeter(prev => Math.min(prev + 10, 100));
+    
+    // Check for achievements after each action
+    const newAchievements = checkAchievements(battle, action);
+    if (newAchievements.length > 0) {
+      setAchievements(prev => [...prev, ...newAchievements]);
+    }
   };
 
   const handlePowerUp = () => {
@@ -138,6 +146,7 @@ export const useBattleLogic = (battleId) => {
     battleEffect,
     powerUpMeter,
     comboMeter,
-    battleLog
+    battleLog,
+    achievements
   };
 };

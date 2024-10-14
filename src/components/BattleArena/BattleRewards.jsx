@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 
 const BattleRewards = ({ battle }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const claimRewardsMutation = useMutation({
     mutationFn: async () => {
@@ -20,6 +21,14 @@ const BattleRewards = ({ battle }) => {
         description: `You've received ${data.coins} coins and ${data.experience} XP!`,
         variant: "success",
       });
+      if (data.level_up) {
+        toast({
+          title: "Level Up!",
+          description: `Your teddy has reached level ${data.new_level}!`,
+          variant: "success",
+        });
+      }
+      queryClient.invalidateQueries(['playerTeddies']);
     },
     onError: (error) => {
       toast({

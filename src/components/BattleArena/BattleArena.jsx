@@ -7,12 +7,15 @@ import ActionButtons from './ActionButtons';
 import BattleStatus from './BattleStatus';
 import BattleLog from './BattleLog';
 import PowerUpMeter from './PowerUpMeter';
+import ComboMeter from './ComboMeter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBattleLogic } from '../../hooks/useBattleLogic';
 import BattleRewards from './BattleRewards';
+import AchievementPopup from './AchievementPopup';
 
 const BattleArena = () => {
   const [battleId, setBattleId] = useState(null);
+  const [showAchievement, setShowAchievement] = useState(false);
   const { toast } = useToast();
 
   const {
@@ -21,12 +24,13 @@ const BattleArena = () => {
     error,
     handleAction,
     handlePowerUp,
+    handleCombo,
     animationState,
     battleEffect,
     powerUpMeter,
-    battleLog,
     comboMeter,
-    handleCombo
+    battleLog,
+    achievements
   } = useBattleLogic(battleId);
 
   useEffect(() => {
@@ -77,6 +81,13 @@ const BattleArena = () => {
     createBattle();
   }, []);
 
+  useEffect(() => {
+    if (achievements.length > 0) {
+      setShowAchievement(true);
+      setTimeout(() => setShowAchievement(false), 3000);
+    }
+  }, [achievements]);
+
   if (isLoading) return <div>Loading battle...</div>;
   if (error) return <div>Error: {error.message}</div>;
   if (!battle) return <div>No active battle</div>;
@@ -102,12 +113,9 @@ const BattleArena = () => {
         </motion.div>
       </AnimatePresence>
       <BattleField battle={battle} animationState={animationState} battleEffect={battleEffect} />
-      <PowerUpMeter powerUpMeter={powerUpMeter} onPowerUp={handlePowerUp} />
-      <div className="mb-4">
-        <h2 className="text-xl font-bold">Combo Meter</h2>
-        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-          <div className="bg-green-600 h-2.5 rounded-full" style={{ width: `${comboMeter}%` }}></div>
-        </div>
+      <div className="flex justify-between mb-4">
+        <PowerUpMeter powerUpMeter={powerUpMeter} onPowerUp={handlePowerUp} />
+        <ComboMeter comboMeter={comboMeter} onCombo={handleCombo} />
       </div>
       <ActionButtons 
         onAction={handleAction}
@@ -118,6 +126,11 @@ const BattleArena = () => {
       <BattleStatus battle={battle} />
       <BattleLog log={battleLog} />
       {battle.status === 'finished' && <BattleRewards battle={battle} />}
+      <AnimatePresence>
+        {showAchievement && (
+          <AchievementPopup achievement={achievements[achievements.length - 1]} />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
