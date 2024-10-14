@@ -10,21 +10,7 @@ export const setupTerribleTeddies = async () => {
     console.log('Starting setupTerribleTeddies function');
 
     // Create the table if it doesn't exist
-    const { error: createError } = await supabase.rpc('run_sql_migration', {
-      sql: `
-        CREATE TABLE IF NOT EXISTS public.terrible_teddies (
-          id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-          name TEXT NOT NULL,
-          title TEXT NOT NULL,
-          description TEXT,
-          attack INTEGER NOT NULL,
-          defense INTEGER NOT NULL,
-          special_move TEXT NOT NULL,
-          image_url TEXT,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-      `
-    });
+    const { error: createError } = await supabase.rpc('create_terrible_teddies_table');
 
     if (createError) {
       console.error('Error creating terrible_teddies table:', createError);
@@ -127,7 +113,6 @@ const populateTerribleTeddies = async () => {
   }
 };
 
-// Function to create the terrible_teddies table
 export const createTerribleTeddiesTable = async () => {
   try {
     console.log('Attempting to create terrible_teddies table');
