@@ -1,132 +1,145 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../../lib/supabase';
+import TeddyCard from '../TeddyCard';
+import BattleEffects from './BattleEffects';
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import BattleField from './BattleField';
-import BattleLog from './BattleLog';
-import PlayerHand from './PlayerHand';
-import ActionButtons from './ActionButtons';
-import { simulateAIAction, drawCard } from '../../utils/battleUtils';
-import { captureEvent } from '../../utils/posthog';
 
-const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, isAIOpponent = true }) => {
-  const [battleState, setBattleState] = useState({
-    playerHealth: 30,
-    opponentHealth: 30,
-    playerStuffing: 3,
-    opponentStuffing: 3,
-    playerDefenseBoost: 0,
-    opponentDefenseBoost: 0,
-    currentTurn: 'player',
-    roundCount: 1,
-    battleLog: [],
-  });
-
-  const [playerHand, setPlayerHand] = useState([]);
-  const [opponentHand, setOpponentHand] = useState([]);
+const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
+  const [playerHealth, setPlayerHealth] = useState(100);
+  const [opponentHealth, setOpponentHealth] = useState(100);
+  const [currentTurn, setCurrentTurn] = useState('player');
+  const [battleLog, setBattleLog] = useState([]);
+  const [showEffects, setShowEffects] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (!playerTeddy || !opponentTeddy) {
-      toast({
-        title: "Error",
-        description: "Unable to start battle. Missing teddy information.",
-        variant: "destructive",
-      });
-      onBattleEnd('error');
-      return;
-    }
-    initializeHands();
-  }, [playerTeddy, opponentTeddy]);
-
-  const initializeHands = () => {
-    setPlayerHand(drawCard(3));
-    setOpponentHand(drawCard(3));
-  };
-
-  const battleActionMutation = useMutation({
-    mutationFn: async ({ action, cardId }) => {
-      if (isAIOpponent) {
-        return simulateAIAction(battleState, playerTeddy, opponentTeddy, playerHand, opponentHand, action, cardId);
-      } else {
-        // ... keep existing code for non-AI opponent
-      }
+  const { data: playerTeddyData } = useQuery({
+    queryKey: ['teddy', playerTeddy.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('terrible_teddies')
+        .select('*')
+        .eq('id', playerTeddy.id)
+        .single();
+      if (error) throw error;
+      return data;
     },
-    onSuccess: (data) => {
-      setBattleState(prev => ({
-        ...prev,
-        playerHealth: data.playerHealth,
-        opponentHealth: data.opponentHealth,
-        playerStuffing: data.playerStuffing,
-        opponentStuffing: data.opponentStuffing,
-        playerDefenseBoost: data.playerDefenseBoost,
-        opponentDefenseBoost: data.opponentDefenseBoost,
-        currentTurn: data.currentTurn,
-        roundCount: data.roundCount,
-      }));
-      setPlayerHand(data.updatedPlayerHand);
-      setOpponentHand(data.updatedOpponentHand);
-      addToBattleLog(data.battleLog);
+  });
 
-      // Draw a new card at the end of each round
-      if (data.currentTurn === 'player') {
-        setPlayerHand(prev => [...prev, ...drawCard(1)]);
-      } else {
-        setOpponentHand(prev => [...prev, ...drawCard(1)]);
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+  const { data: opponentTeddyData } = useQuery({
+    queryKey: ['teddy', opponentTeddy.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('terrible_teddies')
+        .select('*')
+        .eq('id', opponentTeddy.id)
+        .single();
+      if (error) throw error;
+      return data;
     },
   });
 
   useEffect(() => {
-    const { playerHealth, opponentHealth } = battleState;
     if (playerHealth <= 0 || opponentHealth <= 0) {
-      onBattleEnd(playerHealth > opponentHealth ? 'win' : 'lose');
-      captureEvent('Battle_Ended', { result: playerHealth > opponentHealth ? 'win' : 'lose' });
+      const winner = playerHealth > 0 ? 'player' : 'opponent';
+      onBattleEnd(winner);
     }
-  }, [battleState.playerHealth, battleState.opponentHealth]);
+  }, [playerHealth, opponentHealth, onBattleEnd]);
 
-  const handleAction = (action, cardId) => {
-    if (battleState.currentTurn !== 'player') return;
-    battleActionMutation.mutate({ action, cardId });
-    captureEvent('Player_Action', { action, cardId });
+  const performAction = (action) => {
+    let damage = 0;
+    let logMessage = '';
+
+    if (action === 'attack') {
+      damage = Math.floor(Math.random() * 20) + 10;
+      if (currentTurn === 'player') {
+        setOpponentHealth((prev) => Math.max(0, prev - damage));
+        logMessage = `${playerTeddyData.name} attacks for ${damage} damage!`;
+      } else {
+        setPlayerHealth((prev) => Math.max(0, prev - damage));
+        logMessage = `${opponentTeddyData.name} attacks for ${damage} damage!`;
+      }
+    } else if (action === 'special') {
+      damage = Math.floor(Math.random() * 30) + 20;
+      if (currentTurn === 'player') {
+        setOpponentHealth((prev) => Math.max(0, prev - damage));
+        logMessage = `${playerTeddyData.name} uses ${playerTeddyData.special_move} for ${damage} damage!`;
+      } else {
+        setPlayerHealth((prev) => Math.max(0, prev - damage));
+        logMessage = `${opponentTeddyData.name} uses ${opponentTeddyData.special_move} for ${damage} damage!`;
+      }
+    }
+
+    setBattleLog((prev) => [...prev, logMessage]);
+    setShowEffects(true);
+    setTimeout(() => setShowEffects(false), 1000);
+    setCurrentTurn(currentTurn === 'player' ? 'opponent' : 'player');
+
+    if (currentTurn === 'opponent') {
+      setTimeout(() => {
+        const aiAction = Math.random() > 0.3 ? 'attack' : 'special';
+        performAction(aiAction);
+      }, 1500);
+    }
   };
 
-  const addToBattleLog = (logEntry) => {
-    setBattleState(prev => ({
-      ...prev,
-      battleLog: [...prev.battleLog, logEntry],
-    }));
-  };
-
-  if (!playerTeddy || !opponentTeddy) {
-    return <div>Error: Missing teddy information. Unable to start battle.</div>;
+  if (!playerTeddyData || !opponentTeddyData) {
+    return <div>Loading battle data...</div>;
   }
 
   return (
-    <div className="battle-arena p-4 bg-gray-100 rounded-lg">
-      <BattleField
-        playerTeddy={playerTeddy}
-        opponentTeddy={opponentTeddy}
-        battleState={battleState}
-      />
-      <PlayerHand
-        hand={playerHand}
-        onPlayCard={handleAction}
-        isPlayerTurn={battleState.currentTurn === 'player'}
-        playerStuffing={battleState.playerStuffing}
-      />
-      <ActionButtons
-        onAction={handleAction}
-        isDisabled={battleState.currentTurn !== 'player'}
-        playerStuffing={battleState.playerStuffing}
-      />
-      <BattleLog log={battleState.battleLog} />
+    <div className="battle-arena bg-gray-100 p-6 rounded-lg shadow-lg">
+      <div className="flex justify-between mb-8">
+        <motion.div
+          initial={{ x: -100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <TeddyCard teddy={playerTeddyData} />
+          <div className="mt-2 text-center">
+            Health: {playerHealth}
+          </div>
+        </motion.div>
+        <motion.div
+          initial={{ x: 100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <TeddyCard teddy={opponentTeddyData} />
+          <div className="mt-2 text-center">
+            Health: {opponentHealth}
+          </div>
+        </motion.div>
+      </div>
+      
+      <AnimatePresence>
+        {showEffects && <BattleEffects />}
+      </AnimatePresence>
+
+      <div className="battle-actions mb-4">
+        {currentTurn === 'player' && (
+          <div className="flex justify-center space-x-4">
+            <Button onClick={() => performAction('attack')}>Attack</Button>
+            <Button onClick={() => performAction('special')}>Special Move</Button>
+          </div>
+        )}
+      </div>
+
+      <div className="battle-log bg-white p-4 rounded-lg h-40 overflow-y-auto">
+        <h3 className="text-lg font-bold mb-2">Battle Log</h3>
+        {battleLog.map((log, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {log}
+          </motion.div>
+        ))}
+      </div>
     </div>
   );
 };
