@@ -16,6 +16,8 @@ import WeatherForecast from './WeatherForecast';
 import TeddyEvolution from './TeddyEvolution';
 import BattleArenaBackground from './BattleArenaBackground';
 import SpecialAbility from './SpecialAbility';
+import { checkAchievements } from '../../utils/achievementSystem';
+import { applyBattleEvent } from '../../utils/battleEvents';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const {
@@ -31,17 +33,25 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const [animation, setAnimation] = useState(null);
   const [crowdMood, setCrowdMood] = useState('neutral');
   const { playSound } = useSound();
+  const [achievements, setAchievements] = useState([]);
 
   useEffect(() => {
     if (battleState.playerHealth <= 0 || battleState.opponentHealth <= 0) {
       playSound(battleState.playerHealth > 0 ? 'victory' : 'defeat');
       onBattleEnd(battleState.playerHealth > 0 ? 'win' : 'lose');
+      checkAchievements().then(newAchievements => setAchievements(newAchievements));
     }
   }, [battleState.playerHealth, battleState.opponentHealth, onBattleEnd, playSound]);
 
   useEffect(() => {
     if (battleState.roundCount % 5 === 0) {
       playSound('weatherChange');
+    }
+    if (battleState.roundCount % 3 === 0) {
+      const updatedState = applyBattleEvent(battleState);
+      // Update the battle state with the new event effects
+      // This would typically be done through a state update function
+      // that's part of the useBattleLogic hook
     }
   }, [battleState.roundCount, playSound]);
 
@@ -122,6 +132,22 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
         <BattleLog log={battleState.battleLog} />
         <BattleStats battleState={battleState} />
         <CrowdReaction mood={crowdMood} />
+
+        <AnimatePresence>
+          {achievements.map((achievement, index) => (
+            <motion.div
+              key={achievement.id}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -50 }}
+              transition={{ delay: index * 0.5 }}
+              className="achievement-popup bg-yellow-100 border-2 border-yellow-300 p-4 rounded-lg mb-2"
+            >
+              <h3 className="text-lg font-bold">{achievement.name}</h3>
+              <p>{achievement.description}</p>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

@@ -1,23 +1,65 @@
+import { supabase } from '../lib/supabase';
+
 const achievements = [
-  { name: "First Blood", condition: (action, damage) => action === 'attack' && damage > 0 },
-  { name: "Defensive Master", condition: (action) => action === 'defend' },
-  { name: "Special Move Unleashed", condition: (action) => action === 'special' },
-  { name: "Close Call", condition: (_, __, playerHealth) => playerHealth < 10 },
-  { name: "Flawless Victory", condition: (_, __, playerHealth, opponentHealth) => playerHealth === 100 && opponentHealth === 0 },
-  { name: "Combo King", condition: (_, __, ___, ____, comboCount) => comboCount >= 3 },
-  { name: "Power Overwhelming", condition: (_, __, ___, ____, _____, powerUpCount) => powerUpCount >= 3 },
-  { name: "Underdog", condition: (_, __, playerHealth, opponentHealth) => playerHealth < opponentHealth / 2 && opponentHealth === 0 },
+  {
+    id: 'first_win',
+    name: 'First Victory',
+    description: 'Win your first battle',
+    check: (stats) => stats.wins > 0,
+  },
+  {
+    id: 'combo_master',
+    name: 'Combo Master',
+    description: 'Perform 10 combos in a single battle',
+    check: (stats) => stats.combosInBattle >= 10,
+  },
+  {
+    id: 'evolve_teddy',
+    name: 'Evolution Complete',
+    description: 'Evolve a teddy to its final form',
+    check: (stats) => stats.fullyEvolvedTeddies > 0,
+  },
+  {
+    id: 'collector',
+    name: 'Teddy Collector',
+    description: 'Collect 50 unique teddies',
+    check: (stats) => stats.uniqueTeddies >= 50,
+  },
+  {
+    id: 'battle_pass_complete',
+    name: 'Season Champion',
+    description: 'Complete a Battle Pass',
+    check: (stats) => stats.completedBattlePasses > 0,
+  },
 ];
 
-export const checkAchievements = (action, damage, playerHealth, opponentHealth, comboCount, powerUpCount) => {
-  return achievements.filter(achievement => 
-    achievement.condition(action, damage, playerHealth, opponentHealth, comboCount, powerUpCount)
-  );
-};
+export const checkAchievements = async (userId) => {
+  const { data: userStats, error } = await supabase
+    .from('user_stats')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
 
-export const getAchievementProgress = (unlockedAchievements) => {
-  return achievements.map(achievement => ({
-    ...achievement,
-    unlocked: unlockedAchievements.includes(achievement.name),
-  }));
+  if (error) {
+    console.error('Error fetching user stats:', error);
+    return [];
+  }
+
+  const newAchievements = achievements.filter(achievement => 
+    achievement.check(userStats) && !userStats.achievements.includes(achievement.id)
+  );
+
+  if (newAchievements.length > 0) {
+    const updatedAchievements = [...userStats.achievements, ...newAchievements.map(a => a.id)];
+    const { error: updateError } = await supabase
+      .from('user_stats')
+      .update({ achievements: updatedAchievements })
+      .eq('user_id', userId);
+
+    if (updateError) {
+      console.error('Error updating achievements:', updateError);
+    }
+  }
+
+  return newAchievements;
 };
