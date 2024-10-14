@@ -7,6 +7,7 @@ import AIOpponent from '../utils/AIOpponent';
 import { checkForCombo, applyComboEffect } from '../utils/comboSystem';
 import { checkAchievements } from '../utils/achievementSystem';
 import { getRandomPowerUp, applyPowerUp } from '../utils/powerUps';
+import { useSpecialAbility } from '../utils/specialAbilities';
 
 export const useBattleLogic = (battleId) => {
   const [animationState, setAnimationState] = useState('idle');
@@ -20,20 +21,6 @@ export const useBattleLogic = (battleId) => {
 
   const [activePowerUps, setActivePowerUps] = useState([]);
 
-  const { data: battle, isLoading, error, refetch } = useQuery({
-    queryKey: ['battle', battleId],
-    queryFn: async () => {
-      if (!battleId) return null;
-      const { data, error } = await supabase
-        .from('battles')
-        .select('*, player1:player1_id(*), player2:player2_id(*), player1_teddy:player1_teddy_id(*), player2_teddy:player2_teddy_id(*)')
-        .eq('id', battleId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!battleId,
-  });
 
   const battleActionMutation = useMutation({
     mutationFn: async ({ action }) => {
@@ -80,6 +67,12 @@ export const useBattleLogic = (battleId) => {
       } else {
         setComboMeter(prev => Math.min(prev + 20, 100));
       }
+
+      // Check for achievements after each action
+      const newAchievements = checkAchievements(battle, data.action);
+      if (newAchievements.length > 0) {
+        setAchievements(prev => [...prev, ...newAchievements]);
+      }
     },
     onError: (error) => {
       toast({
@@ -110,11 +103,10 @@ export const useBattleLogic = (battleId) => {
       prev.map(p => ({ ...p, duration: p.duration - 1 }))
          .filter(p => p.duration > 0)
     );
-    
-    // Check for achievements after each action
-    const newAchievements = checkAchievements(battle, action);
-    if (newAchievements.length > 0) {
-      setAchievements(prev => [...prev, ...newAchievements]);
+
+    if (action === 'special') {
+      const specialAbilityResult = useSpecialAbility(battle.player1_teddy, battle.player2_teddy, battle);
+      setBattleLog(prevLog => [...prevLog, specialAbilityResult]);
     }
   };
 
@@ -142,7 +134,6 @@ export const useBattleLogic = (battleId) => {
       }
     }
   };
-
   return {
     battle,
     isLoading,

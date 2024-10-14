@@ -16,6 +16,7 @@ import BattleEffects from './BattleEffects';
 import TeddyTraits from './TeddyTraits';
 import BattleTimer from './BattleTimer';
 import { getRandomPowerUp, applyPowerUp } from '../../utils/powerUps';
+import { getSpecialAbility, useSpecialAbility } from '../../utils/specialAbilities';
 
 const BattleArena = () => {
   const [battleId, setBattleId] = useState(null);
@@ -35,7 +36,8 @@ const BattleArena = () => {
     powerUpMeter,
     comboMeter,
     battleLog,
-    achievements
+    achievements,
+    activePowerUps
   } = useBattleLogic(battleId);
 
   useEffect(() => {
@@ -73,7 +75,6 @@ const BattleArena = () => {
 
       setBattleId(battle.id);
       
-      // Set initial battle effect
       const initialEffect = generateRandomBattleEffect();
       setBattleEffect(initialEffect);
       toast({
@@ -93,7 +94,6 @@ const BattleArena = () => {
   }, [achievements]);
 
   const handleTimeUp = () => {
-    // Auto-select a random action when time is up
     const actions = ['attack', 'defend', 'special'];
     const randomAction = actions[Math.floor(Math.random() * actions.length)];
     handleAction(randomAction);
@@ -109,6 +109,18 @@ const BattleArena = () => {
         description: `${powerUp.name}: ${powerUp.description}`,
         variant: "success",
       });
+    }
+  };
+
+  const handleSpecialAbility = () => {
+    if (battle && battle.player1_teddy && battle.player2_teddy) {
+      const result = useSpecialAbility(battle.player1_teddy, battle.player2_teddy, battle);
+      toast({
+        title: "Special Ability Used!",
+        description: result,
+        variant: "info",
+      });
+      handleAction('special');
     }
   };
 
@@ -139,8 +151,10 @@ const BattleArena = () => {
       <ActionButtons 
         onAction={handleAction}
         onCombo={handleCombo}
+        onSpecialAbility={handleSpecialAbility}
         isDisabled={battle.status === 'finished' || battle.current_turn !== battle.player1_id}
         comboReady={comboMeter === 100}
+        specialAbility={getSpecialAbility(battle.player1_teddy?.name)}
       />
       <BattleStatus battle={battle} />
       <BattleLog log={battleLog} />
