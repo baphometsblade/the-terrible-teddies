@@ -7,8 +7,9 @@ import ActionButtons from './ActionButtons';
 import BattleStatus from './BattleStatus';
 import BattleLog from './BattleLog';
 import PowerUpMeter from './PowerUpMeter';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useBattleLogic } from '../../hooks/useBattleLogic';
+import BattleRewards from './BattleRewards';
 
 const BattleArena = () => {
   const [battleId, setBattleId] = useState(null);
@@ -23,7 +24,9 @@ const BattleArena = () => {
     animationState,
     battleEffect,
     powerUpMeter,
-    battleLog
+    battleLog,
+    comboMeter,
+    handleCombo
   } = useBattleLogic(battleId);
 
   useEffect(() => {
@@ -86,14 +89,35 @@ const BattleArena = () => {
       transition={{ duration: 0.5 }}
     >
       <h1 className="text-3xl font-bold mb-4">Battle Arena</h1>
+      <AnimatePresence>
+        <motion.div
+          key={battleEffect?.name}
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 50, opacity: 0 }}
+          className="mb-4 p-2 bg-purple-100 rounded-lg"
+        >
+          <h2 className="text-xl font-semibold">{battleEffect?.name}</h2>
+          <p>{battleEffect?.description}</p>
+        </motion.div>
+      </AnimatePresence>
       <BattleField battle={battle} animationState={animationState} battleEffect={battleEffect} />
       <PowerUpMeter powerUpMeter={powerUpMeter} onPowerUp={handlePowerUp} />
+      <div className="mb-4">
+        <h2 className="text-xl font-bold">Combo Meter</h2>
+        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+          <div className="bg-green-600 h-2.5 rounded-full" style={{ width: `${comboMeter}%` }}></div>
+        </div>
+      </div>
       <ActionButtons 
-        onAction={handleAction} 
+        onAction={handleAction}
+        onCombo={handleCombo}
         isDisabled={battle.status === 'finished' || battle.current_turn !== battle.player1_id}
+        comboReady={comboMeter === 100}
       />
       <BattleStatus battle={battle} />
       <BattleLog log={battleLog} />
+      {battle.status === 'finished' && <BattleRewards battle={battle} />}
     </motion.div>
   );
 };

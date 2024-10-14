@@ -4,12 +4,15 @@ import { supabase } from '../lib/supabase';
 import { useToast } from "@/components/ui/use-toast";
 import { generateRandomBattleEffect, applyBattleEffect } from '../utils/battleEffects';
 import AIOpponent from '../utils/AIOpponent';
+import { checkForCombo, applyComboEffect } from '../utils/comboSystem';
 
 export const useBattleLogic = (battleId) => {
   const [animationState, setAnimationState] = useState('idle');
   const [battleEffect, setBattleEffect] = useState(null);
   const [powerUpMeter, setPowerUpMeter] = useState(0);
+  const [comboMeter, setComboMeter] = useState(0);
   const [battleLog, setBattleLog] = useState([]);
+  const [moveHistory, setMoveHistory] = useState([]);
   const { toast } = useToast();
 
   const { data: battle, isLoading, error, refetch } = useQuery({
@@ -62,6 +65,16 @@ export const useBattleLogic = (battleId) => {
         description: newEffect.description,
         variant: "info",
       });
+
+      setMoveHistory(prev => [...prev, data.action]);
+      const combo = checkForCombo(moveHistory);
+      if (combo) {
+        applyComboEffect(combo, battle.player1_teddy, battle.player2_teddy);
+        setBattleLog(prevLog => [...prevLog, `Combo activated: ${combo.name}`]);
+        setComboMeter(0);
+      } else {
+        setComboMeter(prev => Math.min(prev + 20, 100));
+      }
     },
     onError: (error) => {
       toast({
@@ -103,15 +116,28 @@ export const useBattleLogic = (battleId) => {
     }
   };
 
+  const handleCombo = () => {
+    if (comboMeter === 100) {
+      const combo = checkForCombo(moveHistory);
+      if (combo) {
+        applyComboEffect(combo, battle.player1_teddy, battle.player2_teddy);
+        setBattleLog(prevLog => [...prevLog, `Combo activated: ${combo.name}`]);
+        setComboMeter(0);
+      }
+    }
+  };
+
   return {
     battle,
     isLoading,
     error,
     handleAction,
     handlePowerUp,
+    handleCombo,
     animationState,
     battleEffect,
     powerUpMeter,
+    comboMeter,
     battleLog
   };
 };

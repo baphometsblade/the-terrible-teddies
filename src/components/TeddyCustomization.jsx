@@ -4,10 +4,13 @@ import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { motion } from 'framer-motion';
+import { Slider } from "@/components/ui/slider";
 
 const TeddyCustomization = ({ teddy }) => {
   const [name, setName] = useState(teddy.name);
   const [color, setColor] = useState(teddy.color || '#8B4513');
+  const [size, setSize] = useState(teddy.size || 100);
+  const [accessory, setAccessory] = useState(teddy.accessory || 'none');
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -15,7 +18,7 @@ const TeddyCustomization = ({ teddy }) => {
     mutationFn: async () => {
       const { data, error } = await supabase
         .from('terrible_teddies')
-        .update({ name, color })
+        .update({ name, color, size, accessory })
         .eq('id', teddy.id);
       if (error) throw error;
       return data;
@@ -66,6 +69,29 @@ const TeddyCustomization = ({ teddy }) => {
           onChange={(e) => setColor(e.target.value)}
           className="mt-1 block w-full h-10 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
         />
+      </div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">Size</label>
+        <Slider
+          value={[size]}
+          onValueChange={(value) => setSize(value[0])}
+          max={200}
+          step={10}
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">Accessory</label>
+        <select
+          value={accessory}
+          onChange={(e) => setAccessory(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+        >
+          <option value="none">None</option>
+          <option value="hat">Hat</option>
+          <option value="scarf">Scarf</option>
+          <option value="glasses">Glasses</option>
+          <option value="bowtie">Bowtie</option>
+        </select>
       </div>
       <Button 
         onClick={handleCustomize} 
