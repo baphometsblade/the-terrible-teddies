@@ -21,3 +21,6 @@ $$ LANGUAGE plpgsql;
 
 -- Execute the function to ensure the table is created
 SELECT create_terrible_teddies_table();
+
+-- Drop the function after execution to clean up
+DROP FUNCTION IF EXISTS create_terrible_teddies_table();

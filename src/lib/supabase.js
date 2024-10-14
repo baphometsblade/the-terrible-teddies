@@ -53,6 +53,15 @@ const initialTeddies = [
   }
 ];
 
+const createTerribleTeddiesTable = async () => {
+  const { error } = await supabase.rpc('create_terrible_teddies_table');
+  if (error) {
+    console.error('Error creating terrible_teddies table:', error);
+    return false;
+  }
+  return true;
+};
+
 const populateTerribleTeddies = async () => {
   const { data, error } = await supabase
     .from('terrible_teddies')
@@ -69,25 +78,37 @@ const populateTerribleTeddies = async () => {
 
 export const setupTerribleTeddies = async () => {
   try {
-    console.log('Fetching Terrible Teddies from Supabase...');
+    console.log('Setting up Terrible Teddies...');
+    
+    // Ensure the table exists
+    const tableCreated = await createTerribleTeddiesTable();
+    if (!tableCreated) {
+      throw new Error('Failed to create terrible_teddies table');
+    }
+
+    // Check if the table is empty
     const { data, error } = await supabase
       .from('terrible_teddies')
-      .select('*');
+      .select('id')
+      .limit(1);
 
     if (error) {
-      console.error('Error fetching Terrible Teddies:', error);
-      return false;
+      throw error;
     }
 
     if (data && data.length > 0) {
-      console.log(`Successfully fetched ${data.length} Terrible Teddies`);
+      console.log(`Terrible Teddies table already contains data`);
       return true;
     } else {
-      console.log('No Terrible Teddies found in the database. Populating...');
-      return await populateTerribleTeddies();
+      console.log('Terrible Teddies table is empty. Populating...');
+      const populated = await populateTerribleTeddies();
+      if (!populated) {
+        throw new Error('Failed to populate terrible_teddies table');
+      }
+      return true;
     }
   } catch (error) {
-    console.error('Unexpected error in setupTerribleTeddies:', error);
+    console.error('Error in setupTerribleTeddies:', error);
     return false;
   }
 };
