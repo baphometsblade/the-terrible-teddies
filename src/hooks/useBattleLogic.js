@@ -1,19 +1,28 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useBattleState } from './useBattleState';
-import { useBattleActions } from './useBattleActions';
 import { getSpecialAbility } from '../utils/specialAbilities';
 import { applyBattleEvent } from '../utils/battleEvents';
 import { getWeatherEffect } from '../utils/weatherEffects';
 import { applyWeatherEffect, applyStatusEffects } from '../utils/battleEffects';
-import AIOpponent from '../utils/AIOpponent';
+import { calculateDamage } from '../utils/battleUtils';
 
-export const useBattleLogic = (playerTeddy, opponentTeddy, difficulty = 'medium') => {
-  const [battleState, updateBattleState] = useBattleState();
-  
+export const useBattleLogic = (playerTeddy, opponentTeddy) => {
+  const [battleState, setBattleState] = useState({
+    playerHealth: 100,
+    opponentHealth: 100,
+    playerEnergy: 3,
+    opponentEnergy: 3,
+    currentTurn: 'player',
+    weatherEffect: null,
+    powerUpMeter: 0,
+    comboMeter: 0,
+    battleLog: [],
+    roundCount: 0,
+  });
+
   const { data: playerTeddyData, isLoading: isLoadingPlayerTeddy } = useQuery({
-    queryKey: ['playerTeddy', playerTeddy.id],
+    queryKey: ['playerTeddy', playerTeddy?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('terrible_teddies')
@@ -23,10 +32,11 @@ export const useBattleLogic = (playerTeddy, opponentTeddy, difficulty = 'medium'
       if (error) throw error;
       return { ...data, specialAbility: getSpecialAbility(data.name) };
     },
+    enabled: !!playerTeddy,
   });
 
   const { data: opponentTeddyData, isLoading: isLoadingOpponentTeddy } = useQuery({
-    queryKey: ['opponentTeddy', opponentTeddy.id],
+    queryKey: ['opponentTeddy', opponentTeddy?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('terrible_teddies')
@@ -36,89 +46,92 @@ export const useBattleLogic = (playerTeddy, opponentTeddy, difficulty = 'medium'
       if (error) throw error;
       return { ...data, specialAbility: getSpecialAbility(data.name) };
     },
+    enabled: !!opponentTeddy,
   });
 
-  const updateBattleMutation = useMutation({
-    mutationFn: async (newBattleState) => {
-      const { data, error } = await supabase
-        .from('battles')
-        .update(newBattleState)
-        .eq('id', battleState.id);
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      // Refetch battle data after successful update
-      queryClient.invalidateQueries(['battle', battleState.id]);
-    },
-  });
-
-  const { performAction, handlePowerUp, handleCombo } = useBattleActions(
-    battleState,
-    updateBattleState,
-    playerTeddyData,
-    opponentTeddyData,
-    updateBattleMutation
-  );
-
-  const handlePlayerAction = (action) => {
-    const newState = performAction(action);
-    updateBattleState(newState);
-
-    // AI opponent's turn
-    setTimeout(() => {
-      const aiAction = AIOpponent.chooseAction(opponentTeddyData, playerTeddyData, newState, difficulty);
-      const aiActionResult = AIOpponent.performAction(aiAction, opponentTeddyData, playerTeddyData, newState);
-      const finalState = performAction(aiAction, aiActionResult);
-      updateBattleState(finalState);
-    }, 1000);
-  };
-
   useEffect(() => {
-    if (battleState.playerHealth <= 0 || battleState.opponentHealth <= 0) {
-      const winner = battleState.playerHealth > 0 ? playerTeddyData.name : opponentTeddyData.name;
-      updateBattleState({
-        battleLog: [...battleState.battleLog, `Battle ended! ${winner} wins!`],
-      });
-      // Here you would typically update the database, award XP, etc.
-    }
-  }, [battleState.playerHealth, battleState.opponentHealth, playerTeddyData, opponentTeddyData]);
-
-  useEffect(() => {
-    // Apply battle events
     if (battleState.roundCount % 3 === 0) {
       const updatedState = applyBattleEvent(battleState);
-      updateBattleState(updatedState);
+      setBattleState(updatedState);
     }
 
-    // Update weather
     if (battleState.roundCount % 5 === 0) {
       const newWeatherEffect = getWeatherEffect();
-      updateBattleState({
+      setBattleState(prevState => ({
+        ...prevState,
         weatherEffect: newWeatherEffect,
-        battleLog: [...battleState.battleLog, `The weather has changed to ${newWeatherEffect.name}!`],
-      });
+        battleLog: [...prevState.battleLog, `The weather has changed to ${newWeatherEffect.name}!`],
+      }));
     }
 
-    // Apply weather effects
     if (battleState.weatherEffect) {
       const weatherUpdatedState = applyWeatherEffect(battleState, playerTeddyData, opponentTeddyData);
-      updateBattleState(weatherUpdatedState);
+      setBattleState(weatherUpdatedState);
     }
 
-    // Apply status effects
     const statusUpdatedState = applyStatusEffects(battleState, playerTeddyData, opponentTeddyData);
-    updateBattleState(statusUpdatedState);
-  }, [battleState.roundCount, battleState.weatherEffect]);
+    setBattleState(statusUpdatedState);
+  }, [battleState.roundCount, battleState.weatherEffect, playerTeddyData, opponentTeddyData]);
+
+  const handleAction = (action) => {
+    let newState = { ...battleState };
+    let damage = 0;
+
+    if (action === 'attack') {
+      damage = calculateDamage(playerTeddyData, opponentTeddyData);
+      newState.opponentHealth -= damage;
+      newState.battleLog.push(`${playerTeddyData.name} attacks for ${damage} damage!`);
+    } else if (action === 'defend') {
+      newState.playerEnergy += 1;
+      newState.battleLog.push(`${playerTeddyData.name} defends and gains 1 energy!`);
+    } else if (action === 'special' && newState.playerEnergy >= 2) {
+      const specialAbility = playerTeddyData.specialAbility;
+      const specialResult = specialAbility.effect(playerTeddyData, opponentTeddyData, newState);
+      newState = { ...newState, ...specialResult };
+      newState.playerEnergy -= 2;
+    }
+
+    newState.powerUpMeter = Math.min(newState.powerUpMeter + 10, 100);
+    newState.comboMeter = Math.min(newState.comboMeter + 20, 100);
+    newState.currentTurn = 'opponent';
+    newState.roundCount += 1;
+
+    setBattleState(newState);
+  };
+
+  const handlePowerUp = () => {
+    if (battleState.powerUpMeter === 100) {
+      const newState = {
+        ...battleState,
+        playerEnergy: battleState.playerEnergy + 2,
+        powerUpMeter: 0,
+        battleLog: [...battleState.battleLog, `${playerTeddyData.name} uses Power Up and gains 2 energy!`],
+      };
+      setBattleState(newState);
+    }
+  };
+
+  const handleCombo = () => {
+    if (battleState.comboMeter === 100) {
+      const comboDamage = playerTeddyData.attack * 2;
+      const newState = {
+        ...battleState,
+        opponentHealth: Math.max(0, battleState.opponentHealth - comboDamage),
+        comboMeter: 0,
+        battleLog: [...battleState.battleLog, `${playerTeddyData.name} unleashes a devastating combo attack for ${comboDamage} damage!`],
+      };
+      setBattleState(newState);
+    }
+  };
 
   return {
     battleState,
-    handleAction: handlePlayerAction,
+    handleAction,
     handlePowerUp,
     handleCombo,
     isLoadingPlayerTeddy,
     isLoadingOpponentTeddy,
     playerTeddyData,
-    opponentTeddyData
+    opponentTeddyData,
   };
 };
