@@ -7,6 +7,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const setupTerribleTeddies = async () => {
   try {
+    console.log('Starting setupTerribleTeddies function');
+
     // Create the table if it doesn't exist
     const { error: createError } = await supabase.rpc('run_sql_migration', {
       sql: `
@@ -29,6 +31,8 @@ export const setupTerribleTeddies = async () => {
       return false;
     }
 
+    console.log('Table creation successful or already exists');
+
     // Check if the table is empty
     const { count, error: countError } = await supabase
       .from('terrible_teddies')
@@ -39,8 +43,11 @@ export const setupTerribleTeddies = async () => {
       return false;
     }
 
+    console.log('Current count of teddies:', count);
+
     // If the table is empty, populate it
     if (count === 0) {
+      console.log('Table is empty, populating with initial data');
       return populateTerribleTeddies();
     }
 
@@ -54,6 +61,7 @@ export const setupTerribleTeddies = async () => {
 
 const populateTerribleTeddies = async () => {
   try {
+    console.log('Starting populateTerribleTeddies function');
     const initialTeddies = [
       {
         name: "Whiskey Whiskers",
@@ -122,6 +130,7 @@ const populateTerribleTeddies = async () => {
 // Function to create the terrible_teddies table
 export const createTerribleTeddiesTable = async () => {
   try {
+    console.log('Attempting to create terrible_teddies table');
     const { error } = await supabase.rpc('create_terrible_teddies_table');
     if (error) {
       console.error('Error creating terrible_teddies table:', error);
