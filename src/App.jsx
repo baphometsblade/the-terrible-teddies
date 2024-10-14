@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import TerribleTeddiesGame from './components/TerribleTeddiesGame';
 import { SupabaseProvider } from './integrations/supabase/auth';
 import { initPostHog, captureEvent } from './utils/posthog';
-import { initSupabase, setupTerribleTeddies } from './lib/supabase';
+import { setupTerribleTeddies } from './lib/supabase';
 
 function App() {
   const [isSupabaseReady, setIsSupabaseReady] = useState(false);
@@ -15,17 +15,11 @@ function App() {
         initPostHog();
         captureEvent('App_Loaded');
 
-        const supabaseInitialized = await initSupabase();
-        
-        if (supabaseInitialized) {
-          const setupResult = await setupTerribleTeddies();
-          if (setupResult) {
-            setIsSupabaseReady(true);
-          } else {
-            setError('Failed to set up Terrible Teddies table');
-          }
+        const setupResult = await setupTerribleTeddies();
+        if (setupResult) {
+          setIsSupabaseReady(true);
         } else {
-          setError('Failed to initialize Supabase');
+          setError('Failed to set up Terrible Teddies table');
         }
       } catch (error) {
         console.error('Error during app initialization:', error);

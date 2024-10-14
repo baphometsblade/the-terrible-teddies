@@ -11,31 +11,27 @@ import BattleStats from './Battle/BattleStats';
 
 const TerribleTeddiesGame = () => {
   const [gameState, setGameState] = useState('menu');
-  const [playerTeddies, setPlayerTeddies] = useState([]);
   const [selectedTeddy, setSelectedTeddy] = useState(null);
   const [battleStats, setBattleStats] = useState(null);
   const { toast } = useToast();
 
-  const { data: fetchedTeddies, isLoading, error } = useQuery({
+  const { data: playerTeddies, isLoading, error } = useQuery({
     queryKey: ['playerTeddies'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('player_teddies')
-        .select('*, terrible_teddies(*)')
-        .eq('player_id', (await supabase.auth.getUser()).data.user.id);
+        .from('terrible_teddies')
+        .select('*')
+        .limit(10);  // Limit to 10 teddies for this example
       if (error) throw error;
-      return data.map(item => item.terrible_teddies);
+      return data;
     },
   });
 
   useEffect(() => {
-    if (fetchedTeddies) {
-      setPlayerTeddies(fetchedTeddies);
-      if (fetchedTeddies.length > 0 && !selectedTeddy) {
-        setSelectedTeddy(fetchedTeddies[0]);
-      }
+    if (playerTeddies && playerTeddies.length > 0) {
+      setSelectedTeddy(playerTeddies[0]);
     }
-  }, [fetchedTeddies]);
+  }, [playerTeddies]);
 
   const startBattle = () => {
     if (!selectedTeddy) {
