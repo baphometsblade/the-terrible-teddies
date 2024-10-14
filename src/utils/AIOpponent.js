@@ -1,67 +1,36 @@
-import { calculateDamage } from './battleUtils';
-
-class AIOpponent {
-  static generateTeddy() {
-    // This is a placeholder. In a real implementation, you'd fetch a random teddy from the database.
-    return {
-      id: 'ai-teddy-1',
-      name: 'AI Teddy',
-      attack: Math.floor(Math.random() * 5) + 3,
-      defense: Math.floor(Math.random() * 5) + 3,
-      specialMove: 'AI Special',
-    };
-  }
-
-  static chooseAction(aiTeddy, playerTeddy, difficulty = 'medium') {
-    const actions = ['attack', 'defend', 'special'];
-    let weights;
-
-    switch (difficulty) {
-      case 'easy':
-        weights = [0.6, 0.3, 0.1];
-        break;
-      case 'hard':
-        weights = this.calculateHardDifficultyWeights(aiTeddy, playerTeddy);
-        break;
-      case 'medium':
-      default:
-        weights = [0.4, 0.3, 0.3];
-        break;
-    }
-
-    return this.weightedRandomChoice(actions, weights);
-  }
-
-  static calculateHardDifficultyWeights(aiTeddy, playerTeddy) {
-    const potentialDamage = calculateDamage(aiTeddy, playerTeddy);
-    const defensiveNeed = calculateDamage(playerTeddy, aiTeddy) / aiTeddy.defense;
-
-    let attackWeight = 0.4 + (potentialDamage / 10);
-    let defendWeight = 0.3 + (defensiveNeed / 5);
-    let specialWeight = 0.3;
-
-    // Normalize weights
-    const totalWeight = attackWeight + defendWeight + specialWeight;
-    return [
-      attackWeight / totalWeight,
-      defendWeight / totalWeight,
-      specialWeight / totalWeight
+const AIOpponent = {
+  chooseAction: (aiTeddy, playerTeddy, battleState) => {
+    const actions = ['attack', 'special', 'defend'];
+    const weights = [
+      battleState.opponentHealth > 50 ? 0.6 : 0.3,
+      battleState.opponentHealth > 30 ? 0.3 : 0.5,
+      battleState.opponentHealth < 30 ? 0.5 : 0.2
     ];
-  }
-
-  static weightedRandomChoice(items, weights) {
-    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-    let random = Math.random() * totalWeight;
     
-    for (let i = 0; i < items.length; i++) {
-      if (random < weights[i]) {
-        return items[i];
+    // Adjust weights based on player's health
+    if (battleState.playerHealth < 20) {
+      weights[0] += 0.2; // Increase chance of attack when player is low on health
+      weights[1] += 0.1; // Slightly increase chance of special move
+    }
+
+    // Adjust weights based on AI's defense boost
+    if (battleState.opponentDefenseBoost < 10) {
+      weights[2] += 0.2; // Increase chance of defend if defense boost is low
+    }
+
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    const randomValue = Math.random() * totalWeight;
+    let weightSum = 0;
+    
+    for (let i = 0; i < actions.length; i++) {
+      weightSum += weights[i];
+      if (randomValue <= weightSum) {
+        return actions[i];
       }
-      random -= weights[i];
     }
     
-    return items[items.length - 1];
+    return 'attack'; // Fallback
   }
-}
+};
 
 export default AIOpponent;

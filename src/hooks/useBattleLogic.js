@@ -1,142 +1,138 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useToast } from "@/components/ui/use-toast";
-import { generateRandomBattleEffect, applyBattleEffect } from '../utils/battleEffects';
-import AIOpponent from '../utils/AIOpponent';
-import { checkForCombo, applyComboEffect } from '../utils/comboSystem';
+import { calculateDamage, applyPowerUp, checkForCombo } from '../utils/battleUtils';
 import { checkAchievements } from '../utils/achievementSystem';
-import { getRandomPowerUp, applyPowerUp } from '../utils/powerUps';
-import { useSpecialAbility } from '../utils/specialAbilities';
+import { useToast } from "@/components/ui/use-toast";
+import AIOpponent from '../utils/AIOpponent';
 
-export const useBattleLogic = (battleId) => {
-  const [animationState, setAnimationState] = useState('idle');
-  const [battleEffect, setBattleEffect] = useState(null);
+export const useBattleLogic = (playerTeddy, opponentTeddy) => {
+  const [battleState, setBattleState] = useState({
+    playerHealth: 100,
+    opponentHealth: 100,
+    playerDefenseBoost: 0,
+    opponentDefenseBoost: 0,
+    currentTurn: 'player',
+    roundCount: 0
+  });
+  const [battleLog, setBattleLog] = useState([]);
   const [powerUpMeter, setPowerUpMeter] = useState(0);
   const [comboMeter, setComboMeter] = useState(0);
-  const [battleLog, setBattleLog] = useState([]);
   const [moveHistory, setMoveHistory] = useState([]);
-
   const [achievements, setAchievements] = useState([]);
+  const { toast } = useToast();
 
-  const [activePowerUps, setActivePowerUps] = useState([]);
-
-
-  const battleActionMutation = useMutation({
-    mutationFn: async ({ action }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/battle-action`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          battleId,
-          action,
-          playerId: user.id,
-          battleEffect: battleEffect,
-        }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error);
-      }
-      return response.json();
-    },
-    onSuccess: (data) => {
-      refetch();
-      setBattleLog(prevLog => [...prevLog, data.actionResult]);
-      setAnimationState('attack');
-      setTimeout(() => setAnimationState('idle'), 1000);
-      
-      const newEffect = generateRandomBattleEffect();
-      setBattleEffect(newEffect);
-      toast({
-        title: "Battle Effect",
-        description: newEffect.description,
-        variant: "info",
-      });
-
-      setMoveHistory(prev => [...prev, data.action]);
-      const combo = checkForCombo(moveHistory);
-      if (combo) {
-        applyComboEffect(combo, battle.player1_teddy, battle.player2_teddy);
-        setBattleLog(prevLog => [...prevLog, `Combo activated: ${combo.name}`]);
-        setComboMeter(0);
-      } else {
-        setComboMeter(prev => Math.min(prev + 20, 100));
-      }
-
-      // Check for achievements after each action
-      const newAchievements = checkAchievements(battle, data.action);
-      if (newAchievements.length > 0) {
-        setAchievements(prev => [...prev, ...newAchievements]);
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+  const { data: playerTeddyData, isLoading: isLoadingPlayer, error: playerError } = useQuery({
+    queryKey: ['teddy', playerTeddy.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('terrible_teddies')
+        .select('*')
+        .eq('id', playerTeddy.id)
+        .single();
+      if (error) throw error;
+      return data;
     },
   });
 
-  const handleAction = (action) => {
-    battleActionMutation.mutate({ action });
-    if (battle.is_ai_opponent) {
-      setTimeout(() => {
-        const aiAction = AIOpponent.chooseAction(battle.player2_teddy, battle.player1_teddy, battle.ai_difficulty);
-        battleActionMutation.mutate({ action: aiAction });
-      }, 1000);
-    }
-    setPowerUpMeter(prev => Math.min(prev + 10, 100));
-    
-    // Apply active power-ups
-    activePowerUps.forEach(powerUp => {
-      applyPowerUp(battle.player1_teddy, powerUp);
-    });
-    
-    // Decrease power-up durations and remove expired ones
-    setActivePowerUps(prev => 
-      prev.map(p => ({ ...p, duration: p.duration - 1 }))
-         .filter(p => p.duration > 0)
-    );
+  const { data: opponentTeddyData, isLoading: isLoadingOpponent, error: opponentError } = useQuery({
+    queryKey: ['teddy', opponentTeddy.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('terrible_teddies')
+        .select('*')
+        .eq('id', opponentTeddy.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
 
+  const performAction = (action) => {
+    let newBattleState = { ...battleState };
+    let damage = 0;
+    let logMessage = '';
+
+    if (action === 'attack') {
+      damage = calculateDamage(playerTeddyData, opponentTeddyData, newBattleState.opponentDefenseBoost);
+      newBattleState.opponentHealth -= damage;
+      logMessage = `${playerTeddyData.name} attacks for ${damage} damage!`;
+    } else if (action === 'special') {
+      damage = calculateDamage(playerTeddyData, opponentTeddyData, newBattleState.opponentDefenseBoost) * 1.5;
+      newBattleState.opponentHealth -= damage;
+      logMessage = `${playerTeddyData.name} uses ${playerTeddyData.special_move} for ${damage} damage!`;
+    } else if (action === 'defend') {
+      const defenseBoost = Math.floor(Math.random() * 10) + 5;
+      newBattleState.playerDefenseBoost += defenseBoost;
+      logMessage = `${playerTeddyData.name} increases defense by ${defenseBoost}!`;
+    }
+
+    setBattleLog(prev => [...prev, logMessage]);
     setMoveHistory(prev => [...prev, action]);
+    setPowerUpMeter(prev => Math.min(prev + 10, 100));
+
     const combo = checkForCombo(moveHistory);
     if (combo) {
-      const comboResult = applyComboEffect(combo, battle.player1_teddy, battle.player2_teddy);
-      setBattleLog(prevLog => [...prevLog, comboResult]);
       setComboMeter(0);
+      const comboMessage = `${playerTeddyData.name} activates ${combo.name} combo!`;
+      setBattleLog(prev => [...prev, comboMessage]);
+      // Apply combo effect
     } else {
       setComboMeter(prev => Math.min(prev + 20, 100));
     }
 
-    if (action === 'special') {
-      const specialAbilityResult = useSpecialAbility(battle.player1_teddy, battle.player2_teddy, battle);
-      setBattleLog(prevLog => [...prevLog, specialAbilityResult]);
-    }
-
-    // Check for achievements after each action
-    const newAchievements = checkAchievements(battle, action);
+    const newAchievements = checkAchievements(action, damage, newBattleState.playerHealth, newBattleState.opponentHealth);
     if (newAchievements.length > 0) {
       setAchievements(prev => [...prev, ...newAchievements]);
+      newAchievements.forEach(achievement => {
+        toast({
+          title: "Achievement Unlocked!",
+          description: achievement.name,
+        });
+      });
     }
+
+    newBattleState.currentTurn = 'opponent';
+    newBattleState.roundCount++;
+    setBattleState(newBattleState);
+
+    // AI opponent turn
+    setTimeout(() => {
+      const aiAction = AIOpponent.chooseAction(opponentTeddyData, playerTeddyData, newBattleState);
+      performAIAction(aiAction);
+    }, 1500);
+  };
+
+  const performAIAction = (action) => {
+    let newBattleState = { ...battleState };
+    let damage = 0;
+    let logMessage = '';
+
+    if (action === 'attack') {
+      damage = calculateDamage(opponentTeddyData, playerTeddyData, newBattleState.playerDefenseBoost);
+      newBattleState.playerHealth -= damage;
+      logMessage = `${opponentTeddyData.name} attacks for ${damage} damage!`;
+    } else if (action === 'special') {
+      damage = calculateDamage(opponentTeddyData, playerTeddyData, newBattleState.playerDefenseBoost) * 1.5;
+      newBattleState.playerHealth -= damage;
+      logMessage = `${opponentTeddyData.name} uses ${opponentTeddyData.special_move} for ${damage} damage!`;
+    } else if (action === 'defend') {
+      const defenseBoost = Math.floor(Math.random() * 10) + 5;
+      newBattleState.opponentDefenseBoost += defenseBoost;
+      logMessage = `${opponentTeddyData.name} increases defense by ${defenseBoost}!`;
+    }
+
+    setBattleLog(prev => [...prev, logMessage]);
+    newBattleState.currentTurn = 'player';
+    setBattleState(newBattleState);
   };
 
   const handlePowerUp = () => {
     if (powerUpMeter === 100) {
-      const newPowerUp = getRandomPowerUp();
-      setActivePowerUps(prev => [...prev, newPowerUp]);
-      applyPowerUp(battle.player1_teddy, newPowerUp);
+      const powerUp = applyPowerUp(playerTeddyData);
+      setBattleLog(prev => [...prev, `${playerTeddyData.name} activates ${powerUp.name}!`]);
       setPowerUpMeter(0);
-      toast({
-        title: "Power-Up Activated!",
-        description: `${newPowerUp.name}: ${newPowerUp.description}`,
-        variant: "success",
-      });
+      // Apply power-up effect
     }
   };
 
@@ -144,26 +140,23 @@ export const useBattleLogic = (battleId) => {
     if (comboMeter === 100) {
       const combo = checkForCombo(moveHistory);
       if (combo) {
-        const comboResult = applyComboEffect(combo, battle.player1_teddy, battle.player2_teddy);
-        setBattleLog(prevLog => [...prevLog, comboResult]);
+        setBattleLog(prev => [...prev, `${playerTeddyData.name} unleashes ${combo.name} combo!`]);
         setComboMeter(0);
+        // Apply combo effect
       }
     }
   };
 
   return {
-    battle,
-    isLoading,
-    error,
-    handleAction,
+    battleState,
+    performAction,
     handlePowerUp,
     handleCombo,
-    animationState,
-    battleEffect,
+    battleLog,
     powerUpMeter,
     comboMeter,
-    battleLog,
-    achievements,
-    activePowerUps
+    currentTurn: battleState.currentTurn,
+    isLoading: isLoadingPlayer || isLoadingOpponent,
+    error: playerError || opponentError
   };
 };
