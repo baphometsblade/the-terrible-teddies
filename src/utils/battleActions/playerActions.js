@@ -93,20 +93,6 @@ const updateBattleState = (battleState, damage, logMessage, playerTeddyData, opp
   return battleState;
 };
 
-const applyStatusEffects = (battleState, playerTeddyData, opponentTeddyData) => {
-  if (battleState.playerStatusEffect) {
-    const updatedPlayerTeddy = applyStatusEffect(playerTeddyData, battleState.playerStatusEffect);
-    battleState.playerHealth = updatedPlayerTeddy.health;
-    battleState.battleLog = [...battleState.battleLog, `${playerTeddyData.name} is affected by ${battleState.playerStatusEffect}!`];
-  }
-  if (battleState.opponentStatusEffect) {
-    const updatedOpponentTeddy = applyStatusEffect(opponentTeddyData, battleState.opponentStatusEffect);
-    battleState.opponentHealth = updatedOpponentTeddy.health;
-    battleState.battleLog = [...battleState.battleLog, `${opponentTeddyData.name} is affected by ${battleState.opponentStatusEffect}!`];
-  }
-  return battleState;
-};
-
 const handleLevelUp = (battleState, playerTeddyData, updatePlayerTeddyMutation, toast) => {
   if (battleState.playerExperience >= battleState.playerLevel * 100) {
     battleState.playerLevel++;

@@ -1,75 +1,46 @@
-const battleEffects = [
-  {
-    name: "Stuffing Storm",
-    description: "A flurry of stuffing fills the air, reducing all attacks by 1 for this turn.",
-    effect: (attacker, defender) => {
-      attacker.attack = Math.max(1, attacker.attack - 1);
-      defender.attack = Math.max(1, defender.attack - 1);
-    }
-  },
-  {
-    name: "Thread Tangle",
-    description: "Loose threads entangle the teddies, reducing their defense by 1 for this turn.",
-    effect: (attacker, defender) => {
-      attacker.defense = Math.max(1, attacker.defense - 1);
-      defender.defense = Math.max(1, defender.defense - 1);
-    }
-  },
-  {
-    name: "Button Boost",
-    description: "A shower of buttons rains down, increasing all attacks by 1 for this turn.",
-    effect: (attacker, defender) => {
-      attacker.attack += 1;
-      defender.attack += 1;
-    }
-  },
-  {
-    name: "Fabric Fortification",
-    description: "A magical fabric reinforces the teddies, increasing their defense by 1 for this turn.",
-    effect: (attacker, defender) => {
-      attacker.defense += 1;
-      defender.defense += 1;
-    }
-  },
-  {
-    name: "Seam Surge",
-    description: "The teddies' seams glow with power, doubling the effect of their special moves for this turn.",
-    effect: (attacker, defender) => {
-      attacker.specialMultiplier = 2;
-      defender.specialMultiplier = 2;
-    }
-  },
-  {
-    name: "Fluff Frenzy",
-    description: "A whirlwind of fluff surrounds the battlefield, swapping the attack and defense values of both teddies.",
-    effect: (attacker, defender) => {
-      [attacker.attack, attacker.defense] = [attacker.defense, attacker.attack];
-      [defender.attack, defender.defense] = [defender.defense, defender.attack];
-    }
-  },
-  {
-    name: "Cuddle Confusion",
-    description: "A wave of cuddliness washes over the teddies, causing them to forget their moves. Randomly reassign attack and defense values.",
-    effect: (attacker, defender) => {
-      const reassignStats = (teddy) => {
-        const totalStats = teddy.attack + teddy.defense;
-        teddy.attack = Math.floor(Math.random() * totalStats);
-        teddy.defense = totalStats - teddy.attack;
-      };
-      reassignStats(attacker);
-      reassignStats(defender);
-    }
+export const applyWeatherEffect = (state, player, opponent) => {
+  const weatherEffect = state.weatherEffect;
+  let newState = { ...state };
+  
+  newState.playerHealth = Math.max(0, Math.min(100, newState.playerHealth + weatherEffect.healthEffect));
+  newState.opponentHealth = Math.max(0, Math.min(100, newState.opponentHealth + weatherEffect.healthEffect));
+  
+  newState.battleLog = [...newState.battleLog, `${weatherEffect.name} affects both teddies!`];
+  
+  return newState;
+};
+
+export const applyStatusEffects = (state, player, opponent) => {
+  let newState = { ...state };
+  
+  if (newState.playerStatusEffect) {
+    const playerEffect = applyStatusEffect(player, newState.playerStatusEffect);
+    newState.playerHealth = Math.max(0, newState.playerHealth - playerEffect.damage);
+    newState.battleLog = [...newState.battleLog, `${player.name} is affected by ${newState.playerStatusEffect}!`];
   }
-];
-
-export const generateRandomBattleEffect = () => {
-  return battleEffects[Math.floor(Math.random() * battleEffects.length)];
+  
+  if (newState.opponentStatusEffect) {
+    const opponentEffect = applyStatusEffect(opponent, newState.opponentStatusEffect);
+    newState.opponentHealth = Math.max(0, newState.opponentHealth - opponentEffect.damage);
+    newState.battleLog = [...newState.battleLog, `${opponent.name} is affected by ${newState.opponentStatusEffect}!`];
+  }
+  
+  return newState;
 };
 
-export const applyBattleEffect = (effect, attacker, defender) => {
-  effect.effect(attacker, defender);
-};
-
-export const describeBattleEffect = (effect) => {
-  return `${effect.name}: ${effect.description}`;
+const applyStatusEffect = (teddy, statusEffect) => {
+  switch (statusEffect) {
+    case 'burn':
+      return { damage: Math.floor(teddy.maxHealth * 0.1) };
+    case 'poison':
+      return { damage: Math.floor(teddy.maxHealth * 0.08) };
+    case 'freeze':
+      return { damage: 0, skipTurn: true };
+    case 'paralyze':
+      return { damage: 0, reduceSpeed: true };
+    case 'confusion':
+      return { damage: 0, selfDamageChance: 0.3 };
+    default:
+      return { damage: 0 };
+  }
 };

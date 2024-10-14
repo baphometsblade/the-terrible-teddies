@@ -5,6 +5,8 @@ export const useBattleState = (initialPlayerHealth = 100, initialOpponentHealth 
   const [battleState, setBattleState] = useState({
     playerHealth: initialPlayerHealth,
     opponentHealth: initialOpponentHealth,
+    playerEnergy: 3,
+    opponentEnergy: 3,
     playerDefenseBoost: 0,
     opponentDefenseBoost: 0,
     playerStatusEffect: null,
@@ -16,6 +18,8 @@ export const useBattleState = (initialPlayerHealth = 100, initialOpponentHealth 
     weatherEffect: null,
     comboMeter: 0,
     powerUpMeter: 0,
+    battleLog: [],
+    moveHistory: [],
     playerItems: [getRandomBattleItem(), getRandomBattleItem()],
     opponentItems: [getRandomBattleItem()],
     playerAttackBoost: 0,
