@@ -7,21 +7,40 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const setupTerribleTeddies = async () => {
   try {
-    // Ensure the function exists
-    await createTerribleTeddiesTable();
+    // Create the table if it doesn't exist
+    const { error: createError } = await supabase.rpc('run_sql_migration', {
+      sql: `
+        CREATE TABLE IF NOT EXISTS public.terrible_teddies (
+          id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+          name TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          attack INTEGER NOT NULL,
+          defense INTEGER NOT NULL,
+          special_move TEXT NOT NULL,
+          image_url TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `
+    });
 
-    // Check if the table exists and has data
-    const { data, error } = await supabase
+    if (createError) {
+      console.error('Error creating terrible_teddies table:', createError);
+      return false;
+    }
+
+    // Check if the table is empty
+    const { data, error: countError } = await supabase
       .from('terrible_teddies')
       .select('count')
       .single();
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error checking terrible_teddies table:', error);
+    if (countError && countError.code !== 'PGRST116') {
+      console.error('Error checking terrible_teddies table:', countError);
       return false;
     }
 
-    // If the table is empty or doesn't exist, populate it
+    // If the table is empty, populate it
     if (!data || data.count === 0) {
       return populateTerribleTeddies();
     }
