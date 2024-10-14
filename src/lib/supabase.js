@@ -7,124 +7,25 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const setupTerribleTeddies = async () => {
   try {
-    console.log('Starting setupTerribleTeddies function');
-
-    // Create the table if it doesn't exist
-    const { error: createError } = await supabase.rpc('create_terrible_teddies_table');
-
-    if (createError) {
-      console.error('Error creating terrible_teddies table:', createError);
-      return false;
-    }
-
-    console.log('Table creation successful or already exists');
-
-    // Check if the table is empty
-    const { count, error: countError } = await supabase
+    console.log('Fetching Terrible Teddies from Supabase...');
+    const { data, error } = await supabase
       .from('terrible_teddies')
-      .select('*', { count: 'exact', head: true });
+      .select('*');
 
-    if (countError) {
-      console.error('Error checking terrible_teddies table:', countError);
+    if (error) {
+      console.error('Error fetching Terrible Teddies:', error);
       return false;
     }
 
-    console.log('Current count of teddies:', count);
-
-    // If the table is empty, populate it
-    if (count === 0) {
-      console.log('Table is empty, populating with initial data');
-      return populateTerribleTeddies();
+    if (data && data.length > 0) {
+      console.log(`Successfully fetched ${data.length} Terrible Teddies`);
+      return true;
+    } else {
+      console.log('No Terrible Teddies found in the database');
+      return false;
     }
-
-    console.log('terrible_teddies table is already set up and populated');
-    return true;
   } catch (error) {
     console.error('Unexpected error in setupTerribleTeddies:', error);
-    return false;
-  }
-};
-
-const populateTerribleTeddies = async () => {
-  try {
-    console.log('Starting populateTerribleTeddies function');
-    const initialTeddies = [
-      {
-        name: "Whiskey Whiskers",
-        title: "The Smooth Operator",
-        description: "A suave bear with a penchant for fine spirits and even finer company.",
-        attack: 6,
-        defense: 5,
-        special_move: "On the Rocks",
-        image_url: "https://example.com/whiskey_whiskers.png"
-      },
-      {
-        name: "Madame Mistletoe",
-        title: "The Festive Flirt",
-        description: "She carries mistletoe year-round, believing every moment is an opportunity for a sly kiss.",
-        attack: 5,
-        defense: 6,
-        special_move: "Sneak Kiss",
-        image_url: "https://example.com/madame_mistletoe.png"
-      },
-      {
-        name: "Baron Von Blubber",
-        title: "The Inflated Ego",
-        description: "A pompous bear with an oversized monocle and a belly that's one puff away from popping.",
-        attack: 7,
-        defense: 4,
-        special_move: "Burst Bubble",
-        image_url: "https://example.com/baron_von_blubber.png"
-      },
-      {
-        name: "Icy Ivan",
-        title: "The Frosty Fighter",
-        description: "A bear with fur as white as snow and eyes as cold as ice. He's wearing nothing but a tiny Speedo.",
-        attack: 6,
-        defense: 7,
-        special_move: "Ice Age",
-        image_url: "https://example.com/icy_ivan.png"
-      },
-      {
-        name: "Lady Lush",
-        title: "The Party Animal",
-        description: "This bear's fur is a mess of glitter and confetti. She's always ready for a good time.",
-        attack: 5,
-        defense: 5,
-        special_move: "Drunken Master",
-        image_url: "https://example.com/lady_lush.png"
-      }
-    ];
-
-    const { error } = await supabase
-      .from('terrible_teddies')
-      .insert(initialTeddies);
-
-    if (error) {
-      console.error('Error populating terrible_teddies:', error);
-      return false;
-    }
-
-    console.log('Terrible Teddies populated successfully');
-    return true;
-  } catch (error) {
-    console.error('Unexpected error in populateTerribleTeddies:', error);
-    return false;
-  }
-};
-
-export const createTerribleTeddiesTable = async () => {
-  try {
-    console.log('Attempting to create terrible_teddies table');
-    const { error } = await supabase.rpc('create_terrible_teddies_table');
-    if (error) {
-      console.error('Error creating terrible_teddies table:', error);
-      return false;
-    }
-    console.log('create_terrible_teddies_table function executed successfully');
-    return true;
-  } catch (error) {
-    console.error('Error executing create_terrible_teddies_table function:', error);
     return false;
   }
 };
