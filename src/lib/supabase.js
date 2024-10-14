@@ -54,11 +54,12 @@ const initialTeddies = [
 ];
 
 const createTerribleTeddiesTable = async () => {
-  const { error } = await supabase.rpc('create_terrible_teddies_table');
+  const { data, error } = await supabase.rpc('create_terrible_teddies_table');
   if (error) {
     console.error('Error creating terrible_teddies table:', error);
     return false;
   }
+  console.log('Table creation result:', data);
   return true;
 };
 
@@ -93,6 +94,7 @@ export const setupTerribleTeddies = async () => {
       .limit(1);
 
     if (error) {
+      console.error('Error checking table contents:', error);
       throw error;
     }
 
@@ -111,4 +113,19 @@ export const setupTerribleTeddies = async () => {
     console.error('Error in setupTerribleTeddies:', error);
     return false;
   }
+};
+
+// Add this function to check if the table exists
+export const checkTableExists = async () => {
+  const { data, error } = await supabase
+    .from('terrible_teddies')
+    .select('id')
+    .limit(1);
+
+  if (error) {
+    console.error('Error checking if table exists:', error);
+    return false;
+  }
+
+  return true;
 };
