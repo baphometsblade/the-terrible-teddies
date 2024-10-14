@@ -34,3 +34,19 @@ export const subscribeToMatch = (matchId, callback) => {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, callback)
     .subscribe();
 };
+
+export const getAllDataFromTable = async (tableName) => {
+  try {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*');
+
+    if (error) throw error;
+
+    console.log(`Retrieved all data from ${tableName}:`, data);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching data from ${tableName}:`, error);
+    throw error;
+  }
+};
