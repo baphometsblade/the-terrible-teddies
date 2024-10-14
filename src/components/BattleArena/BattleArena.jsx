@@ -7,12 +7,14 @@ import ActionButtons from './ActionButtons';
 import BattleStatus from './BattleStatus';
 import BattleLog from './BattleLog';
 import AIOpponent from '../../utils/AIOpponent';
+import { motion } from 'framer-motion';
 
 const BattleArena = () => {
   const [battleId, setBattleId] = useState(null);
   const [isAIOpponent, setIsAIOpponent] = useState(false);
   const [aiDifficulty, setAiDifficulty] = useState('medium');
   const [battleLog, setBattleLog] = useState([]);
+  const [animationState, setAnimationState] = useState('idle');
   const { toast } = useToast();
 
   const { data: battle, isLoading, error, refetch } = useQuery({
@@ -54,6 +56,8 @@ const BattleArena = () => {
     onSuccess: (data) => {
       refetch();
       setBattleLog(prevLog => [...prevLog, data.actionResult]);
+      setAnimationState('attack');
+      setTimeout(() => setAnimationState('idle'), 1000);
     },
     onError: (error) => {
       toast({
@@ -118,16 +122,21 @@ const BattleArena = () => {
   if (!battle) return <div>No active battle</div>;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <motion.div 
+      className="container mx-auto px-4 py-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <h1 className="text-3xl font-bold mb-4">Battle Arena</h1>
-      <BattleField battle={battle} />
+      <BattleField battle={battle} animationState={animationState} />
       <ActionButtons 
         onAction={handleAction} 
         isDisabled={battleActionMutation.isLoading || battle.status === 'finished' || battle.current_turn !== battle.player1_id}
       />
       <BattleStatus battle={battle} />
       <BattleLog log={battleLog} />
-    </div>
+    </motion.div>
   );
 };
 
