@@ -27,9 +27,9 @@ const Evolution = ({ teddy }) => {
             clearInterval(evolutionInterval);
             return 100;
           }
-          return prev + 10;
+          return prev + 2;
         });
-      }, 200);
+      }, 50);
     },
     onSuccess: (evolvedTeddy) => {
       queryClient.invalidateQueries('playerTeddies');

@@ -1,15 +1,15 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { motion } from 'framer-motion';
 
 const Leaderboard = () => {
-  const { data: leaderboardData, isLoading, error } = useQuery({
+  const { data: leaderboard, isLoading, error } = useQuery({
     queryKey: ['leaderboard'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('players')
-        .select('username, wins, losses, rank')
+        .select('id, username, wins, losses')
         .order('wins', { ascending: false })
         .limit(10);
       if (error) throw error;
@@ -18,36 +18,37 @@ const Leaderboard = () => {
   });
 
   if (isLoading) return <div>Loading leaderboard...</div>;
-  if (error) return <div>Error loading leaderboard: {error.message}</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <div className="leaderboard p-4 bg-gray-100 rounded-lg">
+    <motion.div 
+      className="leaderboard p-4 bg-gray-100 rounded-lg"
+      initial={{ y: 50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Rank</TableHead>
-            <TableHead>Username</TableHead>
-            <TableHead>Wins</TableHead>
-            <TableHead>Losses</TableHead>
-            <TableHead>Win Rate</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {leaderboardData.map((player, index) => (
-            <TableRow key={player.username}>
-              <TableCell>{index + 1}</TableCell>
-              <TableCell>{player.username}</TableCell>
-              <TableCell>{player.wins}</TableCell>
-              <TableCell>{player.losses}</TableCell>
-              <TableCell>
-                {((player.wins / (player.wins + player.losses)) * 100).toFixed(2)}%
-              </TableCell>
-            </TableRow>
+      <table className="w-full">
+        <thead>
+          <tr>
+            <th className="text-left">Rank</th>
+            <th className="text-left">Player</th>
+            <th className="text-left">Wins</th>
+            <th className="text-left">Losses</th>
+          </tr>
+        </thead>
+        <tbody>
+          {leaderboard.map((player, index) => (
+            <tr key={player.id} className={index % 2 === 0 ? 'bg-gray-200' : ''}>
+              <td>{index + 1}</td>
+              <td>{player.username}</td>
+              <td>{player.wins}</td>
+              <td>{player.losses}</td>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
-    </div>
+        </tbody>
+      </table>
+    </motion.div>
   );
 };
 
