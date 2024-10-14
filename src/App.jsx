@@ -5,7 +5,6 @@ import Evolution from './components/Evolution';
 import TeddyDisplay from './components/TeddyDisplay';
 import SeasonalEventManager from './components/SeasonalEvent/SeasonalEventManager';
 import BattleStats from './components/BattleStats';
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const queryClient = new QueryClient();
