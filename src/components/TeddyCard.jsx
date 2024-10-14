@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from 'framer-motion';
 import { Tooltip } from "@/components/ui/tooltip";
+import { ImageOff } from 'lucide-react';
 
 const TeddyCard = ({ teddy }) => {
   return (
@@ -15,12 +16,22 @@ const TeddyCard = ({ teddy }) => {
           <CardTitle>{teddy.name}</CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          <div className="relative w-full h-48 mb-4 overflow-hidden rounded-lg">
-            <img 
-              src={teddy.imageUrl} 
-              alt={teddy.name} 
-              className="absolute inset-0 w-full h-full object-cover transform hover:scale-110 transition-transform duration-300 ease-in-out"
-            />
+          <div className="relative w-full h-48 mb-4 overflow-hidden rounded-lg bg-gray-200">
+            {teddy.imageUrl ? (
+              <img 
+                src={teddy.imageUrl} 
+                alt={teddy.name} 
+                className="absolute inset-0 w-full h-full object-cover transform hover:scale-110 transition-transform duration-300 ease-in-out"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Available';
+                }}
+              />
+            ) : (
+              <div className="flex items-center justify-center w-full h-full">
+                <ImageOff className="w-12 h-12 text-gray-400" />
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-50"></div>
             <p className="absolute bottom-2 left-2 text-white text-sm font-bold">{teddy.title}</p>
           </div>

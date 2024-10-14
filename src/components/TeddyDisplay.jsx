@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Card, CardContent } from "@/components/ui/card";
+import { ImageOff } from 'lucide-react';
 
 const TeddyDisplay = () => {
   const { data: teddies, isLoading, error } = useQuery({
@@ -25,12 +26,22 @@ const TeddyDisplay = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {teddies.map(teddy => (
           <Card key={teddy.id} className="overflow-hidden">
-            <div className="relative h-48">
-              <img 
-                src={teddy.imageUrl} 
-                alt={teddy.name} 
-                className="absolute inset-0 w-full h-full object-cover transform hover:scale-110 transition-transform duration-300 ease-in-out"
-              />
+            <div className="relative h-48 bg-gray-200">
+              {teddy.imageUrl ? (
+                <img 
+                  src={teddy.imageUrl} 
+                  alt={teddy.name} 
+                  className="absolute inset-0 w-full h-full object-cover transform hover:scale-110 transition-transform duration-300 ease-in-out"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Available';
+                  }}
+                />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full">
+                  <ImageOff className="w-12 h-12 text-gray-400" />
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-50"></div>
               <h3 className="absolute bottom-2 left-2 text-white text-xl font-semibold">{teddy.name}</h3>
             </div>
