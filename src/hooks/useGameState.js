@@ -9,7 +9,7 @@ export const useGameState = () => {
   const [powerUps, setPowerUps] = useState([]);
   const [achievements, setAchievements] = useState([]);
 
-  const { data: playerTeddies, isLoading, error } = usePlayerTeddies();
+  const { data: playerTeddies, isLoading, error, refetch } = usePlayerTeddies();
 
   useEffect(() => {
     if (playerTeddies && playerTeddies.length > 0 && !selectedTeddy) {
@@ -45,6 +45,7 @@ export const useGameState = () => {
     });
     if (result === 'win' && updatedTeddy) {
       setSelectedTeddy(updatedTeddy);
+      refetch(); // Refetch player teddies to update the list
     }
   };
 
