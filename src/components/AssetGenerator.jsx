@@ -17,7 +17,7 @@ export const AssetGenerator = () => {
       setProgress(100);
       toast({
         title: "Assets Generated",
-        description: `Successfully generated ${assets.length} assets!`,
+        description: `Successfully generated ${assets.length} assets using Midjourney!`,
         variant: "success",
       });
     } catch (error) {
@@ -34,7 +34,7 @@ export const AssetGenerator = () => {
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4">Generate Terrible Teddies Assets</h2>
+      <h2 className="text-2xl font-bold mb-4">Generate Terrible Teddies Assets with Midjourney</h2>
       <Button
         onClick={handleGenerateAssets}
         disabled={isGenerating}
