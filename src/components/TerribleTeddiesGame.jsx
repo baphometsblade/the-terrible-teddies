@@ -10,6 +10,9 @@ import { Sword, ShoppingBag, Award, Zap, Calendar, Gift } from 'lucide-react';
 import Battle from './Battle';
 import Shop from './Shop';
 import Evolution from './Evolution';
+import PowerUpSystem from './PowerUpSystem';
+import AchievementSystem from './AchievementSystem';
+import SeasonalEvent from './SeasonalEvent';
 
 const TerribleTeddiesGame = () => {
   console.log('TerribleTeddiesGame component rendering');
@@ -17,6 +20,8 @@ const TerribleTeddiesGame = () => {
   const [gameState, setGameState] = useState('menu');
   const [selectedTeddy, setSelectedTeddy] = useState(null);
   const [opponent, setOpponent] = useState(null);
+  const [powerUps, setPowerUps] = useState([]);
+  const [achievements, setAchievements] = useState([]);
 
   const { data: playerTeddies, isLoading, error } = useQuery({
     queryKey: ['playerTeddies'],
@@ -96,6 +101,7 @@ const TerribleTeddiesGame = () => {
           <Battle
             playerTeddy={selectedTeddy}
             opponentTeddy={opponent}
+            powerUps={powerUps}
             onBattleEnd={(result, updatedTeddy, experience) => {
               setGameState('menu');
               toast({
@@ -115,6 +121,12 @@ const TerribleTeddiesGame = () => {
         return <Shop onExit={() => setGameState('menu')} />;
       case 'evolution':
         return <Evolution teddy={selectedTeddy} onClose={() => setGameState('menu')} />;
+      case 'powerUps':
+        return <PowerUpSystem powerUps={powerUps} setPowerUps={setPowerUps} onClose={() => setGameState('menu')} />;
+      case 'achievements':
+        return <AchievementSystem achievements={achievements} setAchievements={setAchievements} onClose={() => setGameState('menu')} />;
+      case 'seasonalEvent':
+        return <SeasonalEvent onClose={() => setGameState('menu')} />;
       default:
         return (
           <Tabs defaultValue="collection" className="w-full">
@@ -169,14 +181,14 @@ const TerribleTeddiesGame = () => {
         <Button onClick={() => setGameState('evolution')} disabled={!selectedTeddy || selectedTeddy.experience < selectedTeddy.level * 100}>
           <Zap className="mr-2 h-4 w-4" /> Evolve
         </Button>
-        <Button onClick={() => toast({ title: "Coming Soon", description: "This feature is not yet implemented." })}>
-          <Award className="mr-2 h-4 w-4" /> Leaderboard
+        <Button onClick={() => setGameState('powerUps')}>
+          <Gift className="mr-2 h-4 w-4" /> Power-Ups
         </Button>
-        <Button onClick={() => toast({ title: "Coming Soon", description: "This feature is not yet implemented." })}>
-          <Calendar className="mr-2 h-4 w-4" /> Daily Challenge
+        <Button onClick={() => setGameState('achievements')}>
+          <Award className="mr-2 h-4 w-4" /> Achievements
         </Button>
-        <Button onClick={() => toast({ title: "Coming Soon", description: "This feature is not yet implemented." })}>
-          <Gift className="mr-2 h-4 w-4" /> Seasonal Event
+        <Button onClick={() => setGameState('seasonalEvent')}>
+          <Calendar className="mr-2 h-4 w-4" /> Seasonal Event
         </Button>
       </div>
     </div>

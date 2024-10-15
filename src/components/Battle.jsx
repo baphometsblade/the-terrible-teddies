@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sword, Shield, Zap } from 'lucide-react';
 import { calculateDamage, calculateExperience, levelUp } from '../utils/battleSystem';
 
-const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
+const Battle = ({ playerTeddy, opponentTeddy, powerUps, onBattleEnd }) => {
   const [playerHealth, setPlayerHealth] = useState(100);
   const [opponentHealth, setOpponentHealth] = useState(100);
   const [currentTurn, setCurrentTurn] = useState('player');
@@ -15,6 +15,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   const [playerEnergy, setPlayerEnergy] = useState(3);
   const [opponentEnergy, setOpponentEnergy] = useState(3);
   const [animation, setAnimation] = useState(null);
+  const [activePowerUps, setActivePowerUps] = useState([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -39,7 +40,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
 
     switch (action) {
       case 'attack':
-        damage = calculateDamage(playerTeddy, opponentTeddy);
+        damage = calculateDamage(playerTeddy, opponentTeddy, activePowerUps);
         setOpponentHealth(prev => Math.max(0, prev - damage));
         addToBattleLog(`${playerTeddy.name} attacks for ${damage} damage!`);
         break;
@@ -49,7 +50,7 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
         break;
       case 'special':
         if (playerEnergy >= 2) {
-          damage = calculateDamage(playerTeddy, opponentTeddy) * 1.5;
+          damage = calculateDamage(playerTeddy, opponentTeddy, activePowerUps) * 1.5;
           setOpponentHealth(prev => Math.max(0, prev - damage));
           addToBattleLog(`${playerTeddy.name} uses ${playerTeddy.special_move} for ${damage} damage!`);
           energyCost = 2;
@@ -123,6 +124,33 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
     </Card>
   );
 
+  const renderPowerUps = () => (
+    <div className="power-ups mt-4">
+      <h3 className="text-xl font-semibold mb-2">Power-Ups</h3>
+      <div className="flex flex-wrap gap-2">
+        {powerUps.map((powerUp, index) => (
+          <Button
+            key={index}
+            onClick={() => activatePowerUp(powerUp)}
+            disabled={activePowerUps.includes(powerUp)}
+          >
+            {powerUp.name}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const activatePowerUp = (powerUp) => {
+    setActivePowerUps(prev => [...prev, powerUp]);
+    addToBattleLog(`Activated ${powerUp.name} power-up!`);
+    toast({
+      title: "Power-Up Activated",
+      description: `${powerUp.name} is now active for this battle!`,
+      variant: "success",
+    });
+  };
+
   return (
     <div className="battle-arena">
       <h2 className="text-2xl font-bold mb-4">Battle Arena</h2>
@@ -152,7 +180,8 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
           ))}
         </div>
       </div>
-      <div className="flex justify-center space-x-4">
+      {renderPowerUps()}
+      <div className="flex justify-center space-x-4 mt-4">
         <Button onClick={() => handlePlayerAction('attack')} disabled={currentTurn !== 'player'}>
           Attack
         </Button>

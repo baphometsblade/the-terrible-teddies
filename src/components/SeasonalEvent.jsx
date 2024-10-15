@@ -1,102 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { motion } from 'framer-motion';
-import SeasonalEventShop from './SeasonalEventShop';
 
-const SeasonalEvent = () => {
-  const [participation, setParticipation] = useState(false);
-  const [showShop, setShowShop] = useState(false);
+const SeasonalEvent = ({ onClose }) => {
   const { toast } = useToast();
+  const [eventProgress, setEventProgress] = useState(0);
 
-  const { data: event, isLoading, error } = useQuery({
-    queryKey: ['seasonalEvent'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('seasonal_events')
-        .select('*')
-        .eq('is_active', true)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-  });
+  const currentEvent = {
+    name: "Summer Beach Bash",
+    description: "Collect beach-themed teddies and win exclusive rewards!",
+    rewards: [
+      { name: "Surfer Teddy", requirement: 100 },
+      { name: "Beach Ball Power-Up", requirement: 250 },
+      { name: "Tropical Paradise Background", requirement: 500 },
+    ],
+  };
 
-  const participateMutation = useMutation({
-    mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data, error } = await supabase
-        .from('event_participants')
-        .insert({ user_id: user.id, event_id: event.id });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      setParticipation(true);
-      toast({
-        title: "Participation Confirmed",
-        description: "You've successfully joined the seasonal event!",
-        variant: "success",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Participation Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  useEffect(() => {
-    const checkParticipation = async () => {
-      if (event) {
-        const { data: { user } } = await supabase.auth.getUser();
-        const { data, error } = await supabase
-          .from('event_participants')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('event_id', event.id)
-          .single();
-        if (data) setParticipation(true);
-      }
-    };
-    checkParticipation();
-  }, [event]);
-
-  if (isLoading) return <div>Loading seasonal event...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-  if (!event) return <div>No active seasonal event at the moment.</div>;
+  const participateInEvent = () => {
+    // In a real implementation, this would involve some game logic
+    const pointsEarned = Math.floor(Math.random() * 50) + 10;
+    setEventProgress(prev => prev + pointsEarned);
+    toast({
+      title: "Event Progress",
+      description: `You earned ${pointsEarned} event points!`,
+      variant: "success",
+    });
+  };
 
   return (
-    <motion.div 
-      className="seasonal-event p-4 bg-gray-100 rounded-lg"
-      initial={{ y: 50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <h2 className="text-2xl font-bold mb-4">{event.name}</h2>
-      <p className="mb-4">{event.description}</p>
-      <p className="mb-4">Event ends: {new Date(event.end_date).toLocaleDateString()}</p>
-      {!participation ? (
-        <Button 
-          onClick={() => participateMutation.mutate()}
-          disabled={participateMutation.isLoading}
-        >
-          {participateMutation.isLoading ? 'Joining...' : 'Join Event'}
-        </Button>
-      ) : (
-        <>
-          <p className="text-green-500 font-bold mb-4">You're participating in this event!</p>
-          <Button onClick={() => setShowShop(!showShop)} className="mb-4">
-            {showShop ? 'Hide Event Shop' : 'Show Event Shop'}
-          </Button>
-          {showShop && <SeasonalEventShop eventId={event.id} />}
-        </>
-      )}
-    </motion.div>
+    <div className="seasonal-event">
+      <h2 className="text-2xl font-bold mb-4">{currentEvent.name}</h2>
+      <p className="mb-4">{currentEvent.description}</p>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Event Progress</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Total Points: {eventProgress}</p>
+          <Button onClick={participateInEvent} className="mt-2">Participate</Button>
+        </CardContent>
+      </Card>
+      <h3 className="text-xl font-bold mb-2">Rewards</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        {currentEvent.rewards.map((reward, index) => (
+          <Card key={index}>
+            <CardHeader>
+              <CardTitle>{reward.name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Required Points: {reward.requirement}</p>
+              <p>Status: {eventProgress >= reward.requirement ? 'Unlocked' : 'Locked'}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Button onClick={onClose}>Close</Button>
+    </div>
   );
 };
 
