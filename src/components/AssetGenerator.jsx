@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { generateAllAssets } from '../utils/assetGenerator';
+import { integrateSupabaseData } from '../utils/supabaseIntegration';
 
 export const AssetGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -13,11 +14,21 @@ export const AssetGenerator = () => {
     setIsGenerating(true);
     setProgress(0);
     try {
-      const assets = await generateAllAssets();
+      const assets = await generateAllAssets((progress) => {
+        setProgress(progress);
+      });
       setProgress(100);
       toast({
         title: "Assets Generated",
         description: `Successfully generated ${assets.length} assets using Midjourney!`,
+        variant: "success",
+      });
+
+      // Integrate generated assets with Supabase
+      await integrateSupabaseData(assets);
+      toast({
+        title: "Supabase Integration Complete",
+        description: "All generated assets have been integrated with Supabase.",
         variant: "success",
       });
     } catch (error) {
@@ -40,7 +51,7 @@ export const AssetGenerator = () => {
         disabled={isGenerating}
         className="w-full mb-4"
       >
-        {isGenerating ? 'Generating...' : 'Generate Assets'}
+        {isGenerating ? 'Generating...' : 'Generate Assets and Integrate with Supabase'}
       </Button>
       {isGenerating && (
         <div>

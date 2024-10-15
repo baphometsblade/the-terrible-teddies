@@ -56,7 +56,7 @@ export const generateTeddyImage = async (name, description) => {
   return await uploadImageToSupabase(imageUrl, fileName);
 };
 
-export const generateAllAssets = async () => {
+export const generateAllAssets = async (onProgress) => {
   const teddyBears = [
     { name: "Whiskey Whiskers", title: "The Smooth Operator" },
     { name: "Madame Mistletoe", title: "The Festive Flirt" },
@@ -65,14 +65,22 @@ export const generateAllAssets = async () => {
 
   const generatedAssets = [];
 
-  for (const bear of teddyBears) {
+  for (let i = 0; i < teddyBears.length; i++) {
+    const bear = teddyBears[i];
     try {
       const imageUrl = await generateTeddyImage(bear.name, bear.title);
       generatedAssets.push({
         name: bear.name,
         title: bear.title,
         imageUrl: imageUrl,
+        attack: Math.floor(Math.random() * 3) + 5, // Random attack between 5-7
+        defense: Math.floor(Math.random() * 3) + 4, // Random defense between 4-6
+        special_move: `${bear.name}'s Special Move`, // Placeholder, replace with actual special moves
+        special_move_description: `Description of ${bear.name}'s special move` // Placeholder, replace with actual descriptions
       });
+      if (onProgress) {
+        onProgress(((i + 1) / teddyBears.length) * 100);
+      }
       console.log(`Generated asset for ${bear.name}`);
     } catch (error) {
       console.error(`Error generating asset for ${bear.name}:`, error);
