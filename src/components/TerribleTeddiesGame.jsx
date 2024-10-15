@@ -157,6 +157,8 @@ const TerribleTeddiesGame = () => {
   if (isLoading) return <div>Loading your teddies...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
+  console.log('Rendering TerribleTeddiesGame component');
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8 text-center">Terrible Teddies</h1>
