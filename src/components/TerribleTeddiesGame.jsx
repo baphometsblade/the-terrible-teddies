@@ -12,6 +12,7 @@ import Shop from './Shop';
 import Evolution from './Evolution';
 
 const TerribleTeddiesGame = () => {
+  console.log('TerribleTeddiesGame component rendering');
   const { toast } = useToast();
   const [gameState, setGameState] = useState('menu');
   const [selectedTeddy, setSelectedTeddy] = useState(null);
@@ -20,17 +21,20 @@ const TerribleTeddiesGame = () => {
   const { data: playerTeddies, isLoading, error } = useQuery({
     queryKey: ['playerTeddies'],
     queryFn: async () => {
+      console.log('Fetching player teddies');
       const { data, error } = await supabase
         .from('player_teddies')
         .select('*, terrible_teddies(*)')
         .order('created_at', { ascending: false });
       if (error) throw error;
+      console.log('Player teddies fetched:', data);
       return data.map(pt => pt.terrible_teddies);
     },
   });
 
   useEffect(() => {
     if (error) {
+      console.error('Error loading teddies:', error);
       toast({
         title: "Error loading teddies",
         description: error.message,
@@ -41,6 +45,7 @@ const TerribleTeddiesGame = () => {
 
   useEffect(() => {
     if (playerTeddies && playerTeddies.length > 0) {
+      console.log('Setting initial selected teddy');
       setSelectedTeddy(playerTeddies[0]);
     }
   }, [playerTeddies]);
