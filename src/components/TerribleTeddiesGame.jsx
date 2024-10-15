@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sword, ShoppingBag, Award, Zap, Calendar, Gift } from 'lucide-react';
 import Battle from './Battle';
 import Shop from './Shop';
 import Evolution from './Evolution';
@@ -14,9 +11,10 @@ import PowerUpSystem from './PowerUpSystem';
 import AchievementSystem from './AchievementSystem';
 import SeasonalEvent from './SeasonalEvent';
 import ErrorBoundary from './ErrorBoundary';
+import GameMenu from './GameMenu';
+import TeddyCollection from './TeddyCollection';
 
 const TerribleTeddiesGame = () => {
-  console.log('TerribleTeddiesGame component rendering');
   const { toast } = useToast();
   const [gameState, setGameState] = useState('menu');
   const [selectedTeddy, setSelectedTeddy] = useState(null);
@@ -27,13 +25,11 @@ const TerribleTeddiesGame = () => {
   const { data: playerTeddies, isLoading, error } = useQuery({
     queryKey: ['playerTeddies'],
     queryFn: async () => {
-      console.log('Fetching player teddies');
       const { data, error } = await supabase
         .from('player_teddies')
         .select('*, terrible_teddies(*)')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      console.log('Player teddies fetched:', data);
       return data.map(pt => pt.terrible_teddies);
     },
   });
@@ -51,7 +47,6 @@ const TerribleTeddiesGame = () => {
 
   useEffect(() => {
     if (playerTeddies && playerTeddies.length > 0) {
-      console.log('Setting initial selected teddy');
       setSelectedTeddy(playerTeddies[0]);
     }
   }, [playerTeddies]);
@@ -75,25 +70,6 @@ const TerribleTeddiesGame = () => {
       variant: "success",
     });
   };
-
-  const renderTeddyCard = (teddy) => (
-    <Card key={teddy.id} className={`cursor-pointer ${selectedTeddy?.id === teddy.id ? 'border-4 border-blue-500' : ''}`}
-         onClick={() => setSelectedTeddy(teddy)}>
-      <CardHeader>
-        <CardTitle>{teddy.name}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-gray-600">{teddy.title}</p>
-        <p className="mt-2">{teddy.description}</p>
-        <div className="mt-2 flex justify-between">
-          <span>Attack: {teddy.attack}</span>
-          <span>Defense: {teddy.defense}</span>
-        </div>
-        <p className="mt-2 text-sm font-semibold">Special: {teddy.special_move}</p>
-        <p className="mt-2 text-sm">Level: {teddy.level} | XP: {teddy.experience}/{teddy.level * 100}</p>
-      </CardContent>
-    </Card>
-  );
 
   const renderGameContent = () => {
     switch (gameState) {
@@ -138,9 +114,11 @@ const TerribleTeddiesGame = () => {
             </TabsList>
             <TabsContent value="collection">
               <h2 className="text-2xl font-bold mb-4">Your Teddies</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {playerTeddies && playerTeddies.map(renderTeddyCard)}
-              </div>
+              <TeddyCollection
+                playerTeddies={playerTeddies}
+                selectedTeddy={selectedTeddy}
+                setSelectedTeddy={setSelectedTeddy}
+              />
             </TabsContent>
             <TabsContent value="stats">
               <h2 className="text-2xl font-bold mb-4">Your Stats</h2>
@@ -158,8 +136,6 @@ const TerribleTeddiesGame = () => {
   if (isLoading) return <div>Loading your teddies...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
-  console.log('Rendering TerribleTeddiesGame component');
-
   return (
     <ErrorBoundary>
       <div className="container mx-auto px-4 py-8">
@@ -175,26 +151,11 @@ const TerribleTeddiesGame = () => {
             {renderGameContent()}
           </motion.div>
         </AnimatePresence>
-      <div className="flex flex-wrap justify-center gap-4 mt-8">
-        <Button onClick={startBattle} disabled={!selectedTeddy}>
-          <Sword className="mr-2 h-4 w-4" /> Start Battle
-        </Button>
-        <Button onClick={() => setGameState('shop')}>
-          <ShoppingBag className="mr-2 h-4 w-4" /> Shop
-        </Button>
-        <Button onClick={() => setGameState('evolution')} disabled={!selectedTeddy || selectedTeddy.experience < selectedTeddy.level * 100}>
-          <Zap className="mr-2 h-4 w-4" /> Evolve
-        </Button>
-        <Button onClick={() => setGameState('powerUps')}>
-          <Gift className="mr-2 h-4 w-4" /> Power-Ups
-        </Button>
-        <Button onClick={() => setGameState('achievements')}>
-          <Award className="mr-2 h-4 w-4" /> Achievements
-        </Button>
-        <Button onClick={() => setGameState('seasonalEvent')}>
-          <Calendar className="mr-2 h-4 w-4" /> Seasonal Event
-        </Button>
-      </div>
+        <GameMenu
+          startBattle={startBattle}
+          setGameState={setGameState}
+          selectedTeddy={selectedTeddy}
+        />
       </div>
     </ErrorBoundary>
   );
