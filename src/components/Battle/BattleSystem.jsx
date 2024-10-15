@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import BattleField from './BattleField';
 import BattleActions from './BattleActions';
@@ -12,6 +12,7 @@ import BattleStats from './BattleStats';
 import BattleTimer from './BattleTimer';
 import TeddyTraits from './TeddyTraits';
 import BattleEffects from './BattleEffects';
+import BattleRewards from './BattleRewards';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { useBattleLogic } from '../../hooks/useBattleLogic';
@@ -75,6 +76,7 @@ const BattleSystem = ({ playerTeddy }) => {
       });
     }
 
+    // Update player stats and award XP (keep existing code)
     // Update player stats
     const { data: playerStats, error } = await supabase
       .from('player_stats')
@@ -181,21 +183,7 @@ const BattleSystem = ({ playerTeddy }) => {
       <BattleLog battleLog={battleState.battleLog} />
       <RandomEventDisplay events={randomEvents} />
       <BattleStats battleState={battleState} />
-      {showRewards && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
-        >
-          <div className="bg-white p-6 rounded-lg shadow-xl">
-            <h2 className="text-2xl font-bold mb-4">Battle Rewards</h2>
-            <p>XP Gained: 10</p>
-            <p>Coins Earned: 50</p>
-            <Button onClick={() => setShowRewards(false)} className="mt-4">Close</Button>
-          </div>
-        </motion.div>
-      )}
+      <BattleRewards showRewards={showRewards} setShowRewards={setShowRewards} />
       {gameOver && (
         <div className="mt-4 text-center">
           <Button onClick={() => window.location.reload()} className="bg-green-500 hover:bg-green-600 text-white">
