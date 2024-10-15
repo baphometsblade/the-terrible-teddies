@@ -1,12 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { getWeatherEffect } from '../../utils/battleUtils';
+import { getRandomWeatherEffect } from '../../utils/weatherEffects';
 
 const WeatherForecast = ({ currentWeather, roundCount }) => {
   const nextWeatherChangeRound = Math.ceil(roundCount / 5) * 5;
   const roundsUntilChange = nextWeatherChangeRound - roundCount;
 
-  const predictedWeather = getWeatherEffect();
+  const predictedWeather = getRandomWeatherEffect();
 
   return (
     <motion.div

@@ -1,16 +1,16 @@
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { getSpecialAbility } from '../utils/specialAbilities';
 import { applyBattleEvent } from '../utils/battleEvents';
-import { getWeatherEffect } from '../utils/weatherEffects';
-import { applyWeatherEffect } from '../utils/battleEffects';
+import { getRandomWeatherEffect, applyWeatherEffect } from '../utils/weatherEffects';
 import { getAIAction } from '../utils/AIOpponent';
 import { useBattleState } from './useBattleState';
 import { performPlayerAction, performAIAction } from '../utils/battleActions';
-import { useEffect } from 'react';
 
 export const useBattleLogic = (playerTeddy, opponentTeddy) => {
   const [battleState, updateBattleState] = useBattleState();
+  const [randomEvents, setRandomEvents] = useState([]);
 
   const { data: playerTeddyData, isLoading: isLoadingPlayerTeddy } = useQuery({
     queryKey: ['playerTeddy', playerTeddy?.id],
@@ -47,7 +47,7 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     }
 
     if (battleState.roundCount % 5 === 0) {
-      const newWeatherEffect = getWeatherEffect();
+      const newWeatherEffect = getRandomWeatherEffect();
       updateBattleState((prevState) => ({
         ...prevState,
         weatherEffect: newWeatherEffect,
@@ -56,7 +56,7 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     }
 
     if (battleState.weatherEffect) {
-      const weatherUpdatedState = applyWeatherEffect(battleState, playerTeddyData, opponentTeddyData);
+      const weatherUpdatedState = applyWeatherEffect(battleState, battleState.weatherEffect);
       updateBattleState(weatherUpdatedState);
     }
 
@@ -65,6 +65,7 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
       const randomEvent = getRandomEvent();
       const updatedState = applyRandomEvent(battleState, randomEvent);
       updateBattleState(updatedState);
+      setRandomEvents([...randomEvents, randomEvent]);
     }
   }, [battleState.roundCount, battleState.weatherEffect, playerTeddyData, opponentTeddyData]);
 
@@ -112,6 +113,7 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     isLoadingOpponentTeddy,
     playerTeddyData,
     opponentTeddyData,
+    randomEvents,
   };
 };
 
@@ -120,6 +122,8 @@ const getRandomEvent = () => {
     { name: 'Sudden Gust', effect: (state) => ({ ...state, playerDefenseBoost: state.playerDefenseBoost - 2, opponentDefenseBoost: state.opponentDefenseBoost - 2 }) },
     { name: 'Energy Surge', effect: (state) => ({ ...state, playerEnergy: state.playerEnergy + 1, opponentEnergy: state.opponentEnergy + 1 }) },
     { name: 'Healing Mist', effect: (state) => ({ ...state, playerHealth: Math.min(100, state.playerHealth + 10), opponentHealth: Math.min(100, state.opponentHealth + 10) }) },
+    { name: 'Rage Inducer', effect: (state) => ({ ...state, rage: Math.min(100, state.rage + 20), aiRage: Math.min(100, state.aiRage + 20) }) },
+    { name: 'Stuffing Storm', effect: (state) => ({ ...state, playerAttackBoost: state.playerAttackBoost + 3, opponentAttackBoost: state.opponentAttackBoost + 3 }) },
   ];
   return events[Math.floor(Math.random() * events.length)];
 };

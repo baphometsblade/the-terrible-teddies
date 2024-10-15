@@ -7,11 +7,13 @@ import BattleLog from './BattleLog';
 import PowerUpMeter from './PowerUpMeter';
 import ComboMeter from './ComboMeter';
 import WeatherEffect from './WeatherEffect';
+import RandomEventDisplay from './RandomEventDisplay';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { useBattleLogic } from '../../hooks/useBattleLogic';
 import { motion, AnimatePresence } from 'framer-motion';
 import BattleAnimation from './BattleAnimation';
+import WeatherForecast from './WeatherForecast';
 
 const BattleSystem = ({ playerTeddy }) => {
   const [opponentTeddy, setOpponentTeddy] = useState(null);
@@ -26,6 +28,7 @@ const BattleSystem = ({ playerTeddy }) => {
     playerTeddyData,
     opponentTeddyData,
     aiAction,
+    randomEvents,
   } = useBattleLogic(playerTeddy, opponentTeddy);
 
   const [battleAnimation, setBattleAnimation] = useState(null);
@@ -114,6 +117,7 @@ const BattleSystem = ({ playerTeddy }) => {
       transition={{ duration: 0.5 }}
     >
       <WeatherEffect weather={battleState.weatherEffect} />
+      <WeatherForecast currentWeather={battleState.weatherEffect} roundCount={battleState.roundCount} />
       <BattleField
         battleState={battleState}
         playerTeddyData={playerTeddyData}
@@ -131,12 +135,14 @@ const BattleSystem = ({ playerTeddy }) => {
         currentTurn={battleState.currentTurn}
         playerEnergy={battleState.playerEnergy}
         onAction={handlePlayerAction}
+        rage={battleState.rage}
       />
       <div className="flex justify-between mt-4">
         <PowerUpMeter value={battleState.powerUpMeter} onPowerUp={handlePowerUp} />
         <ComboMeter value={battleState.comboMeter} onCombo={handleCombo} />
       </div>
       <BattleLog battleLog={battleState.battleLog} />
+      <RandomEventDisplay events={randomEvents} />
       {showRewards && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
