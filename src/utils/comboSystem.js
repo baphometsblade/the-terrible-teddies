@@ -1,3 +1,5 @@
+import { calculateDamage } from './battleUtils';
+
 const comboMoves = {
   'attack-attack': {
     name: 'Double Strike',
@@ -41,6 +43,18 @@ export const checkForCombo = (moves) => {
   return comboMoves[comboKey] || null;
 };
 
-export const applyComboEffect = (combo, attacker, defender) => {
-  return combo.effect(attacker, defender);
+export const applyComboEffect = (state, combo, attacker, defender) => {
+  const effect = combo.effect(attacker, defender);
+  let newState = { ...state };
+
+  if (effect.opponentHealth) {
+    newState.opponentHealth = effect.opponentHealth(newState.opponentHealth);
+  }
+  if (effect.playerStatusEffect) {
+    newState.playerStatusEffect = effect.playerStatusEffect;
+  }
+  newState.battleLog = [...newState.battleLog, ...effect.battleLog];
+  newState.moveHistory = [];
+
+  return newState;
 };
