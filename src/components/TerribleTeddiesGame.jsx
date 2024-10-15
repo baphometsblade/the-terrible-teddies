@@ -1,56 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { useToast } from "@/components/ui/use-toast";
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ErrorBoundary from './ErrorBoundary';
 import GameMenu from './GameMenu';
 import GameContent from './GameContent';
-import { usePlayerTeddies } from '../hooks/usePlayerTeddies';
+import { useGameState } from '../hooks/useGameState';
 
 const TerribleTeddiesGame = () => {
-  const { toast } = useToast();
-  const [gameState, setGameState] = useState('menu');
-  const [selectedTeddy, setSelectedTeddy] = useState(null);
-  const [powerUps, setPowerUps] = useState([]);
-  const [achievements, setAchievements] = useState([]);
-
-  const { data: playerTeddies, isLoading, error } = usePlayerTeddies();
-
-  useEffect(() => {
-    if (playerTeddies && playerTeddies.length > 0) {
-      setSelectedTeddy(playerTeddies[0]);
-    }
-  }, [playerTeddies]);
-
-  const startBattle = () => {
-    if (!selectedTeddy) {
-      toast({
-        title: "No Teddy Selected",
-        description: "Please select a teddy before starting a battle.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setGameState('battle');
-    toast({
-      title: "Battle Started",
-      description: `${selectedTeddy.name} is ready to fight!`,
-      variant: "success",
-    });
-  };
-
-  const handleBattleEnd = (result, updatedTeddy, experience) => {
-    setGameState('menu');
-    toast({
-      title: result === 'win' ? "Victory!" : "Defeat",
-      description: result === 'win' 
-        ? `You won the battle! ${selectedTeddy.name} gained ${experience} XP.` 
-        : "You lost the battle.",
-      variant: result === 'win' ? "success" : "destructive",
-    });
-    if (result === 'win' && updatedTeddy) {
-      setSelectedTeddy(updatedTeddy);
-    }
-  };
+  const {
+    gameState,
+    selectedTeddy,
+    setSelectedTeddy,
+    powerUps,
+    setPowerUps,
+    achievements,
+    setAchievements,
+    playerTeddies,
+    isLoading,
+    error,
+    startBattle,
+    handleBattleEnd
+  } = useGameState();
 
   if (isLoading) return <div>Loading your teddies...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -82,7 +51,6 @@ const TerribleTeddiesGame = () => {
         </AnimatePresence>
         <GameMenu
           startBattle={startBattle}
-          setGameState={setGameState}
           selectedTeddy={selectedTeddy}
         />
       </div>
