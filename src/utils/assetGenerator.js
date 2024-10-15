@@ -3,11 +3,13 @@ import axios from 'axios';
 
 const MIDJOURNEY_API_URL = 'https://api.midjourney.com/v1/imagine'; // Replace with actual Midjourney API endpoint
 const MIDJOURNEY_API_KEY = process.env.MIDJOURNEY_API_KEY;
+const MIDJOURNEY_ID = process.env.MIDJOURNEY_ID;
 
 const generateMidjourneyImage = async (prompt) => {
   try {
     const response = await axios.post(MIDJOURNEY_API_URL, {
       prompt: prompt,
+      midjourney_id: MIDJOURNEY_ID,
     }, {
       headers: {
         'Authorization': `Bearer ${MIDJOURNEY_API_KEY}`,
