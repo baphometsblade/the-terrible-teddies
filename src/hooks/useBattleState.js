@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getRandomBattleItem } from '../utils/battleItems';
+import { getRandomWeatherEffect } from '../utils/weatherEffects';
 
 export const useBattleState = (initialPlayerHealth = 100, initialOpponentHealth = 100) => {
   const [battleState, setBattleState] = useState({
@@ -15,7 +16,7 @@ export const useBattleState = (initialPlayerHealth = 100, initialOpponentHealth 
     roundCount: 0,
     playerExperience: 0,
     playerLevel: 1,
-    weatherEffect: null,
+    weatherEffect: getRandomWeatherEffect(),
     comboMeter: 0,
     powerUpMeter: 0,
     battleLog: [],
@@ -30,6 +31,8 @@ export const useBattleState = (initialPlayerHealth = 100, initialOpponentHealth 
     opponentShield: false,
     rage: 0,
     aiRage: 0,
+    playerCriticalChanceBoost: 0,
+    opponentCriticalChanceBoost: 0,
   });
 
   const updateBattleState = (updates) => {

@@ -1,12 +1,13 @@
 import { calculateDamage, rollForCritical } from './battleUtils';
 import { applyStatusEffect, applyRageEffect } from './battleEffects';
 import { checkForCombo, applyComboEffect } from './comboSystem';
+import { applyWeatherEffect, getRandomWeatherEffect } from './weatherEffects';
 
 export const performPlayerAction = (action, battleState, playerTeddyData, opponentTeddyData) => {
   let newState = { ...battleState };
   let damage = 0;
 
-  const isCritical = rollForCritical(playerTeddyData);
+  const isCritical = rollForCritical(playerTeddyData, newState.playerCriticalChanceBoost);
 
   switch (action) {
     case 'attack':
@@ -50,6 +51,14 @@ export const performPlayerAction = (action, battleState, playerTeddyData, oppone
   newState.roundCount++;
 
   newState = applyStatusEffect(newState, playerTeddyData, opponentTeddyData);
+  newState = applyWeatherEffect(newState, newState.weatherEffect);
+
+  // Change weather every 5 rounds
+  if (newState.roundCount % 5 === 0) {
+    const newWeatherEffect = getRandomWeatherEffect();
+    newState.weatherEffect = newWeatherEffect;
+    newState.battleLog.push(`The weather is changing to ${newWeatherEffect.name}!`);
+  }
 
   const combo = checkForCombo(newState.moveHistory);
   if (combo) {
@@ -63,7 +72,7 @@ export const performAIAction = (action, battleState, aiTeddyData, playerTeddyDat
   let newState = { ...battleState };
   let damage = 0;
 
-  const isCritical = rollForCritical(aiTeddyData);
+  const isCritical = rollForCritical(aiTeddyData, newState.opponentCriticalChanceBoost);
 
   switch (action) {
     case 'attack':
@@ -105,6 +114,7 @@ export const performAIAction = (action, battleState, aiTeddyData, playerTeddyDat
   newState.roundCount++;
 
   newState = applyStatusEffect(newState, aiTeddyData, playerTeddyData);
+  newState = applyWeatherEffect(newState, newState.weatherEffect);
 
   const combo = checkForCombo(newState.moveHistory);
   if (combo) {
