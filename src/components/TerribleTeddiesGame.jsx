@@ -7,11 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sword, ShoppingBag, Award, Zap, Calendar, Gift } from 'lucide-react';
+import Battle from './Battle';
+import Shop from './Shop';
 
 const TerribleTeddiesGame = () => {
   const { toast } = useToast();
   const [gameState, setGameState] = useState('menu');
   const [selectedTeddy, setSelectedTeddy] = useState(null);
+  const [opponent, setOpponent] = useState(null);
 
   const { data: playerTeddies, isLoading, error } = useQuery({
     queryKey: ['playerTeddies'],
@@ -50,11 +53,14 @@ const TerribleTeddiesGame = () => {
       });
       return;
     }
+    // Select a random opponent
+    const availableOpponents = playerTeddies.filter(t => t.id !== selectedTeddy.id);
+    const randomOpponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
+    setOpponent(randomOpponent);
     setGameState('battle');
-    // Here you would typically initiate the battle logic
     toast({
       title: "Battle Started",
-      description: `${selectedTeddy.name} is ready to fight!`,
+      description: `${selectedTeddy.name} is ready to fight against ${randomOpponent.name}!`,
       variant: "success",
     });
   };
@@ -66,11 +72,13 @@ const TerribleTeddiesGame = () => {
         <CardTitle>{teddy.name}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p>{teddy.description}</p>
-        <div className="mt-2">
-          <span className="mr-2">Attack: {teddy.attack}</span>
+        <p className="text-sm text-gray-600">{teddy.title}</p>
+        <p className="mt-2">{teddy.description}</p>
+        <div className="mt-2 flex justify-between">
+          <span>Attack: {teddy.attack}</span>
           <span>Defense: {teddy.defense}</span>
         </div>
+        <p className="mt-2 text-sm font-semibold">Special: {teddy.special_move}</p>
       </CardContent>
     </Card>
   );
@@ -79,20 +87,21 @@ const TerribleTeddiesGame = () => {
     switch (gameState) {
       case 'battle':
         return (
-          <div>
-            <h2 className="text-2xl font-bold mb-4">Battle Arena</h2>
-            <p>Battle functionality to be implemented.</p>
-            <Button onClick={() => setGameState('menu')} className="mt-4">Back to Menu</Button>
-          </div>
+          <Battle
+            playerTeddy={selectedTeddy}
+            opponentTeddy={opponent}
+            onBattleEnd={(result) => {
+              setGameState('menu');
+              toast({
+                title: result === 'win' ? "Victory!" : "Defeat",
+                description: result === 'win' ? "You won the battle!" : "You lost the battle.",
+                variant: result === 'win' ? "success" : "destructive",
+              });
+            }}
+          />
         );
       case 'shop':
-        return (
-          <div>
-            <h2 className="text-2xl font-bold mb-4">Teddy Shop</h2>
-            <p>Shop functionality to be implemented.</p>
-            <Button onClick={() => setGameState('menu')} className="mt-4">Back to Menu</Button>
-          </div>
-        );
+        return <Shop onExit={() => setGameState('menu')} />;
       default:
         return (
           <Tabs defaultValue="collection" className="w-full">
@@ -137,7 +146,7 @@ const TerribleTeddiesGame = () => {
           {renderGameContent()}
         </motion.div>
       </AnimatePresence>
-      <div className="flex justify-center space-x-4 mt-8">
+      <div className="flex flex-wrap justify-center gap-4 mt-8">
         <Button onClick={startBattle} disabled={!selectedTeddy}>
           <Sword className="mr-2 h-4 w-4" /> Start Battle
         </Button>

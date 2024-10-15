@@ -1,94 +1,123 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import TeddyCard from './TeddyCard';
-import { calculateDamage } from '../utils/battleUtils';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { motion } from 'framer-motion';
+import { calculateDamage } from '../utils/battleSystem';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
-  const [playerHealth, setPlayerHealth] = useState(30);
-  const [opponentHealth, setOpponentHealth] = useState(30);
+  const [playerHealth, setPlayerHealth] = useState(100);
+  const [opponentHealth, setOpponentHealth] = useState(100);
   const [currentTurn, setCurrentTurn] = useState('player');
+  const [battleLog, setBattleLog] = useState([]);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (playerHealth <= 0 || opponentHealth <= 0) {
-      onBattleEnd(playerHealth > opponentHealth ? 'win' : 'lose');
+    if (playerHealth <= 0) {
+      onBattleEnd('lose');
+    } else if (opponentHealth <= 0) {
+      onBattleEnd('win');
     }
-  }, [playerHealth, opponentHealth]);
+  }, [playerHealth, opponentHealth, onBattleEnd]);
 
-  const handleAttack = () => {
-    if (currentTurn === 'player') {
-      const damage = calculateDamage(playerTeddy, opponentTeddy);
-      setOpponentHealth(prev => Math.max(0, prev - damage));
-      setCurrentTurn('opponent');
-      toast({
-        title: "Player Attack",
-        description: `You dealt ${damage} damage!`,
-      });
-    }
+  const addToBattleLog = (message) => {
+    setBattleLog(prevLog => [...prevLog, message]);
   };
 
-  const handleDefend = () => {
-    if (currentTurn === 'player') {
-      setPlayerTeddy(prev => ({ ...prev, defense: prev.defense + 2 }));
-      setCurrentTurn('opponent');
-      toast({
-        title: "Player Defend",
-        description: "You increased your defense by 2!",
-      });
+  const handlePlayerAction = (action) => {
+    if (currentTurn !== 'player') return;
+
+    let damage = 0;
+    switch (action) {
+      case 'attack':
+        damage = calculateDamage(playerTeddy, opponentTeddy);
+        setOpponentHealth(prev => Math.max(0, prev - damage));
+        addToBattleLog(`${playerTeddy.name} attacks for ${damage} damage!`);
+        break;
+      case 'defend':
+        addToBattleLog(`${playerTeddy.name} takes a defensive stance.`);
+        break;
+      case 'special':
+        damage = calculateDamage(playerTeddy, opponentTeddy) * 1.5;
+        setOpponentHealth(prev => Math.max(0, prev - damage));
+        addToBattleLog(`${playerTeddy.name} uses ${playerTeddy.special_move} for ${damage} damage!`);
+        break;
+      default:
+        break;
     }
+
+    setCurrentTurn('opponent');
+    setTimeout(handleOpponentTurn, 1500);
   };
 
-  const handleSpecialMove = () => {
-    if (currentTurn === 'player') {
-      // Implement special move logic here
-      toast({
-        title: "Special Move",
-        description: `You used ${playerTeddy.specialMove}!`,
-      });
-      setCurrentTurn('opponent');
-    }
-  };
+  const handleOpponentTurn = () => {
+    const actions = ['attack', 'defend', 'special'];
+    const randomAction = actions[Math.floor(Math.random() * actions.length)];
+    let damage = 0;
 
-  const opponentTurn = () => {
-    // Simple AI: randomly choose between attack and defend
-    if (Math.random() > 0.5) {
-      const damage = calculateDamage(opponentTeddy, playerTeddy);
-      setPlayerHealth(prev => Math.max(0, prev - damage));
-      toast({
-        title: "Opponent Attack",
-        description: `Opponent dealt ${damage} damage!`,
-      });
-    } else {
-      setOpponentTeddy(prev => ({ ...prev, defense: prev.defense + 2 }));
-      toast({
-        title: "Opponent Defend",
-        description: "Opponent increased their defense by 2!",
-      });
+    switch (randomAction) {
+      case 'attack':
+        damage = calculateDamage(opponentTeddy, playerTeddy);
+        setPlayerHealth(prev => Math.max(0, prev - damage));
+        addToBattleLog(`${opponentTeddy.name} attacks for ${damage} damage!`);
+        break;
+      case 'defend':
+        addToBattleLog(`${opponentTeddy.name} takes a defensive stance.`);
+        break;
+      case 'special':
+        damage = calculateDamage(opponentTeddy, playerTeddy) * 1.5;
+        setPlayerHealth(prev => Math.max(0, prev - damage));
+        addToBattleLog(`${opponentTeddy.name} uses ${opponentTeddy.special_move} for ${damage} damage!`);
+        break;
+      default:
+        break;
     }
+
     setCurrentTurn('player');
   };
 
-  useEffect(() => {
-    if (currentTurn === 'opponent') {
-      setTimeout(opponentTurn, 1000);
-    }
-  }, [currentTurn]);
+  const renderTeddyCard = (teddy, health) => (
+    <Card className="w-full max-w-sm">
+      <CardHeader>
+        <CardTitle>{teddy.name}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-gray-600">{teddy.title}</p>
+        <Progress value={health} className="mt-2" />
+        <p className="mt-2">Health: {health}</p>
+        <p>Attack: {teddy.attack}</p>
+        <p>Defense: {teddy.defense}</p>
+        <p>Special: {teddy.special_move}</p>
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="flex justify-between w-full mb-4">
-        <TeddyCard teddy={playerTeddy} />
-        <TeddyCard teddy={opponentTeddy} />
+    <div className="battle-arena">
+      <h2 className="text-2xl font-bold mb-4">Battle Arena</h2>
+      <div className="flex justify-between mb-4">
+        {renderTeddyCard(playerTeddy, playerHealth)}
+        {renderTeddyCard(opponentTeddy, opponentHealth)}
       </div>
-      <div className="flex justify-between w-full mb-4">
-        <p>Player Health: {playerHealth}</p>
-        <p>Opponent Health: {opponentHealth}</p>
+      <div className="mb-4">
+        <h3 className="text-xl font-semibold mb-2">Battle Log</h3>
+        <div className="h-40 overflow-y-auto bg-gray-100 p-2 rounded">
+          {battleLog.map((log, index) => (
+            <p key={index}>{log}</p>
+          ))}
+        </div>
       </div>
-      <div className="flex space-x-2">
-        <Button onClick={handleAttack} disabled={currentTurn !== 'player'}>Attack</Button>
-        <Button onClick={handleDefend} disabled={currentTurn !== 'player'}>Defend</Button>
-        <Button onClick={handleSpecialMove} disabled={currentTurn !== 'player'}>Special Move</Button>
+      <div className="flex justify-center space-x-4">
+        <Button onClick={() => handlePlayerAction('attack')} disabled={currentTurn !== 'player'}>
+          Attack
+        </Button>
+        <Button onClick={() => handlePlayerAction('defend')} disabled={currentTurn !== 'player'}>
+          Defend
+        </Button>
+        <Button onClick={() => handlePlayerAction('special')} disabled={currentTurn !== 'player'}>
+          Special
+        </Button>
       </div>
     </div>
   );
