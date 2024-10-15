@@ -36,6 +36,7 @@ const BattleSystem = ({ playerTeddy }) => {
 
   const [battleAnimation, setBattleAnimation] = useState(null);
   const [showRewards, setShowRewards] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
 
   const { data: opponents, isLoading: isLoadingOpponents } = useQuery({
     queryKey: ['opponents'],
@@ -51,7 +52,15 @@ const BattleSystem = ({ playerTeddy }) => {
     enabled: !!playerTeddy,
   });
 
+  useEffect(() => {
+    if (opponents && opponents.length > 0) {
+      const randomOpponent = opponents[Math.floor(Math.random() * opponents.length)];
+      setOpponentTeddy(randomOpponent);
+    }
+  }, [opponents]);
+
   const handleBattleEnd = async (result) => {
+    setGameOver(true);
     toast({
       title: result === 'win' ? "Victory!" : "Defeat",
       description: result === 'win' ? "You won the battle!" : "You lost the battle.",
@@ -95,6 +104,8 @@ const BattleSystem = ({ playerTeddy }) => {
   };
 
   const handlePlayerAction = async (action) => {
+    if (gameOver) return;
+
     setBattleAnimation(action);
     const newState = await handleAction(action);
     setTimeout(() => setBattleAnimation(null), 1000);
@@ -117,13 +128,14 @@ const BattleSystem = ({ playerTeddy }) => {
   };
 
   const handleTimeUp = () => {
+    if (gameOver) return;
     const actions = ['attack', 'defend', 'special'];
     const randomAction = actions[Math.floor(Math.random() * actions.length)];
     handlePlayerAction(randomAction);
   };
 
-  if (isLoadingPlayerTeddy || isLoadingOpponentTeddy) {
-    return <div>Loading battle data...</div>;
+  if (isLoadingPlayerTeddy || isLoadingOpponentTeddy || !opponentTeddy) {
+    return <div className="text-center p-8">Loading battle data...</div>;
   }
 
   return (
@@ -160,10 +172,11 @@ const BattleSystem = ({ playerTeddy }) => {
         playerEnergy={battleState.playerEnergy}
         onAction={handlePlayerAction}
         rage={battleState.rage}
+        disabled={gameOver}
       />
       <div className="flex justify-between mt-4">
-        <PowerUpMeter value={battleState.powerUpMeter} onPowerUp={handlePowerUp} />
-        <ComboMeter value={battleState.comboMeter} onCombo={handleCombo} />
+        <PowerUpMeter value={battleState.powerUpMeter} onPowerUp={handlePowerUp} disabled={gameOver} />
+        <ComboMeter value={battleState.comboMeter} onCombo={handleCombo} disabled={gameOver} />
       </div>
       <BattleLog battleLog={battleState.battleLog} />
       <RandomEventDisplay events={randomEvents} />
@@ -182,6 +195,13 @@ const BattleSystem = ({ playerTeddy }) => {
             <Button onClick={() => setShowRewards(false)} className="mt-4">Close</Button>
           </div>
         </motion.div>
+      )}
+      {gameOver && (
+        <div className="mt-4 text-center">
+          <Button onClick={() => window.location.reload()} className="bg-green-500 hover:bg-green-600 text-white">
+            Play Again
+          </Button>
+        </div>
       )}
     </motion.div>
   );
