@@ -1,25 +1,64 @@
 import React from 'react';
+import { motion } from 'framer-motion';
+import { Sword, Shield, Zap, Sparkles } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 const BattleActions = ({ currentTurn, playerEnergy, rage, onAction }) => {
+  const buttonVariants = {
+    disabled: { opacity: 0.5, scale: 0.95 },
+    enabled: { opacity: 1, scale: 1 },
+  };
+
   return (
-    <div className="battle-actions mb-4">
-      <Button onClick={() => onAction('attack')} disabled={currentTurn !== 'player'} className="mr-2">
-        Attack
-      </Button>
-      <Button onClick={() => onAction('defend')} disabled={currentTurn !== 'player'} className="mr-2">
-        Defend
-      </Button>
-      <Button onClick={() => onAction('special')} disabled={currentTurn !== 'player' || playerEnergy < 2} className="mr-2">
-        Special Move
-      </Button>
-      <Button 
-        onClick={() => onAction('ultimate')} 
-        disabled={currentTurn !== 'player' || rage < 100}
-        className={`mr-2 ${rage === 100 ? 'animate-pulse bg-red-500' : ''}`}
+    <div className="battle-actions grid grid-cols-2 gap-2 mb-4">
+      <motion.div
+        variants={buttonVariants}
+        animate={currentTurn === 'player' ? 'enabled' : 'disabled'}
       >
-        Ultimate Move
-      </Button>
+        <Button 
+          onClick={() => onAction('attack')} 
+          disabled={currentTurn !== 'player'}
+          className="w-full bg-red-500 hover:bg-red-600"
+        >
+          <Sword className="mr-2 h-4 w-4" /> Attack
+        </Button>
+      </motion.div>
+      <motion.div
+        variants={buttonVariants}
+        animate={currentTurn === 'player' ? 'enabled' : 'disabled'}
+      >
+        <Button 
+          onClick={() => onAction('defend')} 
+          disabled={currentTurn !== 'player'}
+          className="w-full bg-blue-500 hover:bg-blue-600"
+        >
+          <Shield className="mr-2 h-4 w-4" /> Defend
+        </Button>
+      </motion.div>
+      <motion.div
+        variants={buttonVariants}
+        animate={currentTurn === 'player' && playerEnergy >= 2 ? 'enabled' : 'disabled'}
+      >
+        <Button 
+          onClick={() => onAction('special')} 
+          disabled={currentTurn !== 'player' || playerEnergy < 2}
+          className="w-full bg-purple-500 hover:bg-purple-600"
+        >
+          <Zap className="mr-2 h-4 w-4" /> Special Move
+        </Button>
+      </motion.div>
+      <motion.div
+        variants={buttonVariants}
+        animate={currentTurn === 'player' && rage === 100 ? 'enabled' : 'disabled'}
+      >
+        <Button 
+          onClick={() => onAction('ultimate')} 
+          disabled={currentTurn !== 'player' || rage < 100}
+          className={`w-full bg-yellow-500 hover:bg-yellow-600 ${rage === 100 ? 'animate-pulse' : ''}`}
+        >
+          <Sparkles className="mr-2 h-4 w-4" /> Ultimate Move
+        </Button>
+      </motion.div>
     </div>
   );
 };

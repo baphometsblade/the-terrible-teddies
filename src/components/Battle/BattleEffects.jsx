@@ -1,44 +1,44 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const BattleEffects = () => {
+const BattleEffects = ({ effect }) => {
+  if (!effect) return null;
+
+  const particleVariants = {
+    initial: { opacity: 0, scale: 0 },
+    animate: { opacity: [0, 1, 0], scale: [0, 1, 0] },
+  };
+
   return (
     <motion.div
       className="battle-effects absolute inset-0 pointer-events-none"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
     >
+      {[...Array(20)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-4 h-4 bg-yellow-400 rounded-full"
+          variants={particleVariants}
+          initial="initial"
+          animate="animate"
+          transition={{
+            duration: 1,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+          }}
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+        />
+      ))}
       <motion.div
-        className="effect-particle bg-red-500 rounded-full w-4 h-4"
-        initial={{ scale: 0, x: '50%', y: '50%' }}
-        animate={{
-          scale: [0, 1.5, 0],
-          x: ['50%', '30%', '70%', '50%'],
-          y: ['50%', '70%', '30%', '50%'],
-        }}
-        transition={{ duration: 0.5, times: [0, 0.2, 1], repeat: 2 }}
-      />
-      <motion.div
-        className="effect-particle bg-yellow-500 rounded-full w-3 h-3"
-        initial={{ scale: 0, x: '50%', y: '50%' }}
-        animate={{
-          scale: [0, 1.2, 0],
-          x: ['50%', '70%', '30%', '50%'],
-          y: ['50%', '30%', '70%', '50%'],
-        }}
-        transition={{ duration: 0.5, times: [0, 0.2, 1], repeat: 2, delay: 0.1 }}
-      />
-      <motion.div
-        className="effect-particle bg-blue-500 rounded-full w-2 h-2"
-        initial={{ scale: 0, x: '50%', y: '50%' }}
-        animate={{
-          scale: [0, 1, 0],
-          x: ['50%', '30%', '70%', '50%'],
-          y: ['50%', '70%', '30%', '50%'],
-        }}
-        transition={{ duration: 0.5, times: [0, 0.2, 1], repeat: 2, delay: 0.2 }}
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200 to-transparent"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.2, 0] }}
+        transition={{ duration: 2, repeat: Infinity }}
       />
     </motion.div>
   );

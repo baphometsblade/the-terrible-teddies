@@ -9,12 +9,13 @@ import ComboMeter from './ComboMeter';
 import WeatherEffect from './WeatherEffect';
 import RandomEventDisplay from './RandomEventDisplay';
 import BattleStats from './BattleStats';
+import BattleTimer from './BattleTimer';
+import TeddyTraits from './TeddyTraits';
+import BattleEffects from './BattleEffects';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { useBattleLogic } from '../../hooks/useBattleLogic';
 import { motion, AnimatePresence } from 'framer-motion';
-import BattleAnimation from './BattleAnimation';
-import WeatherForecast from './WeatherForecast';
 import confetti from 'canvas-confetti';
 
 const BattleSystem = ({ playerTeddy }) => {
@@ -115,7 +116,13 @@ const BattleSystem = ({ playerTeddy }) => {
     }, 1500);
   };
 
-  if (isLoadingPlayerTeddy || isLoadingOpponentTeddy || isLoadingOpponents) {
+  const handleTimeUp = () => {
+    const actions = ['attack', 'defend', 'special'];
+    const randomAction = actions[Math.floor(Math.random() * actions.length)];
+    handlePlayerAction(randomAction);
+  };
+
+  if (isLoadingPlayerTeddy || isLoadingOpponentTeddy) {
     return <div>Loading battle data...</div>;
   }
 
@@ -128,7 +135,7 @@ const BattleSystem = ({ playerTeddy }) => {
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <WeatherEffect weather={battleState.weatherEffect} />
-        <WeatherForecast currentWeather={battleState.weatherEffect} roundCount={battleState.roundCount} />
+        <BattleTimer duration={30} onTimeUp={handleTimeUp} />
       </div>
       <BattleField
         battleState={battleState}
@@ -143,6 +150,11 @@ const BattleSystem = ({ playerTeddy }) => {
           />
         )}
       </AnimatePresence>
+      <BattleEffects effect={battleState.currentEffect} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <TeddyTraits teddy={playerTeddyData} />
+        <TeddyTraits teddy={opponentTeddyData} />
+      </div>
       <BattleActions
         currentTurn={battleState.currentTurn}
         playerEnergy={battleState.playerEnergy}
