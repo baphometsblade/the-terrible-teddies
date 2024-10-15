@@ -28,6 +28,8 @@ export const useBattleState = (initialPlayerHealth = 100, initialOpponentHealth 
     opponentAttackBoostDuration: 0,
     playerShield: false,
     opponentShield: false,
+    rage: 0,
+    aiRage: 0,
   });
 
   const updateBattleState = (updates) => {

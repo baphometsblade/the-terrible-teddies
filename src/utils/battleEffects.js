@@ -28,19 +28,29 @@ export const applyStatusEffects = (state, player, opponent) => {
   return newState;
 };
 
-const applyStatusEffect = (teddy, statusEffect) => {
+export const applyStatusEffect = (teddy, statusEffect) => {
   switch (statusEffect) {
     case 'burn':
-      return { damage: Math.floor(teddy.maxHealth * 0.1) };
+      return { damage: Math.floor(teddy.maxHealth * 0.1), effect: 'Attack reduced' };
     case 'poison':
-      return { damage: Math.floor(teddy.maxHealth * 0.08) };
+      return { damage: Math.floor(teddy.maxHealth * 0.08), effect: 'Defense reduced' };
     case 'freeze':
-      return { damage: 0, skipTurn: true };
+      return { damage: 0, effect: 'Speed reduced' };
     case 'paralyze':
-      return { damage: 0, reduceSpeed: true };
+      return { damage: 0, effect: 'May skip turn' };
     case 'confusion':
-      return { damage: 0, selfDamageChance: 0.3 };
+      return { damage: 0, effect: 'May hurt self' };
     default:
-      return { damage: 0 };
+      return { damage: 0, effect: null };
   }
+};
+
+export const applyRageEffect = (state, teddy) => {
+  let newState = { ...state };
+  const rageBoost = Math.floor(teddy.attack * (newState.rage / 100));
+  newState.battleLog.push(`${teddy.name}'s rage boosts attack by ${rageBoost}!`);
+  return {
+    ...newState,
+    playerAttackBoost: newState.playerAttackBoost + rageBoost,
+  };
 };

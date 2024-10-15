@@ -1,5 +1,5 @@
 import { calculateDamage, rollForCritical } from './battleUtils';
-import { applyStatusEffect } from './battleEffects';
+import { applyStatusEffect, applyRageEffect } from './battleEffects';
 import { checkForCombo, applyComboEffect } from './comboSystem';
 
 export const performPlayerAction = (action, battleState, playerTeddyData, opponentTeddyData) => {
@@ -14,12 +14,14 @@ export const performPlayerAction = (action, battleState, playerTeddyData, oppone
       newState.opponentHealth -= damage;
       newState.battleLog.push(`${playerTeddyData.name} attacks for ${damage} damage!${isCritical ? ' Critical hit!' : ''}`);
       newState.moveHistory.push('attack');
+      newState.rage = Math.min(newState.rage + 10, 100);
       break;
     case 'defend':
       newState.playerEnergy += 1;
       newState.playerDefenseBoost += Math.floor(playerTeddyData.defense * 0.2);
       newState.battleLog.push(`${playerTeddyData.name} defends and gains 1 energy and ${newState.playerDefenseBoost} defense!`);
       newState.moveHistory.push('defend');
+      newState.rage = Math.min(newState.rage + 5, 100);
       break;
     case 'special':
       if (newState.playerEnergy >= 2) {
@@ -28,6 +30,16 @@ export const performPlayerAction = (action, battleState, playerTeddyData, oppone
         newState = { ...newState, ...specialResult };
         newState.playerEnergy -= 2;
         newState.moveHistory.push('special');
+        newState.rage = Math.min(newState.rage + 15, 100);
+      }
+      break;
+    case 'ultimate':
+      if (newState.rage === 100) {
+        damage = calculateDamage(playerTeddyData, opponentTeddyData, newState.weatherEffect, true) * 2;
+        newState.opponentHealth -= damage;
+        newState.battleLog.push(`${playerTeddyData.name} unleashes their Ultimate Move for ${damage} devastating damage!`);
+        newState.rage = 0;
+        newState = applyRageEffect(newState, playerTeddyData);
       }
       break;
   }
@@ -51,18 +63,22 @@ export const performAIAction = (action, battleState, aiTeddyData, playerTeddyDat
   let newState = { ...battleState };
   let damage = 0;
 
+  const isCritical = rollForCritical(aiTeddyData);
+
   switch (action) {
     case 'attack':
-      damage = calculateDamage(aiTeddyData, playerTeddyData, newState.weatherEffect);
+      damage = calculateDamage(aiTeddyData, playerTeddyData, newState.weatherEffect, isCritical);
       newState.playerHealth -= damage;
-      newState.battleLog.push(`${aiTeddyData.name} attacks for ${damage} damage!`);
+      newState.battleLog.push(`${aiTeddyData.name} attacks for ${damage} damage!${isCritical ? ' Critical hit!' : ''}`);
       newState.moveHistory.push('attack');
+      newState.aiRage = Math.min(newState.aiRage + 10, 100);
       break;
     case 'defend':
       newState.opponentEnergy += 1;
       newState.opponentDefenseBoost += Math.floor(aiTeddyData.defense * 0.2);
       newState.battleLog.push(`${aiTeddyData.name} defends and gains 1 energy and ${newState.opponentDefenseBoost} defense!`);
       newState.moveHistory.push('defend');
+      newState.aiRage = Math.min(newState.aiRage + 5, 100);
       break;
     case 'special':
       if (newState.opponentEnergy >= 2) {
@@ -71,6 +87,16 @@ export const performAIAction = (action, battleState, aiTeddyData, playerTeddyDat
         newState = { ...newState, ...specialResult };
         newState.opponentEnergy -= 2;
         newState.moveHistory.push('special');
+        newState.aiRage = Math.min(newState.aiRage + 15, 100);
+      }
+      break;
+    case 'ultimate':
+      if (newState.aiRage === 100) {
+        damage = calculateDamage(aiTeddyData, playerTeddyData, newState.weatherEffect, true) * 2;
+        newState.playerHealth -= damage;
+        newState.battleLog.push(`${aiTeddyData.name} unleashes their Ultimate Move for ${damage} devastating damage!`);
+        newState.aiRage = 0;
+        newState = applyRageEffect(newState, aiTeddyData);
       }
       break;
   }
