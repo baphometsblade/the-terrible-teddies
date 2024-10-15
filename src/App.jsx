@@ -9,8 +9,7 @@ function App() {
   const { session } = useSupabaseAuth();
 
   return (
-    <div className="App container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8 text-center">Terrible Teddies</h1>
+    <div className="App min-h-screen bg-gradient-to-b from-purple-100 to-pink-100">
       <Routes>
         <Route path="/" element={session ? <TerribleTeddiesGame /> : <Auth />} />
       </Routes>
