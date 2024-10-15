@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sword, ShoppingBag, Award, Zap, Calendar, Gift } from 'lucide-react';
 import Battle from './Battle';
 import Shop from './Shop';
+import Evolution from './Evolution';
 
 const TerribleTeddiesGame = () => {
   const { toast } = useToast();
@@ -53,7 +54,6 @@ const TerribleTeddiesGame = () => {
       });
       return;
     }
-    // Select a random opponent
     const availableOpponents = playerTeddies.filter(t => t.id !== selectedTeddy.id);
     const randomOpponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
     setOpponent(randomOpponent);
@@ -79,6 +79,7 @@ const TerribleTeddiesGame = () => {
           <span>Defense: {teddy.defense}</span>
         </div>
         <p className="mt-2 text-sm font-semibold">Special: {teddy.special_move}</p>
+        <p className="mt-2 text-sm">Level: {teddy.level} | XP: {teddy.experience}/{teddy.level * 100}</p>
       </CardContent>
     </Card>
   );
@@ -90,18 +91,25 @@ const TerribleTeddiesGame = () => {
           <Battle
             playerTeddy={selectedTeddy}
             opponentTeddy={opponent}
-            onBattleEnd={(result) => {
+            onBattleEnd={(result, updatedTeddy, experience) => {
               setGameState('menu');
               toast({
                 title: result === 'win' ? "Victory!" : "Defeat",
-                description: result === 'win' ? "You won the battle!" : "You lost the battle.",
+                description: result === 'win' 
+                  ? `You won the battle! ${selectedTeddy.name} gained ${experience} XP.` 
+                  : "You lost the battle.",
                 variant: result === 'win' ? "success" : "destructive",
               });
+              if (result === 'win' && updatedTeddy) {
+                setSelectedTeddy(updatedTeddy);
+              }
             }}
           />
         );
       case 'shop':
         return <Shop onExit={() => setGameState('menu')} />;
+      case 'evolution':
+        return <Evolution teddy={selectedTeddy} onClose={() => setGameState('menu')} />;
       default:
         return (
           <Tabs defaultValue="collection" className="w-full">
@@ -153,11 +161,11 @@ const TerribleTeddiesGame = () => {
         <Button onClick={() => setGameState('shop')}>
           <ShoppingBag className="mr-2 h-4 w-4" /> Shop
         </Button>
-        <Button onClick={() => toast({ title: "Coming Soon", description: "This feature is not yet implemented." })}>
-          <Award className="mr-2 h-4 w-4" /> Leaderboard
+        <Button onClick={() => setGameState('evolution')} disabled={!selectedTeddy || selectedTeddy.experience < selectedTeddy.level * 100}>
+          <Zap className="mr-2 h-4 w-4" /> Evolve
         </Button>
         <Button onClick={() => toast({ title: "Coming Soon", description: "This feature is not yet implemented." })}>
-          <Zap className="mr-2 h-4 w-4" /> Evolve
+          <Award className="mr-2 h-4 w-4" /> Leaderboard
         </Button>
         <Button onClick={() => toast({ title: "Coming Soon", description: "This feature is not yet implemented." })}>
           <Calendar className="mr-2 h-4 w-4" /> Daily Challenge

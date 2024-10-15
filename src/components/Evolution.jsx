@@ -1,47 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
-import { motion, AnimatePresence } from 'framer-motion';
-import { Progress } from "@/components/ui/progress";
-import { getNextEvolution } from '../utils/evolutionPaths';
+import { motion } from 'framer-motion';
 
-const Evolution = ({ teddy }) => {
-  const [isEvolving, setIsEvolving] = useState(false);
-  const [evolutionProgress, setEvolutionProgress] = useState(0);
-  const queryClient = useQueryClient();
+const Evolution = ({ teddy, onClose }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const nextEvolution = getNextEvolution(teddy.type, teddy.level);
-
-  const evolveMutation = useMutation({
+  const evolutionMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.rpc('evolve_teddy', { teddy_id: teddy.id });
       if (error) throw error;
       return data;
     },
-    onMutate: () => {
-      setIsEvolving(true);
-      const evolutionInterval = setInterval(() => {
-        setEvolutionProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(evolutionInterval);
-            return 100;
-          }
-          return prev + 2;
-        });
-      }, 50);
-    },
     onSuccess: (evolvedTeddy) => {
       queryClient.invalidateQueries('playerTeddies');
       toast({
         title: "Evolution Successful!",
-        description: `${teddy.name} has evolved to ${nextEvolution.name}!`,
+        description: `${teddy.name} has evolved to ${evolvedTeddy.name}!`,
         variant: "success",
       });
-      setIsEvolving(false);
-      setEvolutionProgress(0);
+      onClose();
     },
     onError: (error) => {
       toast({
@@ -49,57 +31,39 @@ const Evolution = ({ teddy }) => {
         description: error.message,
         variant: "destructive",
       });
-      setIsEvolving(false);
-      setEvolutionProgress(0);
     },
   });
 
   const handleEvolve = () => {
-    evolveMutation.mutate();
+    evolutionMutation.mutate();
   };
 
   return (
-    <motion.div 
-      className="evolution-container p-4 bg-gray-100 rounded-lg"
-      initial={{ scale: 0.9, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.3 }}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
     >
-      <h2 className="text-2xl font-bold mb-4">Evolve {teddy.name}</h2>
-      <p className="mb-2">Current Level: {teddy.level}</p>
-      <p className="mb-4">Current Form: {teddy.name}</p>
-      {nextEvolution && (
-        <div className="mb-4">
-          <h3 className="text-xl font-semibold">Next Evolution:</h3>
-          <p>Name: {nextEvolution.name}</p>
-          <p>Attack: {nextEvolution.attack}</p>
-          <p>Defense: {nextEvolution.defense}</p>
-          <p>Special Move: {nextEvolution.special}</p>
-        </div>
-      )}
-      <AnimatePresence>
-        {isEvolving && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle>Evolve {teddy.name}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Current Level: {teddy.level}</p>
+          <p>Experience: {teddy.experience} / {teddy.level * 100}</p>
+          <p className="mt-4">Evolving will increase your teddy's stats and potentially unlock new abilities!</p>
+          <Button 
+            onClick={handleEvolve} 
+            className="mt-4 w-full"
+            disabled={teddy.experience < teddy.level * 100 || evolutionMutation.isLoading}
           >
-            <Progress value={evolutionProgress} className="w-full mb-4" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <Button 
-        onClick={handleEvolve} 
-        disabled={isEvolving || teddy.level >= 5}
-        className="w-full"
-      >
-        {isEvolving ? 'Evolving...' : 'Evolve'}
-      </Button>
-      {teddy.level >= 5 && (
-        <p className="mt-2 text-sm text-gray-500">
-          This teddy has reached maximum evolution.
-        </p>
-      )}
+            {evolutionMutation.isLoading ? 'Evolving...' : 'Evolve'}
+          </Button>
+          <Button onClick={onClose} variant="outline" className="mt-2 w-full">
+            Cancel
+          </Button>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 };
