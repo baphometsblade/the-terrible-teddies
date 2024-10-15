@@ -8,12 +8,14 @@ import PowerUpMeter from './PowerUpMeter';
 import ComboMeter from './ComboMeter';
 import WeatherEffect from './WeatherEffect';
 import RandomEventDisplay from './RandomEventDisplay';
+import BattleStats from './BattleStats';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { useBattleLogic } from '../../hooks/useBattleLogic';
 import { motion, AnimatePresence } from 'framer-motion';
 import BattleAnimation from './BattleAnimation';
 import WeatherForecast from './WeatherForecast';
+import confetti from 'canvas-confetti';
 
 const BattleSystem = ({ playerTeddy }) => {
   const [opponentTeddy, setOpponentTeddy] = useState(null);
@@ -54,6 +56,14 @@ const BattleSystem = ({ playerTeddy }) => {
       description: result === 'win' ? "You won the battle!" : "You lost the battle.",
       variant: result === 'win' ? "success" : "destructive",
     });
+
+    if (result === 'win') {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
 
     // Update player stats
     const { data: playerStats, error } = await supabase
@@ -116,8 +126,10 @@ const BattleSystem = ({ playerTeddy }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <WeatherEffect weather={battleState.weatherEffect} />
-      <WeatherForecast currentWeather={battleState.weatherEffect} roundCount={battleState.roundCount} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <WeatherEffect weather={battleState.weatherEffect} />
+        <WeatherForecast currentWeather={battleState.weatherEffect} roundCount={battleState.roundCount} />
+      </div>
       <BattleField
         battleState={battleState}
         playerTeddyData={playerTeddyData}
@@ -143,6 +155,7 @@ const BattleSystem = ({ playerTeddy }) => {
       </div>
       <BattleLog battleLog={battleState.battleLog} />
       <RandomEventDisplay events={randomEvents} />
+      <BattleStats battleState={battleState} />
       {showRewards && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -152,8 +165,9 @@ const BattleSystem = ({ playerTeddy }) => {
         >
           <div className="bg-white p-6 rounded-lg shadow-xl">
             <h2 className="text-2xl font-bold mb-4">Battle Rewards</h2>
-            {/* Add reward details here */}
-            <Button onClick={() => setShowRewards(false)}>Close</Button>
+            <p>XP Gained: 10</p>
+            <p>Coins Earned: 50</p>
+            <Button onClick={() => setShowRewards(false)} className="mt-4">Close</Button>
           </div>
         </motion.div>
       )}

@@ -13,9 +13,10 @@ const RandomEventDisplay = ({ events }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5 }}
-            className="bg-purple-100 p-2 rounded-md mb-2"
+            className="bg-purple-100 p-3 rounded-md mb-2 shadow-md"
           >
-            <p className="font-medium">{event.name}</p>
+            <p className="font-medium text-purple-800">{event.name}</p>
+            <p className="text-sm text-purple-600 mt-1">{event.description}</p>
           </motion.div>
         ))}
       </AnimatePresence>
