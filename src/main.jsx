@@ -7,6 +7,7 @@ import './index.css'
 import { initializePostHog } from './utils/analytics.js'
 import { initializeErrorReporting } from './utils/errorReporting.js'
 import ErrorBoundary from './components/ErrorBoundary'
+import { SupabaseProvider } from './integrations/supabase/auth'
 
 console.log('Main.jsx is starting execution');
 
@@ -27,9 +28,11 @@ try {
     <React.StrictMode>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
+          <SupabaseProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </SupabaseProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </React.StrictMode>

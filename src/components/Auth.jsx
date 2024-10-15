@@ -1,17 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { runAllScripts } from '../utils/runAllScripts';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -49,29 +46,8 @@ const Auth = () => {
         description: "Signed in successfully!",
         variant: "success",
       });
-      navigate('/');
     }
     setLoading(false);
-  };
-
-  const handleRunScripts = async () => {
-    setLoading(true);
-    try {
-      const result = await runAllScripts();
-      toast({
-        title: "Scripts Executed",
-        description: result,
-        variant: "success",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -101,9 +77,6 @@ const Auth = () => {
           </Button>
         </div>
       </form>
-      <Button onClick={handleRunScripts} disabled={loading} className="w-full">
-        Run All Scripts
-      </Button>
     </div>
   );
 };
