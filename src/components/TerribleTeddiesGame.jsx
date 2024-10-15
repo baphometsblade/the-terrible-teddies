@@ -21,6 +21,7 @@ const TerribleTeddiesGame = () => {
 
   if (isLoading) return <div>Loading your teddies...</div>;
   if (error) return <div>Error: {error.message}</div>;
+  if (!playerTeddies || playerTeddies.length === 0) return <div>No teddies found. Please contact support.</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
