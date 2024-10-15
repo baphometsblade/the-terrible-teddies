@@ -12,10 +12,10 @@ export const useGameState = () => {
   const { data: playerTeddies, isLoading, error } = usePlayerTeddies();
 
   useEffect(() => {
-    if (playerTeddies && playerTeddies.length > 0) {
+    if (playerTeddies && playerTeddies.length > 0 && !selectedTeddy) {
       setSelectedTeddy(playerTeddies[0]);
     }
-  }, [playerTeddies]);
+  }, [playerTeddies, selectedTeddy]);
 
   const startBattle = () => {
     if (!selectedTeddy) {

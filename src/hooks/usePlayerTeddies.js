@@ -10,7 +10,7 @@ export const usePlayerTeddies = () => {
         .select('*, terrible_teddies(*)')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data.map(pt => pt.terrible_teddies);
+      return data.map(pt => ({...pt.terrible_teddies, player_teddy_id: pt.id}));
     },
   });
 };
