@@ -13,6 +13,7 @@ import Evolution from './Evolution';
 import PowerUpSystem from './PowerUpSystem';
 import AchievementSystem from './AchievementSystem';
 import SeasonalEvent from './SeasonalEvent';
+import ErrorBoundary from './ErrorBoundary';
 
 const TerribleTeddiesGame = () => {
   console.log('TerribleTeddiesGame component rendering');
@@ -160,19 +161,20 @@ const TerribleTeddiesGame = () => {
   console.log('Rendering TerribleTeddiesGame component');
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8 text-center">Terrible Teddies</h1>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={gameState}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
-        >
-          {renderGameContent()}
-        </motion.div>
-      </AnimatePresence>
+    <ErrorBoundary>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold mb-8 text-center">Terrible Teddies</h1>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={gameState}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderGameContent()}
+          </motion.div>
+        </AnimatePresence>
       <div className="flex flex-wrap justify-center gap-4 mt-8">
         <Button onClick={startBattle} disabled={!selectedTeddy}>
           <Sword className="mr-2 h-4 w-4" /> Start Battle
@@ -193,7 +195,8 @@ const TerribleTeddiesGame = () => {
           <Calendar className="mr-2 h-4 w-4" /> Seasonal Event
         </Button>
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 
