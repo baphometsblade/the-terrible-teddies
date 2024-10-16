@@ -1,9 +1,12 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 
-const TeddyCard = ({ teddy }) => {
+const TeddyCard = ({ teddy, onClick }) => {
   return (
-    <Card className="w-20 h-28 bg-white rounded-lg shadow-lg overflow-hidden">
+    <Card 
+      className="w-20 h-28 bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer"
+      onClick={onClick}
+    >
       <CardContent className="p-2 flex flex-col items-center justify-between h-full">
         <div className="text-xs font-bold truncate w-full text-center">{teddy.name}</div>
         <div className="w-12 h-12 bg-gray-200 rounded-full mb-1"></div>
