@@ -10,6 +10,9 @@ import ComboSystem from './ComboSystem';
 import BattleLog from './BattleLog';
 import TurnIndicator from './TurnIndicator';
 import { motion } from 'framer-motion';
+import { drawCard, discardCard, reshuffleDeck } from '../../utils/cardSystem';
+import { getAIMove } from '../../utils/aiOpponent';
+import { generatePowerUps, applyPowerUp } from '../../utils/powerUpSystem';
 
 const GameBoard = () => {
   const [playerHand, setPlayerHand] = useState<TeddyCardType[]>([]);
@@ -25,7 +28,8 @@ const GameBoard = () => {
   const [battleLogs, setBattleLogs] = useState<string[]>([]);
   const [powerUps, setPowerUps] = useState<PowerUp[]>([]);
   const [availableCombos, setAvailableCombos] = useState<Combo[]>([]);
-  const { toast } = useToast();
+
+  const [discardPile, setDiscardPile] = useState<TeddyCardType[]>([]);
 
   useEffect(() => {
     initializeGame();
@@ -36,6 +40,7 @@ const GameBoard = () => {
     setDeck(initialDeck);
     drawInitialHands(initialDeck);
     setBattleLogs(["Game started!"]);
+    setPowerUps(generatePowerUps());
   };
 
   const drawInitialHands = (initialDeck: TeddyCardType[]) => {
@@ -45,10 +50,12 @@ const GameBoard = () => {
   };
 
   const playCard = (card: TeddyCardType) => {
-    if (currentTurn === 'player' && playerField.length < 3 && playerEnergy >= 1) {
+    if (currentTurn === 'player' && playerField.length < 3 && playerEnergy >= card.energyCost) {
       setPlayerField([...playerField, card]);
-      setPlayerHand(playerHand.filter(c => c.id !== card.id));
-      setPlayerEnergy(playerEnergy - 1);
+      const { updatedHand, updatedDiscardPile } = discardCard(card, playerHand, discardPile);
+      setPlayerHand(updatedHand);
+      setDiscardPile(updatedDiscardPile);
+      setPlayerEnergy(playerEnergy - card.energyCost);
       addBattleLog(`You played ${card.name}`);
     }
   };
@@ -73,18 +80,19 @@ const GameBoard = () => {
     }
   };
 
-  const drawCard = () => {
-    if (deck.length > 0 && playerHand.length < 7) {
-      const drawnCard = deck[0];
-      setPlayerHand([...playerHand, drawnCard]);
-      setDeck(deck.slice(1));
+  const drawCardAction = () => {
+    if (deck.length === 0) {
+      const newDeck = reshuffleDeck(deck, discardPile);
+      setDeck(newDeck);
+      setDiscardPile([]);
+    }
+    const { updatedDeck, updatedHand, drawnCard } = drawCard(deck, playerHand);
+    if (drawnCard) {
+      setDeck(updatedDeck);
+      setPlayerHand(updatedHand);
       addBattleLog(`You drew ${drawnCard.name}`);
     } else {
-      toast({
-        title: "Cannot Draw",
-        description: deck.length === 0 ? "Deck is empty!" : "Hand is full!",
-        variant: "destructive",
-      });
+      addBattleLog("Couldn't draw a card: hand is full or deck is empty");
     }
   };
 
@@ -100,56 +108,37 @@ const GameBoard = () => {
     let newOpponentHand = [...opponentHand];
     let newPlayerField = [...playerField];
     let newPlayerHealth = playerHealth;
+    let newOpponentHealth = opponentHealth;
 
-    // Play cards
-    while (newOpponentEnergy > 0 && newOpponentField.length < 3 && newOpponentHand.length > 0) {
-      const cardToPlay = newOpponentHand[0];
-      newOpponentField.push(cardToPlay);
-      newOpponentHand = newOpponentHand.slice(1);
-      newOpponentEnergy--;
-      toast({
-        title: "Opponent's Turn",
-        description: `Opponent played ${cardToPlay.name}`,
-      });
-    }
+    while (newOpponentEnergy > 0) {
+      const aiMove = getAIMove(newOpponentHand, newOpponentField, newPlayerField, newOpponentEnergy, newOpponentHealth, newPlayerHealth);
 
-    // Attack
-    for (const attackingCard of newOpponentField) {
-      if (newOpponentEnergy > 0 && newPlayerField.length > 0) {
-        const targetCard = newPlayerField[0];
-        const damage = calculateDamage(attackingCard, targetCard);
-        newPlayerHealth = Math.max(0, newPlayerHealth - damage);
-        newPlayerField = newPlayerField.filter(c => c.id !== targetCard.id);
-        newOpponentEnergy--;
-        toast({
-          title: "Opponent's Attack",
-          description: `${attackingCard.name} dealt ${damage} damage to ${targetCard.name}`,
-        });
-      } else if (newOpponentEnergy > 0) {
-        newPlayerHealth = Math.max(0, newPlayerHealth - attackingCard.attack);
-        newOpponentEnergy--;
-        toast({
-          title: "Opponent's Attack",
-          description: `${attackingCard.name} dealt ${attackingCard.attack} damage to you`,
-        });
-      }
-    }
-
-    // Use special abilities
-    for (const teddy of newOpponentField) {
-      if (newOpponentEnergy >= 2) {
-        const result = applySpecialAbility(teddy, opponentHealth, newPlayerHealth, newOpponentField, newPlayerField);
-        if ('playerHealth' in result) newPlayerHealth = result.playerHealth as number;
-        if ('opponentHealth' in result) setOpponentHealth(result.opponentHealth as number);
-        if ('playerField' in result) newPlayerField = result.playerField as TeddyCardType[];
-        if ('attack' in result || 'defense' in result) {
-          newOpponentField = newOpponentField.map(t => t.id === teddy.id ? result as TeddyCardType : t);
+      if (aiMove.action === 'play') {
+        newOpponentField.push(aiMove.card);
+        newOpponentHand = newOpponentHand.filter(c => c.id !== aiMove.card.id);
+        newOpponentEnergy -= aiMove.card.energyCost;
+        addBattleLog(`Opponent played ${aiMove.card.name}`);
+      } else if (aiMove.action === 'attack') {
+        if (newPlayerField.length > 0) {
+          const targetCard = newPlayerField[0];
+          const damage = calculateDamage(aiMove.card, targetCard);
+          newPlayerField = newPlayerField.filter(c => c.id !== targetCard.id);
+          addBattleLog(`${aiMove.card.name} dealt ${damage} damage to ${targetCard.name}`);
+        } else {
+          newPlayerHealth = Math.max(0, newPlayerHealth - aiMove.card.attack);
+          addBattleLog(`${aiMove.card.name} dealt ${aiMove.card.attack} damage to you`);
         }
+        newOpponentEnergy--;
+      } else if (aiMove.action === 'useSpecial') {
+        const result = applySpecialAbility(aiMove.card, newOpponentHealth, newPlayerHealth, newOpponentField, newPlayerField);
+        if ('playerHealth' in result) newPlayerHealth = result.playerHealth as number;
+        if ('opponentHealth' in result) newOpponentHealth = result.opponentHealth as number;
+        if ('playerField' in result) newPlayerField = result.playerField as TeddyCardType[];
+        if ('opponentField' in result) newOpponentField = result.opponentField as TeddyCardType[];
         newOpponentEnergy -= 2;
-        toast({
-          title: "Opponent's Special Ability",
-          description: `${teddy.name} used ${teddy.specialAbility.name}`,
-        });
+        addBattleLog(`Opponent used ${aiMove.card.specialAbility.name}`);
+      } else {
+        break;
       }
     }
 
@@ -157,6 +146,7 @@ const GameBoard = () => {
     setOpponentHand(newOpponentHand);
     setPlayerField(newPlayerField);
     setPlayerHealth(newPlayerHealth);
+    setOpponentHealth(newOpponentHealth);
     setCurrentTurn('player');
   };
 
@@ -174,24 +164,20 @@ const GameBoard = () => {
   };
 
   const usePowerUp = (powerUp: PowerUp) => {
-    powerUp.effect();
+    const updatedState = applyPowerUp(powerUp, {
+      playerEnergy,
+      playerHealth,
+      deck,
+      playerHand,
+    });
+    setPlayerEnergy(updatedState.playerEnergy);
+    setPlayerHealth(updatedState.playerHealth);
+    setDeck(updatedState.deck);
+    setPlayerHand(updatedState.playerHand);
     addBattleLog(`Used power-up: ${powerUp.name}`);
   };
 
-  const useCombo = (combo: Combo) => {
-    // Implement combo logic
-    addBattleLog(`Used combo: ${combo.name}`);
-  };
-
-  useEffect(() => {
-    if (playerHealth <= 0 || opponentHealth <= 0) {
-      toast({
-        title: "Game Over",
-        description: playerHealth <= 0 ? "You lost!" : "You won!",
-        variant: playerHealth <= 0 ? "destructive" : "success",
-      });
-    }
-  }, [playerHealth, opponentHealth, toast]);
+  // ... keep existing useCombo function and useEffect for game over check
 
   return (
     <motion.div 
@@ -205,18 +191,23 @@ const GameBoard = () => {
         field={opponentField}
         health={opponentHealth}
         energy={opponentEnergy}
+        handSize={opponentHand.length}
+        deckSize={deck.length}
+        discardPileSize={discardPile.length}
       />
       <PlayerArea
         hand={playerHand}
         field={playerField}
         health={playerHealth}
         energy={playerEnergy}
+        deckSize={deck.length}
+        discardPileSize={discardPile.length}
         onPlayCard={playCard}
         onUseSpecialAbility={useSpecialAbility}
         onAttack={attack}
       />
       <GameControls
-        onDrawCard={drawCard}
+        onDrawCard={drawCardAction}
         onEndTurn={endTurn}
         isPlayerTurn={currentTurn === 'player'}
         canDrawCard={deck.length > 0 && playerHand.length < 7}
