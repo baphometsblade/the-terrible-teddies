@@ -9,3 +9,17 @@ export interface TeddyCard {
   };
   abilityDuration?: number;
 }
+
+export interface PowerUp {
+  id: string;
+  name: string;
+  description: string;
+  effect: () => void;
+}
+
+export interface Combo {
+  id: string;
+  name: string;
+  description: string;
+  requiredCards: string[];
+}

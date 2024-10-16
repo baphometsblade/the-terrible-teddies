@@ -1,4 +1,4 @@
-import { TeddyCard } from '../types/types';
+import { TeddyCard, PowerUp, Combo } from '../types/types';
 
 export const generateRandomTeddy = (): TeddyCard => {
   const names = ['Fluffy', 'Grumpy', 'Sneaky', 'Bouncy', 'Sleepy'];
@@ -54,4 +54,45 @@ export const applySpecialAbility = (
 
 export const calculateDamage = (attacker: TeddyCard, defender: TeddyCard) => {
   return Math.max(0, attacker.attack - defender.defense);
+};
+
+export const generatePowerUps = (): PowerUp[] => {
+  return [
+    {
+      id: '1',
+      name: 'Energy Boost',
+      description: 'Gain 2 extra energy this turn',
+      effect: () => {/* Implement effect */},
+    },
+    {
+      id: '2',
+      name: 'Healing Touch',
+      description: 'Restore 5 health points',
+      effect: () => {/* Implement effect */},
+    },
+    // Add more power-ups as needed
+  ];
+};
+
+export const generateCombos = (): Combo[] => {
+  return [
+    {
+      id: '1',
+      name: 'Double Trouble',
+      description: 'Play two cards of the same type for increased effect',
+      requiredCards: ['any', 'any'],
+    },
+    {
+      id: '2',
+      name: 'Elemental Fusion',
+      description: 'Combine two different elemental cards for a powerful effect',
+      requiredCards: ['fire', 'water'],
+    },
+    // Add more combos as needed
+  ];
+};
+
+export const checkForAvailableCombos = (hand: TeddyCard[], field: TeddyCard[]): Combo[] => {
+  // Implement logic to check for available combos based on the player's hand and field
+  return [];
 };
