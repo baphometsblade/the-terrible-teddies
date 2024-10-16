@@ -25,18 +25,19 @@ const TerribleTeddiesGame = () => {
     console.log('TerribleTeddiesGame rendered', { 
       gameState, 
       selectedTeddy, 
-      playerTeddies, 
+      playerTeddies: playerTeddies ? playerTeddies.length : 'undefined', 
       isLoading, 
-      error 
+      error: error ? error.message : 'none'
     });
   }, [gameState, selectedTeddy, playerTeddies, isLoading, error]);
 
   if (isLoading) {
+    console.log('TerribleTeddiesGame: Loading state');
     return <div className="text-center py-8">Loading your teddies...</div>;
   }
   
   if (error) {
-    console.error('Error in TerribleTeddiesGame:', error);
+    console.error('TerribleTeddiesGame: Error state', error);
     return (
       <div className="text-center py-8">
         <p className="text-red-500 mb-4">Error: {error.message}</p>
@@ -46,7 +47,7 @@ const TerribleTeddiesGame = () => {
   }
 
   if (!playerTeddies || playerTeddies.length === 0) {
-    console.log('No teddies found for the player');
+    console.log('TerribleTeddiesGame: No teddies found');
     return (
       <div className="text-center py-8">
         <p className="mb-4">No teddies found. Let's get you started!</p>
@@ -55,6 +56,7 @@ const TerribleTeddiesGame = () => {
     );
   }
 
+  console.log('TerribleTeddiesGame: Rendering main content');
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold mb-8 text-center">Terrible Teddies</h1>

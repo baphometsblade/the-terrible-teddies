@@ -12,14 +12,19 @@ export const useGameState = () => {
   const { data: playerTeddies, isLoading, error, refetch } = usePlayerTeddies();
 
   useEffect(() => {
-    console.log('useGameState effect', { playerTeddies, selectedTeddy });
+    console.log('useGameState effect', { 
+      playerTeddies: playerTeddies ? playerTeddies.length : 'undefined', 
+      selectedTeddy: selectedTeddy ? selectedTeddy.id : 'none'
+    });
     if (playerTeddies && playerTeddies.length > 0 && !selectedTeddy) {
+      console.log('Setting initial selected teddy');
       setSelectedTeddy(playerTeddies[0]);
     }
   }, [playerTeddies, selectedTeddy]);
 
   const startBattle = () => {
     if (!selectedTeddy) {
+      console.log('No teddy selected for battle');
       toast({
         title: "No Teddy Selected",
         description: "Please select a teddy before starting a battle.",
@@ -27,6 +32,7 @@ export const useGameState = () => {
       });
       return;
     }
+    console.log('Starting battle with teddy:', selectedTeddy.id);
     setGameState('battle');
     toast({
       title: "Battle Started",
@@ -36,6 +42,7 @@ export const useGameState = () => {
   };
 
   const handleBattleEnd = (result, updatedTeddy, experience) => {
+    console.log('Battle ended', { result, updatedTeddyId: updatedTeddy?.id, experience });
     setGameState('menu');
     toast({
       title: result === 'win' ? "Victory!" : "Defeat",
