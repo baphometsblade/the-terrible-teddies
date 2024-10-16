@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../utils/supabaseClient';
 import TeddyCard from './TeddyCard';
@@ -17,6 +17,10 @@ const TeddyList = () => {
 
   if (isLoading) return <div>Loading teddy bears...</div>;
   if (error) return <div>Error: {error.message}</div>;
+
+  if (!teddies || teddies.length === 0) {
+    return <div>No teddy bears found. Please check your database.</div>;
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
