@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
+import { motion } from 'framer-motion';
 
 interface GameControlsProps {
   onDrawCard: () => void;
@@ -15,7 +16,12 @@ const GameControls: React.FC<GameControlsProps> = ({
   canDrawCard,
 }) => {
   return (
-    <div className="game-controls">
+    <motion.div 
+      className="game-controls flex justify-center space-x-4 mt-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <Button
         onClick={onDrawCard}
         disabled={!isPlayerTurn || !canDrawCard}
@@ -30,7 +36,7 @@ const GameControls: React.FC<GameControlsProps> = ({
       >
         End Turn
       </Button>
-    </div>
+    </motion.div>
   );
 };
 

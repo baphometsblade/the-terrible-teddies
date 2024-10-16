@@ -9,6 +9,7 @@ export const generateRandomTeddy = (): TeddyCard => {
     attack: Math.floor(Math.random() * 3) + 1,
     defense: Math.floor(Math.random() * 3) + 1,
     specialAbility: generateRandomSpecialAbility(),
+    energyCost: Math.floor(Math.random() * 2) + 1,
   };
 };
 
@@ -70,7 +71,12 @@ export const generatePowerUps = (): PowerUp[] => {
       description: 'Restore 5 health points',
       effect: () => {/* Implement effect */},
     },
-    // Add more power-ups as needed
+    {
+      id: '3',
+      name: 'Card Draw',
+      description: 'Draw 2 additional cards',
+      effect: () => {/* Implement effect */},
+    },
   ];
 };
 
@@ -88,11 +94,40 @@ export const generateCombos = (): Combo[] => {
       description: 'Combine two different elemental cards for a powerful effect',
       requiredCards: ['fire', 'water'],
     },
-    // Add more combos as needed
+    {
+      id: '3',
+      name: 'Triple Threat',
+      description: 'Play three cards in a row for a devastating combo attack',
+      requiredCards: ['any', 'any', 'any'],
+    },
   ];
 };
 
 export const checkForAvailableCombos = (hand: TeddyCard[], field: TeddyCard[]): Combo[] => {
-  // Implement logic to check for available combos based on the player's hand and field
-  return [];
+  const allCombos = generateCombos();
+  return allCombos.filter(combo => {
+    // Implement logic to check if the combo is available based on the hand and field
+    // This is a placeholder implementation
+    return Math.random() > 0.5;
+  });
+};
+
+export const getAIMove = (
+  opponentHand: TeddyCard[],
+  opponentField: TeddyCard[],
+  playerField: TeddyCard[],
+  opponentEnergy: number
+): { action: 'play' | 'attack', card: TeddyCard } | { action: 'endTurn' } => {
+  // Simple AI logic: play a card if possible, then attack if possible, otherwise end turn
+  const playableCards = opponentHand.filter(card => card.energyCost <= opponentEnergy);
+  
+  if (playableCards.length > 0 && opponentField.length < 3) {
+    return { action: 'play', card: playableCards[0] };
+  }
+  
+  if (opponentField.length > 0 && playerField.length > 0) {
+    return { action: 'attack', card: opponentField[0] };
+  }
+  
+  return { action: 'endTurn' };
 };

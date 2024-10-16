@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { generateRandomTeddy, applySpecialAbility, calculateDamage } from '../../utils/gameUtils';
-import { TeddyCard as TeddyCardType } from '../../types/types';
+import { TeddyCard as TeddyCardType, PowerUp, Combo } from '../../types/types';
 import PlayerArea from './PlayerArea';
 import OpponentArea from './OpponentArea';
 import GameControls from './GameControls';
 import PowerUpSystem from './PowerUpSystem';
 import ComboSystem from './ComboSystem';
 import BattleLog from './BattleLog';
+import TurnIndicator from './TurnIndicator';
+import { motion } from 'framer-motion';
 
 const GameBoard = () => {
   const [playerHand, setPlayerHand] = useState<TeddyCardType[]>([]);
@@ -18,11 +20,11 @@ const GameBoard = () => {
   const [playerHealth, setPlayerHealth] = useState(30);
   const [opponentHealth, setOpponentHealth] = useState(30);
   const [deck, setDeck] = useState<TeddyCardType[]>([]);
-  const [playerEnergy, setPlayerEnergy] = useState(3);
-  const [opponentEnergy, setOpponentEnergy] = useState(3);
+  const [playerEnergy, setPlayerEnergy] = useState(1);
+  const [opponentEnergy, setOpponentEnergy] = useState(1);
   const [battleLogs, setBattleLogs] = useState<string[]>([]);
-  const [powerUps, setPowerUps] = useState([]);
-  const [availableCombos, setAvailableCombos] = useState([]);
+  const [powerUps, setPowerUps] = useState<PowerUp[]>([]);
+  const [availableCombos, setAvailableCombos] = useState<Combo[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -30,11 +32,16 @@ const GameBoard = () => {
   }, []);
 
   const initializeGame = () => {
-    const initialDeck = Array(10).fill(null).map(generateRandomTeddy);
+    const initialDeck = Array(30).fill(null).map(generateRandomTeddy);
     setDeck(initialDeck);
+    drawInitialHands(initialDeck);
+    setBattleLogs(["Game started!"]);
+  };
+
+  const drawInitialHands = (initialDeck: TeddyCardType[]) => {
     setPlayerHand(initialDeck.slice(0, 5));
     setOpponentHand(initialDeck.slice(5, 10));
-    setBattleLogs(["Game started!"]);
+    setDeck(initialDeck.slice(10));
   };
 
   const playCard = (card: TeddyCardType) => {
@@ -151,7 +158,6 @@ const GameBoard = () => {
     setPlayerField(newPlayerField);
     setPlayerHealth(newPlayerHealth);
     setCurrentTurn('player');
-    setCurrentTurn('player');
   };
 
   const addBattleLog = (log: string) => {
@@ -167,12 +173,12 @@ const GameBoard = () => {
     }
   };
 
-  const usePowerUp = (powerUp: any) => {
-    // Implement power-up logic
+  const usePowerUp = (powerUp: PowerUp) => {
+    powerUp.effect();
     addBattleLog(`Used power-up: ${powerUp.name}`);
   };
 
-  const useCombo = (combo: any) => {
+  const useCombo = (combo: Combo) => {
     // Implement combo logic
     addBattleLog(`Used combo: ${combo.name}`);
   };
@@ -188,7 +194,13 @@ const GameBoard = () => {
   }, [playerHealth, opponentHealth, toast]);
 
   return (
-    <div className="game-board">
+    <motion.div 
+      className="game-board p-4 bg-amber-100 rounded-lg shadow-lg"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <TurnIndicator currentTurn={currentTurn} />
       <OpponentArea
         field={opponentField}
         health={opponentHealth}
@@ -212,7 +224,7 @@ const GameBoard = () => {
       <PowerUpSystem powerUps={powerUps} onUsePowerUp={usePowerUp} />
       <ComboSystem availableCombos={availableCombos} onUseCombo={useCombo} />
       <BattleLog logs={battleLogs} />
-    </div>
+    </motion.div>
   );
 };
 
