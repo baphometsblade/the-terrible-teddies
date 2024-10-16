@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import TeddyCard from '../TeddyCard';
+import { useToast } from "@/components/ui/use-toast";
 
 const GameBoard = () => {
   const [playerHand, setPlayerHand] = useState([
@@ -19,11 +20,21 @@ const GameBoard = () => {
   const [currentTurn, setCurrentTurn] = useState('player');
   const [playerHealth, setPlayerHealth] = useState(30);
   const [opponentHealth, setOpponentHealth] = useState(30);
+  const [deck, setDeck] = useState([
+    { id: 8, name: "Teddy 6", attack: 3, defense: 3 },
+    { id: 9, name: "Teddy 7", attack: 4, defense: 2 },
+    { id: 10, name: "Teddy 8", attack: 2, defense: 4 },
+  ]);
+  const { toast } = useToast();
 
   const playCard = (card) => {
     if (currentTurn === 'player' && playerField.length < 3) {
       setPlayerField([...playerField, card]);
       setPlayerHand(playerHand.filter(c => c.id !== card.id));
+      toast({
+        title: "Card Played",
+        description: `You played ${card.name}`,
+      });
     }
   };
 
@@ -32,13 +43,71 @@ const GameBoard = () => {
       const damage = Math.max(0, attackingCard.attack - targetCard.defense);
       setOpponentHealth(prevHealth => Math.max(0, prevHealth - damage));
       setOpponentField(opponentField.filter(c => c.id !== targetCard.id));
+      toast({
+        title: "Attack",
+        description: `${attackingCard.name} dealt ${damage} damage to ${targetCard.name}`,
+      });
+    }
+  };
+
+  const drawCard = () => {
+    if (deck.length > 0) {
+      const drawnCard = deck[0];
+      setPlayerHand([...playerHand, drawnCard]);
+      setDeck(deck.slice(1));
+      toast({
+        title: "Card Drawn",
+        description: `You drew ${drawnCard.name}`,
+      });
+    } else {
+      toast({
+        title: "Deck Empty",
+        description: "No more cards to draw!",
+        variant: "destructive",
+      });
     }
   };
 
   const endTurn = () => {
-    setCurrentTurn(currentTurn === 'player' ? 'opponent' : 'player');
-    // Implement opponent's turn logic here
+    setCurrentTurn('opponent');
+    setTimeout(opponentTurn, 1000);
   };
+
+  const opponentTurn = () => {
+    // Simple AI: Play a card if possible, then attack if possible
+    if (opponentField.length < 3 && Math.random() > 0.5) {
+      const newCard = { id: Date.now(), name: `Opponent ${opponentField.length + 1}`, attack: 2, defense: 2 };
+      setOpponentField([...opponentField, newCard]);
+      toast({
+        title: "Opponent's Turn",
+        description: `Opponent played ${newCard.name}`,
+      });
+    }
+
+    if (opponentField.length > 0 && playerField.length > 0) {
+      const attackingCard = opponentField[0];
+      const targetCard = playerField[0];
+      const damage = Math.max(0, attackingCard.attack - targetCard.defense);
+      setPlayerHealth(prevHealth => Math.max(0, prevHealth - damage));
+      setPlayerField(playerField.filter(c => c.id !== targetCard.id));
+      toast({
+        title: "Opponent's Attack",
+        description: `${attackingCard.name} dealt ${damage} damage to ${targetCard.name}`,
+      });
+    }
+
+    setCurrentTurn('player');
+  };
+
+  useEffect(() => {
+    if (playerHealth <= 0 || opponentHealth <= 0) {
+      toast({
+        title: "Game Over",
+        description: playerHealth <= 0 ? "You lost!" : "You won!",
+        variant: playerHealth <= 0 ? "destructive" : "success",
+      });
+    }
+  }, [playerHealth, opponentHealth, toast]);
 
   return (
     <div className="relative w-full h-screen bg-amber-100 overflow-hidden">
@@ -92,14 +161,23 @@ const GameBoard = () => {
         </div>
       </div>
 
-      {/* End Turn button */}
-      <Button 
-        className="absolute bottom-20 right-4 bg-green-500 hover:bg-green-600 text-white"
-        onClick={endTurn}
-        disabled={currentTurn !== 'player'}
-      >
-        End Turn
-      </Button>
+      {/* Game controls */}
+      <div className="absolute bottom-20 right-4 space-y-2">
+        <Button 
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+          onClick={drawCard}
+          disabled={currentTurn !== 'player' || deck.length === 0}
+        >
+          Draw Card
+        </Button>
+        <Button 
+          className="w-full bg-green-500 hover:bg-green-600 text-white"
+          onClick={endTurn}
+          disabled={currentTurn !== 'player'}
+        >
+          End Turn
+        </Button>
+      </div>
     </div>
   );
 };
