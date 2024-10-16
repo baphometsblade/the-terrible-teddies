@@ -12,6 +12,7 @@ export const useGameState = () => {
   const { data: playerTeddies, isLoading, error, refetch } = usePlayerTeddies();
 
   useEffect(() => {
+    console.log('useGameState effect', { playerTeddies, selectedTeddy });
     if (playerTeddies && playerTeddies.length > 0 && !selectedTeddy) {
       setSelectedTeddy(playerTeddies[0]);
     }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useGameState } from '../hooks/useGameState';
 import GameMenu from './GameMenu';
 import GameContent from './GameContent';
@@ -21,9 +21,22 @@ const TerribleTeddiesGame = () => {
     handleBattleEnd
   } = useGameState();
 
-  if (isLoading) return <div className="text-center py-8">Loading your teddies...</div>;
+  useEffect(() => {
+    console.log('TerribleTeddiesGame rendered', { 
+      gameState, 
+      selectedTeddy, 
+      playerTeddies, 
+      isLoading, 
+      error 
+    });
+  }, [gameState, selectedTeddy, playerTeddies, isLoading, error]);
+
+  if (isLoading) {
+    return <div className="text-center py-8">Loading your teddies...</div>;
+  }
   
   if (error) {
+    console.error('Error in TerribleTeddiesGame:', error);
     return (
       <div className="text-center py-8">
         <p className="text-red-500 mb-4">Error: {error.message}</p>
@@ -33,6 +46,7 @@ const TerribleTeddiesGame = () => {
   }
 
   if (!playerTeddies || playerTeddies.length === 0) {
+    console.log('No teddies found for the player');
     return (
       <div className="text-center py-8">
         <p className="mb-4">No teddies found. Let's get you started!</p>
