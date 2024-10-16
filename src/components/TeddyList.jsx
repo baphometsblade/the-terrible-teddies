@@ -1,30 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { getAllDataFromTable } from '../utils/supabaseClient';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../utils/supabaseClient';
+import TeddyCard from './TeddyCard';
 
 const TeddyList = () => {
-  const [teddies, setTeddies] = useState([]);
+  const { data: teddies, isLoading, error } = useQuery({
+    queryKey: ['teddies'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('terrible_teddies')
+        .select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  useEffect(() => {
-    const fetchTeddies = async () => {
-      try {
-        const data = await getAllDataFromTable('terrible_teddies');
-        setTeddies(data);
-      } catch (error) {
-        console.error('Failed to fetch teddies:', error);
-      }
-    };
-
-    fetchTeddies();
-  }, []);
+  if (isLoading) return <div>Loading teddy bears...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
-    <div>
-      <h2>All Teddy Bears</h2>
-      <ul>
-        {teddies.map(teddy => (
-          <li key={teddy.id}>{teddy.name} - {teddy.title}</li>
-        ))}
-      </ul>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {teddies.map(teddy => (
+        <TeddyCard key={teddy.id} teddy={teddy} />
+      ))}
     </div>
   );
 };
