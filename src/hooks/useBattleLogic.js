@@ -8,9 +8,10 @@ import { getAIAction } from '../utils/AIOpponent';
 import { useBattleState } from './useBattleState';
 import { performPlayerAction, performAIAction } from '../utils/battleActions';
 
-export const useBattleLogic = (playerTeddy, opponentTeddy) => {
+export const useBattleLogic = () => {
   const [battleState, updateBattleState] = useBattleState();
   const [randomEvents, setRandomEvents] = useState([]);
+  const [weatherEffect, setWeatherEffect] = useState(getRandomWeatherEffect());
 
   const { data: playerTeddyData, isLoading: isLoadingPlayerTeddy } = useQuery({
     queryKey: ['playerTeddy', playerTeddy?.id],
@@ -41,33 +42,34 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
   });
 
   useEffect(() => {
-    if (battleState.roundCount % 3 === 0) {
-      const updatedState = applyBattleEffect(battleState);
-      updateBattleState(updatedState);
-    }
+    const applyEffects = () => {
+      if (battleState.roundCount % 3 === 0) {
+        const updatedState = applyBattleEffect(battleState);
+        updateBattleState(updatedState);
+      }
 
-    if (battleState.roundCount % 5 === 0) {
-      const newWeatherEffect = getRandomWeatherEffect();
-      updateBattleState((prevState) => ({
-        ...prevState,
-        weatherEffect: newWeatherEffect,
-        battleLog: [...prevState.battleLog, `The weather has changed to ${newWeatherEffect.name}!`],
-      }));
-    }
+      if (battleState.roundCount % 5 === 0) {
+        const newWeatherEffect = getRandomWeatherEffect();
+        setWeatherEffect(newWeatherEffect);
+        updateBattleState((prevState) => ({
+          ...prevState,
+          battleLog: [...prevState.battleLog, `The weather has changed to ${newWeatherEffect.name}!`],
+        }));
+      }
 
-    if (battleState.weatherEffect) {
-      const weatherUpdatedState = applyWeatherEffect(battleState, battleState.weatherEffect);
+      const weatherUpdatedState = applyWeatherEffect(battleState, weatherEffect);
       updateBattleState(weatherUpdatedState);
-    }
 
-    // Add random events
-    if (Math.random() < 0.1) { // 10% chance of a random event each round
-      const randomEvent = getRandomEvent();
-      const updatedState = applyRandomEvent(battleState, randomEvent);
-      updateBattleState(updatedState);
-      setRandomEvents([...randomEvents, randomEvent]);
-    }
-  }, [battleState.roundCount, battleState.weatherEffect, playerTeddyData, opponentTeddyData]);
+      if (Math.random() < 0.1) {
+        const randomEvent = getRandomEvent();
+        const updatedState = applyRandomEvent(battleState, randomEvent);
+        updateBattleState(updatedState);
+        setRandomEvents([...randomEvents, randomEvent]);
+      }
+    };
+
+    applyEffects();
+  }, [battleState.roundCount, weatherEffect]);
 
   const handleAction = async (action) => {
     const newState = performPlayerAction(action, battleState, playerTeddyData, opponentTeddyData);
@@ -114,6 +116,7 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
     playerTeddyData,
     opponentTeddyData,
     randomEvents,
+    weatherEffect,
   };
 };
 
