@@ -1,60 +1,42 @@
 import React from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../../lib/supabase';
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
 import { motion } from 'framer-motion';
+import { Button } from "@/components/ui/button";
 
-const BattleRewards = ({ battle }) => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const claimRewardsMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.rpc('claim_battle_rewards', { battle_id: battle.id });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Rewards Claimed",
-        description: `You've received ${data.coins} coins and ${data.experience} XP!`,
-        variant: "success",
-      });
-      if (data.level_up) {
-        toast({
-          title: "Level Up!",
-          description: `Your teddy has reached level ${data.new_level}!`,
-          variant: "success",
-        });
-      }
-      queryClient.invalidateQueries(['playerTeddies']);
-    },
-    onError: (error) => {
-      toast({
-        title: "Failed to Claim Rewards",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+const BattleRewards = ({ winner, onClose }) => {
+  const rewards = winner === 'player' ? {
+    experience: 100,
+    coins: 50,
+    items: ['Rare Card Pack', 'Energy Potion']
+  } : {
+    experience: 25,
+    coins: 10,
+    items: ['Common Card Pack']
+  };
 
   return (
     <motion.div
-      className="battle-rewards p-4 bg-yellow-100 rounded-lg mt-4"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      className="battle-rewards fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
     >
-      <h2 className="text-2xl font-bold mb-2">Battle Rewards</h2>
-      <p className="mb-4">Congratulations on completing the battle! Claim your rewards below:</p>
-      <Button
-        onClick={() => claimRewardsMutation.mutate()}
-        disabled={claimRewardsMutation.isLoading}
-        className="w-full"
+      <motion.div
+        className="bg-white p-6 rounded-lg shadow-lg"
+        initial={{ scale: 0.9, y: 50 }}
+        animate={{ scale: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
-        {claimRewardsMutation.isLoading ? 'Claiming...' : 'Claim Rewards'}
-      </Button>
+        <h2 className="text-2xl font-bold mb-4">Battle Rewards</h2>
+        <p className="mb-2">Experience: {rewards.experience} XP</p>
+        <p className="mb-2">Coins: {rewards.coins}</p>
+        <h3 className="font-semibold mt-4 mb-2">Items:</h3>
+        <ul className="list-disc list-inside mb-4">
+          {rewards.items.map((item, index) => (
+            <li key={index}>{item}</li>
+          ))}
+        </ul>
+        <Button onClick={onClose}>Close</Button>
+      </motion.div>
     </motion.div>
   );
 };

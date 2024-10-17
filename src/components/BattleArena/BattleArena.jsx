@@ -10,6 +10,9 @@ import WeatherEffect from './WeatherEffect';
 import CombatLog from './CombatLog';
 import PowerUpSystem from './PowerUpSystem';
 import PlayerHand from './PlayerHand';
+import BattleEffects from './BattleEffects';
+import TurnTimer from './TurnTimer';
+import BattleRewards from './BattleRewards';
 import { useBattleLogic } from '../../hooks/useBattleLogic';
 import { Button } from "@/components/ui/button";
 
@@ -23,6 +26,7 @@ const BattleArena = () => {
     drawCard,
     playCard,
     endTurn,
+    aiAction,
     isLoadingPlayerTeddy,
     isLoadingOpponentTeddy,
     playerTeddyData,
@@ -32,6 +36,7 @@ const BattleArena = () => {
   } = useBattleLogic();
 
   const [showPowerUpSystem, setShowPowerUpSystem] = useState(false);
+  const [showRewards, setShowRewards] = useState(false);
 
   useEffect(() => {
     if (battleState.playerHealth <= 0 || battleState.opponentHealth <= 0) {
@@ -41,8 +46,14 @@ const BattleArena = () => {
         description: `${winner} wins the battle!`,
         variant: winner === playerTeddyData.name ? "success" : "destructive",
       });
+      setShowRewards(true);
     }
   }, [battleState.playerHealth, battleState.opponentHealth, playerTeddyData, opponentTeddyData, toast]);
+
+  const handleTurnEnd = () => {
+    endTurn();
+    setTimeout(aiAction, 1000);
+  };
 
   if (isLoadingPlayerTeddy || isLoadingOpponentTeddy) {
     return <div>Loading battle data...</div>;
@@ -82,7 +93,7 @@ const BattleArena = () => {
             Draw Card
           </Button>
           <Button
-            onClick={endTurn}
+            onClick={handleTurnEnd}
             disabled={battleState.currentTurn !== 'player'}
             className="mt-2 bg-green-500 hover:bg-green-600 text-white"
           >
@@ -100,6 +111,10 @@ const BattleArena = () => {
         <div>
           <PowerUpMeter value={battleState.powerUpMeter} onPowerUp={handlePowerUp} />
           <ComboMeter value={battleState.comboMeter} onCombo={handleCombo} />
+          <TurnTimer
+            isPlayerTurn={battleState.currentTurn === 'player'}
+            onTimeUp={handleTurnEnd}
+          />
         </div>
       </div>
       <AnimatePresence>
@@ -113,10 +128,17 @@ const BattleArena = () => {
           />
         )}
       </AnimatePresence>
+      <BattleEffects effects={battleState.activeEffects} />
       <div className="grid grid-cols-2 gap-4 mt-4">
         <BattleLog battleLog={battleState.battleLog} />
         <CombatLog combatEvents={battleState.combatEvents} />
       </div>
+      {showRewards && (
+        <BattleRewards
+          winner={battleState.playerHealth > 0 ? 'player' : 'opponent'}
+          onClose={() => setShowRewards(false)}
+        />
+      )}
     </motion.div>
   );
 };
