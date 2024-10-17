@@ -7,6 +7,7 @@ import { getRandomWeatherEffect, applyWeatherEffect } from '../utils/weatherEffe
 import { getAIAction } from '../utils/AIOpponent';
 import { useBattleState } from './useBattleState';
 import { performPlayerAction, performAIAction } from '../utils/battleActions';
+import { drawCardFromDeck, shuffleDeck } from '../utils/deckUtils';
 
 export const useBattleLogic = () => {
   const [battleState, updateBattleState] = useBattleState();
@@ -14,31 +15,31 @@ export const useBattleLogic = () => {
   const [weatherEffect, setWeatherEffect] = useState(getRandomWeatherEffect());
 
   const { data: playerTeddyData, isLoading: isLoadingPlayerTeddy } = useQuery({
-    queryKey: ['playerTeddy', playerTeddy?.id],
+    queryKey: ['playerTeddy', battleState.playerTeddyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('terrible_teddies')
         .select('*')
-        .eq('id', playerTeddy.id)
+        .eq('id', battleState.playerTeddyId)
         .single();
       if (error) throw error;
       return { ...data, specialAbility: getSpecialAbility(data.name) };
     },
-    enabled: !!playerTeddy,
+    enabled: !!battleState.playerTeddyId,
   });
 
   const { data: opponentTeddyData, isLoading: isLoadingOpponentTeddy } = useQuery({
-    queryKey: ['opponentTeddy', opponentTeddy?.id],
+    queryKey: ['opponentTeddy', battleState.opponentTeddyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('terrible_teddies')
         .select('*')
-        .eq('id', opponentTeddy.id)
+        .eq('id', battleState.opponentTeddyId)
         .single();
       if (error) throw error;
       return { ...data, specialAbility: getSpecialAbility(data.name) };
     },
-    enabled: !!opponentTeddy,
+    enabled: !!battleState.opponentTeddyId,
   });
 
   useEffect(() => {
@@ -80,6 +81,7 @@ export const useBattleLogic = () => {
   const handlePowerUp = () => {
     if (battleState.powerUpMeter === 100) {
       updateBattleState({
+        ...battleState,
         playerEnergy: battleState.playerEnergy + 2,
         powerUpMeter: 0,
         battleLog: [...battleState.battleLog, `${playerTeddyData.name} uses Power Up and gains 2 energy!`],
@@ -91,6 +93,7 @@ export const useBattleLogic = () => {
     if (battleState.comboMeter === 100) {
       const comboDamage = playerTeddyData.attack * 2;
       updateBattleState({
+        ...battleState,
         opponentHealth: Math.max(0, battleState.opponentHealth - comboDamage),
         comboMeter: 0,
         battleLog: [...battleState.battleLog, `${playerTeddyData.name} unleashes a devastating combo attack for ${comboDamage} damage!`],
@@ -105,11 +108,59 @@ export const useBattleLogic = () => {
     return { action, newState };
   };
 
+  const drawCard = () => {
+    if (battleState.playerHand.length < 7) {
+      const { newDeck, drawnCard } = drawCardFromDeck(battleState.playerDeck);
+      if (drawnCard) {
+        updateBattleState({
+          ...battleState,
+          playerDeck: newDeck,
+          playerHand: [...battleState.playerHand, drawnCard],
+          battleLog: [...battleState.battleLog, `You drew ${drawnCard.name}`],
+        });
+      } else {
+        // If deck is empty, shuffle discard pile into deck
+        const newDeck = shuffleDeck([...battleState.playerDiscardPile]);
+        updateBattleState({
+          ...battleState,
+          playerDeck: newDeck,
+          playerDiscardPile: [],
+          battleLog: [...battleState.battleLog, "Deck reshuffled"],
+        });
+      }
+    }
+  };
+
+  const playCard = (card) => {
+    if (battleState.playerEnergy >= card.energyCost) {
+      updateBattleState({
+        ...battleState,
+        playerHand: battleState.playerHand.filter(c => c.id !== card.id),
+        playerField: [...battleState.playerField, card],
+        playerEnergy: battleState.playerEnergy - card.energyCost,
+        battleLog: [...battleState.battleLog, `You played ${card.name}`],
+      });
+    }
+  };
+
+  const endTurn = () => {
+    updateBattleState({
+      ...battleState,
+      currentTurn: 'opponent',
+      playerEnergy: battleState.playerEnergy + 1, // Gain 1 energy each turn
+      roundCount: battleState.roundCount + 1,
+    });
+    setTimeout(aiAction, 1000); // AI takes its turn after a short delay
+  };
+
   return {
     battleState,
     handleAction,
     handlePowerUp,
     handleCombo,
+    drawCard,
+    playCard,
+    endTurn,
     aiAction,
     isLoadingPlayerTeddy,
     isLoadingOpponentTeddy,
