@@ -7,6 +7,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { generateOpponent } from '../utils/opponentGenerator';
 import { PowerUp } from '../types/types';
 import PowerUpSelection from './PowerUpSelection';
+import { generatePowerUps } from '../utils/powerUpSystem';
+import { upgradeTeddy } from '../utils/progressionSystem';
 
 const SurvivalMode: React.FC = () => {
   const [wave, setWave] = useState(1);
@@ -31,9 +33,10 @@ const SurvivalMode: React.FC = () => {
   } = useBattleLogic();
 
   useEffect(() => {
-    // Initialize player teddy and first opponent
-    setPlayerTeddy(playerTeddyData);
-    generateNewOpponent();
+    if (playerTeddyData) {
+      setPlayerTeddy(playerTeddyData);
+      generateNewOpponent();
+    }
   }, [playerTeddyData]);
 
   const generateNewOpponent = () => {
@@ -53,6 +56,8 @@ const SurvivalMode: React.FC = () => {
     setShowPowerUpSelection(true);
     resetBattleState();
     generateNewOpponent();
+    setAvailablePowerUps(generatePowerUps(3)); // Generate 3 power-ups to choose from
+    upgradeTeddy(playerTeddy, wave); // Upgrade player's teddy after each wave
   };
 
   const handleGameOver = () => {

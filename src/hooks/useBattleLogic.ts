@@ -13,10 +13,11 @@ import { checkAchievements, Achievement } from '../utils/achievementSystem';
 import { getRandomBattleItem, BattleItem } from '../utils/battleItems';
 import { useBattleState } from './useBattleState';
 import { useBattleEffects } from './useBattleEffects';
+import { checkLevelUp } from '../utils/progressionSystem';
 
 export const useBattleLogic = () => {
   const [battleState, updateBattleState] = useBattleState();
-  const [powerUps, setPowerUps] = useState<PowerUp[]>(generatePowerUps());
+  const [powerUps, setPowerUps] = useState<PowerUp[]>(generatePowerUps(3));
   const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
 
   const { applyEffects } = useBattleEffects(battleState, updateBattleState, battleState.weatherEffect, (newWeather) => updateBattleState({ weatherEffect: newWeather }));
@@ -91,19 +92,25 @@ export const useBattleLogic = () => {
       });
     }
 
+    // Check for level up
+    const updatedPlayerTeddy = checkLevelUp(playerTeddyData);
+    if (updatedPlayerTeddy.level > playerTeddyData.level) {
+      newState.battleLog.push(`${playerTeddyData.name} leveled up to level ${updatedPlayerTeddy.level}!`);
+      // Update player teddy data in the database
+      await supabase
+        .from('terrible_teddies')
+        .update(updatedPlayerTeddy)
+        .eq('id', updatedPlayerTeddy.id);
+    }
+
     updateBattleState(newState);
     setTimeout(aiAction, 1000);
   };
 
-  const handlePowerUp = () => {
-    if (battleState.powerUpMeter === 100) {
-      updateBattleState({
-        ...battleState,
-        playerEnergy: battleState.playerEnergy + 2,
-        powerUpMeter: 0,
-        battleLog: [...battleState.battleLog, `${playerTeddyData.name} uses Power Up and gains 2 energy!`],
-      });
-    }
+  const handlePowerUp = (powerUp: PowerUp) => {
+    const newState = applyPowerUp(powerUp, battleState);
+    updateBattleState(newState);
+    setPowerUps(powerUps.filter(p => p.id !== powerUp.id));
   };
 
   const handleCombo = () => {
@@ -126,7 +133,7 @@ export const useBattleLogic = () => {
 
     // Apply weather effects for AI actions
     if (action === 'attack') {
-      newState.playerHealth = applyWeatherEffect('attack', newState.playerHealth, weatherEffect);
+      newState.playerHealth = applyWeatherEffect('attack', newState.playerHealth, battleState.weatherEffect);
     }
 
     updateBattleState(newState);
@@ -136,7 +143,7 @@ export const useBattleLogic = () => {
   const resetBattleState = () => {
     const [initialState, _] = useBattleState();
     updateBattleState(initialState);
-    setPowerUps(generatePowerUps());
+    setPowerUps(generatePowerUps(3));
   };
 
   return {
@@ -145,7 +152,6 @@ export const useBattleLogic = () => {
     handlePowerUp,
     handleCombo,
     aiAction,
-    endBattle,
     isLoadingPlayerTeddy,
     isLoadingOpponentTeddy,
     playerTeddyData,
