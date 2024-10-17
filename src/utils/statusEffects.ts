@@ -29,6 +29,19 @@ const statusEffects: Record<string, StatusEffect> = {
       battleLog: [...state.battleLog, `${target === 'player' ? 'Player' : 'Opponent'} is stunned and loses their turn!`],
     }),
   },
+  poison: {
+    name: 'Poison',
+    duration: 3,
+    effect: (state, target) => {
+      const damage = 3;
+      const healthKey = target === 'player' ? 'playerHealth' : 'opponentHealth';
+      return {
+        ...state,
+        [healthKey]: Math.max(0, state[healthKey] - damage),
+        battleLog: [...state.battleLog, `${target === 'player' ? 'Player' : 'Opponent'} takes ${damage} poison damage!`],
+      };
+    },
+  },
 };
 
 export const applyStatusEffects = (state: BattleState): BattleState => {
