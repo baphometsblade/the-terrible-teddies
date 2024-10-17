@@ -6,6 +6,8 @@ import { getAIMove } from '../utils/aiOpponent';
 import { applyPowerUp } from '../utils/powerUpSystem';
 import { useGameState } from './useGameState';
 import { gainExperience } from '../utils/levelSystem';
+import { getRandomWeather, applyWeatherEffect, WeatherEffect } from '../utils/weatherSystem';
+import { checkAchievements, Achievement } from '../utils/achievementSystem';
 
 export const useGameActions = () => {
   const {
@@ -33,6 +35,9 @@ export const useGameActions = () => {
     setBattleLogs,
     discardPile,
     setDiscardPile,
+    setWeather,
+    achievements,
+    setAchievements,
   } = useGameState();
 
   const { toast } = useToast();
@@ -51,14 +56,19 @@ export const useGameActions = () => {
   const attack = (attackingCard: TeddyCard) => {
     if (currentTurn === 'player' && playerEnergy >= 1 && opponentField.length > 0) {
       const targetCard = opponentField[0];
-      const damage = calculateDamage(attackingCard, targetCard);
-      setOpponentHealth(prevHealth => Math.max(0, prevHealth - damage));
+      const weather = getRandomWeather();
+      setWeather(weather);
+      const baseDamage = calculateDamage(attackingCard, targetCard);
+      const weatherAdjustedDamage = applyWeatherEffect(attackingCard, targetCard, weather);
+      const finalDamage = Math.max(1, weatherAdjustedDamage);
+
+      setOpponentHealth(prevHealth => Math.max(0, prevHealth - finalDamage));
       setOpponentField(opponentField.filter(c => c.id !== targetCard.id));
       setPlayerEnergy(playerEnergy - 1);
-      addBattleLog(`${attackingCard.name} dealt ${damage} damage to ${targetCard.name}`);
+      addBattleLog(`Weather changed to ${weather.name}. ${weather.description}`);
+      addBattleLog(`${attackingCard.name} dealt ${finalDamage} damage to ${targetCard.name}`);
       
-      // Add experience to the attacking teddy
-      const updatedAttackingCard = gainExperience(attackingCard, damage);
+      const updatedAttackingCard = gainExperience(attackingCard, finalDamage);
       setPlayerField(prevField => prevField.map(card => 
         card.id === updatedAttackingCard.id ? updatedAttackingCard : card
       ));

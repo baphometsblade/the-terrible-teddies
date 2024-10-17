@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { TeddyCard, PowerUp, Combo } from '../types/types';
+import { TeddyCard, PowerUp, Combo, Achievement } from '../types/types';
 import { generateRandomTeddy } from '../utils/gameUtils';
 import { generatePowerUps } from '../utils/powerUpSystem';
+import { WeatherEffect, getRandomWeather } from '../utils/weatherSystem';
+import { getInitialAchievements } from '../utils/achievementSystem';
 
 export const useGameState = () => {
   const [playerHand, setPlayerHand] = useState<TeddyCard[]>([]);
@@ -18,6 +20,8 @@ export const useGameState = () => {
   const [powerUps, setPowerUps] = useState<PowerUp[]>([]);
   const [availableCombos, setAvailableCombos] = useState<Combo[]>([]);
   const [discardPile, setDiscardPile] = useState<TeddyCard[]>([]);
+  const [weather, setWeather] = useState<WeatherEffect>(getRandomWeather());
+  const [achievements, setAchievements] = useState<Achievement[]>(getInitialAchievements());
 
   useEffect(() => {
     initializeGame();
@@ -66,5 +70,9 @@ export const useGameState = () => {
     setAvailableCombos,
     discardPile,
     setDiscardPile,
+    weather,
+    setWeather,
+    achievements,
+    setAchievements,
   };
 };
