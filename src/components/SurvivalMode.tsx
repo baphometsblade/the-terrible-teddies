@@ -4,11 +4,17 @@ import { useBattleLogic } from '../hooks/useBattleLogic';
 import BattleArena from './BattleArena/BattleArena';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { generateOpponent } from '../utils/opponentGenerator';
+import { PowerUp } from '../types/types';
+import PowerUpSelection from './PowerUpSelection';
 
 const SurvivalMode: React.FC = () => {
   const [wave, setWave] = useState(1);
   const [playerTeddy, setPlayerTeddy] = useState(null);
   const [opponentTeddy, setOpponentTeddy] = useState(null);
+  const [score, setScore] = useState(0);
+  const [availablePowerUps, setAvailablePowerUps] = useState<PowerUp[]>([]);
+  const [showPowerUpSelection, setShowPowerUpSelection] = useState(false);
   const { toast } = useToast();
 
   const {
@@ -21,39 +27,53 @@ const SurvivalMode: React.FC = () => {
     isLoadingOpponentTeddy,
     playerTeddyData,
     opponentTeddyData,
+    resetBattleState,
   } = useBattleLogic();
 
   useEffect(() => {
     // Initialize player teddy and first opponent
-    setPlayerTeddy(/* Fetch player's selected teddy */);
-    generateOpponent();
-  }, []);
+    setPlayerTeddy(playerTeddyData);
+    generateNewOpponent();
+  }, [playerTeddyData]);
 
-  const generateOpponent = () => {
-    // Generate a new opponent teddy with increasing difficulty based on the wave
-    const newOpponent = {
-      // ... generate opponent stats
-    };
+  const generateNewOpponent = () => {
+    const newOpponent = generateOpponent(wave);
     setOpponentTeddy(newOpponent);
   };
 
   const handleWaveComplete = () => {
-    setWave(wave + 1);
+    const waveScore = calculateWaveScore();
+    setScore(prevScore => prevScore + waveScore);
+    setWave(prevWave => prevWave + 1);
     toast({
       title: "Wave Complete!",
-      description: `You've survived wave ${wave}. Prepare for the next challenge!`,
+      description: `You've survived wave ${wave}. Score: ${waveScore}`,
       variant: "success",
     });
-    generateOpponent();
+    setShowPowerUpSelection(true);
+    resetBattleState();
+    generateNewOpponent();
   };
 
   const handleGameOver = () => {
     toast({
       title: "Game Over",
-      description: `You've survived ${wave} waves in Survival Mode!`,
+      description: `You've survived ${wave} waves in Survival Mode! Final Score: ${score}`,
       variant: "destructive",
     });
     // Handle game over logic (e.g., save high score, return to menu)
+  };
+
+  const calculateWaveScore = () => {
+    const baseScore = 1000;
+    const healthBonus = battleState.playerHealth * 10;
+    const waveBonus = wave * 500;
+    return baseScore + healthBonus + waveBonus;
+  };
+
+  const handlePowerUpSelection = (selectedPowerUp: PowerUp) => {
+    handlePowerUp(selectedPowerUp);
+    setShowPowerUpSelection(false);
   };
 
   if (isLoadingPlayerTeddy || isLoadingOpponentTeddy) {
@@ -68,14 +88,24 @@ const SurvivalMode: React.FC = () => {
       transition={{ duration: 0.5 }}
     >
       <h2 className="text-2xl font-bold mb-4">Survival Mode - Wave {wave}</h2>
-      <BattleArena
-        playerTeddy={playerTeddyData}
-        opponentTeddy={opponentTeddyData}
-        battleState={battleState}
-        onAction={handleAction}
-        onPowerUp={handlePowerUp}
-        onCombo={handleCombo}
-      />
+      <div className="mb-4">
+        <span className="font-bold">Score: {score}</span>
+      </div>
+      {showPowerUpSelection ? (
+        <PowerUpSelection
+          powerUps={availablePowerUps}
+          onSelect={handlePowerUpSelection}
+        />
+      ) : (
+        <BattleArena
+          playerTeddy={playerTeddy}
+          opponentTeddy={opponentTeddy}
+          battleState={battleState}
+          onAction={handleAction}
+          onPowerUp={handlePowerUp}
+          onCombo={handleCombo}
+        />
+      )}
       {battleState.playerHealth <= 0 && (
         <Button onClick={handleGameOver} className="mt-4 bg-red-500 hover:bg-red-600 text-white">
           Game Over

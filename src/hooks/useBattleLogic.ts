@@ -55,7 +55,7 @@ export const useBattleLogic = () => {
     }
   }, [battleState.roundCount]);
 
-  const handleAction = async (action: string) => {
+  const handleAction = async (action) => {
     if (!playerTeddyData || !opponentTeddyData) return;
 
     let newState = { ...battleState };
@@ -124,18 +124,19 @@ export const useBattleLogic = () => {
     const action = getAIAction(opponentTeddyData, playerTeddyData, battleState);
     const newState = performAIAction(action, battleState, opponentTeddyData, playerTeddyData);
 
+    // Apply weather effects for AI actions
+    if (action === 'attack') {
+      newState.playerHealth = applyWeatherEffect('attack', newState.playerHealth, weatherEffect);
+    }
+
     updateBattleState(newState);
+    return { action, newState };
   };
 
-  const endBattle = () => {
-    if (!playerTeddyData || !opponentTeddyData) return;
-
-    const winner = battleState.playerHealth > 0 ? playerTeddyData : opponentTeddyData;
-    const loser = battleState.playerHealth > 0 ? opponentTeddyData : playerTeddyData;
-    const updatedWinner = applyBattleResults(winner, loser);
-
-    // Here you would update the winner's data in the database
-    console.log('Battle ended. Updated winner:', updatedWinner);
+  const resetBattleState = () => {
+    const [initialState, _] = useBattleState();
+    updateBattleState(initialState);
+    setPowerUps(generatePowerUps());
   };
 
   return {
@@ -151,5 +152,6 @@ export const useBattleLogic = () => {
     opponentTeddyData,
     weatherEffect: battleState.weatherEffect,
     unlockedAchievements,
+    resetBattleState,
   };
 };
