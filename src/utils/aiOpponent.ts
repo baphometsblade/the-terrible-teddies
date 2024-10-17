@@ -31,13 +31,24 @@ export const getAIMove = (
     return { action: 'useSpecial', card: cardWithSpecial };
   }
 
-  // Default strategy
+  // Play a card if possible
   if (playableCards.length > 0 && opponentField.length < 3) {
-    return { action: 'play', card: playableCards[0] };
+    // Choose the card with the highest attack or defense
+    const bestCard = playableCards.reduce((prev, current) => 
+      (current.attack + current.defense > prev.attack + prev.defense) ? current : prev
+    );
+    return { action: 'play', card: bestCard };
   }
   
+  // Attack if possible
   if (opponentField.length > 0 && playerField.length > 0) {
-    return { action: 'attack', card: opponentField[0] };
+    // Choose the attacker that can deal the most damage
+    const bestAttacker = opponentField.reduce((prev, current) => {
+      const prevDamage = calculateDamage(prev, playerField[0]);
+      const currentDamage = calculateDamage(current, playerField[0]);
+      return currentDamage > prevDamage ? current : prev;
+    });
+    return { action: 'attack', card: bestAttacker };
   }
   
   return { action: 'endTurn' };

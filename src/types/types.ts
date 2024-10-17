@@ -7,7 +7,9 @@ export interface TeddyCard {
     name: string;
     effect: string;
   };
-  abilityDuration?: number;
+  energyCost: number;
+  level: number;
+  experience: number;
 }
 
 export interface PowerUp {
