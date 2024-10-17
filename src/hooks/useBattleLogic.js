@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { getSpecialAbility } from '../utils/specialAbilities';
-import { applyBattleEffect } from '../utils/battleEffects';
-import { getRandomWeatherEffect, applyWeatherEffect } from '../utils/weatherEffects';
+import { checkForCombo, applyCombo } from '../utils/comboSystem';
+import { useSpecialAbility } from '../utils/specialAbilities';
+import { applyWeatherEffect, getRandomWeather } from '../utils/weatherEffects';
 import { getAIAction } from '../utils/AIOpponent';
 import { useBattleState } from './useBattleState';
 import { performPlayerAction, performAIAction } from '../utils/battleActions';
-import { drawCardFromDeck, shuffleDeck } from '../utils/deckUtils';
 import { useCardActions } from './useCardActions';
 import { useBattleEffects } from './useBattleEffects';
 
 export const useBattleLogic = () => {
   const [battleState, updateBattleState] = useBattleState();
   const [randomEvents, setRandomEvents] = useState([]);
-  const [weatherEffect, setWeatherEffect] = useState(getRandomWeatherEffect());
+  const [weatherEffect, setWeatherEffect] = useState(getRandomWeather());
+  const [moveHistory, setMoveHistory] = useState([]);
 
   const { drawCard, playCard, endTurn } = useCardActions(battleState, updateBattleState);
   const { applyEffects } = useBattleEffects(battleState, updateBattleState, weatherEffect, setWeatherEffect);
@@ -52,9 +52,45 @@ export const useBattleLogic = () => {
   }, [battleState.roundCount]);
 
   const handleAction = async (action) => {
-    const newState = performPlayerAction(action, battleState, playerTeddyData, opponentTeddyData);
+    let newState = performPlayerAction(action, battleState, playerTeddyData, opponentTeddyData);
+    
+    // Apply weather effects
+    if (action === 'attack') {
+      newState.opponentHealth = applyWeatherEffect('attack', newState.opponentHealth, weatherEffect);
+    }
+
+    // Check for combo
+    setMoveHistory([...moveHistory, action]);
+    const combo = checkForCombo(moveHistory);
+    if (combo) {
+      const comboDamage = applyCombo(newState.lastDamageDealt, combo);
+      newState.opponentHealth -= comboDamage;
+      newState.battleLog.push(`${playerTeddyData.name} performed a ${combo.name} for ${comboDamage} damage!`);
+    }
+
     updateBattleState(newState);
     return newState;
+  };
+
+  const handleSpecialAbility = () => {
+    const { damage, healing, effect } = useSpecialAbility(playerTeddyData.specialAbility, playerTeddyData, opponentTeddyData);
+    let newState = { ...battleState };
+
+    if (damage) {
+      newState.opponentHealth -= damage;
+      newState.battleLog.push(`${playerTeddyData.name} used ${playerTeddyData.specialAbility} for ${damage} damage!`);
+    }
+
+    if (healing) {
+      newState.playerHealth = Math.min(100, newState.playerHealth + healing);
+      newState.battleLog.push(`${playerTeddyData.name} healed for ${healing} HP!`);
+    }
+
+    if (effect) {
+      newState.battleLog.push(`Effect: ${effect}`);
+    }
+
+    updateBattleState(newState);
   };
 
   const handlePowerUp = () => {
@@ -82,7 +118,13 @@ export const useBattleLogic = () => {
 
   const aiAction = async () => {
     const action = getAIAction(opponentTeddyData, playerTeddyData, battleState);
-    const newState = performAIAction(action, battleState, opponentTeddyData, playerTeddyData);
+    let newState = performAIAction(action, battleState, opponentTeddyData, playerTeddyData);
+
+    // Apply weather effects for AI actions
+    if (action === 'attack') {
+      newState.playerHealth = applyWeatherEffect('attack', newState.playerHealth, weatherEffect);
+    }
+
     updateBattleState(newState);
     return { action, newState };
   };
@@ -90,6 +132,7 @@ export const useBattleLogic = () => {
   return {
     battleState,
     handleAction,
+    handleSpecialAbility,
     handlePowerUp,
     handleCombo,
     drawCard,

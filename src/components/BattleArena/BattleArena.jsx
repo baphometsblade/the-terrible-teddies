@@ -13,6 +13,7 @@ import PlayerHand from './PlayerHand';
 import BattleEffects from './BattleEffects';
 import TurnTimer from './TurnTimer';
 import BattleRewards from './BattleRewards';
+import BattleSummary from './BattleSummary';
 import { useBattleLogic } from '../../hooks/useBattleLogic';
 import { Button } from "@/components/ui/button";
 
@@ -21,6 +22,7 @@ const BattleArena = () => {
   const {
     battleState,
     handleAction,
+    handleSpecialAbility,
     handlePowerUp,
     handleCombo,
     drawCard,
@@ -37,6 +39,7 @@ const BattleArena = () => {
 
   const [showPowerUpSystem, setShowPowerUpSystem] = useState(false);
   const [showRewards, setShowRewards] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     if (battleState.playerHealth <= 0 || battleState.opponentHealth <= 0) {
@@ -46,7 +49,7 @@ const BattleArena = () => {
         description: `${winner} wins the battle!`,
         variant: winner === playerTeddyData.name ? "success" : "destructive",
       });
-      setShowRewards(true);
+      setShowSummary(true);
     }
   }, [battleState.playerHealth, battleState.opponentHealth, playerTeddyData, opponentTeddyData, toast]);
 
@@ -82,6 +85,7 @@ const BattleArena = () => {
         <div>
           <ActionButtons
             onAction={handleAction}
+            onSpecialAbility={handleSpecialAbility}
             currentTurn={battleState.currentTurn}
             playerEnergy={battleState.playerEnergy}
           />
@@ -133,6 +137,18 @@ const BattleArena = () => {
         <BattleLog battleLog={battleState.battleLog} />
         <CombatLog combatEvents={battleState.combatEvents} />
       </div>
+      {showSummary && (
+        <BattleSummary
+          winner={battleState.playerHealth > 0 ? 'player' : 'opponent'}
+          playerTeddy={playerTeddyData}
+          opponentTeddy={opponentTeddyData}
+          battleState={battleState}
+          onClose={() => {
+            setShowSummary(false);
+            setShowRewards(true);
+          }}
+        />
+      )}
       {showRewards && (
         <BattleRewards
           winner={battleState.playerHealth > 0 ? 'player' : 'opponent'}
