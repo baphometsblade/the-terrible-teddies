@@ -1,19 +1,40 @@
 import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Zap, Shield, Swords } from 'lucide-react';
 import TeddyCard from '../TeddyCard';
 
-const BattleField = ({ battle }) => {
+const BattleField = ({ battleState, playerTeddyData, opponentTeddyData }) => {
   return (
     <div className="grid grid-cols-2 gap-4 mb-4">
-      <div>
-        <h2 className="text-xl font-bold mb-2">Player 1</h2>
-        {battle.player1_teddy && <TeddyCard teddy={battle.player1_teddy} />}
-        <p>Health: {battle.player1_health}/30</p>
-      </div>
-      <div>
-        <h2 className="text-xl font-bold mb-2">{battle.is_ai_opponent ? 'AI Opponent' : 'Player 2'}</h2>
-        {battle.player2_teddy && <TeddyCard teddy={battle.player2_teddy} />}
-        <p>Health: {battle.player2_health}/30</p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>{playerTeddyData.name}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TeddyCard teddy={playerTeddyData} />
+          <Progress value={(battleState.playerHealth / 100) * 100} className="mt-2" />
+          <div className="flex justify-between mt-2">
+            <span><Zap className="inline mr-1" /> {battleState.playerEnergy}</span>
+            <span><Shield className="inline mr-1" /> {playerTeddyData.defense}</span>
+            <span><Swords className="inline mr-1" /> {playerTeddyData.attack}</span>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>{opponentTeddyData.name}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TeddyCard teddy={opponentTeddyData} />
+          <Progress value={(battleState.opponentHealth / 100) * 100} className="mt-2" />
+          <div className="flex justify-between mt-2">
+            <span><Zap className="inline mr-1" /> {battleState.opponentEnergy}</span>
+            <span><Shield className="inline mr-1" /> {opponentTeddyData.defense}</span>
+            <span><Swords className="inline mr-1" /> {opponentTeddyData.attack}</span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

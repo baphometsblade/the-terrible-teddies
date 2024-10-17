@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { getSpecialAbility } from '../utils/specialAbilities';
-import { applyBattleEvent } from '../utils/battleEvents';
+import { applyBattleEffect } from '../utils/battleEffects';
 import { getRandomWeatherEffect, applyWeatherEffect } from '../utils/weatherEffects';
 import { getAIAction } from '../utils/AIOpponent';
 import { useBattleState } from './useBattleState';
@@ -42,7 +42,7 @@ export const useBattleLogic = (playerTeddy, opponentTeddy) => {
 
   useEffect(() => {
     if (battleState.roundCount % 3 === 0) {
-      const updatedState = applyBattleEvent(battleState);
+      const updatedState = applyBattleEffect(battleState);
       updateBattleState(updatedState);
     }
 
