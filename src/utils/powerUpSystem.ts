@@ -1,4 +1,4 @@
-import { PowerUp, TeddyCard } from '../types/types';
+import { PowerUp, BattleState } from '../types/types';
 
 export const generatePowerUps = (): PowerUp[] => {
   return [
@@ -6,28 +6,23 @@ export const generatePowerUps = (): PowerUp[] => {
       id: '1',
       name: 'Energy Boost',
       description: 'Gain 2 extra energy this turn',
-      effect: (state) => ({ ...state, playerEnergy: state.playerEnergy + 2 }),
+      effect: (state: BattleState) => ({ ...state, playerEnergy: state.playerEnergy + 2 }),
     },
     {
       id: '2',
       name: 'Healing Touch',
-      description: 'Restore 5 health points',
-      effect: (state) => ({ ...state, playerHealth: Math.min(state.playerHealth + 5, 30) }),
+      description: 'Restore 10 health points',
+      effect: (state: BattleState) => ({ ...state, playerHealth: Math.min(state.playerHealth + 10, 100) }),
     },
     {
       id: '3',
-      name: 'Card Draw',
-      description: 'Draw 2 additional cards',
-      effect: (state) => {
-        const { updatedDeck, updatedHand } = state;
-        const result1 = drawCard(updatedDeck, updatedHand);
-        const result2 = drawCard(result1.updatedDeck, result1.updatedHand);
-        return { ...state, deck: result2.updatedDeck, playerHand: result2.updatedHand };
-      },
+      name: 'Attack Surge',
+      description: 'Increase attack by 3 for 2 turns',
+      effect: (state: BattleState) => ({ ...state, playerAttackBoost: (state.playerAttackBoost || 0) + 3, playerAttackBoostDuration: 2 }),
     },
   ];
 };
 
-export const applyPowerUp = (powerUp: PowerUp, gameState: any) => {
-  return powerUp.effect(gameState);
+export const applyPowerUp = (powerUp: PowerUp, battleState: BattleState): BattleState => {
+  return powerUp.effect(battleState);
 };
