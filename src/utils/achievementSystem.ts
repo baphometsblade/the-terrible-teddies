@@ -1,78 +1,43 @@
-import { TeddyCard } from '../types/types';
+import { BattleState } from '../types/types';
 
-export interface Achievement {
+export type Achievement = {
   id: string;
   name: string;
   description: string;
-  isUnlocked: boolean;
-  progress: number;
-  maxProgress: number;
-}
+  condition: (state: BattleState) => boolean;
+};
 
 const achievements: Achievement[] = [
   {
-    id: 'firstWin',
-    name: 'First Victory',
-    description: 'Win your first battle',
-    isUnlocked: false,
-    progress: 0,
-    maxProgress: 1,
+    id: 'first_blood',
+    name: 'First Blood',
+    description: 'Deal damage to your opponent for the first time',
+    condition: (state) => state.opponentHealth < 100,
   },
   {
-    id: 'levelMaster',
-    name: 'Level Master',
-    description: 'Level up a teddy to level 5',
-    isUnlocked: false,
-    progress: 0,
-    maxProgress: 5,
+    id: 'combo_master',
+    name: 'Combo Master',
+    description: 'Perform a combo move',
+    condition: (state) => state.comboMeter === 0 && state.moveHistory.length >= 3,
   },
   {
-    id: 'comboKing',
-    name: 'Combo King',
-    description: 'Perform 10 combos',
-    isUnlocked: false,
-    progress: 0,
-    maxProgress: 10,
+    id: 'survivor',
+    name: 'Survivor',
+    description: 'Win a battle with less than 10 health remaining',
+    condition: (state) => state.opponentHealth === 0 && state.playerHealth <= 10,
+  },
+  {
+    id: 'energy_efficient',
+    name: 'Energy Efficient',
+    description: 'Win a battle without using any special moves',
+    condition: (state) => state.opponentHealth === 0 && !state.moveHistory.includes('special'),
   },
 ];
 
-export const checkAchievements = (
-  currentAchievements: Achievement[],
-  playerTeddies: TeddyCard[],
-  battleWon: boolean,
-  combosPerformed: number
-): Achievement[] => {
-  const updatedAchievements = [...currentAchievements];
+export const checkAchievements = (state: BattleState, unlockedAchievements: string[]): string[] => {
+  const newAchievements = achievements
+    .filter((achievement) => !unlockedAchievements.includes(achievement.id) && achievement.condition(state))
+    .map((achievement) => achievement.id);
 
-  // Check for first win
-  const firstWinAchievement = updatedAchievements.find(a => a.id === 'firstWin');
-  if (firstWinAchievement && !firstWinAchievement.isUnlocked && battleWon) {
-    firstWinAchievement.isUnlocked = true;
-    firstWinAchievement.progress = 1;
-  }
-
-  // Check for level master
-  const levelMasterAchievement = updatedAchievements.find(a => a.id === 'levelMaster');
-  if (levelMasterAchievement) {
-    const highestLevel = Math.max(...playerTeddies.map(t => t.level));
-    levelMasterAchievement.progress = Math.min(highestLevel, levelMasterAchievement.maxProgress);
-    if (levelMasterAchievement.progress === levelMasterAchievement.maxProgress) {
-      levelMasterAchievement.isUnlocked = true;
-    }
-  }
-
-  // Check for combo king
-  const comboKingAchievement = updatedAchievements.find(a => a.id === 'comboKing');
-  if (comboKingAchievement) {
-    comboKingAchievement.progress = Math.min(comboKingAchievement.progress + combosPerformed, comboKingAchievement.maxProgress);
-    if (comboKingAchievement.progress === comboKingAchievement.maxProgress) {
-      comboKingAchievement.isUnlocked = true;
-    }
-  }
-
-  return updatedAchievements;
-};
-
-export const getInitialAchievements = (): Achievement[] => {
-  return achievements.map(achievement => ({ ...achievement }));
+  return [...unlockedAchievements, ...newAchievements];
 };

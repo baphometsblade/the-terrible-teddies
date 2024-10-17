@@ -3,10 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { checkForCombo, applyCombo } from '../utils/comboSystem';
 import { generatePowerUps, applyPowerUp } from '../utils/powerUpSystem';
-import { getAIAction } from '../utils/AIOpponent';
+import { getAIAction, performAIAction } from '../utils/AIOpponent';
 import { applyWeatherEffect, getRandomWeather } from '../utils/weatherEffects';
 import { applyBattleResults } from '../utils/levelSystem';
 import { BattleState, TeddyCard, PowerUp } from '../types/types';
+import { calculateCriticalHit } from '../utils/criticalHits';
+import { applyStatusEffects, addStatusEffect } from '../utils/statusEffects';
+import { checkAchievements, Achievement } from '../utils/achievementSystem';
 
 export const useBattleLogic = () => {
   const [battleState, setBattleState] = useState<BattleState>({
@@ -20,36 +23,44 @@ export const useBattleLogic = () => {
     moveHistory: [],
     powerUpMeter: 0,
     comboMeter: 0,
-    activeEffects: [],
+    playerStatusEffects: [],
+    opponentStatusEffects: [],
+    playerDefenseBoost: 0,
+    opponentDefenseBoost: 0,
+    playerStunned: false,
+    opponentStunned: false,
   });
 
   const [weatherEffect, setWeatherEffect] = useState(getRandomWeather());
   const [powerUps, setPowerUps] = useState<PowerUp[]>(generatePowerUps());
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
 
   const { data: playerTeddyData, isLoading: isLoadingPlayerTeddy } = useQuery({
-    queryKey: ['playerTeddy'],
+    queryKey: ['playerTeddy', battleState.playerTeddyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('terrible_teddies')
         .select('*')
-        .eq('id', 1)  // Assuming player teddy has id 1
+        .eq('id', battleState.playerTeddyId)
         .single();
       if (error) throw error;
-      return data as TeddyCard;
+      return { ...data, specialAbility: getSpecialAbility(data.name) };
     },
+    enabled: !!battleState.playerTeddyId,
   });
 
   const { data: opponentTeddyData, isLoading: isLoadingOpponentTeddy } = useQuery({
-    queryKey: ['opponentTeddy'],
+    queryKey: ['opponentTeddy', battleState.opponentTeddyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('terrible_teddies')
         .select('*')
-        .eq('id', 2)  // Assuming opponent teddy has id 2
+        .eq('id', battleState.opponentTeddyId)
         .single();
       if (error) throw error;
-      return data as TeddyCard;
+      return { ...data, specialAbility: getSpecialAbility(data.name) };
     },
+    enabled: !!battleState.opponentTeddyId,
   });
 
   useEffect(() => {
@@ -64,24 +75,35 @@ export const useBattleLogic = () => {
     let newState = { ...battleState };
     newState.moveHistory.push(action);
 
-    switch (action) {
-      case 'attack':
-        const damage = applyWeatherEffect('attack', playerTeddyData.attack, weatherEffect);
-        newState.opponentHealth = Math.max(0, newState.opponentHealth - damage);
-        newState.battleLog.push(`${playerTeddyData.name} attacks for ${damage} damage!`);
-        break;
-      case 'defend':
-        newState.playerEnergy = Math.min(5, newState.playerEnergy + 1);
-        newState.battleLog.push(`${playerTeddyData.name} defends and gains 1 energy.`);
-        break;
-      case 'special':
-        if (newState.playerEnergy >= 2) {
-          const specialDamage = playerTeddyData.attack * 1.5;
-          newState.opponentHealth = Math.max(0, newState.opponentHealth - specialDamage);
-          newState.playerEnergy -= 2;
-          newState.battleLog.push(`${playerTeddyData.name} uses a special move for ${specialDamage} damage!`);
-        }
-        break;
+    if (newState.playerStunned) {
+      newState.battleLog.push(`${playerTeddyData.name} is stunned and loses their turn!`);
+      newState.playerStunned = false;
+    } else {
+      switch (action) {
+        case 'attack':
+          const { isCritical, damage } = calculateCriticalHit(playerTeddyData, playerTeddyData.attack);
+          const weatherAdjustedDamage = applyWeatherEffect('attack', damage, weatherEffect);
+          newState.opponentHealth = Math.max(0, newState.opponentHealth - weatherAdjustedDamage);
+          newState.battleLog.push(`${playerTeddyData.name} attacks for ${weatherAdjustedDamage} damage!${isCritical ? ' Critical hit!' : ''}`);
+          if (Math.random() < 0.2) {
+            newState = addStatusEffect(newState, 'burn', 'opponent');
+          }
+          break;
+        case 'defend':
+          newState.playerEnergy = Math.min(5, newState.playerEnergy + 1);
+          newState.playerDefenseBoost = (newState.playerDefenseBoost || 0) + 2;
+          newState.battleLog.push(`${playerTeddyData.name} defends, gaining 1 energy and boosting defense by 2.`);
+          break;
+        case 'special':
+          if (newState.playerEnergy >= 2) {
+            const specialDamage = playerTeddyData.attack * 1.5;
+            newState.opponentHealth = Math.max(0, newState.opponentHealth - specialDamage);
+            newState.playerEnergy -= 2;
+            newState.battleLog.push(`${playerTeddyData.name} uses a special move for ${specialDamage} damage!`);
+            newState = addStatusEffect(newState, 'stun', 'opponent');
+          }
+          break;
+      }
     }
 
     const combo = checkForCombo(newState.moveHistory);
@@ -93,27 +115,48 @@ export const useBattleLogic = () => {
     }
 
     newState.powerUpMeter = Math.min(100, newState.powerUpMeter + 10);
+    newState.playerEnergy = Math.min(5, newState.playerEnergy + 1); // Energy regeneration
     newState.currentTurn = 'opponent';
     newState.roundCount++;
+
+    newState = applyStatusEffects(newState);
+
+    const newUnlockedAchievements = checkAchievements(newState, unlockedAchievements);
+    if (newUnlockedAchievements.length > unlockedAchievements.length) {
+      setUnlockedAchievements(newUnlockedAchievements);
+      const newAchievements = newUnlockedAchievements.filter((id) => !unlockedAchievements.includes(id));
+      newAchievements.forEach((id) => {
+        const achievement = achievements.find((a) => a.id === id);
+        if (achievement) {
+          newState.battleLog.push(`Achievement unlocked: ${achievement.name} - ${achievement.description}`);
+        }
+      });
+    }
 
     setBattleState(newState);
     setTimeout(aiAction, 1000);
   };
 
   const handlePowerUp = () => {
-    if (battleState.powerUpMeter === 100 && powerUps.length > 0) {
-      const powerUp = powerUps[0];
-      const newState = applyPowerUp(powerUp, battleState);
-      setBattleState(newState);
-      setPowerUps(powerUps.slice(1));
+    if (battleState.powerUpMeter === 100) {
+      updateBattleState({
+        ...battleState,
+        playerEnergy: battleState.playerEnergy + 2,
+        powerUpMeter: 0,
+        battleLog: [...battleState.battleLog, `${playerTeddyData.name} uses Power Up and gains 2 energy!`],
+      });
     }
   };
 
   const handleCombo = () => {
-    if (battleState.comboMeter === 100 && playerTeddyData) {
-      const newState = applyCombo('attack,attack,attack', battleState, playerTeddyData);
-      newState.comboMeter = 0;
-      setBattleState(newState);
+    if (battleState.comboMeter === 100) {
+      const comboDamage = playerTeddyData.attack * 2;
+      updateBattleState({
+        ...battleState,
+        opponentHealth: Math.max(0, battleState.opponentHealth - comboDamage),
+        comboMeter: 0,
+        battleLog: [...battleState.battleLog, `${playerTeddyData.name} unleashes a devastating combo attack for ${comboDamage} damage!`],
+      });
     }
   };
 
@@ -121,30 +164,7 @@ export const useBattleLogic = () => {
     if (!opponentTeddyData || !playerTeddyData) return;
 
     const action = getAIAction(opponentTeddyData, playerTeddyData, battleState);
-    let newState = { ...battleState };
-
-    switch (action) {
-      case 'attack':
-        const damage = applyWeatherEffect('attack', opponentTeddyData.attack, weatherEffect);
-        newState.playerHealth = Math.max(0, newState.playerHealth - damage);
-        newState.battleLog.push(`${opponentTeddyData.name} attacks for ${damage} damage!`);
-        break;
-      case 'defend':
-        newState.opponentEnergy = Math.min(5, newState.opponentEnergy + 1);
-        newState.battleLog.push(`${opponentTeddyData.name} defends and gains 1 energy.`);
-        break;
-      case 'special':
-        if (newState.opponentEnergy >= 2) {
-          const specialDamage = opponentTeddyData.attack * 1.5;
-          newState.playerHealth = Math.max(0, newState.playerHealth - specialDamage);
-          newState.opponentEnergy -= 2;
-          newState.battleLog.push(`${opponentTeddyData.name} uses a special move for ${specialDamage} damage!`);
-        }
-        break;
-    }
-
-    newState.currentTurn = 'player';
-    newState.roundCount++;
+    const newState = performAIAction(action, battleState, opponentTeddyData, playerTeddyData);
 
     setBattleState(newState);
   };
@@ -172,5 +192,6 @@ export const useBattleLogic = () => {
     playerTeddyData,
     opponentTeddyData,
     weatherEffect,
+    unlockedAchievements,
   };
 };
