@@ -33,6 +33,8 @@ export interface BattleState {
   opponentCooldowns: Record<string, number>;
   weatherEffect: WeatherEffect | null;
   turnCount: number;
+  playerStunned: boolean;
+  opponentStunned: boolean;
 }
 
 export interface Deck {
