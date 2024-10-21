@@ -1,39 +1,22 @@
 import { useState } from 'react';
-import { BattleState } from '../types/types';
+import { TeddyCard, BattleState, WeatherEffect } from '../types/types';
 import { getRandomWeather } from '../utils/weatherEffects';
-import { getRandomBattleItem } from '../utils/battleItems';
+import { generatePowerUps } from '../utils/powerUpSystem';
 
-export const useBattleState = (initialPlayerHealth = 100, initialOpponentHealth = 100) => {
+export const useBattleState = (playerTeddy: TeddyCard, opponentTeddy: TeddyCard) => {
   const [battleState, setBattleState] = useState<BattleState>({
-    playerHealth: initialPlayerHealth,
-    opponentHealth: initialOpponentHealth,
+    playerTeddy,
+    opponentTeddy,
+    playerHealth: 20,
+    opponentHealth: 20,
     playerEnergy: 3,
     opponentEnergy: 3,
     playerDefenseBoost: 0,
     opponentDefenseBoost: 0,
-    playerStatusEffects: [],
-    opponentStatusEffects: [],
     currentTurn: 'player',
-    roundCount: 0,
-    playerExperience: 0,
-    playerLevel: 1,
     weatherEffect: getRandomWeather(),
-    comboMeter: 0,
-    powerUpMeter: 0,
-    battleLog: [],
-    moveHistory: [],
-    playerItems: [getRandomBattleItem(), getRandomBattleItem()],
-    opponentItems: [getRandomBattleItem()],
-    playerAttackBoost: 0,
-    playerAttackBoostDuration: 0,
-    opponentAttackBoost: 0,
-    opponentAttackBoostDuration: 0,
-    playerShield: false,
-    opponentShield: false,
-    rage: 0,
-    aiRage: 0,
-    playerCriticalChanceBoost: 0,
-    opponentCriticalChanceBoost: 0,
+    availablePowerUps: generatePowerUps(3),
+    battleLog: ['Battle started!'],
   });
 
   const updateBattleState = (updates: Partial<BattleState>) => {

@@ -1,51 +1,36 @@
-import { BattleState } from '../types/types';
+import { WeatherEffect } from '../types/types';
 
-export type WeatherEffect = {
-  name: string;
-  description: string;
-  effect: (state: BattleState) => BattleState;
-};
-
-const weatherEffects: Record<string, WeatherEffect> = {
-  sunny: {
+const weatherEffects: WeatherEffect[] = [
+  {
     name: 'Sunny',
-    description: 'Increases attack damage by 20%',
-    effect: (state) => ({
-      ...state,
-      playerAttackBoost: (state.playerAttackBoost || 0) + 0.2,
-      opponentAttackBoost: (state.opponentAttackBoost || 0) + 0.2,
-    }),
+    description: 'Increases attack damage',
+    effect: (damage: number) => damage * 1.2
   },
-  rainy: {
+  {
     name: 'Rainy',
-    description: 'Increases defense by 20%',
-    effect: (state) => ({
-      ...state,
-      playerDefenseBoost: (state.playerDefenseBoost || 0) + 0.2,
-      opponentDefenseBoost: (state.opponentDefenseBoost || 0) + 0.2,
-    }),
+    description: 'Decreases attack damage',
+    effect: (damage: number) => damage * 0.8
   },
-  windy: {
+  {
     name: 'Windy',
-    description: 'Increases energy regeneration by 1',
-    effect: (state) => ({
-      ...state,
-      playerEnergyRegen: (state.playerEnergyRegen || 0) + 1,
-      opponentEnergyRegen: (state.opponentEnergyRegen || 0) + 1,
-    }),
+    description: 'Increases critical hit chance',
+    effect: (damage: number) => damage // This effect is handled separately in critical hit logic
   },
-};
+  {
+    name: 'Foggy',
+    description: 'Decreases accuracy',
+    effect: (damage: number) => Math.random() < 0.2 ? 0 : damage // 20% chance to miss
+  }
+];
 
 export const getRandomWeather = (): WeatherEffect => {
-  const weatherKeys = Object.keys(weatherEffects);
-  const randomKey = weatherKeys[Math.floor(Math.random() * weatherKeys.length)];
-  return weatherEffects[randomKey];
+  return weatherEffects[Math.floor(Math.random() * weatherEffects.length)];
 };
 
-export const applyWeatherEffect = (state: BattleState, weather: WeatherEffect): BattleState => {
-  const newState = weather.effect(state);
-  return {
-    ...newState,
-    battleLog: [...newState.battleLog, `The weather is ${weather.name}. ${weather.description}`],
-  };
+export const applyWeatherEffect = (damage: number, weather: WeatherEffect, actionType: 'attack' | 'special'): number => {
+  if (actionType === 'special') {
+    // Special moves are not affected by weather
+    return damage;
+  }
+  return weather.effect(damage);
 };

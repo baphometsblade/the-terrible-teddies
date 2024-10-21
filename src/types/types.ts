@@ -14,7 +14,7 @@ export interface PowerUp {
   id: string;
   name: string;
   description: string;
-  effect: (state: BattleState) => BattleState;
+  effect: (state: BattleState) => Partial<BattleState>;
 }
 
 export interface Combo {
@@ -25,51 +25,26 @@ export interface Combo {
 }
 
 export interface BattleState {
+  playerTeddy: TeddyCard;
+  opponentTeddy: TeddyCard;
   playerHealth: number;
   opponentHealth: number;
   playerEnergy: number;
   opponentEnergy: number;
   playerDefenseBoost: number;
   opponentDefenseBoost: number;
-  playerStatusEffects: StatusEffect[];
-  opponentStatusEffects: StatusEffect[];
   currentTurn: 'player' | 'opponent';
-  roundCount: number;
-  playerExperience: number;
-  playerLevel: number;
   weatherEffect: WeatherEffect;
-  comboMeter: number;
-  powerUpMeter: number;
+  availablePowerUps: PowerUp[];
   battleLog: string[];
-  moveHistory: string[];
-  playerItems: BattleItem[];
-  opponentItems: BattleItem[];
   playerAttackBoost: number;
   playerAttackBoostDuration: number;
   opponentAttackBoost: number;
   opponentAttackBoostDuration: number;
-  playerShield: boolean;
-  opponentShield: boolean;
-  rage: number;
-  aiRage: number;
-  playerCriticalChanceBoost: number;
-  opponentCriticalChanceBoost: number;
-}
-
-export interface StatusEffect {
-  name: string;
-  duration: number;
-  effect: (state: BattleState, target: 'player' | 'opponent') => BattleState;
 }
 
 export interface WeatherEffect {
   name: string;
   description: string;
-  effect: (state: BattleState) => BattleState;
-}
-
-export interface BattleItem {
-  name: string;
-  description: string;
-  effect: (state: BattleState, isPlayer: boolean) => BattleState;
+  effect: (damage: number) => number;
 }
