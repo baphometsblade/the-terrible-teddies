@@ -1,11 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { TeddyCard, Deck } from '../types/types';
+import { TeddyCard, Deck, SpecialAbility } from '../types/types';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+
+const specialAbilities: SpecialAbility[] = [
+  {
+    name: 'Heal',
+    description: 'Restore 5 health to the player',
+    effect: (state, card) => ({ ...state, playerHealth: Math.min(30, state.playerHealth + 5) }),
+    energyCost: 2,
+    cooldown: 3,
+  },
+  {
+    name: 'Double Attack',
+    description: 'Double this card\'s attack for one turn',
+    effect: (state, card) => ({
+      ...state,
+      playerField: state.playerField.map(c => 
+        c.id === card.id ? { ...c, attack: c.attack * 2 } : c
+      ),
+    }),
+    energyCost: 3,
+    cooldown: 4,
+  },
+  // Add more special abilities as needed
+];
 
 const DeckBuilder: React.FC = () => {
   const [selectedCards, setSelectedCards] = useState<TeddyCard[]>([]);
@@ -44,7 +67,11 @@ const DeckBuilder: React.FC = () => {
 
   const handleCardSelect = (card: TeddyCard) => {
     if (selectedCards.length < 30 && !selectedCards.find(c => c.id === card.id)) {
-      setSelectedCards([...selectedCards, card]);
+      const newCard = {
+        ...card,
+        specialAbility: specialAbilities[Math.floor(Math.random() * specialAbilities.length)],
+      };
+      setSelectedCards([...selectedCards, newCard]);
     }
   };
 
@@ -113,6 +140,7 @@ const DeckBuilder: React.FC = () => {
                   <p>Attack: {card.attack}</p>
                   <p>Defense: {card.defense}</p>
                   <p>Energy: {card.energyCost}</p>
+                  <p>Special: {card.specialAbility.name}</p>
                 </CardContent>
               </Card>
             ))}
