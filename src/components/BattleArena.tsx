@@ -1,108 +1,69 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useToast } from "@/hooks/use-toast";
-import { TeddyCard, PowerUp, WeatherEffect } from '../types/types';
+import React from 'react';
+import { useGameActions } from '../hooks/useGameActions';
+import { TeddyCard } from '../types/types';
 import { Button } from "@/components/ui/button";
-import { useBattleActions } from '../hooks/useBattleActions';
-import { useBattleState } from '../hooks/useBattleState';
-import TeddyCardComponent from './TeddyCard';
-import WeatherEffectComponent from './WeatherEffectComponent';
-import PowerUpComponent from './PowerUpComponent';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface BattleArenaProps {
-  playerTeddy: TeddyCard;
-  opponentTeddy: TeddyCard;
-}
+const BattleArena: React.FC = () => {
+  const {
+    playerHand,
+    playerField,
+    opponentField,
+    playerEnergy,
+    opponentHealth,
+    playCard,
+    drawCard,
+    attack,
+    useSpecialAbility,
+    endTurn,
+  } = useGameActions();
 
-const BattleArena: React.FC<BattleArenaProps> = ({ playerTeddy, opponentTeddy }) => {
-  const { toast } = useToast();
-  const [battleState, updateBattleState] = useBattleState(playerTeddy, opponentTeddy);
-  const { performAttack, performDefend, performSpecialMove, usePowerUp } = useBattleActions(battleState, updateBattleState);
-
-  useEffect(() => {
-    if (battleState.playerHealth <= 0 || battleState.opponentHealth <= 0) {
-      const winner = battleState.playerHealth > 0 ? playerTeddy.name : opponentTeddy.name;
-      toast({
-        title: "Battle Ended",
-        description: `${winner} wins the battle!`,
-        variant: "success",
-      });
-    }
-  }, [battleState.playerHealth, battleState.opponentHealth, playerTeddy.name, opponentTeddy.name, toast]);
-
-  const handlePlayerAction = async (action: 'attack' | 'defend' | 'special') => {
-    let result;
-    switch (action) {
-      case 'attack':
-        result = await performAttack();
-        break;
-      case 'defend':
-        result = await performDefend();
-        break;
-      case 'special':
-        result = await performSpecialMove();
-        break;
-    }
-
-    if (result) {
-      toast({
-        title: "Action Performed",
-        description: result.message,
-      });
-    }
-  };
-
-  const handleUsePowerUp = (powerUp: PowerUp) => {
-    const result = usePowerUp(powerUp);
-    if (result) {
-      toast({
-        title: "Power-Up Used",
-        description: result.message,
-      });
-    }
-  };
+  const renderCard = (card: TeddyCard, isPlayable: boolean) => (
+    <Card key={card.id} className="w-32 h-48 m-2">
+      <CardHeader>
+        <CardTitle>{card.name}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p>Attack: {card.attack}</p>
+        <p>Defense: {card.defense}</p>
+        <p>Energy: {card.energyCost}</p>
+        {isPlayable && (
+          <Button onClick={() => playCard(card)} disabled={playerEnergy < card.energyCost}>
+            Play
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <motion.div 
-      className="battle-arena p-4 bg-amber-100 rounded-lg shadow-lg"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <WeatherEffectComponent weather={battleState.weatherEffect} />
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <h2 className="text-xl font-bold mb-2">Your Teddy</h2>
-          <TeddyCardComponent teddy={playerTeddy} />
-          <p>Health: {battleState.playerHealth}</p>
-          <p>Energy: {battleState.playerEnergy}</p>
-        </div>
-        <div>
-          <h2 className="text-xl font-bold mb-2">Opponent's Teddy</h2>
-          <TeddyCardComponent teddy={opponentTeddy} />
-          <p>Health: {battleState.opponentHealth}</p>
-          <p>Energy: {battleState.opponentEnergy}</p>
+    <div className="battle-arena p-4">
+      <h2 className="text-2xl font-bold mb-4">Battle Arena</h2>
+      <div className="mb-4">
+        <h3 className="text-xl font-semibold">Opponent</h3>
+        <p>Health: {opponentHealth}</p>
+        <div className="flex flex-wrap">
+          {opponentField.map(card => renderCard(card, false))}
         </div>
       </div>
-      <div className="flex justify-center space-x-2 mb-4">
-        <Button onClick={() => handlePlayerAction('attack')} disabled={battleState.playerEnergy < 1}>Attack</Button>
-        <Button onClick={() => handlePlayerAction('defend')} disabled={battleState.playerEnergy < 1}>Defend</Button>
-        <Button onClick={() => handlePlayerAction('special')} disabled={battleState.playerEnergy < 2}>Special Move</Button>
+      <div className="mb-4">
+        <h3 className="text-xl font-semibold">Your Field</h3>
+        <div className="flex flex-wrap">
+          {playerField.map(card => renderCard(card, false))}
+        </div>
       </div>
-      <div className="power-ups grid grid-cols-3 gap-2">
-        {battleState.availablePowerUps.map((powerUp) => (
-          <PowerUpComponent key={powerUp.id} powerUp={powerUp} onUse={handleUsePowerUp} />
-        ))}
+      <div className="mb-4">
+        <h3 className="text-xl font-semibold">Your Hand</h3>
+        <p>Energy: {playerEnergy}</p>
+        <div className="flex flex-wrap">
+          {playerHand.map(card => renderCard(card, true))}
+        </div>
       </div>
-      <div className="battle-log mt-4">
-        <h3 className="text-lg font-bold mb-2">Battle Log</h3>
-        <ul className="list-disc list-inside">
-          {battleState.battleLog.slice(-5).map((log, index) => (
-            <li key={index}>{log}</li>
-          ))}
-        </ul>
+      <div className="flex space-x-2">
+        <Button onClick={drawCard}>Draw Card</Button>
+        <Button onClick={endTurn}>End Turn</Button>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
