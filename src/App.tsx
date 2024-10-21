@@ -5,6 +5,7 @@ import Home from './components/Home';
 import BattleArena from './components/BattleArena';
 import Collection from './components/Collection';
 import Shop from './components/Shop';
+import DeckBuilder from './components/DeckBuilder';
 
 const App: React.FC = () => {
   return (
@@ -16,6 +17,7 @@ const App: React.FC = () => {
           <Route path="/battle" component={BattleArena} />
           <Route path="/collection" component={Collection} />
           <Route path="/shop" component={Shop} />
+          <Route path="/deck-builder" component={DeckBuilder} />
         </Switch>
       </div>
     </Router>
