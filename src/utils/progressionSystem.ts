@@ -1,31 +1,35 @@
 import { TeddyCard } from '../types/types';
+import { supabase } from '../lib/supabase';
 
-export const upgradeTeddy = (teddy: TeddyCard, wave: number): TeddyCard => {
-  const upgradePoints = Math.floor(wave / 3); // Upgrade every 3 waves
-
-  return {
+export const upgradeTeddy = async (teddy: TeddyCard, wave: number) => {
+  const upgradedTeddy = {
     ...teddy,
-    attack: teddy.attack + upgradePoints,
-    defense: teddy.defense + upgradePoints,
-    health: teddy.health + upgradePoints * 5,
-    level: teddy.level + upgradePoints,
-    experience: teddy.experience + wave * 100,
+    attack: teddy.attack + Math.floor(wave * 0.5),
+    defense: teddy.defense + Math.floor(wave * 0.3),
+    level: (teddy.level || 1) + 1,
   };
+
+  try {
+    const { data, error } = await supabase
+      .from('terrible_teddies')
+      .update(upgradedTeddy)
+      .eq('id', teddy.id);
+
+    if (error) throw error;
+    return upgradedTeddy;
+  } catch (error) {
+    console.error('Error upgrading teddy:', error);
+    return teddy;
+  }
 };
 
-export const checkLevelUp = (teddy: TeddyCard): TeddyCard => {
-  const experienceThreshold = teddy.level * 1000;
-  
-  if (teddy.experience >= experienceThreshold) {
-    return {
-      ...teddy,
-      level: teddy.level + 1,
-      attack: teddy.attack + 2,
-      defense: teddy.defense + 2,
-      health: teddy.health + 10,
-      experience: teddy.experience - experienceThreshold,
-    };
-  }
+export const calculateExperience = (wave: number, performance: number): number => {
+  const baseXP = wave * 100;
+  const performanceMultiplier = Math.max(0.5, Math.min(2, performance / 100));
+  return Math.floor(baseXP * performanceMultiplier);
+};
 
-  return teddy;
+export const checkLevelUp = (teddy: TeddyCard): boolean => {
+  const experienceThreshold = Math.pow(teddy.level || 1, 1.5) * 1000;
+  return (teddy.experience || 0) >= experienceThreshold;
 };
