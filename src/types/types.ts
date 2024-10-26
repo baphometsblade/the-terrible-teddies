@@ -1,3 +1,5 @@
+export type Element = 'fire' | 'ice' | 'nature' | 'dark' | 'light' | 'cosmic' | 'chaos';
+
 export interface TeddyCard {
   id: string;
   name: string;
@@ -10,36 +12,51 @@ export interface TeddyCard {
   specialMove?: string;
   specialMoveDescription?: string;
   rarity?: 'common' | 'rare' | 'epic' | 'legendary';
-  element?: 'fire' | 'ice' | 'nature' | 'dark' | 'light' | 'cosmic' | 'chaos';
+  element?: Element;
+  level?: number;
+  experience?: number;
 }
 
 export interface SpecialAbility {
   name: string;
-  energyCost: number;
   description: string;
+  energyCost: number;
+  cooldown: number;
+  element?: Element;
 }
 
 export interface BattleState {
+  playerTeddy: TeddyCard;
+  opponentTeddy: TeddyCard;
   playerHealth: number;
   opponentHealth: number;
   playerEnergy: number;
   opponentEnergy: number;
-  playerField: TeddyCard[];
-  opponentField: TeddyCard[];
-  playerHand: TeddyCard[];
-  opponentHand: TeddyCard[];
   currentTurn: 'player' | 'opponent';
+  comboCount: number;
+  currentCombo: string[];
+  activeEffects: BattleEffect[];
   battleLog: string[];
-  playerCooldowns: Record<string, number>;
-  opponentCooldowns: Record<string, number>;
-  weatherEffect: WeatherEffect | null;
   turnCount: number;
-  playerStunned: boolean;
-  opponentStunned: boolean;
+  elementalBonus: Element | null;
 }
 
-export interface WeatherEffect {
+export interface BattleEffect {
+  type: string;
+  duration: number;
+  value: number;
+}
+
+export interface PowerUp {
+  id: string;
   name: string;
   description: string;
-  duration: number;
+  type: 'attack' | 'defense' | 'special';
+  value: number;
+}
+
+export interface ComboMove {
+  name: string;
+  moves: string[];
+  effect: (state: BattleState) => BattleState;
 }
