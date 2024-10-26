@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBattleLogic } from '../../hooks/useBattleLogic';
+import { useAchievements } from '../../hooks/useAchievements';
 import BattleField from './BattleField';
 import BattleActions from './BattleActions';
 import BattleLog from './BattleLog';
@@ -8,12 +9,13 @@ import PowerUpMeter from './PowerUpMeter';
 import ComboMeter from './ComboMeter';
 import BattleAnimation from './BattleAnimation';
 import WeatherEffect from './WeatherEffect';
+import AchievementPopup from '../Achievement/AchievementPopup';
 import { useToast } from "@/components/ui/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { checkAchievements } from '../../utils/achievementSystem';
 import confetti from 'canvas-confetti';
 
-const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
+const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, userId }) => {
   const [difficulty, setDifficulty] = useState('medium');
   const {
     battleState,
@@ -26,8 +28,30 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
     opponentTeddyData
   } = useBattleLogic(playerTeddy, opponentTeddy, difficulty);
 
+  const {
+    unlockedAchievements,
+    unlockAchievement,
+    currentAchievement,
+    showAchievement
+  } = useAchievements(userId);
+
   const [animation, setAnimation] = useState(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (unlockedAchievements) {
+      const newAchievements = checkAchievements(
+        battleState,
+        playerTeddyData,
+        unlockedAchievements
+      );
+
+      newAchievements.forEach(achievement => {
+        unlockAchievement.mutate(achievement.id);
+        showAchievement(achievement);
+      });
+    }
+  }, [battleState, playerTeddyData, unlockedAchievements]);
 
   useEffect(() => {
     if (battleState.playerHealth <= 0 || battleState.opponentHealth <= 0) {
@@ -37,13 +61,6 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
         description: `${winner} wins the battle!`,
         variant: winner === playerTeddyData.name ? "success" : "destructive",
       });
-      if (winner === playerTeddyData.name) {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      }
       onBattleEnd(battleState.playerHealth > 0 ? 'win' : 'lose');
     }
   }, [battleState.playerHealth, battleState.opponentHealth, playerTeddyData, opponentTeddyData, onBattleEnd, toast]);
@@ -61,18 +78,9 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
   return (
     <div className="battle-container p-4 bg-gray-100 rounded-lg shadow-lg">
       <div className="mb-4">
-        <Select onValueChange={setDifficulty} defaultValue={difficulty}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select difficulty" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="easy">Easy</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="hard">Hard</SelectItem>
-          </SelectContent>
-        </Select>
+        <h2 className="text-2xl font-bold">Battle</h2>
+        <WeatherEffect weather={battleState.weatherEffect} />
       </div>
-      <WeatherEffect weather={battleState.weatherEffect} />
       <BattleField
         battleState={battleState}
         playerTeddyData={playerTeddyData}
@@ -95,16 +103,14 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd }) => {
         </div>
       </div>
       <BattleLog battleLog={battleState.battleLog} />
-      <motion.div
-        className="mt-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-      >
-        <Button onClick={() => onBattleEnd('forfeit')} variant="outline">
-          Forfeit Battle
-        </Button>
-      </motion.div>
+      <AnimatePresence>
+        {currentAchievement && (
+          <AchievementPopup
+            achievement={currentAchievement}
+            onClose={() => showAchievement(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

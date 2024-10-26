@@ -1,43 +1,56 @@
-import { BattleState } from '../types/types';
+import { BattleState, TeddyCard } from '../types/types';
 
-export type Achievement = {
+export interface Achievement {
   id: string;
-  name: string;
+  title: string;
   description: string;
-  condition: (state: BattleState) => boolean;
-};
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  condition: (state: BattleState, teddy: TeddyCard) => boolean;
+}
 
-const achievements: Achievement[] = [
+export const achievements: Achievement[] = [
   {
     id: 'first_blood',
-    name: 'First Blood',
-    description: 'Deal damage to your opponent for the first time',
-    condition: (state) => state.opponentHealth < 100,
+    title: 'First Blood',
+    description: 'Win your first battle',
+    rarity: 'common',
+    condition: (state) => state.opponentHealth <= 0
   },
   {
     id: 'combo_master',
-    name: 'Combo Master',
-    description: 'Perform a combo move',
-    condition: (state) => state.comboMeter === 0 && state.moveHistory.length >= 3,
+    title: 'Combo Master',
+    description: 'Execute a 3-move combo',
+    rarity: 'rare',
+    condition: (state) => state.currentCombo.length >= 3
   },
   {
-    id: 'survivor',
-    name: 'Survivor',
-    description: 'Win a battle with less than 10 health remaining',
-    condition: (state) => state.opponentHealth === 0 && state.playerHealth <= 10,
+    id: 'elemental_mastery',
+    title: 'Elemental Mastery',
+    description: 'Deal super effective damage 3 times in one battle',
+    rarity: 'epic',
+    condition: (state) => {
+      const superEffectiveHits = state.battleLog.filter(log => 
+        log.includes('Super Effective!')
+      ).length;
+      return superEffectiveHits >= 3;
+    }
   },
   {
-    id: 'energy_efficient',
-    name: 'Energy Efficient',
-    description: 'Win a battle without using any special moves',
-    condition: (state) => state.opponentHealth === 0 && !state.moveHistory.includes('special'),
-  },
+    id: 'perfect_victory',
+    title: 'Perfect Victory',
+    description: 'Win a battle without taking damage',
+    rarity: 'legendary',
+    condition: (state) => state.opponentHealth <= 0 && state.playerHealth === 30
+  }
 ];
 
-export const checkAchievements = (state: BattleState, unlockedAchievements: string[]): string[] => {
-  const newAchievements = achievements
-    .filter((achievement) => !unlockedAchievements.includes(achievement.id) && achievement.condition(state))
-    .map((achievement) => achievement.id);
-
-  return [...unlockedAchievements, ...newAchievements];
+export const checkAchievements = (
+  state: BattleState,
+  teddy: TeddyCard,
+  unlockedAchievements: string[]
+): Achievement[] => {
+  return achievements.filter(achievement => 
+    !unlockedAchievements.includes(achievement.id) &&
+    achievement.condition(state, teddy)
+  );
 };
