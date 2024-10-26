@@ -10,7 +10,7 @@ export interface TeddyCard {
   specialMove?: string;
   specialMoveDescription?: string;
   rarity?: 'common' | 'rare' | 'epic' | 'legendary';
-  element?: 'fire' | 'ice' | 'nature' | 'dark' | 'light';
+  element?: 'fire' | 'ice' | 'nature' | 'dark' | 'light' | 'cosmic' | 'chaos';
 }
 
 export interface SpecialAbility {

@@ -9,7 +9,7 @@ interface BearMetadata {
   specialMove: string;
   specialMoveDescription: string;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
-  element?: 'fire' | 'ice' | 'nature' | 'dark' | 'light';
+  element?: 'fire' | 'ice' | 'nature' | 'dark' | 'light' | 'cosmic' | 'chaos';
 }
 
 export const bearMetadata: BearMetadata[] = [
@@ -40,56 +40,56 @@ export const bearMetadata: BearMetadata[] = [
     element: 'light'
   },
   {
-    id: "baron-von-blubber",
-    name: "Baron Von Blubber",
-    title: "The Inflated Ego",
-    description: "A pompous bear with an oversized monocle and a belly that's one puff away from popping.",
-    placeholderImage: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e",
+    id: "quantum-cuddles",
+    name: "Quantum Cuddles",
+    title: "The Reality Bender",
+    description: "A teddy that exists in multiple dimensions simultaneously. Each hug creates a temporal paradox.",
+    placeholderImage: "https://images.unsplash.com/photo-1518005020951-eccb494ad742",
     attack: 8,
-    defense: 4,
-    specialMove: "Burst Bubble",
-    specialMoveDescription: "Deflates opponent's ego and defense",
-    rarity: 'epic',
-    element: 'nature'
+    defense: 6,
+    specialMove: "Quantum Entanglement",
+    specialMoveDescription: "Creates a duplicate of itself in an alternate timeline",
+    rarity: 'legendary',
+    element: 'cosmic'
   },
   {
-    id: "cyber-snuggles",
-    name: "Cyber Snuggles",
-    title: "The Digital Destroyer",
-    description: "A high-tech teddy with LED eyes and chrome-plated paws. Specializes in virtual hugs and digital destruction.",
-    placeholderImage: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
+    id: "disco-destructor",
+    name: "Disco Destructor",
+    title: "The Groovy Gladiator",
+    description: "A funky bear that turns every battle into a dance-off. Their moves are literally killer.",
+    placeholderImage: "https://images.unsplash.com/photo-1492321936769-b49830bc1d1e",
+    attack: 7,
+    defense: 5,
+    specialMove: "Disco Inferno",
+    specialMoveDescription: "Forces all enemies to dance, reducing their attack power",
+    rarity: 'epic',
+    element: 'light'
+  },
+  {
+    id: "void-hugger",
+    name: "Void Hugger",
+    title: "The Abyss Walker",
+    description: "A teddy bear made from the fabric of darkness itself. Its hugs feel like falling into infinity.",
+    placeholderImage: "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86",
     attack: 9,
-    defense: 3,
-    specialMove: "Binary Blast",
-    specialMoveDescription: "Corrupts opponent's defense systems",
+    defense: 4,
+    specialMove: "Void Embrace",
+    specialMoveDescription: "Banishes an enemy to the shadow realm temporarily",
     rarity: 'legendary',
     element: 'dark'
   },
   {
-    id: "frost-hugs",
-    name: "Frost Hugs",
-    title: "The Arctic Assassin",
-    description: "A polar bear teddy with ice crystals for fur. Their hugs are literally freezing.",
-    placeholderImage: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e",
-    attack: 5,
-    defense: 8,
-    specialMove: "Frozen Embrace",
-    specialMoveDescription: "Freezes opponent, preventing their next action",
+    id: "glitch-bear",
+    name: "Glitch Bear",
+    title: "The Bug Exploiter",
+    description: "A teddy that learned to manipulate the matrix. Reality tends to malfunction around it.",
+    placeholderImage: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7",
+    attack: 6,
+    defense: 7,
+    specialMove: "System Crash",
+    specialMoveDescription: "Causes random glitches in the opponent's stats",
     rarity: 'epic',
-    element: 'ice'
-  },
-  {
-    id: "inferno-cuddles",
-    name: "Inferno Cuddles",
-    title: "The Blazing Berserker",
-    description: "A teddy bear wreathed in eternal flames. Their stuffing is made of pure fire.",
-    placeholderImage: "https://images.unsplash.com/photo-1460925895917-afdab827c52f",
-    attack: 10,
-    defense: 2,
-    specialMove: "Flame Frenzy",
-    specialMoveDescription: "Burns through opponent's defenses",
-    rarity: 'legendary',
-    element: 'fire'
+    element: 'chaos'
   }
 ];
 
@@ -129,6 +129,10 @@ export const getElementColor = (element: BearMetadata['element']): string => {
       return 'text-purple-900';
     case 'light':
       return 'text-yellow-400';
+    case 'cosmic':
+      return 'text-indigo-500';
+    case 'chaos':
+      return 'text-rose-500';
     default:
       return 'text-gray-500';
   }

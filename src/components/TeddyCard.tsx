@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TeddyCard as TeddyCardType } from '../types/types';
-import { getPlaceholderImage, getBearMetadata, getRarityColor, getElementColor } from '../utils/bearPlaceholders';
+import { getPlaceholderImage, getBearMetadata, getRarityColor, getElementColor, getRarityBorder } from '../utils/bearPlaceholders';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Flame, Snowflake, Leaf, Moon, Sun } from 'lucide-react';
+import { Flame, Snowflake, Leaf, Moon, Sun, Stars, Sparkles } from 'lucide-react';
 
 interface TeddyCardProps {
   teddy: TeddyCardType;
@@ -24,6 +24,10 @@ const ElementIcon = ({ element }: { element?: string }) => {
       return <Moon className="w-3 h-3" />;
     case 'light':
       return <Sun className="w-3 h-3" />;
+    case 'cosmic':
+      return <Stars className="w-3 h-3" />;
+    case 'chaos':
+      return <Sparkles className="w-3 h-3" />;
     default:
       return null;
   }
@@ -42,8 +46,8 @@ const TeddyCard: React.FC<TeddyCardProps> = ({ teddy, onClick, onSpecialAbility 
       onHoverEnd={() => setIsHovered(false)}
     >
       <Card 
-        className={`w-32 h-48 bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer relative ${
-          metadata?.rarity === 'legendary' ? 'border-2 border-yellow-400' : ''
+        className={`w-32 h-48 bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer relative border-2 ${
+          metadata ? getRarityBorder(metadata.rarity) : 'border-gray-300'
         }`}
         onClick={onClick}
       >
@@ -51,18 +55,23 @@ const TeddyCard: React.FC<TeddyCardProps> = ({ teddy, onClick, onSpecialAbility 
           <div className="text-xs font-bold truncate w-full text-center flex items-center justify-center gap-1">
             <span className={metadata ? getRarityColor(metadata.rarity) : ''}>{teddy.name}</span>
             {metadata?.element && (
-              <span className={getElementColor(metadata.element)}>
+              <motion.span 
+                className={getElementColor(metadata.element)}
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              >
                 <ElementIcon element={metadata.element} />
-              </span>
+              </motion.span>
             )}
           </div>
-          <div 
-            className="w-20 h-20 rounded-lg mb-1 bg-center bg-cover transform transition-transform duration-300"
+          <motion.div 
+            className="w-20 h-20 rounded-lg mb-1 bg-center bg-cover transform"
             style={{ 
               backgroundImage: `url(${imageUrl})`,
               backgroundPosition: 'center',
               backgroundSize: 'cover'
             }}
+            whileHover={{ scale: 1.1 }}
           />
           <div className="flex justify-between w-full text-xs">
             <span className="text-red-500">⚔️ {teddy.attack}</span>
