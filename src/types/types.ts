@@ -1,24 +1,22 @@
 export interface TeddyCard {
   id: string;
   name: string;
-  title: string;
-  description: string;
   attack: number;
   defense: number;
   energyCost: number;
   specialAbility: SpecialAbility;
   image_url?: string;
-  placeholderImage?: string; // New field for placeholder images
-  specialMove?: string; // New field for special move
-  specialMoveDescription?: string; // New field for special move description
+  placeholderImage?: string;
+  specialMove?: string;
+  specialMoveDescription?: string;
+  rarity?: 'common' | 'rare' | 'epic' | 'legendary';
+  element?: 'fire' | 'ice' | 'nature' | 'dark' | 'light';
 }
 
 export interface SpecialAbility {
   name: string;
-  description: string;
-  effect: (state: BattleState, card: TeddyCard) => Partial<BattleState>;
   energyCost: number;
-  cooldown: number;
+  description: string;
 }
 
 export interface BattleState {
@@ -38,21 +36,10 @@ export interface BattleState {
   turnCount: number;
   playerStunned: boolean;
   opponentStunned: boolean;
-  moveHistory: string[];
-  comboMeter: number;
-  activeCombo: string[];
-  comboProgress: number;
-}
-
-export interface Deck {
-  id: string;
-  name: string;
-  cards: TeddyCard[];
 }
 
 export interface WeatherEffect {
   name: string;
   description: string;
-  effect: (state: BattleState) => Partial<BattleState>;
   duration: number;
 }

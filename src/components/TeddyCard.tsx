@@ -2,8 +2,9 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TeddyCard as TeddyCardType } from '../types/types';
-import { getPlaceholderImage, getBearMetadata } from '../utils/bearPlaceholders';
-import { motion } from 'framer-motion';
+import { getPlaceholderImage, getBearMetadata, getRarityColor, getElementColor } from '../utils/bearPlaceholders';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Flame, Snowflake, Leaf, Moon, Sun } from 'lucide-react';
 
 interface TeddyCardProps {
   teddy: TeddyCardType;
@@ -11,23 +12,52 @@ interface TeddyCardProps {
   onSpecialAbility?: () => void;
 }
 
+const ElementIcon = ({ element }: { element?: string }) => {
+  switch (element) {
+    case 'fire':
+      return <Flame className="w-3 h-3" />;
+    case 'ice':
+      return <Snowflake className="w-3 h-3" />;
+    case 'nature':
+      return <Leaf className="w-3 h-3" />;
+    case 'dark':
+      return <Moon className="w-3 h-3" />;
+    case 'light':
+      return <Sun className="w-3 h-3" />;
+    default:
+      return null;
+  }
+};
+
 const TeddyCard: React.FC<TeddyCardProps> = ({ teddy, onClick, onSpecialAbility }) => {
   const metadata = getBearMetadata(teddy.id);
   const imageUrl = teddy.image_url || getPlaceholderImage(teddy.id);
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <motion.div
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
     >
       <Card 
-        className="w-24 h-36 bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer relative"
+        className={`w-32 h-48 bg-white rounded-lg shadow-lg overflow-hidden cursor-pointer relative ${
+          metadata?.rarity === 'legendary' ? 'border-2 border-yellow-400' : ''
+        }`}
         onClick={onClick}
       >
         <CardContent className="p-2 flex flex-col items-center justify-between h-full">
-          <div className="text-xs font-bold truncate w-full text-center">{teddy.name}</div>
+          <div className="text-xs font-bold truncate w-full text-center flex items-center justify-center gap-1">
+            <span className={metadata ? getRarityColor(metadata.rarity) : ''}>{teddy.name}</span>
+            {metadata?.element && (
+              <span className={getElementColor(metadata.element)}>
+                <ElementIcon element={metadata.element} />
+              </span>
+            )}
+          </div>
           <div 
-            className="w-12 h-12 rounded-full mb-1 bg-center bg-cover"
+            className="w-20 h-20 rounded-lg mb-1 bg-center bg-cover transform transition-transform duration-300"
             style={{ 
               backgroundImage: `url(${imageUrl})`,
               backgroundPosition: 'center',
@@ -35,8 +65,8 @@ const TeddyCard: React.FC<TeddyCardProps> = ({ teddy, onClick, onSpecialAbility 
             }}
           />
           <div className="flex justify-between w-full text-xs">
-            <span className="text-red-500">{teddy.attack}</span>
-            <span className="text-blue-500">{teddy.defense}</span>
+            <span className="text-red-500">⚔️ {teddy.attack}</span>
+            <span className="text-blue-500">🛡️ {teddy.defense}</span>
           </div>
           {onSpecialAbility && (
             <Button 
@@ -51,6 +81,22 @@ const TeddyCard: React.FC<TeddyCardProps> = ({ teddy, onClick, onSpecialAbility 
             </Button>
           )}
         </CardContent>
+        <AnimatePresence>
+          {isHovered && metadata && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute inset-0 bg-black bg-opacity-80 p-2 text-white text-xs"
+            >
+              <p className="font-bold mb-1">{metadata.title}</p>
+              <p className="text-xs mb-1">{metadata.description}</p>
+              <p className="text-xs text-yellow-400">
+                {metadata.specialMove}: {metadata.specialMoveDescription}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Card>
     </motion.div>
   );
