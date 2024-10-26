@@ -7,7 +7,10 @@ export interface TeddyCard {
   defense: number;
   energyCost: number;
   specialAbility: SpecialAbility;
-  image_url: string;
+  image_url?: string;
+  placeholderImage?: string; // New field for placeholder images
+  specialMove?: string; // New field for special move
+  specialMoveDescription?: string; // New field for special move description
 }
 
 export interface SpecialAbility {
