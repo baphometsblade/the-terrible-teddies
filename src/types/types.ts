@@ -67,3 +67,11 @@ export interface ComboMove {
 }
 
 export type WeatherType = 'sunny' | 'rainy' | 'stormy' | 'snowy' | 'windy' | 'clear';
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  condition: (state: BattleState) => boolean;
+}
