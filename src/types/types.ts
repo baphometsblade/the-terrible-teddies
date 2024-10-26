@@ -35,6 +35,10 @@ export interface BattleState {
   turnCount: number;
   playerStunned: boolean;
   opponentStunned: boolean;
+  moveHistory: string[];
+  comboMeter: number;
+  activeCombo: string[];
+  comboProgress: number;
 }
 
 export interface Deck {
