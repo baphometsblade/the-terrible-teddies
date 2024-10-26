@@ -25,6 +25,16 @@ export interface SpecialAbility {
   element?: Element;
 }
 
+export interface PowerUp {
+  id: string;
+  name: string;
+  description: string;
+  type: 'attack' | 'defense' | 'special' | 'ultimate';
+  cost: number;
+  duration: number;
+  turnsRemaining?: number;
+}
+
 export interface BattleState {
   playerTeddy: TeddyCard;
   opponentTeddy: TeddyCard;
@@ -36,22 +46,16 @@ export interface BattleState {
   comboCount: number;
   currentCombo: string[];
   activeEffects: BattleEffect[];
+  activePowerUps: PowerUp[];
   battleLog: string[];
   turnCount: number;
   elementalBonus: Element | null;
+  weatherEffect?: string;
 }
 
 export interface BattleEffect {
   type: string;
   duration: number;
-  value: number;
-}
-
-export interface PowerUp {
-  id: string;
-  name: string;
-  description: string;
-  type: 'attack' | 'defense' | 'special';
   value: number;
 }
 
