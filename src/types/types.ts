@@ -1,3 +1,5 @@
+// ... keep existing code (up to Element type definition)
+
 export type Element = 'fire' | 'ice' | 'nature' | 'dark' | 'light' | 'cosmic' | 'chaos';
 
 export interface TeddyCard {
@@ -75,3 +77,4 @@ export interface Achievement {
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   condition: (state: BattleState) => boolean;
 }
+

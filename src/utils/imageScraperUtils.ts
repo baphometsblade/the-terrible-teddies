@@ -2,7 +2,7 @@ import axios from 'axios';
 import { supabase } from '../lib/supabase';
 import { TeddyCard, Element } from '../types/types';
 
-const UNSPLASH_API_KEY = 'iUApcCH8tNfGR3fivB8UQ54QIvdt_HQTqMpuHrgYt_I';
+const UNSPLASH_API_KEY = process.env.VITE_UNSPLASH_ACCESS_KEY;
 
 interface TeddyMetadata {
   id: string;
@@ -63,46 +63,88 @@ const teddyMetadata: TeddyMetadata[] = [
     placeholderImage: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5"
   },
   {
-    id: "party-paws",
-    name: "Party Paws",
-    title: "The Celebration Master",
-    description: "This bear never met a party they didn't like. Always the life of any gathering.",
+    id: "disco-bear",
+    name: "Disco Bear",
+    title: "The Groove Master",
+    description: "A funky bear who never stopped living in the 70s. His dance moves are lethal!",
     element: 'light',
-    rarity: 'rare',
-    attack: 5,
-    defense: 7,
-    specialMove: "Confetti Blast",
-    specialMoveDescription: "Disorients opponents with a shower of glitter and confetti",
+    rarity: 'epic',
+    attack: 6,
+    defense: 6,
+    specialMove: "Disco Inferno",
+    specialMoveDescription: "Dazzles opponents with spectacular dance moves, reducing their accuracy",
+    imageUrl: "",
+    placeholderImage: "https://images.unsplash.com/photo-1525268771113-32d9e9021a97"
+  },
+  {
+    id: "professor-paws",
+    name: "Professor Paws",
+    title: "The Mad Scientist",
+    description: "A brilliant but slightly unhinged scientist bear with a penchant for unusual experiments.",
+    element: 'cosmic',
+    rarity: 'legendary',
+    attack: 8,
+    defense: 5,
+    specialMove: "Quantum Theorem",
+    specialMoveDescription: "Confuses opponents with complex mathematical equations",
+    imageUrl: "",
+    placeholderImage: "https://images.unsplash.com/photo-1520808663317-647b476a81b9"
+  },
+  {
+    id: "sir-snooze",
+    name: "Sir Snooze",
+    title: "The Dream Walker",
+    description: "A narcoleptic knight who fights his battles in the dream realm.",
+    element: 'dark',
+    rarity: 'epic',
+    attack: 7,
+    defense: 6,
+    specialMove: "Dream Invasion",
+    specialMoveDescription: "Enters opponent's dreams to cause confusion and chaos",
     imageUrl: "",
     placeholderImage: "https://images.unsplash.com/photo-1558679908-541bcf1249ff"
   },
   {
-    id: "ninja-nap",
-    name: "Ninja Nap",
-    title: "The Stealth Sleeper",
-    description: "A master of the ancient art of falling asleep anywhere, anytime.",
-    element: 'dark',
-    rarity: 'epic',
-    attack: 8,
-    defense: 4,
-    specialMove: "Silent Slumber",
-    specialMoveDescription: "Puts opponents to sleep with ninja-like precision",
+    id: "captain-chaos",
+    name: "Captain Chaos",
+    title: "The Unpredictable",
+    description: "A bear whose actions are completely random, even to himself.",
+    element: 'chaos',
+    rarity: 'legendary',
+    attack: 9,
+    defense: 3,
+    specialMove: "Random Rampage",
+    specialMoveDescription: "Performs a completely unpredictable action with varying effects",
     imageUrl: "",
-    placeholderImage: "https://images.unsplash.com/photo-1559454403-b8fb88521f77"
+    placeholderImage: "https://images.unsplash.com/photo-1523207911345-32501502db22"
   },
   {
-    id: "techno-ted",
-    name: "Techno Ted",
-    title: "The Digital Dancer",
-    description: "A cybernetic bear who turns battle into a dance party.",
-    element: 'cosmic',
-    rarity: 'legendary',
-    attack: 7,
+    id: "lady-frost",
+    name: "Lady Frost",
+    title: "The Ice Queen",
+    description: "A sophisticated bear with a heart as cold as ice and impeccable manners.",
+    element: 'ice',
+    rarity: 'epic',
+    attack: 6,
     defense: 7,
-    specialMove: "Bass Drop",
-    specialMoveDescription: "Overwhelms opponents with sick beats and laser shows",
+    specialMove: "Frozen Etiquette",
+    specialMoveDescription: "Freezes opponents while teaching them proper manners",
     imageUrl: "",
-    placeholderImage: "https://images.unsplash.com/photo-1535615615570-3b839f4359be"
+    placeholderImage: "https://images.unsplash.com/photo-1548783094-3ccfa04d4bc9"
+  },
+  {
+    id: "zen-master",
+    name: "Zen Master",
+    title: "The Enlightened One",
+    description: "A peaceful bear who fights only when necessary, using the power of inner peace.",
+    element: 'light',
+    rarity: 'legendary',
+    attack: 5,
+    defense: 9,
+    specialMove: "Tranquil Mind",
+    specialMoveDescription: "Nullifies opponent's negative effects through meditation",
+    imageUrl: "",
+    placeholderImage: "https://images.unsplash.com/photo-1517783999520-f068d7431a60"
   }
 ];
 
