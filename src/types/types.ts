@@ -50,7 +50,8 @@ export interface BattleState {
   battleLog: string[];
   turnCount: number;
   elementalBonus: Element | null;
-  weatherEffect?: string;
+  weatherEffect: WeatherType | null;
+  weatherDuration: number;
 }
 
 export interface BattleEffect {
@@ -64,3 +65,5 @@ export interface ComboMove {
   moves: string[];
   effect: (state: BattleState) => BattleState;
 }
+
+export type WeatherType = 'sunny' | 'rainy' | 'stormy' | 'snowy' | 'windy' | 'clear';

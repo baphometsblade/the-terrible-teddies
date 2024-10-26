@@ -6,14 +6,15 @@ import BattleField from './BattleField';
 import BattleActions from './BattleActions';
 import BattleLog from './BattleLog';
 import ComboMeter from './ComboMeter';
+import WeatherDisplay from './WeatherSystem/WeatherDisplay';
 import BattleAnimation from './BattleAnimation';
-import WeatherEffect from './WeatherEffect';
 import AchievementPopup from '../Achievement/AchievementPopup';
 import PowerUpDisplay from './PowerUps/PowerUpDisplay';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { checkAchievements } from '../../utils/achievementSystem';
 import { powerUps, activatePowerUp } from '../../utils/powerUpSystem';
+import { getRandomWeather, applyWeatherEffect } from '../../utils/weatherSystem';
 import confetti from 'canvas-confetti';
 
 const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, userId }) => {
@@ -35,16 +36,29 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, userId }) => {
   const [animation, setAnimation] = useState(null);
   const { toast } = useToast();
 
-  const handlePowerUpActivation = (powerUp) => {
-    const updatedState = activatePowerUp(powerUp, battleState, playerTeddyData);
-    updateBattleState(updatedState);
-    
-    toast({
-      title: "Power-Up Activated!",
-      description: powerUp.description,
-      variant: "success"
-    });
-  };
+  useEffect(() => {
+    // Initialize random weather at battle start
+    if (!battleState.weatherEffect) {
+      const initialWeather = getRandomWeather();
+      updateBattleState({
+        weatherEffect: initialWeather.name,
+        weatherDuration: initialWeather.duration,
+        battleLog: [...battleState.battleLog, `The weather changes to ${initialWeather.name}!`]
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    // Update weather on turn end
+    if (battleState.weatherDuration <= 0 && battleState.weatherEffect) {
+      const newWeather = getRandomWeather();
+      updateBattleState({
+        weatherEffect: newWeather.name,
+        weatherDuration: newWeather.duration,
+        battleLog: [...battleState.battleLog, `The weather changes to ${newWeather.name}!`]
+      });
+    }
+  }, [battleState.weatherDuration]);
 
   useEffect(() => {
     if (unlockedAchievements) {
@@ -77,7 +91,12 @@ const Battle = ({ playerTeddy, opponentTeddy, onBattleEnd, userId }) => {
     <div className="battle-container p-4 bg-gray-100 rounded-lg shadow-lg">
       <div className="mb-4">
         <h2 className="text-2xl font-bold">Battle</h2>
-        <WeatherEffect weather={battleState.weatherEffect} />
+        {battleState.weatherEffect && (
+          <WeatherDisplay
+            weather={battleState.weatherEffect}
+            duration={battleState.weatherDuration}
+          />
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
