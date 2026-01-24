@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import TeddyCard from '../TeddyCard';
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 
 /**
