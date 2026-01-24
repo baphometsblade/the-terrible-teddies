@@ -78,8 +78,11 @@ const GameBoard = () => {
         return;
       }
       const damage = Math.max(0, attackingCard.attack - targetCard.defense);
+
       setOpponentHealth(prevHealth => Math.max(0, prevHealth - damage));
+
       setOpponentField(opponentField.filter(c => c.id !== targetCard.id));
+
       toast({ title: "Attack", description: `${attackingCard.name} dealt ${damage} damage to ${targetCard.name}` });
     }
   };
@@ -217,6 +220,80 @@ const GameBoard = () => {
         >
           End Turn
         </Button>
+      </div>
+    </div>
+  );
+};
+
+export default GameBoard;
+
+        <div className="text-white font-bold">Opponent</div>
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
+          <div className="text-white">{opponentHealth}</div>
+          <Progress value={(opponentEnergy / 3) * 100} className="w-24 h-2" />
+          <div className="text-yellow-300">{opponentEnergy}⚡</div>
+        </div>
+      </div>
+
+      {/* Opponent's field */}
+      <div className="absolute top-24 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
+        {opponentField.map((card) => (
+          <TeddyCard key={card.id} teddy={card} />
+        ))}
+      </div>
+
+      {/* Main game board */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4/5 h-2/3 bg-amber-200 rounded-lg border-4 border-brown-600 flex flex-col justify-between p-4">
+        {/* Player's field */}
+        <div className="flex justify-center space-x-2 mt-auto">
+
+          {playerField.map((card) => (
+            <TeddyCard
+              key={card.id}
+              teddy={card}
+              onClick={() => currentTurn === 'player' && phase === 'main' && opponentField.length > 0 && attack(card, opponentField[0])}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Player's hand */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
+        {playerHand.map((card) => (
+          <TeddyCard
+            key={card.id}
+            teddy={card}
+            onClick={() => currentTurn === 'player' && phase === 'main' && playCard(card)}
+          />
+        ))}
+      </div>
+
+      {/* Bottom decorative border with energy gauge */}
+      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-r from-brown-800 to-brown-600 flex items-center justify-between px-4">
+        <div className="text-white font-bold">Player</div>
+
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-green-500 rounded-full"></div>
+          <div className="text-white">{playerHealth}</div>
+          <Progress value={(playerEnergy / 3) * 100} className="w-24 h-2" />
+          <div className="text-yellow-300">{playerEnergy}⚡</div>
+        </div>
+      </div>
+
+      {/* Game controls */}
+      <div className="absolute bottom-24 right-4 space-y-2">
+        <Button
+          className="w-full bg-green-500 hover:bg-green-600 text-white"
+          onClick={endTurn}
+          disabled={currentTurn !== 'player' || phase !== 'main'}
+        >
+          End Turn
+        </Button>
+        {/* Display the current phase of the player's turn */}
+        <div className="text-center text-sm text-gray-700 mt-1">
+          Phase: {phase.charAt(0).toUpperCase() + phase.slice(1)}
+        </div>
       </div>
     </div>
   );
