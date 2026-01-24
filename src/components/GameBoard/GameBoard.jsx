@@ -34,7 +34,7 @@ const GameBoard = () => {
     { id: 10, name: "Teddy 8", attack: 2, defense: 4, type: 'action', cost: 2 },
   ]);
   const [playerEnergy, setPlayerEnergy] = useState(3);
-    const [opponentEnergy, setOpponentEnergy] = useState(3);
+  const [opponentEnergy, setOpponentEnergy] = useState(3);
   const { toast } = useToast();
 
   const playCard = (card) => {
@@ -147,18 +147,19 @@ const GameBoard = () => {
 
   return (
     <div className="relative w-full h-screen bg-amber-100 overflow-hidden">
-      {/* Top decorative border */}
-      <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-brown-800 to-brown-600 flex items-center justify-between px-4">
+      {/* Top decorative border with energy gauge */}
+      <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-r from-brown-800 to-brown-600 flex items-center justify-between px-4">
         <div className="text-white font-bold">Opponent</div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
           <div className="text-white">{opponentHealth}</div>
-          <div className="text-yellow-300 ml-2">{opponentEnergy}⚡</div>
+          <Progress value={(opponentEnergy / 3) * 100} className="w-24 h-2" />
+          <div className="text-yellow-300">{opponentEnergy}⚡</div>
         </div>
       </div>
 
       {/* Opponent's field */}
-      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
+      <div className="absolute top-24 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
         {opponentField.map((card) => (
           <TeddyCard key={card.id} teddy={card} />
         ))}
@@ -189,18 +190,19 @@ const GameBoard = () => {
         ))}
       </div>
 
-      {/* Bottom decorative border */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-r from-brown-800 to-brown-600 flex items-center justify-between px-4">
+      {/* Bottom decorative border with energy gauge */}
+      <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-r from-brown-800 to-brown-600 flex items-center justify-between px-4">
         <div className="text-white font-bold">Player</div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-green-500 rounded-full"></div>
           <div className="text-white">{playerHealth}</div>
-          <div className="text-yellow-300 ml-2">{playerEnergy}⚡</div>
+          <Progress value={(playerEnergy / 3) * 100} className="w-24 h-2" />
+          <div className="text-yellow-300">{playerEnergy}⚡</div>
         </div>
       </div>
 
       {/* Game controls */}
-      <div className="absolute bottom-20 right-4 space-y-2">
+      <div className="absolute bottom-24 right-4 space-y-2">
         <Button
           className="w-full bg-blue-500 hover:bg-blue-600 text-white"
           onClick={drawCard}
