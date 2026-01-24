@@ -34,7 +34,7 @@ const GameBoard = () => {
     { id: 10, name: "Teddy 8", attack: 2, defense: 4, type: 'action', cost: 2 },
   ]);
   const [playerEnergy, setPlayerEnergy] = useState(3);
-  const [opponentEnergy, setOpponentEnergy] = useState(3);
+    const [opponentEnergy, setOpponentEnergy] = useState(3);
   const { toast } = useToast();
 
   const playCard = (card) => {
