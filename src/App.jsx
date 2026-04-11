@@ -5,6 +5,7 @@ import GameBoard from './components/GameBoard/GameBoard';
 import MainMenu from './components/MainMenu';
 import DeckBuilder from './components/DeckBuilder';
 import TeddyCollection from './components/TeddyCollection';
+import Tutorial from './components/Tutorial';
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from './components/ErrorBoundary';
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 function App() {
   const { session, loading } = useSupabaseAuth();
   const [currentScreen, setCurrentScreen] = useState('menu');
+  const [showTutorial, setShowTutorial] = useState(false);
 
   if (loading) {
     return (
@@ -74,6 +76,7 @@ function App() {
             onStartGame={() => navigateTo('game')}
             onDeckBuilder={() => navigateTo('deck')}
             onCollection={() => navigateTo('collection')}
+            onTutorial={() => setShowTutorial(true)}
           />
         );
     }
@@ -83,17 +86,30 @@ function App() {
     <ErrorBoundary>
       <div className="App min-h-screen">
         {session ? (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentScreen}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {renderScreen()}
-            </motion.div>
-          </AnimatePresence>
+          <>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentScreen}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderScreen()}
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Tutorial overlay */}
+            {showTutorial && (
+              <Tutorial
+                onClose={() => setShowTutorial(false)}
+                onStartGame={() => {
+                  setShowTutorial(false);
+                  navigateTo('game');
+                }}
+              />
+            )}
+          </>
         ) : (
           <Auth />
         )}

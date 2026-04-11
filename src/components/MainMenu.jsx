@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-const MainMenu = ({ onStartGame, onDeckBuilder, onCollection }) => {
+const MainMenu = ({ onStartGame, onDeckBuilder, onCollection, onTutorial }) => {
   const [hoveredOption, setHoveredOption] = useState(null);
 
   const menuOptions = [
@@ -14,6 +14,14 @@ const MainMenu = ({ onStartGame, onDeckBuilder, onCollection }) => {
       icon: '⚔️',
       color: 'from-red-500 to-orange-500',
       action: onStartGame,
+    },
+    {
+      id: 'tutorial',
+      title: 'How to Play',
+      description: 'Learn the rules and abilities',
+      icon: '📖',
+      color: 'from-green-500 to-teal-500',
+      action: onTutorial,
     },
     {
       id: 'deck',
