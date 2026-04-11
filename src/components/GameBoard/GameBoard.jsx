@@ -1,21 +1,36 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import TeddyCard from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
+import { Howl } from 'howler';
+
+// Sound effects
+const sounds = {
+  cardPlay: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'], volume: 0.3 }),
+  attack: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2803/2803-preview.mp3'], volume: 0.4 }),
+  damage: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2012/2012-preview.mp3'], volume: 0.3 }),
+  heal: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3'], volume: 0.3 }),
+  victory: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3'], volume: 0.5 }),
+  defeat: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'], volume: 0.4 }),
+  draw: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2073/2073-preview.mp3'], volume: 0.2 }),
+  trap: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/209/209-preview.mp3'], volume: 0.4 }),
+};
 
 /**
- * Enhanced GameBoard with proper phase system, momentum gauge, and improved AI.
+ * Enhanced GameBoard with card abilities, sound effects, and improved AI.
  *
- * Turn Structure:
- * 1. Draw Phase - Automatically draw a card
- * 2. Main Phase - Play cards, use abilities
- * 3. Battle Phase - Attack with your teddies
- * 4. End Phase - Resolve effects, opponent's turn
+ * Card Abilities:
+ * - taunt: Forces enemies to attack this card first
+ * - piercing: Ignores enemy defense
+ * - shield: Takes 50% less damage
+ * - stealth: Can't be targeted for one turn after played
+ * - protect: Other cards can't be targeted while this is on field
+ * - fury: Gains +1 attack each time it takes damage
  */
-const GameBoard = () => {
+const GameBoard = ({ onBackToMenu }) => {
   // Game state
   const [phase, setPhase] = useState('draw');
   const [currentTurn, setCurrentTurn] = useState('player');
@@ -42,8 +57,17 @@ const GameBoard = () => {
   const [battleLog, setBattleLog] = useState([]);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
+  const [showAbilityPopup, setShowAbilityPopup] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   const { toast } = useToast();
+
+  // Play sound helper
+  const playSound = useCallback((soundName) => {
+    if (soundEnabled && sounds[soundName]) {
+      sounds[soundName].play();
+    }
+  }, [soundEnabled]);
 
   // Shuffle deck helper
   const shuffleDeck = (deck) => {
@@ -73,17 +97,19 @@ const GameBoard = () => {
       { id: 8, name: "Honey Jar", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'draw', amount: 2 },
       { id: 9, name: "Fluff Bomb", attack: 5, defense: 0, type: 'action', cost: 4, ability: 'none' },
       { id: 10, name: "Guardian Bear", attack: 1, defense: 5, type: 'action', cost: 3, ability: 'protect' },
+      { id: 11, name: "Rage Bear", attack: 2, defense: 3, type: 'action', cost: 3, ability: 'fury' },
+      { id: 12, name: "Tiny Tim", attack: 1, defense: 1, type: 'action', cost: 1, ability: 'swarm' },
     ]);
 
     const initialOpponentDeck = shuffleDeck([
       { id: 101, name: "Evil Teddy", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none' },
-      { id: 102, name: "Dark Fluffington", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'none' },
-      { id: 103, name: "Shadow Bear", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'none' },
-      { id: 104, name: "Nightmare Cuddles", attack: 3, defense: 3, type: 'action', cost: 3, ability: 'none' },
+      { id: 102, name: "Dark Fluffington", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt' },
+      { id: 103, name: "Shadow Bear", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'piercing' },
+      { id: 104, name: "Nightmare Cuddles", attack: 3, defense: 3, type: 'action', cost: 3, ability: 'fury' },
       { id: 105, name: "Wicked Whiskers", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none' },
+      { id: 106, name: "Demon Bear", attack: 4, defense: 4, type: 'action', cost: 4, ability: 'shield' },
     ]);
 
-    // Draw initial hands
     const playerInitialHand = initialPlayerDeck.slice(0, 5);
     const playerRemainingDeck = initialPlayerDeck.slice(5);
 
@@ -91,7 +117,6 @@ const GameBoard = () => {
     setPlayerDeck(playerRemainingDeck);
     setOpponentDeck(initialOpponentDeck);
 
-    // Start opponent with some cards on field
     setOpponentField([initialOpponentDeck[0]]);
     setOpponentDeck(initialOpponentDeck.slice(1));
 
@@ -103,6 +128,7 @@ const GameBoard = () => {
     if (playerHealth <= 0 && !gameOver) {
       setGameOver(true);
       setWinner('opponent');
+      playSound('defeat');
       toast({
         title: "Defeat!",
         description: "Your teddies have been defeated...",
@@ -111,12 +137,13 @@ const GameBoard = () => {
     } else if (opponentHealth <= 0 && !gameOver) {
       setGameOver(true);
       setWinner('player');
+      playSound('victory');
       toast({
         title: "Victory!",
         description: "You've conquered the terrible teddies!",
       });
     }
-  }, [playerHealth, opponentHealth, gameOver, toast]);
+  }, [playerHealth, opponentHealth, gameOver, toast, playSound]);
 
   // Handle draw phase
   useEffect(() => {
@@ -127,14 +154,52 @@ const GameBoard = () => {
         const drawnCard = playerDeck[0];
         setPlayerHand(prev => [...prev, drawnCard]);
         setPlayerDeck(prev => prev.slice(1));
+        playSound('draw');
         addToBattleLog(`Drew ${drawnCard.name}`);
         toast({ title: "Card Drawn", description: `You drew ${drawnCard.name}` });
       } else {
         addToBattleLog("Deck is empty!");
       }
+      // Remove stealth from cards that have been on field for a turn
+      setPlayerField(prev => prev.map(c => ({ ...c, stealthActive: false })));
       setTimeout(() => setPhase('main'), 500);
     }
-  }, [phase, currentTurn, playerDeck, gameOver, toast, addToBattleLog]);
+  }, [phase, currentTurn, playerDeck, gameOver, toast, addToBattleLog, playSound]);
+
+  // Get valid targets considering abilities
+  const getValidTargets = useCallback((attackerField, defenderField) => {
+    // Check for taunt - must attack taunt cards first
+    const tauntCards = defenderField.filter(c => c.ability === 'taunt' && !c.stealthActive);
+    if (tauntCards.length > 0) {
+      return tauntCards;
+    }
+
+    // Check for protect - if protect is on field, can only target protect card
+    const protectCards = defenderField.filter(c => c.ability === 'protect' && !c.stealthActive);
+    if (protectCards.length > 0) {
+      return protectCards;
+    }
+
+    // Filter out stealth cards
+    return defenderField.filter(c => !c.stealthActive);
+  }, []);
+
+  // Calculate damage with abilities
+  const calculateDamage = useCallback((attacker, defender) => {
+    let damage = attacker.attack;
+
+    // Piercing ignores defense
+    if (attacker.ability !== 'piercing') {
+      damage = Math.max(0, damage - defender.defense);
+    }
+
+    // Shield reduces damage by 50%
+    if (defender.ability === 'shield') {
+      damage = Math.floor(damage / 2);
+    }
+
+    return damage;
+  }, []);
 
   // Play a card from hand
   const playCard = (card) => {
@@ -156,6 +221,7 @@ const GameBoard = () => {
       setPlayerHand(prev => prev.filter(c => c.id !== card.id));
       setPlayerGraveyard(prev => [...prev, card]);
       setPlayerMomentum(prev => Math.min(10, prev + 1));
+      playSound('cardPlay');
       return;
     }
 
@@ -169,11 +235,24 @@ const GameBoard = () => {
       return;
     }
 
-    setPlayerField(prev => [...prev, card]);
+    // Apply stealth on play
+    const cardToPlay = card.ability === 'stealth'
+      ? { ...card, stealthActive: true }
+      : card;
+
+    setPlayerField(prev => [...prev, cardToPlay]);
     setPlayerHand(prev => prev.filter(c => c.id !== card.id));
     setPlayerEnergy(prev => prev - card.cost);
     setPlayerMomentum(prev => Math.min(10, prev + 1));
-    addToBattleLog(`Played ${card.name}`);
+    playSound('cardPlay');
+
+    // Show ability popup
+    if (card.ability && card.ability !== 'none') {
+      setShowAbilityPopup({ name: card.name, ability: card.ability });
+      setTimeout(() => setShowAbilityPopup(null), 1500);
+    }
+
+    addToBattleLog(`Played ${card.name}${card.ability !== 'none' ? ` (${card.ability})` : ''}`);
     toast({ title: "Card Played", description: `${card.name} enters the battlefield!` });
   };
 
@@ -182,6 +261,7 @@ const GameBoard = () => {
     switch (card.effect) {
       case 'heal':
         setPlayerHealth(prev => Math.min(30, prev + card.amount));
+        playSound('heal');
         addToBattleLog(`Healed ${card.amount} HP with ${card.name}`);
         toast({ title: "Healing!", description: `Restored ${card.amount} HP` });
         break;
@@ -190,8 +270,14 @@ const GameBoard = () => {
         const drawnCards = playerDeck.slice(0, cardsToDraw);
         setPlayerHand(prev => [...prev, ...drawnCards]);
         setPlayerDeck(prev => prev.slice(cardsToDraw));
+        playSound('draw');
         addToBattleLog(`Drew ${cardsToDraw} cards with ${card.name}`);
         toast({ title: "Cards Drawn!", description: `Drew ${cardsToDraw} cards` });
+        break;
+      case 'buff':
+        setPlayerField(prev => prev.map(c => ({ ...c, attack: c.attack + card.amount })));
+        addToBattleLog(`All teddies gained +${card.amount} attack!`);
+        toast({ title: "Power Up!", description: `All teddies gained +${card.amount} attack!` });
         break;
       default:
         break;
@@ -205,6 +291,13 @@ const GameBoard = () => {
       toast({ title: "Already attacked", description: `${card.name} has already attacked this turn`, variant: "destructive" });
       return;
     }
+
+    const validTargets = getValidTargets(playerField, opponentField);
+    if (validTargets.length === 0 && opponentField.length > 0) {
+      toast({ title: "No valid targets", description: "All enemies have stealth!", variant: "destructive" });
+      return;
+    }
+
     setSelectedCard(card);
     setTargetingMode(true);
   };
@@ -213,11 +306,26 @@ const GameBoard = () => {
   const attackTarget = (target) => {
     if (!selectedCard || !targetingMode) return;
 
+    // Check if target is valid
+    const validTargets = getValidTargets(playerField, opponentField);
+    if (!validTargets.find(t => t.id === target.id)) {
+      const tauntCard = opponentField.find(c => c.ability === 'taunt');
+      if (tauntCard) {
+        toast({
+          title: "Must attack taunt!",
+          description: `${tauntCard.name} is taunting you!`,
+          variant: "destructive"
+        });
+      }
+      return;
+    }
+
     // Check for trap
     if (target.type === 'trap') {
       const trapDamage = target.amount || 3;
       setPlayerHealth(prev => Math.max(0, prev - trapDamage));
       setOpponentField(prev => prev.filter(c => c.id !== target.id));
+      playSound('trap');
       addToBattleLog(`${target.name} triggered! Took ${trapDamage} damage`);
       toast({
         title: "Trap Triggered!",
@@ -225,11 +333,24 @@ const GameBoard = () => {
         variant: "destructive"
       });
     } else {
-      // Normal attack
-      const damage = Math.max(0, selectedCard.attack - target.defense);
+      // Calculate damage with abilities
+      const damage = calculateDamage(selectedCard, target);
+      playSound('attack');
+
+      // Apply fury - target gains attack when damaged
+      if (target.ability === 'fury' && damage > 0) {
+        setOpponentField(prev => prev.map(c =>
+          c.id === target.id ? { ...c, attack: c.attack + 1 } : c
+        ));
+        addToBattleLog(`${target.name}'s fury activated! +1 attack`);
+      }
+
       setOpponentHealth(prev => Math.max(0, prev - damage));
+
+      // Destroy the target if it takes lethal damage (simplified - always destroy on hit)
       setOpponentField(prev => prev.filter(c => c.id !== target.id));
-      addToBattleLog(`${selectedCard.name} attacked ${target.name} for ${damage} damage`);
+
+      addToBattleLog(`${selectedCard.name} attacked ${target.name} for ${damage} damage${selectedCard.ability === 'piercing' ? ' (piercing)' : ''}`);
       toast({ title: "Attack!", description: `${selectedCard.name} dealt ${damage} damage!` });
     }
 
@@ -246,15 +367,18 @@ const GameBoard = () => {
   // Attack opponent directly
   const attackOpponentDirectly = () => {
     if (!selectedCard || !targetingMode) return;
-    if (opponentField.length > 0) {
+
+    const validTargets = getValidTargets(playerField, opponentField);
+    if (validTargets.length > 0) {
       toast({
         title: "Cannot attack directly",
-        description: "Opponent has teddies on the field!",
+        description: "Must attack enemy teddies first!",
         variant: "destructive"
       });
       return;
     }
 
+    playSound('attack');
     setOpponentHealth(prev => Math.max(0, prev - selectedCard.attack));
     setPlayerField(prev => prev.map(c =>
       c.id === selectedCard.id ? { ...c, hasAttacked: true } : c
@@ -291,35 +415,61 @@ const GameBoard = () => {
     addToBattleLog("Opponent's turn!");
     setOpponentEnergy(3);
 
+    // Remove stealth from opponent cards
+    setOpponentField(prev => prev.map(c => ({ ...c, stealthActive: false })));
+
     // Opponent draws a card
     if (opponentDeck.length > 0) {
       const drawnCard = opponentDeck[0];
       setOpponentDeck(prev => prev.slice(1));
 
       if (opponentField.length < 3 && 3 >= drawnCard.cost) {
-        setOpponentField(prev => [...prev, drawnCard]);
+        const cardToPlay = drawnCard.ability === 'stealth'
+          ? { ...drawnCard, stealthActive: true }
+          : drawnCard;
+        setOpponentField(prev => [...prev, cardToPlay]);
+        playSound('cardPlay');
         addToBattleLog(`Opponent played ${drawnCard.name}`);
       }
     }
 
     // Opponent attacks
     setTimeout(() => {
+      const validTargets = getValidTargets(opponentField, playerField);
+
       if (opponentField.length > 0) {
         opponentField.forEach(card => {
-          if (playerField.length > 0) {
-            const target = playerField[0];
+          if (card.stealthActive) return; // Stealth cards can't attack on the turn they're played
+
+          if (validTargets.length > 0) {
+            // Attack the first valid target (considering taunt/protect)
+            const target = validTargets[0];
+
             if (target.type === 'trap') {
               const trapDamage = target.amount || 3;
               setOpponentHealth(prev => Math.max(0, prev - trapDamage));
               setPlayerField(prev => prev.filter(c => c.id !== target.id));
+              playSound('trap');
               addToBattleLog(`Your ${target.name} triggered! Opponent took ${trapDamage} damage`);
             } else {
-              const damage = Math.max(0, card.attack - target.defense);
+              const damage = calculateDamage(card, target);
+              playSound('attack');
+
+              // Fury activation
+              if (target.ability === 'fury' && damage > 0) {
+                setPlayerField(prev => prev.map(c =>
+                  c.id === target.id ? { ...c, attack: c.attack + 1 } : c
+                ));
+                addToBattleLog(`${target.name}'s fury activated! +1 attack`);
+              }
+
               setPlayerHealth(prev => Math.max(0, prev - damage));
               setPlayerField(prev => prev.filter(c => c.id !== target.id));
               addToBattleLog(`${card.name} attacked ${target.name} for ${damage} damage`);
             }
-          } else {
+          } else if (playerField.length === 0) {
+            // Direct attack
+            playSound('attack');
             setPlayerHealth(prev => Math.max(0, prev - card.attack));
             addToBattleLog(`${card.name} attacked you directly for ${card.attack} damage!`);
           }
@@ -347,8 +497,37 @@ const GameBoard = () => {
     window.location.reload();
   };
 
+  // Get ability description
+  const getAbilityDescription = (ability) => {
+    const descriptions = {
+      taunt: "Forces enemies to attack this card first",
+      piercing: "Ignores enemy defense",
+      shield: "Takes 50% less damage",
+      stealth: "Can't be targeted for one turn",
+      protect: "Other cards can't be targeted",
+      fury: "Gains +1 attack when damaged",
+      swarm: "Costs only 1 energy",
+    };
+    return descriptions[ability] || "";
+  };
+
   return (
     <div className="relative w-full h-screen bg-gradient-to-b from-amber-100 to-amber-200 overflow-hidden">
+      {/* Ability Popup */}
+      <AnimatePresence>
+        {showAbilityPopup && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.5 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            className="absolute top-1/3 left-1/2 transform -translate-x-1/2 z-50 bg-purple-600 text-white px-6 py-3 rounded-lg shadow-lg"
+          >
+            <div className="text-lg font-bold">{showAbilityPopup.name}</div>
+            <div className="text-sm text-purple-200">{getAbilityDescription(showAbilityPopup.ability)}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Game Over Overlay */}
       <AnimatePresence>
         {gameOver && (
@@ -370,19 +549,30 @@ const GameBoard = () => {
                   ? 'Your terrible teddies triumphed!'
                   : 'Better luck next time...'}
               </p>
-              <Button onClick={restartGame} className="bg-amber-500 hover:bg-amber-600">
-                Play Again
-              </Button>
+              <div className="space-x-4">
+                <Button onClick={restartGame} className="bg-amber-500 hover:bg-amber-600">
+                  Play Again
+                </Button>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Sound toggle */}
+      <button
+        onClick={() => setSoundEnabled(!soundEnabled)}
+        className="absolute top-20 left-4 z-40 bg-white/80 p-2 rounded-full shadow"
+        title={soundEnabled ? "Mute sounds" : "Enable sounds"}
+      >
+        {soundEnabled ? '🔊' : '🔇'}
+      </button>
+
       {/* Top bar - Opponent info */}
       <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-red-900 to-red-700 flex items-center justify-between px-4 shadow-lg">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
-            <span className="text-white text-xl">&#128520;</span>
+            <span className="text-white text-xl">👿</span>
           </div>
           <div>
             <div className="text-white font-bold">Evil Teddies</div>
@@ -400,21 +590,36 @@ const GameBoard = () => {
 
       {/* Opponent's field */}
       <div className="absolute top-20 left-1/2 transform -translate-x-1/2 flex justify-center space-x-3">
-        {opponentField.map((card) => (
-          <motion.div
-            key={card.id}
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className={`${targetingMode ? 'cursor-crosshair ring-2 ring-red-500 ring-offset-2' : ''}`}
-            onClick={() => targetingMode && attackTarget(card)}
-          >
-            <TeddyCard teddy={card} />
-          </motion.div>
-        ))}
+        {opponentField.map((card) => {
+          const validTargets = getValidTargets(playerField, opponentField);
+          const isValidTarget = validTargets.find(t => t.id === card.id);
+
+          return (
+            <motion.div
+              key={card.id}
+              initial={{ y: -50, opacity: 0 }}
+              animate={{ y: 0, opacity: card.stealthActive ? 0.5 : 1 }}
+              className={`relative ${targetingMode && isValidTarget ? 'cursor-crosshair ring-2 ring-red-500 ring-offset-2' : ''}`}
+              onClick={() => targetingMode && isValidTarget && attackTarget(card)}
+            >
+              <TeddyCard teddy={card} />
+              {card.stealthActive && (
+                <div className="absolute top-0 left-0 right-0 bg-purple-500 text-white text-[8px] text-center rounded-t">
+                  STEALTH
+                </div>
+              )}
+              {card.ability === 'taunt' && !card.stealthActive && (
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-red-500 text-white text-[8px] px-1 rounded">
+                  TAUNT
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
         {opponentField.length === 0 && targetingMode && (
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="w-20 h-32 border-2 border-dashed border-red-400 rounded-lg flex items-center justify-center cursor-crosshair bg-red-100/50"
+            className="w-24 h-36 border-2 border-dashed border-red-400 rounded-lg flex items-center justify-center cursor-crosshair bg-red-100/50"
             onClick={attackOpponentDirectly}
           >
             <span className="text-red-500 text-xs text-center">Attack Directly</span>
@@ -455,7 +660,7 @@ const GameBoard = () => {
             <motion.div
               key={card.id}
               whileHover={{ y: -5 }}
-              className={`
+              className={`relative
                 ${selectedCard?.id === card.id ? 'ring-2 ring-yellow-400' : ''}
                 ${card.hasAttacked ? 'opacity-60' : 'cursor-pointer'}
               `}
@@ -464,6 +669,16 @@ const GameBoard = () => {
               <TeddyCard teddy={card} />
               {card.hasAttacked && (
                 <div className="text-center text-xs text-gray-500 mt-1">Exhausted</div>
+              )}
+              {card.stealthActive && (
+                <div className="absolute top-0 left-0 right-0 bg-purple-500 text-white text-[8px] text-center rounded-t">
+                  STEALTH
+                </div>
+              )}
+              {card.ability === 'taunt' && !card.stealthActive && (
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-black text-[8px] px-1 rounded">
+                  TAUNT
+                </div>
               )}
             </motion.div>
           ))}
@@ -493,7 +708,7 @@ const GameBoard = () => {
       <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-r from-green-900 to-green-700 flex items-center justify-between px-4 shadow-lg">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-            <span className="text-white text-xl">&#129528;</span>
+            <span className="text-white text-xl">🧸</span>
           </div>
           <div>
             <div className="text-white font-bold">You</div>
@@ -502,7 +717,7 @@ const GameBoard = () => {
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <span className="text-yellow-300 text-lg">&#9889;</span>
+            <span className="text-yellow-300 text-lg">⚡</span>
             <span className="text-white font-bold">{playerEnergy}</span>
           </div>
           <div className="text-right">
@@ -528,7 +743,7 @@ const GameBoard = () => {
             className="w-full bg-red-500 hover:bg-red-600 text-white"
             onClick={goToBattlePhase}
           >
-            Battle Phase
+            ⚔️ Battle
           </Button>
         )}
         {(phase === 'main' || phase === 'battle') && currentTurn === 'player' && (
