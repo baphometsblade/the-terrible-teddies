@@ -12,6 +12,7 @@ import Settings from './components/Settings';
 import DailyRewards from './components/DailyRewards';
 import Shop from './components/Shop';
 import BattlePass from './components/BattlePass';
+import Leaderboard from './components/Leaderboard';
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from './components/ErrorBoundary';
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ function App() {
   const [showDailyRewards, setShowDailyRewards] = useState(false);
   const [showShop, setShowShop] = useState(false);
   const [showBattlePass, setShowBattlePass] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const { tutorialCompleted, setTutorialCompleted, lastLoginDate } = useGameStore();
 
@@ -116,6 +118,7 @@ function App() {
             onDailyRewards={() => setShowDailyRewards(true)}
             onShop={() => setShowShop(true)}
             onBattlePass={() => setShowBattlePass(true)}
+            onLeaderboard={() => setShowLeaderboard(true)}
           />
         );
     }
@@ -159,6 +162,7 @@ function App() {
               {showDailyRewards && <DailyRewards onClose={() => setShowDailyRewards(false)} />}
               {showShop && <Shop onClose={() => setShowShop(false)} />}
               {showBattlePass && <BattlePass onClose={() => setShowBattlePass(false)} />}
+              {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
             </AnimatePresence>
           </>
         ) : (

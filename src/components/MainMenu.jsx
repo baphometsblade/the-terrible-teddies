@@ -16,6 +16,7 @@ const MainMenu = ({
   onDailyRewards,
   onShop,
   onBattlePass,
+  onLeaderboard,
 }) => {
   const {
     playerName, level, xp, getXPForNextLevel,
@@ -33,6 +34,7 @@ const MainMenu = ({
 
   const menuOptions = [
     { id: 'battle', title: 'Battle', description: 'Fight the AI!', icon: '⚔️', color: 'from-red-500 to-orange-500', action: onStartGame, badge: currentWinStreak > 0 ? `🔥 ${currentWinStreak}` : null },
+    { id: 'leaderboard', title: 'Rankings', description: 'Compete globally!', icon: '🏅', color: 'from-indigo-500 to-purple-600', action: onLeaderboard },
     { id: 'battlepass', title: 'Battle Pass', description: 'Season rewards!', icon: '🏆', color: 'from-yellow-500 to-orange-600', action: onBattlePass, badge: '⭐', highlight: true },
     { id: 'shop', title: 'Shop', description: 'Get gems & packs!', icon: '🏪', color: 'from-emerald-500 to-green-600', action: onShop, badge: '💎' },
     { id: 'packs', title: 'Card Packs', description: 'Open new cards!', icon: '📦', color: 'from-purple-500 to-pink-500', action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks}` : null, highlight: cardPacks > 0 },
@@ -158,7 +160,7 @@ const MainMenu = ({
 
       {/* Menu Options */}
       <div className="flex-1 flex items-center justify-center relative z-10">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4 max-w-7xl w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3 md:gap-4 max-w-7xl w-full">
           {menuOptions.map((option, index) => (
             <motion.div
               key={option.id}
