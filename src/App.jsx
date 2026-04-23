@@ -20,6 +20,7 @@ const Shop = lazy(() => import('./components/Shop'));
 const BattlePass = lazy(() => import('./components/BattlePass'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const Challenges = lazy(() => import('./components/Challenges'));
+const PurchaseSuccess = lazy(() => import('./components/PurchaseSuccess'));
 
 const DialogLoader = () => (
   <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
@@ -46,8 +47,21 @@ function App() {
   const [showBattlePass, setShowBattlePass] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
+  const [purchaseSessionId, setPurchaseSessionId] = useState(null);
 
   const { tutorialCompleted, setTutorialCompleted, lastLoginDate } = useGameStore();
+
+  // Detect Stripe Checkout return
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const purchase = params.get('purchase');
+    const sessionId = params.get('session_id');
+    if (purchase === 'success' && sessionId) {
+      setPurchaseSessionId(sessionId);
+      // Clean URL without triggering a reload
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     const today = new Date().toDateString();
@@ -181,6 +195,13 @@ function App() {
                 {showBattlePass && <BattlePass onClose={() => setShowBattlePass(false)} />}
                 {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
                 {showChallenges && <Challenges onClose={() => setShowChallenges(false)} />}
+
+                {purchaseSessionId && (
+                  <PurchaseSuccess
+                    sessionId={purchaseSessionId}
+                    onDone={() => setPurchaseSessionId(null)}
+                  />
+                )}
               </AnimatePresence>
             </Suspense>
           </>

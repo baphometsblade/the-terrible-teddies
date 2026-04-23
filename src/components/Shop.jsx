@@ -5,6 +5,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, SHOP_ITEMS } from '../stores/gameStore';
 import confetti from 'canvas-confetti';
 import analytics from '../utils/analytics';
+import { redirectToStripeCheckout } from '../utils/stripe';
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 const GEM_BUNDLES = [
   { id: 'gems_small', gems: 50, price: 0.99, bonus: 0, popular: false },
@@ -15,10 +17,10 @@ const GEM_BUNDLES = [
 ];
 
 const Shop = ({ onClose }) => {
-  const { coins, gems, cardPacks, addGems, buyShopItem } = useGameStore();
+  const { coins, gems, cardPacks, buyShopItem } = useGameStore();
+  const { session } = useSupabaseAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('packs');
-  const [showPurchaseModal, setShowPurchaseModal] = useState(null);
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
@@ -42,30 +44,27 @@ const Shop = ({ onClose }) => {
   };
 
   const handleGemPurchase = async (bundle) => {
+    if (!session?.user) {
+      toast({
+        title: "Sign In Required",
+        description: "Please sign in to purchase gems.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const totalGems = bundle.gems + bundle.bonus;
-      addGems(totalGems);
-      analytics.trackPurchase({
-        itemId: bundle.id,
-        itemName: `${bundle.gems} Gems`,
-        price: bundle.price,
-        currency: 'USD',
-      });
-      setProcessing(false);
-      setShowPurchaseModal(null);
-      confetti({
-        particleCount: 150,
-        spread: 100,
-        origin: { y: 0.5 },
-        colors: ['#9333EA', '#A855F7', '#C084FC', '#E879F9'],
-      });
-      toast({ title: "Gems Purchased!", description: `You received ${totalGems} gems!` });
+      await redirectToStripeCheckout(bundle.id, session.user.id);
+      // Browser navigates away — no further code runs here
     } catch (err) {
       analytics.trackError(err, 'gem_purchase');
       setProcessing(false);
-      toast({ title: "Purchase Failed", description: "Please try again.", variant: "destructive" });
+      toast({
+        title: "Checkout Failed",
+        description: err.message || "Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -104,7 +103,7 @@ const Shop = ({ onClose }) => {
     <motion.div
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      onClick={() => setShowPurchaseModal(bundle)}
+      onClick={() => !processing && handleGemPurchase(bundle)}
       className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all
         ${bundle.popular ? 'border-yellow-400 shadow-lg shadow-yellow-500/30' : 'border-white/20 hover:border-white/40'}
         bg-gradient-to-br from-purple-900/80 to-indigo-900/80`}
@@ -210,7 +209,13 @@ const Shop = ({ onClose }) => {
                       <div className="text-white/50 line-through text-lg">$14.99</div>
                       <div className="text-3xl font-bold text-yellow-400">$4.99</div>
                       <div className="text-green-400 text-sm font-semibold">67% OFF</div>
-                      <Button className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-black font-bold">Buy Now</Button>
+                      <Button
+                        onClick={() => handleGemPurchase({ id: 'starter_bundle', gems: 100, bonus: 0, price: 4.99 })}
+                        disabled={processing}
+                        className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+                      >
+                        {processing ? '…' : 'Buy Now'}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -220,7 +225,14 @@ const Shop = ({ onClose }) => {
                     <p className="text-white/60 text-sm mb-3">50 gems daily for 7 days!</p>
                     <div className="flex justify-between items-center">
                       <span className="text-purple-300">350 gems total</span>
-                      <Button size="sm" className="bg-purple-500 hover:bg-purple-600">$1.99</Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleGemPurchase({ id: 'weekly_gem_pass', gems: 350, bonus: 0, price: 1.99 })}
+                        disabled={processing}
+                        className="bg-purple-500 hover:bg-purple-600"
+                      >
+                        $1.99
+                      </Button>
                     </div>
                   </div>
                   <div className="bg-gradient-to-br from-green-600/30 to-teal-600/30 border border-green-500/50 rounded-xl p-4">
@@ -238,49 +250,17 @@ const Shop = ({ onClose }) => {
         </div>
       </motion.div>
 
-      <AnimatePresence>
-        {showPurchaseModal && (
+      {processing && (
+        <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center">
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
-            onClick={() => !processing && setShowPurchaseModal(null)}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            className="text-5xl"
           >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-              className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-6 max-w-sm w-full border border-white/20"
-              onClick={e => e.stopPropagation()}
-            >
-              <h3 className="text-xl font-bold text-white text-center mb-4">Confirm Purchase</h3>
-              <div className="bg-purple-900/30 rounded-xl p-4 text-center mb-4">
-                <div className="text-4xl mb-2">💎</div>
-                <div className="text-2xl font-bold text-white">
-                  {showPurchaseModal.gems.toLocaleString()}
-                  {showPurchaseModal.bonus > 0 && <span className="text-green-400 text-lg ml-2">+{showPurchaseModal.bonus}</span>}
-                </div>
-                <div className="text-purple-300">{showPurchaseModal.gems + showPurchaseModal.bonus} gems total</div>
-              </div>
-              <div className="text-center mb-4">
-                <div className="text-3xl font-bold text-white">${showPurchaseModal.price.toFixed(2)}</div>
-                <div className="text-white/50 text-sm">One-time purchase</div>
-              </div>
-              <div className="space-y-3 mb-4">
-                <input type="text" placeholder="Card number" className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/40" defaultValue="4242 4242 4242 4242" />
-                <div className="grid grid-cols-2 gap-3">
-                  <input type="text" placeholder="MM/YY" className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/40" defaultValue="12/28" />
-                  <input type="text" placeholder="CVC" className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/40" defaultValue="123" />
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <Button onClick={() => handleGemPurchase(showPurchaseModal)} disabled={processing} className="flex-1 bg-green-500 hover:bg-green-600">
-                  {processing ? <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>⏳</motion.span> : 'Pay Now'}
-                </Button>
-                <Button onClick={() => setShowPurchaseModal(null)} disabled={processing} variant="outline" className="flex-1 text-white border-white/30">Cancel</Button>
-              </div>
-              <div className="mt-4 text-center text-white/40 text-xs">🔒 Secured by Stripe</div>
-            </motion.div>
+            💎
           </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 };
