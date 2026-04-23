@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, SHOP_ITEMS } from '../stores/gameStore';
 import confetti from 'canvas-confetti';
+import analytics from '../utils/analytics';
 
 const GEM_BUNDLES = [
   { id: 'gems_small', gems: 50, price: 0.99, bonus: 0, popular: false },
@@ -20,9 +21,19 @@ const Shop = ({ onClose }) => {
   const [showPurchaseModal, setShowPurchaseModal] = useState(null);
   const [processing, setProcessing] = useState(false);
 
+  useEffect(() => {
+    analytics.trackShopView(activeTab);
+  }, [activeTab]);
+
   const handleBuyItem = (item) => {
     const result = buyShopItem(item.id);
     if (result.success) {
+      analytics.trackInGamePurchase({
+        itemId: item.id,
+        itemName: item.name,
+        cost: item.price,
+        currency: item.currency,
+      });
       toast({ title: "Purchase Successful!", description: result.message });
       confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
     } else {
@@ -32,18 +43,30 @@ const Shop = ({ onClose }) => {
 
   const handleGemPurchase = async (bundle) => {
     setProcessing(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    const totalGems = bundle.gems + bundle.bonus;
-    addGems(totalGems);
-    setProcessing(false);
-    setShowPurchaseModal(null);
-    confetti({
-      particleCount: 150,
-      spread: 100,
-      origin: { y: 0.5 },
-      colors: ['#9333EA', '#A855F7', '#C084FC', '#E879F9'],
-    });
-    toast({ title: "Gems Purchased!", description: `You received ${totalGems} gems!` });
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      const totalGems = bundle.gems + bundle.bonus;
+      addGems(totalGems);
+      analytics.trackPurchase({
+        itemId: bundle.id,
+        itemName: `${bundle.gems} Gems`,
+        price: bundle.price,
+        currency: 'USD',
+      });
+      setProcessing(false);
+      setShowPurchaseModal(null);
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.5 },
+        colors: ['#9333EA', '#A855F7', '#C084FC', '#E879F9'],
+      });
+      toast({ title: "Gems Purchased!", description: `You received ${totalGems} gems!` });
+    } catch (err) {
+      analytics.trackError(err, 'gem_purchase');
+      setProcessing(false);
+      toast({ title: "Purchase Failed", description: "Please try again.", variant: "destructive" });
+    }
   };
 
   const PackCard = ({ item, featured = false }) => (
