@@ -1,0 +1,379 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+export const ALL_CARDS = [
+  // Common (Starter Cards)
+  { id: 1, name: "Teddy Troublemaker", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "A classic troublemaker who loves chaos." },
+  { id: 2, name: "Tiny Tim", attack: 1, defense: 1, type: 'action', cost: 1, ability: 'swarm', rarity: 'common', description: "Small but scrappy!" },
+  { id: 3, name: "Fluffy McFluffface", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "The fluffiest of them all." },
+  { id: 4, name: "Button Basher", attack: 2, defense: 1, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Loses buttons but never loses fights." },
+  { id: 5, name: "Stitchy", attack: 1, defense: 3, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Held together by sheer willpower." },
+
+  // Uncommon
+  { id: 6, name: "Sassy Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'uncommon', description: "Too sassy to ignore." },
+  { id: 7, name: "Sneaky Pete", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'stealth', rarity: 'uncommon', description: "Now you see him, now you don't." },
+  { id: 8, name: "Cuddle Crusher", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'shield', rarity: 'uncommon', description: "Hugs that hurt... less." },
+  { id: 9, name: "Pillow Fighter", attack: 4, defense: 1, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon', description: "Pillows can be deadly weapons." },
+  { id: 10, name: "Grumpy Gus", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'uncommon', description: "Gets angrier when hit." },
+
+  // Rare
+  { id: 11, name: "Guardian Bear", attack: 1, defense: 5, type: 'action', cost: 3, ability: 'protect', rarity: 'rare', description: "Protects the innocent fluffballs." },
+  { id: 12, name: "Rage Bear", attack: 2, defense: 3, type: 'action', cost: 3, ability: 'fury', rarity: 'rare', description: "You won't like him when he's angry." },
+  { id: 13, name: "Fluff Bomb", attack: 5, defense: 0, type: 'action', cost: 4, ability: 'none', rarity: 'rare', description: "All attack, no defense!" },
+  { id: 14, name: "Cotton King", attack: 3, defense: 3, type: 'action', cost: 4, ability: 'royal', rarity: 'rare', description: "Royalty has its privileges." },
+  { id: 15, name: "Shadow Teddy", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'stealth', rarity: 'rare', description: "Born from darkness." },
+
+  // Epic
+  { id: 16, name: "Legendary Fluffington", attack: 4, defense: 4, type: 'action', cost: 5, ability: 'shield', rarity: 'epic', description: "A legend among teddies." },
+  { id: 17, name: "Berserker Bear", attack: 6, defense: 1, type: 'action', cost: 4, ability: 'fury', rarity: 'epic', description: "Unstoppable rage incarnate." },
+  { id: 18, name: "Ancient Guardian", attack: 2, defense: 6, type: 'action', cost: 5, ability: 'protect', rarity: 'epic', description: "Has protected teddies for centuries." },
+  { id: 19, name: "Phantom Hugger", attack: 5, defense: 3, type: 'action', cost: 5, ability: 'piercing', rarity: 'epic', description: "Hugs that phase through armor." },
+
+  // Legendary
+  { id: 20, name: "Teddy Prime", attack: 5, defense: 5, type: 'action', cost: 6, ability: 'taunt', rarity: 'legendary', description: "The original terrible teddy." },
+  { id: 21, name: "Apocalypse Bear", attack: 7, defense: 3, type: 'action', cost: 6, ability: 'fury', rarity: 'legendary', description: "Brings the end times with cuddles." },
+
+  // Trap Cards
+  { id: 30, name: "Bear Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common', description: "Classic but effective." },
+  { id: 31, name: "Surprise Hug", attack: 0, defense: 0, type: 'trap', cost: 1, effect: 'damage', amount: 2, rarity: 'common', description: "Unexpected affection hurts." },
+  { id: 32, name: "Stuffing Explosion", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Cotton everywhere!" },
+  { id: 33, name: "Button Barrage", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'uncommon', description: "Buttons fly in all directions." },
+  { id: 34, name: "Cuddle Catastrophe", attack: 0, defense: 0, type: 'trap', cost: 4, effect: 'damage', amount: 6, rarity: 'rare', description: "Too much love to handle." },
+
+  // Special Cards
+  { id: 40, name: "Stuffing Surge", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'heal', amount: 5, rarity: 'common', description: "Restores precious stuffing." },
+  { id: 41, name: "Honey Jar", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'draw', amount: 2, rarity: 'common', description: "Sweet card advantage." },
+  { id: 42, name: "Button Eyes", attack: 0, defense: 0, type: 'special', cost: 1, effect: 'draw', amount: 1, rarity: 'common', description: "See the future." },
+  { id: 43, name: "Emergency Repair", attack: 0, defense: 0, type: 'special', cost: 4, effect: 'heal', amount: 8, rarity: 'uncommon', description: "Critical stuffing restoration." },
+  { id: 44, name: "Teddy Rally", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'buff', amount: 1, rarity: 'uncommon', description: "All teddies gain +1 attack." },
+  { id: 45, name: "Fluff Storm", attack: 0, defense: 0, type: 'special', cost: 4, effect: 'draw', amount: 3, rarity: 'rare', description: "Draw a flurry of cards." },
+  { id: 46, name: "Full Restoration", attack: 0, defense: 0, type: 'special', cost: 6, effect: 'heal', amount: 15, rarity: 'epic', description: "Complete teddy makeover." },
+  { id: 47, name: "Legendary Blessing", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'buff', amount: 2, rarity: 'legendary', description: "All teddies gain +2 attack." },
+];
+
+export const ACHIEVEMENTS = [
+  { id: 'first_win', name: 'First Victory', description: 'Win your first battle', reward: 100, icon: '🏆' },
+  { id: 'win_10', name: 'Rising Champion', description: 'Win 10 battles', reward: 500, icon: '⭐' },
+  { id: 'win_50', name: 'Teddy Master', description: 'Win 50 battles', reward: 2000, icon: '👑' },
+  { id: 'win_streak_5', name: 'On Fire', description: 'Win 5 battles in a row', reward: 300, icon: '🔥' },
+  { id: 'collect_20', name: 'Collector', description: 'Collect 20 unique cards', reward: 400, icon: '📚' },
+  { id: 'collect_all', name: 'Complete Collection', description: 'Collect all cards', reward: 5000, icon: '💎' },
+  { id: 'play_100', name: 'Dedicated Player', description: 'Play 100 battles', reward: 1000, icon: '🎮' },
+  { id: 'deal_1000_damage', name: 'Damage Dealer', description: 'Deal 1000 total damage', reward: 500, icon: '💥' },
+  { id: 'heal_500', name: 'Medic Bear', description: 'Heal 500 total HP', reward: 300, icon: '💚' },
+  { id: 'perfect_win', name: 'Flawless', description: 'Win without losing HP', reward: 1000, icon: '💫' },
+  { id: 'comeback', name: 'Comeback King', description: 'Win with 5 or less HP', reward: 500, icon: '👊' },
+  { id: 'level_10', name: 'Leveling Up', description: 'Reach level 10', reward: 500, icon: '📈' },
+  { id: 'level_25', name: 'Veteran', description: 'Reach level 25', reward: 1500, icon: '🎖️' },
+  { id: 'daily_7', name: 'Weekly Warrior', description: 'Log in 7 days in a row', reward: 700, icon: '📅' },
+];
+
+export const DAILY_REWARDS = [
+  { day: 1, coins: 50, cards: 0, packs: 0 },
+  { day: 2, coins: 75, cards: 1, packs: 0 },
+  { day: 3, coins: 100, cards: 0, packs: 0 },
+  { day: 4, coins: 100, cards: 2, packs: 0 },
+  { day: 5, coins: 150, cards: 0, packs: 1 },
+  { day: 6, coins: 200, cards: 3, packs: 0 },
+  { day: 7, coins: 300, cards: 0, packs: 2 },
+];
+
+export const SHOP_ITEMS = [
+  { id: 'pack_1', name: 'Card Pack', description: '5 random cards', icon: '📦', price: 200, currency: 'coins', type: 'pack', quantity: 1 },
+  { id: 'pack_5', name: '5 Card Packs', description: '25 random cards (10% off)', icon: '📦', price: 900, currency: 'coins', type: 'pack', quantity: 5 },
+  { id: 'pack_10', name: '10 Card Packs', description: '50 random cards (20% off)', icon: '📦📦', price: 1600, currency: 'coins', type: 'pack', quantity: 10 },
+  { id: 'premium_pack', name: 'Premium Pack', description: 'Guaranteed rare or better!', icon: '💎', price: 50, currency: 'gems', type: 'premium', quantity: 1 },
+  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards, guaranteed legendary!', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
+  { id: 'coins_small', name: 'Small Coin Bag', description: '+500 coins', icon: '💰', price: 10, currency: 'gems', type: 'coins', quantity: 500 },
+  { id: 'coins_large', name: 'Large Coin Bag', description: '+3000 coins', icon: '💰', price: 50, currency: 'gems', type: 'coins', quantity: 3000 },
+];
+
+const getXPForLevel = (level) => Math.floor(100 * Math.pow(1.5, level - 1));
+
+const initialState = {
+  playerName: 'Teddy Trainer',
+  level: 1,
+  xp: 0,
+  coins: 500,
+  gems: 10,
+  ownedCards: [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42],
+  currentDeck: [1, 2, 3, 4, 5, 6, 30, 40, 41, 42],
+  savedDecks: [],
+  totalWins: 0,
+  totalLosses: 0,
+  currentWinStreak: 0,
+  bestWinStreak: 0,
+  totalDamageDealt: 0,
+  totalHealingDone: 0,
+  totalBattles: 0,
+  completedAchievements: [],
+  lastLoginDate: null,
+  consecutiveLogins: 0,
+  cardPacks: 1,
+  soundEnabled: true,
+  musicEnabled: true,
+  animationsEnabled: true,
+  difficulty: 'normal',
+  tutorialCompleted: false,
+};
+
+export const useGameStore = create(
+  persist(
+    (set, get) => ({
+      ...initialState,
+
+      setPlayerName: (name) => set({ playerName: name }),
+
+      addXP: (amount) => {
+        const state = get();
+        let newXP = state.xp + amount;
+        let newLevel = state.level;
+        let bonusCoins = 0;
+
+        while (newXP >= getXPForLevel(newLevel)) {
+          newXP -= getXPForLevel(newLevel);
+          newLevel++;
+          bonusCoins += 100 * newLevel;
+        }
+
+        set({ xp: newXP, level: newLevel, coins: state.coins + bonusCoins });
+        get().checkAchievement('level_10', newLevel >= 10);
+        get().checkAchievement('level_25', newLevel >= 25);
+      },
+
+      getXPForNextLevel: () => getXPForLevel(get().level),
+
+      addCoins: (amount) => set((state) => ({ coins: state.coins + amount })),
+      spendCoins: (amount) => {
+        const state = get();
+        if (state.coins >= amount) {
+          set({ coins: state.coins - amount });
+          return true;
+        }
+        return false;
+      },
+
+      addGems: (amount) => set((state) => ({ gems: state.gems + amount })),
+      spendGems: (amount) => {
+        const state = get();
+        if (state.gems >= amount) {
+          set({ gems: state.gems - amount });
+          return true;
+        }
+        return false;
+      },
+
+      addCard: (cardId) => {
+        const state = get();
+        if (!state.ownedCards.includes(cardId)) {
+          const newOwnedCards = [...state.ownedCards, cardId];
+          set({ ownedCards: newOwnedCards });
+          get().checkAchievement('collect_20', newOwnedCards.length >= 20);
+          get().checkAchievement('collect_all', newOwnedCards.length >= ALL_CARDS.length);
+        }
+      },
+
+      addCards: (cardIds) => {
+        const state = get();
+        const newCards = cardIds.filter(id => !state.ownedCards.includes(id));
+        if (newCards.length > 0) {
+          const newOwnedCards = [...state.ownedCards, ...newCards];
+          set({ ownedCards: newOwnedCards });
+          get().checkAchievement('collect_20', newOwnedCards.length >= 20);
+          get().checkAchievement('collect_all', newOwnedCards.length >= ALL_CARDS.length);
+        }
+      },
+
+      setCurrentDeck: (cardIds) => set({ currentDeck: cardIds }),
+
+      saveDeck: (name, cardIds) => {
+        set((state) => ({
+          savedDecks: [...state.savedDecks.filter(d => d.name !== name), { name, cards: cardIds }]
+        }));
+      },
+
+      deleteDeck: (name) => {
+        set((state) => ({
+          savedDecks: state.savedDecks.filter(d => d.name !== name)
+        }));
+      },
+
+      recordBattleResult: (won, damageDealt, healingDone, finalHP) => {
+        const state = get();
+        const newWins = won ? state.totalWins + 1 : state.totalWins;
+        const newLosses = won ? state.totalLosses : state.totalLosses + 1;
+        const newStreak = won ? state.currentWinStreak + 1 : 0;
+        const newBestStreak = Math.max(state.bestWinStreak, newStreak);
+        const newDamage = state.totalDamageDealt + damageDealt;
+        const newHealing = state.totalHealingDone + healingDone;
+        const newTotalBattles = state.totalBattles + 1;
+
+        set({
+          totalBattles: newTotalBattles,
+          totalWins: newWins,
+          totalLosses: newLosses,
+          currentWinStreak: newStreak,
+          bestWinStreak: newBestStreak,
+          totalDamageDealt: newDamage,
+          totalHealingDone: newHealing,
+        });
+
+        const xpGain = won ? 50 : 20;
+        get().addXP(xpGain);
+
+        if (won) {
+          const coinsGain = 25 + (newStreak * 5);
+          get().addCoins(coinsGain);
+        }
+
+        get().checkAchievement('first_win', newWins >= 1);
+        get().checkAchievement('win_10', newWins >= 10);
+        get().checkAchievement('win_50', newWins >= 50);
+        get().checkAchievement('win_streak_5', newStreak >= 5);
+        get().checkAchievement('play_100', newTotalBattles >= 100);
+        get().checkAchievement('deal_1000_damage', newDamage >= 1000);
+        get().checkAchievement('heal_500', newHealing >= 500);
+        get().checkAchievement('perfect_win', won && finalHP === 30);
+        get().checkAchievement('comeback', won && finalHP <= 5);
+
+        return { xpGain, coinsGain: won ? 25 + (newStreak * 5) : 0 };
+      },
+
+      checkAchievement: (achievementId, condition) => {
+        const state = get();
+        if (condition && !state.completedAchievements.includes(achievementId)) {
+          const achievement = ACHIEVEMENTS.find(a => a.id === achievementId);
+          if (achievement) {
+            set({
+              completedAchievements: [...state.completedAchievements, achievementId],
+              coins: state.coins + achievement.reward,
+            });
+            return achievement;
+          }
+        }
+        return null;
+      },
+
+      checkDailyLogin: () => {
+        const state = get();
+        const today = new Date().toDateString();
+        if (state.lastLoginDate === today) return null;
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const wasYesterday = state.lastLoginDate === yesterday.toDateString();
+        const newConsecutive = wasYesterday ? state.consecutiveLogins + 1 : 1;
+        const dayIndex = ((newConsecutive - 1) % 7);
+        const reward = DAILY_REWARDS[dayIndex];
+
+        set({
+          lastLoginDate: today,
+          consecutiveLogins: newConsecutive,
+          coins: state.coins + reward.coins,
+          cardPacks: state.cardPacks + reward.packs,
+        });
+
+        if (reward.cards > 0) {
+          const availableCards = ALL_CARDS.filter(c => !state.ownedCards.includes(c.id));
+          const randomCards = availableCards
+            .sort(() => Math.random() - 0.5)
+            .slice(0, reward.cards)
+            .map(c => c.id);
+          if (randomCards.length > 0) {
+            get().addCards(randomCards);
+          }
+        }
+
+        get().checkAchievement('daily_7', newConsecutive >= 7);
+        return { ...reward, day: dayIndex + 1, consecutive: newConsecutive };
+      },
+
+      addCardPack: (amount = 1) => set((state) => ({ cardPacks: state.cardPacks + amount })),
+
+      openCardPack: (guaranteedMinRarity = null) => {
+        const state = get();
+        if (state.cardPacks <= 0) return null;
+
+        const getRandomRarity = (guaranteed = false) => {
+          if (guaranteed === 'legendary') return 'legendary';
+          if (guaranteed === 'rare') {
+            const roll = Math.random() * 100;
+            if (roll < 5) return 'legendary';
+            if (roll < 25) return 'epic';
+            return 'rare';
+          }
+          const roll = Math.random() * 100;
+          if (roll < 1) return 'legendary';
+          if (roll < 6) return 'epic';
+          if (roll < 21) return 'rare';
+          if (roll < 51) return 'uncommon';
+          return 'common';
+        };
+
+        const pulledCards = [];
+        const packSize = guaranteedMinRarity === 'legendary' ? 10 : 5;
+
+        for (let i = 0; i < packSize; i++) {
+          let rarity;
+          if (i === 0 && guaranteedMinRarity === 'legendary') {
+            rarity = 'legendary';
+          } else if (i === 0 && guaranteedMinRarity === 'rare') {
+            rarity = getRandomRarity('rare');
+          } else {
+            rarity = getRandomRarity();
+          }
+
+          const cardsOfRarity = ALL_CARDS.filter(c => c.rarity === rarity);
+          const randomCard = cardsOfRarity[Math.floor(Math.random() * cardsOfRarity.length)];
+          pulledCards.push({
+            ...randomCard,
+            isNew: !state.ownedCards.includes(randomCard.id) && !pulledCards.find(pc => pc.id === randomCard.id),
+          });
+        }
+
+        const newCardIds = pulledCards.map(c => c.id);
+        get().addCards(newCardIds);
+        set((s) => ({ cardPacks: s.cardPacks - 1 }));
+        return pulledCards;
+      },
+
+      buyShopItem: (itemId) => {
+        const state = get();
+        const item = SHOP_ITEMS.find(i => i.id === itemId);
+        if (!item) return { success: false, message: "Item not found" };
+
+        if (item.currency === 'coins') {
+          if (state.coins < item.price) return { success: false, message: "Not enough coins" };
+          set({ coins: state.coins - item.price });
+        } else if (item.currency === 'gems') {
+          if (state.gems < item.price) return { success: false, message: "Not enough gems" };
+          set({ gems: state.gems - item.price });
+        }
+
+        if (item.type === 'pack' || item.type === 'premium' || item.type === 'legendary') {
+          set((s) => ({ cardPacks: s.cardPacks + item.quantity }));
+          return { success: true, message: `Got ${item.quantity} pack(s)!`, type: item.type };
+        } else if (item.type === 'coins') {
+          set((s) => ({ coins: s.coins + item.quantity }));
+          return { success: true, message: `Got ${item.quantity} coins!` };
+        }
+
+        return { success: false, message: "Unknown item type" };
+      },
+
+      setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
+      setMusicEnabled: (enabled) => set({ musicEnabled: enabled }),
+      setAnimationsEnabled: (enabled) => set({ animationsEnabled: enabled }),
+      setDifficulty: (difficulty) => set({ difficulty }),
+      setTutorialCompleted: (completed) => set({ tutorialCompleted: completed }),
+
+      resetProgress: () => set(initialState),
+    }),
+    {
+      name: 'terrible-teddies-storage',
+      version: 1,
+    }
+  )
+);
+
+export default useGameStore;

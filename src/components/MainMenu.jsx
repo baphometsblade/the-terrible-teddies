@@ -2,64 +2,60 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useGameStore } from '../stores/gameStore';
 
-const MainMenu = ({ onStartGame, onDeckBuilder, onCollection, onTutorial }) => {
+const MainMenu = ({
+  onStartGame,
+  onDeckBuilder,
+  onCollection,
+  onTutorial,
+  onCardPacks,
+  onPlayerStats,
+  onSettings,
+  onDailyRewards,
+}) => {
+  const {
+    playerName, level, xp, getXPForNextLevel,
+    coins, gems, cardPacks,
+    totalWins, currentWinStreak, consecutiveLogins, lastLoginDate,
+  } = useGameStore();
+
   const [hoveredOption, setHoveredOption] = useState(null);
 
+  const today = new Date().toDateString();
+  const dailyAvailable = lastLoginDate !== today;
+
+  const xpForNext = getXPForNextLevel();
+  const xpProgress = (xp / xpForNext) * 100;
+
   const menuOptions = [
-    {
-      id: 'battle',
-      title: 'Battle Arena',
-      description: 'Challenge the AI to a card battle!',
-      icon: '⚔️',
-      color: 'from-red-500 to-orange-500',
-      action: onStartGame,
-    },
-    {
-      id: 'tutorial',
-      title: 'How to Play',
-      description: 'Learn the rules and abilities',
-      icon: '📖',
-      color: 'from-green-500 to-teal-500',
-      action: onTutorial,
-    },
-    {
-      id: 'deck',
-      title: 'Deck Builder',
-      description: 'Customize your teddy deck',
-      icon: '🃏',
-      color: 'from-blue-500 to-purple-500',
-      action: onDeckBuilder,
-    },
-    {
-      id: 'collection',
-      title: 'Collection',
-      description: 'View all your terrible teddies',
-      icon: '🧸',
-      color: 'from-amber-500 to-yellow-500',
-      action: onCollection,
-    },
+    { id: 'battle', title: 'Battle', description: 'Fight the AI!', icon: '⚔️', color: 'from-red-500 to-orange-500', action: onStartGame, badge: currentWinStreak > 0 ? `🔥 ${currentWinStreak}` : null },
+    { id: 'packs', title: 'Card Packs', description: 'Open new cards!', icon: '📦', color: 'from-purple-500 to-pink-500', action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks}` : null, highlight: cardPacks > 0 },
+    { id: 'deck', title: 'Deck Builder', description: 'Build your deck', icon: '🃏', color: 'from-blue-500 to-indigo-500', action: onDeckBuilder },
+    { id: 'collection', title: 'Collection', description: 'All your teddies', icon: '🧸', color: 'from-amber-500 to-yellow-500', action: onCollection },
+    { id: 'tutorial', title: 'How to Play', description: 'Learn the rules', icon: '📖', color: 'from-green-500 to-teal-500', action: onTutorial },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-purple-800 to-indigo-900 flex flex-col items-center justify-center p-8">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-purple-800 to-indigo-900 flex flex-col p-4 md:p-6 overflow-y-auto">
+      {/* Animated background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {[...Array(12)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute text-4xl opacity-20"
+            className="absolute text-4xl opacity-10"
             initial={{
-              x: Math.random() * window.innerWidth,
+              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
               y: -50,
               rotate: 0
             }}
             animate={{
-              y: window.innerHeight + 50,
+              y: (typeof window !== 'undefined' ? window.innerHeight : 800) + 50,
               rotate: 360
             }}
             transition={{
-              duration: 10 + Math.random() * 10,
+              duration: 15 + Math.random() * 10,
               repeat: Infinity,
               delay: Math.random() * 5
             }}
@@ -69,88 +65,146 @@ const MainMenu = ({ onStartGame, onDeckBuilder, onCollection, onTutorial }) => {
         ))}
       </div>
 
+      {/* Top bar */}
+      <div className="relative z-10 flex flex-wrap justify-between items-center mb-4 gap-3">
+        <motion.div
+          initial={{ x: -50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          onClick={onPlayerStats}
+          className="flex items-center gap-3 bg-white/10 rounded-xl p-3 backdrop-blur-sm cursor-pointer hover:bg-white/15 transition-colors"
+        >
+          <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-2xl border-2 border-white shadow-lg">
+            🧸
+          </div>
+          <div>
+            <div className="text-white font-bold">{playerName}</div>
+            <div className="flex items-center gap-2">
+              <span className="bg-yellow-500 text-black px-2 py-0.5 rounded text-xs font-bold">Lv. {level}</span>
+              <div className="w-24"><Progress value={xpProgress} className="h-2" /></div>
+            </div>
+            <div className="text-white/50 text-xs mt-0.5">
+              {totalWins} wins • {consecutiveLogins} day streak
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ x: 50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          className="flex items-center gap-2"
+        >
+          <motion.button
+            onClick={onDailyRewards}
+            className={`relative p-3 rounded-xl transition-all ${
+              dailyAvailable
+                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 shadow-lg shadow-yellow-500/50'
+                : 'bg-white/10'
+            }`}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span className="text-2xl">🎁</span>
+            {dailyAvailable && (
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ repeat: Infinity, duration: 1 }}
+                className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"
+              />
+            )}
+          </motion.button>
+
+          <div className="bg-yellow-500/20 px-3 py-2 rounded-xl flex items-center gap-2">
+            <span className="text-lg">🪙</span>
+            <span className="text-yellow-400 font-bold">{coins.toLocaleString()}</span>
+          </div>
+
+          <div className="bg-purple-500/20 px-3 py-2 rounded-xl flex items-center gap-2">
+            <span className="text-lg">💎</span>
+            <span className="text-purple-400 font-bold">{gems}</span>
+          </div>
+
+          <motion.button
+            onClick={onSettings}
+            className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"
+            whileHover={{ scale: 1.05, rotate: 90 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <span className="text-2xl">⚙️</span>
+          </motion.button>
+        </motion.div>
+      </div>
+
       {/* Title */}
       <motion.div
-        initial={{ y: -50, opacity: 0 }}
+        initial={{ y: -30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, type: 'spring' }}
-        className="text-center mb-12 relative z-10"
+        className="text-center mb-6 relative z-10"
       >
-        <h1 className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300 mb-2 drop-shadow-lg">
+        <h1 className="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300 mb-2 drop-shadow-lg">
           Terrible Teddies
         </h1>
-        <p className="text-purple-200 text-lg">The Naughtiest Card Battle Game</p>
-        <div className="flex justify-center gap-2 mt-4">
-          <span className="text-3xl">🧸</span>
-          <span className="text-3xl">⚔️</span>
-          <span className="text-3xl">🧸</span>
+        <p className="text-purple-200 text-base md:text-lg">The Naughtiest Card Battle Game</p>
+        <div className="flex justify-center gap-2 mt-2">
+          <span className="text-2xl">🧸</span>
+          <span className="text-2xl">⚔️</span>
+          <span className="text-2xl">🧸</span>
         </div>
       </motion.div>
 
       {/* Menu Options */}
-      <div className="flex flex-col md:flex-row gap-6 relative z-10">
-        {menuOptions.map((option, index) => (
-          <motion.div
-            key={option.id}
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 + index * 0.1, duration: 0.5 }}
-            onMouseEnter={() => setHoveredOption(option.id)}
-            onMouseLeave={() => setHoveredOption(null)}
-          >
-            <Card
-              className={`
-                w-64 h-80 cursor-pointer overflow-hidden
-                bg-gradient-to-b ${option.color}
-                border-4 border-white/30
-                shadow-2xl
-                transition-all duration-300
-                ${hoveredOption === option.id ? 'scale-110 shadow-yellow-400/50' : 'scale-100'}
-              `}
-              onClick={option.action}
+      <div className="flex-1 flex items-center justify-center relative z-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 max-w-5xl w-full">
+          {menuOptions.map((option, index) => (
+            <motion.div
+              key={option.id}
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 + index * 0.08, duration: 0.4 }}
+              onMouseEnter={() => setHoveredOption(option.id)}
+              onMouseLeave={() => setHoveredOption(null)}
             >
-              <div className="h-full flex flex-col items-center justify-center p-6 text-white">
-                <motion.div
-                  className="text-6xl mb-4"
-                  animate={hoveredOption === option.id ? {
-                    scale: [1, 1.2, 1],
-                    rotate: [0, 10, -10, 0]
-                  } : {}}
-                  transition={{ duration: 0.5 }}
-                >
-                  {option.icon}
-                </motion.div>
-                <h2 className="text-2xl font-bold mb-2 text-center">{option.title}</h2>
-                <p className="text-sm text-white/80 text-center">{option.description}</p>
-
-                <AnimatePresence>
-                  {hoveredOption === option.id && (
-                    <motion.div
-                      initial={{ y: 20, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      exit={{ y: 20, opacity: 0 }}
-                      className="mt-4"
-                    >
-                      <Button variant="secondary" className="bg-white text-gray-800 hover:bg-gray-100">
-                        Play
-                      </Button>
-                    </motion.div>
+              <Card
+                className={`
+                  w-full h-40 md:h-48 cursor-pointer overflow-hidden
+                  bg-gradient-to-b ${option.color}
+                  border-4 border-white/30 shadow-xl
+                  transition-all duration-300
+                  ${hoveredOption === option.id ? 'scale-105 shadow-2xl' : 'scale-100'}
+                  ${option.highlight ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-purple-900' : ''}
+                `}
+                onClick={option.action}
+              >
+                <div className="h-full flex flex-col items-center justify-center p-3 text-white relative">
+                  {option.badge && (
+                    <div className="absolute top-2 right-2 bg-black/40 px-2 py-1 rounded-full text-xs font-bold">
+                      {option.badge}
+                    </div>
                   )}
-                </AnimatePresence>
-              </div>
-            </Card>
-          </motion.div>
-        ))}
+
+                  <motion.div
+                    className="text-4xl md:text-5xl mb-2"
+                    animate={hoveredOption === option.id ? { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] } : {}}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {option.icon}
+                  </motion.div>
+                  <h2 className="text-base md:text-lg font-bold text-center">{option.title}</h2>
+                  <p className="text-xs text-white/80 text-center hidden md:block">{option.description}</p>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
-      {/* Footer */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
-        className="mt-12 text-purple-300 text-sm relative z-10"
+        className="text-center text-purple-300/50 text-xs relative z-10 mt-4"
       >
-        <p>Version 1.0 - Cheeky Teddy Brawl</p>
+        <p>Version 1.0 • Cheeky Teddy Brawl</p>
       </motion.div>
     </div>
   );

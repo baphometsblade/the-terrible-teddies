@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Howl } from 'howler';
+import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
+import confetti from 'canvas-confetti';
 
 // Sound effects
 const sounds = {
@@ -31,6 +33,17 @@ const sounds = {
  * - fury: Gains +1 attack each time it takes damage
  */
 const GameBoard = ({ onBackToMenu }) => {
+  // Get store data
+  const {
+    currentDeck,
+    difficulty: aiDifficulty,
+    soundEnabled: storeSoundEnabled,
+    recordBattleResult,
+    addXP,
+    addCoins,
+    playerName,
+  } = useGameStore();
+
   // Game state
   const [phase, setPhase] = useState('draw');
   const [currentTurn, setCurrentTurn] = useState('player');
@@ -58,16 +71,17 @@ const GameBoard = ({ onBackToMenu }) => {
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
   const [showAbilityPopup, setShowAbilityPopup] = useState(null);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [rewardsShown, setRewardsShown] = useState(false);
+  const [battleRewards, setBattleRewards] = useState({ xp: 0, coins: 0 });
 
   const { toast } = useToast();
 
   // Play sound helper
   const playSound = useCallback((soundName) => {
-    if (soundEnabled && sounds[soundName]) {
+    if (storeSoundEnabled && sounds[soundName]) {
       sounds[soundName].play();
     }
-  }, [soundEnabled]);
+  }, [storeSoundEnabled]);
 
   // Shuffle deck helper
   const shuffleDeck = (deck) => {
@@ -86,42 +100,66 @@ const GameBoard = ({ onBackToMenu }) => {
 
   // Initialize decks
   useEffect(() => {
-    const initialPlayerDeck = shuffleDeck([
-      { id: 1, name: "Teddy Troublemaker", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none' },
-      { id: 2, name: "Sassy Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt' },
-      { id: 3, name: "Bear Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3 },
-      { id: 4, name: "Stuffing Surge", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'heal', amount: 5 },
-      { id: 5, name: "Pillow Fighter", attack: 4, defense: 1, type: 'action', cost: 3, ability: 'piercing' },
-      { id: 6, name: "Cuddle Crusher", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'shield' },
-      { id: 7, name: "Sneaky Pete", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'stealth' },
-      { id: 8, name: "Honey Jar", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'draw', amount: 2 },
-      { id: 9, name: "Fluff Bomb", attack: 5, defense: 0, type: 'action', cost: 4, ability: 'none' },
-      { id: 10, name: "Guardian Bear", attack: 1, defense: 5, type: 'action', cost: 3, ability: 'protect' },
-      { id: 11, name: "Rage Bear", attack: 2, defense: 3, type: 'action', cost: 3, ability: 'fury' },
-      { id: 12, name: "Tiny Tim", attack: 1, defense: 1, type: 'action', cost: 1, ability: 'swarm' },
-    ]);
+    // Build player deck from store's currentDeck (card IDs mapped to ALL_CARDS)
+    const playerDeckCards = currentDeck
+      .map(cardId => ALL_CARDS.find(c => c.id === cardId))
+      .filter(Boolean)
+      .map((card, idx) => ({ ...card, instanceId: `p-${card.id}-${idx}` }));
 
-    const initialOpponentDeck = shuffleDeck([
-      { id: 101, name: "Evil Teddy", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none' },
-      { id: 102, name: "Dark Fluffington", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt' },
-      { id: 103, name: "Shadow Bear", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'piercing' },
-      { id: 104, name: "Nightmare Cuddles", attack: 3, defense: 3, type: 'action', cost: 3, ability: 'fury' },
-      { id: 105, name: "Wicked Whiskers", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none' },
-      { id: 106, name: "Demon Bear", attack: 4, defense: 4, type: 'action', cost: 4, ability: 'shield' },
-    ]);
+    // Fallback if no deck is set - use starter cards
+    const deckToUse = playerDeckCards.length >= 5
+      ? playerDeckCards
+      : [
+          { id: 1, name: "Teddy Troublemaker", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
+          { id: 2, name: "Sassy Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'common' },
+          { id: 3, name: "Bear Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common' },
+          { id: 4, name: "Stuffing Surge", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'heal', amount: 5, rarity: 'uncommon' },
+          { id: 5, name: "Pillow Fighter", attack: 4, defense: 1, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon' },
+          { id: 6, name: "Cuddle Crusher", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'shield', rarity: 'uncommon' },
+          { id: 7, name: "Sneaky Pete", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'stealth', rarity: 'rare' },
+          { id: 8, name: "Honey Jar", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'draw', amount: 2, rarity: 'common' },
+          { id: 9, name: "Fluff Bomb", attack: 5, defense: 0, type: 'action', cost: 4, ability: 'none', rarity: 'rare' },
+          { id: 10, name: "Guardian Bear", attack: 1, defense: 5, type: 'action', cost: 3, ability: 'protect', rarity: 'epic' },
+        ].map((card, idx) => ({ ...card, instanceId: `p-${card.id}-${idx}` }));
+
+    const initialPlayerDeck = shuffleDeck(deckToUse);
+
+    // Generate opponent deck based on difficulty
+    const opponentBaseStats = {
+      easy: { attackMod: -1, defenseMod: -1, healthMod: -5 },
+      normal: { attackMod: 0, defenseMod: 0, healthMod: 0 },
+      hard: { attackMod: 1, defenseMod: 1, healthMod: 5 },
+    };
+    const diffMods = opponentBaseStats[aiDifficulty] || opponentBaseStats.normal;
+
+    const opponentCards = [
+      { id: 101, name: "Evil Teddy", attack: 3 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
+      { id: 102, name: "Dark Fluffington", attack: 2 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'taunt', rarity: 'common' },
+      { id: 103, name: "Shadow Bear", attack: 4 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 3, ability: 'piercing', rarity: 'rare' },
+      { id: 104, name: "Nightmare Cuddles", attack: 3 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 3, ability: 'fury', rarity: 'epic' },
+      { id: 105, name: "Wicked Whiskers", attack: 2 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
+      { id: 106, name: "Demon Bear", attack: 4 + diffMods.attackMod, defense: 4 + diffMods.defenseMod, type: 'action', cost: 4, ability: 'shield', rarity: 'legendary' },
+      { id: 107, name: "Chaos Cub", attack: 3 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'stealth', rarity: 'rare' },
+      { id: 108, name: "Void Bear", attack: 5 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 4, ability: 'piercing', rarity: 'epic' },
+    ].map((card, idx) => ({ ...card, instanceId: `o-${card.id}-${idx}` }));
+
+    const initialOpponentDeck = shuffleDeck(opponentCards);
+
+    // Set opponent health based on difficulty
+    setOpponentHealth(30 + diffMods.healthMod);
 
     const playerInitialHand = initialPlayerDeck.slice(0, 5);
     const playerRemainingDeck = initialPlayerDeck.slice(5);
 
     setPlayerHand(playerInitialHand);
     setPlayerDeck(playerRemainingDeck);
-    setOpponentDeck(initialOpponentDeck);
 
     setOpponentField([initialOpponentDeck[0]]);
     setOpponentDeck(initialOpponentDeck.slice(1));
 
-    addToBattleLog("Game started! Your turn.");
-  }, [addToBattleLog]);
+    addToBattleLog(`Game started! Difficulty: ${aiDifficulty.toUpperCase()}`);
+    addToBattleLog("Your turn.");
+  }, [addToBattleLog, currentDeck, aiDifficulty]);
 
   // Check for game over
   useEffect(() => {
@@ -129,6 +167,15 @@ const GameBoard = ({ onBackToMenu }) => {
       setGameOver(true);
       setWinner('opponent');
       playSound('defeat');
+
+      // Record defeat - small consolation rewards
+      const xpReward = 10;
+      const coinReward = 5;
+      recordBattleResult(false, playerHealth);
+      addXP(xpReward);
+      addCoins(coinReward);
+      setBattleRewards({ xp: xpReward, coins: coinReward });
+
       toast({
         title: "Defeat!",
         description: "Your teddies have been defeated...",
@@ -138,12 +185,32 @@ const GameBoard = ({ onBackToMenu }) => {
       setGameOver(true);
       setWinner('player');
       playSound('victory');
+
+      // Record victory - good rewards based on difficulty
+      const difficultyMultiplier = { easy: 1, normal: 1.5, hard: 2 };
+      const mult = difficultyMultiplier[aiDifficulty] || 1;
+      const xpReward = Math.floor(50 * mult);
+      const coinReward = Math.floor(25 * mult);
+
+      recordBattleResult(true, playerHealth);
+      addXP(xpReward);
+      addCoins(coinReward);
+      setBattleRewards({ xp: xpReward, coins: coinReward });
+
+      // Victory confetti
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: ['#FFD700', '#FFA500', '#FF6347', '#9370DB', '#00CED1'],
+      });
+
       toast({
         title: "Victory!",
         description: "You've conquered the terrible teddies!",
       });
     }
-  }, [playerHealth, opponentHealth, gameOver, toast, playSound]);
+  }, [playerHealth, opponentHealth, gameOver, toast, playSound, recordBattleResult, addXP, addCoins, aiDifficulty]);
 
   // Handle draw phase
   useEffect(() => {
@@ -534,39 +601,93 @@ const GameBoard = ({ onBackToMenu }) => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-0 z-50 bg-black/70 flex items-center justify-center"
+            className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center"
           >
             <motion.div
-              initial={{ scale: 0.5 }}
-              animate={{ scale: 1 }}
-              className="bg-white rounded-xl p-8 text-center"
+              initial={{ scale: 0.5, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              className={`rounded-2xl p-8 text-center max-w-md w-full mx-4 ${
+                winner === 'player'
+                  ? 'bg-gradient-to-b from-yellow-500 to-amber-600'
+                  : 'bg-gradient-to-b from-gray-700 to-gray-900'
+              }`}
             >
-              <h2 className={`text-4xl font-bold mb-4 ${winner === 'player' ? 'text-green-500' : 'text-red-500'}`}>
+              <motion.div
+                animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 0.5 }}
+                className="text-6xl mb-4"
+              >
+                {winner === 'player' ? '🏆' : '💔'}
+              </motion.div>
+              <h2 className={`text-4xl font-bold mb-2 ${winner === 'player' ? 'text-black' : 'text-white'}`}>
                 {winner === 'player' ? 'Victory!' : 'Defeat!'}
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className={`mb-6 ${winner === 'player' ? 'text-black/70' : 'text-white/70'}`}>
                 {winner === 'player'
                   ? 'Your terrible teddies triumphed!'
                   : 'Better luck next time...'}
               </p>
-              <div className="space-x-4">
-                <Button onClick={restartGame} className="bg-amber-500 hover:bg-amber-600">
+
+              {/* Rewards */}
+              <div className={`rounded-xl p-4 mb-6 ${winner === 'player' ? 'bg-black/20' : 'bg-white/10'}`}>
+                <div className={`text-sm font-semibold mb-3 ${winner === 'player' ? 'text-black' : 'text-white'}`}>
+                  Battle Rewards
+                </div>
+                <div className="flex justify-center gap-8">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-center"
+                  >
+                    <div className="text-3xl mb-1">⭐</div>
+                    <div className={`font-bold ${winner === 'player' ? 'text-black' : 'text-yellow-400'}`}>
+                      +{battleRewards.xp} XP
+                    </div>
+                  </motion.div>
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="text-center"
+                  >
+                    <div className="text-3xl mb-1">🪙</div>
+                    <div className={`font-bold ${winner === 'player' ? 'text-black' : 'text-yellow-400'}`}>
+                      +{battleRewards.coins}
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-center">
+                <Button
+                  onClick={restartGame}
+                  className={`${winner === 'player' ? 'bg-black text-white hover:bg-black/80' : 'bg-amber-500 hover:bg-amber-600'}`}
+                >
                   Play Again
                 </Button>
+                {onBackToMenu && (
+                  <Button
+                    onClick={onBackToMenu}
+                    variant="outline"
+                    className={`${winner === 'player' ? 'border-black text-black hover:bg-black/10' : 'border-white text-white hover:bg-white/10'}`}
+                  >
+                    Menu
+                  </Button>
+                )}
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Sound toggle */}
-      <button
-        onClick={() => setSoundEnabled(!soundEnabled)}
+      {/* Sound indicator */}
+      <div
         className="absolute top-20 left-4 z-40 bg-white/80 p-2 rounded-full shadow"
-        title={soundEnabled ? "Mute sounds" : "Enable sounds"}
+        title={storeSoundEnabled ? "Sound on" : "Sound off"}
       >
-        {soundEnabled ? '🔊' : '🔇'}
-      </button>
+        {storeSoundEnabled ? '🔊' : '🔇'}
+      </div>
 
       {/* Top bar - Opponent info */}
       <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-red-900 to-red-700 flex items-center justify-between px-4 shadow-lg">
@@ -707,11 +828,11 @@ const GameBoard = ({ onBackToMenu }) => {
       {/* Bottom bar - Player info */}
       <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-r from-green-900 to-green-700 flex items-center justify-between px-4 shadow-lg">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg">
             <span className="text-white text-xl">🧸</span>
           </div>
           <div>
-            <div className="text-white font-bold">You</div>
+            <div className="text-white font-bold">{playerName}</div>
             <div className="text-green-200 text-xs">Deck: {playerDeck.length} | Hand: {playerHand.length}</div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import Auth from './components/Auth';
 import GameBoard from './components/GameBoard/GameBoard';
@@ -6,67 +6,96 @@ import MainMenu from './components/MainMenu';
 import DeckBuilder from './components/DeckBuilder';
 import TeddyCollection from './components/TeddyCollection';
 import Tutorial from './components/Tutorial';
+import CardPackOpening from './components/CardPackOpening';
+import PlayerStats from './components/PlayerStats';
+import Settings from './components/Settings';
+import DailyRewards from './components/DailyRewards';
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from './components/ErrorBoundary';
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
+import { useGameStore } from './stores/gameStore';
 
 function App() {
   const { session, loading } = useSupabaseAuth();
   const [currentScreen, setCurrentScreen] = useState('menu');
+
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showCardPacks, setShowCardPacks] = useState(false);
+  const [showPlayerStats, setShowPlayerStats] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showDailyRewards, setShowDailyRewards] = useState(false);
+
+  const { tutorialCompleted, setTutorialCompleted, lastLoginDate } = useGameStore();
+
+  useEffect(() => {
+    const today = new Date().toDateString();
+    if (session && lastLoginDate !== today) {
+      const timer = setTimeout(() => setShowDailyRewards(true), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [session, lastLoginDate]);
+
+  useEffect(() => {
+    if (session && !tutorialCompleted && !showDailyRewards) {
+      const timer = setTimeout(() => setShowTutorial(true), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [session, tutorialCompleted, showDailyRewards]);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-purple-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4 animate-bounce">🧸</div>
+          <motion.div
+            animate={{ y: [0, -20, 0] }}
+            transition={{ repeat: Infinity, duration: 1 }}
+            className="text-6xl mb-4"
+          >
+            🧸
+          </motion.div>
           <div className="text-white text-xl">Loading Terrible Teddies...</div>
         </div>
       </div>
     );
   }
 
-  const navigateTo = (screen) => {
-    setCurrentScreen(screen);
-  };
+  const navigateTo = (screen) => setCurrentScreen(screen);
+
+  const BackButton = () => (
+    <Button
+      className="absolute top-4 left-4 z-40 bg-purple-600 hover:bg-purple-700"
+      onClick={() => navigateTo('menu')}
+    >
+      ← Menu
+    </Button>
+  );
 
   const renderScreen = () => {
     switch (currentScreen) {
       case 'game':
         return (
           <div className="relative">
-            <Button
-              className="absolute top-4 left-4 z-50 bg-purple-600 hover:bg-purple-700"
-              onClick={() => navigateTo('menu')}
-            >
-              Back to Menu
-            </Button>
+            <BackButton />
             <GameBoard />
           </div>
         );
       case 'deck':
         return (
-          <div className="min-h-screen bg-gradient-to-b from-blue-900 to-purple-900 p-8">
-            <Button
-              className="mb-4 bg-purple-600 hover:bg-purple-700"
-              onClick={() => navigateTo('menu')}
-            >
-              Back to Menu
-            </Button>
-            <DeckBuilder />
+          <div className="min-h-screen bg-gradient-to-b from-blue-900 to-purple-900 p-4 md:p-8">
+            <BackButton />
+            <div className="pt-12">
+              <DeckBuilder />
+            </div>
           </div>
         );
       case 'collection':
         return (
-          <div className="min-h-screen bg-gradient-to-b from-amber-900 to-orange-900 p-8">
-            <Button
-              className="mb-4 bg-purple-600 hover:bg-purple-700"
-              onClick={() => navigateTo('menu')}
-            >
-              Back to Menu
-            </Button>
-            <TeddyCollection />
+          <div className="min-h-screen bg-gradient-to-b from-amber-900 to-orange-900 p-4 md:p-8">
+            <BackButton />
+            <div className="pt-12">
+              <TeddyCollection />
+            </div>
           </div>
         );
       case 'menu':
@@ -77,6 +106,10 @@ function App() {
             onDeckBuilder={() => navigateTo('deck')}
             onCollection={() => navigateTo('collection')}
             onTutorial={() => setShowTutorial(true)}
+            onCardPacks={() => setShowCardPacks(true)}
+            onPlayerStats={() => setShowPlayerStats(true)}
+            onSettings={() => setShowSettings(true)}
+            onDailyRewards={() => setShowDailyRewards(true)}
           />
         );
     }
@@ -90,25 +123,35 @@ function App() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentScreen}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
               >
                 {renderScreen()}
               </motion.div>
             </AnimatePresence>
 
-            {/* Tutorial overlay */}
-            {showTutorial && (
-              <Tutorial
-                onClose={() => setShowTutorial(false)}
-                onStartGame={() => {
-                  setShowTutorial(false);
-                  navigateTo('game');
-                }}
-              />
-            )}
+            <AnimatePresence>
+              {showTutorial && (
+                <Tutorial
+                  onClose={() => {
+                    setShowTutorial(false);
+                    setTutorialCompleted(true);
+                  }}
+                  onStartGame={() => {
+                    setShowTutorial(false);
+                    setTutorialCompleted(true);
+                    navigateTo('game');
+                  }}
+                />
+              )}
+
+              {showCardPacks && <CardPackOpening onClose={() => setShowCardPacks(false)} />}
+              {showPlayerStats && <PlayerStats onClose={() => setShowPlayerStats(false)} />}
+              {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+              {showDailyRewards && <DailyRewards onClose={() => setShowDailyRewards(false)} />}
+            </AnimatePresence>
           </>
         ) : (
           <Auth />
