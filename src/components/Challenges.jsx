@@ -43,13 +43,16 @@ const getTimeUntilReset = (isWeekly = false) => {
 };
 
 const Challenges = ({ onClose }) => {
-  const { 
-    totalWins, totalBattles, currentWinStreak, bestWinStreak,
-    addCoins, addGems, addXP, addCardPack, ownedCards
+  const {
+    bestWinStreak, ownedCards,
+    addCoins, addGems, addXP, addCardPack, claimChallenge, claimedChallenges,
+    // Daily stats (auto-reset each day)
+    todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
+    // Weekly stats (auto-reset each Monday)
+    weekWins, weekCoinsEarned,
   } = useGameStore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('daily');
-  const [claimedChallenges, setClaimedChallenges] = useState([]);
   const [dailyResetTime, setDailyResetTime] = useState(getTimeUntilReset(false));
   const [weeklyResetTime, setWeeklyResetTime] = useState(getTimeUntilReset(true));
 
@@ -61,55 +64,46 @@ const Challenges = ({ onClose }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Simulated progress (in production, these would be tracked in the store)
   const getChallengeProgress = (challenge) => {
     switch (challenge.stat) {
-      case 'dailyWins': return Math.min(totalWins % 10, challenge.target);
-      case 'dailyGames': return Math.min(totalBattles % 10, challenge.target);
-      case 'dailyDamage': return Math.min((totalBattles * 15) % 100, challenge.target);
-      case 'dailyCardsPlayed': return Math.min((totalBattles * 4) % 20, challenge.target);
-      case 'weeklyWins': return Math.min(totalWins % 30, challenge.target);
+      case 'dailyWins':        return Math.min(todayWins, challenge.target);
+      case 'dailyGames':       return Math.min(todayBattles, challenge.target);
+      case 'dailyDamage':      return Math.min(todayDamageDealt, challenge.target);
+      case 'dailyCardsPlayed': return Math.min(todayCardsPlayed, challenge.target);
+      case 'weeklyWins':       return Math.min(weekWins, challenge.target);
       case 'weeklyBestStreak': return Math.min(bestWinStreak, challenge.target);
-      case 'weeklyNewCards': return Math.min(ownedCards.length % 10, challenge.target);
-      case 'weeklyCoinsEarned': return Math.min((totalWins * 30) % 1000, challenge.target);
+      case 'weeklyNewCards':   return Math.min(ownedCards.length, challenge.target);
+      case 'weeklyCoinsEarned':return Math.min(weekCoinsEarned, challenge.target);
       default: return 0;
     }
   };
 
   const claimReward = (challenge) => {
-    if (claimedChallenges.includes(challenge.id)) return;
-    
+    if ((claimedChallenges ?? []).includes(challenge.id)) return;
+
     const progress = getChallengeProgress(challenge);
     if (progress < challenge.target) return;
 
     switch (challenge.reward.type) {
-      case 'coins':
-        addCoins(challenge.reward.amount);
-        break;
-      case 'gems':
-        addGems(challenge.reward.amount);
-        break;
-      case 'xp':
-        addXP(challenge.reward.amount);
-        break;
+      case 'coins':       addCoins(challenge.reward.amount); break;
+      case 'gems':        addGems(challenge.reward.amount); break;
+      case 'xp':          addXP(challenge.reward.amount); break;
       case 'pack':
-      case 'legendaryPack':
-        addCardPack(challenge.reward.amount);
-        break;
+      case 'legendaryPack': addCardPack(challenge.reward.amount); break;
     }
 
-    setClaimedChallenges(prev => [...prev, challenge.id]);
-    confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-    toast({ 
-      title: "Challenge Complete!", 
-      description: `Claimed: ${challenge.reward.amount} ${challenge.reward.type}` 
+    claimChallenge(challenge.id);
+    confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
+    toast({
+      title: "Challenge Complete!",
+      description: `Claimed: ${challenge.reward.amount} ${challenge.reward.type}`,
     });
   };
 
   const ChallengeCard = ({ challenge, isWeekly = false }) => {
     const progress = getChallengeProgress(challenge);
     const isComplete = progress >= challenge.target;
-    const isClaimed = claimedChallenges.includes(challenge.id);
+    const isClaimed = (claimedChallenges ?? []).includes(challenge.id);
     const progressPercent = Math.min((progress / challenge.target) * 100, 100);
 
     return (

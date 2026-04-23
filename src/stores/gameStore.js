@@ -90,6 +90,14 @@ export const SHOP_ITEMS = [
 
 const getXPForLevel = (level) => Math.floor(100 * Math.pow(1.5, level - 1));
 
+// Returns the Monday of the current week as a date string for weekly reset keys
+const getWeekKey = () => {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.getFullYear(), d.getMonth(), diff).toDateString();
+};
+
 const initialState = {
   playerName: 'Teddy Trainer',
   level: 1,
@@ -99,6 +107,7 @@ const initialState = {
   ownedCards: [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42],
   currentDeck: [1, 2, 3, 4, 5, 6, 30, 40, 41, 42],
   savedDecks: [],
+  // All-time stats
   totalWins: 0,
   totalLosses: 0,
   currentWinStreak: 0,
@@ -106,6 +115,19 @@ const initialState = {
   totalDamageDealt: 0,
   totalHealingDone: 0,
   totalBattles: 0,
+  // Daily challenge stats (reset each calendar day)
+  todayWins: 0,
+  todayBattles: 0,
+  todayDamageDealt: 0,
+  todayCardsPlayed: 0,
+  dailyStatsDate: null,
+  // Weekly challenge stats (reset each Monday)
+  weekWins: 0,
+  weekCoinsEarned: 0,
+  weeklyStatsDate: null,
+  // Claimed challenge IDs (persisted so players can't double-claim)
+  claimedChallenges: [],
+  // System
   completedAchievements: [],
   lastLoginDate: null,
   consecutiveLogins: 0,
@@ -121,6 +143,9 @@ export const useGameStore = create(
   persist(
     (set, get) => ({
       ...initialState,
+
+      // Not persisted — populated only in the current session
+      pendingAchievements: [],
 
       setPlayerName: (name) => set({ playerName: name }),
 
@@ -198,45 +223,72 @@ export const useGameStore = create(
         }));
       },
 
-      recordBattleResult: (won, damageDealt, healingDone, finalHP) => {
+      recordBattleResult: (won, damageDealt = 0, healingDone = 0, finalHP = 0, cardsPlayed = 0) => {
         const state = get();
+
+        // All-time counters
         const newWins = won ? state.totalWins + 1 : state.totalWins;
         const newLosses = won ? state.totalLosses : state.totalLosses + 1;
         const newStreak = won ? state.currentWinStreak + 1 : 0;
         const newBestStreak = Math.max(state.bestWinStreak, newStreak);
-        const newDamage = state.totalDamageDealt + damageDealt;
-        const newHealing = state.totalHealingDone + healingDone;
+        const newTotalDamage = state.totalDamageDealt + damageDealt;
+        const newTotalHealing = state.totalHealingDone + healingDone;
         const newTotalBattles = state.totalBattles + 1;
 
+        // Coins earned this battle (used for weekly tracking)
+        const coinsThisBattle = won ? 25 + (newStreak * 5) : 5;
+
+        // Daily stats — auto-reset when the calendar date changes
+        const today = new Date().toDateString();
+        const dailyReset = state.dailyStatsDate !== today;
+        const newTodayWins = (dailyReset ? 0 : state.todayWins) + (won ? 1 : 0);
+        const newTodayBattles = (dailyReset ? 0 : state.todayBattles) + 1;
+        const newTodayDamage = (dailyReset ? 0 : state.todayDamageDealt) + damageDealt;
+        const newTodayCards = (dailyReset ? 0 : state.todayCardsPlayed) + cardsPlayed;
+
+        // Weekly stats — auto-reset on Mondays
+        const weekKey = getWeekKey();
+        const weeklyReset = state.weeklyStatsDate !== weekKey;
+        const newWeekWins = (weeklyReset ? 0 : state.weekWins) + (won ? 1 : 0);
+        const newWeekCoins = (weeklyReset ? 0 : state.weekCoinsEarned) + coinsThisBattle;
+
         set({
+          // All-time
           totalBattles: newTotalBattles,
           totalWins: newWins,
           totalLosses: newLosses,
           currentWinStreak: newStreak,
           bestWinStreak: newBestStreak,
-          totalDamageDealt: newDamage,
-          totalHealingDone: newHealing,
+          totalDamageDealt: newTotalDamage,
+          totalHealingDone: newTotalHealing,
+          // Daily
+          todayWins: newTodayWins,
+          todayBattles: newTodayBattles,
+          todayDamageDealt: newTodayDamage,
+          todayCardsPlayed: newTodayCards,
+          dailyStatsDate: today,
+          // Weekly
+          weekWins: newWeekWins,
+          weekCoinsEarned: newWeekCoins,
+          weeklyStatsDate: weekKey,
         });
 
         const xpGain = won ? 50 : 20;
         get().addXP(xpGain);
-
-        if (won) {
-          const coinsGain = 25 + (newStreak * 5);
-          get().addCoins(coinsGain);
-        }
+        if (won) get().addCoins(coinsThisBattle);
+        else get().addCoins(5); // consolation
 
         get().checkAchievement('first_win', newWins >= 1);
         get().checkAchievement('win_10', newWins >= 10);
         get().checkAchievement('win_50', newWins >= 50);
         get().checkAchievement('win_streak_5', newStreak >= 5);
         get().checkAchievement('play_100', newTotalBattles >= 100);
-        get().checkAchievement('deal_1000_damage', newDamage >= 1000);
-        get().checkAchievement('heal_500', newHealing >= 500);
+        get().checkAchievement('deal_1000_damage', newTotalDamage >= 1000);
+        get().checkAchievement('heal_500', newTotalHealing >= 500);
         get().checkAchievement('perfect_win', won && finalHP === 30);
         get().checkAchievement('comeback', won && finalHP <= 5);
 
-        return { xpGain, coinsGain: won ? 25 + (newStreak * 5) : 0 };
+        return { xpGain, coinsGain: coinsThisBattle };
       },
 
       checkAchievement: (achievementId, condition) => {
@@ -244,14 +296,30 @@ export const useGameStore = create(
         if (condition && !state.completedAchievements.includes(achievementId)) {
           const achievement = ACHIEVEMENTS.find(a => a.id === achievementId);
           if (achievement) {
-            set({
-              completedAchievements: [...state.completedAchievements, achievementId],
-              coins: state.coins + achievement.reward,
-            });
+            set((s) => ({
+              completedAchievements: [...s.completedAchievements, achievementId],
+              coins: s.coins + achievement.reward,
+              pendingAchievements: [...s.pendingAchievements, achievement],
+            }));
             return achievement;
           }
         }
         return null;
+      },
+
+      // Pop and return the next queued achievement notification
+      shiftPendingAchievement: () => {
+        const state = get();
+        if (state.pendingAchievements.length === 0) return null;
+        const [first, ...rest] = state.pendingAchievements;
+        set({ pendingAchievements: rest });
+        return first;
+      },
+
+      claimChallenge: (challengeId) => {
+        set((state) => ({
+          claimedChallenges: [...state.claimedChallenges, challengeId],
+        }));
       },
 
       checkDailyLogin: () => {
@@ -263,7 +331,7 @@ export const useGameStore = create(
         yesterday.setDate(yesterday.getDate() - 1);
         const wasYesterday = state.lastLoginDate === yesterday.toDateString();
         const newConsecutive = wasYesterday ? state.consecutiveLogins + 1 : 1;
-        const dayIndex = ((newConsecutive - 1) % 7);
+        const dayIndex = (newConsecutive - 1) % 7;
         const reward = DAILY_REWARDS[dayIndex];
 
         set({
@@ -279,9 +347,7 @@ export const useGameStore = create(
             .sort(() => Math.random() - 0.5)
             .slice(0, reward.cards)
             .map(c => c.id);
-          if (randomCards.length > 0) {
-            get().addCards(randomCards);
-          }
+          if (randomCards.length > 0) get().addCards(randomCards);
         }
 
         get().checkAchievement('daily_7', newConsecutive >= 7);
@@ -331,8 +397,7 @@ export const useGameStore = create(
           });
         }
 
-        const newCardIds = pulledCards.map(c => c.id);
-        get().addCards(newCardIds);
+        get().addCards(pulledCards.map(c => c.id));
         set((s) => ({ cardPacks: s.cardPacks - 1 }));
         return pulledCards;
       },
@@ -350,10 +415,11 @@ export const useGameStore = create(
           set({ gems: state.gems - item.price });
         }
 
-        if (item.type === 'pack' || item.type === 'premium' || item.type === 'legendary') {
+        if (['pack', 'premium', 'legendary'].includes(item.type)) {
           set((s) => ({ cardPacks: s.cardPacks + item.quantity }));
           return { success: true, message: `Got ${item.quantity} pack(s)!`, type: item.type };
-        } else if (item.type === 'coins') {
+        }
+        if (item.type === 'coins') {
           set((s) => ({ coins: s.coins + item.quantity }));
           return { success: true, message: `Got ${item.quantity} coins!` };
         }
@@ -367,11 +433,16 @@ export const useGameStore = create(
       setDifficulty: (difficulty) => set({ difficulty }),
       setTutorialCompleted: (completed) => set({ tutorialCompleted: completed }),
 
-      resetProgress: () => set(initialState),
+      resetProgress: () => set({ ...initialState, pendingAchievements: [] }),
     }),
     {
       name: 'terrible-teddies-storage',
-      version: 1,
+      version: 2,
+      // Don't persist in-flight UI state
+      partialize: (state) => {
+        const { pendingAchievements, ...rest } = state;
+        return rest;
+      },
     }
   )
 );

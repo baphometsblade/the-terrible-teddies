@@ -39,10 +39,11 @@ const GameBoard = ({ onBackToMenu }) => {
     difficulty: aiDifficulty,
     soundEnabled: storeSoundEnabled,
     recordBattleResult,
-    addXP,
-    addCoins,
     playerName,
   } = useGameStore();
+
+  // Accumulate per-game stats for challenge/achievement tracking
+  const battleStatsRef = useRef({ damageDealt: 0, healingDone: 0, cardsPlayed: 0 });
 
   // Game state
   const [phase, setPhase] = useState('draw');
@@ -168,13 +169,15 @@ const GameBoard = ({ onBackToMenu }) => {
       setWinner('opponent');
       playSound('defeat');
 
-      // Record defeat - small consolation rewards
-      const xpReward = 10;
-      const coinReward = 5;
-      recordBattleResult(false, playerHealth);
-      addXP(xpReward);
-      addCoins(coinReward);
-      setBattleRewards({ xp: xpReward, coins: coinReward });
+      // Record defeat — store now handles consolation coins internally
+      const { xpGain, coinsGain } = recordBattleResult(
+        false,
+        battleStatsRef.current.damageDealt,
+        battleStatsRef.current.healingDone,
+        playerHealth,
+        battleStatsRef.current.cardsPlayed
+      );
+      setBattleRewards({ xp: xpGain, coins: coinsGain });
 
       toast({
         title: "Defeat!",
@@ -186,16 +189,15 @@ const GameBoard = ({ onBackToMenu }) => {
       setWinner('player');
       playSound('victory');
 
-      // Record victory - good rewards based on difficulty
-      const difficultyMultiplier = { easy: 1, normal: 1.5, hard: 2 };
-      const mult = difficultyMultiplier[aiDifficulty] || 1;
-      const xpReward = Math.floor(50 * mult);
-      const coinReward = Math.floor(25 * mult);
-
-      recordBattleResult(true, playerHealth);
-      addXP(xpReward);
-      addCoins(coinReward);
-      setBattleRewards({ xp: xpReward, coins: coinReward });
+      // Record victory — store handles XP and coin rewards
+      const { xpGain, coinsGain } = recordBattleResult(
+        true,
+        battleStatsRef.current.damageDealt,
+        battleStatsRef.current.healingDone,
+        playerHealth,
+        battleStatsRef.current.cardsPlayed
+      );
+      setBattleRewards({ xp: xpGain, coins: coinsGain });
 
       // Victory confetti
       confetti({
@@ -288,6 +290,7 @@ const GameBoard = ({ onBackToMenu }) => {
       setPlayerHand(prev => prev.filter(c => c.id !== card.id));
       setPlayerGraveyard(prev => [...prev, card]);
       setPlayerMomentum(prev => Math.min(10, prev + 1));
+      battleStatsRef.current.cardsPlayed += 1;
       playSound('cardPlay');
       return;
     }
@@ -311,6 +314,7 @@ const GameBoard = ({ onBackToMenu }) => {
     setPlayerHand(prev => prev.filter(c => c.id !== card.id));
     setPlayerEnergy(prev => prev - card.cost);
     setPlayerMomentum(prev => Math.min(10, prev + 1));
+    battleStatsRef.current.cardsPlayed += 1;
     playSound('cardPlay');
 
     // Show ability popup
@@ -328,6 +332,7 @@ const GameBoard = ({ onBackToMenu }) => {
     switch (card.effect) {
       case 'heal':
         setPlayerHealth(prev => Math.min(30, prev + card.amount));
+        battleStatsRef.current.healingDone += card.amount;
         playSound('heal');
         addToBattleLog(`Healed ${card.amount} HP with ${card.name}`);
         toast({ title: "Healing!", description: `Restored ${card.amount} HP` });
@@ -413,6 +418,7 @@ const GameBoard = ({ onBackToMenu }) => {
       }
 
       setOpponentHealth(prev => Math.max(0, prev - damage));
+      battleStatsRef.current.damageDealt += damage;
 
       // Destroy the target if it takes lethal damage (simplified - always destroy on hit)
       setOpponentField(prev => prev.filter(c => c.id !== target.id));
@@ -447,6 +453,7 @@ const GameBoard = ({ onBackToMenu }) => {
 
     playSound('attack');
     setOpponentHealth(prev => Math.max(0, prev - selectedCard.attack));
+    battleStatsRef.current.damageDealt += selectedCard.attack;
     setPlayerField(prev => prev.map(c =>
       c.id === selectedCard.id ? { ...c, hasAttacked: true } : c
     ));
@@ -515,6 +522,7 @@ const GameBoard = ({ onBackToMenu }) => {
             if (target.type === 'trap') {
               const trapDamage = target.amount || 3;
               setOpponentHealth(prev => Math.max(0, prev - trapDamage));
+              battleStatsRef.current.damageDealt += trapDamage;
               setPlayerField(prev => prev.filter(c => c.id !== target.id));
               playSound('trap');
               addToBattleLog(`Your ${target.name} triggered! Opponent took ${trapDamage} damage`);

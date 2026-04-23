@@ -6,6 +6,7 @@ import MainMenu from './components/MainMenu';
 import DeckBuilder from './components/DeckBuilder';
 import TeddyCollection from './components/TeddyCollection';
 import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/components/ui/use-toast";
 import ErrorBoundary from './components/ErrorBoundary';
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -49,7 +50,20 @@ function App() {
   const [showChallenges, setShowChallenges] = useState(false);
   const [purchaseSessionId, setPurchaseSessionId] = useState(null);
 
-  const { tutorialCompleted, setTutorialCompleted, lastLoginDate } = useGameStore();
+  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, shiftPendingAchievement } = useGameStore();
+  const { toast } = useToast();
+
+  // Show achievement unlock toasts whenever new achievements are queued
+  useEffect(() => {
+    if (!pendingAchievements || pendingAchievements.length === 0) return;
+    const achievement = shiftPendingAchievement();
+    if (!achievement) return;
+    toast({
+      title: `${achievement.icon} Achievement Unlocked!`,
+      description: `${achievement.name} — +${achievement.reward.toLocaleString()} 🪙`,
+      duration: 5000,
+    });
+  }, [pendingAchievements?.length]);
 
   // Detect Stripe Checkout return
   useEffect(() => {
