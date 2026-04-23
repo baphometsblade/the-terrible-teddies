@@ -1,0 +1,333 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/components/ui/use-toast";
+import { useGameStore } from '../stores/gameStore';
+import confetti from 'canvas-confetti';
+
+const SEASON_NAME = "Season 1: Teddy Rampage";
+const SEASON_DAYS_LEFT = 24;
+
+const BATTLE_PASS_REWARDS = [
+  { tier: 1, xpRequired: 0, free: { type: 'coins', amount: 100, icon: '🪙' }, premium: { type: 'card', cardId: 7, name: 'Sneaky Pete', icon: '🃏', rarity: 'uncommon' } },
+  { tier: 2, xpRequired: 100, free: { type: 'pack', amount: 1, icon: '📦' }, premium: { type: 'coins', amount: 500, icon: '🪙' } },
+  { tier: 3, xpRequired: 250, free: { type: 'coins', amount: 150, icon: '🪙' }, premium: { type: 'gems', amount: 25, icon: '💎' } },
+  { tier: 4, xpRequired: 450, free: { type: 'gems', amount: 10, icon: '💎' }, premium: { type: 'card', cardId: 11, name: 'Guardian Bear', icon: '🃏', rarity: 'rare' } },
+  { tier: 5, xpRequired: 700, free: { type: 'pack', amount: 1, icon: '📦' }, premium: { type: 'exclusive', name: 'Gold Border', icon: '✨' } },
+  { tier: 6, xpRequired: 1000, free: { type: 'coins', amount: 200, icon: '🪙' }, premium: { type: 'pack', amount: 3, icon: '📦' } },
+  { tier: 7, xpRequired: 1350, free: { type: 'gems', amount: 15, icon: '💎' }, premium: { type: 'card', cardId: 16, name: 'Legendary Fluffington', icon: '🃏', rarity: 'epic' } },
+  { tier: 8, xpRequired: 1750, free: { type: 'pack', amount: 2, icon: '📦' }, premium: { type: 'gems', amount: 50, icon: '💎' } },
+  { tier: 9, xpRequired: 2200, free: { type: 'coins', amount: 300, icon: '🪙' }, premium: { type: 'exclusive', name: 'Teddy Emote', icon: '🎭' } },
+  { tier: 10, xpRequired: 2700, free: { type: 'pack', amount: 2, icon: '📦' }, premium: { type: 'card', cardId: 20, name: 'Teddy Prime', icon: '👑', rarity: 'legendary' } },
+];
+
+const PREMIUM_PASS_PRICE = 500; // gems
+
+const BattlePass = ({ onClose }) => {
+  const { gems, spendGems, addCoins, addGems, addCardPack, addCard, xp } = useGameStore();
+  const { toast } = useToast();
+  const [hasPremium, setHasPremium] = useState(false);
+  const [claimedRewards, setClaimedRewards] = useState({ free: [], premium: [] });
+  const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
+  const scrollRef = useRef(null);
+
+  const battlePassXP = xp;
+  const currentTier = BATTLE_PASS_REWARDS.reduce((tier, reward) => {
+    return battlePassXP >= reward.xpRequired ? reward.tier : tier;
+  }, 0);
+
+  const nextTier = BATTLE_PASS_REWARDS.find(r => r.xpRequired > battlePassXP);
+  const xpToNext = nextTier ? nextTier.xpRequired - battlePassXP : 0;
+  const xpProgress = nextTier 
+    ? ((battlePassXP - (BATTLE_PASS_REWARDS[nextTier.tier - 2]?.xpRequired || 0)) / 
+       (nextTier.xpRequired - (BATTLE_PASS_REWARDS[nextTier.tier - 2]?.xpRequired || 0))) * 100
+    : 100;
+
+  const handlePurchasePremium = () => {
+    if (spendGems(PREMIUM_PASS_PRICE)) {
+      setHasPremium(true);
+      setShowPurchaseConfirm(false);
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#FFD700', '#FFA500', '#FF6347'] });
+      toast({ title: "Premium Pass Unlocked!", description: "You now have access to all premium rewards!" });
+    } else {
+      toast({ title: "Not Enough Gems", description: `You need ${PREMIUM_PASS_PRICE} gems.`, variant: "destructive" });
+    }
+  };
+
+  const claimReward = (tier, isPremium) => {
+    const reward = BATTLE_PASS_REWARDS.find(r => r.tier === tier);
+    if (!reward) return;
+
+    const rewardData = isPremium ? reward.premium : reward.free;
+    const claimKey = isPremium ? 'premium' : 'free';
+
+    if (claimedRewards[claimKey].includes(tier)) {
+      toast({ title: "Already Claimed", description: "You've already claimed this reward.", variant: "destructive" });
+      return;
+    }
+
+    if (tier > currentTier) {
+      toast({ title: "Tier Not Reached", description: "Keep playing to unlock this tier!", variant: "destructive" });
+      return;
+    }
+
+    if (isPremium && !hasPremium) {
+      toast({ title: "Premium Required", description: "Unlock the Premium Pass to claim this reward!", variant: "destructive" });
+      return;
+    }
+
+    switch (rewardData.type) {
+      case 'coins':
+        addCoins(rewardData.amount);
+        toast({ title: "Coins Claimed!", description: `+${rewardData.amount} coins` });
+        break;
+      case 'gems':
+        addGems(rewardData.amount);
+        toast({ title: "Gems Claimed!", description: `+${rewardData.amount} gems` });
+        break;
+      case 'pack':
+        addCardPack(rewardData.amount);
+        toast({ title: "Packs Claimed!", description: `+${rewardData.amount} card pack(s)` });
+        break;
+      case 'card':
+        addCard(rewardData.cardId);
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+        toast({ title: "Card Unlocked!", description: `You got ${rewardData.name}!` });
+        break;
+      case 'exclusive':
+        toast({ title: "Exclusive Unlocked!", description: `You got ${rewardData.name}!` });
+        break;
+    }
+
+    setClaimedRewards(prev => ({
+      ...prev,
+      [claimKey]: [...prev[claimKey], tier]
+    }));
+  };
+
+  const RewardCard = ({ reward, isPremium, tier }) => {
+    const isUnlocked = tier <= currentTier;
+    const isClaimed = claimedRewards[isPremium ? 'premium' : 'free'].includes(tier);
+    const canClaim = isUnlocked && !isClaimed && (!isPremium || hasPremium);
+
+    const rarityColors = {
+      common: 'border-gray-400',
+      uncommon: 'border-green-500',
+      rare: 'border-blue-500',
+      epic: 'border-purple-500',
+      legendary: 'border-yellow-500 shadow-yellow-500/50 shadow-lg',
+    };
+
+    return (
+      <motion.div
+        whileHover={canClaim ? { scale: 1.05 } : {}}
+        whileTap={canClaim ? { scale: 0.95 } : {}}
+        onClick={() => canClaim && claimReward(tier, isPremium)}
+        className={`
+          relative w-20 h-24 rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-all
+          ${isPremium 
+            ? 'bg-gradient-to-br from-yellow-600/30 to-orange-600/30 border-2' 
+            : 'bg-white/10 border border-white/20'}
+          ${reward.rarity ? rarityColors[reward.rarity] : isPremium ? 'border-yellow-500/50' : ''}
+          ${!isUnlocked ? 'opacity-40' : ''}
+          ${isClaimed ? 'opacity-60' : ''}
+          ${canClaim ? 'hover:border-white' : ''}
+        `}
+      >
+        {isClaimed && (
+          <div className="absolute inset-0 bg-green-500/30 rounded-lg flex items-center justify-center">
+            <span className="text-2xl">✅</span>
+          </div>
+        )}
+
+        {!isUnlocked && (
+          <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+            <span className="text-xl">🔒</span>
+          </div>
+        )}
+
+        <div className="text-2xl mb-1">{reward.icon}</div>
+        <div className="text-white text-[10px] font-semibold text-center">
+          {reward.type === 'card' ? reward.name : 
+           reward.type === 'exclusive' ? reward.name :
+           `${reward.amount ? '+' + reward.amount : ''}`}
+        </div>
+        {reward.rarity && (
+          <div className={`text-[8px] uppercase font-bold ${
+            reward.rarity === 'legendary' ? 'text-yellow-400' :
+            reward.rarity === 'epic' ? 'text-purple-400' :
+            reward.rarity === 'rare' ? 'text-blue-400' : 'text-green-400'
+          }`}>
+            {reward.rarity}
+          </div>
+        )}
+      </motion.div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-gradient-to-b from-indigo-900 via-purple-900 to-black rounded-2xl max-w-5xl w-full shadow-2xl border border-white/10 overflow-hidden"
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-yellow-600 via-orange-500 to-red-500 p-4 relative overflow-hidden">
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+            animate={{ x: ['-100%', '200%'] }}
+            transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+          />
+          <div className="flex justify-between items-center relative z-10">
+            <div>
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <span className="text-3xl">🏆</span> Battle Pass
+              </h2>
+              <p className="text-white/80 text-sm">{SEASON_NAME}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <div className="text-white/70 text-xs">Season ends in</div>
+                <div className="text-white font-bold">{SEASON_DAYS_LEFT} days</div>
+              </div>
+              {!hasPremium && (
+                <Button
+                  onClick={() => setShowPurchaseConfirm(true)}
+                  className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold hover:from-yellow-300 hover:to-orange-400"
+                >
+                  💎 {PREMIUM_PASS_PRICE} - Unlock Premium
+                </Button>
+              )}
+              {hasPremium && (
+                <div className="bg-yellow-500 text-black px-4 py-2 rounded-lg font-bold flex items-center gap-2">
+                  ⭐ Premium Active
+                </div>
+              )}
+              <button onClick={onClose} className="text-white/70 hover:text-white text-2xl">×</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="px-6 py-4 bg-black/30">
+          <div className="flex items-center gap-4">
+            <div className="bg-yellow-500 text-black w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg">
+              {currentTier}
+            </div>
+            <div className="flex-1">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-white/70">Tier {currentTier} → {currentTier + 1}</span>
+                <span className="text-yellow-400">{xpToNext} XP to next tier</span>
+              </div>
+              <Progress value={xpProgress} className="h-3 bg-white/10" />
+            </div>
+            <div className="text-white/50 text-sm">
+              Total: {battlePassXP} XP
+            </div>
+          </div>
+        </div>
+
+        {/* Rewards Track */}
+        <div className="p-6 overflow-x-auto" ref={scrollRef}>
+          <div className="flex gap-4 min-w-max pb-4">
+            {BATTLE_PASS_REWARDS.map((reward) => (
+              <div key={reward.tier} className="flex flex-col items-center gap-2">
+                {/* Tier number */}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                  reward.tier <= currentTier ? 'bg-yellow-500 text-black' : 'bg-white/20 text-white/50'
+                }`}>
+                  {reward.tier}
+                </div>
+
+                {/* XP requirement */}
+                <div className="text-white/50 text-[10px]">{reward.xpRequired} XP</div>
+
+                {/* Premium reward (top) */}
+                <RewardCard reward={reward.premium} isPremium={true} tier={reward.tier} />
+
+                {/* Divider */}
+                <div className={`w-16 h-0.5 ${reward.tier <= currentTier ? 'bg-yellow-500' : 'bg-white/20'}`} />
+
+                {/* Free reward (bottom) */}
+                <RewardCard reward={reward.free} isPremium={false} tier={reward.tier} />
+
+                {/* Free label */}
+                <div className="text-white/40 text-[10px]">FREE</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="bg-black/30 p-4 text-center">
+          <p className="text-white/50 text-sm">
+            Win battles and complete daily challenges to earn XP!
+          </p>
+        </div>
+      </motion.div>
+
+      {/* Purchase Confirmation */}
+      <AnimatePresence>
+        {showPurchaseConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
+            onClick={() => setShowPurchaseConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-gradient-to-b from-yellow-900 to-orange-900 rounded-2xl p-6 max-w-md w-full border-2 border-yellow-500"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-2xl font-bold text-white text-center mb-4">⭐ Unlock Premium Pass</h3>
+              
+              <div className="bg-black/30 rounded-xl p-4 mb-4">
+                <div className="text-white font-semibold mb-2">Premium Pass includes:</div>
+                <ul className="text-white/80 text-sm space-y-1">
+                  <li>✓ Exclusive legendary cards</li>
+                  <li>✓ Premium cosmetic rewards</li>
+                  <li>✓ Bonus gems and coins</li>
+                  <li>✓ Special card borders & emotes</li>
+                  <li>✓ All 10 premium tier rewards</li>
+                </ul>
+              </div>
+
+              <div className="text-center mb-4">
+                <div className="text-white/50 text-sm">Price</div>
+                <div className="text-3xl font-bold text-yellow-400 flex items-center justify-center gap-2">
+                  💎 {PREMIUM_PASS_PRICE}
+                </div>
+                <div className="text-white/50 text-sm">You have: {gems} gems</div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={handlePurchasePremium}
+                  disabled={gems < PREMIUM_PASS_PRICE}
+                  className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold hover:from-yellow-400 hover:to-orange-400"
+                >
+                  Purchase
+                </Button>
+                <Button
+                  onClick={() => setShowPurchaseConfirm(false)}
+                  variant="outline"
+                  className="flex-1 text-white border-white/30"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default BattlePass;

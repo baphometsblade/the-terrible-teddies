@@ -15,6 +15,7 @@ const MainMenu = ({
   onSettings,
   onDailyRewards,
   onShop,
+  onBattlePass,
 }) => {
   const {
     playerName, level, xp, getXPForNextLevel,
@@ -32,11 +33,12 @@ const MainMenu = ({
 
   const menuOptions = [
     { id: 'battle', title: 'Battle', description: 'Fight the AI!', icon: '⚔️', color: 'from-red-500 to-orange-500', action: onStartGame, badge: currentWinStreak > 0 ? `🔥 ${currentWinStreak}` : null },
-    { id: 'shop', title: 'Shop', description: 'Get gems & packs!', icon: '🏪', color: 'from-emerald-500 to-green-600', action: onShop, badge: '💎', highlight: true },
+    { id: 'battlepass', title: 'Battle Pass', description: 'Season rewards!', icon: '🏆', color: 'from-yellow-500 to-orange-600', action: onBattlePass, badge: '⭐', highlight: true },
+    { id: 'shop', title: 'Shop', description: 'Get gems & packs!', icon: '🏪', color: 'from-emerald-500 to-green-600', action: onShop, badge: '💎' },
     { id: 'packs', title: 'Card Packs', description: 'Open new cards!', icon: '📦', color: 'from-purple-500 to-pink-500', action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks}` : null, highlight: cardPacks > 0 },
     { id: 'deck', title: 'Deck Builder', description: 'Build your deck', icon: '🃏', color: 'from-blue-500 to-indigo-500', action: onDeckBuilder },
     { id: 'collection', title: 'Collection', description: 'All your teddies', icon: '🧸', color: 'from-amber-500 to-yellow-500', action: onCollection },
-    { id: 'tutorial', title: 'How to Play', description: 'Learn the rules', icon: '📖', color: 'from-green-500 to-teal-500', action: onTutorial },
+    { id: 'tutorial', title: 'How to Play', description: 'Learn the rules', icon: '📖', color: 'from-teal-500 to-cyan-500', action: onTutorial },
   ];
 
   return (
@@ -156,7 +158,7 @@ const MainMenu = ({
 
       {/* Menu Options */}
       <div className="flex-1 flex items-center justify-center relative z-10">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 max-w-6xl w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4 max-w-7xl w-full">
           {menuOptions.map((option, index) => (
             <motion.div
               key={option.id}
