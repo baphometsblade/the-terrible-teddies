@@ -22,4 +22,18 @@ export default defineConfig({
       },
     ],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          animations: ['framer-motion'],
+          ui: ['@radix-ui/react-slot', '@radix-ui/react-toast', '@radix-ui/react-progress', '@radix-ui/react-switch'],
+          state: ['zustand'],
+          effects: ['canvas-confetti', 'howler'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
 });
