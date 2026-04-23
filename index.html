@@ -3,11 +3,99 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Terrible Teddies</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#581c87" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <title>Terrible Teddies - Card Battle Game</title>
+    <meta name="description" content="Battle with naughty teddies in this addictive card game! Collect legendary cards, build powerful decks, and dominate the leaderboards." />
+    <meta name="keywords" content="card game, teddy bear game, battle cards, collectible cards, free game" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Terrible Teddies - Card Battle Game" />
+    <meta property="og:description" content="Battle with naughty teddies in this addictive card game!" />
+    <meta property="og:image" content="/og-image.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Terrible Teddies - Card Battle Game" />
+    <meta name="twitter:description" content="Battle with naughty teddies in this addictive card game!" />
+
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #1e1b4b;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(180deg, #581c87 0%, #1e1b4b 100%);
+        z-index: 9999;
+        transition: opacity 0.5s;
+      }
+      #initial-loader.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loader-content {
+        text-align: center;
+        color: white;
+      }
+      .loader-teddy {
+        font-size: 80px;
+        animation: bounce 1s infinite;
+      }
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+      }
+      .loader-title {
+        font-size: 28px;
+        font-weight: bold;
+        margin-top: 16px;
+        background: linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .loader-subtitle {
+        font-size: 14px;
+        color: #c4b5fd;
+        margin-top: 8px;
+      }
+    </style>
   </head>
   <body>
+    <div id="initial-loader">
+      <div class="loader-content">
+        <div class="loader-teddy">🧸</div>
+        <div class="loader-title">Terrible Teddies</div>
+        <div class="loader-subtitle">Loading your collection...</div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loader = document.getElementById('initial-loader');
+          if (loader) {
+            loader.classList.add('fade-out');
+            setTimeout(() => loader.remove(), 500);
+          }
+        }, 300);
+      });
+    </script>
   </body>
 </html>

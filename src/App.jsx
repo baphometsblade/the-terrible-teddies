@@ -1,24 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import Auth from './components/Auth';
 import GameBoard from './components/GameBoard/GameBoard';
 import MainMenu from './components/MainMenu';
 import DeckBuilder from './components/DeckBuilder';
 import TeddyCollection from './components/TeddyCollection';
-import Tutorial from './components/Tutorial';
-import CardPackOpening from './components/CardPackOpening';
-import PlayerStats from './components/PlayerStats';
-import Settings from './components/Settings';
-import DailyRewards from './components/DailyRewards';
-import Shop from './components/Shop';
-import BattlePass from './components/BattlePass';
-import Leaderboard from './components/Leaderboard';
-import Challenges from './components/Challenges';
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from './components/ErrorBoundary';
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from './stores/gameStore';
+
+const Tutorial = lazy(() => import('./components/Tutorial'));
+const CardPackOpening = lazy(() => import('./components/CardPackOpening'));
+const PlayerStats = lazy(() => import('./components/PlayerStats'));
+const Settings = lazy(() => import('./components/Settings'));
+const DailyRewards = lazy(() => import('./components/DailyRewards'));
+const Shop = lazy(() => import('./components/Shop'));
+const BattlePass = lazy(() => import('./components/BattlePass'));
+const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const Challenges = lazy(() => import('./components/Challenges'));
+
+const DialogLoader = () => (
+  <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+      className="text-6xl"
+    >
+      🧸
+    </motion.div>
+  </div>
+);
 
 function App() {
   const { session, loading } = useSupabaseAuth();
@@ -144,30 +157,32 @@ function App() {
               </motion.div>
             </AnimatePresence>
 
-            <AnimatePresence>
-              {showTutorial && (
-                <Tutorial
-                  onClose={() => {
-                    setShowTutorial(false);
-                    setTutorialCompleted(true);
-                  }}
-                  onStartGame={() => {
-                    setShowTutorial(false);
-                    setTutorialCompleted(true);
-                    navigateTo('game');
-                  }}
-                />
-              )}
+            <Suspense fallback={<DialogLoader />}>
+              <AnimatePresence>
+                {showTutorial && (
+                  <Tutorial
+                    onClose={() => {
+                      setShowTutorial(false);
+                      setTutorialCompleted(true);
+                    }}
+                    onStartGame={() => {
+                      setShowTutorial(false);
+                      setTutorialCompleted(true);
+                      navigateTo('game');
+                    }}
+                  />
+                )}
 
-              {showCardPacks && <CardPackOpening onClose={() => setShowCardPacks(false)} />}
-              {showPlayerStats && <PlayerStats onClose={() => setShowPlayerStats(false)} />}
-              {showSettings && <Settings onClose={() => setShowSettings(false)} />}
-              {showDailyRewards && <DailyRewards onClose={() => setShowDailyRewards(false)} />}
-              {showShop && <Shop onClose={() => setShowShop(false)} />}
-              {showBattlePass && <BattlePass onClose={() => setShowBattlePass(false)} />}
-              {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
-              {showChallenges && <Challenges onClose={() => setShowChallenges(false)} />}
-            </AnimatePresence>
+                {showCardPacks && <CardPackOpening onClose={() => setShowCardPacks(false)} />}
+                {showPlayerStats && <PlayerStats onClose={() => setShowPlayerStats(false)} />}
+                {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+                {showDailyRewards && <DailyRewards onClose={() => setShowDailyRewards(false)} />}
+                {showShop && <Shop onClose={() => setShowShop(false)} />}
+                {showBattlePass && <BattlePass onClose={() => setShowBattlePass(false)} />}
+                {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
+                {showChallenges && <Challenges onClose={() => setShowChallenges(false)} />}
+              </AnimatePresence>
+            </Suspense>
           </>
         ) : (
           <Auth />

@@ -1,0 +1,43 @@
+{
+  "name": "Terrible Teddies - Card Battle Game",
+  "short_name": "Terrible Teddies",
+  "description": "Battle with naughty teddies in this addictive card game!",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1e1b4b",
+  "theme_color": "#581c87",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Battle",
+      "short_name": "Battle",
+      "description": "Start a new battle",
+      "url": "/?action=battle"
+    },
+    {
+      "name": "Shop",
+      "short_name": "Shop",
+      "description": "Open the shop",
+      "url": "/?action=shop"
+    },
+    {
+      "name": "Daily Rewards",
+      "short_name": "Rewards",
+      "description": "Claim daily rewards",
+      "url": "/?action=rewards"
+    }
+  ]
+}
