@@ -17,6 +17,7 @@ const MainMenu = ({
   onShop,
   onBattlePass,
   onLeaderboard,
+  onChallenges,
 }) => {
   const {
     playerName, level, xp, getXPForNextLevel,
@@ -34,13 +35,13 @@ const MainMenu = ({
 
   const menuOptions = [
     { id: 'battle', title: 'Battle', description: 'Fight the AI!', icon: '⚔️', color: 'from-red-500 to-orange-500', action: onStartGame, badge: currentWinStreak > 0 ? `🔥 ${currentWinStreak}` : null },
-    { id: 'leaderboard', title: 'Rankings', description: 'Compete globally!', icon: '🏅', color: 'from-indigo-500 to-purple-600', action: onLeaderboard },
+    { id: 'challenges', title: 'Challenges', description: 'Daily & weekly!', icon: '🎯', color: 'from-orange-500 to-red-600', action: onChallenges, badge: '!' },
     { id: 'battlepass', title: 'Battle Pass', description: 'Season rewards!', icon: '🏆', color: 'from-yellow-500 to-orange-600', action: onBattlePass, badge: '⭐', highlight: true },
     { id: 'shop', title: 'Shop', description: 'Get gems & packs!', icon: '🏪', color: 'from-emerald-500 to-green-600', action: onShop, badge: '💎' },
     { id: 'packs', title: 'Card Packs', description: 'Open new cards!', icon: '📦', color: 'from-purple-500 to-pink-500', action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks}` : null, highlight: cardPacks > 0 },
+    { id: 'leaderboard', title: 'Rankings', description: 'Compete globally!', icon: '🏅', color: 'from-indigo-500 to-purple-600', action: onLeaderboard },
     { id: 'deck', title: 'Deck Builder', description: 'Build your deck', icon: '🃏', color: 'from-blue-500 to-indigo-500', action: onDeckBuilder },
     { id: 'collection', title: 'Collection', description: 'All your teddies', icon: '🧸', color: 'from-amber-500 to-yellow-500', action: onCollection },
-    { id: 'tutorial', title: 'How to Play', description: 'Learn the rules', icon: '📖', color: 'from-teal-500 to-cyan-500', action: onTutorial },
   ];
 
   return (
