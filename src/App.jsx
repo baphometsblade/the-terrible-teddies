@@ -10,6 +10,7 @@ import CardPackOpening from './components/CardPackOpening';
 import PlayerStats from './components/PlayerStats';
 import Settings from './components/Settings';
 import DailyRewards from './components/DailyRewards';
+import Shop from './components/Shop';
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from './components/ErrorBoundary';
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ function App() {
   const [showPlayerStats, setShowPlayerStats] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showDailyRewards, setShowDailyRewards] = useState(false);
+  const [showShop, setShowShop] = useState(false);
 
   const { tutorialCompleted, setTutorialCompleted, lastLoginDate } = useGameStore();
 
@@ -110,6 +112,7 @@ function App() {
             onPlayerStats={() => setShowPlayerStats(true)}
             onSettings={() => setShowSettings(true)}
             onDailyRewards={() => setShowDailyRewards(true)}
+            onShop={() => setShowShop(true)}
           />
         );
     }
@@ -151,6 +154,7 @@ function App() {
               {showPlayerStats && <PlayerStats onClose={() => setShowPlayerStats(false)} />}
               {showSettings && <Settings onClose={() => setShowSettings(false)} />}
               {showDailyRewards && <DailyRewards onClose={() => setShowDailyRewards(false)} />}
+              {showShop && <Shop onClose={() => setShowShop(false)} />}
             </AnimatePresence>
           </>
         ) : (

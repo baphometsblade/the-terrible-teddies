@@ -1,102 +1,263 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { useGameStore, SHOP_ITEMS } from '../stores/gameStore';
+import confetti from 'canvas-confetti';
 
-const Shop = ({ onExit }) => {
+const GEM_BUNDLES = [
+  { id: 'gems_small', gems: 50, price: 0.99, bonus: 0, popular: false },
+  { id: 'gems_medium', gems: 150, price: 2.99, bonus: 10, popular: false },
+  { id: 'gems_large', gems: 500, price: 9.99, bonus: 50, popular: true },
+  { id: 'gems_huge', gems: 1200, price: 19.99, bonus: 200, popular: false },
+  { id: 'gems_mega', gems: 3000, price: 49.99, bonus: 750, popular: false },
+];
+
+const Shop = ({ onClose }) => {
+  const { coins, gems, cardPacks, addGems, buyShopItem } = useGameStore();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('packs');
+  const [showPurchaseModal, setShowPurchaseModal] = useState(null);
+  const [processing, setProcessing] = useState(false);
 
-  const { data: playerCoins = 0, isLoading: isLoadingCoins } = useQuery({
-    queryKey: ['playerCoins'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data, error } = await supabase
-        .from('players')
-        .select('coins')
-        .eq('id', user.id)
-        .single();
-      if (error) throw error;
-      return data.coins;
-    },
-  });
-
-  const { data: shopItems = [], isLoading: isLoadingItems } = useQuery({
-    queryKey: ['shopItems'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('shop_items')
-        .select('*');
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const purchaseMutation = useMutation({
-    mutationFn: async (itemId) => {
-      const { data, error } = await supabase.rpc('purchase_shop_item', { item_id: itemId });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries('playerCoins');
-      queryClient.invalidateQueries('playerTeddies');
-      toast({
-        title: "Purchase Successful",
-        description: "You've acquired a new item!",
-        variant: "success",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Purchase Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handlePurchase = (item) => {
-    if (playerCoins < item.price) {
-      toast({
-        title: "Insufficient Coins",
-        description: "You don't have enough coins to purchase this item.",
-        variant: "destructive",
-      });
-      return;
+  const handleBuyItem = (item) => {
+    const result = buyShopItem(item.id);
+    if (result.success) {
+      toast({ title: "Purchase Successful!", description: result.message });
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+    } else {
+      toast({ title: "Purchase Failed", description: result.message, variant: "destructive" });
     }
-    purchaseMutation.mutate(item.id);
   };
 
-  if (isLoadingCoins || isLoadingItems) return <div>Loading shop data...</div>;
+  const handleGemPurchase = async (bundle) => {
+    setProcessing(true);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    const totalGems = bundle.gems + bundle.bonus;
+    addGems(totalGems);
+    setProcessing(false);
+    setShowPurchaseModal(null);
+    confetti({
+      particleCount: 150,
+      spread: 100,
+      origin: { y: 0.5 },
+      colors: ['#9333EA', '#A855F7', '#C084FC', '#E879F9'],
+    });
+    toast({ title: "Gems Purchased!", description: `You received ${totalGems} gems!` });
+  };
+
+  const PackCard = ({ item, featured = false }) => (
+    <motion.div
+      whileHover={{ scale: 1.03, y: -5 }}
+      whileTap={{ scale: 0.98 }}
+      className={`relative rounded-xl overflow-hidden cursor-pointer ${featured ? 'col-span-2 row-span-2' : ''}`}
+      onClick={() => handleBuyItem(item)}
+    >
+      <div className={`p-4 h-full flex flex-col items-center justify-center text-center
+        ${item.type === 'legendary' ? 'bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600' :
+          item.type === 'premium' ? 'bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500' :
+          'bg-gradient-to-br from-blue-600 to-indigo-700'}
+        ${featured ? 'min-h-[280px]' : 'min-h-[160px]'}`}>
+        {item.type === 'legendary' && (
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+            animate={{ x: ['-100%', '200%'] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+          />
+        )}
+        <div className={`${featured ? 'text-6xl' : 'text-4xl'} mb-2`}>{item.icon}</div>
+        <h3 className={`font-bold text-white ${featured ? 'text-2xl' : 'text-lg'}`}>{item.name}</h3>
+        <p className={`text-white/80 ${featured ? 'text-base' : 'text-xs'} mb-3`}>{item.description}</p>
+        <div className={`flex items-center gap-1 px-4 py-2 rounded-full font-bold
+          ${item.currency === 'gems' ? 'bg-purple-900/50 text-purple-200' : 'bg-yellow-900/50 text-yellow-200'}`}>
+          <span>{item.currency === 'gems' ? '💎' : '🪙'}</span>
+          <span>{item.price}</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  const GemBundle = ({ bundle }) => (
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={() => setShowPurchaseModal(bundle)}
+      className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all
+        ${bundle.popular ? 'border-yellow-400 shadow-lg shadow-yellow-500/30' : 'border-white/20 hover:border-white/40'}
+        bg-gradient-to-br from-purple-900/80 to-indigo-900/80`}
+    >
+      {bundle.popular && (
+        <div className="absolute top-0 left-0 right-0 bg-yellow-500 text-black text-xs font-bold py-1 text-center">BEST VALUE</div>
+      )}
+      <div className={`p-4 text-center ${bundle.popular ? 'pt-8' : ''}`}>
+        <div className="text-4xl mb-2">💎</div>
+        <div className="text-2xl font-bold text-white">{bundle.gems.toLocaleString()}</div>
+        {bundle.bonus > 0 && <div className="text-green-400 text-sm font-semibold">+{bundle.bonus} BONUS</div>}
+        <div className="text-purple-300 text-xs mt-1">{bundle.bonus > 0 ? `${bundle.gems + bundle.bonus} total` : ''}</div>
+        <div className="mt-3 bg-white text-purple-900 px-4 py-2 rounded-full font-bold">${bundle.price.toFixed(2)}</div>
+      </div>
+    </motion.div>
+  );
 
   return (
-    <div className="shop">
-      <h2 className="text-2xl font-bold mb-4">Teddy Shop</h2>
-      <p className="mb-4">Your Coins: {playerCoins}</p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        {shopItems.map((item) => (
-          <Card key={item.id}>
-            <CardHeader>
-              <CardTitle>{item.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>{item.description}</p>
-              <p className="font-bold mt-2">Price: {item.price} coins</p>
-              <Button 
-                onClick={() => handlePurchase(item)} 
-                className="mt-2 w-full"
-                disabled={playerCoins < item.price}
-              >
-                Buy
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <Button onClick={onExit}>Exit Shop</Button>
+    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 overflow-y-auto">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-gradient-to-b from-indigo-900 via-purple-900 to-black rounded-2xl max-w-4xl w-full shadow-2xl border border-white/10 my-4"
+      >
+        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-t-2xl flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <span className="text-3xl">🏪</span> Shop
+          </h2>
+          <div className="flex items-center gap-4">
+            <div className="bg-yellow-500/20 px-3 py-1 rounded-full flex items-center gap-2">
+              <span>🪙</span><span className="text-yellow-400 font-bold">{coins.toLocaleString()}</span>
+            </div>
+            <div className="bg-purple-500/20 px-3 py-1 rounded-full flex items-center gap-2">
+              <span>💎</span><span className="text-purple-300 font-bold">{gems}</span>
+            </div>
+            <div className="bg-blue-500/20 px-3 py-1 rounded-full flex items-center gap-2">
+              <span>📦</span><span className="text-blue-300 font-bold">{cardPacks}</span>
+            </div>
+            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl ml-2">×</button>
+          </div>
+        </div>
+
+        <div className="flex border-b border-white/10">
+          {[
+            { id: 'packs', label: 'Card Packs', icon: '📦' },
+            { id: 'gems', label: 'Buy Gems', icon: '💎' },
+            { id: 'special', label: 'Special Offers', icon: '⭐' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-4 text-center font-semibold transition-all ${
+                activeTab === tab.id ? 'text-white bg-white/10 border-b-2 border-purple-400' : 'text-white/50 hover:text-white/80'
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>{tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="p-6 max-h-[60vh] overflow-y-auto">
+          <AnimatePresence mode="wait">
+            {activeTab === 'packs' && (
+              <motion.div key="packs" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {SHOP_ITEMS.filter(i => ['pack', 'premium', 'legendary'].includes(i.type)).map(item => (
+                  <PackCard key={item.id} item={item} featured={item.type === 'legendary'} />
+                ))}
+              </motion.div>
+            )}
+
+            {activeTab === 'gems' && (
+              <motion.div key="gems" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold text-white mb-2">Get More Gems</h3>
+                  <p className="text-white/60">Use gems to buy premium packs with guaranteed rare cards!</p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  {GEM_BUNDLES.map(bundle => (<GemBundle key={bundle.id} bundle={bundle} />))}
+                </div>
+                <div className="mt-6 text-center text-white/40 text-sm">
+                  <p>Secure payment processing powered by Stripe</p>
+                  <p className="mt-1">All purchases are final. See Terms of Service for details.</p>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'special' && (
+              <motion.div key="special" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <div className="bg-gradient-to-r from-yellow-600/30 to-orange-600/30 border border-yellow-500/50 rounded-xl p-6 mb-6">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <div className="text-yellow-400 text-sm font-semibold mb-1">LIMITED TIME OFFER</div>
+                      <h3 className="text-2xl font-bold text-white mb-2">Starter Bundle</h3>
+                      <p className="text-white/70 mb-3">Everything you need to dominate!</p>
+                      <ul className="text-white/80 text-sm space-y-1">
+                        <li>📦 5 Card Packs</li>
+                        <li>💎 100 Gems</li>
+                        <li>🪙 1000 Coins</li>
+                        <li>⭐ 1 Guaranteed Epic Card</li>
+                      </ul>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-white/50 line-through text-lg">$14.99</div>
+                      <div className="text-3xl font-bold text-yellow-400">$4.99</div>
+                      <div className="text-green-400 text-sm font-semibold">67% OFF</div>
+                      <Button className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-black font-bold">Buy Now</Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-purple-600/30 to-pink-600/30 border border-purple-500/50 rounded-xl p-4">
+                    <h4 className="font-bold text-white mb-2">💎 Weekly Gem Pass</h4>
+                    <p className="text-white/60 text-sm mb-3">50 gems daily for 7 days!</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-purple-300">350 gems total</span>
+                      <Button size="sm" className="bg-purple-500 hover:bg-purple-600">$1.99</Button>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-600/30 to-teal-600/30 border border-green-500/50 rounded-xl p-4">
+                    <h4 className="font-bold text-white mb-2">🪙 Coin Doubler</h4>
+                    <p className="text-white/60 text-sm mb-3">Double coins from battles for 24h!</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-green-300">Worth 500+ coins</span>
+                      <Button size="sm" className="bg-green-500 hover:bg-green-600 text-black">💎 25</Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+
+      <AnimatePresence>
+        {showPurchaseModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
+            onClick={() => !processing && setShowPurchaseModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+              className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-6 max-w-sm w-full border border-white/20"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold text-white text-center mb-4">Confirm Purchase</h3>
+              <div className="bg-purple-900/30 rounded-xl p-4 text-center mb-4">
+                <div className="text-4xl mb-2">💎</div>
+                <div className="text-2xl font-bold text-white">
+                  {showPurchaseModal.gems.toLocaleString()}
+                  {showPurchaseModal.bonus > 0 && <span className="text-green-400 text-lg ml-2">+{showPurchaseModal.bonus}</span>}
+                </div>
+                <div className="text-purple-300">{showPurchaseModal.gems + showPurchaseModal.bonus} gems total</div>
+              </div>
+              <div className="text-center mb-4">
+                <div className="text-3xl font-bold text-white">${showPurchaseModal.price.toFixed(2)}</div>
+                <div className="text-white/50 text-sm">One-time purchase</div>
+              </div>
+              <div className="space-y-3 mb-4">
+                <input type="text" placeholder="Card number" className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/40" defaultValue="4242 4242 4242 4242" />
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" placeholder="MM/YY" className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/40" defaultValue="12/28" />
+                  <input type="text" placeholder="CVC" className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/40" defaultValue="123" />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button onClick={() => handleGemPurchase(showPurchaseModal)} disabled={processing} className="flex-1 bg-green-500 hover:bg-green-600">
+                  {processing ? <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>⏳</motion.span> : 'Pay Now'}
+                </Button>
+                <Button onClick={() => setShowPurchaseModal(null)} disabled={processing} variant="outline" className="flex-1 text-white border-white/30">Cancel</Button>
+              </div>
+              <div className="mt-4 text-center text-white/40 text-xs">🔒 Secured by Stripe</div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
