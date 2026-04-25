@@ -39,20 +39,6 @@ export const subscribeToMatch = (matchId, callback) => {
     .subscribe();
 };
 
-export const getAllDataFromTable = async (tableName) => {
-  try {
-    const { data, error } = await supabase
-      .from(tableName)
-      .select('*');
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error(`Error fetching data from ${tableName}:`, error);
-    throw error;
-  }
-};
-
 export const fetchServerGemBalance = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;

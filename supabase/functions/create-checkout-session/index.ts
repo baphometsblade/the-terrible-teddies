@@ -17,13 +17,37 @@ const GEM_BUNDLES: Record<string, { gems: number; bonus: number; price: number; 
   weekly_gem_pass:   { gems: 350,  bonus: 0,   price: 199,  name: "Weekly Gem Pass" },
 };
 
-// Allowed origins — add your production domain here
+// Rate limiting: max 5 checkout attempts per user per minute
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 5;
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+}
+
+// Allowed origins — production domain set via env var, localhost only in dev
 const ALLOWED_ORIGINS = [
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "http://localhost:8080",
-  Deno.env.get("ALLOWED_ORIGIN") ?? "",
-].filter(Boolean);
+  Deno.env.get("ALLOWED_ORIGIN"),
+  ...(Deno.env.get("DENO_ENV") !== "production" ? [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8080",
+  ] : []),
+].filter(Boolean) as string[];
 
 const getCorsHeaders = (requestOrigin: string | null) => {
   const origin = ALLOWED_ORIGINS.includes(requestOrigin ?? "") ? requestOrigin : ALLOWED_ORIGINS[0];
@@ -62,6 +86,14 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Invalid or expired session" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Rate limit: prevent checkout spam
+    if (!checkRateLimit(user.id)) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please wait a minute." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
