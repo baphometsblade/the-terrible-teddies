@@ -25,12 +25,17 @@ const BATTLE_PASS_REWARDS = [
 const PREMIUM_PASS_PRICE = 500; // gems
 
 const BattlePass = ({ onClose }) => {
-  const { gems, spendGems, addCoins, addGems, addCardPack, addCard, xp } = useGameStore();
+  const {
+    gems, spendGems, addCoins, addGems, addCardPack, addCard, xp,
+    hasBattlePassPremium, setBattlePassPremium,
+    claimedBattlePassRewards, claimBattlePassReward,
+  } = useGameStore();
   const { toast } = useToast();
-  const [hasPremium, setHasPremium] = useState(false);
-  const [claimedRewards, setClaimedRewards] = useState({ free: [], premium: [] });
   const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
   const scrollRef = useRef(null);
+
+  const hasPremium = hasBattlePassPremium;
+  const claimedRewards = claimedBattlePassRewards;
 
   const battlePassXP = xp;
   const currentTier = BATTLE_PASS_REWARDS.reduce((tier, reward) => {
@@ -46,7 +51,7 @@ const BattlePass = ({ onClose }) => {
 
   const handlePurchasePremium = () => {
     if (spendGems(PREMIUM_PASS_PRICE)) {
-      setHasPremium(true);
+      setBattlePassPremium(true);
       setShowPurchaseConfirm(false);
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#FFD700', '#FFA500', '#FF6347'] });
       toast({ title: "Premium Pass Unlocked!", description: "You now have access to all premium rewards!" });
@@ -100,10 +105,7 @@ const BattlePass = ({ onClose }) => {
         break;
     }
 
-    setClaimedRewards(prev => ({
-      ...prev,
-      [claimKey]: [...prev[claimKey], tier]
-    }));
+    claimBattlePassReward(tier, isPremium);
   };
 
   const RewardCard = ({ reward, isPremium, tier }) => {

@@ -137,6 +137,9 @@ const initialState = {
   animationsEnabled: true,
   difficulty: 'normal',
   tutorialCompleted: false,
+  // Battle Pass
+  hasBattlePassPremium: false,
+  claimedBattlePassRewards: { free: [], premium: [] },
 };
 
 export const useGameStore = create(
@@ -187,6 +190,20 @@ export const useGameStore = create(
           return true;
         }
         return false;
+      },
+
+      setBattlePassPremium: (value) => set({ hasBattlePassPremium: value }),
+      claimBattlePassReward: (tier, isPremium) => {
+        const state = get();
+        const key = isPremium ? 'premium' : 'free';
+        if (state.claimedBattlePassRewards[key].includes(tier)) return false;
+        set({
+          claimedBattlePassRewards: {
+            ...state.claimedBattlePassRewards,
+            [key]: [...state.claimedBattlePassRewards[key], tier],
+          },
+        });
+        return true;
       },
 
       addCard: (cardId) => {
