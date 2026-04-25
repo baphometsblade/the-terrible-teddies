@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { shuffleDeck } from '@/utils/deckUtils';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
@@ -361,8 +362,7 @@ export const useGameStore = create(
 
         if (reward.cards > 0) {
           const availableCards = ALL_CARDS.filter(c => !state.ownedCards.includes(c.id));
-          const randomCards = availableCards
-            .sort(() => Math.random() - 0.5)
+          const randomCards = shuffleDeck(availableCards)
             .slice(0, reward.cards)
             .map(c => c.id);
           if (randomCards.length > 0) get().addCards(randomCards);

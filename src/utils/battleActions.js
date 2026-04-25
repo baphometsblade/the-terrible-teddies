@@ -11,7 +11,7 @@ export const performPlayerAction = (action, battleState, playerTeddyData, oppone
 
   switch (action) {
     case 'attack':
-      damage = calculateDamage(playerTeddyData, opponentTeddyData, newState.weatherEffect, isCritical);
+      damage = calculateDamage(playerTeddyData, opponentTeddyData, { weatherEffect: newState.weatherEffect, isCritical });
       newState.opponentHealth -= damage;
       newState.battleLog.push(`${playerTeddyData.name} attacks for ${damage} damage!${isCritical ? ' Critical hit!' : ''}`);
       newState.moveHistory.push('attack');
@@ -36,7 +36,7 @@ export const performPlayerAction = (action, battleState, playerTeddyData, oppone
       break;
     case 'ultimate':
       if (newState.rage === 100) {
-        damage = calculateDamage(playerTeddyData, opponentTeddyData, newState.weatherEffect, true) * 2;
+        damage = calculateDamage(playerTeddyData, opponentTeddyData, { weatherEffect: newState.weatherEffect, isCritical: true }) * 2;
         newState.opponentHealth -= damage;
         newState.battleLog.push(`${playerTeddyData.name} unleashes their Ultimate Move for ${damage} devastating damage!`);
         newState.rage = 0;
@@ -76,7 +76,7 @@ export const performAIAction = (action, battleState, aiTeddyData, playerTeddyDat
 
   switch (action) {
     case 'attack':
-      damage = calculateDamage(aiTeddyData, playerTeddyData, newState.weatherEffect, isCritical);
+      damage = calculateDamage(aiTeddyData, playerTeddyData, { weatherEffect: newState.weatherEffect, isCritical });
       newState.playerHealth -= damage;
       newState.battleLog.push(`${aiTeddyData.name} attacks for ${damage} damage!${isCritical ? ' Critical hit!' : ''}`);
       newState.moveHistory.push('attack');

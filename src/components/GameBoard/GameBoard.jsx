@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Howl } from 'howler';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
+import { calculateCardDamage } from '../../utils/battleUtils';
 
 // Sound effects
 const sounds = {
@@ -60,6 +61,7 @@ const GameBoard = ({ onBackToMenu }) => {
   }, []);
 
   // Game state
+  const [gameId, setGameId] = useState(0); // Used to trigger deck re-initialization on restart
   const [phase, setPhase] = useState('draw');
   const [currentTurn, setCurrentTurn] = useState('player');
   const [turnCount, setTurnCount] = useState(1);
@@ -174,7 +176,7 @@ const GameBoard = ({ onBackToMenu }) => {
 
     addToBattleLog(`Game started! Difficulty: ${aiDifficulty.toUpperCase()}`);
     addToBattleLog("Your turn.");
-  }, [addToBattleLog, currentDeck, aiDifficulty]);
+  }, [addToBattleLog, currentDeck, aiDifficulty, gameId]);
 
   // Check for game over
   useEffect(() => {
@@ -267,22 +269,8 @@ const GameBoard = ({ onBackToMenu }) => {
     return defenderField.filter(c => !c.stealthActive);
   }, []);
 
-  // Calculate damage with abilities
-  const calculateDamage = useCallback((attacker, defender) => {
-    let damage = attacker.attack;
-
-    // Piercing ignores defense
-    if (attacker.ability !== 'piercing') {
-      damage = Math.max(0, damage - defender.defense);
-    }
-
-    // Shield reduces damage by 50%
-    if (defender.ability === 'shield') {
-      damage = Math.floor(damage / 2);
-    }
-
-    return damage;
-  }, []);
+  // Use canonical calculateCardDamage from battleUtils.js
+  // Handles piercing (ignores defense) and shield (50% damage reduction) abilities
 
   // Play a card from hand
   const playCard = (card) => {
@@ -420,7 +408,7 @@ const GameBoard = ({ onBackToMenu }) => {
       });
     } else {
       // Calculate damage with abilities
-      const damage = calculateDamage(selectedCard, target);
+      const damage = calculateCardDamage(selectedCard, target);
       playSound('attack');
 
       // Apply fury - target gains attack when damaged
@@ -541,7 +529,7 @@ const GameBoard = ({ onBackToMenu }) => {
               playSound('trap');
               addToBattleLog(`Your ${target.name} triggered! Opponent took ${trapDamage} damage`);
             } else {
-              const damage = calculateDamage(card, target);
+              const damage = calculateCardDamage(card, target);
               playSound('attack');
 
               // Fury activation
@@ -581,9 +569,43 @@ const GameBoard = ({ onBackToMenu }) => {
     setTargetingMode(false);
   };
 
-  // Restart game
+  // Restart game with proper state reset
   const restartGame = () => {
-    window.location.reload();
+    // Reset battle stats ref
+    battleStatsRef.current = { damageDealt: 0, healingDone: 0, cardsPlayed: 0 };
+
+    // Reset game state
+    setPhase('draw');
+    setCurrentTurn('player');
+    setTurnCount(1);
+
+    // Reset player state
+    setPlayerHealth(30);
+    setPlayerEnergy(3);
+    setPlayerMomentum(0);
+    setPlayerHand([]);
+    setPlayerField([]);
+    setPlayerDeck([]);
+    setPlayerGraveyard([]);
+
+    // Reset opponent state
+    setOpponentHealth(30);
+    setOpponentEnergy(3);
+    setOpponentField([]);
+    setOpponentDeck([]);
+
+    // Reset UI state
+    setSelectedCard(null);
+    setTargetingMode(false);
+    setBattleLog([]);
+    setGameOver(false);
+    setWinner(null);
+    setShowAbilityPopup(null);
+    setRewardsShown(false);
+    setBattleRewards({ xp: 0, coins: 0 });
+
+    // Increment gameId to trigger deck re-initialization useEffect
+    setGameId(prev => prev + 1);
   };
 
   // Get ability description
