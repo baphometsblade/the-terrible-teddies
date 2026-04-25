@@ -45,6 +45,20 @@ const GameBoard = ({ onBackToMenu }) => {
   // Accumulate per-game stats for challenge/achievement tracking
   const battleStatsRef = useRef({ damageDealt: 0, healingDone: 0, cardsPlayed: 0 });
 
+  // Track timeouts for cleanup on unmount
+  const timeoutsRef = useRef([]);
+  const safeTimeout = useCallback((fn, delay) => {
+    const id = setTimeout(fn, delay);
+    timeoutsRef.current.push(id);
+    return id;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+    };
+  }, []);
+
   // Game state
   const [phase, setPhase] = useState('draw');
   const [currentTurn, setCurrentTurn] = useState('player');
@@ -231,7 +245,7 @@ const GameBoard = ({ onBackToMenu }) => {
       }
       // Remove stealth from cards that have been on field for a turn
       setPlayerField(prev => prev.map(c => ({ ...c, stealthActive: false })));
-      setTimeout(() => setPhase('main'), 500);
+      safeTimeout(() => setPhase('main'), 500);
     }
   }, [phase, currentTurn, playerDeck, gameOver, toast, addToBattleLog, playSound]);
 
@@ -320,7 +334,7 @@ const GameBoard = ({ onBackToMenu }) => {
     // Show ability popup
     if (card.ability && card.ability !== 'none') {
       setShowAbilityPopup({ name: card.name, ability: card.ability });
-      setTimeout(() => setShowAbilityPopup(null), 1500);
+      safeTimeout(() => setShowAbilityPopup(null), 1500);
     }
 
     addToBattleLog(`Played ${card.name}${card.ability !== 'none' ? ` (${card.ability})` : ''}`);
@@ -481,7 +495,7 @@ const GameBoard = ({ onBackToMenu }) => {
     setCurrentTurn('opponent');
     setPhase('end');
     addToBattleLog("Ending turn...");
-    setTimeout(executeOpponentTurn, 1000);
+    safeTimeout(executeOpponentTurn, 1000);
   };
 
   // Opponent AI turn
@@ -508,7 +522,7 @@ const GameBoard = ({ onBackToMenu }) => {
     }
 
     // Opponent attacks
-    setTimeout(() => {
+    safeTimeout(() => {
       const validTargets = getValidTargets(opponentField, playerField);
 
       if (opponentField.length > 0) {
@@ -551,7 +565,7 @@ const GameBoard = ({ onBackToMenu }) => {
         });
       }
 
-      setTimeout(() => {
+      safeTimeout(() => {
         setCurrentTurn('player');
         setTurnCount(prev => prev + 1);
         setPlayerEnergy(Math.min(10, 3 + Math.floor(turnCount / 2)));
