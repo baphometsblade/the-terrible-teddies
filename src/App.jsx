@@ -11,6 +11,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from './stores/gameStore';
+import { fetchServerGemBalance } from './utils/supabaseClient';
 
 const Tutorial = lazy(() => import('./components/Tutorial'));
 const CardPackOpening = lazy(() => import('./components/CardPackOpening'));
@@ -50,7 +51,7 @@ function App() {
   const [showChallenges, setShowChallenges] = useState(false);
   const [purchaseSessionId, setPurchaseSessionId] = useState(null);
 
-  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, shiftPendingAchievement } = useGameStore();
+  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, shiftPendingAchievement, setGems } = useGameStore();
   const { toast } = useToast();
 
   // Show achievement unlock toasts — process ALL queued achievements with staggered timing
@@ -71,6 +72,18 @@ function App() {
     // Clear the queue after scheduling all toasts
     while (shiftPendingAchievement()) { /* drain queue */ }
   }, [pendingAchievements, shiftPendingAchievement, toast]);
+
+  // Sync authoritative gem balance from server on login
+  useEffect(() => {
+    if (!session) return;
+    const syncGems = async () => {
+      const serverBalance = await fetchServerGemBalance();
+      if (serverBalance !== null) {
+        setGems(serverBalance);
+      }
+    };
+    syncGems();
+  }, [session, setGems]);
 
   // Detect Stripe Checkout return
   useEffect(() => {

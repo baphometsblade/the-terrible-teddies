@@ -179,6 +179,7 @@ export const useGameStore = create(
       },
 
       addGems: (amount) => set((state) => ({ gems: state.gems + amount })),
+      setGems: (amount) => set({ gems: amount }),
       spendGems: (amount) => {
         const state = get();
         if (state.gems >= amount) {

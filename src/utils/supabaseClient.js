@@ -46,11 +46,26 @@ export const getAllDataFromTable = async (tableName) => {
       .select('*');
 
     if (error) throw error;
-
-    console.log(`Retrieved all data from ${tableName}:`, data);
     return data;
   } catch (error) {
     console.error(`Error fetching data from ${tableName}:`, error);
     throw error;
   }
+};
+
+export const fetchServerGemBalance = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('user_gems')
+    .select('balance')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching gem balance:', error);
+    return null;
+  }
+  return data?.balance ?? null;
 };

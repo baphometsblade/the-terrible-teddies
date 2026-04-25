@@ -3,28 +3,32 @@ import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { useGameStore } from '../stores/gameStore';
 import { verifyPurchaseSession } from '../utils/stripe';
+import { fetchServerGemBalance } from '../utils/supabaseClient';
 import confetti from 'canvas-confetti';
 import analytics from '../utils/analytics';
 
 const PurchaseSuccess = ({ sessionId, onDone }) => {
-  const { addGems } = useGameStore();
+  const { setGems } = useGameStore();
   const [phase, setPhase] = useState('verifying'); // verifying | success | pending | error
   const [gemsGranted, setGemsGranted] = useState(0);
-  const credited = useRef(false);
+  const synced = useRef(false);
 
   useEffect(() => {
-    if (!sessionId || credited.current) return;
+    if (!sessionId || synced.current) return;
 
     const verify = async () => {
       try {
         const purchase = await verifyPurchaseSession(sessionId);
 
         if (purchase && purchase.status === 'completed') {
-          // Guard against double-crediting (React StrictMode double-invoke)
-          if (credited.current) return;
-          credited.current = true;
+          if (synced.current) return;
+          synced.current = true;
 
-          addGems(purchase.gems_granted);
+          // Sync authoritative gem balance from server — never trust local credit
+          const serverBalance = await fetchServerGemBalance();
+          if (serverBalance !== null) {
+            setGems(serverBalance);
+          }
           setGemsGranted(purchase.gems_granted);
           setPhase('success');
 
