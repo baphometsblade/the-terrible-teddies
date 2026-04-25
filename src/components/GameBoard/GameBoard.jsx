@@ -212,7 +212,7 @@ const GameBoard = ({ onBackToMenu }) => {
         description: "You've conquered the terrible teddies!",
       });
     }
-  }, [playerHealth, opponentHealth, gameOver, toast, playSound, recordBattleResult, addXP, addCoins, aiDifficulty]);
+  }, [playerHealth, opponentHealth, gameOver, toast, playSound, recordBattleResult, aiDifficulty]);
 
   // Handle draw phase
   useEffect(() => {

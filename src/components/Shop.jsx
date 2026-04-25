@@ -55,7 +55,7 @@ const Shop = ({ onClose }) => {
 
     setProcessing(true);
     try {
-      await redirectToStripeCheckout(bundle.id, session.user.id);
+      await redirectToStripeCheckout(bundle.id);
       // Browser navigates away — no further code runs here
     } catch (err) {
       analytics.trackError(err, 'gem_purchase');

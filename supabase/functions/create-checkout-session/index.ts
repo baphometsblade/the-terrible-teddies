@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   apiVersion: "2023-10-16",
@@ -16,23 +17,69 @@ const GEM_BUNDLES: Record<string, { gems: number; bonus: number; price: number; 
   weekly_gem_pass:   { gems: 350,  bonus: 0,   price: 199,  name: "Weekly Gem Pass" },
 };
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// Allowed origins — add your production domain here
+const ALLOWED_ORIGINS = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:8080",
+  Deno.env.get("ALLOWED_ORIGIN") ?? "",
+].filter(Boolean);
+
+const getCorsHeaders = (requestOrigin: string | null) => {
+  const origin = ALLOWED_ORIGINS.includes(requestOrigin ?? "") ? requestOrigin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": origin ?? "",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
 };
 
 serve(async (req) => {
+  const requestOrigin = req.headers.get("Origin");
+  const corsHeaders = getCorsHeaders(requestOrigin);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { bundle_id, user_id, origin } = await req.json();
+    // Verify JWT and extract user from token (not from request body)
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Missing or invalid authorization" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired session" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { bundle_id } = await req.json();
 
     const bundle = GEM_BUNDLES[bundle_id];
     if (!bundle) {
       return new Response(
         JSON.stringify({ error: "Invalid bundle ID" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate origin is in allowlist — prevent open redirect
+    const safeOrigin = ALLOWED_ORIGINS.includes(requestOrigin ?? "") ? requestOrigin : ALLOWED_ORIGINS[0];
+    if (!safeOrigin) {
+      return new Response(
+        JSON.stringify({ error: "Invalid origin" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -55,12 +102,12 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${origin}/?purchase=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/?purchase=cancelled`,
-      client_reference_id: user_id ?? "anonymous",
+      success_url: `${safeOrigin}/?purchase=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${safeOrigin}/?purchase=cancelled`,
+      client_reference_id: user.id,
       metadata: {
         bundle_id,
-        user_id: user_id ?? "",
+        user_id: user.id,
         gems: String(bundle.gems),
         bonus: String(bundle.bonus),
         total_gems: String(totalGems),

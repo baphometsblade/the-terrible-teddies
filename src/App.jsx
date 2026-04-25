@@ -53,17 +53,24 @@ function App() {
   const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, shiftPendingAchievement } = useGameStore();
   const { toast } = useToast();
 
-  // Show achievement unlock toasts whenever new achievements are queued
+  // Show achievement unlock toasts — process ALL queued achievements with staggered timing
   useEffect(() => {
     if (!pendingAchievements || pendingAchievements.length === 0) return;
-    const achievement = shiftPendingAchievement();
-    if (!achievement) return;
-    toast({
-      title: `${achievement.icon} Achievement Unlocked!`,
-      description: `${achievement.name} — +${achievement.reward.toLocaleString()} 🪙`,
-      duration: 5000,
+
+    // Process all pending achievements with 600ms stagger
+    pendingAchievements.forEach((achievement, i) => {
+      setTimeout(() => {
+        toast({
+          title: `${achievement.icon} Achievement Unlocked!`,
+          description: `${achievement.name} — +${achievement.reward.toLocaleString()} 🪙`,
+          duration: 5000,
+        });
+      }, i * 600);
     });
-  }, [pendingAchievements?.length]);
+
+    // Clear the queue after scheduling all toasts
+    while (shiftPendingAchievement()) { /* drain queue */ }
+  }, [pendingAchievements, shiftPendingAchievement, toast]);
 
   // Detect Stripe Checkout return
   useEffect(() => {
