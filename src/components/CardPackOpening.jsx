@@ -22,12 +22,15 @@ const RARITY_GLOW = {
 };
 
 const CardPackOpening = ({ onClose }) => {
-  const { cardPacks, openCardPack, coins, gems, buyShopItem } = useGameStore();
+  const { cardPacks, premiumPacks, legendaryPacks, openCardPack, coins, gems, buyShopItem, getNextPackType } = useGameStore();
   const [isOpening, setIsOpening] = useState(false);
   const [pulledCards, setPulledCards] = useState(null);
   const [revealedIndex, setRevealedIndex] = useState(-1);
   const [showPack, setShowPack] = useState(true);
   const [packAnimation, setPackAnimation] = useState(false);
+
+  const totalPacks = cardPacks + premiumPacks + legendaryPacks;
+  const nextPackType = getNextPackType();
 
   const fireConfetti = (rarity) => {
     const colors = {
@@ -44,7 +47,7 @@ const CardPackOpening = ({ onClose }) => {
   };
 
   const handleOpenPack = () => {
-    if (cardPacks <= 0) return;
+    if (totalPacks <= 0) return;
 
     setIsOpening(true);
     setPackAnimation(true);
@@ -53,7 +56,9 @@ const CardPackOpening = ({ onClose }) => {
 
     setTimeout(() => {
       setShowPack(false);
-      const cards = openCardPack();
+      // Open the next available pack type (prioritizes legendary > premium > regular)
+      const packType = getNextPackType();
+      const cards = openCardPack(packType);
       setPulledCards(cards);
 
       cards.forEach((card, index) => {
@@ -113,7 +118,12 @@ const CardPackOpening = ({ onClose }) => {
             </div>
             <div className="bg-pink-500/20 px-4 py-2 rounded-lg flex items-center gap-2 border border-pink-500/30">
               <span className="text-pink-400">📦</span>
-              <span className="text-white font-bold">{cardPacks}</span>
+              <span className="text-white font-bold">{totalPacks}</span>
+              {(premiumPacks > 0 || legendaryPacks > 0) && (
+                <span className="text-xs text-white/60">
+                  ({cardPacks}+{premiumPacks}P+{legendaryPacks}L)
+                </span>
+              )}
             </div>
             <button
               onClick={resetAndClose}
@@ -140,7 +150,7 @@ const CardPackOpening = ({ onClose }) => {
                   } : { scale: 1, opacity: 1 }}
                   transition={{ duration: packAnimation ? 1.2 : 0.5 }}
                   className="relative cursor-pointer"
-                  onClick={cardPacks > 0 && !isOpening ? handleOpenPack : undefined}
+                  onClick={totalPacks > 0 && !isOpening ? handleOpenPack : undefined}
                 >
                   <motion.div
                     animate={!packAnimation ? {
@@ -150,17 +160,25 @@ const CardPackOpening = ({ onClose }) => {
                     transition={{ repeat: Infinity, duration: 3 }}
                     className={`
                       w-56 h-72 rounded-2xl
-                      bg-gradient-to-br from-purple-600 via-pink-600 to-indigo-700
-                      border-4 border-yellow-400
+                      ${nextPackType === 'legendary'
+                        ? 'bg-gradient-to-br from-yellow-500 via-orange-600 to-red-700 border-4 border-yellow-300'
+                        : nextPackType === 'premium'
+                        ? 'bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 border-4 border-blue-300'
+                        : 'bg-gradient-to-br from-purple-600 via-pink-600 to-indigo-700 border-4 border-yellow-400'
+                      }
                       shadow-2xl shadow-purple-500/50
                       flex flex-col items-center justify-center
-                      ${cardPacks > 0 && !isOpening ? 'hover:scale-105 transition-transform' : 'opacity-50'}
+                      ${totalPacks > 0 && !isOpening ? 'hover:scale-105 transition-transform' : 'opacity-50'}
                     `}
                   >
-                    <div className="text-7xl mb-4">📦</div>
-                    <div className="text-white font-bold text-2xl mb-1">Terrible Teddies</div>
-                    <div className="text-yellow-300 text-sm font-semibold">CARD PACK</div>
-                    <div className="text-white/70 text-xs mt-2">5 Cards Inside</div>
+                    <div className="text-7xl mb-4">{nextPackType === 'legendary' ? '⭐' : nextPackType === 'premium' ? '💎' : '📦'}</div>
+                    <div className="text-white font-bold text-2xl mb-1">
+                      {nextPackType === 'legendary' ? 'Legendary Pack' : nextPackType === 'premium' ? 'Premium Pack' : 'Terrible Teddies'}
+                    </div>
+                    <div className={`text-sm font-semibold ${nextPackType === 'legendary' ? 'text-yellow-300' : nextPackType === 'premium' ? 'text-blue-300' : 'text-yellow-300'}`}>
+                      {nextPackType === 'legendary' ? 'GUARANTEED LEGENDARY!' : nextPackType === 'premium' ? 'GUARANTEED RARE+' : 'CARD PACK'}
+                    </div>
+                    <div className="text-white/70 text-xs mt-2">{nextPackType === 'legendary' ? '10 Cards Inside' : '5 Cards Inside'}</div>
                     <div className="mt-4 flex gap-1">
                       {Object.keys(RARITY_COLORS).map((rarity) => (
                         <div
@@ -252,16 +270,22 @@ const CardPackOpening = ({ onClose }) => {
 
           {/* Actions */}
           <div className="flex flex-wrap justify-center gap-3 mt-8">
-            {!pulledCards && !isOpening && cardPacks > 0 && (
+            {!pulledCards && !isOpening && totalPacks > 0 && (
               <Button
                 onClick={handleOpenPack}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 text-lg font-bold shadow-lg"
+                className={`text-white px-8 py-3 text-lg font-bold shadow-lg ${
+                  nextPackType === 'legendary'
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'
+                    : nextPackType === 'premium'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
+                    : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
+                }`}
               >
-                🎁 Open Pack ({cardPacks})
+                🎁 Open {nextPackType === 'legendary' ? 'Legendary' : nextPackType === 'premium' ? 'Premium' : ''} Pack ({totalPacks})
               </Button>
             )}
 
-            {!pulledCards && !isOpening && cardPacks === 0 && (
+            {!pulledCards && !isOpening && totalPacks === 0 && (
               <div className="text-center">
                 <p className="text-white/70 mb-3">No packs available. Buy some below!</p>
               </div>
@@ -269,12 +293,12 @@ const CardPackOpening = ({ onClose }) => {
 
             {pulledCards && !isOpening && (
               <>
-                {cardPacks > 0 && (
+                {totalPacks > 0 && (
                   <Button
                     onClick={() => { resetView(); handleOpenPack(); }}
                     className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3"
                   >
-                    Open Another ({cardPacks})
+                    Open Another ({totalPacks})
                   </Button>
                 )}
                 <Button

@@ -70,13 +70,13 @@ export const ACHIEVEMENTS = [
 ];
 
 export const DAILY_REWARDS = [
-  { day: 1, coins: 50, cards: 0, packs: 0 },
-  { day: 2, coins: 75, cards: 1, packs: 0 },
-  { day: 3, coins: 100, cards: 0, packs: 0 },
-  { day: 4, coins: 100, cards: 2, packs: 0 },
-  { day: 5, coins: 150, cards: 0, packs: 1 },
-  { day: 6, coins: 200, cards: 3, packs: 0 },
-  { day: 7, coins: 300, cards: 0, packs: 2 },
+  { day: 1, coins: 50, gems: 0, cards: 0, packs: 0 },
+  { day: 2, coins: 75, gems: 0, cards: 1, packs: 0 },
+  { day: 3, coins: 100, gems: 5, cards: 0, packs: 0 },
+  { day: 4, coins: 100, gems: 0, cards: 2, packs: 0 },
+  { day: 5, coins: 150, gems: 0, cards: 0, packs: 1 },
+  { day: 6, coins: 200, gems: 10, cards: 3, packs: 0 },
+  { day: 7, coins: 300, gems: 25, cards: 0, packs: 2 },
 ];
 
 export const SHOP_ITEMS = [
@@ -133,6 +133,8 @@ const initialState = {
   lastLoginDate: null,
   consecutiveLogins: 0,
   cardPacks: 1,
+  premiumPacks: 0,
+  legendaryPacks: 0,
   soundEnabled: true,
   musicEnabled: true,
   animationsEnabled: true,
@@ -357,6 +359,7 @@ export const useGameStore = create(
           lastLoginDate: today,
           consecutiveLogins: newConsecutive,
           coins: state.coins + reward.coins,
+          gems: state.gems + (reward.gems || 0),
           cardPacks: state.cardPacks + reward.packs,
         });
 
@@ -372,11 +375,42 @@ export const useGameStore = create(
         return { ...reward, day: dayIndex + 1, consecutive: newConsecutive };
       },
 
-      addCardPack: (amount = 1) => set((state) => ({ cardPacks: state.cardPacks + amount })),
+      addCardPack: (amount = 1, packType = 'regular') => {
+        if (packType === 'premium') {
+          set((state) => ({ premiumPacks: state.premiumPacks + amount }));
+        } else if (packType === 'legendary') {
+          set((state) => ({ legendaryPacks: state.legendaryPacks + amount }));
+        } else {
+          set((state) => ({ cardPacks: state.cardPacks + amount }));
+        }
+      },
 
-      openCardPack: (guaranteedMinRarity = null) => {
+      openCardPack: (packType = 'regular') => {
         const state = get();
-        if (state.cardPacks <= 0) return null;
+
+        // Determine which pack to open and validate availability
+        let guaranteedMinRarity = null;
+        if (packType === 'legendary' && state.legendaryPacks > 0) {
+          guaranteedMinRarity = 'legendary';
+        } else if (packType === 'premium' && state.premiumPacks > 0) {
+          guaranteedMinRarity = 'rare';
+        } else if (packType === 'regular' && state.cardPacks > 0) {
+          guaranteedMinRarity = null;
+        } else {
+          // Fallback: try to open any available pack
+          if (state.legendaryPacks > 0) {
+            guaranteedMinRarity = 'legendary';
+            packType = 'legendary';
+          } else if (state.premiumPacks > 0) {
+            guaranteedMinRarity = 'rare';
+            packType = 'premium';
+          } else if (state.cardPacks > 0) {
+            guaranteedMinRarity = null;
+            packType = 'regular';
+          } else {
+            return null; // No packs available
+          }
+        }
 
         const getRandomRarity = (guaranteed = false) => {
           if (guaranteed === 'legendary') return 'legendary';
@@ -407,7 +441,21 @@ export const useGameStore = create(
             rarity = getRandomRarity();
           }
 
-          const cardsOfRarity = ALL_CARDS.filter(c => c.rarity === rarity);
+          let cardsOfRarity = ALL_CARDS.filter(c => c.rarity === rarity);
+
+          // Fallback: if no cards exist for this rarity, try lower rarities
+          if (cardsOfRarity.length === 0) {
+            const rarityFallback = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
+            const currentIndex = rarityFallback.indexOf(rarity);
+            for (let j = currentIndex + 1; j < rarityFallback.length; j++) {
+              cardsOfRarity = ALL_CARDS.filter(c => c.rarity === rarityFallback[j]);
+              if (cardsOfRarity.length > 0) break;
+            }
+          }
+
+          // If still no cards found, skip this slot (shouldn't happen with proper card pool)
+          if (cardsOfRarity.length === 0) continue;
+
           const randomCard = cardsOfRarity[Math.floor(Math.random() * cardsOfRarity.length)];
           pulledCards.push({
             ...randomCard,
@@ -416,8 +464,32 @@ export const useGameStore = create(
         }
 
         get().addCards(pulledCards.map(c => c.id));
-        set((s) => ({ cardPacks: s.cardPacks - 1 }));
+
+        // Decrement the correct pack type
+        if (packType === 'legendary') {
+          set((s) => ({ legendaryPacks: s.legendaryPacks - 1 }));
+        } else if (packType === 'premium') {
+          set((s) => ({ premiumPacks: s.premiumPacks - 1 }));
+        } else {
+          set((s) => ({ cardPacks: s.cardPacks - 1 }));
+        }
+
         return pulledCards;
+      },
+
+      // Helper to get total available packs of all types
+      getTotalPacks: () => {
+        const state = get();
+        return state.cardPacks + state.premiumPacks + state.legendaryPacks;
+      },
+
+      // Get the next pack type to open (prioritizes special packs)
+      getNextPackType: () => {
+        const state = get();
+        if (state.legendaryPacks > 0) return 'legendary';
+        if (state.premiumPacks > 0) return 'premium';
+        if (state.cardPacks > 0) return 'regular';
+        return null;
       },
 
       buyShopItem: (itemId) => {
@@ -433,9 +505,17 @@ export const useGameStore = create(
           set({ gems: state.gems - item.price });
         }
 
-        if (['pack', 'premium', 'legendary'].includes(item.type)) {
+        if (item.type === 'pack') {
           set((s) => ({ cardPacks: s.cardPacks + item.quantity }));
           return { success: true, message: `Got ${item.quantity} pack(s)!`, type: item.type };
+        }
+        if (item.type === 'premium') {
+          set((s) => ({ premiumPacks: s.premiumPacks + item.quantity }));
+          return { success: true, message: `Got ${item.quantity} premium pack(s)!`, type: item.type };
+        }
+        if (item.type === 'legendary') {
+          set((s) => ({ legendaryPacks: s.legendaryPacks + item.quantity }));
+          return { success: true, message: `Got ${item.quantity} legendary pack(s)!`, type: item.type };
         }
         if (item.type === 'coins') {
           set((s) => ({ coins: s.coins + item.quantity }));

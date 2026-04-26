@@ -21,7 +21,7 @@ const DailyRewards = ({ onClose }) => {
     }
   }, [checkDailyLogin]);
 
-  const RewardDay = ({ day, isToday, isClaimed, coins, cards, packs }) => (
+  const RewardDay = ({ day, isToday, isClaimed, coins, gems, cards, packs }) => (
     <motion.div
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
@@ -37,6 +37,7 @@ const DailyRewards = ({ onClose }) => {
       <div className={`text-xs font-bold mb-1 ${isToday ? 'text-black' : 'text-white/70'}`}>Day {day}</div>
       <div className="space-y-0.5">
         {coins > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-yellow-400'}`}>🪙 {coins}</div>}
+        {gems > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-cyan-400'}`}>💎 {gems}</div>}
         {cards > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-blue-400'}`}>🃏 x{cards}</div>}
         {packs > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-purple-400'}`}>📦 x{packs}</div>}
       </div>
@@ -73,6 +74,7 @@ const DailyRewards = ({ onClose }) => {
                   isToday={isToday}
                   isClaimed={isClaimed}
                   coins={dayReward.coins}
+                  gems={dayReward.gems || 0}
                   cards={dayReward.cards}
                   packs={dayReward.packs}
                 />
@@ -93,6 +95,12 @@ const DailyRewards = ({ onClose }) => {
                     <div className="text-center">
                       <div className="text-4xl mb-1">🪙</div>
                       <div className="text-yellow-400 font-bold text-xl">+{reward.coins}</div>
+                    </div>
+                  )}
+                  {reward.gems > 0 && (
+                    <div className="text-center">
+                      <div className="text-4xl mb-1">💎</div>
+                      <div className="text-cyan-400 font-bold text-xl">+{reward.gems}</div>
                     </div>
                   )}
                   {reward.cards > 0 && (

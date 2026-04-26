@@ -1,20 +1,18 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { useGameStore } from '../stores/gameStore';
+import { supabase } from '../lib/supabase';
 
-const MOCK_LEADERBOARD = [
-  { rank: 1, name: "TeddyMaster99", level: 47, wins: 342, streak: 15, trophies: 2850 },
-  { rank: 2, name: "FluffyDestroyer", level: 45, wins: 315, streak: 8, trophies: 2720 },
-  { rank: 3, name: "BearKing2024", level: 42, wins: 298, streak: 12, trophies: 2590 },
-  { rank: 4, name: "CuddleChampion", level: 40, wins: 276, streak: 6, trophies: 2480 },
-  { rank: 5, name: "StuffingSlayer", level: 38, wins: 254, streak: 4, trophies: 2350 },
-  { rank: 6, name: "ButtonBasher", level: 36, wins: 231, streak: 9, trophies: 2220 },
-  { rank: 7, name: "FurryFighter", level: 35, wins: 218, streak: 3, trophies: 2100 },
-  { rank: 8, name: "HugHero", level: 33, wins: 195, streak: 7, trophies: 1980 },
-  { rank: 9, name: "PlushPunisher", level: 31, wins: 178, streak: 2, trophies: 1850 },
-  { rank: 10, name: "TeddyTitan", level: 30, wins: 165, streak: 5, trophies: 1720 },
-];
+// Calculate trophies based on player stats
+const calculateTrophies = (wins, level, bestStreak) => {
+  return Math.floor((wins || 0) * 8 + (level || 1) * 10 + (bestStreak || 0) * 5);
+};
+
+// Calculate level from experience
+const calculateLevel = (experience) => {
+  return Math.floor((experience || 0) / 100) + 1;
+};
 
 const RANK_REWARDS = [
   { rank: 1, gems: 500, coins: 5000, packs: 10, title: "Teddy Champion" },
@@ -28,10 +26,61 @@ const RANK_REWARDS = [
 const Leaderboard = ({ onClose }) => {
   const { playerName, level, totalWins, currentWinStreak, bestWinStreak } = useGameStore();
   const [activeTab, setActiveTab] = useState('global');
-  const [timeframe, setTimeframe] = useState('season');
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const playerTrophies = Math.floor(totalWins * 8 + level * 10 + bestWinStreak * 5);
-  const playerRank = MOCK_LEADERBOARD.filter(p => p.trophies > playerTrophies).length + 1;
+  const playerTrophies = calculateTrophies(totalWins, level, bestWinStreak);
+
+  // Fetch leaderboard data from Supabase
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('players')
+          .select('username, wins, losses, experience, coins, best_win_streak')
+          .order('wins', { ascending: false })
+          .limit(50);
+
+        if (fetchError) throw fetchError;
+
+        // Transform data to match expected format with trophies calculation
+        const transformedData = (data || []).map((player, index) => {
+          const playerLevel = calculateLevel(player.experience);
+          const trophies = calculateTrophies(player.wins, playerLevel, player.best_win_streak);
+          return {
+            rank: index + 1,
+            name: player.username || 'Unknown Player',
+            level: playerLevel,
+            wins: player.wins || 0,
+            streak: player.best_win_streak || 0,
+            trophies: trophies,
+          };
+        });
+
+        // Sort by trophies and re-rank
+        transformedData.sort((a, b) => b.trophies - a.trophies);
+        transformedData.forEach((player, index) => {
+          player.rank = index + 1;
+        });
+
+        setLeaderboardData(transformedData);
+      } catch (err) {
+        console.error('Error fetching leaderboard:', err);
+        setError(err.message || 'Failed to load leaderboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, []);
+
+  // Calculate player's rank based on real leaderboard data
+  const playerRank = leaderboardData.filter(p => p.trophies > playerTrophies).length + 1;
 
   const getRankDisplay = (rank) => {
     if (rank === 1) return { icon: '🥇', color: 'text-yellow-400', bg: 'from-yellow-600/30 to-amber-600/30' };
@@ -95,16 +144,9 @@ const Leaderboard = ({ onClose }) => {
             <span className="text-3xl">🏆</span> Leaderboard
           </h2>
           <div className="flex items-center gap-3">
-            <select
-              value={timeframe}
-              onChange={(e) => setTimeframe(e.target.value)}
-              className="bg-white/20 text-white border-0 rounded-lg px-3 py-1 text-sm"
-            >
-              <option value="season">This Season</option>
-              <option value="weekly">This Week</option>
-              <option value="daily">Today</option>
-              <option value="alltime">All Time</option>
-            </select>
+            <span className="bg-white/20 text-white rounded-lg px-3 py-1 text-sm">
+              All Time
+            </span>
             <button onClick={onClose} className="text-white/70 hover:text-white text-2xl">×</button>
           </div>
         </div>
@@ -151,7 +193,36 @@ const Leaderboard = ({ onClose }) => {
 
                 {/* Top Players */}
                 <div className="text-white/50 text-sm mb-2">Top Players</div>
-                {MOCK_LEADERBOARD.map(player => (
+
+                {loading && (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-4 animate-bounce">🐻</div>
+                    <p className="text-white/70">Loading leaderboard...</p>
+                  </div>
+                )}
+
+                {error && (
+                  <div className="text-center py-8 bg-red-500/10 border border-red-500/30 rounded-xl">
+                    <div className="text-4xl mb-4">⚠️</div>
+                    <p className="text-red-400">Error loading leaderboard</p>
+                    <p className="text-white/50 text-sm mt-2">{error}</p>
+                    <Button
+                      onClick={() => window.location.reload()}
+                      className="mt-4 bg-red-600 hover:bg-red-700"
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                )}
+
+                {!loading && !error && leaderboardData.length === 0 && (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-4">🏆</div>
+                    <p className="text-white/70">No players yet. Be the first!</p>
+                  </div>
+                )}
+
+                {!loading && !error && leaderboardData.map(player => (
                   <LeaderboardRow key={player.rank} player={player} />
                 ))}
               </motion.div>
