@@ -9,20 +9,12 @@ import { initializeErrorReporting } from './utils/errorReporting.js'
 import ErrorBoundary from './components/ErrorBoundary'
 import { SupabaseProvider } from './integrations/supabase/auth'
 
-console.log('Main.jsx is starting execution');
-
 try {
   initializePostHog();
-  console.log('PostHog initialized');
-
   initializeErrorReporting();
-  console.log('Error reporting initialized');
 
   const queryClient = new QueryClient()
-  console.log('QueryClient created');
-
   const root = ReactDOM.createRoot(document.getElementById('root'));
-  console.log('React root created');
 
   root.render(
     <React.StrictMode>
@@ -37,8 +29,6 @@ try {
       </ErrorBoundary>
     </React.StrictMode>
   );
-
-  console.log('React app rendered');
 } catch (error) {
   console.error('Error in main.jsx:', error);
 }

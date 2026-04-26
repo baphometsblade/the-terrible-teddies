@@ -58,7 +58,7 @@ const createTerribleTeddiesTable = async () => {
   try {
     const { data, error } = await supabase.rpc('create_terrible_teddies_table');
     if (error) throw error;
-    console.log('Table creation result:', data);
+    if (import.meta.env.DEV) console.log('Table creation result:', data);
     return data;
   } catch (error) {
     console.error('Error creating terrible_teddies table:', error);
@@ -74,7 +74,7 @@ const populateTerribleTeddies = async () => {
 
     if (error) throw error;
 
-    console.log('Terrible Teddies populated successfully');
+    if (import.meta.env.DEV) console.log('Terrible Teddies populated successfully');
     return true;
   } catch (error) {
     console.error('Error populating terrible_teddies:', error);
@@ -84,8 +84,8 @@ const populateTerribleTeddies = async () => {
 
 export const setupTerribleTeddies = async () => {
   try {
-    console.log('Setting up Terrible Teddies...');
-    
+    if (import.meta.env.DEV) console.log('Setting up Terrible Teddies...');
+
     const tableExists = await checkTableExists();
     if (!tableExists) {
       const tableCreated = await createTerribleTeddiesTable();
@@ -101,10 +101,10 @@ export const setupTerribleTeddies = async () => {
     if (error) throw error;
 
     if (count === 0) {
-      console.log('Terrible Teddies table is empty. Populating...');
+      if (import.meta.env.DEV) console.log('Terrible Teddies table is empty. Populating...');
       await populateTerribleTeddies();
     } else {
-      console.log(`Terrible Teddies table contains ${count} records`);
+      if (import.meta.env.DEV) console.log(`Terrible Teddies table contains ${count} records`);
     }
 
     return true;
@@ -123,13 +123,13 @@ export const checkTableExists = async () => {
 
     if (error) {
       if (error.code === 'PGRST116') {
-        console.log('Terrible Teddies table does not exist');
+        if (import.meta.env.DEV) console.log('Terrible Teddies table does not exist');
         return false;
       }
       throw error;
     }
 
-    console.log('Terrible Teddies table exists');
+    if (import.meta.env.DEV) console.log('Terrible Teddies table exists');
     return true;
   } catch (error) {
     console.error('Unexpected error checking table existence:', error);
