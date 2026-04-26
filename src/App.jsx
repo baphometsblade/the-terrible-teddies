@@ -11,7 +11,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from './stores/gameStore';
-import { fetchServerGemBalance } from './utils/supabaseClient';
+import { fetchServerGemBalance, ensurePlayerProfile } from './utils/supabaseClient';
 
 const Tutorial = lazy(() => import('./components/Tutorial'));
 const CardPackOpening = lazy(() => import('./components/CardPackOpening'));
@@ -73,16 +73,19 @@ function App() {
     while (shiftPendingAchievement()) { /* drain queue */ }
   }, [pendingAchievements, shiftPendingAchievement, toast]);
 
-  // Sync authoritative gem balance from server on login
+  // Sync player profile and gem balance from server on login
   useEffect(() => {
     if (!session) return;
-    const syncGems = async () => {
+    const syncProfile = async () => {
+      // Ensure player profile exists in database
+      await ensurePlayerProfile(session.user?.email?.split('@')[0]);
+      // Sync authoritative gem balance
       const serverBalance = await fetchServerGemBalance();
       if (serverBalance !== null) {
         setGems(serverBalance);
       }
     };
-    syncGems();
+    syncProfile();
   }, [session, setGems]);
 
   // Detect Stripe Checkout return

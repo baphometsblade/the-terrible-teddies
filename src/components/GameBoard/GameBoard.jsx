@@ -9,6 +9,7 @@ import { Howl } from 'howler';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
 import { calculateCardDamage } from '../../utils/battleUtils';
+import { syncBattleResult } from '../../utils/supabaseClient';
 
 // Sound effects
 const sounds = {
@@ -195,6 +196,9 @@ const GameBoard = ({ onBackToMenu }) => {
       );
       setBattleRewards({ xp: xpGain, coins: coinsGain });
 
+      // Sync to server (fire and forget - don't block UI)
+      syncBattleResult(false, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain);
+
       toast({
         title: "Defeat!",
         description: "Your teddies have been defeated...",
@@ -214,6 +218,9 @@ const GameBoard = ({ onBackToMenu }) => {
         battleStatsRef.current.cardsPlayed
       );
       setBattleRewards({ xp: xpGain, coins: coinsGain });
+
+      // Sync to server (fire and forget - don't block UI)
+      syncBattleResult(true, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain);
 
       // Victory confetti
       confetti({
