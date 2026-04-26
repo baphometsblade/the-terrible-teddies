@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sword, Shield, Zap } from 'lucide-react';
-import { calculateDamage, calculateExperience, levelUp } from '../utils/battleSystem';
+import { calculateDamage } from '../utils/battleUtils';
+import { calculateExperience, levelUp } from '../utils/battleSystem';
 
 const Battle = ({ playerTeddy, opponentTeddy, powerUps, onBattleEnd }) => {
   const [playerHealth, setPlayerHealth] = useState(100);
@@ -40,7 +41,7 @@ const Battle = ({ playerTeddy, opponentTeddy, powerUps, onBattleEnd }) => {
 
     switch (action) {
       case 'attack':
-        damage = calculateDamage(playerTeddy, opponentTeddy, activePowerUps);
+        damage = calculateDamage(playerTeddy, opponentTeddy, { useRandomFactor: true });
         setOpponentHealth(prev => Math.max(0, prev - damage));
         addToBattleLog(`${playerTeddy.name} attacks for ${damage} damage!`);
         break;
@@ -50,7 +51,7 @@ const Battle = ({ playerTeddy, opponentTeddy, powerUps, onBattleEnd }) => {
         break;
       case 'special':
         if (playerEnergy >= 2) {
-          damage = calculateDamage(playerTeddy, opponentTeddy, activePowerUps) * 1.5;
+          damage = calculateDamage(playerTeddy, opponentTeddy, { useRandomFactor: true }) * 1.5;
           setOpponentHealth(prev => Math.max(0, prev - damage));
           addToBattleLog(`${playerTeddy.name} uses ${playerTeddy.special_move} for ${damage} damage!`);
           energyCost = 2;
@@ -78,7 +79,7 @@ const Battle = ({ playerTeddy, opponentTeddy, powerUps, onBattleEnd }) => {
 
     switch (randomAction) {
       case 'attack':
-        damage = calculateDamage(opponentTeddy, playerTeddy);
+        damage = calculateDamage(opponentTeddy, playerTeddy, { useRandomFactor: true });
         setPlayerHealth(prev => Math.max(0, prev - damage));
         addToBattleLog(`${opponentTeddy.name} attacks for ${damage} damage!`);
         break;
@@ -88,7 +89,7 @@ const Battle = ({ playerTeddy, opponentTeddy, powerUps, onBattleEnd }) => {
         break;
       case 'special':
         if (opponentEnergy >= 2) {
-          damage = calculateDamage(opponentTeddy, playerTeddy) * 1.5;
+          damage = calculateDamage(opponentTeddy, playerTeddy, { useRandomFactor: true }) * 1.5;
           setPlayerHealth(prev => Math.max(0, prev - damage));
           addToBattleLog(`${opponentTeddy.name} uses ${opponentTeddy.special_move} for ${damage} damage!`);
           energyCost = 2;

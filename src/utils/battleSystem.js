@@ -1,8 +1,5 @@
-export const calculateDamage = (attacker, defender) => {
-  const baseDamage = attacker.attack - defender.defense / 2;
-  const randomFactor = Math.random() * 0.2 + 0.9; // Random factor between 0.9 and 1.1
-  return Math.max(1, Math.floor(baseDamage * randomFactor));
-};
+// calculateDamage has been consolidated into battleUtils.js
+// Import it from there: import { calculateDamage } from './battleUtils';
 
 export const calculateExperience = (winner, loser) => {
   const baseXP = 10;

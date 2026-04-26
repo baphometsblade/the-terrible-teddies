@@ -101,7 +101,7 @@ export const performAIAction = (action, battleState, aiTeddyData, playerTeddyDat
       break;
     case 'ultimate':
       if (newState.aiRage === 100) {
-        damage = calculateDamage(aiTeddyData, playerTeddyData, newState.weatherEffect, true) * 2;
+        damage = calculateDamage(aiTeddyData, playerTeddyData, { weatherEffect: newState.weatherEffect, isCritical: true }) * 2;
         newState.playerHealth -= damage;
         newState.battleLog.push(`${aiTeddyData.name} unleashes their Ultimate Move for ${damage} devastating damage!`);
         newState.aiRage = 0;

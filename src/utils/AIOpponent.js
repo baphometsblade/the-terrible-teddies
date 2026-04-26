@@ -51,7 +51,7 @@ export const performAIAction = (action, aiTeddy, playerTeddy, battleState) => {
 
   switch (action) {
     case 'attack':
-      damage = calculateDamage(aiTeddy, playerTeddy, newState.weatherEffect);
+      damage = calculateDamage(aiTeddy, playerTeddy, { weatherEffect: newState.weatherEffect });
       newState.playerHealth -= damage;
       newState.battleLog.push(`${aiTeddy.name} attacks for ${damage} damage!`);
       newState.opponentCombo.push('attack');
@@ -97,7 +97,7 @@ const checkForCombo = (combo) => {
 const applyComboEffect = (state, comboEffect, attacker, defender) => {
   let newState = { ...state };
   if (comboEffect.name === 'Triple Strike' || comboEffect.name === 'Ultimate Power') {
-    const damage = calculateDamage(attacker, defender, state.weatherEffect);
+    const damage = calculateDamage(attacker, defender, { weatherEffect: state.weatherEffect });
     newState.opponentHealth -= Math.floor(comboEffect.effect(damage));
   } else if (comboEffect.name === 'Iron Wall') {
     newState.opponentDefenseBoost = Math.floor(comboEffect.effect(newState.opponentDefenseBoost));

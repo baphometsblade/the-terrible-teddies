@@ -30,7 +30,7 @@ export const performAIAction = (action, battleState, playerTeddyData, opponentTe
 };
 
 const handleAttack = (battleState, attacker, defender, isCritical) => {
-  const damage = calculateDamage(attacker, defender, battleState.playerDefenseBoost, isCritical);
+  const damage = calculateDamage(attacker, defender, { defenseBoost: battleState.playerDefenseBoost, isCritical });
   let logMessage = '';
 
   if (battleState.playerShield) {
@@ -45,7 +45,7 @@ const handleAttack = (battleState, attacker, defender, isCritical) => {
 };
 
 const handleSpecialAttack = (battleState, attacker, defender) => {
-  const damage = calculateDamage(attacker, defender, battleState.playerDefenseBoost) * 1.5;
+  const damage = calculateDamage(attacker, defender, { defenseBoost: battleState.playerDefenseBoost }) * 1.5;
   let logMessage = '';
 
   if (battleState.playerShield) {
