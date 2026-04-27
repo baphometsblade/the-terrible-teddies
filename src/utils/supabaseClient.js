@@ -45,7 +45,7 @@ export const fetchServerGemBalance = async () => {
 
   const { data, error } = await supabase
     .from('user_gems')
-    .select('balance')
+    .select('gems')
     .eq('user_id', user.id)
     .maybeSingle();
 
@@ -53,7 +53,7 @@ export const fetchServerGemBalance = async () => {
     console.error('Error fetching gem balance:', error);
     return null;
   }
-  return data?.balance ?? null;
+  return data?.gems ?? null;
 };
 
 export const ensurePlayerProfile = async (username = null) => {

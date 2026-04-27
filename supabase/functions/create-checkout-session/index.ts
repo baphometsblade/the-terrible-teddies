@@ -17,27 +17,9 @@ const GEM_BUNDLES: Record<string, { gems: number; bonus: number; price: number; 
   weekly_gem_pass:   { gems: 350,  bonus: 0,   price: 199,  name: "Weekly Gem Pass" },
 };
 
-// Rate limiting: max 5 checkout attempts per user per minute
-const RATE_LIMIT_WINDOW_MS = 60_000;
+// Rate limiting config - enforced via database for durability across function restarts
 const RATE_LIMIT_MAX = 5;
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(userId);
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-
-  if (entry.count >= RATE_LIMIT_MAX) {
-    return false;
-  }
-
-  entry.count++;
-  return true;
-}
+const RATE_LIMIT_WINDOW_SECONDS = 60;
 
 // Allowed origins — production domain set via env var, localhost only in dev
 const ALLOWED_ORIGINS = [
@@ -89,8 +71,14 @@ serve(async (req) => {
       );
     }
 
-    // Rate limit: prevent checkout spam
-    if (!checkRateLimit(user.id)) {
+    // Rate limit via database (durable across function restarts)
+    const { data: allowed, error: rateLimitError } = await supabase.rpc("check_rate_limit", {
+      p_user_id: user.id,
+      p_action_type: "checkout",
+      p_max_requests: RATE_LIMIT_MAX,
+      p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+    });
+    if (rateLimitError || allowed === false) {
       return new Response(
         JSON.stringify({ error: "Too many requests. Please wait a minute." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }

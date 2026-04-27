@@ -34,6 +34,15 @@ serve(async (req) => {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+
+    // Verify payment was actually successful (handles delayed payment methods)
+    if (session.payment_status !== "paid") {
+      console.log("Checkout completed but payment not yet received:", session.id);
+      return new Response(JSON.stringify({ received: true, pending: true }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const meta = session.metadata ?? {};
     const bundleId = meta.bundle_id ?? "unknown";
     const userId = meta.user_id || null;
@@ -50,18 +59,28 @@ serve(async (req) => {
         status: "completed",
       });
 
-      if (insertError && insertError.code !== "23505") {
-        // 23505 = unique violation (already processed) — safe to ignore
+      if (insertError) {
+        if (insertError.code === "23505") {
+          // Duplicate — already processed, safe to return success
+          return new Response(JSON.stringify({ received: true, duplicate: true }), {
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        // Non-duplicate insert failure — return 500 to trigger Stripe retry
         console.error("Failed to insert purchase:", insertError);
+        return new Response("Database insert failed", { status: 500 });
       }
 
-      // Credit gems to authenticated user
+      // Credit gems to authenticated user (only after successful insert)
       if (userId) {
         const { error: rpcError } = await supabase.rpc("add_user_gems", {
           p_user_id: userId,
           p_gems: totalGems,
         });
-        if (rpcError) console.error("Failed to credit gems:", rpcError);
+        if (rpcError) {
+          console.error("Failed to credit gems:", rpcError);
+          return new Response("Gem credit failed", { status: 500 });
+        }
       }
     } catch (err) {
       console.error("Fulfillment error:", err);
