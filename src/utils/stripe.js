@@ -1,7 +1,7 @@
 import { supabase } from '../integrations/supabase/supabase';
 
-const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_PROJECT_URL}/functions/v1`;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_API_KEY;
+const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 /**
  * Creates a Stripe Checkout Session and redirects the browser to it.
