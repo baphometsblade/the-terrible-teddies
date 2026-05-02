@@ -59,7 +59,7 @@ const Settings = ({ onClose }) => {
       >
         <div className="bg-gray-800 p-6 rounded-t-2xl flex justify-between items-center border-b border-white/10">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">⚙️ Settings</h2>
-          <button onClick={onClose} className="text-white/70 hover:text-white text-2xl">×</button>
+          <button onClick={onClose} className="text-white/70 hover:text-white text-2xl" aria-label="Close settings">×</button>
         </div>
 
         <div className="p-6 space-y-2 max-h-[70vh] overflow-y-auto">

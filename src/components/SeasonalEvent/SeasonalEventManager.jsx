@@ -31,9 +31,11 @@ const SeasonalEventManager = () => {
 
   const participateMutation = useMutation({
     mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase
         .from('player_event_participation')
-        .insert({ event_id: currentEvent.id, player_id: supabase.auth.user().id });
+        .insert({ event_id: currentEvent.id, player_id: user.id });
       if (error) throw error;
       return data;
     },

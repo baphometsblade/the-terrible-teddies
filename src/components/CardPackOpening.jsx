@@ -128,6 +128,7 @@ const CardPackOpening = ({ onClose }) => {
             <button
               onClick={resetAndClose}
               className="text-white/70 hover:text-white text-3xl ml-2"
+              aria-label="Close card packs"
             >
               ×
             </button>

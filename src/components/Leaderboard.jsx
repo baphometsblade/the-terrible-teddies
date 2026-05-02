@@ -147,7 +147,7 @@ const Leaderboard = ({ onClose }) => {
             <span className="bg-white/20 text-white rounded-lg px-3 py-1 text-sm">
               All Time
             </span>
-            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl">×</button>
+            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl" aria-label="Close leaderboard">×</button>
           </div>
         </div>
 

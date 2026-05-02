@@ -194,7 +194,7 @@ const Challenges = ({ onClose }) => {
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <span className="text-3xl">🎯</span> Challenges
           </h2>
-          <button onClick={onClose} className="text-white/70 hover:text-white text-2xl">×</button>
+          <button onClick={onClose} className="text-white/70 hover:text-white text-2xl" aria-label="Close challenges">×</button>
         </div>
 
         {/* Tabs */}

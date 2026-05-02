@@ -142,7 +142,7 @@ const Shop = ({ onClose }) => {
             <div className="bg-blue-500/20 px-3 py-1 rounded-full flex items-center gap-2">
               <span>📦</span><span className="text-blue-300 font-bold">{cardPacks}</span>
             </div>
-            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl ml-2">×</button>
+            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl ml-2" aria-label="Close shop">×</button>
           </div>
         </div>
 

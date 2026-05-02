@@ -77,12 +77,16 @@ function App() {
   useEffect(() => {
     if (!session) return;
     const syncProfile = async () => {
-      // Ensure player profile exists in database
-      await ensurePlayerProfile(session.user?.email?.split('@')[0]);
-      // Sync authoritative gem balance
-      const serverBalance = await fetchServerGemBalance();
-      if (serverBalance !== null) {
-        setGems(serverBalance);
+      try {
+        // Ensure player profile exists in database
+        await ensurePlayerProfile(session.user?.email?.split('@')[0]);
+        // Sync authoritative gem balance
+        const serverBalance = await fetchServerGemBalance();
+        if (serverBalance !== null) {
+          setGems(serverBalance);
+        }
+      } catch (err) {
+        console.error('Profile sync failed:', err);
       }
     };
     syncProfile();

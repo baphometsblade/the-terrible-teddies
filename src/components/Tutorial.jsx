@@ -89,6 +89,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
           <button
             onClick={onClose}
             className="text-white/70 hover:text-white text-2xl"
+            aria-label="Close tutorial"
           >
             ×
           </button>

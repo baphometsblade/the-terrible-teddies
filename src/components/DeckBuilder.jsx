@@ -211,7 +211,7 @@ const DeckBuilder = () => {
                       <span className="text-yellow-400 font-bold w-5">{card.cost}</span>
                       <span className="text-white text-sm truncate max-w-[120px]">{card.name}</span>
                     </div>
-                    <button onClick={() => removeFromDeck(card)} className="text-red-400 hover:text-red-300 text-lg px-1">×</button>
+                    <button onClick={() => removeFromDeck(card)} className="text-red-400 hover:text-red-300 text-lg px-1" aria-label={`Remove ${card.name} from deck`}>×</button>
                   </motion.div>
                 ))}
               </AnimatePresence>

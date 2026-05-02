@@ -197,7 +197,8 @@ const GameBoard = ({ onBackToMenu }) => {
       setBattleRewards({ xp: xpGain, coins: coinsGain });
 
       // Sync to server (fire and forget - don't block UI)
-      syncBattleResult(false, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain);
+      syncBattleResult(false, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain)
+        .catch(err => console.error('Battle sync failed:', err));
 
       toast({
         title: "Defeat!",
@@ -220,7 +221,8 @@ const GameBoard = ({ onBackToMenu }) => {
       setBattleRewards({ xp: xpGain, coins: coinsGain });
 
       // Sync to server (fire and forget - don't block UI)
-      syncBattleResult(true, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain);
+      syncBattleResult(true, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain)
+        .catch(err => console.error('Battle sync failed:', err));
 
       // Victory confetti
       confetti({

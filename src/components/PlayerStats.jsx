@@ -86,7 +86,7 @@ const PlayerStats = ({ onClose }) => {
               <div className="text-purple-400 text-2xl font-bold">{gems}</div>
               <div className="text-white/60 text-xs">Gems</div>
             </div>
-            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl">×</button>
+            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl" aria-label="Close stats">×</button>
           </div>
         </div>
 

@@ -207,7 +207,7 @@ const BattlePass = ({ onClose }) => {
                   ⭐ Premium Active
                 </div>
               )}
-              <button onClick={onClose} className="text-white/70 hover:text-white text-2xl">×</button>
+              <button onClick={onClose} className="text-white/70 hover:text-white text-2xl" aria-label="Close battle pass">×</button>
             </div>
           </div>
         </div>
