@@ -34,7 +34,7 @@ const sounds = {
  * - protect: Other cards can't be targeted while this is on field
  * - fury: Gains +1 attack each time it takes damage
  */
-const GameBoard = ({ onBackToMenu }) => {
+const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // Get store data
   const {
     currentDeck,
@@ -712,7 +712,7 @@ const GameBoard = ({ onBackToMenu }) => {
               </div>
 
               {/* Upsell nudge — only shown when player is low on resources */}
-              {(cardPacks === 0 || gems < 50) && onBackToMenu && (
+              {(cardPacks === 0 || gems < 50) && (onOpenShop || onBackToMenu) && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -724,7 +724,7 @@ const GameBoard = ({ onBackToMenu }) => {
                   </p>
                   <Button
                     size="sm"
-                    onClick={onBackToMenu}
+                    onClick={onOpenShop ?? onBackToMenu}
                     className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
                   >
                     Visit Shop

@@ -153,7 +153,10 @@ function App() {
         return (
           <div className="relative">
             <BackButton />
-            <GameBoard />
+            <GameBoard
+              onBackToMenu={() => navigateTo('menu')}
+              onOpenShop={() => { navigateTo('menu'); setShowShop(true); }}
+            />
           </div>
         );
       case 'deck':
