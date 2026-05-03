@@ -39,6 +39,4 @@ export const initDatabase = async () => {
     `
   });
   if (playerTeddiesError) console.error('Error creating player_teddies table:', playerTeddiesError);
-
-  console.log('Database initialization complete');
 };

@@ -11,7 +11,6 @@ export const integrateSupabaseData = async (assets) => {
       throw error;
     }
 
-    console.log('Assets integrated with Supabase successfully');
     return data;
   } catch (error) {
     console.error('Error integrating assets with Supabase:', error);

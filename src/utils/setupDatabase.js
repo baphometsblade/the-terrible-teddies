@@ -12,8 +12,6 @@ export const setupDatabase = async () => {
 
     // Populate tables with mock data (if needed)
     await populateMockData();
-
-    console.log('Database setup and data population complete');
   } catch (error) {
     console.error('Error setting up database:', error);
   }

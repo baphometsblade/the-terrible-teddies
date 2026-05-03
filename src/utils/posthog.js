@@ -22,7 +22,5 @@ export const initPostHog = () => {
 export const captureEvent = (eventName, properties = {}) => {
   if (typeof window !== 'undefined' && posthog.isFeatureEnabled('analytics')) {
     posthog.capture(eventName, properties);
-  } else {
-    console.log(`Event not captured (analytics disabled or server-side): ${eventName}`, properties);
   }
 };

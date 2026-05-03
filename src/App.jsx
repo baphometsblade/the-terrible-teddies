@@ -51,7 +51,7 @@ function App() {
   const [showChallenges, setShowChallenges] = useState(false);
   const [purchaseSessionId, setPurchaseSessionId] = useState(null);
 
-  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, shiftPendingAchievement, setGems } = useGameStore();
+  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, setGems } = useGameStore();
   const { toast } = useToast();
 
   // Show achievement unlock toasts — process ALL queued achievements with staggered timing
@@ -69,9 +69,9 @@ function App() {
       }, i * 600);
     });
 
-    // Clear the queue after scheduling all toasts
-    while (shiftPendingAchievement()) { /* drain queue */ }
-  }, [pendingAchievements, shiftPendingAchievement, toast]);
+    // Clear the queue in a single state update
+    useGameStore.setState({ pendingAchievements: [] });
+  }, [pendingAchievements, toast]);
 
   // Sync player profile and gem balance from server on login
   useEffect(() => {

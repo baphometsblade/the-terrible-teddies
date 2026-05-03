@@ -3,7 +3,6 @@ const errorCooldown = 5000; // 5 seconds
 
 export const initializeErrorReporting = () => {
   // Initialize any error reporting setup here if needed
-  console.log('Error reporting initialized');
 };
 
 export const reportError = (error) => {

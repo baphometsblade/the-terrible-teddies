@@ -38,12 +38,8 @@ export const uploadTeddyImages = async () => {
           .eq('id', teddy.id);
 
         if (updateError) throw updateError;
-
-        console.log(`Updated image for ${teddy.name}`);
       }
     }
-
-    console.log('All images uploaded and records updated');
   } catch (error) {
     console.error('Error uploading images:', error);
   }

@@ -49,18 +49,12 @@ export const setupTerribleTeddies = async () => {
 
     if (insertError) {
       console.error('Error inserting Terrible Teddies data:', insertError)
-    } else {
-      console.log('Terrible Teddies data uploaded successfully')
     }
-  } else {
-    console.log('Terrible Teddies table already contains data')
   }
 
   // Clean up unnecessary tables or data
   const { error: cleanupError } = await supabase.rpc('cleanup_unused_tables')
   if (cleanupError) {
     console.error('Error cleaning up unused tables:', cleanupError)
-  } else {
-    console.log('Cleanup completed successfully')
   }
 }

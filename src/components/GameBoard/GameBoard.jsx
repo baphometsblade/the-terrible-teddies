@@ -278,9 +278,6 @@ const GameBoard = ({ onBackToMenu }) => {
     return defenderField.filter(c => !c.stealthActive);
   }, []);
 
-  // Use canonical calculateCardDamage from battleUtils.js
-  // Handles piercing (ignores defense) and shield (50% damage reduction) abilities
-
   // Play a card from hand
   const playCard = (card) => {
     if (currentTurn !== 'player' || phase !== 'main') return;

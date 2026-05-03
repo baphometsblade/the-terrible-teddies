@@ -1,8 +1,6 @@
 import { supabase } from '../lib/supabase';
 
 export const runMigrations = async () => {
-  console.log('Running database migrations...');
-
   const migrations = [
     createTableIfNotExists,
     createPolicyIfNotExists
@@ -11,8 +9,6 @@ export const runMigrations = async () => {
   for (const migration of migrations) {
     await migration();
   }
-
-  console.log('Database migrations completed successfully');
 };
 
 const createTableIfNotExists = async () => {
@@ -40,6 +36,5 @@ export const verifyTables = async () => {
     }
   }
   
-  console.log('All tables verified successfully');
   return true;
 };

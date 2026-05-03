@@ -13,7 +13,6 @@ class WebSocketManager {
     this.socket = new WebSocket(this.url);
 
     this.socket.onopen = () => {
-      console.log('WebSocket connection established');
       this.reconnectAttempts = 0;
       toast({
         title: "Connected",
@@ -24,7 +23,6 @@ class WebSocketManager {
 
     this.socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log('Received message:', data);
       // Handle incoming messages here
     };
 
@@ -33,8 +31,7 @@ class WebSocketManager {
       this.reconnect();
     };
 
-    this.socket.onclose = (event) => {
-      console.log('WebSocket connection closed:', event.code, event.reason);
+    this.socket.onclose = () => {
       this.reconnect();
     };
   }
@@ -42,7 +39,6 @@ class WebSocketManager {
   reconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
       setTimeout(() => this.connect(), this.reconnectInterval);
     } else {
       console.error('Max reconnect attempts reached. Please check your connection and try again later.');
