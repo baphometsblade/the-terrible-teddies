@@ -7,53 +7,61 @@ import { fetchServerGemBalance } from '../utils/supabaseClient';
 import confetti from 'canvas-confetti';
 import analytics from '../utils/analytics';
 
+// Gem bundle prices for analytics (mirrors server-side definitions)
+const BUNDLE_PRICES = {
+  gems_small: 0.99, gems_medium: 2.99, gems_large: 9.99,
+  gems_huge: 19.99, gems_mega: 49.99, starter_bundle: 4.99, weekly_gem_pass: 1.99,
+};
+
 const PurchaseSuccess = ({ sessionId, onDone }) => {
   const { setGems } = useGameStore();
   const [phase, setPhase] = useState('verifying'); // verifying | success | pending | error
   const [gemsGranted, setGemsGranted] = useState(0);
   const synced = useRef(false);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  const verify = async () => {
     if (!sessionId || synced.current) return;
+    if (mountedRef.current) setPhase('verifying');
+    try {
+      const purchase = await verifyPurchaseSession(sessionId);
+      if (!mountedRef.current) return;
 
-    const verify = async () => {
-      try {
-        const purchase = await verifyPurchaseSession(sessionId);
+      if (purchase && purchase.status === 'completed') {
+        if (synced.current) return;
+        synced.current = true;
 
-        if (purchase && purchase.status === 'completed') {
-          if (synced.current) return;
-          synced.current = true;
+        const serverBalance = await fetchServerGemBalance();
+        if (!mountedRef.current) return;
+        if (serverBalance !== null) setGems(serverBalance);
 
-          // Sync authoritative gem balance from server — never trust local credit
-          const serverBalance = await fetchServerGemBalance();
-          if (serverBalance !== null) {
-            setGems(serverBalance);
-          }
-          setGemsGranted(purchase.gems_granted);
-          setPhase('success');
+        setGemsGranted(purchase.gems_granted);
+        setPhase('success');
 
-          confetti({
-            particleCount: 200,
-            spread: 120,
-            origin: { y: 0.45 },
-            colors: ['#9333EA', '#A855F7', '#C084FC', '#E879F9', '#FFD700'],
-          });
+        confetti({
+          particleCount: 200, spread: 120, origin: { y: 0.45 },
+          colors: ['#9333EA', '#A855F7', '#C084FC', '#E879F9', '#FFD700'],
+        });
 
-          analytics.trackPurchase({
-            itemId: purchase.bundle_id,
-            itemName: `${purchase.gems_granted} Gems`,
-            price: 0,
-            currency: 'USD',
-          });
-        } else {
-          // Webhook still processing — tell user to check back
-          setPhase('pending');
-        }
-      } catch (_err) {
-        setPhase('error');
+        analytics.trackPurchase({
+          itemId: purchase.bundle_id,
+          itemName: `${purchase.gems_granted} Gems`,
+          price: BUNDLE_PRICES[purchase.bundle_id] ?? 0,
+          currency: 'USD',
+        });
+      } else {
+        setPhase('pending');
       }
-    };
+    } catch (_err) {
+      if (mountedRef.current) setPhase('error');
+    }
+  };
 
+  useEffect(() => {
     verify();
   }, [sessionId]);
 
@@ -118,9 +126,17 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
             <p className="text-white/70 mb-6">
               If you were charged, please contact support — we'll sort it out immediately.
             </p>
-            <Button onClick={onDone} variant="outline" className="border-white/30 text-white hover:bg-white/10">
-              Return to Game
-            </Button>
+            <div className="flex gap-3 justify-center">
+              <Button
+                onClick={() => { synced.current = false; verify(); }}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                Try Again
+              </Button>
+              <Button onClick={onDone} variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                Return to Game
+              </Button>
+            </div>
           </>
         )}
       </motion.div>

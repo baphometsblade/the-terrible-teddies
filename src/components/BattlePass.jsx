@@ -7,7 +7,9 @@ import { useGameStore } from '../stores/gameStore';
 import confetti from 'canvas-confetti';
 
 const SEASON_NAME = "Season 1: Teddy Rampage";
-const SEASON_DAYS_LEFT = 24;
+// Season ends June 30 2026 — recalculated live for urgency
+const SEASON_END = new Date('2026-06-30T23:59:59Z');
+const SEASON_DAYS_LEFT = Math.max(0, Math.ceil((SEASON_END - Date.now()) / 86_400_000));
 
 const BATTLE_PASS_REWARDS = [
   { tier: 1, xpRequired: 0, free: { type: 'coins', amount: 100, icon: '🪙' }, premium: { type: 'card', cardId: 7, name: 'Sneaky Pete', icon: '🃏', rarity: 'uncommon' } },

@@ -115,7 +115,7 @@ const Shop = ({ onClose }) => {
         <div className="text-4xl mb-2">💎</div>
         <div className="text-2xl font-bold text-white">{bundle.gems.toLocaleString()}</div>
         {bundle.bonus > 0 && <div className="text-green-400 text-sm font-semibold">+{bundle.bonus} BONUS</div>}
-        <div className="text-purple-300 text-xs mt-1">{bundle.bonus > 0 ? `${bundle.gems + bundle.bonus} total` : ''}</div>
+        {bundle.bonus > 0 && <div className="text-purple-300 text-xs mt-1">{bundle.gems + bundle.bonus} total</div>}
         <div className="mt-3 bg-white text-purple-900 px-4 py-2 rounded-full font-bold">${bundle.price.toFixed(2)}</div>
       </div>
     </motion.div>
@@ -235,12 +235,12 @@ const Shop = ({ onClose }) => {
                       </Button>
                     </div>
                   </div>
-                  <div className="bg-gradient-to-br from-green-600/30 to-teal-600/30 border border-green-500/50 rounded-xl p-4">
+                  <div className="bg-gradient-to-br from-green-600/20 to-teal-600/20 border border-green-500/30 rounded-xl p-4 opacity-60">
                     <h4 className="font-bold text-white mb-2">🪙 Coin Doubler</h4>
                     <p className="text-white/60 text-sm mb-3">Double coins from battles for 24h!</p>
                     <div className="flex justify-between items-center">
                       <span className="text-green-300">Worth 500+ coins</span>
-                      <Button size="sm" className="bg-green-500 hover:bg-green-600 text-black">💎 25</Button>
+                      <Button size="sm" disabled className="bg-green-500/50 text-black cursor-not-allowed">Coming Soon</Button>
                     </div>
                   </div>
                 </div>

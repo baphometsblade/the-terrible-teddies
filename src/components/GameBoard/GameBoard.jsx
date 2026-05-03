@@ -42,6 +42,8 @@ const GameBoard = ({ onBackToMenu }) => {
     soundEnabled: storeSoundEnabled,
     recordBattleResult,
     playerName,
+    gems,
+    cardPacks,
   } = useGameStore();
 
   // Accumulate per-game stats for challenge/achievement tracking
@@ -708,6 +710,27 @@ const GameBoard = ({ onBackToMenu }) => {
                   </motion.div>
                 </div>
               </div>
+
+              {/* Upsell nudge — only shown when player is low on resources */}
+              {(cardPacks === 0 || gems < 50) && onBackToMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                  className="mb-4 bg-black/30 rounded-xl p-3 text-center"
+                >
+                  <p className={`text-sm mb-2 ${winner === 'player' ? 'text-black/70' : 'text-white/70'}`}>
+                    {cardPacks === 0 ? '📦 Out of card packs? Get more to strengthen your deck!' : '💎 Low on gems? Stock up and unlock premium cards!'}
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={onBackToMenu}
+                    className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
+                  >
+                    Visit Shop
+                  </Button>
+                </motion.div>
+              )}
 
               <div className="flex gap-3 justify-center">
                 <Button
