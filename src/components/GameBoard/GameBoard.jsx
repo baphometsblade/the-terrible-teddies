@@ -405,10 +405,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const attackTarget = (target) => {
     if (!selectedCard || !targetingMode) return;
 
-    // Check if target is valid
+    // Only creatures are valid targets (traps spring on their own and are
+    // triggered by going face — see attackOpponentDirectly).
     const validTargets = getValidTargets(playerField, opponentField);
     if (!validTargets.find(t => t.instanceId === target.instanceId)) {
-      const tauntCard = opponentField.find(c => c.ability === 'taunt');
+      const tauntCard = opponentField.find(c => c.ability === 'taunt' && c.type !== 'trap');
       if (tauntCard) {
         toast({
           title: "Must attack taunt!",
@@ -419,40 +420,26 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       return;
     }
 
-    // Check for trap
-    if (target.type === 'trap') {
-      const trapDamage = target.amount || 3;
-      setPlayerHealth(prev => Math.max(0, prev - trapDamage));
-      setOpponentField(prev => prev.filter(c => c.instanceId !== target.instanceId));
-      playSound('trap');
-      addToBattleLog(`${target.name} triggered! Took ${trapDamage} damage`);
-      toast({
-        title: "Trap Triggered!",
-        description: `${target.name} dealt ${trapDamage} damage to you!`,
-        variant: "destructive"
-      });
-    } else {
-      // Calculate damage with abilities
-      const damage = calculateCardDamage(selectedCard, target);
-      playSound('attack');
+    // Calculate damage with abilities
+    const damage = calculateCardDamage(selectedCard, target);
+    playSound('attack');
 
-      // Apply fury - target gains attack when damaged
-      if (target.ability === 'fury' && damage > 0) {
-        setOpponentField(prev => prev.map(c =>
-          c.instanceId === target.instanceId ? { ...c, attack: c.attack + 1 } : c
-        ));
-        addToBattleLog(`${target.name}'s fury activated! +1 attack`);
-      }
-
-      setOpponentHealth(prev => Math.max(0, prev - damage));
-      battleStatsRef.current.damageDealt += damage;
-
-      // Destroy the target if it takes lethal damage (simplified - always destroy on hit)
-      setOpponentField(prev => prev.filter(c => c.instanceId !== target.instanceId));
-
-      addToBattleLog(`${selectedCard.name} attacked ${target.name} for ${damage} damage${selectedCard.ability === 'piercing' ? ' (piercing)' : ''}`);
-      toast({ title: "Attack!", description: `${selectedCard.name} dealt ${damage} damage!` });
+    // Apply fury - target gains attack when damaged
+    if (target.ability === 'fury' && damage > 0) {
+      setOpponentField(prev => prev.map(c =>
+        c.instanceId === target.instanceId ? { ...c, attack: c.attack + 1 } : c
+      ));
+      addToBattleLog(`${target.name}'s fury activated! +1 attack`);
     }
+
+    setOpponentHealth(prev => Math.max(0, prev - damage));
+    battleStatsRef.current.damageDealt += damage;
+
+    // Destroy the target if it takes lethal damage (simplified - always destroy on hit)
+    setOpponentField(prev => prev.filter(c => c.instanceId !== target.instanceId));
+
+    addToBattleLog(`${selectedCard.name} attacked ${target.name} for ${damage} damage${selectedCard.ability === 'piercing' ? ' (piercing)' : ''}`);
+    toast({ title: "Attack!", description: `${selectedCard.name} dealt ${damage} damage!` });
 
     // Mark card as having attacked
     setPlayerField(prev => prev.map(c =>
@@ -478,15 +465,29 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       return;
     }
 
-    playSound('attack');
-    setOpponentHealth(prev => Math.max(0, prev - selectedCard.attack));
-    battleStatsRef.current.damageDealt += selectedCard.attack;
+    // No blocking creatures. If the opponent has a trap on the field, the attack
+    // springs it (the attacker takes the trap damage and the trap is consumed)
+    // instead of hitting face — so traps stay meaningful without permanently
+    // gating the attack: the next strike gets through.
+    const trap = opponentField.find(c => c.type === 'trap');
+    if (trap) {
+      const trapDamage = trap.amount || 3;
+      setPlayerHealth(prev => Math.max(0, prev - trapDamage));
+      setOpponentField(prev => prev.filter(c => c.instanceId !== trap.instanceId));
+      playSound('trap');
+      addToBattleLog(`${trap.name} sprang! You took ${trapDamage} damage`);
+      toast({ title: "Trap Triggered!", description: `${trap.name} dealt ${trapDamage} damage to you!`, variant: "destructive" });
+    } else {
+      playSound('attack');
+      setOpponentHealth(prev => Math.max(0, prev - selectedCard.attack));
+      battleStatsRef.current.damageDealt += selectedCard.attack;
+      addToBattleLog(`${selectedCard.name} attacked opponent directly for ${selectedCard.attack} damage!`);
+      toast({ title: "Direct Attack!", description: `Dealt ${selectedCard.attack} damage to opponent!` });
+    }
+
     setPlayerField(prev => prev.map(c =>
       c.instanceId === selectedCard.instanceId ? { ...c, hasAttacked: true } : c
     ));
-
-    addToBattleLog(`${selectedCard.name} attacked opponent directly for ${selectedCard.attack} damage!`);
-    toast({ title: "Direct Attack!", description: `Dealt ${selectedCard.attack} damage to opponent!` });
 
     setPlayerMomentum(prev => Math.min(10, prev + 3));
     setSelectedCard(null);
@@ -546,29 +547,34 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       opponentField.forEach(card => {
         if (card.stealthActive) return; // can't attack the turn it's played
 
+        // Creature blockers (taunt/protect/normal) must be dealt with first.
         const targets = getValidTargets(opponentField, livePlayerField);
 
         if (targets.length > 0) {
           const target = targets[0];
-          if (target.type === 'trap') {
-            const trapDamage = target.amount || 3;
-            trapDamageToOpponent += trapDamage;
-            livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
-            playSound('trap');
-            logs.push(`Your ${target.name} triggered! Opponent took ${trapDamage} damage`);
-          } else {
-            const damage = calculateCardDamage(card, target);
-            playSound('attack');
-            if (target.ability === 'fury' && damage > 0) {
-              livePlayerField = livePlayerField.map(c =>
-                c.instanceId === target.instanceId ? { ...c, attack: c.attack + 1 } : c
-              );
-              logs.push(`${target.name}'s fury activated! +1 attack`);
-            }
-            livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
-            logs.push(`${card.name} attacked ${target.name} for ${damage} damage`);
+          const damage = calculateCardDamage(card, target);
+          playSound('attack');
+          if (target.ability === 'fury' && damage > 0) {
+            livePlayerField = livePlayerField.map(c =>
+              c.instanceId === target.instanceId ? { ...c, attack: c.attack + 1 } : c
+            );
+            logs.push(`${target.name}'s fury activated! +1 attack`);
           }
-        } else if (livePlayerField.length === 0) {
+          livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
+          logs.push(`${card.name} attacked ${target.name} for ${damage} damage`);
+          return;
+        }
+
+        // No creature blockers. A player trap springs on the attacker (and is
+        // consumed); otherwise the attack hits face.
+        const trap = livePlayerField.find(c => c.type === 'trap');
+        if (trap) {
+          const trapDamage = trap.amount || 3;
+          trapDamageToOpponent += trapDamage;
+          livePlayerField = livePlayerField.filter(c => c.instanceId !== trap.instanceId);
+          playSound('trap');
+          logs.push(`Your ${trap.name} sprang! Opponent took ${trapDamage} damage`);
+        } else {
           faceDamage += card.attack;
           playSound('attack');
           logs.push(`${card.name} attacked you directly for ${card.attack} damage!`);
