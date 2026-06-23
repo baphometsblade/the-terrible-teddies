@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { useGameStore } from '../stores/gameStore';
 import { supabase } from '../lib/supabase';
+import { getSeasonDaysLeft } from '../utils/season';
 
 // Calculate trophies based on player stats
 const calculateTrophies = (wins, level, bestStreak) => {
@@ -33,12 +34,11 @@ const Leaderboard = ({ onClose }) => {
   const playerTrophies = calculateTrophies(totalWins, level, bestWinStreak);
 
   // Fetch leaderboard data from Supabase
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      setLoading(true);
-      setError(null);
+  const fetchLeaderboard = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-      try {
+    try {
         const { data, error: fetchError } = await supabase
           .from('players')
           .select('username, wins, losses, experience, coins, best_win_streak')
@@ -74,10 +74,11 @@ const Leaderboard = ({ onClose }) => {
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchLeaderboard();
   }, []);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
 
   // Calculate player's rank based on real leaderboard data
   const playerRank = leaderboardData.filter(p => p.trophies > playerTrophies).length + 1;
@@ -207,7 +208,7 @@ const Leaderboard = ({ onClose }) => {
                     <p className="text-red-400">Error loading leaderboard</p>
                     <p className="text-white/50 text-sm mt-2">{error}</p>
                     <Button
-                      onClick={() => window.location.reload()}
+                      onClick={fetchLeaderboard}
                       className="mt-4 bg-red-600 hover:bg-red-700"
                     >
                       Retry
@@ -234,7 +235,7 @@ const Leaderboard = ({ onClose }) => {
                   <div className="text-6xl mb-4">👥</div>
                   <h3 className="text-white text-xl font-bold mb-2">Coming Soon!</h3>
                   <p className="text-white/50">Add friends to compete against them directly!</p>
-                  <Button className="mt-4 bg-purple-600 hover:bg-purple-700">
+                  <Button disabled className="mt-4 bg-purple-600/50 text-white/70 cursor-not-allowed">
                     Connect Social Account
                   </Button>
                 </div>
@@ -243,7 +244,7 @@ const Leaderboard = ({ onClose }) => {
 
             {activeTab === 'rewards' && (
               <motion.div key="rewards" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="text-white/50 text-sm mb-4">Season End Rewards (24 days left)</div>
+                <div className="text-white/50 text-sm mb-4">Season End Rewards ({getSeasonDaysLeft()} days left)</div>
 
                 {RANK_REWARDS.map((reward, idx) => (
                   <div

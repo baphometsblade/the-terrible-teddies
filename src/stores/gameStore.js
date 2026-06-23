@@ -273,6 +273,13 @@ export const useGameStore = create(
         const newWeekWins = (weeklyReset ? 0 : state.weekWins) + (won ? 1 : 0);
         const newWeekCoins = (weeklyReset ? 0 : state.weekCoinsEarned) + coinsThisBattle;
 
+        // Clear claimed challenges for any period that just rolled over, so the
+        // same daily/weekly challenge ids become claimable again. Challenge ids
+        // are prefixed 'd' (daily) or 'w' (weekly).
+        let newClaimedChallenges = state.claimedChallenges;
+        if (dailyReset) newClaimedChallenges = newClaimedChallenges.filter(id => !id.startsWith('d'));
+        if (weeklyReset) newClaimedChallenges = newClaimedChallenges.filter(id => !id.startsWith('w'));
+
         set({
           // All-time
           totalBattles: newTotalBattles,
@@ -292,6 +299,8 @@ export const useGameStore = create(
           weekWins: newWeekWins,
           weekCoinsEarned: newWeekCoins,
           weeklyStatsDate: weekKey,
+          // Re-claimable challenges after a period rollover
+          claimedChallenges: newClaimedChallenges,
         });
 
         const xpGain = won ? 50 : 20;

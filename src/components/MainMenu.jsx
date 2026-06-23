@@ -35,7 +35,7 @@ const MainMenu = ({
 
   const menuOptions = [
     { id: 'battle', title: 'Battle', description: 'Fight the AI!', icon: '⚔️', color: 'from-red-500 to-orange-500', action: onStartGame, badge: currentWinStreak > 0 ? `🔥 ${currentWinStreak}` : null },
-    { id: 'challenges', title: 'Challenges', description: 'Daily & weekly!', icon: '🎯', color: 'from-orange-500 to-red-600', action: onChallenges, badge: '!' },
+    { id: 'challenges', title: 'Challenges', description: 'Daily & weekly!', icon: '🎯', color: 'from-orange-500 to-red-600', action: onChallenges, badge: dailyAvailable ? '!' : null },
     { id: 'battlepass', title: 'Battle Pass', description: 'Season rewards!', icon: '🏆', color: 'from-yellow-500 to-orange-600', action: onBattlePass, badge: '⭐', highlight: true },
     { id: 'shop', title: 'Shop', description: 'Get gems & packs!', icon: '🏪', color: 'from-emerald-500 to-green-600', action: onShop, badge: '💎' },
     { id: 'packs', title: 'Card Packs', description: 'Open new cards!', icon: '📦', color: 'from-purple-500 to-pink-500', action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks}` : null, highlight: cardPacks > 0 },

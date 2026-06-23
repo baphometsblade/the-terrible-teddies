@@ -347,7 +347,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         addToBattleLog(`Healed ${card.amount} HP with ${card.name}`);
         toast({ title: "Healing!", description: `Restored ${card.amount} HP` });
         break;
-      case 'draw':
+      case 'draw': {
         const cardsToDraw = Math.min(card.amount, playerDeck.length);
         const drawnCards = playerDeck.slice(0, cardsToDraw);
         setPlayerHand(prev => [...prev, ...drawnCards]);
@@ -356,6 +356,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         addToBattleLog(`Drew ${cardsToDraw} cards with ${card.name}`);
         toast({ title: "Cards Drawn!", description: `Drew ${cardsToDraw} cards` });
         break;
+      }
       case 'buff':
         setPlayerField(prev => prev.map(c => ({ ...c, attack: c.attack + card.amount })));
         addToBattleLog(`All teddies gained +${card.amount} attack!`);

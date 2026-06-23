@@ -182,6 +182,23 @@ const Challenges = ({ onClose }) => {
   const dailyComplete = DAILY_CHALLENGES.filter(c => getChallengeProgress(c) >= c.target).length;
   const weeklyComplete = WEEKLY_CHALLENGES.filter(c => getChallengeProgress(c) >= c.target).length;
 
+  // Bonus for clearing every challenge in a tab. Uses the same claim ledger as
+  // individual challenges (ids 'd'/'w'-prefixed so they reset on rollover too).
+  const BONUS = {
+    daily:  { key: 'd_all_bonus', gems: 25,  coins: 200,  allDone: dailyComplete === DAILY_CHALLENGES.length },
+    weekly: { key: 'w_all_bonus', gems: 100, coins: 1000, allDone: weeklyComplete === WEEKLY_CHALLENGES.length },
+  };
+
+  const claimBonus = (tab) => {
+    const bonus = BONUS[tab];
+    if (!bonus.allDone || (claimedChallenges ?? []).includes(bonus.key)) return;
+    addGems(bonus.gems);
+    addCoins(bonus.coins);
+    claimChallenge(bonus.key);
+    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#FFD700', '#9333EA', '#22c55e'] });
+    toast({ title: "Bonus Claimed!", description: `+${bonus.gems} 💎 and +${bonus.coins} 🪙` });
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
       <motion.div
@@ -269,17 +286,27 @@ const Challenges = ({ onClose }) => {
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <div className="text-purple-400">💎 {activeTab === 'daily' ? '25' : '100'}</div>
-                <div className="text-yellow-400">🪙 {activeTab === 'daily' ? '200' : '1000'}</div>
+                <div className="text-purple-400">💎 {BONUS[activeTab].gems}</div>
+                <div className="text-yellow-400">🪙 {BONUS[activeTab].coins}</div>
               </div>
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${
-                (activeTab === 'daily' ? dailyComplete : weeklyComplete) === 
-                (activeTab === 'daily' ? DAILY_CHALLENGES : WEEKLY_CHALLENGES).length
-                  ? 'bg-yellow-500 text-black'
-                  : 'bg-white/10 text-white/30'
-              }`}>
-                🎁
-              </div>
+              {(claimedChallenges ?? []).includes(BONUS[activeTab].key) ? (
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-green-600/40 text-white">
+                  ✅
+                </div>
+              ) : (
+                <button
+                  onClick={() => claimBonus(activeTab)}
+                  disabled={!BONUS[activeTab].allDone}
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-all ${
+                    BONUS[activeTab].allDone
+                      ? 'bg-yellow-500 text-black hover:scale-105 cursor-pointer animate-pulse'
+                      : 'bg-white/10 text-white/30 cursor-not-allowed'
+                  }`}
+                  aria-label="Claim all-challenges bonus"
+                >
+                  🎁
+                </button>
+              )}
             </div>
           </div>
         </div>
