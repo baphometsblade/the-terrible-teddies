@@ -26,7 +26,7 @@ const PREMIUM_PASS_PRICE = 500; // gems
 
 const BattlePass = ({ onClose }) => {
   const {
-    gems, spendGems, addCoins, addGems, addCardPack, addCard, xp,
+    gems, spendGems, addCoins, addGems, addCardPack, addCard, seasonXP,
     hasBattlePassPremium, setBattlePassPremium,
     claimedBattlePassRewards, claimBattlePassReward,
   } = useGameStore();
@@ -37,7 +37,7 @@ const BattlePass = ({ onClose }) => {
   const hasPremium = hasBattlePassPremium;
   const claimedRewards = claimedBattlePassRewards;
 
-  const battlePassXP = xp;
+  const battlePassXP = seasonXP;
   const currentTier = BATTLE_PASS_REWARDS.reduce((tier, reward) => {
     return battlePassXP >= reward.xpRequired ? reward.tier : tier;
   }, 0);
@@ -65,12 +65,6 @@ const BattlePass = ({ onClose }) => {
     if (!reward) return;
 
     const rewardData = isPremium ? reward.premium : reward.free;
-    const claimKey = isPremium ? 'premium' : 'free';
-
-    if (claimedRewards[claimKey].includes(tier)) {
-      toast({ title: "Already Claimed", description: "You've already claimed this reward.", variant: "destructive" });
-      return;
-    }
 
     if (tier > currentTier) {
       toast({ title: "Tier Not Reached", description: "Keep playing to unlock this tier!", variant: "destructive" });
@@ -79,6 +73,14 @@ const BattlePass = ({ onClose }) => {
 
     if (isPremium && !hasPremium) {
       toast({ title: "Premium Required", description: "Unlock the Premium Pass to claim this reward!", variant: "destructive" });
+      return;
+    }
+
+    // Claim first — claimBattlePassReward atomically records the tier and
+    // returns false if it was already claimed, so a double-click can't grant
+    // the reward twice.
+    if (!claimBattlePassReward(tier, isPremium)) {
+      toast({ title: "Already Claimed", description: "You've already claimed this reward.", variant: "destructive" });
       return;
     }
 
@@ -104,8 +106,6 @@ const BattlePass = ({ onClose }) => {
         toast({ title: "Exclusive Unlocked!", description: `You got ${rewardData.name}!` });
         break;
     }
-
-    claimBattlePassReward(tier, isPremium);
   };
 
   const RewardCard = ({ reward, isPremium, tier }) => {

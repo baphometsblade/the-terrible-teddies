@@ -91,6 +91,14 @@ export const SHOP_ITEMS = [
 
 const getXPForLevel = (level) => Math.floor(100 * Math.pow(1.5, level - 1));
 
+// Coins refunded when a card pull duplicates one you already own, so paid packs
+// always have value even for near-complete collections.
+const DUPLICATE_COIN_VALUE = { common: 10, uncommon: 20, rare: 40, epic: 75, legendary: 150 };
+const coinsForDuplicate = (cardId) => {
+  const card = ALL_CARDS.find(c => c.id === cardId);
+  return DUPLICATE_COIN_VALUE[card?.rarity] ?? 10;
+};
+
 // Returns the Monday of the current week as a date string for weekly reset keys
 const getWeekKey = () => {
   const d = new Date();
@@ -103,6 +111,10 @@ const initialState = {
   playerName: 'Teddy Trainer',
   level: 1,
   xp: 0,
+  // Monotonic lifetime XP that never decreases on level-up — drives the Battle
+  // Pass tiers, which need cumulative progress (unlike `xp`, which resets each
+  // level).
+  seasonXP: 0,
   coins: 500,
   gems: 10,
   ownedCards: [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42],
@@ -167,7 +179,12 @@ export const useGameStore = create(
           bonusCoins += 100 * newLevel;
         }
 
-        set({ xp: newXP, level: newLevel, coins: state.coins + bonusCoins });
+        set({
+          xp: newXP,
+          level: newLevel,
+          seasonXP: state.seasonXP + amount,
+          coins: state.coins + bonusCoins,
+        });
         get().checkAchievement('level_10', newLevel >= 10);
         get().checkAchievement('level_25', newLevel >= 25);
       },
@@ -184,7 +201,7 @@ export const useGameStore = create(
         return false;
       },
 
-      addGems: (amount) => set((state) => ({ gems: state.gems + amount })),
+      addGems: (amount) => set((state) => ({ gems: state.gems + Math.max(0, amount) })),
       setGems: (amount) => set({ gems: amount }),
       spendGems: (amount) => {
         const state = get();
@@ -209,28 +226,39 @@ export const useGameStore = create(
         return true;
       },
 
-      addCard: (cardId) => {
-        const state = get();
-        if (!state.ownedCards.includes(cardId)) {
-          const newOwnedCards = [...state.ownedCards, cardId];
-          set({ ownedCards: newOwnedCards });
-          get().checkAchievement('collect_20', newOwnedCards.length >= 20);
-          get().checkAchievement('collect_all', newOwnedCards.length >= ALL_CARDS.length);
-        }
-      },
+      addCard: (cardId) => get().addCards([cardId]),
 
+      // Grant cards: new ids are added to the collection, duplicates are refunded
+      // as coins so a pull is never worthless. Returns the coins awarded.
       addCards: (cardIds) => {
         const state = get();
-        const newCards = cardIds.filter(id => !state.ownedCards.includes(id));
+        const newCards = [];
+        let dupeCoins = 0;
+        const owned = new Set(state.ownedCards);
+        for (const id of cardIds) {
+          if (owned.has(id)) {
+            dupeCoins += coinsForDuplicate(id);
+          } else {
+            owned.add(id);
+            newCards.push(id);
+          }
+        }
+
+        if (newCards.length === 0 && dupeCoins === 0) return 0;
+
+        const newOwnedCards = [...state.ownedCards, ...newCards];
+        set({ ownedCards: newOwnedCards, coins: state.coins + dupeCoins });
         if (newCards.length > 0) {
-          const newOwnedCards = [...state.ownedCards, ...newCards];
-          set({ ownedCards: newOwnedCards });
           get().checkAchievement('collect_20', newOwnedCards.length >= 20);
           get().checkAchievement('collect_all', newOwnedCards.length >= ALL_CARDS.length);
         }
+        return dupeCoins;
       },
 
-      setCurrentDeck: (cardIds) => set({ currentDeck: cardIds }),
+      // Only owned cards may enter the active deck — guards against loading a
+      // stale saved deck (or any non-UI writer) that references unowned cards.
+      setCurrentDeck: (cardIds) =>
+        set((state) => ({ currentDeck: cardIds.filter(id => state.ownedCards.includes(id)) })),
 
       saveDeck: (name, cardIds) => {
         set((state) => ({
@@ -347,9 +375,38 @@ export const useGameStore = create(
       },
 
       claimChallenge: (challengeId) => {
-        set((state) => ({
-          claimedChallenges: [...state.claimedChallenges, challengeId],
-        }));
+        const state = get();
+        if (state.claimedChallenges.includes(challengeId)) return false;
+        set({ claimedChallenges: [...state.claimedChallenges, challengeId] });
+        return true;
+      },
+
+      // Reset daily/weekly challenge stats and re-open their claimed ledger when
+      // the calendar has rolled over. Driven by the date at read time (e.g. when
+      // opening the Challenges panel) so state is correct even before the first
+      // battle of the day. recordBattleResult performs the same reset inline.
+      syncPeriods: () => {
+        const state = get();
+        const today = new Date().toDateString();
+        const weekKey = getWeekKey();
+        const dailyReset = state.dailyStatsDate && state.dailyStatsDate !== today;
+        const weeklyReset = state.weeklyStatsDate && state.weeklyStatsDate !== weekKey;
+        if (!dailyReset && !weeklyReset) return;
+
+        let claimed = state.claimedChallenges;
+        const patch = {};
+        if (dailyReset) {
+          claimed = claimed.filter(id => !id.startsWith('d'));
+          Object.assign(patch, {
+            todayWins: 0, todayBattles: 0, todayDamageDealt: 0, todayCardsPlayed: 0,
+            dailyStatsDate: today,
+          });
+        }
+        if (weeklyReset) {
+          claimed = claimed.filter(id => !id.startsWith('w'));
+          Object.assign(patch, { weekWins: 0, weekCoinsEarned: 0, weeklyStatsDate: weekKey });
+        }
+        set({ ...patch, claimedChallenges: claimed });
       },
 
       checkDailyLogin: () => {
@@ -378,6 +435,10 @@ export const useGameStore = create(
             .slice(0, reward.cards)
             .map(c => c.id);
           if (randomCards.length > 0) get().addCards(randomCards);
+          // Collection complete (or nearly): honor the promised cards as coins
+          // so the daily reward is never silently empty.
+          const shortfall = reward.cards - randomCards.length;
+          if (shortfall > 0) get().addCoins(shortfall * 50);
         }
 
         get().checkAchievement('daily_7', newConsecutive >= 7);
@@ -394,32 +455,29 @@ export const useGameStore = create(
         }
       },
 
-      openCardPack: (packType = 'regular') => {
-        const state = get();
-
-        // Determine which pack to open and validate availability
-        let guaranteedMinRarity = null;
-        if (packType === 'legendary' && state.legendaryPacks > 0) {
-          guaranteedMinRarity = 'legendary';
-        } else if (packType === 'premium' && state.premiumPacks > 0) {
-          guaranteedMinRarity = 'rare';
-        } else if (packType === 'regular' && state.cardPacks > 0) {
-          guaranteedMinRarity = null;
-        } else {
-          // Fallback: try to open any available pack
-          if (state.legendaryPacks > 0) {
-            guaranteedMinRarity = 'legendary';
-            packType = 'legendary';
-          } else if (state.premiumPacks > 0) {
-            guaranteedMinRarity = 'rare';
-            packType = 'premium';
-          } else if (state.cardPacks > 0) {
-            guaranteedMinRarity = null;
-            packType = 'regular';
-          } else {
-            return null; // No packs available
+      openCardPack: (requestedType = 'regular') => {
+        // Atomically claim exactly one pack inside a single update so rapid
+        // double-clicks can't open two packs or drive a counter negative.
+        // Resolve the requested type if available, else fall back to any pack
+        // (legendary > premium > regular).
+        const field = { legendary: 'legendaryPacks', premium: 'premiumPacks', regular: 'cardPacks' };
+        let packType = null;
+        set((s) => {
+          for (const t of [requestedType, 'legendary', 'premium', 'regular']) {
+            const key = field[t];
+            if (key && s[key] > 0) {
+              packType = t;
+              return { [key]: s[key] - 1 };
+            }
           }
-        }
+          return {};
+        });
+        if (!packType) return null; // No packs available
+
+        const guaranteedMinRarity =
+          packType === 'legendary' ? 'legendary' : packType === 'premium' ? 'rare' : null;
+
+        const state = get();
 
         const getRandomRarity = (guaranteed = false) => {
           if (guaranteed === 'legendary') return 'legendary';
@@ -473,15 +531,6 @@ export const useGameStore = create(
         }
 
         get().addCards(pulledCards.map(c => c.id));
-
-        // Decrement the correct pack type
-        if (packType === 'legendary') {
-          set((s) => ({ legendaryPacks: s.legendaryPacks - 1 }));
-        } else if (packType === 'premium') {
-          set((s) => ({ premiumPacks: s.premiumPacks - 1 }));
-        } else {
-          set((s) => ({ cardPacks: s.cardPacks - 1 }));
-        }
 
         return pulledCards;
       },
@@ -544,11 +593,44 @@ export const useGameStore = create(
     }),
     {
       name: 'terrible-teddies-storage',
-      version: 2,
+      version: 3,
       // Don't persist in-flight UI state
       partialize: (state) => {
         const { pendingAchievements, ...rest } = state;
         return rest;
+      },
+      // Normalize state persisted by any earlier release: fill in fields added
+      // later, repair nested shapes, and coerce corrupt numerics. Without this a
+      // returning player's stale localStorage can crash on reads like
+      // claimedBattlePassRewards.premium.includes(...) or surface NaN balances.
+      migrate: (persisted) => {
+        const s = { ...initialState, ...(persisted || {}) };
+
+        s.claimedBattlePassRewards = {
+          free: persisted?.claimedBattlePassRewards?.free ?? [],
+          premium: persisted?.claimedBattlePassRewards?.premium ?? [],
+        };
+        s.claimedChallenges = Array.isArray(persisted?.claimedChallenges) ? persisted.claimedChallenges : [];
+        s.ownedCards = Array.isArray(persisted?.ownedCards) && persisted.ownedCards.length
+          ? persisted.ownedCards : [...initialState.ownedCards];
+        s.currentDeck = Array.isArray(persisted?.currentDeck) ? persisted.currentDeck : [...initialState.currentDeck];
+        s.savedDecks = Array.isArray(persisted?.savedDecks) ? persisted.savedDecks : [];
+        s.completedAchievements = Array.isArray(persisted?.completedAchievements) ? persisted.completedAchievements : [];
+
+        // seasonXP was added in v3 — seed it from cumulative level progress so
+        // existing players don't start the Battle Pass from zero.
+        if (typeof s.seasonXP !== 'number' || Number.isNaN(s.seasonXP)) {
+          let seeded = s.xp || 0;
+          for (let lvl = 1; lvl < (s.level || 1); lvl++) seeded += getXPForLevel(lvl);
+          s.seasonXP = seeded;
+        }
+
+        for (const k of ['coins', 'gems', 'xp', 'level', 'cardPacks', 'premiumPacks',
+          'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'consecutiveLogins',
+          'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak']) {
+          if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];
+        }
+        return s;
       },
     }
   )

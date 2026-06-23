@@ -47,7 +47,7 @@ const CardPackOpening = ({ onClose }) => {
   };
 
   const handleOpenPack = () => {
-    if (totalPacks <= 0) return;
+    if (totalPacks <= 0 || isOpening) return;
 
     setIsOpening(true);
     setPackAnimation(true);
@@ -59,6 +59,14 @@ const CardPackOpening = ({ onClose }) => {
       // Open the next available pack type (prioritizes legendary > premium > regular)
       const packType = getNextPackType();
       const cards = openCardPack(packType);
+      // The store claims the pack atomically; if none remain (e.g. a lost race),
+      // it returns null — bail without crashing the reveal animation.
+      if (!cards) {
+        setIsOpening(false);
+        setShowPack(true);
+        setPackAnimation(false);
+        return;
+      }
       setPulledCards(cards);
 
       cards.forEach((card, index) => {

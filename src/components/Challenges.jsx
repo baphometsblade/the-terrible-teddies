@@ -45,7 +45,7 @@ const getTimeUntilReset = (isWeekly = false) => {
 const Challenges = ({ onClose }) => {
   const {
     bestWinStreak, ownedCards,
-    addCoins, addGems, addXP, addCardPack, claimChallenge, claimedChallenges,
+    addCoins, addGems, addXP, addCardPack, claimChallenge, claimedChallenges, syncPeriods,
     // Daily stats (auto-reset each day)
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     // Weekly stats (auto-reset each Monday)
@@ -55,6 +55,12 @@ const Challenges = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState('daily');
   const [dailyResetTime, setDailyResetTime] = useState(getTimeUntilReset(false));
   const [weeklyResetTime, setWeeklyResetTime] = useState(getTimeUntilReset(true));
+
+  // Roll over daily/weekly stats and the claimed ledger if the calendar has
+  // advanced since the last battle, so the panel never shows stale challenges.
+  useEffect(() => {
+    syncPeriods();
+  }, [syncPeriods]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -79,20 +85,21 @@ const Challenges = ({ onClose }) => {
   };
 
   const claimReward = (challenge) => {
-    if ((claimedChallenges ?? []).includes(challenge.id)) return;
-
     const progress = getChallengeProgress(challenge);
     if (progress < challenge.target) return;
 
+    // Claim first — claimChallenge is atomic and idempotent in the store, so a
+    // double-click (or any re-entry) can't grant the reward twice.
+    if (!claimChallenge(challenge.id)) return;
+
     switch (challenge.reward.type) {
-      case 'coins':       addCoins(challenge.reward.amount); break;
-      case 'gems':        addGems(challenge.reward.amount); break;
-      case 'xp':          addXP(challenge.reward.amount); break;
-      case 'pack':
-      case 'legendaryPack': addCardPack(challenge.reward.amount); break;
+      case 'coins':         addCoins(challenge.reward.amount); break;
+      case 'gems':          addGems(challenge.reward.amount); break;
+      case 'xp':            addXP(challenge.reward.amount); break;
+      case 'legendaryPack': addCardPack(challenge.reward.amount, 'legendary'); break;
+      case 'pack':          addCardPack(challenge.reward.amount); break;
     }
 
-    claimChallenge(challenge.id);
     confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
     toast({
       title: "Challenge Complete!",
