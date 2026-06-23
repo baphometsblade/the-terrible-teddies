@@ -80,6 +80,12 @@ Deploy with `supabase functions deploy <name>`. Required secrets:
 ### Environment Variables
 
 Frontend (Vite, must be prefixed with `VITE_`):
-- `VITE_SUPABASE_PROJECT_URL`
-- `VITE_SUPABASE_API_KEY`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 - `VITE_POSTHOG_KEY` (optional, for analytics)
+
+For local edge-function development, also set `SUPABASE_SERVICE_ROLE_KEY` (used
+by the Stripe webhook to credit gems) and deploy the webhook with JWT
+verification disabled — `supabase functions deploy stripe-webhook --no-verify-jwt`
+(also configured in `supabase/config.toml`) — since Stripe authenticates via
+its signature header, not a Supabase JWT.
