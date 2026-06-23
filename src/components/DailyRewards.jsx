@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { useGameStore, DAILY_REWARDS } from '../stores/gameStore';
@@ -89,7 +89,7 @@ const DailyRewards = ({ onClose }) => {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500 rounded-xl p-6 text-center"
               >
-                <h3 className="text-white text-xl font-bold mb-4">🎉 Today's Reward Claimed!</h3>
+                <h3 className="text-white text-xl font-bold mb-4">🎉 Today&apos;s Reward Claimed!</h3>
                 <div className="flex justify-center gap-8">
                   {reward.coins > 0 && (
                     <div className="text-center">

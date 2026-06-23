@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card } from "@/components/ui/card";
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import TeddyCard from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
@@ -58,8 +57,12 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   }, []);
 
   useEffect(() => {
+    // Capture the array reference so the cleanup clears the same list we push
+    // into (it's mutated in place, never reassigned), satisfying the rule that
+    // warns against reading a possibly-changed ref in cleanup.
+    const timeouts = timeoutsRef.current;
     return () => {
-      timeoutsRef.current.forEach(clearTimeout);
+      timeouts.forEach(clearTimeout);
     };
   }, []);
 
@@ -76,7 +79,6 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const [playerHand, setPlayerHand] = useState([]);
   const [playerField, setPlayerField] = useState([]);
   const [playerDeck, setPlayerDeck] = useState([]);
-  const [playerGraveyard, setPlayerGraveyard] = useState([]);
 
   // Opponent state
   const [opponentHealth, setOpponentHealth] = useState(30);
@@ -91,7 +93,6 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
   const [showAbilityPopup, setShowAbilityPopup] = useState(null);
-  const [rewardsShown, setRewardsShown] = useState(false);
   const [battleRewards, setBattleRewards] = useState({ xp: 0, coins: 0 });
 
   const { toast } = useToast();
@@ -260,7 +261,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       setPlayerField(prev => prev.map(c => ({ ...c, stealthActive: false })));
       safeTimeout(() => setPhase('main'), 500);
     }
-  }, [phase, currentTurn, playerDeck, gameOver, toast, addToBattleLog, playSound]);
+  }, [phase, currentTurn, playerDeck, gameOver, toast, addToBattleLog, playSound, safeTimeout]);
 
   // Get valid targets considering abilities
   const getValidTargets = useCallback((attackerField, defenderField) => {
@@ -298,7 +299,6 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       applySpecialEffect(card);
       setPlayerEnergy(prev => prev - card.cost);
       setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
-      setPlayerGraveyard(prev => [...prev, card]);
       setPlayerMomentum(prev => Math.min(10, prev + 1));
       battleStatsRef.current.cardsPlayed += 1;
       playSound('cardPlay');
@@ -619,7 +619,6 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setPlayerHand([]);
     setPlayerField([]);
     setPlayerDeck([]);
-    setPlayerGraveyard([]);
 
     // Reset opponent state
     setOpponentHealth(30);
@@ -634,7 +633,6 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setGameOver(false);
     setWinner(null);
     setShowAbilityPopup(null);
-    setRewardsShown(false);
     setBattleRewards({ xp: 0, coins: 0 });
 
     // Increment gameId to trigger deck re-initialization useEffect

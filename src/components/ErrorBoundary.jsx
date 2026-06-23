@@ -7,7 +7,7 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -52,7 +52,7 @@ class ErrorBoundary extends React.Component {
               <div className="text-6xl mb-4">🧸💔</div>
               <h1 className="text-3xl font-bold text-white mb-2">Oh no!</h1>
               <p className="text-white/70">
-                Something went wrong with the teddies. Don't worry — your progress is safe.
+                Something went wrong with the teddies. Don&apos;t worry — your progress is safe.
               </p>
             </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -100,7 +100,7 @@ const Challenges = ({ onClose }) => {
     });
   };
 
-  const ChallengeCard = ({ challenge, isWeekly = false }) => {
+  const ChallengeCard = ({ challenge }) => {
     const progress = getChallengeProgress(challenge);
     const isComplete = progress >= challenge.target;
     const isClaimed = (claimedChallenges ?? []).includes(challenge.id);
@@ -257,7 +257,7 @@ const Challenges = ({ onClose }) => {
           <AnimatePresence mode="wait">
             {activeTab === 'daily' && (
               <motion.div key="daily" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                {DAILY_CHALLENGES.map((challenge, idx) => (
+                {DAILY_CHALLENGES.map((challenge) => (
                   <div key={challenge.id} className="mb-3">
                     <ChallengeCard challenge={challenge} />
                   </div>
@@ -267,9 +267,9 @@ const Challenges = ({ onClose }) => {
 
             {activeTab === 'weekly' && (
               <motion.div key="weekly" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                {WEEKLY_CHALLENGES.map((challenge, idx) => (
+                {WEEKLY_CHALLENGES.map((challenge) => (
                   <div key={challenge.id} className="mb-3">
-                    <ChallengeCard challenge={challenge} isWeekly />
+                    <ChallengeCard challenge={challenge} />
                   </div>
                 ))}
               </motion.div>

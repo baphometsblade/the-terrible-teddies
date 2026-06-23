@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useGameStore } from '../stores/gameStore';
@@ -131,10 +130,21 @@ const MainMenu = ({
           </div>
 
           <motion.button
+            onClick={onTutorial}
+            className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            aria-label="How to play"
+          >
+            <span className="text-2xl">❓</span>
+          </motion.button>
+
+          <motion.button
             onClick={onSettings}
             className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"
             whileHover={{ scale: 1.05, rotate: 90 }}
             whileTap={{ scale: 0.95 }}
+            aria-label="Settings"
           >
             <span className="text-2xl">⚙️</span>
           </motion.button>

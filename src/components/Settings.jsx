@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -125,7 +125,7 @@ const Settings = ({ onClose }) => {
             ) : (
               <div className="bg-red-900/30 border border-red-500 rounded-lg p-4">
                 <p className="text-red-300 text-sm mb-3">
-                  This will delete ALL progress. Type "RESET" to confirm.
+                  This will delete ALL progress. Type &quot;RESET&quot; to confirm.
                 </p>
                 <input
                   type="text"

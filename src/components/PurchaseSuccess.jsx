@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { useGameStore } from '../stores/gameStore';
@@ -24,7 +24,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
     return () => { mountedRef.current = false; };
   }, []);
 
-  const verify = async () => {
+  const verify = useCallback(async () => {
     if (!sessionId || synced.current) return;
     if (mountedRef.current) setPhase('verifying');
     try {
@@ -59,11 +59,11 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
     } catch (_err) {
       if (mountedRef.current) setPhase('error');
     }
-  };
+  }, [sessionId, setGems]);
 
   useEffect(() => {
     verify();
-  }, [sessionId]);
+  }, [verify]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
@@ -98,7 +98,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
               onClick={onDone}
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 font-bold text-lg"
             >
-              Awesome! Let's Play
+              Awesome! Let&apos;s Play
             </Button>
           </>
         )}
@@ -111,7 +111,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
               Your payment was received. Gems will appear within a minute.
             </p>
             <p className="text-white/50 text-sm mb-6">
-              If gems don't appear, please contact support with your order confirmation email.
+              If gems don&apos;t appear, please contact support with your order confirmation email.
             </p>
             <Button onClick={onDone} variant="outline" className="border-white/30 text-white hover:bg-white/10">
               Return to Game
@@ -124,7 +124,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
             <div className="text-6xl mb-4">😢</div>
             <h2 className="text-2xl font-bold text-white mb-2">Something Went Wrong</h2>
             <p className="text-white/70 mb-6">
-              If you were charged, please contact support — we'll sort it out immediately.
+              If you were charged, please contact support — we&apos;ll sort it out immediately.
             </p>
             <div className="flex gap-3 justify-center">
               <Button

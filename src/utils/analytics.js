@@ -74,6 +74,7 @@ export const analytics = {
 
   trackInGamePurchase: ({ itemId, itemName, cost, currency }) => {
     logEvent('spend_virtual_currency', {
+      item_id: itemId,
       item_name: itemName,
       virtual_currency_name: currency,
       value: cost,
