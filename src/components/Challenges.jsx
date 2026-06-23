@@ -198,10 +198,11 @@ const Challenges = ({ onClose }) => {
 
   const claimBonus = (tab) => {
     const bonus = BONUS[tab];
-    if (!bonus.allDone || (claimedChallenges ?? []).includes(bonus.key)) return;
+    if (!bonus.allDone) return;
+    // Claim first — atomic and idempotent, so a double-click can't double-grant.
+    if (!claimChallenge(bonus.key)) return;
     addGems(bonus.gems);
     addCoins(bonus.coins);
-    claimChallenge(bonus.key);
     confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#FFD700', '#9333EA', '#22c55e'] });
     toast({ title: "Bonus Claimed!", description: `+${bonus.gems} 💎 and +${bonus.coins} 🪙` });
   };
