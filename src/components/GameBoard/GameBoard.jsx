@@ -855,13 +855,15 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             </motion.div>
           );
         })}
-        {opponentField.length === 0 && targetingMode && (
+        {targetingMode && getValidTargets(playerField, opponentField).length === 0 && (
           <motion.div
             whileHover={{ scale: 1.05 }}
             className="w-24 h-36 border-2 border-dashed border-red-400 rounded-lg flex items-center justify-center cursor-crosshair bg-red-100/50"
             onClick={attackOpponentDirectly}
           >
-            <span className="text-red-500 text-xs text-center">Attack Directly</span>
+            <span className="text-red-500 text-xs text-center">
+              {opponentField.some(c => c.type === 'trap') ? 'Strike (springs trap)' : 'Attack Directly'}
+            </span>
           </motion.div>
         )}
       </div>

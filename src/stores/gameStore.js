@@ -638,11 +638,15 @@ export const useGameStore = create(
         s.savedDecks = Array.isArray(persisted?.savedDecks) ? persisted.savedDecks : [];
         s.completedAchievements = Array.isArray(persisted?.completedAchievements) ? persisted.completedAchievements : [];
 
-        // seasonXP was added in v3 — seed it from cumulative level progress so
-        // existing players don't start the Battle Pass from zero.
-        if (typeof s.seasonXP !== 'number' || Number.isNaN(s.seasonXP)) {
-          let seeded = s.xp || 0;
-          for (let lvl = 1; lvl < (s.level || 1); lvl++) seeded += getXPForLevel(lvl);
+        // seasonXP was added in v3 — for players whose persisted state predates
+        // it, seed from cumulative level progress so the Battle Pass doesn't
+        // reset to tier 0. Test the *raw* persisted value: the merged `s` has
+        // already picked up the initialState default of 0.
+        const persistedSeason = persisted?.seasonXP;
+        if (typeof persistedSeason !== 'number' || Number.isNaN(persistedSeason)) {
+          const baseLevel = Number(persisted?.level) || 1;
+          let seeded = Number(persisted?.xp) || 0;
+          for (let lvl = 1; lvl < baseLevel; lvl++) seeded += getXPForLevel(lvl);
           s.seasonXP = seeded;
         }
 
