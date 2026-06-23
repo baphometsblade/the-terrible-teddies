@@ -22,6 +22,11 @@ const sounds = {
   trap: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/209/209-preview.mp3'], volume: 0.4 }),
 };
 
+// Cap the hand so unbounded draw (per-turn + draw specials) can't overflow the
+// fixed-width hand layout into an unclickable, off-screen stack.
+const MAX_HAND_SIZE = 10;
+const OPPONENT_TURN_ENERGY = 3;
+
 /**
  * Enhanced GameBoard with card abilities, sound effects, and improved AI.
  *
@@ -48,12 +53,18 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // Accumulate per-game stats for challenge/achievement tracking
   const battleStatsRef = useRef({ damageDealt: 0, healingDone: 0, cardsPlayed: 0 });
 
-  // Track timeouts for cleanup on unmount
+  // Track timeouts so queued turn steps can be cancelled on restart/concede/
+  // game-over/unmount, instead of firing later and mutating a fresh game.
   const timeoutsRef = useRef([]);
   const safeTimeout = useCallback((fn, delay) => {
     const id = setTimeout(fn, delay);
     timeoutsRef.current.push(id);
     return id;
+  }, []);
+  const clearAllTimeouts = useCallback(() => {
+    timeoutsRef.current.forEach(clearTimeout);
+    // Clear in place so the unmount cleanup's captured reference stays valid.
+    timeoutsRef.current.length = 0;
   }, []);
 
   useEffect(() => {
@@ -82,7 +93,6 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
   // Opponent state
   const [opponentHealth, setOpponentHealth] = useState(30);
-  const [opponentEnergy, setOpponentEnergy] = useState(3);
   const [opponentField, setOpponentField] = useState([]);
   const [opponentDeck, setOpponentDeck] = useState([]);
 
@@ -182,33 +192,13 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     addToBattleLog("Your turn.");
   }, [addToBattleLog, currentDeck, aiDifficulty, gameId]);
 
-  // Check for game over
+  // Check for game over. Opponent death is checked first so that a simultaneous
+  // lethal (both reach 0 in the same commit) counts as a win for the player who
+  // dealt it, rather than an unconditional loss.
   useEffect(() => {
-    if (playerHealth <= 0 && !gameOver) {
-      setGameOver(true);
-      setWinner('opponent');
-      playSound('defeat');
-
-      // Record defeat — store now handles consolation coins internally
-      const { xpGain, coinsGain } = recordBattleResult(
-        false,
-        battleStatsRef.current.damageDealt,
-        battleStatsRef.current.healingDone,
-        playerHealth,
-        battleStatsRef.current.cardsPlayed
-      );
-      setBattleRewards({ xp: xpGain, coins: coinsGain });
-
-      // Sync to server (fire and forget - don't block UI)
-      syncBattleResult(false, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain)
-        .catch(err => console.error('Battle sync failed:', err));
-
-      toast({
-        title: "Defeat!",
-        description: "Your teddies have been defeated...",
-        variant: "destructive",
-      });
-    } else if (opponentHealth <= 0 && !gameOver) {
+    if (gameOver) return;
+    if (opponentHealth <= 0) {
+      clearAllTimeouts(); // cancel any queued opponent-turn steps
       setGameOver(true);
       setWinner('player');
       playSound('victory');
@@ -239,46 +229,72 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         title: "Victory!",
         description: "You've conquered the terrible teddies!",
       });
+    } else if (playerHealth <= 0) {
+      clearAllTimeouts(); // cancel any queued opponent-turn steps
+      setGameOver(true);
+      setWinner('opponent');
+      playSound('defeat');
+
+      // Record defeat — store now handles consolation coins internally
+      const { xpGain, coinsGain } = recordBattleResult(
+        false,
+        battleStatsRef.current.damageDealt,
+        battleStatsRef.current.healingDone,
+        playerHealth,
+        battleStatsRef.current.cardsPlayed
+      );
+      setBattleRewards({ xp: xpGain, coins: coinsGain });
+
+      // Sync to server (fire and forget - don't block UI)
+      syncBattleResult(false, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain)
+        .catch(err => console.error('Battle sync failed:', err));
+
+      toast({
+        title: "Defeat!",
+        description: "Your teddies have been defeated...",
+        variant: "destructive",
+      });
     }
-  }, [playerHealth, opponentHealth, gameOver, toast, playSound, recordBattleResult, aiDifficulty]);
+  }, [playerHealth, opponentHealth, gameOver, toast, playSound, recordBattleResult, aiDifficulty, clearAllTimeouts]);
 
   // Handle draw phase
   useEffect(() => {
     if (currentTurn !== 'player' || gameOver) return;
 
     if (phase === 'draw') {
-      if (playerDeck.length > 0) {
+      if (playerDeck.length === 0) {
+        addToBattleLog("Deck is empty!");
+      } else if (playerHand.length >= MAX_HAND_SIZE) {
+        addToBattleLog(`Hand is full (${MAX_HAND_SIZE}) — skipped draw`);
+      } else {
         const drawnCard = playerDeck[0];
         setPlayerHand(prev => [...prev, drawnCard]);
         setPlayerDeck(prev => prev.slice(1));
         playSound('draw');
         addToBattleLog(`Drew ${drawnCard.name}`);
         toast({ title: "Card Drawn", description: `You drew ${drawnCard.name}` });
-      } else {
-        addToBattleLog("Deck is empty!");
       }
       // Remove stealth from cards that have been on field for a turn
       setPlayerField(prev => prev.map(c => ({ ...c, stealthActive: false })));
       safeTimeout(() => setPhase('main'), 500);
     }
-  }, [phase, currentTurn, playerDeck, gameOver, toast, addToBattleLog, playSound, safeTimeout]);
+  }, [phase, currentTurn, playerDeck, playerHand.length, gameOver, toast, addToBattleLog, playSound, safeTimeout]);
 
-  // Get valid targets considering abilities
+  // Get valid attack targets considering abilities. Traps are excluded: they
+  // are not creatures and spring on their own, so they must never gate a direct
+  // attack — otherwise a board of only traps soft-locks the game.
   const getValidTargets = useCallback((attackerField, defenderField) => {
-    // Check for taunt - must attack taunt cards first
-    const tauntCards = defenderField.filter(c => c.ability === 'taunt' && !c.stealthActive);
-    if (tauntCards.length > 0) {
-      return tauntCards;
-    }
+    const creatures = defenderField.filter(c => c.type !== 'trap' && !c.stealthActive);
 
-    // Check for protect - if protect is on field, can only target protect card
-    const protectCards = defenderField.filter(c => c.ability === 'protect' && !c.stealthActive);
-    if (protectCards.length > 0) {
-      return protectCards;
-    }
+    // Taunt must be attacked first
+    const tauntCards = creatures.filter(c => c.ability === 'taunt');
+    if (tauntCards.length > 0) return tauntCards;
 
-    // Filter out stealth cards
-    return defenderField.filter(c => !c.stealthActive);
+    // Protect — only the protector can be targeted while it's on the field
+    const protectCards = creatures.filter(c => c.ability === 'protect');
+    if (protectCards.length > 0) return protectCards;
+
+    return creatures;
   }, []);
 
   // Play a card from hand
@@ -348,7 +364,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         toast({ title: "Healing!", description: `Restored ${card.amount} HP` });
         break;
       case 'draw': {
-        const cardsToDraw = Math.min(card.amount, playerDeck.length);
+        const cardsToDraw = Math.min(card.amount, playerDeck.length, Math.max(0, MAX_HAND_SIZE - playerHand.length));
         const drawnCards = playerDeck.slice(0, cardsToDraw);
         setPlayerHand(prev => [...prev, ...drawnCards]);
         setPlayerDeck(prev => prev.slice(cardsToDraw));
@@ -379,12 +395,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       return;
     }
 
-    const validTargets = getValidTargets(playerField, opponentField);
-    if (validTargets.length === 0 && opponentField.length > 0) {
-      toast({ title: "No valid targets", description: "All enemies have stealth!", variant: "destructive" });
-      return;
-    }
-
+    // Selection always proceeds; the attack step enforces taunt/protect and
+    // allows a direct hit when only traps or stealthed cards remain.
     setSelectedCard(card);
     setTargetingMode(true);
   };
@@ -502,17 +514,17 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // Opponent AI turn
   const executeOpponentTurn = () => {
     addToBattleLog("Opponent's turn!");
-    setOpponentEnergy(3);
 
     // Remove stealth from opponent cards
     setOpponentField(prev => prev.map(c => ({ ...c, stealthActive: false })));
 
-    // Opponent draws a card
+    // Opponent plays the top deck card if it can afford and has board room.
+    // The card is only consumed from the deck when actually played, so the
+    // opponent doesn't silently mill its own deck when the board is full.
     if (opponentDeck.length > 0) {
       const drawnCard = opponentDeck[0];
-      setOpponentDeck(prev => prev.slice(1));
-
-      if (opponentField.length < 3 && opponentEnergy >= drawnCard.cost) {
+      if (opponentField.length < 3 && OPPONENT_TURN_ENERGY >= drawnCard.cost) {
+        setOpponentDeck(prev => prev.slice(1));
         const cardToPlay = drawnCard.ability === 'stealth'
           ? { ...drawnCard, stealthActive: true }
           : drawnCard;
@@ -598,12 +610,17 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         !window.confirm('Concede this battle? It will count as a loss.')) {
       return;
     }
+    clearAllTimeouts(); // cancel any in-flight opponent-turn steps
     addToBattleLog('You conceded the battle.');
     setPlayerHealth(0); // routes through the existing defeat flow
   };
 
   // Restart game with proper state reset
   const restartGame = () => {
+    // Cancel any queued opponent-turn steps from the finished game so they can't
+    // fire and mutate the fresh board.
+    clearAllTimeouts();
+
     // Reset battle stats ref
     battleStatsRef.current = { damageDealt: 0, healingDone: 0, cardsPlayed: 0 };
 
@@ -622,7 +639,6 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
     // Reset opponent state
     setOpponentHealth(30);
-    setOpponentEnergy(3);
     setOpponentField([]);
     setOpponentDeck([]);
 
