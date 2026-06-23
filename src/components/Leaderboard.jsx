@@ -39,10 +39,11 @@ const Leaderboard = ({ onClose }) => {
     setError(null);
 
     try {
+        // Read from the leaderboard view, which exposes only ranking columns
+        // (no coins balance, no user_id) across all players.
         const { data, error: fetchError } = await supabase
-          .from('players')
-          .select('username, wins, losses, experience, coins, best_win_streak')
-          .order('wins', { ascending: false })
+          .from('leaderboard')
+          .select('username, wins, losses, experience, best_win_streak')
           .limit(50);
 
         if (fetchError) throw fetchError;

@@ -61,6 +61,20 @@ serve(async (req) => {
     const bundleId = meta.bundle_id ?? "unknown";
     const userId = meta.user_id || null;
 
+    // Bind the credit to the paying customer. create-checkout-session sets both
+    // metadata.user_id and client_reference_id to the JWT-verified user, so they
+    // must agree and be a real UUID. If we can't confidently identify the user,
+    // fail (500) so Stripe retries and the purchase isn't silently recorded as
+    // completed-but-uncredited.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!userId || !UUID_RE.test(userId) || session.client_reference_id !== userId) {
+      console.error(
+        "Refusing to credit — user binding failed:", session.id,
+        "user_id:", userId, "client_reference_id:", session.client_reference_id
+      );
+      return new Response("Invalid user binding", { status: 500 });
+    }
+
     // Re-derive the gem count from the server-side bundle table; never trust
     // the client-influenceable total_gems metadata for the actual credit.
     const bundle = GEM_BUNDLES[bundleId];
@@ -108,16 +122,14 @@ serve(async (req) => {
         return new Response("Database insert failed", { status: 500 });
       }
 
-      // Credit gems to authenticated user (only after successful insert)
-      if (userId) {
-        const { error: rpcError } = await supabase.rpc("add_user_gems", {
-          p_user_id: userId,
-          p_gems: totalGems,
-        });
-        if (rpcError) {
-          console.error("Failed to credit gems:", rpcError);
-          return new Response("Gem credit failed", { status: 500 });
-        }
+      // Credit gems to the (validated) user, only after a successful insert.
+      const { error: rpcError } = await supabase.rpc("add_user_gems", {
+        p_user_id: userId,
+        p_gems: totalGems,
+      });
+      if (rpcError) {
+        console.error("Failed to credit gems:", rpcError);
+        return new Response("Gem credit failed", { status: 500 });
       }
     } catch (err) {
       console.error("Fulfillment error:", err);

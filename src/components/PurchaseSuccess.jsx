@@ -14,7 +14,7 @@ const BUNDLE_PRICES = {
 };
 
 const PurchaseSuccess = ({ sessionId, onDone }) => {
-  const { setGems } = useGameStore();
+  const { reconcileServerGems } = useGameStore();
   const [phase, setPhase] = useState('verifying'); // verifying | success | pending | error
   const [gemsGranted, setGemsGranted] = useState(0);
   const synced = useRef(false);
@@ -37,7 +37,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
 
         const serverBalance = await fetchServerGemBalance();
         if (!mountedRef.current) return;
-        if (serverBalance !== null) setGems(serverBalance);
+        if (serverBalance !== null) reconcileServerGems(serverBalance);
 
         setGemsGranted(purchase.gems_granted);
         setPhase('success');
@@ -59,7 +59,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
     } catch (_err) {
       if (mountedRef.current) setPhase('error');
     }
-  }, [sessionId, setGems]);
+  }, [sessionId, reconcileServerGems]);
 
   useEffect(() => {
     verify();

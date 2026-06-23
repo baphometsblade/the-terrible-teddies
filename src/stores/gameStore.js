@@ -115,6 +115,10 @@ const initialState = {
   // Pass tiers, which need cumulative progress (unlike `xp`, which resets each
   // level).
   seasonXP: 0,
+  // High-water mark of the authoritative (purchased) gem total we've already
+  // credited locally. Login/purchase only credits the positive delta above this
+  // mark, so spent gems are never restored by re-reading the server balance.
+  lastSyncedServerGems: 0,
   coins: 500,
   gems: 10,
   ownedCards: [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42],
@@ -203,6 +207,23 @@ export const useGameStore = create(
 
       addGems: (amount) => set((state) => ({ gems: state.gems + Math.max(0, amount) })),
       setGems: (amount) => set({ gems: amount }),
+
+      // Credit only newly-purchased gems (the amount the authoritative server
+      // balance has risen since we last synced), then advance the high-water
+      // mark. Re-reading the server balance after spending therefore can't
+      // restore spent gems, while purchases made on another device still land.
+      reconcileServerGems: (serverBalance) => {
+        if (typeof serverBalance !== 'number' || Number.isNaN(serverBalance)) return;
+        const state = get();
+        const delta = serverBalance - state.lastSyncedServerGems;
+        if (delta > 0) {
+          set({ gems: state.gems + delta, lastSyncedServerGems: serverBalance });
+        } else if (delta < 0) {
+          // Server total moved down (shouldn't happen) — just track it, never
+          // remove gems the player already earned/spent locally.
+          set({ lastSyncedServerGems: serverBalance });
+        }
+      },
       spendGems: (amount) => {
         const state = get();
         if (state.gems >= amount) {
@@ -627,7 +648,8 @@ export const useGameStore = create(
 
         for (const k of ['coins', 'gems', 'xp', 'level', 'cardPacks', 'premiumPacks',
           'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'consecutiveLogins',
-          'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak']) {
+          'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak',
+          'lastSyncedServerGems']) {
           if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];
         }
         return s;

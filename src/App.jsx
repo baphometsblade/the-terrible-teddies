@@ -51,7 +51,7 @@ function App() {
   const [showChallenges, setShowChallenges] = useState(false);
   const [purchaseSessionId, setPurchaseSessionId] = useState(null);
 
-  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, setGems } = useGameStore();
+  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, reconcileServerGems } = useGameStore();
   const { toast } = useToast();
 
   // Show achievement unlock toasts — process ALL queued achievements with staggered timing
@@ -80,17 +80,19 @@ function App() {
       try {
         // Ensure player profile exists in database
         await ensurePlayerProfile(session.user?.email?.split('@')[0]);
-        // Sync authoritative gem balance
+        // Credit any gems purchased since our last sync (e.g. on another device
+        // or a checkout whose success screen never loaded) without restoring
+        // gems already spent locally.
         const serverBalance = await fetchServerGemBalance();
         if (serverBalance !== null) {
-          setGems(serverBalance);
+          reconcileServerGems(serverBalance);
         }
       } catch (err) {
         console.error('Profile sync failed:', err);
       }
     };
     syncProfile();
-  }, [session, setGems]);
+  }, [session, reconcileServerGems]);
 
   // Detect Stripe Checkout return
   useEffect(() => {
