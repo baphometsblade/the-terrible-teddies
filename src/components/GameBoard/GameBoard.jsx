@@ -297,7 +297,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     if (card.type === 'special') {
       applySpecialEffect(card);
       setPlayerEnergy(prev => prev - card.cost);
-      setPlayerHand(prev => prev.filter(c => c.id !== card.id));
+      setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
       setPlayerGraveyard(prev => [...prev, card]);
       setPlayerMomentum(prev => Math.min(10, prev + 1));
       battleStatsRef.current.cardsPlayed += 1;
@@ -321,7 +321,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       : card;
 
     setPlayerField(prev => [...prev, cardToPlay]);
-    setPlayerHand(prev => prev.filter(c => c.id !== card.id));
+    setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
     setPlayerEnergy(prev => prev - card.cost);
     setPlayerMomentum(prev => Math.min(10, prev + 1));
     battleStatsRef.current.cardsPlayed += 1;
@@ -369,6 +369,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // Select a card for attacking
   const selectCardForAttack = (card) => {
     if (currentTurn !== 'player' || phase !== 'battle') return;
+    if (card.type === 'trap') {
+      toast({ title: "Traps can't attack", description: `${card.name} springs automatically when an enemy strikes it.`, variant: "destructive" });
+      return;
+    }
     if (card.hasAttacked) {
       toast({ title: "Already attacked", description: `${card.name} has already attacked this turn`, variant: "destructive" });
       return;
@@ -390,7 +394,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
     // Check if target is valid
     const validTargets = getValidTargets(playerField, opponentField);
-    if (!validTargets.find(t => t.id === target.id)) {
+    if (!validTargets.find(t => t.instanceId === target.instanceId)) {
       const tauntCard = opponentField.find(c => c.ability === 'taunt');
       if (tauntCard) {
         toast({
@@ -406,7 +410,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     if (target.type === 'trap') {
       const trapDamage = target.amount || 3;
       setPlayerHealth(prev => Math.max(0, prev - trapDamage));
-      setOpponentField(prev => prev.filter(c => c.id !== target.id));
+      setOpponentField(prev => prev.filter(c => c.instanceId !== target.instanceId));
       playSound('trap');
       addToBattleLog(`${target.name} triggered! Took ${trapDamage} damage`);
       toast({
@@ -422,7 +426,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       // Apply fury - target gains attack when damaged
       if (target.ability === 'fury' && damage > 0) {
         setOpponentField(prev => prev.map(c =>
-          c.id === target.id ? { ...c, attack: c.attack + 1 } : c
+          c.instanceId === target.instanceId ? { ...c, attack: c.attack + 1 } : c
         ));
         addToBattleLog(`${target.name}'s fury activated! +1 attack`);
       }
@@ -431,7 +435,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       battleStatsRef.current.damageDealt += damage;
 
       // Destroy the target if it takes lethal damage (simplified - always destroy on hit)
-      setOpponentField(prev => prev.filter(c => c.id !== target.id));
+      setOpponentField(prev => prev.filter(c => c.instanceId !== target.instanceId));
 
       addToBattleLog(`${selectedCard.name} attacked ${target.name} for ${damage} damage${selectedCard.ability === 'piercing' ? ' (piercing)' : ''}`);
       toast({ title: "Attack!", description: `${selectedCard.name} dealt ${damage} damage!` });
@@ -439,7 +443,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
     // Mark card as having attacked
     setPlayerField(prev => prev.map(c =>
-      c.id === selectedCard.id ? { ...c, hasAttacked: true } : c
+      c.instanceId === selectedCard.instanceId ? { ...c, hasAttacked: true } : c
     ));
 
     setPlayerMomentum(prev => Math.min(10, prev + 2));
@@ -465,7 +469,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setOpponentHealth(prev => Math.max(0, prev - selectedCard.attack));
     battleStatsRef.current.damageDealt += selectedCard.attack;
     setPlayerField(prev => prev.map(c =>
-      c.id === selectedCard.id ? { ...c, hasAttacked: true } : c
+      c.instanceId === selectedCard.instanceId ? { ...c, hasAttacked: true } : c
     ));
 
     addToBattleLog(`${selectedCard.name} attacked opponent directly for ${selectedCard.attack} damage!`);
@@ -507,7 +511,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       const drawnCard = opponentDeck[0];
       setOpponentDeck(prev => prev.slice(1));
 
-      if (opponentField.length < 3 && 3 >= drawnCard.cost) {
+      if (opponentField.length < 3 && opponentEnergy >= drawnCard.cost) {
         const cardToPlay = drawnCard.ability === 'stealth'
           ? { ...drawnCard, stealthActive: true }
           : drawnCard;
@@ -517,54 +521,61 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       }
     }
 
-    // Opponent attacks
+    // Opponent attacks — resolve against a live working copy so each attacker
+    // re-evaluates targets (taunt/protect) as creatures fall, instead of every
+    // attacker piling onto a single stale target and the rest no-opping.
     safeTimeout(() => {
-      const validTargets = getValidTargets(opponentField, playerField);
+      let livePlayerField = playerField.map(c => ({ ...c }));
+      let faceDamage = 0;
+      let trapDamageToOpponent = 0;
+      const logs = [];
 
-      if (opponentField.length > 0) {
-        opponentField.forEach(card => {
-          if (card.stealthActive) return; // Stealth cards can't attack on the turn they're played
+      opponentField.forEach(card => {
+        if (card.stealthActive) return; // can't attack the turn it's played
 
-          if (validTargets.length > 0) {
-            // Attack the first valid target (considering taunt/protect)
-            const target = validTargets[0];
+        const targets = getValidTargets(opponentField, livePlayerField);
 
-            if (target.type === 'trap') {
-              const trapDamage = target.amount || 3;
-              setOpponentHealth(prev => Math.max(0, prev - trapDamage));
-              battleStatsRef.current.damageDealt += trapDamage;
-              setPlayerField(prev => prev.filter(c => c.id !== target.id));
-              playSound('trap');
-              addToBattleLog(`Your ${target.name} triggered! Opponent took ${trapDamage} damage`);
-            } else {
-              const damage = calculateCardDamage(card, target);
-              playSound('attack');
-
-              // Fury activation
-              if (target.ability === 'fury' && damage > 0) {
-                setPlayerField(prev => prev.map(c =>
-                  c.id === target.id ? { ...c, attack: c.attack + 1 } : c
-                ));
-                addToBattleLog(`${target.name}'s fury activated! +1 attack`);
-              }
-
-              setPlayerHealth(prev => Math.max(0, prev - damage));
-              setPlayerField(prev => prev.filter(c => c.id !== target.id));
-              addToBattleLog(`${card.name} attacked ${target.name} for ${damage} damage`);
-            }
-          } else if (playerField.length === 0) {
-            // Direct attack
+        if (targets.length > 0) {
+          const target = targets[0];
+          if (target.type === 'trap') {
+            const trapDamage = target.amount || 3;
+            trapDamageToOpponent += trapDamage;
+            livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
+            playSound('trap');
+            logs.push(`Your ${target.name} triggered! Opponent took ${trapDamage} damage`);
+          } else {
+            const damage = calculateCardDamage(card, target);
             playSound('attack');
-            setPlayerHealth(prev => Math.max(0, prev - card.attack));
-            addToBattleLog(`${card.name} attacked you directly for ${card.attack} damage!`);
+            if (target.ability === 'fury' && damage > 0) {
+              livePlayerField = livePlayerField.map(c =>
+                c.instanceId === target.instanceId ? { ...c, attack: c.attack + 1 } : c
+              );
+              logs.push(`${target.name}'s fury activated! +1 attack`);
+            }
+            livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
+            logs.push(`${card.name} attacked ${target.name} for ${damage} damage`);
           }
-        });
+        } else if (livePlayerField.length === 0) {
+          faceDamage += card.attack;
+          playSound('attack');
+          logs.push(`${card.name} attacked you directly for ${card.attack} damage!`);
+        }
+      });
+
+      setPlayerField(livePlayerField);
+      if (faceDamage > 0) setPlayerHealth(prev => Math.max(0, prev - faceDamage));
+      if (trapDamageToOpponent > 0) {
+        setOpponentHealth(prev => Math.max(0, prev - trapDamageToOpponent));
+        battleStatsRef.current.damageDealt += trapDamageToOpponent;
       }
+      logs.forEach(addToBattleLog);
 
       safeTimeout(() => {
         setCurrentTurn('player');
         setTurnCount(prev => prev + 1);
-        setPlayerEnergy(Math.min(10, 3 + Math.floor(turnCount / 2)));
+        // turnCount is still the pre-increment value in this closure — use +1
+        // so energy tracks the turn the player is about to take.
+        setPlayerEnergy(Math.min(10, 3 + Math.floor((turnCount + 1) / 2)));
         setPhase('draw');
         addToBattleLog("Your turn!");
       }, 500);
@@ -575,6 +586,19 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const cancelTargeting = () => {
     setSelectedCard(null);
     setTargetingMode(false);
+  };
+
+  // Concede the battle — counts as a loss. Guarantees the player can always
+  // exit a stalled board (e.g. a hand of only buff/heal cards with an empty
+  // deck) instead of being soft-locked with no damaging play available.
+  const concedeGame = () => {
+    if (gameOver) return;
+    if (typeof window !== 'undefined' &&
+        !window.confirm('Concede this battle? It will count as a loss.')) {
+      return;
+    }
+    addToBattleLog('You conceded the battle.');
+    setPlayerHealth(0); // routes through the existing defeat flow
   };
 
   // Restart game with proper state reset
@@ -786,11 +810,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       <div className="absolute top-20 left-1/2 transform -translate-x-1/2 flex justify-center space-x-3">
         {opponentField.map((card) => {
           const validTargets = getValidTargets(playerField, opponentField);
-          const isValidTarget = validTargets.find(t => t.id === card.id);
+          const isValidTarget = validTargets.find(t => t.instanceId === card.instanceId);
 
           return (
             <motion.div
-              key={card.id}
+              key={card.instanceId}
               initial={{ y: -50, opacity: 0 }}
               animate={{ y: 0, opacity: card.stealthActive ? 0.5 : 1 }}
               className={`relative ${targetingMode && isValidTarget ? 'cursor-crosshair ring-2 ring-red-500 ring-offset-2' : ''}`}
@@ -852,10 +876,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         <div className="flex justify-center space-x-3 mt-auto">
           {playerField.map((card) => (
             <motion.div
-              key={card.id}
+              key={card.instanceId}
               whileHover={{ y: -5 }}
               className={`relative
-                ${selectedCard?.id === card.id ? 'ring-2 ring-yellow-400' : ''}
+                ${selectedCard?.instanceId === card.instanceId ? 'ring-2 ring-yellow-400' : ''}
                 ${card.hasAttacked ? 'opacity-60' : 'cursor-pointer'}
               `}
               onClick={() => phase === 'battle' && !card.hasAttacked && selectCardForAttack(card)}
@@ -884,7 +908,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         <AnimatePresence>
           {playerHand.map((card, index) => (
             <motion.div
-              key={card.id}
+              key={card.instanceId}
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1, rotate: (index - playerHand.length / 2) * 3 }}
               exit={{ y: 50, opacity: 0 }}
@@ -946,6 +970,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             onClick={endTurn}
           >
             End Turn
+          </Button>
+        )}
+        {!gameOver && currentTurn === 'player' && (
+          <Button
+            className="w-full bg-white/10 hover:bg-white/20 text-white/80 text-xs border border-white/20"
+            onClick={concedeGame}
+          >
+            🏳️ Concede
           </Button>
         )}
       </div>
