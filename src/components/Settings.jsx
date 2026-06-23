@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useGameStore } from '../stores/gameStore';
+import { supabase } from '../utils/supabaseClient';
 
 const Settings = ({ onClose }) => {
   const {
@@ -16,6 +17,8 @@ const Settings = ({ onClose }) => {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState('');
 
+  const [signingOut, setSigningOut] = useState(false);
+
   const handleReset = () => {
     if (resetConfirmText === 'RESET') {
       resetProgress();
@@ -23,6 +26,14 @@ const Settings = ({ onClose }) => {
       setResetConfirmText('');
       onClose();
     }
+  };
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    // The auth listener (hooks/useSupabaseAuth) nulls the session on sign-out,
+    // which drops the app back to the Auth screen automatically.
+    await supabase.auth.signOut();
+    onClose();
   };
 
   const SettingRow = ({ icon, label, description, children }) => (
@@ -87,6 +98,18 @@ const Settings = ({ onClose }) => {
               <DifficultyButton value="normal" label="😐 Normal" description="Balanced" color="bg-yellow-600" />
               <DifficultyButton value="hard" label="😈 Hard" description="Challenge" color="bg-red-600" />
             </div>
+          </div>
+
+          <div className="mb-6">
+            <h3 className="text-white/50 text-sm uppercase tracking-wider mb-4">Account</h3>
+            <Button
+              onClick={handleSignOut}
+              disabled={signingOut}
+              variant="outline"
+              className="w-full border-white/30 text-white hover:bg-white/10"
+            >
+              {signingOut ? 'Signing out…' : '🚪 Sign Out'}
+            </Button>
           </div>
 
           <div className="pt-6 border-t border-white/10">

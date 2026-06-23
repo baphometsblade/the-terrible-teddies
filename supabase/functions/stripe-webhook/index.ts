@@ -12,6 +12,20 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
 );
 
+// Authoritative bundle definitions — MUST match create-checkout-session.
+// The webhook re-derives gem counts and the expected price from this table
+// rather than trusting client-influenceable session metadata, and refuses to
+// credit if the amount actually charged doesn't match.
+const GEM_BUNDLES: Record<string, { gems: number; bonus: number; price: number }> = {
+  gems_small:      { gems: 50,   bonus: 0,   price: 99 },
+  gems_medium:     { gems: 150,  bonus: 10,  price: 299 },
+  gems_large:      { gems: 500,  bonus: 50,  price: 999 },
+  gems_huge:       { gems: 1200, bonus: 200, price: 1999 },
+  gems_mega:       { gems: 3000, bonus: 750, price: 4999 },
+  starter_bundle:  { gems: 100,  bonus: 0,   price: 499 },
+  weekly_gem_pass: { gems: 350,  bonus: 0,   price: 199 },
+};
+
 serve(async (req) => {
   const signature = req.headers.get("Stripe-Signature");
   if (!signature) {
@@ -46,7 +60,30 @@ serve(async (req) => {
     const meta = session.metadata ?? {};
     const bundleId = meta.bundle_id ?? "unknown";
     const userId = meta.user_id || null;
-    const totalGems = parseInt(meta.total_gems ?? "0", 10);
+
+    // Re-derive the gem count from the server-side bundle table; never trust
+    // the client-influenceable total_gems metadata for the actual credit.
+    const bundle = GEM_BUNDLES[bundleId];
+    if (!bundle) {
+      console.error("Refusing to fulfill unknown bundle:", bundleId, session.id);
+      // Acknowledge so Stripe stops retrying; nothing is credited.
+      return new Response(JSON.stringify({ received: true, ignored: "unknown_bundle" }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify the amount actually charged matches the bundle's expected price.
+    if ((session.amount_total ?? 0) !== bundle.price) {
+      console.error(
+        "Amount mismatch — refusing to credit:", session.id,
+        "charged:", session.amount_total, "expected:", bundle.price
+      );
+      return new Response(JSON.stringify({ received: true, ignored: "amount_mismatch" }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const totalGems = bundle.gems + bundle.bonus;
 
     try {
       // Record purchase — idempotent via UNIQUE constraint on stripe_session_id

@@ -22,3 +22,10 @@ port = 54323
 
 [functions]
 verify_jwt = true
+
+# Stripe calls this endpoint with a Stripe-Signature header and NO Supabase JWT.
+# It authenticates via Stripe webhook signature verification instead, so the
+# gateway-level JWT check must be disabled or every webhook is rejected (401)
+# before our handler runs — which would silently break all gem fulfillment.
+[functions.stripe-webhook]
+verify_jwt = false

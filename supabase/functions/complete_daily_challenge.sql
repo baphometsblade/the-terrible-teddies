@@ -26,10 +26,12 @@ BEGIN
   INSERT INTO daily_challenge_completions (player_id, player_teddy_id, completion_date)
   VALUES (user_id, player_teddy_id, CURRENT_DATE);
 
-  -- Award coins to the player
+  -- Award coins to the player. The players table is keyed on user_id
+  -- (matching every other migration); the previous WHERE id = user_id
+  -- targeted a non-existent/foreign column and silently awarded nothing.
   UPDATE players
   SET coins = coins + reward_coins
-  WHERE id = user_id;
+  WHERE user_id = auth.uid();
 
   RETURN json_build_object('success', true, 'reward_coins', reward_coins);
 END;

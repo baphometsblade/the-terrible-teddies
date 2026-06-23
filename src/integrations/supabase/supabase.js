@@ -1,6 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+// Re-export the single canonical Supabase client so Stripe checkout reads the
+// exact same auth session as the rest of the app (see utils/supabaseClient.js).
+import { supabase } from '../../utils/supabaseClient';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export { supabase };

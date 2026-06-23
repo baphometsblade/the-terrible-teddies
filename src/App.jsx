@@ -101,8 +101,14 @@ function App() {
       setPurchaseSessionId(sessionId);
       // Clean URL without triggering a reload
       window.history.replaceState({}, '', window.location.pathname);
+    } else if (purchase === 'cancelled') {
+      toast({
+        title: 'Checkout cancelled',
+        description: 'No charge was made — your gems are still waiting in the shop.',
+      });
+      window.history.replaceState({}, '', window.location.pathname);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     const today = new Date().toDateString();
@@ -239,19 +245,26 @@ function App() {
                 {showBattlePass && <BattlePass onClose={() => setShowBattlePass(false)} />}
                 {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
                 {showChallenges && <Challenges onClose={() => setShowChallenges(false)} />}
-
-                {purchaseSessionId && (
-                  <PurchaseSuccess
-                    sessionId={purchaseSessionId}
-                    onDone={() => setPurchaseSessionId(null)}
-                  />
-                )}
               </AnimatePresence>
             </Suspense>
           </>
         ) : (
           <Auth />
         )}
+
+        {/* Purchase verification renders regardless of auth state: returning
+            from Stripe is a full page navigation, so if session restoration is
+            slow or fails the buyer must still see confirmation rather than a
+            bare login screen with their paid session_id silently dropped. */}
+        {purchaseSessionId && (
+          <Suspense fallback={<DialogLoader />}>
+            <PurchaseSuccess
+              sessionId={purchaseSessionId}
+              onDone={() => setPurchaseSessionId(null)}
+            />
+          </Suspense>
+        )}
+
         <Toaster />
       </div>
     </ErrorBoundary>

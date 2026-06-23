@@ -1,10 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
+// Re-export the single canonical Supabase client. Spinning up a second
+// createClient() on the same URL spawns a competing GoTrueClient whose auth
+// listener races the first on token refresh — which can make getSession()
+// momentarily return null mid-checkout and strand a paying customer. One
+// client, one session, app-wide.
+import { supabase } from '../utils/supabaseClient';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export { supabase };
 
 const initialTeddies = [
   {
