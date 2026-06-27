@@ -9,9 +9,15 @@ npm run dev          # Start dev server on port 8080
 npm run build        # Production build to dist/
 npm run preview      # Preview production build locally
 npm run lint         # ESLint check (js,jsx files)
+npm test             # Run the Vitest suite once
+npm run test:watch   # Vitest in watch mode
 ```
 
-No test suite is configured.
+Tests use **Vitest** (jsdom) and live next to the code as `*.test.js`. The
+suite focuses on the pure, high-stakes logic — the `gameStore` economy/money
+paths, `battleUtils` damage math, and the deck/season helpers. Run a single
+file with `npx vitest run src/stores/gameStore.test.js`. CI (`.github/
+workflows/node.js.yml`) runs lint, build, and test on every PR to `main`.
 
 ## Architecture Overview
 
