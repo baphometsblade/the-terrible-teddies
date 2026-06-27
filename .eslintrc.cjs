@@ -27,5 +27,20 @@ module.exports = {
       files: ["*.config.js", "*.config.cjs", ".eslintrc.cjs"],
       env: { node: true, browser: false },
     },
+    {
+      // Vitest injects these as globals (test.globals = true).
+      files: ["**/*.test.{js,jsx}", "**/*.spec.{js,jsx}"],
+      globals: {
+        describe: "readonly",
+        it: "readonly",
+        test: "readonly",
+        expect: "readonly",
+        vi: "readonly",
+        beforeEach: "readonly",
+        afterEach: "readonly",
+        beforeAll: "readonly",
+        afterAll: "readonly",
+      },
+    },
   ],
 };
