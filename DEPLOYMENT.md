@@ -16,9 +16,12 @@ The repo's `supabase/config.toml` is wired to project ref `dutkgzurneffawxesgsj`
 Use that project if it's yours; otherwise create one and update `config.toml`'s
 `id`.
 
+The Supabase CLI is a developer tool, not a project dependency — install it
+globally (`npm i -g supabase`) or invoke it with `npx supabase` (used below).
+
 ```bash
-supabase login
-supabase link --project-ref <your-project-ref>
+npx supabase login
+npx supabase link --project-ref <your-project-ref>
 ```
 
 ### Apply the database migrations
@@ -28,7 +31,7 @@ create the players/purchases/user_gems/matches/battles tables, RLS policies,
 the `SECURITY DEFINER` RPCs, rate limiting, and the money-path hardening.
 
 ```bash
-supabase db push
+npx supabase db push
 ```
 
 The two loose SQL files `supabase/functions/complete_daily_challenge.sql` and
@@ -38,16 +41,16 @@ SQL editor or add as a migration) if you use the daily-challenge edge path.
 ### Deploy the Edge Functions
 
 ```bash
-supabase functions deploy create-checkout-session
-supabase functions deploy battle-action
+npx supabase functions deploy create-checkout-session
+npx supabase functions deploy battle-action
 # The webhook MUST skip JWT verification — Stripe authenticates via its
 # signature header, not a Supabase JWT (also set in config.toml).
-supabase functions deploy stripe-webhook --no-verify-jwt
+npx supabase functions deploy stripe-webhook --no-verify-jwt
 ```
 
 ### Set Edge Function secrets
 
-Dashboard → Edge Functions → Secrets (or `supabase secrets set KEY=value`):
+Dashboard → Edge Functions → Secrets (or `npx supabase secrets set KEY=value`):
 
 | Secret | Where it comes from |
 | --- | --- |
