@@ -126,7 +126,7 @@ const DeckBuilder = () => {
               ))}
             </div>
 
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[500px] overflow-y-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[500px] overflow-y-auto justify-items-center">
               {filteredCards.map((card) => {
                 const copiesInDeck = deck.filter(c => c.id === card.id).length;
                 const isMaxed = copiesInDeck >= MAX_COPIES;

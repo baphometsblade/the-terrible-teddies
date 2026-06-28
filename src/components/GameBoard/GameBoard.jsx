@@ -927,8 +927,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         </div>
       </div>
 
-      {/* Player's hand */}
-      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex justify-center space-x-2">
+      {/* Player's hand — caps width and scrolls horizontally so a full hand
+          stays reachable on phones instead of overflowing off-screen. */}
+      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex justify-start md:justify-center space-x-2 max-w-[96vw] overflow-x-auto px-2 pb-1">
         <AnimatePresence>
           {playerHand.map((card, index) => (
             <motion.div
