@@ -22,7 +22,7 @@ const GEM_BUNDLES: Record<string, { gems: number; bonus: number; price: number }
   gems_large:      { gems: 500,  bonus: 50,  price: 999 },
   gems_huge:       { gems: 1200, bonus: 200, price: 1999 },
   gems_mega:       { gems: 3000, bonus: 750, price: 4999 },
-  starter_bundle:  { gems: 100,  bonus: 0,   price: 499 },
+  starter_bundle:  { gems: 300,  bonus: 0,   price: 499 },
   weekly_gem_pass: { gems: 350,  bonus: 0,   price: 199 },
 };
 

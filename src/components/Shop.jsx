@@ -195,22 +195,20 @@ const Shop = ({ onClose }) => {
                 <div className="bg-gradient-to-r from-yellow-600/30 to-orange-600/30 border border-yellow-500/50 rounded-xl p-6 mb-6">
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div>
-                      <div className="text-yellow-400 text-sm font-semibold mb-1">LIMITED TIME OFFER</div>
-                      <h3 className="text-2xl font-bold text-white mb-2">Starter Bundle</h3>
-                      <p className="text-white/70 mb-3">Everything you need to dominate!</p>
+                      <div className="text-yellow-400 text-sm font-semibold mb-1">BEST VALUE FOR NEW PLAYERS</div>
+                      <h3 className="text-2xl font-bold text-white mb-2">Starter Gem Pack</h3>
+                      <p className="text-white/70 mb-3">A big gem boost to get you started.</p>
                       <ul className="text-white/80 text-sm space-y-1">
-                        <li>📦 5 Card Packs</li>
-                        <li>💎 100 Gems</li>
-                        <li>🪙 1000 Coins</li>
-                        <li>⭐ 1 Guaranteed Epic Card</li>
+                        <li>💎 300 Gems</li>
+                        <li>📦 Spend them on Premium &amp; Legendary card packs</li>
+                        <li>🪙 …or Coin bags in the shop</li>
                       </ul>
                     </div>
                     <div className="text-center">
-                      <div className="text-white/50 line-through text-lg">$14.99</div>
                       <div className="text-3xl font-bold text-yellow-400">$4.99</div>
-                      <div className="text-green-400 text-sm font-semibold">67% OFF</div>
+                      <div className="text-green-400 text-sm font-semibold">2× the gems of the $2.99 pack</div>
                       <Button
-                        onClick={() => handleGemPurchase({ id: 'starter_bundle', gems: 100, bonus: 0, price: 4.99 })}
+                        onClick={() => handleGemPurchase({ id: 'starter_bundle', gems: 300, bonus: 0, price: 4.99 })}
                         disabled={processing}
                         className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
                       >
@@ -221,10 +219,10 @@ const Shop = ({ onClose }) => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-gradient-to-br from-purple-600/30 to-pink-600/30 border border-purple-500/50 rounded-xl p-4">
-                    <h4 className="font-bold text-white mb-2">💎 Weekly Gem Pass</h4>
-                    <p className="text-white/60 text-sm mb-3">50 gems daily for 7 days!</p>
+                    <h4 className="font-bold text-white mb-2">💎 Mega Gem Pack</h4>
+                    <p className="text-white/60 text-sm mb-3">A one-time gem boost — credited instantly.</p>
                     <div className="flex justify-between items-center">
-                      <span className="text-purple-300">350 gems total</span>
+                      <span className="text-purple-300">350 gems</span>
                       <Button
                         size="sm"
                         onClick={() => handleGemPurchase({ id: 'weekly_gem_pass', gems: 350, bonus: 0, price: 1.99 })}

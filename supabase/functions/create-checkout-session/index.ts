@@ -13,8 +13,8 @@ const GEM_BUNDLES: Record<string, { gems: number; bonus: number; price: number; 
   gems_large:        { gems: 500,  bonus: 50,  price: 999,  name: "500 Gems + 50 Bonus" },
   gems_huge:         { gems: 1200, bonus: 200, price: 1999, name: "1,200 Gems + 200 Bonus" },
   gems_mega:         { gems: 3000, bonus: 750, price: 4999, name: "3,000 Gems + 750 Bonus" },
-  starter_bundle:    { gems: 100,  bonus: 0,   price: 499,  name: "Starter Bundle" },
-  weekly_gem_pass:   { gems: 350,  bonus: 0,   price: 199,  name: "Weekly Gem Pass" },
+  starter_bundle:    { gems: 300,  bonus: 0,   price: 499,  name: "Starter Gem Pack — 300 Gems" },
+  weekly_gem_pass:   { gems: 350,  bonus: 0,   price: 199,  name: "Mega Gem Pack — 350 Gems" },
 };
 
 // Rate limiting config - enforced via database for durability across function restarts
