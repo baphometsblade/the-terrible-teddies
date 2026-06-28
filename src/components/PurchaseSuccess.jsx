@@ -65,6 +65,20 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
     verify();
   }, [verify]);
 
+  // If the webhook is still catching up ('pending'), keep re-polling in the
+  // background so gems appear automatically once it credits — instead of
+  // leaving the player on a dead-end screen.
+  useEffect(() => {
+    if (phase !== 'pending') return;
+    let tries = 0;
+    const id = setInterval(() => {
+      if (tries >= 6) { clearInterval(id); return; }
+      tries += 1;
+      verify();
+    }, 4000);
+    return () => clearInterval(id);
+  }, [phase, verify]);
+
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
       <motion.div
@@ -111,11 +125,16 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
               Your payment was received. Gems will appear within a minute.
             </p>
             <p className="text-white/50 text-sm mb-6">
-              If gems don&apos;t appear, please contact support with your order confirmation email.
+              We&apos;re checking automatically. If gems don&apos;t appear, contact support with your order confirmation email.
             </p>
-            <Button onClick={onDone} variant="outline" className="border-white/30 text-white hover:bg-white/10">
-              Return to Game
-            </Button>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => verify()} className="bg-purple-600 hover:bg-purple-700 text-white">
+                Check now
+              </Button>
+              <Button onClick={onDone} variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                Return to Game
+              </Button>
+            </div>
           </>
         )}
 

@@ -3,11 +3,24 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// Whether the deploy is wired up. The app gates on this and shows a clear
+// configuration screen — throwing here instead would crash the whole module
+// graph at import time and white-screen the app before React can render.
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+
+if (!isSupabaseConfigured) {
+  console.error(
+    'Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY — set them in your ' +
+    'environment (see .env.example). Running with a non-functional client.'
+  );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Use a syntactically-valid placeholder when unconfigured so createClient
+// doesn't throw at import; real calls will fail and the UI gates them off.
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-anon-key'
+);
 
 export const createMatch = async (playerOneId) => {
   const { data, error } = await supabase

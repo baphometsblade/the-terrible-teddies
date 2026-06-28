@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#581c87" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -87,15 +87,38 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const loader = document.getElementById('initial-loader');
-          if (loader) {
-            loader.classList.add('fade-out');
-            setTimeout(() => loader.remove(), 500);
+      // Remove the loader only once React has actually rendered into #root —
+      // and if the app never mounts (e.g. a fatal load error), surface a
+      // refreshable message instead of leaving a blank screen.
+      (function () {
+        var loader = document.getElementById('initial-loader');
+        var root = document.getElementById('root');
+        var removed = false;
+        function removeLoader() {
+          if (removed || !loader) return;
+          removed = true;
+          loader.classList.add('fade-out');
+          setTimeout(function () { loader.remove(); }, 500);
+        }
+        var poll = setInterval(function () {
+          if (root && root.childElementCount > 0) {
+            clearInterval(poll);
+            removeLoader();
           }
-        }, 300);
-      });
+        }, 100);
+        setTimeout(function () {
+          if (removed || (root && root.childElementCount > 0)) return;
+          clearInterval(poll);
+          var content = loader && loader.querySelector('.loader-content');
+          if (content) {
+            content.innerHTML =
+              '<div class="loader-teddy">🧸</div>' +
+              '<div class="loader-title">Couldn\'t load the game</div>' +
+              '<div class="loader-subtitle">Please check your connection and refresh.</div>' +
+              '<button onclick="location.reload()" style="margin-top:16px;padding:8px 22px;border-radius:8px;border:none;background:#f59e0b;color:#000;font-weight:bold;cursor:pointer">Reload</button>';
+          }
+        }, 10000);
+      })();
     </script>
   </body>
 </html>

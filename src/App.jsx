@@ -11,7 +11,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from './stores/gameStore';
-import { fetchServerGemBalance, ensurePlayerProfile } from './utils/supabaseClient';
+import { fetchServerGemBalance, ensurePlayerProfile, isSupabaseConfigured } from './utils/supabaseClient';
 
 const Tutorial = lazy(() => import('./components/Tutorial'));
 const CardPackOpening = lazy(() => import('./components/CardPackOpening'));
@@ -126,6 +126,25 @@ function App() {
       return () => clearTimeout(timer);
     }
   }, [session, tutorialCompleted, showDailyRewards]);
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-950 flex items-center justify-center p-6">
+        <div className="max-w-md text-center bg-white/10 border border-white/20 rounded-2xl p-8">
+          <div className="text-6xl mb-4">🧸🔧</div>
+          <h1 className="text-2xl font-bold text-white mb-2">Setup needed</h1>
+          <p className="text-white/70">
+            The game isn&apos;t connected to its backend yet. Set
+            <code className="mx-1 px-1 bg-black/30 rounded">VITE_SUPABASE_URL</code>
+            and
+            <code className="mx-1 px-1 bg-black/30 rounded">VITE_SUPABASE_ANON_KEY</code>
+            in the environment, then reload.
+          </p>
+          <p className="text-white/40 text-sm mt-3">See <code>.env.example</code> and <code>DEPLOYMENT.md</code>.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

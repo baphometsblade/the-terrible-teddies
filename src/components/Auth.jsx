@@ -14,24 +14,34 @@ const Auth = () => {
     e.preventDefault();
     if (!email || !password) return;
     setLoadingAction('signup');
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Account Created", description: "Check your email for the confirmation link!" });
+    try {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Account Created", description: "Check your email for the confirmation link!" });
+      }
+    } catch (err) {
+      toast({ title: "Network error", description: "Couldn't reach the server. Please try again.", variant: "destructive" });
+    } finally {
+      setLoadingAction(null);
     }
-    setLoadingAction(null);
   };
 
   const handleSignIn = async (e) => {
     e.preventDefault();
     if (!email || !password) return;
     setLoadingAction('signin');
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      toast({ title: "Sign In Failed", description: error.message, variant: "destructive" });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast({ title: "Sign In Failed", description: error.message, variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Network error", description: "Couldn't reach the server. Please try again.", variant: "destructive" });
+    } finally {
+      setLoadingAction(null);
     }
-    setLoadingAction(null);
   };
 
   return (
@@ -44,16 +54,24 @@ const Auth = () => {
         </div>
         <div className="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20 shadow-2xl">
           <form onSubmit={handleSignIn}>
+            <label htmlFor="auth-email" className="sr-only">Email</label>
             <Input
+              id="auth-email"
               type="email"
+              autoComplete="email"
+              aria-label="Email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="mb-4 bg-white/10 border-white/30 text-white placeholder:text-white/50"
               required
             />
+            <label htmlFor="auth-password" className="sr-only">Password</label>
             <Input
+              id="auth-password"
               type="password"
+              autoComplete="current-password"
+              aria-label="Password"
               placeholder="Password (min 6 characters)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
