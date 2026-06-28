@@ -52,6 +52,7 @@ const Settings = ({ onClose }) => {
   const DifficultyButton = ({ value, label, description, color }) => (
     <button
       onClick={() => setDifficulty(value)}
+      aria-pressed={difficulty === value}
       className={`flex-1 p-4 rounded-lg border-2 transition-all ${
         difficulty === value ? `${color} border-white scale-105` : 'bg-white/5 border-white/20 hover:border-white/40'
       }`}
@@ -132,6 +133,7 @@ const Settings = ({ onClose }) => {
                   value={resetConfirmText}
                   onChange={(e) => setResetConfirmText(e.target.value)}
                   placeholder="Type RESET"
+                  aria-label="Type RESET to confirm deleting all progress"
                   className="w-full bg-black/50 border border-red-500 text-white px-3 py-2 rounded mb-3"
                 />
                 <div className="flex gap-2">

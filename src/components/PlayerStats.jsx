@@ -52,6 +52,7 @@ const PlayerStats = ({ onClose }) => {
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
+                    aria-label="Player name"
                     className="bg-white/20 text-white px-3 py-1 rounded border border-white/30 focus:outline-none focus:border-white"
                     maxLength={20}
                     autoFocus
@@ -62,7 +63,7 @@ const PlayerStats = ({ onClose }) => {
               ) : (
                 <div className="flex items-center gap-2">
                   <h2 className="text-2xl font-bold text-white">{playerName}</h2>
-                  <button onClick={() => setEditingName(true)} className="text-white/50 hover:text-white">
+                  <button onClick={() => setEditingName(true)} aria-label="Edit player name" className="text-white/50 hover:text-white">
                     ✏️
                   </button>
                 </div>

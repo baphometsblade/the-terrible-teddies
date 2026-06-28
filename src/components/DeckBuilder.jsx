@@ -248,7 +248,7 @@ const DeckBuilder = () => {
                       <button onClick={() => loadSavedDeck(savedDeck)} className="text-white/80 hover:text-white text-sm flex-1 text-left">
                         📁 {savedDeck.name}
                       </button>
-                      <button onClick={() => deleteDeck(savedDeck.name)} className="text-red-400 hover:text-red-300 text-sm px-2">🗑️</button>
+                      <button onClick={() => deleteDeck(savedDeck.name)} aria-label={`Delete deck ${savedDeck.name}`} className="text-red-400 hover:text-red-300 text-sm px-2">🗑️</button>
                     </div>
                   ))}
                 </div>
@@ -280,6 +280,7 @@ const DeckBuilder = () => {
                 value={deckName}
                 onChange={(e) => setDeckName(e.target.value)}
                 placeholder="Enter deck name..."
+                aria-label="Deck name"
                 className="w-full bg-white/10 border border-white/20 text-white px-4 py-2 rounded-lg mb-4"
                 maxLength={20}
                 autoFocus
