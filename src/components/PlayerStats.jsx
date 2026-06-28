@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useGameStore, ACHIEVEMENTS, ALL_CARDS } from '../stores/gameStore';
+import { useDialog } from '@/hooks/useDialog';
 
 const PlayerStats = ({ onClose }) => {
   const {
@@ -15,6 +16,7 @@ const PlayerStats = ({ onClose }) => {
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState(playerName);
   const [activeTab, setActiveTab] = useState('stats');
+  const dialogRef = useDialog(onClose);
 
   const xpForNext = getXPForNextLevel();
   const xpProgress = (xp / xpForNext) * 100;
@@ -34,7 +36,13 @@ const PlayerStats = ({ onClose }) => {
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 overflow-y-auto">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Player stats"
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 overflow-y-auto"
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

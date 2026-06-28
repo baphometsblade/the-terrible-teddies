@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { useGameStore, DAILY_REWARDS } from '../stores/gameStore';
 import confetti from 'canvas-confetti';
+import { useDialog } from '@/hooks/useDialog';
 
 const DailyRewards = ({ onClose }) => {
   const { checkDailyLogin, consecutiveLogins } = useGameStore();
   const [reward, setReward] = useState(null);
   const [claimed, setClaimed] = useState(false);
+  const dialogRef = useDialog(onClose);
 
   useEffect(() => {
     const dailyReward = checkDailyLogin();
@@ -50,7 +52,13 @@ const DailyRewards = ({ onClose }) => {
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Daily Rewards"
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

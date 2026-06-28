@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import TeddyCard from './TeddyCard';
 import { useGameStore } from '../stores/gameStore';
 import confetti from 'canvas-confetti';
+import { useDialog } from '@/hooks/useDialog';
 
 const RARITY_COLORS = {
   common: 'from-gray-400 to-gray-600',
@@ -105,10 +106,18 @@ const CardPackOpening = ({ onClose }) => {
     onClose();
   };
 
+  const dialogRef = useDialog(resetAndClose);
+
   const newCardsCount = pulledCards ? pulledCards.filter(c => c.isNew).length : 0;
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-b from-black/95 to-purple-900/95 flex items-center justify-center p-4 overflow-y-auto">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Card packs"
+      className="fixed inset-0 z-50 bg-gradient-to-b from-black/95 to-purple-900/95 flex items-center justify-center p-4 overflow-y-auto"
+    >
       <div className="max-w-5xl w-full">
         {/* Header */}
         <div className="flex flex-wrap justify-between items-center mb-8 gap-4">

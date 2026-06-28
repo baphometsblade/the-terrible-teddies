@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import TeddyCard from './TeddyCard';
+import { useDialog } from '@/hooks/useDialog';
 
 const TUTORIAL_STEPS = [
   {
@@ -61,6 +62,7 @@ const exampleCards = [
 const Tutorial = ({ onClose, onStartGame }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const step = TUTORIAL_STEPS[currentStep];
+  const dialogRef = useDialog(onClose);
 
   const nextStep = () => {
     if (currentStep < TUTORIAL_STEPS.length - 1) {
@@ -77,7 +79,13 @@ const Tutorial = ({ onClose, onStartGame }) => {
   const isLastStep = currentStep === TUTORIAL_STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="How to play"
+      className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

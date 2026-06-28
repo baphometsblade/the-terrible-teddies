@@ -9,6 +9,7 @@ import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
 import { calculateCardDamage } from '../../utils/battleUtils';
 import { syncBattleResult } from '../../utils/supabaseClient';
+import { pressable } from '@/lib/a11y';
 
 // Sound effects
 const sounds = {
@@ -839,7 +840,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               initial={{ y: -50, opacity: 0 }}
               animate={{ y: 0, opacity: card.stealthActive ? 0.5 : 1 }}
               className={`relative ${targetingMode && isValidTarget ? 'cursor-crosshair ring-2 ring-red-500 ring-offset-2' : ''}`}
-              onClick={() => targetingMode && isValidTarget && attackTarget(card)}
+              {...pressable(() => targetingMode && isValidTarget && attackTarget(card), `Attack ${card.name}`)}
             >
               <TeddyCard teddy={card} />
               {card.stealthActive && (
@@ -859,7 +860,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           <motion.div
             whileHover={{ scale: 1.05 }}
             className="w-24 h-36 border-2 border-dashed border-red-400 rounded-lg flex items-center justify-center cursor-crosshair bg-red-100/50"
-            onClick={attackOpponentDirectly}
+            {...pressable(attackOpponentDirectly, opponentField.some(c => c.type === 'trap') ? 'Strike (springs trap)' : 'Attack opponent directly')}
           >
             <span className="text-red-500 text-xs text-center">
               {opponentField.some(c => c.type === 'trap') ? 'Strike (springs trap)' : 'Attack Directly'}
@@ -905,7 +906,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                 ${selectedCard?.instanceId === card.instanceId ? 'ring-2 ring-yellow-400' : ''}
                 ${card.hasAttacked ? 'opacity-60' : 'cursor-pointer'}
               `}
-              onClick={() => phase === 'battle' && !card.hasAttacked && selectCardForAttack(card)}
+              {...pressable(() => phase === 'battle' && !card.hasAttacked && selectCardForAttack(card), `Select ${card.name} to attack`)}
             >
               <TeddyCard teddy={card} />
               {card.hasAttacked && (
@@ -937,7 +938,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               exit={{ y: 50, opacity: 0 }}
               whileHover={{ y: -20, scale: 1.1, zIndex: 10 }}
               className={`cursor-pointer ${playerEnergy < card.cost ? 'opacity-50' : ''}`}
-              onClick={() => phase === 'main' && playCard(card)}
+              {...pressable(() => phase === 'main' && playCard(card), `Play ${card.name}`)}
             >
               <TeddyCard teddy={card} />
             </motion.div>

@@ -7,6 +7,8 @@ import confetti from 'canvas-confetti';
 import analytics from '../utils/analytics';
 import { redirectToStripeCheckout } from '../utils/stripe';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useDialog } from '@/hooks/useDialog';
+import { pressable } from '@/lib/a11y';
 
 const GEM_BUNDLES = [
   { id: 'gems_small', gems: 50, price: 0.99, bonus: 0, popular: false },
@@ -22,6 +24,7 @@ const Shop = ({ onClose }) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('packs');
   const [processing, setProcessing] = useState(false);
+  const dialogRef = useDialog(onClose);
 
   useEffect(() => {
     analytics.trackShopView(activeTab);
@@ -73,7 +76,7 @@ const Shop = ({ onClose }) => {
       whileHover={{ scale: 1.03, y: -5 }}
       whileTap={{ scale: 0.98 }}
       className={`relative rounded-xl overflow-hidden cursor-pointer ${featured ? 'col-span-2 row-span-2' : ''}`}
-      onClick={() => handleBuyItem(item)}
+      {...pressable(() => handleBuyItem(item), `Buy ${item.name} for ${item.price} ${item.currency}`)}
     >
       <div className={`p-4 h-full flex flex-col items-center justify-center text-center
         ${item.type === 'legendary' ? 'bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600' :
@@ -103,7 +106,7 @@ const Shop = ({ onClose }) => {
     <motion.div
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      onClick={() => !processing && handleGemPurchase(bundle)}
+      {...pressable(() => !processing && handleGemPurchase(bundle), `Buy ${bundle.gems} gems for $${bundle.price.toFixed(2)}`)}
       className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all
         ${bundle.popular ? 'border-yellow-400 shadow-lg shadow-yellow-500/30' : 'border-white/20 hover:border-white/40'}
         bg-gradient-to-br from-purple-900/80 to-indigo-900/80`}
@@ -122,7 +125,13 @@ const Shop = ({ onClose }) => {
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 overflow-y-auto">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Shop"
+      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 overflow-y-auto"
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

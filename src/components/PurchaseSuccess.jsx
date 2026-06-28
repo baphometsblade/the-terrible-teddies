@@ -6,6 +6,7 @@ import { verifyPurchaseSession } from '../utils/stripe';
 import { fetchServerGemBalance } from '../utils/supabaseClient';
 import confetti from 'canvas-confetti';
 import analytics from '../utils/analytics';
+import { useDialog } from '@/hooks/useDialog';
 
 // Gem bundle prices for analytics (mirrors server-side definitions)
 const BUNDLE_PRICES = {
@@ -19,6 +20,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
   const [gemsGranted, setGemsGranted] = useState(0);
   const synced = useRef(false);
   const mountedRef = useRef(true);
+  const dialogRef = useDialog(onDone);
 
   useEffect(() => {
     return () => { mountedRef.current = false; };
@@ -80,7 +82,13 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
   }, [phase, verify]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Purchase status"
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+    >
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

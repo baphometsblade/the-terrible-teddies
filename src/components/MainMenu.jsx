@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useGameStore } from '../stores/gameStore';
+import { pressable } from '@/lib/a11y';
 
 const MainMenu = ({
   onStartGame,
@@ -76,7 +77,7 @@ const MainMenu = ({
         <motion.div
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          onClick={onPlayerStats}
+          {...pressable(onPlayerStats, 'View player stats')}
           className="flex items-center gap-3 bg-white/10 rounded-xl p-3 backdrop-blur-sm cursor-pointer hover:bg-white/15 transition-colors"
         >
           <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-2xl border-2 border-white shadow-lg">
@@ -190,7 +191,7 @@ const MainMenu = ({
                   ${hoveredOption === option.id ? 'scale-105 shadow-2xl' : 'scale-100'}
                   ${option.highlight ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-purple-900' : ''}
                 `}
-                onClick={option.action}
+                {...pressable(option.action, option.title)}
               >
                 <div className="h-full flex flex-col items-center justify-center p-3 text-white relative">
                   {option.badge && (

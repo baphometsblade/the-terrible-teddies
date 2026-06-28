@@ -4,6 +4,7 @@ import TeddyCard from './TeddyCard';
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
+import { pressable } from '@/lib/a11y';
 
 const RARITY_COLORS = {
   common: 'from-gray-400 to-gray-600',
@@ -135,7 +136,7 @@ const DeckBuilder = () => {
                     whileHover={{ scale: isMaxed ? 1 : 1.05 }}
                     whileTap={{ scale: isMaxed ? 1 : 0.95 }}
                     className={`relative cursor-pointer ${isMaxed ? 'opacity-50' : ''}`}
-                    onClick={() => !isMaxed && addToDeck(card)}
+                    {...pressable(() => !isMaxed && addToDeck(card), `Add ${card.name} to deck`)}
                   >
                     <div className={`absolute inset-0 rounded-lg blur-md -z-10 opacity-30 bg-gradient-to-r ${RARITY_COLORS[card.rarity]}`} />
                     <TeddyCard teddy={card} isDisabled={isMaxed} />

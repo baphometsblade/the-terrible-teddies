@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useGameStore } from '../stores/gameStore';
 import { supabase } from '../utils/supabaseClient';
+import { useDialog } from '@/hooks/useDialog';
 
 const Settings = ({ onClose }) => {
   const {
@@ -18,6 +19,8 @@ const Settings = ({ onClose }) => {
   const [resetConfirmText, setResetConfirmText] = useState('');
 
   const [signingOut, setSigningOut] = useState(false);
+
+  const dialogRef = useDialog(onClose);
 
   const handleReset = () => {
     if (resetConfirmText === 'RESET') {
@@ -63,7 +66,13 @@ const Settings = ({ onClose }) => {
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Settings"
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

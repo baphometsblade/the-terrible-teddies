@@ -6,6 +6,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useGameStore } from '../stores/gameStore';
 import { SEASON_NAME, getSeasonDaysLeft } from '../utils/season';
 import confetti from 'canvas-confetti';
+import { useDialog } from '@/hooks/useDialog';
+import { pressable } from '@/lib/a11y';
 
 const SEASON_DAYS_LEFT = getSeasonDaysLeft();
 
@@ -33,6 +35,7 @@ const BattlePass = ({ onClose }) => {
   const { toast } = useToast();
   const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
   const scrollRef = useRef(null);
+  const dialogRef = useDialog(onClose);
 
   const hasPremium = hasBattlePassPremium;
   const claimedRewards = claimedBattlePassRewards;
@@ -125,7 +128,10 @@ const BattlePass = ({ onClose }) => {
       <motion.div
         whileHover={canClaim ? { scale: 1.05 } : {}}
         whileTap={canClaim ? { scale: 0.95 } : {}}
-        onClick={() => canClaim && claimReward(tier, isPremium)}
+        {...pressable(
+          () => canClaim && claimReward(tier, isPremium),
+          `Claim tier ${tier} ${isPremium ? 'premium' : 'free'} reward`,
+        )}
         className={`
           relative w-20 h-24 rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-all
           ${isPremium 
@@ -169,7 +175,13 @@ const BattlePass = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Battle Pass"
+      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

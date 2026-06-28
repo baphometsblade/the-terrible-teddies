@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useGameStore } from '../stores/gameStore';
 import { supabase } from '../lib/supabase';
 import { getSeasonDaysLeft } from '../utils/season';
+import { useDialog } from '@/hooks/useDialog';
 
 // Calculate trophies based on player stats
 const calculateTrophies = (wins, level, bestStreak) => {
@@ -30,6 +31,7 @@ const Leaderboard = ({ onClose }) => {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const dialogRef = useDialog(onClose);
 
   const playerTrophies = calculateTrophies(totalWins, level, bestWinStreak);
 
@@ -134,7 +136,13 @@ const Leaderboard = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Leaderboard"
+      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}

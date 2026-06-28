@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import TeddyCard from './TeddyCard';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
+import { pressable } from '@/lib/a11y';
 
 const RARITY_COLORS = {
   common: 'from-gray-400 to-gray-600',
@@ -133,7 +134,7 @@ const TeddyCollection = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ delay: Math.min(index * 0.02, 0.5) }}
-              onClick={() => setSelectedCard(card)}
+              {...pressable(() => setSelectedCard(card), `View ${card.name}`)}
               className={`cursor-pointer relative ${!card.owned ? 'opacity-40' : ''}`}
             >
               <div className={`absolute inset-0 rounded-lg blur-lg -z-10 opacity-40 bg-gradient-to-r ${RARITY_COLORS[card.rarity]}`} />

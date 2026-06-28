@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore } from '../stores/gameStore';
 import confetti from 'canvas-confetti';
+import { useDialog } from '@/hooks/useDialog';
 
 const DAILY_CHALLENGES = [
   { id: 'd1', name: 'Win 3 Battles', description: 'Achieve victory in 3 battles', target: 3, reward: { type: 'coins', amount: 150 }, icon: '⚔️', stat: 'dailyWins' },
@@ -54,6 +55,7 @@ const Challenges = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState('daily');
   const [dailyResetTime, setDailyResetTime] = useState(getTimeUntilReset(false));
   const [weeklyResetTime, setWeeklyResetTime] = useState(getTimeUntilReset(true));
+  const dialogRef = useDialog(onClose);
 
   // Roll over daily/weekly stats and the claimed ledger if the calendar has
   // advanced since the last battle, so the panel never shows stale challenges.
@@ -207,7 +209,13 @@ const Challenges = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Challenges"
+      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
