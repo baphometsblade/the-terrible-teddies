@@ -44,12 +44,11 @@ const getTimeUntilReset = (isWeekly = false) => {
 
 const Challenges = ({ onClose }) => {
   const {
-    bestWinStreak, ownedCards,
     addCoins, addGems, addXP, addCardPack, claimChallenge, claimedChallenges, syncPeriods,
     // Daily stats (auto-reset each day)
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     // Weekly stats (auto-reset each Monday)
-    weekWins, weekCoinsEarned,
+    weekWins, weekCoinsEarned, weekBestStreak, weekNewCards,
   } = useGameStore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('daily');
@@ -77,8 +76,8 @@ const Challenges = ({ onClose }) => {
       case 'dailyDamage':      return Math.min(todayDamageDealt, challenge.target);
       case 'dailyCardsPlayed': return Math.min(todayCardsPlayed, challenge.target);
       case 'weeklyWins':       return Math.min(weekWins, challenge.target);
-      case 'weeklyBestStreak': return Math.min(bestWinStreak, challenge.target);
-      case 'weeklyNewCards':   return Math.min(ownedCards.length, challenge.target);
+      case 'weeklyBestStreak': return Math.min(weekBestStreak, challenge.target);
+      case 'weeklyNewCards':   return Math.min(weekNewCards, challenge.target);
       case 'weeklyCoinsEarned':return Math.min(weekCoinsEarned, challenge.target);
       default: return 0;
     }

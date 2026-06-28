@@ -226,6 +226,38 @@ describe('recordBattleResult', () => {
   });
 });
 
+describe('weekly challenge stats are week-scoped (not lifetime)', () => {
+  it('weekBestStreak reflects only this week and a fresh account starts at 0', () => {
+    // A veteran with a big all-time streak but no wins this week.
+    useGameStore.setState({ bestWinStreak: 9, currentWinStreak: 0, weekBestStreak: 0 });
+    expect(get().weekBestStreak).toBe(0); // weekly challenge would NOT be pre-complete
+    get().recordBattleResult(true, 0, 0, 30, 1);
+    expect(get().weekBestStreak).toBe(1);
+  });
+
+  it('weekNewCards counts only cards added this week, not the whole collection', () => {
+    useGameStore.setState({ ownedCards: [1, 2, 3, 4, 5], weekNewCards: 0 });
+    expect(get().weekNewCards).toBe(0);
+    get().addCards([6, 7]); // two new
+    expect(get().weekNewCards).toBe(2);
+    get().addCards([6]); // duplicate — not counted
+    expect(get().weekNewCards).toBe(2);
+  });
+
+  it('weekly stats reset on weekly rollover via syncPeriods', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-01T12:00:00Z')); // a Monday-anchored week
+    get().recordBattleResult(true, 0, 0, 30, 1);
+    get().addCards([6]);
+    expect(get().weekBestStreak).toBeGreaterThan(0);
+    // Jump two weeks ahead and sync.
+    vi.setSystemTime(new Date('2026-06-15T12:00:00Z'));
+    get().syncPeriods();
+    expect(get().weekBestStreak).toBe(0);
+    expect(get().weekNewCards).toBe(0);
+  });
+});
+
 describe('syncPeriods clears stale stats and claims on rollover', () => {
   it('resets daily stats and daily claims when the day changes', () => {
     vi.useFakeTimers();

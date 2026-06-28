@@ -141,6 +141,8 @@ const initialState = {
   // Weekly challenge stats (reset each Monday)
   weekWins: 0,
   weekCoinsEarned: 0,
+  weekBestStreak: 0,
+  weekNewCards: 0,
   weeklyStatsDate: null,
   // Claimed challenge IDs (persisted so players can't double-claim)
   claimedChallenges: [],
@@ -268,7 +270,12 @@ export const useGameStore = create(
         if (newCards.length === 0 && dupeCoins === 0) return 0;
 
         const newOwnedCards = [...state.ownedCards, ...newCards];
-        set({ ownedCards: newOwnedCards, coins: state.coins + dupeCoins });
+        set({
+          ownedCards: newOwnedCards,
+          coins: state.coins + dupeCoins,
+          // Count cards collected this week for the weekly "new cards" challenge.
+          weekNewCards: state.weekNewCards + newCards.length,
+        });
         if (newCards.length > 0) {
           get().checkAchievement('collect_20', newOwnedCards.length >= 20);
           get().checkAchievement('collect_all', newOwnedCards.length >= ALL_CARDS.length);
@@ -321,6 +328,10 @@ export const useGameStore = create(
         const weeklyReset = state.weeklyStatsDate !== weekKey;
         const newWeekWins = (weeklyReset ? 0 : state.weekWins) + (won ? 1 : 0);
         const newWeekCoins = (weeklyReset ? 0 : state.weekCoinsEarned) + coinsThisBattle;
+        // Best streak achieved *this week* — weekly challenges must measure
+        // weekly progress, not the all-time bestWinStreak (which would make the
+        // weekly streak challenge permanently complete).
+        const newWeekBestStreak = Math.max(weeklyReset ? 0 : state.weekBestStreak, newStreak);
 
         // Clear claimed challenges for any period that just rolled over, so the
         // same daily/weekly challenge ids become claimable again. Challenge ids
@@ -347,6 +358,8 @@ export const useGameStore = create(
           // Weekly
           weekWins: newWeekWins,
           weekCoinsEarned: newWeekCoins,
+          weekBestStreak: newWeekBestStreak,
+          weekNewCards: weeklyReset ? 0 : state.weekNewCards,
           weeklyStatsDate: weekKey,
           // Re-claimable challenges after a period rollover
           claimedChallenges: newClaimedChallenges,
@@ -425,7 +438,10 @@ export const useGameStore = create(
         }
         if (weeklyReset) {
           claimed = claimed.filter(id => !id.startsWith('w'));
-          Object.assign(patch, { weekWins: 0, weekCoinsEarned: 0, weeklyStatsDate: weekKey });
+          Object.assign(patch, {
+            weekWins: 0, weekCoinsEarned: 0, weekBestStreak: 0, weekNewCards: 0,
+            weeklyStatsDate: weekKey,
+          });
         }
         set({ ...patch, claimedChallenges: claimed });
       },
@@ -651,8 +667,8 @@ export const useGameStore = create(
         }
 
         for (const k of ['coins', 'gems', 'xp', 'level', 'cardPacks', 'premiumPacks',
-          'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'consecutiveLogins',
-          'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak',
+          'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'weekBestStreak', 'weekNewCards',
+          'consecutiveLogins', 'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak',
           'lastSyncedServerGems']) {
           if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];
         }
