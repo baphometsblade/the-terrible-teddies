@@ -181,7 +181,7 @@ describe('claimChallenge is atomic / idempotent', () => {
 });
 
 describe('syncSeason — battle pass rollover', () => {
-  it('stamps the season key without resetting a fresh/grandfathered player', () => {
+  it('grandfathers un-stamped progress only while Season 1 is still current', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-15T12:00:00Z'));
     useGameStore.setState({ seasonKey: null, seasonXP: 400, hasBattlePassPremium: true });
@@ -189,6 +189,33 @@ describe('syncSeason — battle pass rollover', () => {
     expect(get().seasonKey).toBe('season-1');
     expect(get().seasonXP).toBe(400); // grandfathered, not reset
     expect(get().hasBattlePassPremium).toBe(true);
+  });
+
+  it('resets un-stamped LEGACY progress once the calendar is past Season 1', () => {
+    // A pre-rollover save (seasonKey null) whose progress was earned under the
+    // original hardcoded Season 1, loaded during Season 2 — the progress must
+    // NOT attach to the new season (instant tiers + carried-over premium).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-04T12:00:00Z'));
+    useGameStore.setState({
+      seasonKey: null,
+      seasonXP: 2700,
+      hasBattlePassPremium: true,
+      claimedBattlePassRewards: { free: [1], premium: [1] },
+    });
+    get().syncSeason();
+    expect(get().seasonKey).toBe('season-2');
+    expect(get().seasonXP).toBe(0);
+    expect(get().hasBattlePassPremium).toBe(false);
+    expect(get().claimedBattlePassRewards).toEqual({ free: [], premium: [] });
+  });
+
+  it('stamps a fresh player (no progress) without a pointless reset', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-04T12:00:00Z'));
+    useGameStore.setState({ seasonKey: null, seasonXP: 0, hasBattlePassPremium: false });
+    get().syncSeason();
+    expect(get().seasonKey).toBe('season-2');
   });
 
   it('resets progress, claims, and premium when the season advances', () => {
@@ -231,12 +258,22 @@ describe('syncSeason — battle pass rollover', () => {
   });
 });
 
-describe('claimBattlePassReward is atomic per tier/track', () => {
+describe('claimBattlePassReward is atomic per tier/track with store-side eligibility', () => {
   it('blocks a second claim of the same tier+track', () => {
+    get().syncSeason(); // stamp the current season before granting progress
+    useGameStore.setState({ hasBattlePassPremium: true });
     expect(get().claimBattlePassReward(3, false)).toBe(true);
     expect(get().claimBattlePassReward(3, false)).toBe(false);
     // The premium track of the same tier is independent.
     expect(get().claimBattlePassReward(3, true)).toBe(true);
+  });
+
+  it('rejects claims above the earned XP and premium claims without the pass', () => {
+    get().syncSeason();
+    useGameStore.setState({ seasonXP: 100 });
+    expect(get().claimBattlePassReward(5, false, 700)).toBe(false); // tier not reached
+    expect(get().claimBattlePassReward(2, false, 100)).toBe(true);  // exactly reached
+    expect(get().claimBattlePassReward(2, true, 100)).toBe(false);  // no premium pass
   });
 });
 

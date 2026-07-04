@@ -243,15 +243,28 @@ export const useGameStore = create(
       },
 
       // Roll the Battle Pass over when the calendar season has advanced:
-      // progress, claims, and premium are per-season. A null stored key (fresh
-      // or migrated player) is stamped without resetting existing progress.
+      // progress, claims, and premium are per-season.
       syncSeason: () => {
         const { key } = getCurrentSeason();
         const state = get();
         if (state.seasonKey === key) return;
         if (state.seasonKey === null) {
-          set({ seasonKey: key });
-          return;
+          // Un-stamped save (fresh player or pre-rollover release). Any
+          // existing pass progress was earned under the ORIGINAL hardcoded
+          // Season 1 — it may only be grandfathered while Season 1 is still
+          // the current season. Once the calendar is past it, stamping
+          // without a reset would attach legacy progress (tiers, claims,
+          // premium) to the new season.
+          const hasLegacyProgress =
+            state.seasonXP > 0 ||
+            state.hasBattlePassPremium ||
+            state.claimedBattlePassRewards.free.length > 0 ||
+            state.claimedBattlePassRewards.premium.length > 0;
+          if (key === 'season-1' || !hasLegacyProgress) {
+            set({ seasonKey: key });
+            return;
+          }
+          // fall through: legacy Season-1 progress in a later season → reset
         }
         set({
           seasonKey: key,
@@ -261,9 +274,23 @@ export const useGameStore = create(
         });
       },
 
-      setBattlePassPremium: (value) => set({ hasBattlePassPremium: value }),
-      claimBattlePassReward: (tier, isPremium) => {
+      // Roll the season first so a purchase right at a quarter boundary (or
+      // from a dialog held open across it) lands in the season the player is
+      // actually buying — not stamped onto the expired one and wiped moments
+      // later.
+      setBattlePassPremium: (value) => {
+        get().syncSeason();
+        set({ hasBattlePassPremium: value });
+      },
+      // Atomic claim with store-side eligibility. Rolls the season first so a
+      // dialog held open across a quarter boundary can't claim expired-season
+      // tiers into the fresh pass; validates XP and premium ownership here
+      // rather than trusting the component's (possibly stale) render.
+      claimBattlePassReward: (tier, isPremium, xpRequired = 0) => {
+        get().syncSeason();
         const state = get();
+        if (state.seasonXP < xpRequired) return false;
+        if (isPremium && !state.hasBattlePassPremium) return false;
         const key = isPremium ? 'premium' : 'free';
         if (state.claimedBattlePassRewards[key].includes(tier)) return false;
         set({

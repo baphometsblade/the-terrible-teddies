@@ -3,6 +3,13 @@ import { useEffect, useRef } from 'react';
 const FOCUSABLE =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+// All currently-mounted dialogs, in mount order. Only the top of the stack
+// handles Escape/Tab: multiple dialogs can be open at once (e.g. a purchase
+// screen and the daily-rewards auto-open), and since every instance listens on
+// document, stopPropagation() can't stop sibling listeners — without the stack
+// a single Escape would close every open dialog and the Tab traps would fight.
+const dialogStack = [];
+
 /**
  * Accessible modal-dialog behavior for an overlay element.
  *
@@ -24,6 +31,7 @@ export function useDialog(onClose) {
     const node = ref.current;
     if (!node) return;
     const previouslyFocused = document.activeElement;
+    dialogStack.push(node);
 
     const focusable = () => Array.from(node.querySelectorAll(FOCUSABLE))
       .filter((el) => !el.disabled && el.offsetParent !== null);
@@ -40,8 +48,10 @@ export function useDialog(onClose) {
     // mid-dialog (e.g. the "open pack" button during the reveal), focus falls
     // back to <body> and a node-level listener would never see the Escape.
     const onKeyDown = (e) => {
+      // Only the most-recently-opened dialog owns the keyboard.
+      if (dialogStack[dialogStack.length - 1] !== node) return;
       if (e.key === 'Escape') {
-        e.stopPropagation();
+        e.stopImmediatePropagation();
         onCloseRef.current?.();
         return;
       }
@@ -70,6 +80,9 @@ export function useDialog(onClose) {
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
+      // Remove by index — dialogs don't always unmount in LIFO order.
+      const i = dialogStack.indexOf(node);
+      if (i !== -1) dialogStack.splice(i, 1);
       if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
         previouslyFocused.focus();
       }

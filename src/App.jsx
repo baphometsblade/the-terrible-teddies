@@ -114,18 +114,21 @@ function App() {
 
   useEffect(() => {
     const today = new Date().toDateString();
-    if (session && lastLoginDate !== today) {
+    // Don't auto-open daily rewards over an in-progress purchase verification;
+    // stacked dialogs would fight for the keyboard. It opens after the buyer
+    // dismisses the payment screen (purchaseSessionId clears → effect re-runs).
+    if (session && lastLoginDate !== today && !purchaseSessionId) {
       const timer = setTimeout(() => setShowDailyRewards(true), 500);
       return () => clearTimeout(timer);
     }
-  }, [session, lastLoginDate]);
+  }, [session, lastLoginDate, purchaseSessionId]);
 
   useEffect(() => {
-    if (session && !tutorialCompleted && !showDailyRewards) {
+    if (session && !tutorialCompleted && !showDailyRewards && !purchaseSessionId) {
       const timer = setTimeout(() => setShowTutorial(true), 1000);
       return () => clearTimeout(timer);
     }
-  }, [session, tutorialCompleted, showDailyRewards]);
+  }, [session, tutorialCompleted, showDailyRewards, purchaseSessionId]);
 
   if (!isSupabaseConfigured) {
     return (

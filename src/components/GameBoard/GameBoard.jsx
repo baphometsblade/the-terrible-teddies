@@ -11,6 +11,7 @@ import { calculateCardDamage } from '../../utils/battleUtils';
 import { syncBattleResult } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { pressable } from '@/lib/a11y';
+import { useDialog } from '@/hooks/useDialog';
 
 // Sound effects
 const sounds = {
@@ -27,6 +28,27 @@ const sounds = {
 // Cap the hand so unbounded draw (per-turn + draw specials) can't overflow the
 // fixed-width hand layout into an unclickable, off-screen stack.
 const MAX_HAND_SIZE = 10;
+
+// The game-over overlay mounts conditionally, so it hosts its own useDialog
+// (the hook must live in a component that mounts with the overlay). Gives the
+// end screen dialog semantics + focus containment, so keyboard users can't
+// tab into the finished board behind it.
+const GameOverDialog = ({ label, onEscape, children }) => {
+  const ref = useDialog(onEscape);
+  return (
+    <motion.div
+      ref={ref}
+      role="dialog"
+      aria-modal="true"
+      aria-label={label}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center"
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 /**
  * Enhanced GameBoard with card abilities, sound effects, and improved AI.
@@ -536,7 +558,12 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const executeOpponentTurn = () => {
     addToBattleLog("Opponent's turn!");
 
-    // Remove stealth from opponent cards
+    // Remove stealth from opponent cards. Compute the cleared field once and
+    // use it for BOTH the state update and the attack loop below — the loop
+    // otherwise iterates this closure's stale snapshot, where a stealth card
+    // played last turn still reads stealthActive and skips an extra full turn
+    // of attacks.
+    const activeOpponentField = opponentField.map(c => ({ ...c, stealthActive: false }));
     setOpponentField(prev => prev.map(c => ({ ...c, stealthActive: false })));
 
     // Opponent plays every card it can afford within its per-turn energy
@@ -556,12 +583,16 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // re-evaluates targets (taunt/protect) as creatures fall, instead of every
     // attacker piling onto a single stale target and the rest no-opping.
     safeTimeout(() => {
-      let livePlayerField = playerField.map(c => ({ ...c }));
+      // Clear hasAttacked in the working copy: endTurn already reset it in
+      // state, but this closure predates that render, and the unconditional
+      // write-back below would otherwise restore hasAttacked:true — bricking
+      // any attacker that survives an opponent turn as permanently Exhausted.
+      let livePlayerField = playerField.map(c => ({ ...c, hasAttacked: false }));
       let faceDamage = 0;
       let trapDamageToOpponent = 0;
       const logs = [];
 
-      opponentField.forEach(card => {
+      activeOpponentField.forEach(card => {
         if (card.stealthActive) return; // can't attack the turn it's played
 
         // Creature blockers (taunt/protect/normal) must be dealt with first.
@@ -715,10 +746,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       {/* Game Over Overlay */}
       <AnimatePresence>
         {gameOver && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center"
+          <GameOverDialog
+            label={winner === 'player' ? 'Victory' : 'Defeat'}
+            onEscape={() => onBackToMenu && onBackToMenu()}
           >
             <motion.div
               initial={{ scale: 0.5, y: 50 }}
@@ -815,7 +845,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                 )}
               </div>
             </motion.div>
-          </motion.div>
+          </GameOverDialog>
         )}
       </AnimatePresence>
 
@@ -1006,28 +1036,30 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
       {/* Game controls */}
       {/* On phones the old right-side stack rendered on top of the hand, so
-          lay the controls out as a horizontal row in the free band between the
-          battlefield and the hand; sm+ keeps the vertical right-side stack. */}
-      <div className="absolute bottom-[14.5rem] inset-x-2 flex flex-row justify-center gap-2 sm:inset-x-auto sm:bottom-20 sm:right-4 sm:flex-col sm:w-36">
+          lay the controls out as a compact horizontal row anchored just under
+          the battlefield (which ends at 2/3 viewport height) — a fixed
+          bottom offset overlapped the player's field cards on short phones.
+          sm+ keeps the vertical right-side stack. */}
+      <div className="absolute top-[calc(66.67%+0.5rem)] inset-x-2 flex flex-row justify-center gap-2 sm:top-auto sm:inset-x-auto sm:bottom-20 sm:right-4 sm:flex-col sm:w-36">
         {targetingMode && (
           <Button
-            className="flex-1 sm:flex-none sm:w-full bg-gray-500 hover:bg-gray-600 text-white"
+            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-gray-500 hover:bg-gray-600 text-white"
             onClick={cancelTargeting}
           >
             Cancel
           </Button>
         )}
-        {phase === 'main' && currentTurn === 'player' && (
+        {!gameOver && phase === 'main' && currentTurn === 'player' && (
           <Button
-            className="flex-1 sm:flex-none sm:w-full bg-red-500 hover:bg-red-600 text-white"
+            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-red-500 hover:bg-red-600 text-white"
             onClick={goToBattlePhase}
           >
             ⚔️ Battle
           </Button>
         )}
-        {(phase === 'main' || phase === 'battle') && currentTurn === 'player' && (
+        {!gameOver && (phase === 'main' || phase === 'battle') && currentTurn === 'player' && (
           <Button
-            className="flex-1 sm:flex-none sm:w-full bg-green-500 hover:bg-green-600 text-white"
+            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-green-500 hover:bg-green-600 text-white"
             onClick={endTurn}
           >
             End Turn
@@ -1035,7 +1067,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         )}
         {!gameOver && currentTurn === 'player' && (
           <Button
-            className="flex-1 sm:flex-none sm:w-full bg-white/10 hover:bg-white/20 text-white/80 text-xs border border-white/20"
+            className="flex-none h-9 px-3 text-xs sm:h-10 sm:px-4 sm:w-full bg-white/10 hover:bg-white/20 text-white/80 text-xs border border-white/20"
             onClick={concedeGame}
           >
             🏳️ Concede

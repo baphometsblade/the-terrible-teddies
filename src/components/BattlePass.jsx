@@ -33,7 +33,10 @@ const BattlePass = ({ onClose }) => {
   const { toast } = useToast();
   const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
   const scrollRef = useRef(null);
-  const dialogRef = useDialog(onClose);
+  // Escape targets the innermost layer: dismiss the nested purchase-confirm
+  // overlay first, and only close the whole pass when no overlay is open.
+  // (useDialog reads the callback through a ref, so this closure stays live.)
+  const dialogRef = useDialog(() => (showPurchaseConfirm ? setShowPurchaseConfirm(false) : onClose()));
 
   // Live season info (recomputed per render) — and roll the pass over on open
   // if the calendar season has advanced since the player last earned XP.
@@ -87,7 +90,7 @@ const BattlePass = ({ onClose }) => {
     // Claim first — claimBattlePassReward atomically records the tier and
     // returns false if it was already claimed, so a double-click can't grant
     // the reward twice.
-    if (!claimBattlePassReward(tier, isPremium)) {
+    if (!claimBattlePassReward(tier, isPremium, reward.xpRequired)) {
       toast({ title: "Already Claimed", description: "You've already claimed this reward.", variant: "destructive" });
       return;
     }

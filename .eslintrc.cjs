@@ -28,8 +28,10 @@ module.exports = {
       env: { node: true, browser: false },
     },
     {
-      // Vitest injects these as globals (test.globals = true).
+      // Vitest injects these as globals (test.globals = true); tests run in
+      // Node (jsdom), so Node globals like process/Buffer are legitimate.
       files: ["**/*.test.{js,jsx}", "**/*.spec.{js,jsx}"],
+      env: { node: true },
       globals: {
         describe: "readonly",
         it: "readonly",

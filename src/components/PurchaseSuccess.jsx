@@ -11,7 +11,7 @@ import { useDialog } from '@/hooks/useDialog';
 // Gem bundle prices for analytics (mirrors server-side definitions)
 const BUNDLE_PRICES = {
   gems_small: 0.99, gems_medium: 2.99, gems_large: 9.99,
-  gems_huge: 19.99, gems_mega: 49.99, starter_bundle: 4.99, weekly_gem_pass: 1.99,
+  gems_huge: 19.99, gems_mega: 49.99, starter_bundle: 4.99, weekly_gem_pass: 5.99,
 };
 
 const PurchaseSuccess = ({ sessionId, onDone }) => {
@@ -20,15 +20,23 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
   const [gemsGranted, setGemsGranted] = useState(0);
   const synced = useRef(false);
   const mountedRef = useRef(true);
-  const dialogRef = useDialog(onDone);
+  // Escape must not dismiss the dialog mid-verification — unmounting aborts
+  // the in-flight check and the buyer's gems wouldn't appear until the next
+  // full reload's login reconciliation.
+  const dialogRef = useDialog(() => { if (phase !== 'verifying') onDone(); });
 
   useEffect(() => {
     return () => { mountedRef.current = false; };
   }, []);
 
-  const verify = useCallback(async () => {
+  // silent=true is used by the background re-poll: it must not flip the phase
+  // to 'verifying', because that would unmount/remount the polling effect on
+  // every tick (resetting its counter — the poll would never terminate) and
+  // flash the spinner. A transient error during a silent poll also stays in
+  // 'pending' so the next tick can retry.
+  const verify = useCallback(async (silent = false) => {
     if (!sessionId || synced.current) return;
-    if (mountedRef.current) setPhase('verifying');
+    if (!silent && mountedRef.current) setPhase('verifying');
     try {
       const purchase = await verifyPurchaseSession(sessionId);
       if (!mountedRef.current) return;
@@ -59,7 +67,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
         setPhase('pending');
       }
     } catch (_err) {
-      if (mountedRef.current) setPhase('error');
+      if (mountedRef.current && !silent) setPhase('error');
     }
   }, [sessionId, reconcileServerGems]);
 
@@ -69,14 +77,16 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
 
   // If the webhook is still catching up ('pending'), keep re-polling in the
   // background so gems appear automatically once it credits — instead of
-  // leaving the player on a dead-end screen.
+  // leaving the player on a dead-end screen. The attempt counter lives in a
+  // ref so it survives phase flips (a local variable would reset every time
+  // the effect re-ran, making the cap unreachable).
+  const pollTriesRef = useRef(0);
   useEffect(() => {
     if (phase !== 'pending') return;
-    let tries = 0;
     const id = setInterval(() => {
-      if (tries >= 6) { clearInterval(id); return; }
-      tries += 1;
-      verify();
+      if (pollTriesRef.current >= 6) { clearInterval(id); return; }
+      pollTriesRef.current += 1;
+      verify(true);
     }, 4000);
     return () => clearInterval(id);
   }, [phase, verify]);

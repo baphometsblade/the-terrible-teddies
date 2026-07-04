@@ -13,9 +13,9 @@ import { pressable } from '@/lib/a11y';
 const GEM_BUNDLES = [
   { id: 'gems_small', gems: 50, price: 0.99, bonus: 0, popular: false },
   { id: 'gems_medium', gems: 150, price: 2.99, bonus: 10, popular: false },
-  { id: 'gems_large', gems: 500, price: 9.99, bonus: 50, popular: true },
+  { id: 'gems_large', gems: 500, price: 9.99, bonus: 50, popular: false },
   { id: 'gems_huge', gems: 1200, price: 19.99, bonus: 200, popular: false },
-  { id: 'gems_mega', gems: 3000, price: 49.99, bonus: 750, popular: false },
+  { id: 'gems_mega', gems: 3000, price: 49.99, bonus: 750, popular: true },
 ];
 
 const Shop = ({ onClose }) => {
@@ -204,7 +204,7 @@ const Shop = ({ onClose }) => {
                 <div className="bg-gradient-to-r from-yellow-600/30 to-orange-600/30 border border-yellow-500/50 rounded-xl p-6 mb-6">
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div>
-                      <div className="text-yellow-400 text-sm font-semibold mb-1">BEST VALUE FOR NEW PLAYERS</div>
+                      <div className="text-yellow-400 text-sm font-semibold mb-1">NEW PLAYER BOOST</div>
                       <h3 className="text-2xl font-bold text-white mb-2">Starter Gem Pack</h3>
                       <p className="text-white/70 mb-3">A big gem boost to get you started.</p>
                       <ul className="text-white/80 text-sm space-y-1">
@@ -215,7 +215,7 @@ const Shop = ({ onClose }) => {
                     </div>
                     <div className="text-center">
                       <div className="text-3xl font-bold text-yellow-400">$4.99</div>
-                      <div className="text-green-400 text-sm font-semibold">2× the gems of the $2.99 pack</div>
+                      <div className="text-green-400 text-sm font-semibold">vs 160 gems in the $2.99 pack</div>
                       <Button
                         onClick={() => handleGemPurchase({ id: 'starter_bundle', gems: 300, bonus: 0, price: 4.99 })}
                         disabled={processing}
@@ -234,11 +234,11 @@ const Shop = ({ onClose }) => {
                       <span className="text-purple-300">350 gems</span>
                       <Button
                         size="sm"
-                        onClick={() => handleGemPurchase({ id: 'weekly_gem_pass', gems: 350, bonus: 0, price: 1.99 })}
+                        onClick={() => handleGemPurchase({ id: 'weekly_gem_pass', gems: 350, bonus: 0, price: 5.99 })}
                         disabled={processing}
                         className="bg-purple-500 hover:bg-purple-600"
                       >
-                        $1.99
+                        $5.99
                       </Button>
                     </div>
                   </div>
