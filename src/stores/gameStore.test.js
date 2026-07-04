@@ -180,6 +180,57 @@ describe('claimChallenge is atomic / idempotent', () => {
   });
 });
 
+describe('syncSeason — battle pass rollover', () => {
+  it('stamps the season key without resetting a fresh/grandfathered player', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-15T12:00:00Z'));
+    useGameStore.setState({ seasonKey: null, seasonXP: 400, hasBattlePassPremium: true });
+    get().syncSeason();
+    expect(get().seasonKey).toBe('season-1');
+    expect(get().seasonXP).toBe(400); // grandfathered, not reset
+    expect(get().hasBattlePassPremium).toBe(true);
+  });
+
+  it('resets progress, claims, and premium when the season advances', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-15T12:00:00Z'));
+    get().syncSeason(); // stamps season-1
+    useGameStore.setState({
+      seasonXP: 1500,
+      hasBattlePassPremium: true,
+      claimedBattlePassRewards: { free: [1, 2, 3], premium: [1, 2] },
+    });
+
+    vi.setSystemTime(new Date('2026-07-04T12:00:00Z')); // season-2
+    get().syncSeason();
+    expect(get().seasonKey).toBe('season-2');
+    expect(get().seasonXP).toBe(0);
+    expect(get().hasBattlePassPremium).toBe(false);
+    expect(get().claimedBattlePassRewards).toEqual({ free: [], premium: [] });
+  });
+
+  it('is a no-op within the same season', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-04T12:00:00Z'));
+    get().syncSeason();
+    useGameStore.setState({ seasonXP: 300 });
+    get().syncSeason();
+    expect(get().seasonXP).toBe(300);
+  });
+
+  it('addXP rolls the season before crediting, so XP lands in the new season', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-15T12:00:00Z'));
+    get().syncSeason();
+    useGameStore.setState({ seasonXP: 1500, xp: 0, level: 1 });
+
+    vi.setSystemTime(new Date('2026-07-04T12:00:00Z'));
+    get().addXP(50);
+    expect(get().seasonKey).toBe('season-2');
+    expect(get().seasonXP).toBe(50); // reset to 0, then credited 50
+  });
+});
+
 describe('claimBattlePassReward is atomic per tier/track', () => {
   it('blocks a second claim of the same tier+track', () => {
     expect(get().claimBattlePassReward(3, false)).toBe(true);

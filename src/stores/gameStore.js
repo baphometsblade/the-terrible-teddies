@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { shuffleDeck } from '@/utils/deckUtils';
+import { getCurrentSeason } from '@/utils/season';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
@@ -161,6 +162,9 @@ const initialState = {
   // Battle Pass
   hasBattlePassPremium: false,
   claimedBattlePassRewards: { free: [], premium: [] },
+  // Which season the pass progress belongs to; null until first stamped.
+  // When the rolling season advances past this, syncSeason() resets the pass.
+  seasonKey: null,
 };
 
 export const useGameStore = create(
@@ -174,6 +178,9 @@ export const useGameStore = create(
       setPlayerName: (name) => set({ playerName: name }),
 
       addXP: (amount) => {
+        // Roll the Battle Pass season first so this XP lands in the correct
+        // season's progress (get() below must see the post-rollover state).
+        get().syncSeason();
         const state = get();
         let newXP = state.xp + amount;
         let newLevel = state.level;
@@ -233,6 +240,25 @@ export const useGameStore = create(
           return true;
         }
         return false;
+      },
+
+      // Roll the Battle Pass over when the calendar season has advanced:
+      // progress, claims, and premium are per-season. A null stored key (fresh
+      // or migrated player) is stamped without resetting existing progress.
+      syncSeason: () => {
+        const { key } = getCurrentSeason();
+        const state = get();
+        if (state.seasonKey === key) return;
+        if (state.seasonKey === null) {
+          set({ seasonKey: key });
+          return;
+        }
+        set({
+          seasonKey: key,
+          seasonXP: 0,
+          claimedBattlePassRewards: { free: [], premium: [] },
+          hasBattlePassPremium: false,
+        });
       },
 
       setBattlePassPremium: (value) => set({ hasBattlePassPremium: value }),
@@ -648,6 +674,9 @@ export const useGameStore = create(
           premium: persisted?.claimedBattlePassRewards?.premium ?? [],
         };
         s.claimedChallenges = Array.isArray(persisted?.claimedChallenges) ? persisted.claimedChallenges : [];
+        // Pre-rollover saves have no season stamp — null means "stamp without
+        // resetting" on the first syncSeason(), grandfathering their progress.
+        s.seasonKey = typeof persisted?.seasonKey === 'string' ? persisted.seasonKey : null;
         s.ownedCards = Array.isArray(persisted?.ownedCards) && persisted.ownedCards.length
           ? persisted.ownedCards : [...initialState.ownedCards];
         s.currentDeck = Array.isArray(persisted?.currentDeck) ? persisted.currentDeck : [...initialState.currentDeck];

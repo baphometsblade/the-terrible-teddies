@@ -1,79 +1,61 @@
-import { SEASON_NAME, SEASON_END, getSeasonDaysLeft } from './season';
-
-const MS_PER_DAY = 86_400_000;
+import { SEASON_NAMES, getCurrentSeason, getSeasonDaysLeft } from './season';
 
 afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('season constants', () => {
-  it('exposes the expected season name', () => {
-    expect(SEASON_NAME).toBe('Season 1: Teddy Rampage');
+describe('getCurrentSeason (rolling quarterly seasons)', () => {
+  it('identifies Season 1 (Teddy Rampage) during Apr–Jun 2026', () => {
+    const s = getCurrentSeason(new Date('2026-05-15T12:00:00Z'));
+    expect(s.number).toBe(1);
+    expect(s.name).toBe('Season 1: Teddy Rampage');
+    expect(s.key).toBe('season-1');
+    expect(s.endDate.toISOString()).toBe('2026-07-01T00:00:00.000Z');
   });
 
-  it('exposes SEASON_END as the 2026-06-30T23:59:59Z Date', () => {
-    expect(SEASON_END).toBeInstanceOf(Date);
-    expect(SEASON_END.toISOString()).toBe('2026-06-30T23:59:59.000Z');
+  it('rolls to Season 2 (Fluffpocalypse) after June 2026', () => {
+    const s = getCurrentSeason(new Date('2026-07-04T12:00:00Z'));
+    expect(s.number).toBe(2);
+    expect(s.name).toBe('Season 2: Fluffpocalypse');
+    expect(s.endDate.toISOString()).toBe('2026-10-01T00:00:00.000Z');
+  });
+
+  it('the boundary instant belongs to the new season with a full quarter left', () => {
+    const before = getCurrentSeason(new Date('2026-06-30T23:59:00Z'));
+    expect(before.number).toBe(1);
+    expect(before.daysLeft).toBe(1);
+
+    const at = getCurrentSeason(new Date('2026-07-01T00:00:00Z'));
+    expect(at.number).toBe(2);
+    expect(at.daysLeft).toBeGreaterThan(80); // full Jul–Sep quarter ahead
+  });
+
+  it('season names cycle after the list is exhausted', () => {
+    // Season 5 starts 4 quarters after Season 1 → Apr 2027, name wraps to index 0.
+    const s = getCurrentSeason(new Date('2027-05-01T00:00:00Z'));
+    expect(s.number).toBe(5);
+    expect(s.name).toBe(`Season 5: ${SEASON_NAMES[0]}`);
+  });
+
+  it('daysLeft counts whole days, rounding partial days up', () => {
+    // 2026-09-28T12:00Z → 2.5 days to Oct 1 → 3
+    expect(getCurrentSeason(new Date('2026-09-28T12:00:00Z')).daysLeft).toBe(3);
+    // one hour before the boundary → 1
+    expect(getCurrentSeason(new Date('2026-09-30T23:00:00Z')).daysLeft).toBe(1);
+  });
+
+  it('the countdown can never go stale: daysLeft is at least 1 mid-season', () => {
+    for (const iso of ['2026-07-04T12:00:00Z', '2026-12-31T23:00:00Z', '2030-02-14T08:00:00Z']) {
+      expect(getCurrentSeason(new Date(iso)).daysLeft).toBeGreaterThanOrEqual(1);
+    }
   });
 });
 
 describe('getSeasonDaysLeft', () => {
-  it('returns a non-negative integer', () => {
+  it('reflects the current rolling season based on the real clock', () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-06-25T00:00:00Z'));
-    const result = getSeasonDaysLeft();
-    expect(result).toBeGreaterThanOrEqual(0);
-    expect(Number.isInteger(result)).toBe(true);
-  });
-
-  it('returns 0 exactly at the season end', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(SEASON_END);
-    expect(getSeasonDaysLeft()).toBe(0);
-  });
-
-  it('returns 0 after the season end', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(SEASON_END.getTime() + 5 * MS_PER_DAY));
-    expect(getSeasonDaysLeft()).toBe(0);
-  });
-
-  it('never returns negative well past the season end', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2030-01-01T00:00:00Z'));
-    expect(getSeasonDaysLeft()).toBeGreaterThanOrEqual(0);
-    expect(getSeasonDaysLeft()).toBe(0);
-  });
-
-  it('counts the correct whole days for a date before the end', () => {
-    // Set "now" to exactly 3 full days before SEASON_END.
-    // ceil(3 * dayMs / dayMs) === 3
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(SEASON_END.getTime() - 3 * MS_PER_DAY));
-    expect(getSeasonDaysLeft()).toBe(3);
-  });
-
-  it('rounds up partial days (ceil), e.g. 2.5 days left -> 3', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(SEASON_END.getTime() - 2.5 * MS_PER_DAY));
-    expect(getSeasonDaysLeft()).toBe(3);
-  });
-
-  it('returns 1 when less than a full day remains', () => {
-    vi.useFakeTimers();
-    // 1 hour before the end -> ceil(small positive) === 1
-    vi.setSystemTime(new Date(SEASON_END.getTime() - 60 * 60 * 1000));
-    expect(getSeasonDaysLeft()).toBe(1);
-  });
-
-  it('matches the manual ceil formula for an arbitrary earlier date', () => {
-    vi.useFakeTimers();
-    const now = new Date('2026-06-20T12:00:00Z');
-    vi.setSystemTime(now);
-    const expected = Math.max(
-      0,
-      Math.ceil((SEASON_END.getTime() - now.getTime()) / MS_PER_DAY),
-    );
-    expect(getSeasonDaysLeft()).toBe(expected);
+    vi.setSystemTime(new Date('2026-07-04T12:00:00Z'));
+    expect(getSeasonDaysLeft()).toBe(getCurrentSeason(new Date('2026-07-04T12:00:00Z')).daysLeft);
+    expect(getSeasonDaysLeft()).toBeGreaterThan(0);
   });
 });

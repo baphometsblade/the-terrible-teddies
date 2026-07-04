@@ -1,15 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore } from '../stores/gameStore';
-import { SEASON_NAME, getSeasonDaysLeft } from '../utils/season';
+import { getCurrentSeason } from '../utils/season';
 import confetti from 'canvas-confetti';
 import { useDialog } from '@/hooks/useDialog';
 import { pressable } from '@/lib/a11y';
-
-const SEASON_DAYS_LEFT = getSeasonDaysLeft();
 
 const BATTLE_PASS_REWARDS = [
   { tier: 1, xpRequired: 0, free: { type: 'coins', amount: 100, icon: '🪙' }, premium: { type: 'card', cardId: 7, name: 'Sneaky Pete', icon: '🃏', rarity: 'uncommon' } },
@@ -30,12 +28,19 @@ const BattlePass = ({ onClose }) => {
   const {
     gems, spendGems, addCoins, addGems, addCardPack, addCard, seasonXP,
     hasBattlePassPremium, setBattlePassPremium,
-    claimedBattlePassRewards, claimBattlePassReward,
+    claimedBattlePassRewards, claimBattlePassReward, syncSeason,
   } = useGameStore();
   const { toast } = useToast();
   const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
   const scrollRef = useRef(null);
   const dialogRef = useDialog(onClose);
+
+  // Live season info (recomputed per render) — and roll the pass over on open
+  // if the calendar season has advanced since the player last earned XP.
+  const season = getCurrentSeason();
+  useEffect(() => {
+    syncSeason();
+  }, [syncSeason]);
 
   const hasPremium = hasBattlePassPremium;
   const claimedRewards = claimedBattlePassRewards;
@@ -199,12 +204,12 @@ const BattlePass = ({ onClose }) => {
               <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                 <span className="text-3xl">🏆</span> Battle Pass
               </h2>
-              <p className="text-white/80 text-sm">{SEASON_NAME}</p>
+              <p className="text-white/80 text-sm">{season.name}</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <div className="text-white/70 text-xs">Season ends in</div>
-                <div className="text-white font-bold">{SEASON_DAYS_LEFT} days</div>
+                <div className="text-white font-bold">{season.daysLeft} day{season.daysLeft !== 1 ? 's' : ''}</div>
               </div>
               {!hasPremium && (
                 <Button
