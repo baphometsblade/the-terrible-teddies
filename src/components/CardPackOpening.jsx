@@ -26,6 +26,7 @@ const CardPackOpening = ({ onClose }) => {
   const { cardPacks, premiumPacks, legendaryPacks, openCardPack, coins, gems, buyShopItem, getNextPackType } = useGameStore();
   const [isOpening, setIsOpening] = useState(false);
   const [pulledCards, setPulledCards] = useState(null);
+  const [dupeCoins, setDupeCoins] = useState(0);
   const [revealedIndex, setRevealedIndex] = useState(-1);
   const [showPack, setShowPack] = useState(true);
   const [packAnimation, setPackAnimation] = useState(false);
@@ -59,16 +60,18 @@ const CardPackOpening = ({ onClose }) => {
       setShowPack(false);
       // Open the next available pack type (prioritizes legendary > premium > regular)
       const packType = getNextPackType();
-      const cards = openCardPack(packType);
+      const result = openCardPack(packType);
       // The store claims the pack atomically; if none remain (e.g. a lost race),
       // it returns null — bail without crashing the reveal animation.
-      if (!cards) {
+      if (!result) {
         setIsOpening(false);
         setShowPack(true);
         setPackAnimation(false);
         return;
       }
+      const { cards, dupeCoins: refund } = result;
       setPulledCards(cards);
+      setDupeCoins(refund);
 
       cards.forEach((card, index) => {
         setTimeout(() => {
@@ -96,6 +99,7 @@ const CardPackOpening = ({ onClose }) => {
 
   const resetView = () => {
     setPulledCards(null);
+    setDupeCoins(0);
     setRevealedIndex(-1);
     setShowPack(true);
     setPackAnimation(false);
@@ -272,13 +276,22 @@ const CardPackOpening = ({ onClose }) => {
                     ))}
                   </div>
 
-                  {revealedIndex === pulledCards.length - 1 && newCardsCount > 0 && (
+                  {revealedIndex === pulledCards.length - 1 && (newCardsCount > 0 || dupeCoins > 0) && (
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="text-center text-green-400 font-bold text-lg"
+                      className="text-center font-bold text-lg space-y-1"
                     >
-                      🎉 {newCardsCount} new card{newCardsCount > 1 ? 's' : ''} added to collection!
+                      {newCardsCount > 0 && (
+                        <div className="text-green-400">
+                          🎉 {newCardsCount} new card{newCardsCount > 1 ? 's' : ''} added to collection!
+                        </div>
+                      )}
+                      {dupeCoins > 0 && (
+                        <div className="text-yellow-400 text-base">
+                          🪙 +{dupeCoins} coins for duplicate cards
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </motion.div>

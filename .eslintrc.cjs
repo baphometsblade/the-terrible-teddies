@@ -42,5 +42,23 @@ module.exports = {
         afterAll: "readonly",
       },
     },
+    {
+      // Playwright e2e tests run in Node and import their own test/expect
+      // from @playwright/test — drop the Vitest globals so the imports don't
+      // collide, and enable Node globals (Buffer, process).
+      files: ["e2e/**/*.js"],
+      env: { node: true },
+      globals: {
+        describe: "off",
+        it: "off",
+        test: "off",
+        expect: "off",
+        vi: "off",
+        beforeEach: "off",
+        afterEach: "off",
+        beforeAll: "off",
+        afterAll: "off",
+      },
+    },
   ],
 };

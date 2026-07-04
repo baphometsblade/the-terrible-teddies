@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Playwright
+test-results/
+playwright-report/
+
 # Environment files (may contain secrets)
 .env
 .env.*

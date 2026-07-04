@@ -567,9 +567,9 @@ export const useGameStore = create(
           });
         }
 
-        get().addCards(pulledCards.map(c => c.id));
+        const dupeCoins = get().addCards(pulledCards.map(c => c.id));
 
-        return pulledCards;
+        return { cards: pulledCards, dupeCoins };
       },
 
       // Helper to get total available packs of all types

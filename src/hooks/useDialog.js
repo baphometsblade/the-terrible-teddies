@@ -36,6 +36,9 @@ export function useDialog(onClose) {
       node.focus();
     }
 
+    // Listen on document, not the node: if the focused control unmounts
+    // mid-dialog (e.g. the "open pack" button during the reveal), focus falls
+    // back to <body> and a node-level listener would never see the Escape.
     const onKeyDown = (e) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
@@ -50,18 +53,23 @@ export function useDialog(onClose) {
       }
       const firstEl = items[0];
       const lastEl = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === firstEl) {
+      const active = document.activeElement;
+      if (!node.contains(active)) {
+        // Focus escaped (or its element unmounted) — pull it back in.
+        e.preventDefault();
+        firstEl.focus();
+      } else if (e.shiftKey && active === firstEl) {
         e.preventDefault();
         lastEl.focus();
-      } else if (!e.shiftKey && document.activeElement === lastEl) {
+      } else if (!e.shiftKey && active === lastEl) {
         e.preventDefault();
         firstEl.focus();
       }
     };
 
-    node.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      node.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keydown', onKeyDown);
       if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
         previouslyFocused.focus();
       }

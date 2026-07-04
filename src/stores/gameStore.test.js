@@ -129,17 +129,29 @@ describe('openCardPack atomicity', () => {
 
   it('consumes exactly one regular pack and pulls 5 cards', () => {
     useGameStore.setState({ cardPacks: 1, premiumPacks: 0, legendaryPacks: 0 });
-    const pulled = get().openCardPack('regular');
-    expect(pulled).toHaveLength(5);
+    const { cards } = get().openCardPack('regular');
+    expect(cards).toHaveLength(5);
     expect(get().cardPacks).toBe(0);
   });
 
   it('legendary pack pulls 10 with a guaranteed legendary first and consumes one', () => {
     useGameStore.setState({ cardPacks: 0, premiumPacks: 0, legendaryPacks: 1 });
-    const pulled = get().openCardPack('legendary');
-    expect(pulled).toHaveLength(10);
-    expect(pulled[0].rarity).toBe('legendary');
+    const { cards } = get().openCardPack('legendary');
+    expect(cards).toHaveLength(10);
+    expect(cards[0].rarity).toBe('legendary');
     expect(get().legendaryPacks).toBe(0);
+  });
+
+  it('reports the coin refund for duplicate pulls', () => {
+    // Own every card, so all 5 pulls are duplicates and each refunds coins.
+    useGameStore.setState({
+      cardPacks: 1, premiumPacks: 0, legendaryPacks: 0,
+      ownedCards: ALL_CARDS.map(c => c.id), coins: 0,
+    });
+    const { cards, dupeCoins } = get().openCardPack('regular');
+    expect(cards).toHaveLength(5);
+    expect(dupeCoins).toBeGreaterThan(0);
+    expect(get().coins).toBe(dupeCoins);
   });
 
   it('two rapid opens of a single pack cannot both succeed (no negative counter)', () => {
