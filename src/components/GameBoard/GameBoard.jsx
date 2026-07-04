@@ -9,6 +9,7 @@ import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
 import { calculateCardDamage } from '../../utils/battleUtils';
 import { syncBattleResult } from '../../utils/supabaseClient';
+import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { pressable } from '@/lib/a11y';
 
 // Sound effects
@@ -26,7 +27,6 @@ const sounds = {
 // Cap the hand so unbounded draw (per-turn + draw specials) can't overflow the
 // fixed-width hand layout into an unclickable, off-screen stack.
 const MAX_HAND_SIZE = 10;
-const OPPONENT_TURN_ENERGY = 3;
 
 /**
  * Enhanced GameBoard with card abilities, sound effects, and improved AI.
@@ -539,20 +539,17 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // Remove stealth from opponent cards
     setOpponentField(prev => prev.map(c => ({ ...c, stealthActive: false })));
 
-    // Opponent plays the top deck card if it can afford and has board room.
-    // The card is only consumed from the deck when actually played, so the
-    // opponent doesn't silently mill its own deck when the board is full.
-    if (opponentDeck.length > 0) {
-      const drawnCard = opponentDeck[0];
-      if (opponentField.length < 3 && OPPONENT_TURN_ENERGY >= drawnCard.cost) {
-        setOpponentDeck(prev => prev.slice(1));
-        const cardToPlay = drawnCard.ability === 'stealth'
-          ? { ...drawnCard, stealthActive: true }
-          : drawnCard;
-        setOpponentField(prev => [...prev, cardToPlay]);
-        playSound('cardPlay');
-        addToBattleLog(`Opponent played ${drawnCard.name}`);
-      }
+    // Opponent plays every card it can afford within its per-turn energy
+    // budget (difficulty-scaled) while the field has room. Only played cards
+    // leave the deck, so a full board never mills it.
+    const energyBudget = OPPONENT_ENERGY_BY_DIFFICULTY[aiDifficulty] ?? OPPONENT_ENERGY_BY_DIFFICULTY.normal;
+    const { plays, remainingDeck } = chooseOpponentPlays(opponentDeck, opponentField.length, energyBudget);
+    if (plays.length > 0) {
+      setOpponentDeck(remainingDeck);
+      const played = plays.map(c => (c.ability === 'stealth' ? { ...c, stealthActive: true } : c));
+      setOpponentField(prev => [...prev, ...played]);
+      playSound('cardPlay');
+      plays.forEach(c => addToBattleLog(`Opponent played ${c.name}`));
     }
 
     // Opponent attacks — resolve against a live working copy so each attacker
@@ -571,7 +568,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         const targets = getValidTargets(opponentField, livePlayerField);
 
         if (targets.length > 0) {
-          const target = targets[0];
+          // Attack the biggest threat (highest attack, then cheapest kill).
+          const target = chooseAttackTarget(targets);
           const damage = calculateCardDamage(card, target);
           playSound('attack');
           if (target.ability === 'fury' && damage > 0) {
