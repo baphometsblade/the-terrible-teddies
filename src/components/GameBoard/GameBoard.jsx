@@ -80,6 +80,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
   // Game state
   const [gameId, setGameId] = useState(0); // Used to trigger deck re-initialization on restart
+  // False until the deck-init effect has dealt the opening hand, so the draw
+  // phase never runs against the pre-initialization empty deck.
+  const [deckReady, setDeckReady] = useState(false);
   const [phase, setPhase] = useState('draw');
   const [currentTurn, setCurrentTurn] = useState('player');
   const [turnCount, setTurnCount] = useState(1);
@@ -125,9 +128,16 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     return shuffled;
   };
 
-  // Add to battle log
+  // Add to battle log. Ids must be unique — several entries are appended in
+  // the same millisecond during the opponent's turn, so Date.now() collides
+  // and duplicate React keys corrupt the rendered list.
+  const logIdRef = useRef(0);
   const addToBattleLog = useCallback((message) => {
-    setBattleLog(prev => [...prev.slice(-9), { id: Date.now(), message }]);
+    // Capture the id now — reading the ref inside the updater would give two
+    // batched updates the same (final) value and recreate the duplicate keys.
+    logIdRef.current += 1;
+    const id = logIdRef.current;
+    setBattleLog(prev => [...prev.slice(-9), { id, message }]);
   }, []);
 
   // Initialize decks
@@ -191,6 +201,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
     addToBattleLog(`Game started! Difficulty: ${aiDifficulty.toUpperCase()}`);
     addToBattleLog("Your turn.");
+    setDeckReady(true);
   }, [addToBattleLog, currentDeck, aiDifficulty, gameId]);
 
   // Check for game over. Opponent death is checked first so that a simultaneous
@@ -258,28 +269,36 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     }
   }, [playerHealth, opponentHealth, gameOver, toast, playSound, recordBattleResult, aiDifficulty, clearAllTimeouts]);
 
-  // Handle draw phase
+  // Handle draw phase. The draw mutates playerDeck/playerHand — this effect's
+  // own dependencies — so without a per-turn guard it re-fires during the
+  // 500ms draw window and keeps drawing until the phase flips (draining the
+  // deck; and StrictMode's double-invoke would add the same card twice,
+  // producing duplicate hand keys). The ref guarantees exactly one draw per
+  // turn per game.
+  const lastDrawRef = useRef(null);
   useEffect(() => {
-    if (currentTurn !== 'player' || gameOver) return;
+    if (!deckReady || currentTurn !== 'player' || gameOver || phase !== 'draw') return;
 
-    if (phase === 'draw') {
-      if (playerDeck.length === 0) {
-        addToBattleLog("Deck is empty!");
-      } else if (playerHand.length >= MAX_HAND_SIZE) {
-        addToBattleLog(`Hand is full (${MAX_HAND_SIZE}) — skipped draw`);
-      } else {
-        const drawnCard = playerDeck[0];
-        setPlayerHand(prev => [...prev, drawnCard]);
-        setPlayerDeck(prev => prev.slice(1));
-        playSound('draw');
-        addToBattleLog(`Drew ${drawnCard.name}`);
-        toast({ title: "Card Drawn", description: `You drew ${drawnCard.name}` });
-      }
-      // Remove stealth from cards that have been on field for a turn
-      setPlayerField(prev => prev.map(c => ({ ...c, stealthActive: false })));
-      safeTimeout(() => setPhase('main'), 500);
+    const drawKey = `${gameId}-${turnCount}`;
+    if (lastDrawRef.current === drawKey) return;
+    lastDrawRef.current = drawKey;
+
+    if (playerDeck.length === 0) {
+      addToBattleLog("Deck is empty!");
+    } else if (playerHand.length >= MAX_HAND_SIZE) {
+      addToBattleLog(`Hand is full (${MAX_HAND_SIZE}) — skipped draw`);
+    } else {
+      const drawnCard = playerDeck[0];
+      setPlayerHand(prev => [...prev, drawnCard]);
+      setPlayerDeck(prev => prev.slice(1));
+      playSound('draw');
+      addToBattleLog(`Drew ${drawnCard.name}`);
+      toast({ title: "Card Drawn", description: `You drew ${drawnCard.name}` });
     }
-  }, [phase, currentTurn, playerDeck, playerHand.length, gameOver, toast, addToBattleLog, playSound, safeTimeout]);
+    // Remove stealth from cards that have been on field for a turn
+    setPlayerField(prev => prev.map(c => ({ ...c, stealthActive: false })));
+    safeTimeout(() => setPhase('main'), 500);
+  }, [deckReady, phase, currentTurn, turnCount, gameId, playerDeck, playerHand.length, gameOver, toast, addToBattleLog, playSound, safeTimeout]);
 
   // Get valid attack targets considering abilities. Traps are excluded: they
   // are not creatures and spring on their own, so they must never gate a direct
@@ -350,7 +369,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       safeTimeout(() => setShowAbilityPopup(null), 1500);
     }
 
-    addToBattleLog(`Played ${card.name}${card.ability !== 'none' ? ` (${card.ability})` : ''}`);
+    addToBattleLog(`Played ${card.name}${card.ability && card.ability !== 'none' ? ` (${card.ability})` : ''}`);
     toast({ title: "Card Played", description: `${card.name} enters the battlefield!` });
   };
 
@@ -631,7 +650,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // Reset battle stats ref
     battleStatsRef.current = { damageDealt: 0, healingDone: 0, cardsPlayed: 0 };
 
-    // Reset game state
+    // Reset game state. deckReady gates the draw phase until the init effect
+    // has dealt the new opening hand.
+    setDeckReady(false);
     setPhase('draw');
     setCurrentTurn('player');
     setTurnCount(1);
@@ -814,17 +835,17 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           <div className="w-10 h-10 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
             <span className="text-white text-xl">👿</span>
           </div>
-          <div>
-            <div className="text-white font-bold">Evil Teddies</div>
-            <div className="text-red-200 text-xs">Deck: {opponentDeck.length}</div>
+          <div className="min-w-0">
+            <div className="text-white font-bold truncate max-w-[7rem] sm:max-w-none">Evil Teddies</div>
+            <div className="text-red-200 text-xs whitespace-nowrap">Deck: {opponentDeck.length}</div>
           </div>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <div className="text-right">
             <div className="text-white text-sm">HP</div>
-            <div className="text-white font-bold text-xl">{opponentHealth}/30</div>
+            <div className="text-white font-bold text-lg sm:text-xl whitespace-nowrap">{opponentHealth}/30</div>
           </div>
-          <Progress value={(opponentHealth / 30) * 100} className="w-32 h-3 bg-red-900" />
+          <Progress value={(opponentHealth / 30) * 100} className="w-16 sm:w-32 h-3 bg-red-900" />
         </div>
       </div>
 
@@ -869,8 +890,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         )}
       </div>
 
-      {/* Battle log */}
-      <div className="absolute top-20 right-4 w-48 bg-black/60 rounded-lg p-2 max-h-40 overflow-y-auto">
+      {/* Battle log — full panel on md+ screens; on phones it would cover the
+          opponent's cards, so show only the latest entry as a compact ticker. */}
+      <div className="hidden md:block absolute top-20 right-4 w-48 bg-black/60 rounded-lg p-2 max-h-40 overflow-y-auto">
         <div className="text-amber-300 text-xs font-bold mb-1">Battle Log</div>
         {battleLog.map(entry => (
           <div key={entry.id} className="text-white text-xs py-0.5 border-b border-white/10">
@@ -882,7 +904,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       {/* Main battlefield */}
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4/5 h-1/3 bg-amber-300/50 rounded-xl border-4 border-amber-600 shadow-inner flex flex-col justify-between p-4">
         {/* Phase indicator */}
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-amber-600 text-white px-4 py-1 rounded-t-lg font-bold">
+        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-amber-600 text-white px-3 sm:px-4 py-1 rounded-t-lg font-bold text-sm sm:text-base whitespace-nowrap">
           Turn {turnCount} - {phase.charAt(0).toUpperCase() + phase.slice(1)} Phase
           {currentTurn === 'opponent' && ' (Opponent)'}
         </div>
@@ -895,6 +917,19 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             <span className="text-xs text-amber-800">{playerMomentum}/10</span>
           </div>
         </div>
+
+        {/* Latest-event ticker (phones only) — the full battle-log panel is
+            hidden below md because it covers the opponent's cards; the
+            battlefield's top half is guaranteed empty, so surface the most
+            recent entry here instead. */}
+        {battleLog.length > 0 && (
+          <div
+            aria-live="polite"
+            className="md:hidden self-center max-w-full bg-black/60 text-white text-xs px-3 py-1 rounded-full truncate pointer-events-none"
+          >
+            {battleLog[battleLog.length - 1].message}
+          </div>
+        )}
 
         {/* Player's field */}
         <div className="flex justify-center space-x-3 mt-auto">
@@ -953,29 +988,32 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg">
             <span className="text-white text-xl">🧸</span>
           </div>
-          <div>
-            <div className="text-white font-bold">{playerName}</div>
-            <div className="text-green-200 text-xs">Deck: {playerDeck.length} | Hand: {playerHand.length}</div>
+          <div className="min-w-0">
+            <div className="text-white font-bold truncate max-w-[7rem] sm:max-w-none">{playerName}</div>
+            <div className="text-green-200 text-xs whitespace-nowrap">Deck: {playerDeck.length} | Hand: {playerHand.length}</div>
           </div>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <span className="text-yellow-300 text-lg">⚡</span>
             <span className="text-white font-bold">{playerEnergy}</span>
           </div>
           <div className="text-right">
             <div className="text-white text-sm">HP</div>
-            <div className="text-white font-bold text-xl">{playerHealth}/30</div>
+            <div className="text-white font-bold text-lg sm:text-xl whitespace-nowrap">{playerHealth}/30</div>
           </div>
-          <Progress value={(playerHealth / 30) * 100} className="w-32 h-3 bg-green-900" />
+          <Progress value={(playerHealth / 30) * 100} className="w-16 sm:w-32 h-3 bg-green-900" />
         </div>
       </div>
 
       {/* Game controls */}
-      <div className="absolute bottom-20 right-4 space-y-2">
+      {/* On phones the old right-side stack rendered on top of the hand, so
+          lay the controls out as a horizontal row in the free band between the
+          battlefield and the hand; sm+ keeps the vertical right-side stack. */}
+      <div className="absolute bottom-[14.5rem] inset-x-2 flex flex-row justify-center gap-2 sm:inset-x-auto sm:bottom-20 sm:right-4 sm:flex-col sm:w-36">
         {targetingMode && (
           <Button
-            className="w-full bg-gray-500 hover:bg-gray-600 text-white"
+            className="flex-1 sm:flex-none sm:w-full bg-gray-500 hover:bg-gray-600 text-white"
             onClick={cancelTargeting}
           >
             Cancel
@@ -983,7 +1021,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         )}
         {phase === 'main' && currentTurn === 'player' && (
           <Button
-            className="w-full bg-red-500 hover:bg-red-600 text-white"
+            className="flex-1 sm:flex-none sm:w-full bg-red-500 hover:bg-red-600 text-white"
             onClick={goToBattlePhase}
           >
             ⚔️ Battle
@@ -991,7 +1029,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         )}
         {(phase === 'main' || phase === 'battle') && currentTurn === 'player' && (
           <Button
-            className="w-full bg-green-500 hover:bg-green-600 text-white"
+            className="flex-1 sm:flex-none sm:w-full bg-green-500 hover:bg-green-600 text-white"
             onClick={endTurn}
           >
             End Turn
@@ -999,7 +1037,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         )}
         {!gameOver && currentTurn === 'player' && (
           <Button
-            className="w-full bg-white/10 hover:bg-white/20 text-white/80 text-xs border border-white/20"
+            className="flex-1 sm:flex-none sm:w-full bg-white/10 hover:bg-white/20 text-white/80 text-xs border border-white/20"
             onClick={concedeGame}
           >
             🏳️ Concede
