@@ -154,6 +154,81 @@ test('deck builder renders the owned-card grid', async ({ page }) => {
   expect(await ownedCards.count()).toBeGreaterThanOrEqual(5);
 });
 
+test('an attacker that survives the opponent turn is usable again (exhaustion regression)', async ({ page, pageErrors }) => {
+  // Force a deck of pure cheap action cards so the first play is always an
+  // attack-capable creature (the default deck shuffles in traps/specials).
+  await page.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem('terrible-teddies-storage'));
+    stored.state.currentDeck = [1, 2, 3, 4, 5, 6];
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Battle', exact: true }).click(SLOW);
+
+  const endTurn = page.getByRole('button', { name: 'End Turn' });
+  await expect(endTurn).toBeVisible(SLOW);
+
+  // Play a creature, enter battle phase, and attack the opponent's opener.
+  await page.getByRole('button', { name: /^Play / }).first().click();
+  const attacker = page.getByRole('button', { name: /^Select .+ to attack$/ }).first();
+  await expect(attacker).toBeVisible(SLOW);
+  await page.getByRole('button', { name: '⚔️ Battle' }).click();
+  await attacker.click();
+  const target = page.getByRole('button', { name: /^Attack / }).first();
+  if (await target.count()) {
+    await target.click();
+  } else {
+    await page.getByRole('button', { name: /Attack opponent directly|Strike/ }).click();
+  }
+  await expect(page.getByText('Exhausted').first()).toBeVisible(SLOW);
+
+  // Survive the opponent's turn: the attacker must NOT still be Exhausted on
+  // turn 2 (a stale write-back once bricked surviving attackers permanently).
+  await endTurn.click();
+  await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+  await expect(endTurn).toBeVisible(SLOW);
+  await expect(page.getByText('Exhausted')).toHaveCount(0);
+
+  expect(pageErrors, `Unexpected page errors: ${pageErrors.map((e) => e.message).join('; ')}`)
+    .toHaveLength(0);
+});
+
+test('concede shows the defeat dialog and Play Again deals a fresh game', async ({ page }) => {
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  page.once('dialog', (d) => d.accept()); // window.confirm on concede
+  await page.getByRole('button', { name: /Concede/ }).click();
+
+  // Game-over screen is a real dialog with rewards and both exits.
+  const defeat = page.getByRole('dialog', { name: 'Defeat' });
+  await expect(defeat).toBeVisible(SLOW);
+  await expect(defeat.getByText('Battle Rewards')).toBeVisible();
+  await expect(defeat.getByRole('button', { name: 'Menu' })).toBeVisible();
+
+  await defeat.getByRole('button', { name: 'Play Again' }).click();
+  await expect(defeat).toHaveCount(0, SLOW);
+  await expect(page.getByText(/Turn 1/)).toBeVisible(SLOW);
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+});
+
+test('Escape closes only the innermost layer of nested dialogs', async ({ page }) => {
+  await page.getByRole('button', { name: 'Battle Pass', exact: true }).click();
+  const pass = page.getByRole('dialog', { name: /battle pass/i });
+  await expect(pass).toBeVisible(SLOW);
+
+  // Open the nested premium purchase confirmation.
+  await pass.getByRole('button', { name: /unlock premium/i }).click();
+  await expect(page.getByText(/500/).first()).toBeVisible();
+
+  // First Escape dismisses the confirm overlay but keeps the pass open…
+  await page.keyboard.press('Escape');
+  await expect(pass).toBeVisible();
+  // …second Escape closes the pass itself.
+  await page.keyboard.press('Escape');
+  await expect(pass).toHaveCount(0, SLOW);
+});
+
 test('challenges dialog shows daily challenges and closes on Escape', async ({ page }) => {
   await page.getByRole('button', { name: 'Challenges', exact: true }).click();
 

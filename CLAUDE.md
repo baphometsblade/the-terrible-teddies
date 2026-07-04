@@ -15,9 +15,17 @@ npm run test:watch   # Vitest in watch mode
 
 Tests use **Vitest** (jsdom) and live next to the code as `*.test.js`. The
 suite focuses on the pure, high-stakes logic — the `gameStore` economy/money
-paths, `battleUtils` damage math, and the deck/season helpers. Run a single
-file with `npx vitest run src/stores/gameStore.test.js`. CI (`.github/
-workflows/node.js.yml`) runs lint, build, and test on every PR to `main`.
+paths, `battleUtils` damage math, the opponent AI, the deck/season helpers,
+and a `gemBundles` guard that fails if the four gem price tables (Shop UI,
+checkout session, webhook, analytics) ever drift. Run a single file with
+`npx vitest run src/stores/gameStore.test.js`.
+
+End-to-end tests (`npm run test:e2e`, Playwright, `e2e/`) boot the real app
+hermetically (fake session seeded in localStorage, all network stubbed) and
+cover boot, a full battle turn including an attack/exhaustion cycle, the
+game-over → Play Again flow, shop/deck-builder/challenges, and nested-dialog
+Escape handling. CI (`.github/workflows/node.js.yml`) runs lint, build, unit,
+and e2e on every PR to `main`.
 
 ## Architecture Overview
 
