@@ -34,19 +34,19 @@ the `SECURITY DEFINER` RPCs, rate limiting, and the money-path hardening.
 npx supabase db push
 ```
 
-The two loose SQL files `supabase/functions/complete_daily_challenge.sql` and
-`get_daily_challenge.sql` define helper RPCs — apply them too (paste into the
-SQL editor or add as a migration) if you use the daily-challenge edge path.
-
 ### Deploy the Edge Functions
 
 ```bash
 npx supabase functions deploy create-checkout-session
-npx supabase functions deploy battle-action
 # The webhook MUST skip JWT verification — Stripe authenticates via its
 # signature header, not a Supabase JWT (also set in config.toml).
 npx supabase functions deploy stripe-webhook --no-verify-jwt
 ```
+
+`battle-action` is optional: it's secured scaffolding for a possible future
+real-time PvP mode (the `matches`/`battles` tables it uses are real and
+RLS-hardened), but the shipped game is single-player vs AI and never calls
+it. Skip deploying it unless you're building that mode.
 
 ### Set Edge Function secrets
 
