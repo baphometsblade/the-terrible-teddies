@@ -74,6 +74,16 @@
         color: #c4b5fd;
         margin-top: 8px;
       }
+      .loader-reload-btn {
+        margin-top: 16px;
+        padding: 8px 22px;
+        border-radius: 8px;
+        border: none;
+        background: #f59e0b;
+        color: #000;
+        font-weight: bold;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -115,7 +125,13 @@
               '<div class="loader-teddy">🧸</div>' +
               '<div class="loader-title">Couldn\'t load the game</div>' +
               '<div class="loader-subtitle">Please check your connection and refresh.</div>' +
-              '<button onclick="location.reload()" style="margin-top:16px;padding:8px 22px;border-radius:8px;border:none;background:#f59e0b;color:#000;font-weight:bold;cursor:pointer">Reload</button>';
+              '<button id="loader-reload" class="loader-reload-btn">Reload</button>';
+            // No inline onclick= attribute: a script-src CSP (with no
+            // 'unsafe-inline') silently drops inline event-handler attributes,
+            // which would leave this button dead in the one moment it matters
+            // most — the app has already failed to load.
+            var reloadBtn = document.getElementById('loader-reload');
+            if (reloadBtn) reloadBtn.addEventListener('click', function () { location.reload(); });
           }
         }, 10000);
       })();
