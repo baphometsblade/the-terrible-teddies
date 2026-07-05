@@ -154,6 +154,20 @@ test('deck builder renders the owned-card grid', async ({ page }) => {
   expect(await ownedCards.count()).toBeGreaterThanOrEqual(5);
 });
 
+test('manifest app shortcuts (?action=) route to the right screen', async ({ page }) => {
+  // The PWA manifest's shortcuts (long-press the installed icon) launch the
+  // app with ?action=battle|shop|rewards — verify each actually navigates,
+  // since nothing previously read this param.
+  await page.goto('/?action=battle');
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  await page.goto('/?action=shop');
+  await expect(page.getByRole('dialog', { name: 'Shop' })).toBeVisible(SLOW);
+
+  await page.goto('/?action=rewards');
+  await expect(page.getByRole('dialog', { name: 'Daily Rewards' })).toBeVisible(SLOW);
+});
+
 test('an attacker that survives the opponent turn is usable again (exhaustion regression)', async ({ page, pageErrors }) => {
   // Force a deck of pure cheap action cards so the first play is always an
   // attack-capable creature (the default deck shuffles in traps/specials).

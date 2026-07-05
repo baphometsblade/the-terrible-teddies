@@ -112,6 +112,18 @@ function App() {
     }
   }, [toast]);
 
+  // Handle the manifest's app shortcuts (long-press the installed icon ->
+  // Battle / Shop / Daily Rewards), which land here as ?action=<name>.
+  useEffect(() => {
+    if (!session) return;
+    const action = new URLSearchParams(window.location.search).get('action');
+    if (!action) return;
+    if (action === 'battle') setCurrentScreen('game');
+    else if (action === 'shop') setShowShop(true);
+    else if (action === 'rewards') setShowDailyRewards(true);
+    window.history.replaceState({}, '', window.location.pathname);
+  }, [session]);
+
   useEffect(() => {
     const today = new Date().toDateString();
     // Don't auto-open daily rewards over an in-progress purchase verification;

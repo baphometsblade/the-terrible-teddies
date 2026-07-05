@@ -109,10 +109,10 @@ export const analytics = {
     logEvent('tutorial_complete');
   },
 
-  trackError: (error, context) => {
+  trackError: (error, context, fatal = false) => {
     logEvent('exception', {
       description: error?.toString?.() || String(error),
-      fatal: false,
+      fatal,
       context,
     });
   },

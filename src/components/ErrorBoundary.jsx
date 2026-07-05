@@ -1,4 +1,5 @@
 import React from 'react';
+import analytics from '../utils/analytics';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -18,12 +19,11 @@ class ErrorBoundary extends React.Component {
       errorCount: prev.errorCount + 1,
     }));
 
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'exception', {
-        description: error?.toString(),
-        fatal: true,
-      });
-    }
+    // Fatal render crashes are the highest-value error to surface — route
+    // through the same PostHog pipe as every other tracked event, so a crash
+    // in production is actually visible instead of only reaching a browser
+    // console no one is watching.
+    analytics.trackError(error, 'react-error-boundary', true);
   }
 
   handleReset = () => {
