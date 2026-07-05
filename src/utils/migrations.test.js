@@ -28,6 +28,14 @@ function createdTables(sql) {
   return names;
 }
 
+function rlsEnabledTables(sql) {
+  const names = new Set();
+  const re = /ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?"?(?:public\.)?"?(\w+)"?\s+ENABLE\s+ROW\s+LEVEL\s+SECURITY/gi;
+  let m;
+  while ((m = re.exec(sql))) names.add(m[1].toLowerCase());
+  return names;
+}
+
 function referencedTables(sql) {
   // Matches `REFERENCES table_name` / `REFERENCES public.table_name` /
   // `REFERENCES schema.table_name`, capturing an optional schema qualifier.
@@ -66,5 +74,25 @@ describe('supabase migrations reference only tables that get created', () => {
     }
 
     expect(problems, problems.join('\n')).toEqual([]);
+  });
+
+  it('every public table created has RLS enabled somewhere in the migration set', () => {
+    // rate_limits shipped once without RLS — the only thing gating the Stripe
+    // checkout endpoint against spam was directly readable/writable via
+    // PostgREST's default grants, letting a client reset its own rate-limit
+    // window through the table instead of the guarded RPC. Every table in
+    // this schema follows the same convention (RLS enabled, even if with a
+    // deny-all zero-policy set for internal-only tables), so require it
+    // uniformly rather than trusting each new migration to remember.
+    const migrations = loadMigrations();
+    const created = new Set();
+    const rlsEnabled = new Set();
+    for (const { sql } of migrations) {
+      for (const t of createdTables(sql)) created.add(t);
+      for (const t of rlsEnabledTables(sql)) rlsEnabled.add(t);
+    }
+
+    const missing = [...created].filter((t) => !rlsEnabled.has(t));
+    expect(missing, `tables created without RLS ever enabled: ${missing.join(', ')}`).toEqual([]);
   });
 });
