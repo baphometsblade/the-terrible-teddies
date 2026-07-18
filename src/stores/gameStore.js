@@ -157,7 +157,10 @@ const initialState = {
   soundEnabled: true,
   musicEnabled: true,
   animationsEnabled: true,
-  difficulty: 'normal',
+  // New players start on 'easy' for a gentler first session (the AI is a real
+  // threat under the creature-HP combat model); they can ramp up in Settings.
+  // Only affects fresh saves — returning players keep their persisted choice.
+  difficulty: 'easy',
   tutorialCompleted: false,
   // Battle Pass
   hasBattlePassPremium: false,
