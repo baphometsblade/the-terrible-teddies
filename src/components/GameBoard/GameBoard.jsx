@@ -614,6 +614,12 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             logs.push(`${target.name}'s fury activated! +1 attack`);
           }
           livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
+          // Carry the post-defense damage through to the player's face, mirroring
+          // the player's attackTarget (which applies the same calculateCardDamage
+          // to the opponent's health). Without this the opponent's `damage` was
+          // computed but never applied, so its creature swings dealt zero face
+          // damage and defense was meaningless on the AI's side.
+          faceDamage += damage;
           logs.push(`${card.name} attacked ${target.name} for ${damage} damage`);
           return;
         }
