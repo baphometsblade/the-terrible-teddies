@@ -146,7 +146,9 @@ serve(async (req) => {
 
     if (event.type === "charge.refunded") {
       const charge = event.data.object as Stripe.Charge;
-      if (charge.amount_refunded < charge.amount) {
+      // Compare against the captured amount (what can actually be refunded), so
+      // a full refund of a partially-captured charge still counts as full.
+      if (charge.amount_refunded < charge.amount_captured) {
         console.log("Partial refund — leaving gems in place:", charge.id);
         return json({ received: true, ignored: "partial_refund" });
       }
@@ -171,6 +173,11 @@ serve(async (req) => {
       if (rpcError) {
         console.error("Reversal failed:", rpcError, paymentIntent);
         return new Response("Reversal failed", { status: 500 });
+      }
+      if (outcome === "not_found") {
+        // No matching purchase — an unrelated refund, or a reconciliation gap.
+        // Ack (Stripe shouldn't retry) but surface it for manual review.
+        console.warn("Reversal for unknown payment_intent:", paymentIntent);
       }
       return json({ received: true, outcome });
     } catch (err) {

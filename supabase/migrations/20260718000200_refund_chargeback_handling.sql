@@ -17,6 +17,7 @@ SECURITY DEFINER
 SET search_path = pg_catalog, public
 AS $$
 DECLARE
+  v_id      UUID;
   v_user_id UUID;
   v_gems    INTEGER;
   v_status  TEXT;
@@ -27,8 +28,8 @@ BEGIN
   END IF;
 
   -- Lock the purchase row so concurrent refund+dispute events can't double-debit.
-  SELECT user_id, gems_granted, status
-  INTO v_user_id, v_gems, v_status
+  SELECT id, user_id, gems_granted, status
+  INTO v_id, v_user_id, v_gems, v_status
   FROM purchases
   WHERE payment_intent = p_payment_intent
   ORDER BY created_at ASC
@@ -49,10 +50,11 @@ BEGIN
       updated_at = NOW()
   WHERE user_id = v_user_id;
 
+  -- Mark exactly the row we locked and debited (payment_intent is 1:1 with a
+  -- purchase, but scope the update to the locked id to keep it unambiguous).
   UPDATE purchases
   SET status = p_reason
-  WHERE payment_intent = p_payment_intent
-    AND status = 'completed';
+  WHERE id = v_id;
 
   RETURN 'reversed';
 END;
