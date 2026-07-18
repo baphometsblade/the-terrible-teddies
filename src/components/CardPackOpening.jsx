@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import TeddyCard from './TeddyCard';
@@ -34,6 +34,17 @@ const CardPackOpening = ({ onClose }) => {
   const totalPacks = cardPacks + premiumPacks + legendaryPacks;
   const nextPackType = getNextPackType();
 
+  // Track the reveal-animation timers so closing the dialog mid-open cancels
+  // them. Otherwise the pending 1.2s timer still fires openCardPack() after
+  // unmount — silently consuming a pack with no reveal — and the reveal timers
+  // burst confetti over whatever screen the player navigated to.
+  const timeoutsRef = useRef([]);
+  const track = (id) => { timeoutsRef.current.push(id); return id; };
+  useEffect(() => {
+    const timeouts = timeoutsRef.current;
+    return () => timeouts.forEach(clearTimeout);
+  }, []);
+
   const fireConfetti = (rarity) => {
     const colors = {
       legendary: ['#FFD700', '#FFA500', '#FF8C00'],
@@ -56,7 +67,7 @@ const CardPackOpening = ({ onClose }) => {
     setPulledCards(null);
     setRevealedIndex(-1);
 
-    setTimeout(() => {
+    track(setTimeout(() => {
       setShowPack(false);
       // Open the next available pack type (prioritizes legendary > premium > regular)
       const packType = getNextPackType();
@@ -74,20 +85,20 @@ const CardPackOpening = ({ onClose }) => {
       setDupeCoins(refund);
 
       cards.forEach((card, index) => {
-        setTimeout(() => {
+        track(setTimeout(() => {
           setRevealedIndex(index);
           if (card.rarity === 'legendary' || card.rarity === 'epic') {
             fireConfetti(card.rarity);
           } else if (card.rarity === 'rare' && card.isNew) {
             fireConfetti('rare');
           }
-        }, 500 + index * 500);
+        }, 500 + index * 500));
       });
 
-      setTimeout(() => {
+      track(setTimeout(() => {
         setIsOpening(false);
-      }, 500 + cards.length * 500 + 500);
-    }, 1200);
+      }, 500 + cards.length * 500 + 500));
+    }, 1200));
   };
 
   const handleBuyPack = (itemId) => {

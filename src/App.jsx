@@ -57,21 +57,24 @@ function App() {
 
   // Show achievement unlock toasts — process ALL queued achievements with staggered timing
   useEffect(() => {
-    if (!pendingAchievements || pendingAchievements.length === 0) return;
+    if (!pendingAchievements || pendingAchievements.length === 0) return undefined;
 
-    // Process all pending achievements with 600ms stagger
-    pendingAchievements.forEach((achievement, i) => {
+    // Process all pending achievements with 600ms stagger. Track the timers so
+    // they're cancelled on unmount (and on StrictMode's remount cleanup, which
+    // otherwise schedules the batch twice).
+    const timers = pendingAchievements.map((achievement, i) =>
       setTimeout(() => {
         toast({
           title: `${achievement.icon} Achievement Unlocked!`,
           description: `${achievement.name} — +${achievement.reward.toLocaleString()} 🪙`,
           duration: 5000,
         });
-      }, i * 600);
-    });
+      }, i * 600)
+    );
 
     // Clear the queue in a single state update
     useGameStore.setState({ pendingAchievements: [] });
+    return () => timers.forEach(clearTimeout);
   }, [pendingAchievements, toast]);
 
   // Tie analytics events to the signed-in user (or clear the identity on

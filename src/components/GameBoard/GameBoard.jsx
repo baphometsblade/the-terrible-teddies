@@ -545,6 +545,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
   // End turn
   const endTurn = () => {
+    // Guard like every sibling handler: only the player, on their own turn, ends
+    // it — so a stray call during the opponent's turn can't queue a second
+    // executeOpponentTurn.
+    if (currentTurn !== 'player') return;
     setPlayerField(prev => prev.map(c => ({ ...c, hasAttacked: false })));
     setSelectedCard(null);
     setTargetingMode(false);

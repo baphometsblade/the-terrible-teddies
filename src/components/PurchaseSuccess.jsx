@@ -151,7 +151,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
               We&apos;re checking automatically. If gems don&apos;t appear, contact support with your order confirmation email.
             </p>
             <div className="flex gap-3 justify-center">
-              <Button onClick={() => verify()} className="bg-purple-600 hover:bg-purple-700 text-white">
+              <Button onClick={() => { pollTriesRef.current = 0; verify(); }} className="bg-purple-600 hover:bg-purple-700 text-white">
                 Check now
               </Button>
               <Button onClick={onDone} variant="outline" className="border-white/30 text-white hover:bg-white/10">
@@ -170,7 +170,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
             </p>
             <div className="flex gap-3 justify-center">
               <Button
-                onClick={() => { synced.current = false; verify(); }}
+                onClick={() => { pollTriesRef.current = 0; synced.current = false; verify(); }}
                 className="bg-purple-600 hover:bg-purple-700 text-white"
               >
                 Try Again

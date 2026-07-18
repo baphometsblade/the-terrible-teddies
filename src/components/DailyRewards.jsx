@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { useGameStore, DAILY_REWARDS } from '../stores/gameStore';
@@ -11,16 +11,24 @@ const DailyRewards = ({ onClose }) => {
   const [claimed, setClaimed] = useState(false);
   const dialogRef = useDialog(onClose);
 
+  // checkDailyLogin() records the login as a side effect, so it must run exactly
+  // once per mount — StrictMode's double-invoke would otherwise call it twice and
+  // the second (now-already-claimed) call flips the panel to "Already Claimed".
+  const didRunRef = useRef(false);
   useEffect(() => {
+    if (didRunRef.current) return undefined;
+    didRunRef.current = true;
     const dailyReward = checkDailyLogin();
-    if (dailyReward) {
-      setReward(dailyReward);
-      setTimeout(() => {
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-      }, 500);
-    } else {
+    if (!dailyReward) {
       setClaimed(true);
+      return undefined;
     }
+    setReward(dailyReward);
+    // Cleared on unmount so a quick close doesn't burst confetti over the next screen.
+    const t = setTimeout(() => {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    }, 500);
+    return () => clearTimeout(t);
   }, [checkDailyLogin]);
 
   const RewardDay = ({ day, isToday, isClaimed, coins, gems, cards, packs }) => (
