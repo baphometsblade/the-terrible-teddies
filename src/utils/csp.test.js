@@ -41,6 +41,41 @@ describe('CSP script-src hash matches the actual inline script in index.html', (
     ).toBe(true);
   });
 
+  it("the PostHog api_host configured in analytics.js is allowed by the CSP's connect-src", () => {
+    // This drifted once: analytics.js configured 'https://app.posthog.com',
+    // which posthog-js silently rewrites to 'https://us.i.posthog.com' — a
+    // host the CSP didn't allow. Result: in production every analytics event
+    // AND the ErrorBoundary fatal-crash reporting was CSP-blocked, silently
+    // (local verification without a PostHog key never initializes posthog and
+    // so can't catch it). Pin the two files to each other: the exact host
+    // string configured in analytics.js must appear in connect-src, and it
+    // must be the canonical ingestion host (not the legacy app.posthog.com
+    // that posthog-js rewrites away).
+    const analyticsSrc = readFileSync(resolve(process.cwd(), 'src/utils/analytics.js'), 'utf8');
+    const hostMatch = analyticsSrc.match(/api_host:\s*'([^']+)'/);
+    expect(hostMatch, 'no api_host found in src/utils/analytics.js').not.toBeNull();
+    const apiHost = hostMatch[1];
+
+    expect(
+      apiHost,
+      "api_host must not be the legacy 'https://app.posthog.com' — posthog-js rewrites it " +
+        'internally to us.i.posthog.com, so the configured host would never match real traffic'
+    ).not.toBe('https://app.posthog.com');
+
+    const vercelConfig = JSON.parse(readFileSync(resolve(process.cwd(), 'vercel.json'), 'utf8'));
+    const cspHeader = vercelConfig.headers
+      .flatMap((h) => h.headers)
+      .find((h) => h.key === 'Content-Security-Policy')?.value;
+    const connectSrc = cspHeader.split(';').map((d) => d.trim()).find((d) => d.startsWith('connect-src'));
+
+    expect(
+      connectSrc.includes(apiHost),
+      `analytics.js sends PostHog traffic to ${apiHost}, but vercel.json's connect-src ` +
+        `(${connectSrc}) does not allow it — all analytics and crash reports would be ` +
+        'silently CSP-blocked in production'
+    ).toBe(true);
+  });
+
   it('index.html has no dynamically-injected inline event-handler or style attributes', () => {
     // Both would be silently dropped by this CSP (script-src has no
     // 'unsafe-inline'; style-src's 'unsafe-inline' only covers markup that's

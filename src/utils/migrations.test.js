@@ -95,4 +95,51 @@ describe('supabase migrations reference only tables that get created', () => {
     const missing = [...created].filter((t) => !rlsEnabled.has(t));
     expect(missing, `tables created without RLS ever enabled: ${missing.join(', ')}`).toEqual([]);
   });
+
+  it('every SECURITY DEFINER function granted to authenticated validates the caller with auth.uid()', () => {
+    // check_rate_limit shipped as SECURITY DEFINER + GRANT ... TO authenticated
+    // with a caller-supplied p_user_id and NO auth.uid() check, so any logged-in
+    // user could burn another user's rate limit (a DoS on the checkout path) —
+    // the one sibling of upsert_player_profile/sync_battle_result/sync_player_level
+    // that the auth-guard migration forgot. Any SECURITY DEFINER function that
+    // authenticated clients can invoke and that takes a user id must gate on
+    // auth.uid(); the latest CREATE OR REPLACE of each function is what counts.
+    const migrations = loadMigrations();
+
+    // Track, per function name, the SQL of its most recent definition and
+    // whether it was ever granted to the authenticated role.
+    const latestDef = new Map(); // name -> function body sql
+    const grantedToAuthenticated = new Set();
+
+    const defRe = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?(\w+)\s*\(([\s\S]*?)\)\s*RETURNS[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
+    const grantRe = /GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+(?:public\.)?(\w+)\s*\([^)]*\)\s+TO\s+([^;]+);/gi;
+
+    for (const { sql } of migrations) {
+      let m;
+      while ((m = defRe.exec(sql))) {
+        const [, name, params, body] = m;
+        // Later migrations override earlier definitions (application order).
+        latestDef.set(name.toLowerCase(), { params, body });
+      }
+      let g;
+      while ((g = grantRe.exec(sql))) {
+        const [, name, roles] = g;
+        if (/\bauthenticated\b/.test(roles)) grantedToAuthenticated.add(name.toLowerCase());
+      }
+    }
+
+    const problems = [];
+    for (const name of grantedToAuthenticated) {
+      const def = latestDef.get(name);
+      if (!def) continue; // grant with no CREATE OR REPLACE in-repo — skip
+      // Only functions that accept a user-id parameter can be abused cross-user.
+      const takesUserId = /\bp_user_id\s+UUID\b/i.test(def.params);
+      if (!takesUserId) continue;
+      if (!/auth\.uid\(\)/.test(def.body)) {
+        problems.push(`${name}: SECURITY DEFINER, granted to authenticated, takes p_user_id, but its latest definition has no auth.uid() check`);
+      }
+    }
+
+    expect(problems, problems.join('\n')).toEqual([]);
+  });
 });

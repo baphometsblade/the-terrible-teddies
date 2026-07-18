@@ -9,7 +9,12 @@ export const initializePostHog = () => {
     if (!key || !isBrowser) return;
 
     posthog.init(key, {
-      api_host: 'https://app.posthog.com',
+      // The canonical US ingestion host. posthog-js silently rewrites the old
+      // 'https://app.posthog.com' to this value internally, so configuring the
+      // old host would make every real request target a host the CSP's
+      // connect-src doesn't allow — silently dropping ALL analytics and crash
+      // reports in production. csp.test.js pins this to vercel.json.
+      api_host: 'https://us.i.posthog.com',
       loaded: (ph) => {
         if (import.meta.env?.DEV) {
           ph.opt_out_capturing();
