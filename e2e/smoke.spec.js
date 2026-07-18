@@ -171,8 +171,16 @@ test('manifest app shortcuts (?action=) route to the right screen', async ({ pag
 test('an attacker that survives the opponent turn is usable again (exhaustion regression)', async ({ page, pageErrors }) => {
   // Force a deck of pure cheap action cards so the first play is always an
   // attack-capable creature (the default deck shuffles in traps/specials).
-  await page.evaluate(() => {
-    const stored = JSON.parse(localStorage.getItem('terrible-teddies-storage'));
+  //
+  // This must be an init script, not a post-load page.evaluate: the beforeEach
+  // seed is itself an addInitScript, so it re-runs on every navigation and
+  // rewrites the store (without currentDeck) on reload — a plain evaluate would
+  // be clobbered, leaving the default mixed deck and a first play that is
+  // sometimes a trap. Init scripts run in registration order, so this one runs
+  // after the beforeEach seed on the reload below and its deck wins.
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
     stored.state.currentDeck = [1, 2, 3, 4, 5, 6];
     localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
   });

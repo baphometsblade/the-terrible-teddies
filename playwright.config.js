@@ -16,6 +16,10 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:8090',
     trace: 'off',
+    // The app honors this via <MotionConfig reducedMotion="user">, so parallel
+    // workers run without the continuous Framer Motion animations — lighter CPU
+    // and a smaller animation-timing surface for the auto-waiting assertions.
+    reducedMotion: 'reduce',
   },
   projects: [
     {
