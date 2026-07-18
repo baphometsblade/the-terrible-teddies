@@ -42,8 +42,8 @@ const TUTORIAL_STEPS = [
     icon: "⚔️",
   },
   {
-    title: "Momentum",
-    content: "Build momentum by playing cards and attacking. Future updates will add powerful momentum abilities!",
+    title: "Momentum & Rally",
+    content: "Playing cards and attacking builds Momentum. Fill the gauge to 10 and the ⚡ Rally button appears — spend it to give ALL your teddies +1 Attack and heal them to full HP. Your comeback button!",
     icon: "🚀",
   },
   {

@@ -39,3 +39,13 @@ export const resolveCreatureHit = (attacker, target) => {
 
   return { survivor: null, overkill: Math.max(0, dmg - hpBefore), dmg };
 };
+
+/**
+ * "Rally" — the momentum payoff. Pump every creature on a field: +1 attack and
+ * heal back to full HP (currentHp = defense). Non-creatures (traps) are left
+ * untouched. Pure, so the board transform is unit-testable.
+ */
+export const rallyField = (field) =>
+  field.map((c) => (c.type === 'action'
+    ? { ...c, attack: c.attack + 1, currentHp: c.defense }
+    : c));

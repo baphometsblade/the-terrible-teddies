@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Howl } from 'howler';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
-import { resolveCreatureHit } from '../../utils/battleUtils';
+import { resolveCreatureHit, rallyField } from '../../utils/battleUtils';
 import { syncBattleResult } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { pressable } from '@/lib/a11y';
@@ -33,6 +33,9 @@ const MAX_HAND_SIZE = 10;
 // the HP pool in the creature-HP combat model; `currentHp` tracks the remaining
 // pool as it takes hits (see resolveCreatureHit).
 const withHp = (card) => ({ ...card, currentHp: card.defense });
+
+// A full momentum gauge unlocks the Rally payoff.
+const MOMENTUM_MAX = 10;
 
 // The game-over overlay mounts conditionally, so it hosts its own useDialog
 // (the hook must live in a component that mounts with the overlay). Gives the
@@ -566,6 +569,18 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     safeTimeout(executeOpponentTurn, 1000);
   };
 
+  // Momentum payoff: at a full gauge, spend it all to rally the board — every
+  // teddy gets +1 attack and heals to full HP (the only way to heal wounded
+  // creatures under the HP model). Usable any time on the player's turn.
+  const rally = () => {
+    if (currentTurn !== 'player' || gameOver || playerMomentum < MOMENTUM_MAX) return;
+    setPlayerField(prev => rallyField(prev));
+    setPlayerMomentum(0);
+    playSound('heal');
+    addToBattleLog('⚡ RALLY! Your teddies surge — +1 attack and fully healed!');
+    toast({ title: '⚡ Rally!', description: 'Your teddies are pumped and back to full HP!' });
+  };
+
   // Opponent AI turn
   const executeOpponentTurn = () => {
     addToBattleLog("Opponent's turn!");
@@ -1062,6 +1077,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             onClick={cancelTargeting}
           >
             Cancel
+          </Button>
+        )}
+        {!gameOver && playerMomentum >= MOMENTUM_MAX && currentTurn === 'player' && (
+          <Button
+            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold animate-pulse"
+            onClick={rally}
+          >
+            ⚡ Rally!
           </Button>
         )}
         {!gameOver && phase === 'main' && currentTurn === 'player' && (

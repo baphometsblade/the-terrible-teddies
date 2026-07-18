@@ -1,4 +1,4 @@
-import { damageToCreatureHp, resolveCreatureHit } from './battleUtils';
+import { damageToCreatureHp, resolveCreatureHit, rallyField } from './battleUtils';
 
 describe('damageToCreatureHp (creature-HP model)', () => {
   it('deals the full attack to HP by default', () => {
@@ -47,5 +47,26 @@ describe('resolveCreatureHit (creature-HP model)', () => {
     const { survivor, overkill } = resolveCreatureHit({ attack: 3 }, { attack: 1, defense: 3, currentHp: 3 });
     expect(survivor).toBeNull();
     expect(overkill).toBe(0);
+  });
+});
+
+describe('rallyField (momentum payoff)', () => {
+  it('gives creatures +1 attack and heals them to full HP', () => {
+    const field = [{ type: 'action', attack: 2, defense: 4, currentHp: 1 }];
+    const [c] = rallyField(field);
+    expect(c.attack).toBe(3);
+    expect(c.currentHp).toBe(4);
+  });
+
+  it('leaves non-creatures (traps) untouched', () => {
+    const trap = { type: 'trap', attack: 0, defense: 0, amount: 3 };
+    expect(rallyField([trap])[0]).toEqual(trap);
+  });
+
+  it('does not mutate the input field', () => {
+    const field = [{ type: 'action', attack: 2, defense: 4, currentHp: 1 }];
+    rallyField(field);
+    expect(field[0].attack).toBe(2);
+    expect(field[0].currentHp).toBe(1);
   });
 });
