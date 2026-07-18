@@ -22,7 +22,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Card Types",
-    content: "Action Cards - Your fighting teddies with Attack and Defense stats\nTrap Cards - Surprise! Deal damage when attacked\nSpecial Cards - Heal HP or draw more cards",
+    content: "Action Cards - Fighting teddies with Attack (⚔️) and HP (🛡️). HP is how much damage they soak before they're destroyed.\nTrap Cards - Surprise! Deal damage when attacked\nSpecial Cards - Heal HP or draw more cards",
     icon: "🃏",
     showCards: true,
   },
@@ -33,12 +33,12 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Card Abilities",
-    content: "Taunt - Must be attacked first\nPiercing - Ignores defense\nShield - Takes 50% less damage\nStealth - Can't be targeted for a turn\nFury - Gets stronger when damaged",
+    content: "Taunt - Enemies must attack it first\nPiercing - Cuts through Shield\nShield - Takes 50% less damage\nStealth - Can't be targeted for a turn\nFury - Gains +1 Attack each time it survives a hit",
     icon: "✨",
   },
   {
     title: "Combat",
-    content: "In Battle Phase, click your teddy, then click an enemy to attack. If no enemies remain, attack the opponent directly!",
+    content: "Click your teddy, then an enemy to attack. Attacks lower a creature's HP — it stays on the board until HP hits 0, and any leftover damage tramples through to the enemy player. High-HP teddies make great blockers: clear them (or use Piercing) before you can strike the enemy directly!",
     icon: "⚔️",
   },
   {
