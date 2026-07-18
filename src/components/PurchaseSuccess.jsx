@@ -26,6 +26,11 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
   const dialogRef = useDialog(() => { if (phase !== 'verifying') onDone(); });
 
   useEffect(() => {
+    // Reset on (re)mount, not just at init: React 18 StrictMode mounts, unmounts,
+    // then remounts, and any real remount must clear the stale `false` left by the
+    // previous cleanup — otherwise every post-await guard bails and the buyer is
+    // stranded on the "Verifying…" spinner even though the purchase completed.
+    mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
 

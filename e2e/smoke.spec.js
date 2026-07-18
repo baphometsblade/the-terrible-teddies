@@ -166,6 +166,32 @@ test('buying a gem bundle starts Stripe checkout for that exact bundle', async (
   expect(checkoutBody.bundle_id).toBe('gems_small');
 });
 
+test('returning from a completed checkout confirms the credited gems', async ({ page }) => {
+  // The other half of the revenue path: after Stripe redirects back with
+  // ?purchase=success&session_id=…, the app must verify the session and show the
+  // buyer their gems. Stub the purchase-verification and balance reads as a
+  // completed order (registered before goto so they win over the beforeEach
+  // Supabase catch-all).
+  // verifyPurchaseSession/fetchServerGemBalance use .maybeSingle(), which unwraps
+  // a one-element array — so return arrays here.
+  await page.route(/\/rest\/v1\/purchases/, (route) =>
+    route.fulfill({ json: [{ gems_granted: 500, bundle_id: 'gems_large', status: 'completed' }] })
+  );
+  await page.route(/\/rest\/v1\/user_gems/, (route) =>
+    route.fulfill({ json: [{ gems: 556 }] })
+  );
+
+  await page.goto('/?purchase=success&session_id=cs_test_e2e');
+
+  const dialog = page.getByRole('dialog', { name: 'Purchase status' });
+  await expect(dialog).toBeVisible(SLOW);
+  await expect(dialog.getByText('Purchase Complete!')).toBeVisible(SLOW);
+  await expect(dialog.getByText(/500/)).toBeVisible();
+
+  await dialog.getByRole('button', { name: /Let.?s Play/ }).click();
+  await expect(dialog).toHaveCount(0, SLOW);
+});
+
 test('deck builder renders the owned-card grid', async ({ page }) => {
   await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
 
