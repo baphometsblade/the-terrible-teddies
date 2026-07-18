@@ -1,9 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { Button } from '@/components/ui/button';
 
 const SupabaseAuthContext = createContext();
 
@@ -57,30 +54,6 @@ export const useSupabaseAuth = () => {
     throw new Error('useSupabaseAuth must be used within a SupabaseAuthProvider');
   }
   return context;
-};
-
-export const SupabaseAuthUI = () => {
-  const { session } = useSupabaseAuth();
-
-  if (session) {
-    return (
-      <div className="text-center">
-        <p className="mb-4">You are already logged in.</p>
-        <Button onClick={() => window.location.href = '/'}>
-          Go to Home
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <Auth
-      supabaseClient={supabase}
-      appearance={{ theme: ThemeSupa }}
-      theme="default"
-      providers={[]}
-    />
-  );
 };
 
 export const SupabaseAuthProvider = SupabaseProvider;
