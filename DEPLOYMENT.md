@@ -73,8 +73,14 @@ Dashboard → Edge Functions → Secrets (or `npx supabase secrets set KEY=value
    the `GEM_BUNDLES` tables in those two files in sync.
 3. Create the webhook endpoint: Stripe → Developers → Webhooks → Add endpoint
    - URL: `https://<project-ref>.functions.supabase.co/stripe-webhook`
-   - Event: `checkout.session.completed`
+   - Events:
+     - `checkout.session.completed` — credits gems (fulfillment)
+     - `charge.refunded` — claws gems back on a full refund
+     - `charge.dispute.created` — claws gems back on a chargeback
    - Copy the signing secret (`whsec_…`) into `STRIPE_WEBHOOK_SECRET`.
+
+   Without the refund/dispute events the fulfillment still works, but a
+   refunded or charged-back customer keeps their gems.
 
 ---
 
@@ -109,17 +115,25 @@ Point `ALLOWED_ORIGIN` (Supabase secret) at the deployed domain.
 4. Spend gems (Battle Pass premium), refresh — gems are **not** restored
    (the high-water-mark reconciliation holds).
 5. Run `get_advisors` (security) on the project — expect no RLS gaps on
-   `players` / `user_gems` / `purchases`.
+   `players` / `user_gems` / `purchases` and no `function_search_path_mutable`
+   warnings (every `SECURITY DEFINER` function now pins its search_path).
+6. If a previous deploy ever shipped the (now-removed) `battle-action` function,
+   undeploy it: `npx supabase functions delete battle-action`.
 
 ---
 
 ## Security model (why it's safe to take money)
 
 - Gems are minted **only** server-side by the Stripe webhook, after verifying
-  the Stripe signature and re-deriving the amount from the server bundle table.
-  `add_user_gems` rejects any authenticated (non-service-role) caller.
+  the Stripe signature, the paid status, the paying user, and re-deriving the
+  amount/currency from the server bundle table. The fulfillment RPC
+  (`fulfill_gem_purchase`) records the purchase and credits gems in one
+  transaction, and rejects any authenticated (non-service-role) caller.
 - Each `checkout.session` credits at most once (UNIQUE `stripe_session_id`),
-  and the credit is bound to the paying user (`client_reference_id`).
+  atomically — a failed credit rolls the purchase row back, so a Stripe retry
+  re-runs cleanly instead of leaving a paid-but-uncredited order.
+- Refunds and chargebacks claw the gems back (`reverse_gem_purchase`, flooring
+  the balance at 0), so a buy → spend → chargeback can't keep the goods.
 - The client-callable sync RPCs (`sync_battle_result`, `sync_player_level`)
   clamp their inputs so a tampered client can't mint coins or jump levels.
 - Spending gems can't be undone by re-reading the server balance
