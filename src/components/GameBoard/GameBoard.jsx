@@ -614,7 +614,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           // Attack the biggest threat; resolve against its HP just like the
           // player's attackTarget — it survives (fury fires) or dies with trample
           // overkill carrying through to the player's face.
-          const target = chooseAttackTarget(targets);
+          const target = chooseAttackTarget(targets, card);
           const { survivor, overkill, dmg } = resolveCreatureHit(card, target);
           playSound('attack');
           if (survivor) {

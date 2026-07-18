@@ -70,6 +70,37 @@ describe('chooseAttackTarget', () => {
     const t = card(1, 1, 0, 0);
     expect(chooseAttackTarget([t])).toBe(t);
   });
+
+  describe('HP-aware (attacker provided)', () => {
+    // card(id, cost, attack, defense); currentHp defaults to defense via the resolver.
+    it('secures a kill over merely chipping a bigger threat', () => {
+      const attacker = card(9, 1, 3, 1); // deals 3
+      // id2 is the biggest threat (attack 6) but has 5 HP — not killable.
+      // id3 (attack 4) has 3 HP — killable this hit. Prefer the kill.
+      const targets = [card(2, 1, 6, 5), card(3, 1, 4, 3)];
+      expect(chooseAttackTarget(targets, attacker).id).toBe(3);
+    });
+
+    it('among killable targets, kills the biggest threat', () => {
+      const attacker = card(9, 1, 5, 1); // deals 5 — kills both below
+      const targets = [card(2, 1, 3, 2), card(3, 1, 6, 4)];
+      expect(chooseAttackTarget(targets, attacker).id).toBe(3); // higher attack
+    });
+
+    it('when nothing is killable, chips the biggest threat, tie-broken by lowest remaining HP', () => {
+      const attacker = card(9, 1, 1, 1); // deals 1 — kills nothing (all HP >= 2)
+      const a = { ...card(2, 1, 6, 5), currentHp: 5 };
+      const b = { ...card(3, 1, 6, 5), currentHp: 2 }; // same attack, closer to dead
+      expect(chooseAttackTarget([a, b], attacker).id).toBe(3);
+    });
+
+    it('respects shield when judging lethality', () => {
+      const attacker = card(9, 1, 4, 1); // 4, halved to 2 by shield
+      const shielded = { ...card(2, 1, 1, 3), ability: 'shield', currentHp: 3 }; // 2 < 3, survives
+      const plain = card(3, 1, 1, 2); // 4 >= 2, killable
+      expect(chooseAttackTarget([shielded, plain], attacker).id).toBe(3);
+    });
+  });
 });
 
 describe('OPPONENT_ENERGY_BY_DIFFICULTY', () => {

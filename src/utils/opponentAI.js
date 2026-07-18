@@ -1,6 +1,7 @@
 // Pure decision logic for the AI opponent — extracted from GameBoard so the
 // behavior is unit-testable and difficulty actually changes how the opponent
 // plays (not just its stat mods).
+import { damageToCreatureHp } from './battleUtils';
 
 // Per-turn energy budget by difficulty: the behavioral half of the difficulty
 // setting. Hard can afford its most expensive cards; easy is limited to cheap
@@ -38,17 +39,35 @@ export function chooseOpponentPlays(deck, fieldCount, energy, maxField = 3) {
 }
 
 /**
- * Pick which valid target to attack: the biggest threat first (highest
- * attack), tie-broken by the cheapest kill (lowest defense). The caller is
- * responsible for taunt/protect/stealth filtering — every target passed in
- * is assumed legal.
+ * Pick which valid target to attack. The caller handles taunt/protect/stealth
+ * filtering — every target passed in is assumed legal.
+ *
+ * HP-aware (pass the attacking creature): under the creature-HP model, prefer a
+ * target this attacker can KILL outright, taking the biggest threat among those
+ * — securing a kill beats merely chipping. With nothing killable, chip the
+ * biggest threat, tie-broken toward the lowest remaining HP (closest to dead,
+ * least wasted overkill).
+ *
+ * Legacy (no attacker): biggest threat, tie-broken by lowest defense. Retained
+ * so callers without attacker context keep their old behavior.
  */
-export function chooseAttackTarget(validTargets) {
+export function chooseAttackTarget(validTargets, attacker = null) {
   if (!validTargets || validTargets.length === 0) return null;
+
+  const atk = (t) => t.attack ?? 0;
+  const hp = (t) => t.currentHp ?? t.defense ?? 0;
+
+  if (attacker) {
+    const lethal = validTargets.filter((t) => damageToCreatureHp(attacker, t) >= hp(t));
+    const pool = lethal.length > 0 ? lethal : validTargets;
+    return pool.reduce((best, t) => {
+      if (atk(t) !== atk(best)) return atk(t) > atk(best) ? t : best;
+      return hp(t) < hp(best) ? t : best;
+    });
+  }
+
   return validTargets.reduce((best, t) => {
-    if ((t.attack ?? 0) !== (best.attack ?? 0)) {
-      return (t.attack ?? 0) > (best.attack ?? 0) ? t : best;
-    }
+    if (atk(t) !== atk(best)) return atk(t) > atk(best) ? t : best;
     return (t.defense ?? 0) < (best.defense ?? 0) ? t : best;
   });
 }
