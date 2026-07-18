@@ -577,6 +577,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setPlayerField(prev => rallyField(prev));
     setPlayerMomentum(0);
     playSound('heal');
+    confetti({
+      particleCount: 120, spread: 90, origin: { y: 0.7 },
+      colors: ['#fbbf24', '#f59e0b', '#f97316', '#fde68a'],
+    });
     addToBattleLog('⚡ RALLY! Your teddies surge — +1 attack and fully healed!');
     toast({ title: '⚡ Rally!', description: 'Your teddies are pumped and back to full HP!' });
   };
@@ -901,7 +905,16 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         <div className="flex items-center space-x-2 sm:space-x-4">
           <div className="text-right">
             <div className="text-white text-sm">HP</div>
-            <div className="text-white font-bold text-lg sm:text-xl whitespace-nowrap">{opponentHealth}/30</div>
+            {/* key-remount replays the pop on every HP change, so each hit reads. */}
+            <motion.div
+              key={opponentHealth}
+              initial={{ scale: 1.6, color: '#fca5a5' }}
+              animate={{ scale: 1, color: '#ffffff' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 14 }}
+              className="font-bold text-lg sm:text-xl whitespace-nowrap"
+            >
+              {opponentHealth}/30
+            </motion.div>
           </div>
           <Progress value={(opponentHealth / 30) * 100} className="w-16 sm:w-32 h-3 bg-red-900" />
         </div>
@@ -967,13 +980,19 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           {currentTurn === 'opponent' && ' (Opponent)'}
         </div>
 
-        {/* Momentum gauge */}
+        {/* Momentum gauge — glows and pulses when full to signal Rally is ready. */}
         <div className="absolute -left-4 top-1/2 transform -translate-y-1/2 -rotate-90 origin-center">
-          <div className="flex items-center space-x-2">
-            <span className="text-xs text-amber-800">Momentum</span>
+          <motion.div
+            className="flex items-center space-x-2 rounded-full px-2 py-0.5"
+            animate={playerMomentum >= MOMENTUM_MAX
+              ? { boxShadow: ['0 0 0px #f59e0b', '0 0 12px #f59e0b', '0 0 0px #f59e0b'] }
+              : { boxShadow: '0 0 0px transparent' }}
+            transition={playerMomentum >= MOMENTUM_MAX ? { duration: 1.2, repeat: Infinity } : {}}
+          >
+            <span className={`text-xs font-semibold ${playerMomentum >= MOMENTUM_MAX ? 'text-orange-600' : 'text-amber-800'}`}>Momentum</span>
             <Progress value={playerMomentum * 10} className="w-24 h-2" />
-            <span className="text-xs text-amber-800">{playerMomentum}/10</span>
-          </div>
+            <span className={`text-xs font-bold ${playerMomentum >= MOMENTUM_MAX ? 'text-orange-600' : 'text-amber-800'}`}>{playerMomentum}/10</span>
+          </motion.div>
         </div>
 
         {/* Latest-event ticker (phones only) — the full battle-log panel is
@@ -1058,7 +1077,15 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           </div>
           <div className="text-right">
             <div className="text-white text-sm">HP</div>
-            <div className="text-white font-bold text-lg sm:text-xl whitespace-nowrap">{playerHealth}/30</div>
+            <motion.div
+              key={playerHealth}
+              initial={{ scale: 1.6, color: '#fca5a5' }}
+              animate={{ scale: 1, color: '#ffffff' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 14 }}
+              className="font-bold text-lg sm:text-xl whitespace-nowrap"
+            >
+              {playerHealth}/30
+            </motion.div>
           </div>
           <Progress value={(playerHealth / 30) * 100} className="w-16 sm:w-32 h-3 bg-green-900" />
         </div>
