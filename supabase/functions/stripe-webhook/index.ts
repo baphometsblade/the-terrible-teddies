@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   apiVersion: "2023-10-16",
@@ -26,6 +26,14 @@ const GEM_BUNDLES: Record<string, { gems: number; bonus: number; price: number }
   weekly_gem_pass: { gems: 350,  bonus: 0,   price: 599 },
 };
 
+const json = (obj: unknown, status = 200) =>
+  new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
+
+// A PaymentIntent reference on Stripe objects can be an id string or an
+// expanded object; normalize to the id we stored on the purchase row.
+const paymentIntentId = (pi: string | { id: string } | null | undefined): string | null =>
+  typeof pi === "string" ? pi : pi?.id ?? null;
+
 serve(async (req) => {
   const signature = req.headers.get("Stripe-Signature");
   if (!signature) {
@@ -42,19 +50,20 @@ serve(async (req) => {
       Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? ""
     );
   } catch (err) {
+    // Log the detail server-side; return a static message so a prober can't
+    // read back the library's exact signature-mismatch text.
     console.error("Webhook signature verification failed:", err);
-    return new Response(`Webhook error: ${(err as Error).message}`, { status: 400 });
+    return new Response("Invalid signature", { status: 400 });
   }
 
+  // ── Fulfillment: credit gems on a paid checkout ──────────────────────────
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
     // Verify payment was actually successful (handles delayed payment methods)
     if (session.payment_status !== "paid") {
       console.log("Checkout completed but payment not yet received:", session.id);
-      return new Response(JSON.stringify({ received: true, pending: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return json({ received: true, pending: true });
     }
 
     const meta = session.metadata ?? {};
@@ -78,66 +87,97 @@ serve(async (req) => {
     // Re-derive the gem count from the server-side bundle table; never trust
     // the client-influenceable total_gems metadata for the actual credit.
     const bundle = GEM_BUNDLES[bundleId];
+    // The amount check compares USD cents; assert the unit too so a future
+    // non-USD checkout path can't satisfy an integer meant for USD cents.
+    // Unknown bundle / amount / currency should never happen for a session we
+    // created — treat it as a config-drift bug: fail 500 so the paid order
+    // stays visible in Stripe's dashboard instead of vanishing on a silent 200.
     if (!bundle) {
       console.error("Refusing to fulfill unknown bundle:", bundleId, session.id);
-      // Acknowledge so Stripe stops retrying; nothing is credited.
-      return new Response(JSON.stringify({ received: true, ignored: "unknown_bundle" }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response("Unknown bundle", { status: 500 });
     }
-
-    // Verify the amount actually charged matches the bundle's expected price.
+    if ((session.currency ?? "usd") !== "usd") {
+      console.error("Currency mismatch — refusing to credit:", session.id, "currency:", session.currency);
+      return new Response("Currency mismatch", { status: 500 });
+    }
     if ((session.amount_total ?? 0) !== bundle.price) {
       console.error(
         "Amount mismatch — refusing to credit:", session.id,
         "charged:", session.amount_total, "expected:", bundle.price
       );
-      return new Response(JSON.stringify({ received: true, ignored: "amount_mismatch" }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response("Amount mismatch", { status: 500 });
     }
 
     const totalGems = bundle.gems + bundle.bonus;
 
     try {
-      // Record purchase — idempotent via UNIQUE constraint on stripe_session_id
-      const { error: insertError } = await supabase.from("purchases").insert({
-        user_id: userId,
-        bundle_id: bundleId,
-        gems_granted: totalGems,
-        stripe_session_id: session.id,
-        amount_paid: session.amount_total ?? 0,
-        status: "completed",
-      });
-
-      if (insertError) {
-        if (insertError.code === "23505") {
-          // Duplicate — already processed, safe to return success
-          return new Response(JSON.stringify({ received: true, duplicate: true }), {
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-        // Non-duplicate insert failure — return 500 to trigger Stripe retry
-        console.error("Failed to insert purchase:", insertError);
-        return new Response("Database insert failed", { status: 500 });
-      }
-
-      // Credit gems to the (validated) user, only after a successful insert.
-      const { error: rpcError } = await supabase.rpc("add_user_gems", {
+      // Record the purchase and credit the gems atomically. Doing both in one
+      // transaction (keyed on stripe_session_id) makes fulfillment exactly-once:
+      // if the credit fails, the purchase row rolls back too, so Stripe's retry
+      // re-runs cleanly instead of short-circuiting on a duplicate row that was
+      // never actually credited. A genuine replay returns "duplicate" harmlessly.
+      const { data: outcome, error: rpcError } = await supabase.rpc("fulfill_gem_purchase", {
         p_user_id: userId,
+        p_bundle_id: bundleId,
         p_gems: totalGems,
+        p_session_id: session.id,
+        p_amount: session.amount_total ?? 0,
+        p_payment_intent: paymentIntentId(session.payment_intent),
       });
       if (rpcError) {
-        console.error("Failed to credit gems:", rpcError);
-        return new Response("Gem credit failed", { status: 500 });
+        // Return 500 so Stripe retries; nothing was committed.
+        console.error("Fulfillment failed:", rpcError, session.id);
+        return new Response("Fulfillment failed", { status: 500 });
       }
+      return json({ received: true, outcome });
     } catch (err) {
       console.error("Fulfillment error:", err);
       return new Response("Fulfillment failed", { status: 500 });
     }
   }
 
-  return new Response(JSON.stringify({ received: true }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  // ── Reversal: claw gems back on refund or dispute ────────────────────────
+  if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
+    // A dispute (chargeback) always reverses the funds. A refund may be partial;
+    // only claw back the gems on a FULL refund — a partial refund leaves the
+    // purchase intact and is logged for manual handling.
+    let paymentIntent: string | null;
+    let reason: "refunded" | "disputed";
+
+    if (event.type === "charge.refunded") {
+      const charge = event.data.object as Stripe.Charge;
+      if (charge.amount_refunded < charge.amount) {
+        console.log("Partial refund — leaving gems in place:", charge.id);
+        return json({ received: true, ignored: "partial_refund" });
+      }
+      paymentIntent = paymentIntentId(charge.payment_intent);
+      reason = "refunded";
+    } else {
+      const dispute = event.data.object as Stripe.Dispute;
+      paymentIntent = paymentIntentId(dispute.payment_intent);
+      reason = "disputed";
+    }
+
+    if (!paymentIntent) {
+      console.error("Reversal event without a payment_intent:", event.id);
+      return json({ received: true, ignored: "no_payment_intent" });
+    }
+
+    try {
+      const { data: outcome, error: rpcError } = await supabase.rpc("reverse_gem_purchase", {
+        p_payment_intent: paymentIntent,
+        p_reason: reason,
+      });
+      if (rpcError) {
+        console.error("Reversal failed:", rpcError, paymentIntent);
+        return new Response("Reversal failed", { status: 500 });
+      }
+      return json({ received: true, outcome });
+    } catch (err) {
+      console.error("Reversal error:", err);
+      return new Response("Reversal failed", { status: 500 });
+    }
+  }
+
+  return json({ received: true });
 });

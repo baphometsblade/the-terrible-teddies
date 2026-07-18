@@ -142,4 +142,47 @@ describe('supabase migrations reference only tables that get created', () => {
 
     expect(problems, problems.join('\n')).toEqual([]);
   });
+
+  it('every live SECURITY DEFINER function pins its search_path', () => {
+    // A SECURITY DEFINER function with a mutable search_path (Supabase's
+    // `function_search_path_mutable` lint) can have its unqualified table/
+    // function references redirected by a caller who can create a shadowing
+    // object earlier in the resolved path. Every definer function here reads
+    // money-/leaderboard-adjacent tables unqualified, so require each to pin its
+    // search_path — inline (SET search_path in the CREATE) or via ALTER FUNCTION.
+    const migrations = loadMigrations();
+
+    // name -> { isDefiner, hasInlineSearchPath } for the LATEST definition.
+    const latestDef = new Map();
+    const dropped = new Set();       // DROP FUNCTION name(...)
+    const alteredSearchPath = new Set(); // ALTER FUNCTION name(...) SET search_path
+
+    const defRe = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?(\w+)\s*\(([\s\S]*?)\)\s*RETURNS([\s\S]*?)\$\$/gi;
+    const dropRe = /DROP\s+FUNCTION\s+(?:IF\s+EXISTS\s+)?(?:public\.)?(\w+)\s*\(/gi;
+    const alterRe = /ALTER\s+FUNCTION\s+(?:public\.)?(\w+)\s*\([^)]*\)[\s\S]*?SET\s+search_path/gi;
+
+    for (const { sql } of migrations) {
+      let m;
+      while ((m = defRe.exec(sql))) {
+        const [, name, , header] = m; // header spans RETURNS..$$ (holds SECURITY DEFINER / SET search_path)
+        latestDef.set(name.toLowerCase(), {
+          isDefiner: /SECURITY\s+DEFINER/i.test(header),
+          hasInlineSearchPath: /SET\s+search_path/i.test(header),
+        });
+      }
+      let d;
+      while ((d = dropRe.exec(sql))) dropped.add(d[1].toLowerCase());
+      let a;
+      while ((a = alterRe.exec(sql))) alteredSearchPath.add(a[1].toLowerCase());
+    }
+
+    const problems = [];
+    for (const [name, def] of latestDef) {
+      if (dropped.has(name) || !def.isDefiner) continue;
+      if (def.hasInlineSearchPath || alteredSearchPath.has(name)) continue;
+      problems.push(`${name}: SECURITY DEFINER but never pins SET search_path (inline or via ALTER FUNCTION)`);
+    }
+
+    expect(problems, problems.join('\n')).toEqual([]);
+  });
 });

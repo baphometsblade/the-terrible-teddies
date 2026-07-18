@@ -27,8 +27,9 @@ npx supabase link --project-ref <your-project-ref>
 ### Apply the database migrations
 
 Migrations live in `supabase/migrations/` and are ordered by timestamp. They
-create the players/purchases/user_gems/matches/battles tables, RLS policies,
-the `SECURITY DEFINER` RPCs, rate limiting, and the money-path hardening.
+create the players/purchases/user_gems tables, RLS policies, the
+`SECURITY DEFINER` RPCs, rate limiting, atomic Stripe fulfillment with
+refund/chargeback reversal, and the search-path hardening.
 
 ```bash
 npx supabase db push
@@ -43,10 +44,9 @@ npx supabase functions deploy create-checkout-session
 npx supabase functions deploy stripe-webhook --no-verify-jwt
 ```
 
-`battle-action` is optional: it's secured scaffolding for a possible future
-real-time PvP mode (the `matches`/`battles` tables it uses are real and
-RLS-hardened), but the shipped game is single-player vs AI and never calls
-it. Skip deploying it unless you're building that mode.
+Configure the webhook in the Stripe dashboard to send `checkout.session.completed`
+(fulfillment) plus `charge.refunded` and `charge.dispute.created` (gem
+clawback on refunds/chargebacks).
 
 ### Set Edge Function secrets
 
