@@ -86,6 +86,18 @@ export const analytics = {
     });
   },
 
+  // Real-money checkout started (user clicked a gem bundle, before Stripe
+  // redirect). The middle of the funnel between trackShopView (view_item_list)
+  // and trackPurchase (purchase) — without it, checkout abandonment at Stripe
+  // is invisible.
+  trackBeginCheckout: ({ bundleId, gems, price }) => {
+    logEvent('begin_checkout', {
+      currency: 'USD',
+      value: price,
+      items: [{ item_id: bundleId, item_name: `${gems} gems`, price, quantity: 1 }],
+    });
+  },
+
   trackBattleComplete: ({ won, difficulty, duration, damageDealt }) => {
     logEvent(won ? 'level_success' : 'level_fail', {
       difficulty,

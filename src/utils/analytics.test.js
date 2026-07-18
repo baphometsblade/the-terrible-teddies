@@ -36,3 +36,17 @@ describe('analytics.trackError', () => {
     expect(payload.description).toBe('plain string error');
   });
 });
+
+describe('analytics.trackBeginCheckout (purchase-funnel middle)', () => {
+  it('emits a GA4 begin_checkout event with the bundle as a USD line item', () => {
+    analytics.trackBeginCheckout({ bundleId: 'gems_mega', gems: 3000, price: 49.99 });
+    expect(posthog.capture).toHaveBeenCalledWith(
+      'begin_checkout',
+      expect.objectContaining({
+        currency: 'USD',
+        value: 49.99,
+        items: [expect.objectContaining({ item_id: 'gems_mega', price: 49.99, quantity: 1 })],
+      })
+    );
+  });
+});

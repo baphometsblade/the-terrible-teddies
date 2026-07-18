@@ -58,6 +58,7 @@ const Shop = ({ onClose }) => {
 
     setProcessing(true);
     try {
+      analytics.trackBeginCheckout({ bundleId: bundle.id, gems: bundle.gems, price: bundle.price });
       await redirectToStripeCheckout(bundle.id);
       // Browser navigates away — no further code runs here
     } catch (err) {
