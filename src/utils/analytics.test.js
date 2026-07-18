@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 // posthog-js has real network side effects; stub capture so tests can assert
 // on what analytics actually sends without touching the network.
 vi.mock('posthog-js', () => ({
-  default: { init: vi.fn(), capture: vi.fn() },
+  default: { init: vi.fn(), capture: vi.fn(), identify: vi.fn(), reset: vi.fn() },
 }));
 
 import posthog from 'posthog-js';
@@ -11,6 +11,8 @@ import analytics from './analytics';
 
 beforeEach(() => {
   posthog.capture.mockClear();
+  posthog.identify.mockClear();
+  posthog.reset.mockClear();
 });
 
 describe('analytics.trackError', () => {
@@ -48,5 +50,22 @@ describe('analytics.trackBeginCheckout (purchase-funnel middle)', () => {
         items: [expect.objectContaining({ item_id: 'gems_mega', price: 49.99, quantity: 1 })],
       })
     );
+  });
+});
+
+describe('analytics.identify / reset (per-user attribution)', () => {
+  it('identifies with the user id and no PII', () => {
+    analytics.identify('11111111-1111-4111-8111-111111111111');
+    expect(posthog.identify).toHaveBeenCalledWith('11111111-1111-4111-8111-111111111111', {});
+  });
+
+  it('ignores a falsy user id (no anonymous identify)', () => {
+    analytics.identify(undefined);
+    expect(posthog.identify).not.toHaveBeenCalled();
+  });
+
+  it('reset clears the identity on logout', () => {
+    analytics.reset();
+    expect(posthog.reset).toHaveBeenCalled();
   });
 });

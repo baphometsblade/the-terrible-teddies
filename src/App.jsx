@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from './stores/gameStore';
 import { fetchServerGemBalance, ensurePlayerProfile, isSupabaseConfigured } from './utils/supabaseClient';
+import analytics from './utils/analytics';
 
 const Tutorial = lazy(() => import('./components/Tutorial'));
 const CardPackOpening = lazy(() => import('./components/CardPackOpening'));
@@ -72,6 +73,16 @@ function App() {
     // Clear the queue in a single state update
     useGameStore.setState({ pendingAchievements: [] });
   }, [pendingAchievements, toast]);
+
+  // Tie analytics events to the signed-in user (or clear the identity on
+  // logout) so purchases and funnels are measured per-user, not per-device.
+  useEffect(() => {
+    if (session?.user?.id) {
+      analytics.identify(session.user.id);
+    } else {
+      analytics.reset();
+    }
+  }, [session]);
 
   // Sync player profile and gem balance from server on login
   useEffect(() => {

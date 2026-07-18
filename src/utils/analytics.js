@@ -64,6 +64,27 @@ export const analytics = {
     if (!isBrowser || !gaId || !isProduction) return;
   },
 
+  // Tie subsequent events to a stable user so purchases, funnels, and retention
+  // are measured per-user rather than per-device. Pass the Supabase user UUID
+  // (an opaque id, not PII) as the distinct id — keep email/PII out of analytics.
+  identify: (userId, traits = {}) => {
+    try {
+      if (isBrowser && userId && posthog?.identify) posthog.identify(userId, traits);
+    } catch (error) {
+      console.error('Failed to identify user:', error);
+    }
+  },
+
+  // Clear the identity on logout so the next (possibly different) user's events
+  // aren't merged into the previous person's profile.
+  reset: () => {
+    try {
+      if (isBrowser && posthog?.reset) posthog.reset();
+    } catch (error) {
+      console.error('Failed to reset analytics identity:', error);
+    }
+  },
+
   trackPageView: (pagePath) => {
     logEvent('page_view', { page_path: pagePath });
   },
