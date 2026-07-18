@@ -138,7 +138,10 @@ const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false }) =
                 </div>
               )}
               <div className="flex items-center gap-0.5">
-                <span className="text-blue-600 font-bold text-xs">{teddy.defense}</span>
+                {/* defense is the HP pool; show remaining HP, tinted red when wounded */}
+                <span className={`font-bold text-xs ${teddy.currentHp !== undefined && teddy.currentHp < teddy.defense ? 'text-red-600' : 'text-blue-600'}`}>
+                  {teddy.currentHp ?? teddy.defense}
+                </span>
                 <span className="text-[10px]">🛡️</span>
               </div>
             </div>

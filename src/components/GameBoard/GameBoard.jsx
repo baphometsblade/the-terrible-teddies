@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Howl } from 'howler';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
-import { calculateCardDamage } from '../../utils/battleUtils';
+import { resolveCreatureHit } from '../../utils/battleUtils';
 import { syncBattleResult } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { pressable } from '@/lib/a11y';
@@ -28,6 +28,11 @@ const sounds = {
 // Cap the hand so unbounded draw (per-turn + draw specials) can't overflow the
 // fixed-width hand layout into an unclickable, off-screen stack.
 const MAX_HAND_SIZE = 10;
+
+// Stamp a creature's starting durability when it enters the field. `defense` is
+// the HP pool in the creature-HP combat model; `currentHp` tracks the remaining
+// pool as it takes hits (see resolveCreatureHit).
+const withHp = (card) => ({ ...card, currentHp: card.defense });
 
 // The game-over overlay mounts conditionally, so it hosts its own useDialog
 // (the hook must live in a component that mounts with the overlay). Gives the
@@ -53,13 +58,19 @@ const GameOverDialog = ({ label, onEscape, children }) => {
 /**
  * Enhanced GameBoard with card abilities, sound effects, and improved AI.
  *
+ * Combat model: a creature's `defense` is its HP pool (tracked per board
+ * instance as `currentHp`). An attack deals the attacker's `attack` to that
+ * pool; the creature survives a non-lethal hit and only dies when HP hits 0,
+ * at which point trample overkill spills to the owner's face. Both sides
+ * resolve identically via resolveCreatureHit.
+ *
  * Card Abilities:
  * - taunt: Forces enemies to attack this card first
- * - piercing: Ignores enemy defense
- * - shield: Takes 50% less damage
+ * - piercing: Cuts through shield (deals full damage)
+ * - shield: Takes 50% less damage (halved, floored)
  * - stealth: Can't be targeted for one turn after played
  * - protect: Other cards can't be targeted while this is on field
- * - fury: Gains +1 attack each time it takes damage
+ * - fury: Gains +1 attack each time it survives a hit
  */
 const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // Get store data
@@ -218,7 +229,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setPlayerHand(playerInitialHand);
     setPlayerDeck(playerRemainingDeck);
 
-    setOpponentField([initialOpponentDeck[0]]);
+    setOpponentField([withHp(initialOpponentDeck[0])]);
     setOpponentDeck(initialOpponentDeck.slice(1));
 
     addToBattleLog(`Game started! Difficulty: ${aiDifficulty.toUpperCase()}`);
@@ -373,10 +384,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       return;
     }
 
-    // Apply stealth on play
+    // Stamp starting HP; apply stealth on play.
     const cardToPlay = card.ability === 'stealth'
-      ? { ...card, stealthActive: true }
-      : card;
+      ? { ...withHp(card), stealthActive: true }
+      : withHp(card);
 
     setPlayerField(prev => [...prev, cardToPlay]);
     setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
@@ -462,26 +473,23 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       return;
     }
 
-    // Calculate damage with abilities
-    const damage = calculateCardDamage(selectedCard, target);
+    // Resolve against the target's HP: it survives a non-lethal hit (and its
+    // fury fires), or dies and trample overkill spills to the opponent's face.
+    const { survivor, overkill, dmg } = resolveCreatureHit(selectedCard, target);
     playSound('attack');
+    battleStatsRef.current.damageDealt += dmg;
 
-    // Apply fury - target gains attack when damaged
-    if (target.ability === 'fury' && damage > 0) {
-      setOpponentField(prev => prev.map(c =>
-        c.instanceId === target.instanceId ? { ...c, attack: c.attack + 1 } : c
-      ));
-      addToBattleLog(`${target.name}'s fury activated! +1 attack`);
+    if (survivor) {
+      setOpponentField(prev => prev.map(c => c.instanceId === target.instanceId ? survivor : c));
+      if (target.ability === 'fury') addToBattleLog(`${target.name}'s fury activated! +1 attack`);
+      addToBattleLog(`${selectedCard.name} hit ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
+      toast({ title: "Hit!", description: `${target.name} has ${survivor.currentHp} HP left.` });
+    } else {
+      setOpponentField(prev => prev.filter(c => c.instanceId !== target.instanceId));
+      if (overkill > 0) setOpponentHealth(prev => Math.max(0, prev - overkill));
+      addToBattleLog(`${selectedCard.name} destroyed ${target.name}${overkill > 0 ? ` (${overkill} trampled through)` : ''}`);
+      toast({ title: "Destroyed!", description: `${target.name} is down${overkill > 0 ? ` — ${overkill} to the enemy!` : ''}` });
     }
-
-    setOpponentHealth(prev => Math.max(0, prev - damage));
-    battleStatsRef.current.damageDealt += damage;
-
-    // Destroy the target if it takes lethal damage (simplified - always destroy on hit)
-    setOpponentField(prev => prev.filter(c => c.instanceId !== target.instanceId));
-
-    addToBattleLog(`${selectedCard.name} attacked ${target.name} for ${damage} damage${selectedCard.ability === 'piercing' ? ' (piercing)' : ''}`);
-    toast({ title: "Attack!", description: `${selectedCard.name} dealt ${damage} damage!` });
 
     // Mark card as having attacked
     setPlayerField(prev => prev.map(c =>
@@ -577,7 +585,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     const { plays, remainingDeck } = chooseOpponentPlays(opponentDeck, opponentField.length, energyBudget);
     if (plays.length > 0) {
       setOpponentDeck(remainingDeck);
-      const played = plays.map(c => (c.ability === 'stealth' ? { ...c, stealthActive: true } : c));
+      const played = plays.map(c => (c.ability === 'stealth' ? { ...withHp(c), stealthActive: true } : withHp(c)));
       setOpponentField(prev => [...prev, ...played]);
       playSound('cardPlay');
       plays.forEach(c => addToBattleLog(`Opponent played ${c.name}`));
@@ -603,24 +611,21 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         const targets = getValidTargets(opponentField, livePlayerField);
 
         if (targets.length > 0) {
-          // Attack the biggest threat (highest attack, then cheapest kill).
+          // Attack the biggest threat; resolve against its HP just like the
+          // player's attackTarget — it survives (fury fires) or dies with trample
+          // overkill carrying through to the player's face.
           const target = chooseAttackTarget(targets);
-          const damage = calculateCardDamage(card, target);
+          const { survivor, overkill, dmg } = resolveCreatureHit(card, target);
           playSound('attack');
-          if (target.ability === 'fury' && damage > 0) {
-            livePlayerField = livePlayerField.map(c =>
-              c.instanceId === target.instanceId ? { ...c, attack: c.attack + 1 } : c
-            );
-            logs.push(`${target.name}'s fury activated! +1 attack`);
+          if (survivor) {
+            livePlayerField = livePlayerField.map(c => c.instanceId === target.instanceId ? survivor : c);
+            if (target.ability === 'fury') logs.push(`${target.name}'s fury activated! +1 attack`);
+            logs.push(`${card.name} hit ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
+          } else {
+            livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
+            faceDamage += overkill;
+            logs.push(`${card.name} destroyed ${target.name}${overkill > 0 ? ` (${overkill} trampled)` : ''}`);
           }
-          livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
-          // Carry the post-defense damage through to the player's face, mirroring
-          // the player's attackTarget (which applies the same calculateCardDamage
-          // to the opponent's health). Without this the opponent's `damage` was
-          // computed but never applied, so its creature swings dealt zero face
-          // damage and defense was meaningless on the AI's side.
-          faceDamage += damage;
-          logs.push(`${card.name} attacked ${target.name} for ${damage} damage`);
           return;
         }
 
