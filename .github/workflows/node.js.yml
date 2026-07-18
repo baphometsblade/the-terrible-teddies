@@ -9,6 +9,12 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Least-privilege default: neither job writes to the repo, comments on PRs, or
+# publishes anything — they only check out, build, and test. Without this,
+# GITHUB_TOKEN gets the (often broader) repository-default permission set.
+permissions:
+  contents: read
+
 jobs:
   build:
 
