@@ -142,6 +142,30 @@ test('shop opens, shows gem bundles with prices, and closes on Escape', async ({
   await expect(dialog).toHaveCount(0, SLOW);
 });
 
+test('buying a gem bundle starts Stripe checkout for that exact bundle', async ({ page }) => {
+  // Guards the revenue path end to end (button -> edge function). Intercept the
+  // create-checkout-session call, capture the bundle id it was invoked with, and
+  // hand back a same-origin URL so the redirect stays hermetic (no real Stripe).
+  // Registered here (after the beforeEach Supabase catch-all) so it wins by
+  // Playwright's last-registered-first routing.
+  let checkoutBody = null;
+  await page.route('**/functions/v1/create-checkout-session', async (route) => {
+    checkoutBody = route.request().postDataJSON();
+    await route.fulfill({ json: { url: '/?purchase=cancelled' } });
+  });
+
+  await page.getByRole('button', { name: 'Shop', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Shop' });
+  await expect(dialog).toBeVisible(SLOW);
+  await dialog.getByRole('button', { name: 'Buy Gems' }).click();
+
+  // The smallest bundle — "Buy 50 gems for $0.99" — maps to bundle id gems_small.
+  await dialog.getByRole('button', { name: 'Buy 50 gems for $0.99' }).click();
+
+  await expect.poll(() => checkoutBody, SLOW).not.toBeNull();
+  expect(checkoutBody.bundle_id).toBe('gems_small');
+});
+
 test('deck builder renders the owned-card grid', async ({ page }) => {
   await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
 
