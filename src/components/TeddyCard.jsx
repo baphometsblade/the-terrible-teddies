@@ -61,11 +61,14 @@ const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false }) =
     if (teddy.type === 'trap') return '🪤';
     if (teddy.type === 'special') return '✨';
 
+    // All-bear cast: every action card's art is a teddy variant. Rarity is
+    // already communicated by the frame, badge, and shine — the art's job is
+    // to keep the world 100% teddy.
     const rarityEmojis = {
-      legendary: ['👑', '🌟'],
-      epic: ['🐻‍❄️', '💜'],
-      rare: ['🐻', '🔷'],
-      uncommon: ['🧸', '💚'],
+      legendary: ['🐻‍❄️', '🧸'],
+      epic: ['🐻‍❄️', '🐻'],
+      rare: ['🐻', '🧸'],
+      uncommon: ['🧸', '🐻'],
       common: ['🧸', '🐻'],
     };
     const options = rarityEmojis[teddy.rarity] || ['🧸', '🐻'];

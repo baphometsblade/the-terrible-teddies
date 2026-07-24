@@ -50,7 +50,10 @@ const Auth = () => {
         <div className="text-center mb-8">
           <div className="text-7xl mb-4">🧸</div>
           <h1 className="text-4xl font-bold text-white mb-2">Terrible Teddies</h1>
-          <p className="text-purple-300">The card game where bears bite back</p>
+          <p className="text-purple-300">Stuffed animals. Unstuffed grudges.</p>
+          <p className="text-purple-400/70 text-xs mt-2">
+            18+ — contains profanity, cartoon fluff violence, and bears with substance-abuse issues.
+          </p>
         </div>
         <div className="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20 shadow-2xl">
           <form onSubmit={handleSignIn}>

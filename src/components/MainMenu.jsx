@@ -34,14 +34,14 @@ const MainMenu = ({
   const xpProgress = (xp / xpForNext) * 100;
 
   const menuOptions = [
-    { id: 'battle', title: 'Battle', description: 'Fight the AI!', icon: '⚔️', color: 'from-red-500 to-orange-500', action: onStartGame, badge: currentWinStreak > 0 ? `🔥 ${currentWinStreak}` : null },
-    { id: 'challenges', title: 'Challenges', description: 'Daily & weekly!', icon: '🎯', color: 'from-orange-500 to-red-600', action: onChallenges, badge: dailyAvailable ? '!' : null },
-    { id: 'battlepass', title: 'Battle Pass', description: 'Season rewards!', icon: '🏆', color: 'from-yellow-500 to-orange-600', action: onBattlePass, badge: '⭐', highlight: true },
-    { id: 'shop', title: 'Shop', description: 'Get gems & packs!', icon: '🏪', color: 'from-emerald-500 to-green-600', action: onShop, badge: '💎' },
-    { id: 'packs', title: 'Card Packs', description: 'Open new cards!', icon: '📦', color: 'from-purple-500 to-pink-500', action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks}` : null, highlight: cardPacks > 0 },
-    { id: 'leaderboard', title: 'Rankings', description: 'Compete globally!', icon: '🏅', color: 'from-indigo-500 to-purple-600', action: onLeaderboard },
-    { id: 'deck', title: 'Deck Builder', description: 'Build your deck', icon: '🃏', color: 'from-blue-500 to-indigo-500', action: onDeckBuilder },
-    { id: 'collection', title: 'Collection', description: 'All your teddies', icon: '🧸', color: 'from-amber-500 to-yellow-500', action: onCollection },
+    { id: 'battle', title: 'Battle', description: 'Go make Chuck cry', icon: '⚔️', color: 'from-red-500 to-orange-500', action: onStartGame, badge: currentWinStreak > 0 ? `🔥 ${currentWinStreak}` : null },
+    { id: 'challenges', title: 'Challenges', description: 'Prove you have a problem', icon: '🎯', color: 'from-orange-500 to-red-600', action: onChallenges, badge: dailyAvailable ? '!' : null },
+    { id: 'battlepass', title: 'Battle Pass', description: 'Grind. Flex. Repeat.', icon: '🏆', color: 'from-yellow-500 to-orange-600', action: onBattlePass, badge: '⭐', highlight: true },
+    { id: 'shop', title: 'Shop', description: 'Spend money you don’t have', icon: '🏪', color: 'from-emerald-500 to-green-600', action: onShop, badge: '💎' },
+    { id: 'packs', title: 'Card Packs', description: 'Gambling, but cuter', icon: '📦', color: 'from-purple-500 to-pink-500', action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks}` : null, highlight: cardPacks > 0 },
+    { id: 'leaderboard', title: 'Rankings', description: 'See who has no life', icon: '🏅', color: 'from-indigo-500 to-purple-600', action: onLeaderboard },
+    { id: 'deck', title: 'Deck Builder', description: 'Assemble your goon squad', icon: '🃏', color: 'from-blue-500 to-indigo-500', action: onDeckBuilder },
+    { id: 'collection', title: 'Collection', description: 'Your emotional support army', icon: '🧸', color: 'from-amber-500 to-yellow-500', action: onCollection },
   ];
 
   return (
@@ -162,7 +162,7 @@ const MainMenu = ({
         <h1 className="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300 mb-2 drop-shadow-lg">
           Terrible Teddies
         </h1>
-        <p className="text-purple-200 text-base md:text-lg">The Naughtiest Card Battle Game</p>
+        <p className="text-purple-200 text-base md:text-lg">Bad bears. Worse decisions.</p>
         <div className="flex justify-center gap-2 mt-2">
           <span className="text-2xl">🧸</span>
           <span className="text-2xl">⚔️</span>
@@ -222,7 +222,7 @@ const MainMenu = ({
         transition={{ delay: 1 }}
         className="text-center text-purple-300/50 text-xs relative z-10 mt-4"
       >
-        <p>Version 1.0 • Cheeky Teddy Brawl</p>
+        <p>Version 1.0 • No teddies were harmed (lie)</p>
       </motion.div>
     </div>
   );

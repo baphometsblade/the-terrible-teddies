@@ -6,57 +6,57 @@ import { useDialog } from '@/hooks/useDialog';
 
 const TUTORIAL_STEPS = [
   {
-    title: "Welcome to Terrible Teddies!",
-    content: "A naughty card battling game where mischievous teddy bears fight for supremacy!",
+    title: "Welcome to Terrible Teddies",
+    content: "Somewhere between the toy chest and the bar, these teddies went bad. Now they settle everything with cards, fists, and language you can't repeat at work.\n\n(18+ — crude humor, cartoon fluff violence, and bears with substance-abuse issues.)",
     icon: "🧸",
   },
   {
-    title: "Your Goal",
-    content: "Reduce your opponent's HP to 0 before they do the same to you. Each player starts with 30 HP.",
+    title: "The Job",
+    content: "Beat the stuffing out of Chuck — the smuggest teddy alive — by getting his 30 HP to 0 before your 30 HP hits the floor. He WILL talk trash the entire time. Ignore him. Or don't. He hates both.",
     icon: "🎯",
   },
   {
-    title: "Turn Phases",
-    content: "Each turn has phases:\n1. Draw Phase - Draw a card\n2. Main Phase - Play cards\n3. Battle Phase - Attack!\n4. End Phase - End your turn",
+    title: "How a Turn Works",
+    content: "1. Draw — take a card. It's probably a bad one. Play it anyway.\n2. Main — throw teddies and traps on the table\n3. Battle — the fun part\n4. End — Chuck's turn to embarrass himself",
     icon: "🔄",
   },
   {
-    title: "Card Types",
-    content: "Action Cards - Fighting teddies with Attack (⚔️) and HP (🛡️). HP is how much damage they soak before they're destroyed.\nTrap Cards - Surprise! Deal damage when attacked\nSpecial Cards - Heal HP or draw more cards",
+    title: "The Cast",
+    content: "Action Cards — your goons, with Attack (⚔️) and HP (🛡️). HP is how many beatings they can absorb before going back to fluff.\nTrap Cards — spring-loaded regret for whoever swings at you\nSpecial Cards — back-alley healing and questionable card advantage",
     icon: "🃏",
     showCards: true,
   },
   {
-    title: "Energy System",
-    content: "Playing cards costs energy (shown in yellow). You start with 3 energy per turn, increasing as the game progresses.",
+    title: "Energy",
+    content: "Cards cost energy (the yellow number). You start each turn with 3 and it climbs as the game drags on — just like a real bar tab.",
     icon: "⚡",
   },
   {
-    title: "Card Abilities",
-    content: "Taunt - Enemies must attack it first\nPiercing - Cuts through Shield\nShield - Takes 50% less damage\nStealth - Can't be targeted for a turn\nFury - Gains +1 Attack each time it survives a hit",
+    title: "Rap Sheets (Abilities)",
+    content: "Taunt — talks so much shit, enemies HAVE to hit them first\nPiercing — cuts straight through Shield\nShield — takes 50% less damage, the coward\nStealth — untargetable for a turn (currently hiding in your hamper)\nFury — every hit they survive is +1 Attack. Do NOT keep poking them.",
     icon: "✨",
   },
   {
-    title: "Combat",
-    content: "Click your teddy, then an enemy to attack. Attacks lower a creature's HP — it stays on the board until HP hits 0, and any leftover damage tramples through to the enemy player. High-HP teddies make great blockers: clear them (or use Piercing) before you can strike the enemy directly!",
+    title: "Violence 101",
+    content: "Click your teddy, then a victim. Damage comes off the target's HP — they stay on the table until it hits 0, and any leftover damage tramples straight into their owner's face. Big-HP teddies are bouncers: get past them (or bring Piercing) before you can deck Chuck directly.",
     icon: "⚔️",
   },
   {
     title: "Momentum & Rally",
-    content: "Playing cards and attacking builds Momentum. Fill the gauge to 10 and the ⚡ Rally button appears — spend it to give ALL your teddies +1 Attack and heal them to full HP. Your comeback button!",
+    content: "Playing cards and throwing hands builds Momentum. Fill the gauge to 10 and the ⚡ Rally button lights up — cash it in and your whole squad gets +1 Attack and a full restuff. It's the comeback button, and Chuck thinks it should be illegal.",
     icon: "🚀",
   },
   {
-    title: "Ready to Battle!",
-    content: "You're ready to take on the Evil Teddies! Good luck, and may the fluffiest bear win!",
+    title: "Go Ruin Chuck's Day",
+    content: "That's everything. Get out there, talk your talk, and remember the house rule: no biting. (Biting is fine.)",
     icon: "🏆",
   },
 ];
 
 const exampleCards = [
-  { id: 1, name: "Sassy Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt' },
-  { id: 2, name: "Bear Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3 },
-  { id: 3, name: "Stuffing Surge", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'heal', amount: 5 },
+  { id: 1, name: "Shit-Talk Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt' },
+  { id: 2, name: "Honey Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3 },
+  { id: 3, name: "Emergency Fluff Job", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'heal', amount: 5 },
 ];
 
 const Tutorial = ({ onClose, onStartGame }) => {

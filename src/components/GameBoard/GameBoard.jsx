@@ -8,6 +8,7 @@ import { Howl } from 'howler';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
 import { resolveCreatureHit, rallyField } from '../../utils/battleUtils';
+import { pickQuip, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { syncBattleResult } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { pressable } from '@/lib/a11y';
@@ -145,6 +146,28 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const [showAbilityPopup, setShowAbilityPopup] = useState(null);
   const [battleRewards, setBattleRewards] = useState({ xp: 0, coins: 0 });
 
+  // Chuck's trash talk: a transient speech bubble ({id, text}) plus his parting
+  // shot on the game-over screen. Decorative flavor — aria-hidden, the battle
+  // log stays the accessible record.
+  const [oppQuip, setOppQuip] = useState(null);
+  const [endQuip, setEndQuip] = useState(null);
+  const quipIdRef = useRef(0);
+  const lastQuipRef = useRef(null);
+  const nearDeathQuippedRef = useRef(false);
+
+  const speak = useCallback((pool) => {
+    const text = pickQuip(pool, lastQuipRef.current);
+    if (!text) return;
+    lastQuipRef.current = text;
+    const id = ++quipIdRef.current;
+    setOppQuip({ id, text });
+    // Dismiss via the tracked-timeout system so restart/concede/unmount cancel
+    // it; only clear if a newer quip hasn't already replaced this one.
+    safeTimeout(() => {
+      setOppQuip((q) => (q && q.id === id ? null : q));
+    }, 3200);
+  }, [safeTimeout]);
+
   const { toast } = useToast();
 
   // Play sound helper
@@ -188,16 +211,16 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     const deckToUse = playerDeckCards.length >= 5
       ? playerDeckCards
       : [
-          { id: 1, name: "Teddy Troublemaker", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
-          { id: 2, name: "Sassy Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'common' },
-          { id: 3, name: "Bear Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common' },
-          { id: 4, name: "Stuffing Surge", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'heal', amount: 5, rarity: 'uncommon' },
-          { id: 5, name: "Pillow Fighter", attack: 4, defense: 1, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon' },
-          { id: 6, name: "Cuddle Crusher", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'shield', rarity: 'uncommon' },
-          { id: 7, name: "Sneaky Pete", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'stealth', rarity: 'rare' },
-          { id: 8, name: "Honey Jar", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'draw', amount: 2, rarity: 'common' },
-          { id: 9, name: "Fluff Bomb", attack: 5, defense: 0, type: 'action', cost: 4, ability: 'none', rarity: 'rare' },
-          { id: 10, name: "Guardian Bear", attack: 1, defense: 5, type: 'action', cost: 3, ability: 'protect', rarity: 'epic' },
+          { id: 1, name: "Shitstarter Ted", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
+          { id: 2, name: "Shit-Talk Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'common' },
+          { id: 3, name: "Honey Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common' },
+          { id: 4, name: "Emergency Fluff Job", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'heal', amount: 5, rarity: 'uncommon' },
+          { id: 5, name: "Shiv-in-a-Pillow", attack: 4, defense: 1, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon' },
+          { id: 6, name: "Chokehold Cuddles", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'shield', rarity: 'uncommon' },
+          { id: 7, name: "Peeping Pete", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'stealth', rarity: 'rare' },
+          { id: 8, name: "Honey on the Rocks", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'draw', amount: 2, rarity: 'common' },
+          { id: 9, name: "The F-Bomb", attack: 5, defense: 0, type: 'action', cost: 4, ability: 'none', rarity: 'rare' },
+          { id: 10, name: "Restraining-Order Randy", attack: 1, defense: 5, type: 'action', cost: 3, ability: 'protect', rarity: 'epic' },
         ].map((card, idx) => ({ ...card, instanceId: `p-${card.id}-${idx}` }));
 
     const initialPlayerDeck = shuffleDeck(deckToUse);
@@ -211,14 +234,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     const diffMods = opponentBaseStats[aiDifficulty] || opponentBaseStats.normal;
 
     const opponentCards = [
-      { id: 101, name: "Evil Teddy", attack: 3 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
-      { id: 102, name: "Dark Fluffington", attack: 2 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'taunt', rarity: 'common' },
-      { id: 103, name: "Shadow Bear", attack: 4 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 3, ability: 'piercing', rarity: 'rare' },
-      { id: 104, name: "Nightmare Cuddles", attack: 3 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 3, ability: 'fury', rarity: 'epic' },
-      { id: 105, name: "Wicked Whiskers", attack: 2 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
-      { id: 106, name: "Demon Bear", attack: 4 + diffMods.attackMod, defense: 4 + diffMods.defenseMod, type: 'action', cost: 4, ability: 'shield', rarity: 'legendary' },
-      { id: 107, name: "Chaos Cub", attack: 3 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'stealth', rarity: 'rare' },
-      { id: 108, name: "Void Bear", attack: 5 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 4, ability: 'piercing', rarity: 'epic' },
+      { id: 101, name: "Repo Ted", attack: 3 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
+      { id: 102, name: "Loan-Shark Larry", attack: 2 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'taunt', rarity: 'common' },
+      { id: 103, name: "Off-the-Grid Greg", attack: 4 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 3, ability: 'piercing', rarity: 'rare' },
+      { id: 104, name: "Unhinged Cuddles", attack: 3 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 3, ability: 'fury', rarity: 'epic' },
+      { id: 105, name: "Whiskey Whiskers", attack: 2 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
+      { id: 106, name: "Landlord Lucifur", attack: 4 + diffMods.attackMod, defense: 4 + diffMods.defenseMod, type: 'action', cost: 4, ability: 'shield', rarity: 'legendary' },
+      { id: 107, name: "Custody-Battle Cub", attack: 3 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'stealth', rarity: 'rare' },
+      { id: 108, name: "Void Where Prohibited", attack: 5 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 4, ability: 'piercing', rarity: 'epic' },
     ].map((card, idx) => ({ ...card, instanceId: `o-${card.id}-${idx}` }));
 
     const initialOpponentDeck = shuffleDeck(opponentCards);
@@ -235,10 +258,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setOpponentField([withHp(initialOpponentDeck[0])]);
     setOpponentDeck(initialOpponentDeck.slice(1));
 
-    addToBattleLog(`Game started! Difficulty: ${aiDifficulty.toUpperCase()}`);
-    addToBattleLog("Your turn.");
+    addToBattleLog(`${OPPONENT_NAME} slams his deck on the table. Difficulty: ${aiDifficulty.toUpperCase()}`);
+    addToBattleLog("Your turn. Make it hurt.");
     setDeckReady(true);
-  }, [addToBattleLog, currentDeck, aiDifficulty, gameId]);
+    speak('gameStart');
+  }, [addToBattleLog, currentDeck, aiDifficulty, gameId, speak]);
 
   // Check for game over. Opponent death is checked first so that a simultaneous
   // lethal (both reach 0 in the same commit) counts as a win for the player who
@@ -249,6 +273,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       clearAllTimeouts(); // cancel any queued opponent-turn steps
       setGameOver(true);
       setWinner('player');
+      setOppQuip(null);
+      setEndQuip(pickQuip('oppLoses'));
       playSound('victory');
 
       // Record victory — store handles XP and coin rewards
@@ -275,12 +301,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
       toast({
         title: "Victory!",
-        description: "You've conquered the terrible teddies!",
+        description: `${OPPONENT_NAME} has been thoroughly unstuffed.`,
       });
     } else if (playerHealth <= 0) {
       clearAllTimeouts(); // cancel any queued opponent-turn steps
       setGameOver(true);
       setWinner('opponent');
+      setOppQuip(null);
+      setEndQuip(pickQuip('oppWins'));
       playSound('defeat');
 
       // Record defeat — store now handles consolation coins internally
@@ -299,11 +327,20 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
       toast({
         title: "Defeat!",
-        description: "Your teddies have been defeated...",
+        description: "Your squad got the stuffing beaten out of them.",
         variant: "destructive",
       });
     }
   }, [playerHealth, opponentHealth, gameOver, toast, playSound, recordBattleResult, aiDifficulty, clearAllTimeouts]);
+
+  // Chuck starts sweating when he's nearly unstuffed — once per game.
+  useEffect(() => {
+    if (gameOver) return;
+    if (opponentHealth > 0 && opponentHealth <= 8 && !nearDeathQuippedRef.current) {
+      nearDeathQuippedRef.current = true;
+      speak('oppNearDeath');
+    }
+  }, [opponentHealth, gameOver, speak]);
 
   // Handle draw phase. The draw mutates playerDeck/playerHand — this effect's
   // own dependencies — so without a per-turn guard it re-fires during the
@@ -416,8 +453,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         setPlayerHealth(prev => Math.min(30, prev + card.amount));
         battleStatsRef.current.healingDone += card.amount;
         playSound('heal');
-        addToBattleLog(`Healed ${card.amount} HP with ${card.name}`);
-        toast({ title: "Healing!", description: `Restored ${card.amount} HP` });
+        addToBattleLog(`${card.name}: +${card.amount} HP. No questions asked.`);
+        toast({ title: "Patched Up!", description: `+${card.amount} HP. The stuffing guy owed you a favor.` });
         break;
       case 'draw': {
         const cardsToDraw = Math.min(card.amount, playerDeck.length, Math.max(0, MAX_HAND_SIZE - playerHand.length));
@@ -425,14 +462,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         setPlayerHand(prev => [...prev, ...drawnCards]);
         setPlayerDeck(prev => prev.slice(cardsToDraw));
         playSound('draw');
-        addToBattleLog(`Drew ${cardsToDraw} cards with ${card.name}`);
-        toast({ title: "Cards Drawn!", description: `Drew ${cardsToDraw} cards` });
+        addToBattleLog(`${card.name}: drew ${cardsToDraw} — the dealer likes you`);
+        toast({ title: "Hit Me!", description: `Drew ${cardsToDraw}. The house always wins — congrats, you are the house.` });
         break;
       }
       case 'buff':
         setPlayerField(prev => prev.map(c => ({ ...c, attack: c.attack + card.amount })));
-        addToBattleLog(`All teddies gained +${card.amount} attack!`);
-        toast({ title: "Power Up!", description: `All teddies gained +${card.amount} attack!` });
+        addToBattleLog(`Your whole squad is FIRED UP — +${card.amount} attack across the board!`);
+        toast({ title: 'Juiced!', description: `Everybody +${card.amount} attack. Totally natural. Don't test them.` });
         break;
       default:
         break;
@@ -485,13 +522,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     if (survivor) {
       setOpponentField(prev => prev.map(c => c.instanceId === target.instanceId ? survivor : c));
       if (target.ability === 'fury') addToBattleLog(`${target.name}'s fury activated! +1 attack`);
-      addToBattleLog(`${selectedCard.name} hit ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
-      toast({ title: "Hit!", description: `${target.name} has ${survivor.currentHp} HP left.` });
+      addToBattleLog(`${selectedCard.name} smacked ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
+      toast({ title: "Hit!", description: `${target.name} is hanging on at ${survivor.currentHp} HP.` });
     } else {
       setOpponentField(prev => prev.filter(c => c.instanceId !== target.instanceId));
       if (overkill > 0) setOpponentHealth(prev => Math.max(0, prev - overkill));
-      addToBattleLog(`${selectedCard.name} destroyed ${target.name}${overkill > 0 ? ` (${overkill} trampled through)` : ''}`);
-      toast({ title: "Destroyed!", description: `${target.name} is down${overkill > 0 ? ` — ${overkill} to the enemy!` : ''}` });
+      addToBattleLog(`UNSTUFFED! ${selectedCard.name} took ${target.name} apart${overkill > 0 ? ` — ${overkill} trampled right into ${OPPONENT_NAME}'s beans` : ''}`);
+      toast({ title: "UNSTUFFED!", description: `${target.name} is fluff on the floor${overkill > 0 ? ` — ${overkill} tramples through!` : '.'}` });
+      speak('oppLosesCreature');
     }
 
     // Mark card as having attacked
@@ -511,8 +549,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     const validTargets = getValidTargets(playerField, opponentField);
     if (validTargets.length > 0) {
       toast({
-        title: "Cannot attack directly",
-        description: "Must attack enemy teddies first!",
+        title: "Blocked!",
+        description: `${OPPONENT_NAME}'s goons are in the way. Deal with them first.`,
         variant: "destructive"
       });
       return;
@@ -528,14 +566,15 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       setPlayerHealth(prev => Math.max(0, prev - trapDamage));
       setOpponentField(prev => prev.filter(c => c.instanceId !== trap.instanceId));
       playSound('trap');
-      addToBattleLog(`${trap.name} sprang! You took ${trapDamage} damage`);
-      toast({ title: "Trap Triggered!", description: `${trap.name} dealt ${trapDamage} damage to you!`, variant: "destructive" });
+      addToBattleLog(`${trap.name} sprang! ${trapDamage} damage, right in your pride`);
+      toast({ title: "It's a Trap!", description: `${trap.name} got you for ${trapDamage}. ${OPPONENT_NAME} is giggling.`, variant: "destructive" });
     } else {
       playSound('attack');
       setOpponentHealth(prev => Math.max(0, prev - selectedCard.attack));
       battleStatsRef.current.damageDealt += selectedCard.attack;
-      addToBattleLog(`${selectedCard.name} attacked opponent directly for ${selectedCard.attack} damage!`);
-      toast({ title: "Direct Attack!", description: `Dealt ${selectedCard.attack} damage to opponent!` });
+      addToBattleLog(`${selectedCard.name} decked ${OPPONENT_NAME} in the face for ${selectedCard.attack}!`);
+      toast({ title: "Right in the Face!", description: `${selectedCard.attack} damage straight to ${OPPONENT_NAME}'s smug mug.` });
+      if (selectedCard.attack >= 4) speak('oppTakesFaceHit');
     }
 
     setPlayerField(prev => prev.map(c =>
@@ -551,7 +590,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const goToBattlePhase = () => {
     if (phase !== 'main') return;
     setPhase('battle');
-    addToBattleLog("Entering battle phase...");
+    addToBattleLog("Battle phase. Gloves off, paws up.");
   };
 
   // End turn
@@ -581,13 +620,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       particleCount: 120, spread: 90, origin: { y: 0.7 },
       colors: ['#fbbf24', '#f59e0b', '#f97316', '#fde68a'],
     });
-    addToBattleLog('⚡ RALLY! Your teddies surge — +1 attack and fully healed!');
-    toast({ title: '⚡ Rally!', description: 'Your teddies are pumped and back to full HP!' });
+    addToBattleLog('⚡ RALLY! Your teddies scream something unprintable — +1 attack, fully restuffed!');
+    toast({ title: '⚡ Rally!', description: 'Your squad is juiced, restuffed, and legally a mob now.' });
+    speak('playerRally');
   };
 
   // Opponent AI turn
   const executeOpponentTurn = () => {
-    addToBattleLog("Opponent's turn!");
+    addToBattleLog(`${OPPONENT_NAME}'s turn. Brace your beans.`);
 
     // Remove stealth from opponent cards. Compute the cleared field once and
     // use it for BOTH the state update and the attack loop below — the loop
@@ -607,7 +647,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       const played = plays.map(c => (c.ability === 'stealth' ? { ...withHp(c), stealthActive: true } : withHp(c)));
       setOpponentField(prev => [...prev, ...played]);
       playSound('cardPlay');
-      plays.forEach(c => addToBattleLog(`Opponent played ${c.name}`));
+      plays.forEach(c => addToBattleLog(`${OPPONENT_NAME} slammed down ${c.name}`));
+      speak('oppPlays');
     }
 
     // Opponent attacks — resolve against a live working copy so each attacker
@@ -621,6 +662,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       let livePlayerField = playerField.map(c => ({ ...c, hasAttacked: false }));
       let faceDamage = 0;
       let trapDamageToOpponent = 0;
+      let killedPlayerCreature = false;
       const logs = [];
 
       activeOpponentField.forEach(card => {
@@ -638,12 +680,13 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           playSound('attack');
           if (survivor) {
             livePlayerField = livePlayerField.map(c => c.instanceId === target.instanceId ? survivor : c);
-            if (target.ability === 'fury') logs.push(`${target.name}'s fury activated! +1 attack`);
-            logs.push(`${card.name} hit ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
+            if (target.ability === 'fury') logs.push(`${target.name} is FURIOUS now! +1 attack`);
+            logs.push(`${card.name} roughed up ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
           } else {
             livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
             faceDamage += overkill;
-            logs.push(`${card.name} destroyed ${target.name}${overkill > 0 ? ` (${overkill} trampled)` : ''}`);
+            killedPlayerCreature = true;
+            logs.push(`${card.name} UNSTUFFED ${target.name}${overkill > 0 ? ` — ${overkill} trampled into your beans` : ''}`);
           }
           return;
         }
@@ -656,11 +699,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           trapDamageToOpponent += trapDamage;
           livePlayerField = livePlayerField.filter(c => c.instanceId !== trap.instanceId);
           playSound('trap');
-          logs.push(`Your ${trap.name} sprang! Opponent took ${trapDamage} damage`);
+          logs.push(`Your ${trap.name} sprang! ${OPPONENT_NAME} ate ${trapDamage} damage. Delicious.`);
         } else {
           faceDamage += card.attack;
           playSound('attack');
-          logs.push(`${card.name} attacked you directly for ${card.attack} damage!`);
+          logs.push(`${card.name} socked you right in the face for ${card.attack}!`);
         }
       });
 
@@ -671,6 +714,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         battleStatsRef.current.damageDealt += trapDamageToOpponent;
       }
       logs.forEach(addToBattleLog);
+      // One gloat per attack wave, best material first: a kill outranks a jab.
+      if (killedPlayerCreature) speak('oppKills');
+      else if (faceDamage > 0) speak('oppHitsFace');
 
       safeTimeout(() => {
         setCurrentTurn('player');
@@ -679,7 +725,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         // so energy tracks the turn the player is about to take.
         setPlayerEnergy(Math.min(10, 3 + Math.floor((turnCount + 1) / 2)));
         setPhase('draw');
-        addToBattleLog("Your turn!");
+        addToBattleLog("Your turn. Get him.");
       }, 500);
     }, 1000);
   };
@@ -696,11 +742,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const concedeGame = () => {
     if (gameOver) return;
     if (typeof window !== 'undefined' &&
-        !window.confirm('Concede this battle? It will count as a loss.')) {
+        !window.confirm(`Concede this battle? It counts as a loss, and ${OPPONENT_NAME} will NEVER let you hear the end of it.`)) {
       return;
     }
     clearAllTimeouts(); // cancel any in-flight opponent-turn steps
-    addToBattleLog('You conceded the battle.');
+    addToBattleLog(`You conceded. ${OPPONENT_NAME} is doing a little dance.`);
     setPlayerHealth(0); // routes through the existing defeat flow
   };
 
@@ -741,6 +787,12 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setWinner(null);
     setShowAbilityPopup(null);
     setBattleRewards({ xp: 0, coins: 0 });
+
+    // Reset Chuck's mouth
+    setOppQuip(null);
+    setEndQuip(null);
+    lastQuipRef.current = null;
+    nearDeathQuippedRef.current = false;
 
     // Increment gameId to trigger deck re-initialization useEffect
     setGameId(prev => prev + 1);
@@ -801,13 +853,18 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                 {winner === 'player' ? '🏆' : '💔'}
               </motion.div>
               <h2 className={`text-4xl font-bold mb-2 ${winner === 'player' ? 'text-black' : 'text-white'}`}>
-                {winner === 'player' ? 'Victory!' : 'Defeat!'}
+                {winner === 'player' ? 'TOTAL FLUFFING VICTORY!' : 'ABSOLUTELY UNSTUFFED!'}
               </h2>
-              <p className={`mb-6 ${winner === 'player' ? 'text-black/70' : 'text-white/70'}`}>
+              <p className={`mb-2 ${winner === 'player' ? 'text-black/70' : 'text-white/70'}`}>
                 {winner === 'player'
-                  ? 'Your terrible teddies triumphed!'
-                  : 'Better luck next time...'}
+                  ? `${OPPONENT_NAME} rage-quit into the toy chest.`
+                  : `${OPPONENT_NAME} is doing a victory lap. It's insufferable.`}
               </p>
+              {endQuip && (
+                <p className={`mb-6 text-sm italic ${winner === 'player' ? 'text-black/60' : 'text-white/60'}`}>
+                  🧸 {OPPONENT_NAME}: “{endQuip}”
+                </p>
+              )}
 
               {/* Rewards */}
               <div className={`rounded-xl p-4 mb-6 ${winner === 'player' ? 'bg-black/20' : 'bg-white/10'}`}>
@@ -849,7 +906,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                   className="mb-4 bg-black/30 rounded-xl p-3 text-center"
                 >
                   <p className={`text-sm mb-2 ${winner === 'player' ? 'text-black/70' : 'text-white/70'}`}>
-                    {cardPacks === 0 ? '📦 Out of card packs? Get more to strengthen your deck!' : '💎 Low on gems? Stock up and unlock premium cards!'}
+                    {cardPacks === 0 ? '📦 Out of packs? Your squad isn\u2019t going to recruit itself.' : '💎 Low on gems? Chuck says being broke is a personality flaw.'}
                   </p>
                   <Button
                     size="sm"
@@ -891,14 +948,36 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         {storeSoundEnabled ? '🔊' : '🔇'}
       </div>
 
+      {/* Chuck's trash talk — decorative speech bubble; the battle log is the
+          accessible record, so this is hidden from assistive tech. */}
+      <AnimatePresence>
+        {oppQuip && (
+          <motion.div
+            key={oppQuip.id}
+            aria-hidden="true"
+            initial={{ opacity: 0, y: -8, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+            className="absolute top-[8.5rem] left-4 z-30 max-w-[230px] pointer-events-none"
+          >
+            <div className="relative bg-white/95 text-gray-900 text-sm font-semibold rounded-2xl rounded-tl-sm px-3 py-2 shadow-lg border border-red-300">
+              <span className="mr-1">🧸</span>
+              {oppQuip.text}
+              <div className="absolute -top-2 left-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-b-8 border-b-white/95" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top bar - Opponent info */}
       <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-red-900 to-red-700 flex items-center justify-between px-4 shadow-lg">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
-            <span className="text-white text-xl">👿</span>
+            <span className="text-white text-xl">🧸</span>
           </div>
           <div className="min-w-0">
-            <div className="text-white font-bold truncate max-w-[7rem] sm:max-w-none">Evil Teddies</div>
+            <div className="text-white font-bold truncate max-w-[7rem] sm:max-w-none">{OPPONENT_NAME}</div>
             <div className="text-red-200 text-xs whitespace-nowrap">Deck: {opponentDeck.length}</div>
           </div>
         </div>
@@ -1143,7 +1222,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       {/* Targeting mode indicator */}
       {targetingMode && (
         <div className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-yellow-500 text-black px-3 py-2 rounded-lg font-bold animate-pulse">
-          Select a target for {selectedCard?.name}!
+          Pick a victim for {selectedCard?.name}!
         </div>
       )}
     </div>

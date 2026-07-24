@@ -5,52 +5,52 @@ import { getCurrentSeason } from '@/utils/season';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
-  { id: 1, name: "Teddy Troublemaker", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "A classic troublemaker who loves chaos." },
-  { id: 2, name: "Tiny Tim", attack: 1, defense: 1, type: 'action', cost: 1, ability: 'swarm', rarity: 'common', description: "Small but scrappy!" },
-  { id: 3, name: "Fluffy McFluffface", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "The fluffiest of them all." },
-  { id: 4, name: "Button Basher", attack: 2, defense: 1, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Loses buttons but never loses fights." },
-  { id: 5, name: "Stitchy", attack: 1, defense: 3, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Held together by sheer willpower." },
+  { id: 1, name: "Shitstarter Ted", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Every bar fight in this town starts with Ted." },
+  { id: 2, name: "Feral Tim", attack: 1, defense: 1, type: 'action', cost: 1, ability: 'swarm', rarity: 'common', description: "Raised by raccoons. It shows." },
+  { id: 3, name: "Fluffy McFuckface", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Legally changed his name. Won the bet." },
+  { id: 4, name: "Bar-Fight Barry", attack: 2, defense: 1, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Banned from six pubs and one build-a-workshop." },
+  { id: 5, name: "Stitches the Snitch", attack: 1, defense: 3, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Held together by thread and plea deals." },
 
   // Uncommon
-  { id: 6, name: "Sassy Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'uncommon', description: "Too sassy to ignore." },
-  { id: 7, name: "Sneaky Pete", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'stealth', rarity: 'uncommon', description: "Now you see him, now you don't." },
-  { id: 8, name: "Cuddle Crusher", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'shield', rarity: 'uncommon', description: "Hugs that hurt... less." },
-  { id: 9, name: "Pillow Fighter", attack: 4, defense: 1, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon', description: "Pillows can be deadly weapons." },
-  { id: 10, name: "Grumpy Gus", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'uncommon', description: "Gets angrier when hit." },
+  { id: 6, name: "Shit-Talk Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'uncommon', description: "Runs her mouth until you HAVE to hit her. That's the plan." },
+  { id: 7, name: "Peeping Pete", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'stealth', rarity: 'uncommon', description: "You can't target what's hiding in your hamper." },
+  { id: 8, name: "Chokehold Cuddles", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'shield', rarity: 'uncommon', description: "His hugs are technically a submission move." },
+  { id: 9, name: "Shiv-in-a-Pillow", attack: 4, defense: 1, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon', description: "Soft on the outside. Very much not on the inside." },
+  { id: 10, name: "Anger-Management Gus", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'uncommon', description: "Dropped out of the program. The program was relieved." },
 
   // Rare
-  { id: 11, name: "Guardian Bear", attack: 1, defense: 5, type: 'action', cost: 3, ability: 'protect', rarity: 'rare', description: "Protects the innocent fluffballs." },
-  { id: 12, name: "Rage Bear", attack: 2, defense: 3, type: 'action', cost: 3, ability: 'fury', rarity: 'rare', description: "You won't like him when he's angry." },
-  { id: 13, name: "Fluff Bomb", attack: 5, defense: 0, type: 'action', cost: 4, ability: 'none', rarity: 'rare', description: "All attack, no defense!" },
-  { id: 14, name: "Cotton King", attack: 3, defense: 3, type: 'action', cost: 4, ability: 'royal', rarity: 'rare', description: "Royalty has its privileges." },
-  { id: 15, name: "Shadow Teddy", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'stealth', rarity: 'rare', description: "Born from darkness." },
+  { id: 11, name: "Restraining-Order Randy", attack: 1, defense: 5, type: 'action', cost: 3, ability: 'protect', rarity: 'rare', description: "You legally cannot get within 50 feet of his friends." },
+  { id: 12, name: "'Roid-Rage Reggie", attack: 2, defense: 3, type: 'action', cost: 3, ability: 'fury', rarity: 'rare', description: "The stuffing is 90% pre-workout." },
+  { id: 13, name: "The F-Bomb", attack: 5, defense: 0, type: 'action', cost: 4, ability: 'none', rarity: 'rare', description: "Drops hard. Offends everyone. No survivors." },
+  { id: 14, name: "Slumlord Cotton", attack: 3, defense: 3, type: 'action', cost: 4, ability: 'royal', rarity: 'rare', description: "Owns half the toy chest. Fixes none of it." },
+  { id: 15, name: "Tax-Fraud Teddy", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'stealth', rarity: 'rare', description: "Officially, he doesn't exist. Ask his accountant." },
 
   // Epic
-  { id: 16, name: "Legendary Fluffington", attack: 4, defense: 4, type: 'action', cost: 5, ability: 'shield', rarity: 'epic', description: "A legend among teddies." },
-  { id: 17, name: "Berserker Bear", attack: 6, defense: 1, type: 'action', cost: 4, ability: 'fury', rarity: 'epic', description: "Unstoppable rage incarnate." },
-  { id: 18, name: "Ancient Guardian", attack: 2, defense: 6, type: 'action', cost: 5, ability: 'protect', rarity: 'epic', description: "Has protected teddies for centuries." },
-  { id: 19, name: "Phantom Hugger", attack: 5, defense: 3, type: 'action', cost: 5, ability: 'piercing', rarity: 'epic', description: "Hugs that phase through armor." },
+  { id: 16, name: "Lord Fluffington, Disgraced", attack: 4, defense: 4, type: 'action', cost: 5, ability: 'shield', rarity: 'epic', description: "Lost the estate. Kept the attitude and the armor." },
+  { id: 17, name: "Blackout Bjorn", attack: 6, defense: 1, type: 'action', cost: 4, ability: 'fury', rarity: 'epic', description: "Remembers nothing. Regrets everything. Hits like a truck." },
+  { id: 18, name: "Grandpa Warcrimes", attack: 2, defense: 6, type: 'action', cost: 5, ability: 'protect', rarity: 'epic', description: "Don't ask what he did in the Pillow Wars. He'll tell you." },
+  { id: 19, name: "The Seam Reaper", attack: 5, defense: 3, type: 'action', cost: 5, ability: 'piercing', rarity: 'epic', description: "Comes for every bear's thread eventually." },
 
   // Legendary
-  { id: 20, name: "Teddy Prime", attack: 5, defense: 5, type: 'action', cost: 6, ability: 'taunt', rarity: 'legendary', description: "The original terrible teddy." },
-  { id: 21, name: "Apocalypse Bear", attack: 7, defense: 3, type: 'action', cost: 6, ability: 'fury', rarity: 'legendary', description: "Brings the end times with cuddles." },
+  { id: 20, name: "The Godfluffer", attack: 5, defense: 5, type: 'action', cost: 6, ability: 'taunt', rarity: 'legendary', description: "He'll make you an offer you can't refuse. Or ignore." },
+  { id: 21, name: "Fluffpocalypse Now", attack: 7, defense: 3, type: 'action', cost: 6, ability: 'fury', rarity: 'legendary', description: "Loves the smell of stuffing in the morning." },
 
   // Trap Cards
-  { id: 30, name: "Bear Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common', description: "Classic but effective." },
-  { id: 31, name: "Surprise Hug", attack: 0, defense: 0, type: 'trap', cost: 1, effect: 'damage', amount: 2, rarity: 'common', description: "Unexpected affection hurts." },
-  { id: 32, name: "Stuffing Explosion", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Cotton everywhere!" },
-  { id: 33, name: "Button Barrage", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'uncommon', description: "Buttons fly in all directions." },
-  { id: 34, name: "Cuddle Catastrophe", attack: 0, defense: 0, type: 'trap', cost: 4, effect: 'damage', amount: 6, rarity: 'rare', description: "Too much love to handle." },
+  { id: 30, name: "Honey Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common', description: "Sweet, seductive, and absolutely a setup." },
+  { id: 31, name: "Hug With Consequences", attack: 0, defense: 0, type: 'trap', cost: 1, effect: 'damage', amount: 2, rarity: 'common', description: "It felt nice for exactly one second." },
+  { id: 32, name: "Premature Detonation", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "It happens to lots of traps. Don't make it weird." },
+  { id: 33, name: "Full Metal Buttons", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'uncommon', description: "What is your major malfunction, fluffball?" },
+  { id: 34, name: "Cuddle Homicide", attack: 0, defense: 0, type: 'trap', cost: 4, effect: 'damage', amount: 6, rarity: 'rare', description: "The coroner ruled it 'death by affection.'" },
 
   // Special Cards
-  { id: 40, name: "Stuffing Surge", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'heal', amount: 5, rarity: 'common', description: "Restores precious stuffing." },
-  { id: 41, name: "Honey Jar", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'draw', amount: 2, rarity: 'common', description: "Sweet card advantage." },
-  { id: 42, name: "Button Eyes", attack: 0, defense: 0, type: 'special', cost: 1, effect: 'draw', amount: 1, rarity: 'common', description: "See the future." },
-  { id: 43, name: "Emergency Repair", attack: 0, defense: 0, type: 'special', cost: 4, effect: 'heal', amount: 8, rarity: 'uncommon', description: "Critical stuffing restoration." },
-  { id: 44, name: "Teddy Rally", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'buff', amount: 1, rarity: 'uncommon', description: "All teddies gain +1 attack." },
-  { id: 45, name: "Fluff Storm", attack: 0, defense: 0, type: 'special', cost: 4, effect: 'draw', amount: 3, rarity: 'rare', description: "Draw a flurry of cards." },
-  { id: 46, name: "Full Restoration", attack: 0, defense: 0, type: 'special', cost: 6, effect: 'heal', amount: 15, rarity: 'epic', description: "Complete teddy makeover." },
-  { id: 47, name: "Legendary Blessing", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'buff', amount: 2, rarity: 'legendary', description: "All teddies gain +2 attack." },
+  { id: 40, name: "Emergency Fluff Job", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'heal', amount: 5, rarity: 'common', description: "Quick, discreet, cash only." },
+  { id: 41, name: "Honey on the Rocks", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'draw', amount: 2, rarity: 'common', description: "Bartender knows the order. Draw two, tell no one." },
+  { id: 42, name: "Bloodshot Button Eyes", attack: 0, defense: 0, type: 'special', cost: 1, effect: 'draw', amount: 1, rarity: 'common', description: "Haven't slept since the divorce. See everything." },
+  { id: 43, name: "Back-Alley Surgery", attack: 0, defense: 0, type: 'special', cost: 4, effect: 'heal', amount: 8, rarity: 'uncommon', description: "No license, no anesthesia, no questions." },
+  { id: 44, name: "Profanity Pep Talk", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'buff', amount: 1, rarity: 'uncommon', description: "Every third word is bleeped. All teddies +1 attack." },
+  { id: 45, name: "Fluffing Bender", attack: 0, defense: 0, type: 'special', cost: 4, effect: 'draw', amount: 3, rarity: 'rare', description: "Three cards deep and still going. Tomorrow's problem." },
+  { id: 46, name: "The Full Refluff", attack: 0, defense: 0, type: 'special', cost: 6, effect: 'heal', amount: 15, rarity: 'epic', description: "Head-to-toe restuffing. You didn't hear about the clinic from us." },
+  { id: 47, name: "Last Call Blessing", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'buff', amount: 2, rarity: 'legendary', description: "One more round for everybody. All teddies +2 attack." },
 ];
 
 export const ACHIEVEMENTS = [
@@ -109,7 +109,7 @@ const getWeekKey = () => {
 };
 
 const initialState = {
-  playerName: 'Teddy Trainer',
+  playerName: 'Fresh Meat',
   level: 1,
   xp: 0,
   // Monotonic lifetime XP that never decreases on level-up — drives the Battle
