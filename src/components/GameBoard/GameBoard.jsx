@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import TeddyCard from '../TeddyCard';
+import TeddyCard, { CardBack } from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1003,6 +1003,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             <div className="text-white font-bold truncate max-w-[7rem] sm:max-w-none">{OPPONENT_NAME}</div>
             <div className="text-red-200 text-xs whitespace-nowrap">Deck: {opponentDeck.length}</div>
           </div>
+          {/* Opponent's draw pile, face down on the table */}
+          {opponentDeck.length > 0 && (
+            <div className="relative w-8 h-11 shrink-0 hidden sm:block" aria-hidden="true">
+              <div className="absolute inset-0 rotate-6"><CardBack className="w-8 h-11" mini /></div>
+              <div className="absolute inset-0 -rotate-3"><CardBack className="w-8 h-11" mini /></div>
+              <CardBack className="w-8 h-11" mini />
+            </div>
+          )}
         </div>
         <div className="flex items-center space-x-2 sm:space-x-4">
           <div className="text-right">
@@ -1038,7 +1046,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             >
               <TeddyCard teddy={card} />
               {card.stealthActive && (
-                <div className="absolute top-0 left-0 right-0 bg-purple-500 text-white text-[8px] text-center rounded-t">
+                <div className="absolute top-[18px] left-0 right-0 bg-purple-500/90 text-white text-[8px] text-center z-10">
                   STEALTH
                 </div>
               )}
@@ -1127,7 +1135,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                 <div className="text-center text-xs text-plush-400 mt-1">Exhausted</div>
               )}
               {card.stealthActive && (
-                <div className="absolute top-0 left-0 right-0 bg-purple-500 text-white text-[8px] text-center rounded-t">
+                <div className="absolute top-[18px] left-0 right-0 bg-purple-500/90 text-white text-[8px] text-center z-10">
                   STEALTH
                 </div>
               )}
@@ -1152,6 +1160,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               animate={{ y: 0, opacity: 1, rotate: (index - playerHand.length / 2) * 3 }}
               exit={{ y: 50, opacity: 0 }}
               whileHover={{ y: -20, scale: 1.1, zIndex: 10 }}
+              style={{ transformOrigin: 'bottom center' }}
               className={`cursor-pointer ${playerEnergy < card.cost ? 'opacity-50' : ''}`}
               {...pressable(() => phase === 'main' && playCard(card), `Play ${card.name}`)}
             >
@@ -1171,6 +1180,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             <div className="text-white font-bold truncate max-w-[7rem] sm:max-w-none">{playerName}</div>
             <div className="text-emerald-200 text-xs whitespace-nowrap">Deck: {playerDeck.length} | Hand: {playerHand.length}</div>
           </div>
+          {/* Player's draw pile */}
+          {playerDeck.length > 0 && (
+            <div className="relative w-8 h-11 shrink-0 hidden sm:block" aria-hidden="true">
+              <div className="absolute inset-0 -rotate-6"><CardBack className="w-8 h-11" mini /></div>
+              <div className="absolute inset-0 rotate-3"><CardBack className="w-8 h-11" mini /></div>
+              <CardBack className="w-8 h-11" mini />
+            </div>
+          )}
         </div>
         <div className="flex items-center space-x-2 sm:space-x-4">
           <div className="flex items-center space-x-1 sm:space-x-2">

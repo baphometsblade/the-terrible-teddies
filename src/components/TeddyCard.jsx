@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { motion } from 'framer-motion';
 import { RARITY } from '@/lib/rarity';
 
 // Dark-face fallbacks for cards without a rarity (typed opponent cards).
 const TYPE_STYLES = {
-  action: { bg: 'from-amber-900 to-night-800', border: 'border-amber-500', badge: 'bg-amber-600' },
-  trap: { bg: 'from-purple-900 to-night-800', border: 'border-purple-500', badge: 'bg-purple-600' },
-  special: { bg: 'from-cyan-900 to-night-800', border: 'border-cyan-500', badge: 'bg-cyan-600' },
+  action: { bg: 'from-amber-900 to-night-800', border: 'border-amber-500', text: 'text-amber-300' },
+  trap: { bg: 'from-purple-900 to-night-800', border: 'border-purple-500', text: 'text-purple-300' },
+  special: { bg: 'from-cyan-900 to-night-800', border: 'border-cyan-500', text: 'text-cyan-300' },
 };
 
 const ABILITY_ICONS = {
@@ -62,11 +62,51 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   );
 };
 
+// The back of every card in the game: night felt, stitched seam, brass
+// emblem rings. Used for facedown reveals and the deck stacks on the board.
+export const CardBack = ({ className = 'w-24 h-36', mini = false }) => (
+  <div
+    className={`${className} rounded-lg border-2 border-plush-700 bg-gradient-to-br from-night-700 via-night-800 to-night-950 stitched-plush relative overflow-hidden grid place-items-center shadow-lg shadow-black/40`}
+  >
+    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_45%,#fbbf24_0%,transparent_60%)]" />
+    <div className={`rounded-full border-2 border-brass-400/60 grid place-items-center ${mini ? 'w-5 h-5' : 'w-12 h-12'}`}>
+      <div className={`rounded-full border border-brass-400/40 grid place-items-center ${mini ? 'w-3.5 h-3.5 text-[8px]' : 'w-9 h-9 text-xl'}`}>
+        🧸
+      </div>
+    </div>
+  </div>
+);
+
+// One-line rules text for the textbox, like a real TCG card. Ability
+// keywords for creatures; effect summaries for traps and specials.
+const rulesText = (teddy) => {
+  if (teddy.ability && teddy.ability !== 'none') {
+    const label = teddy.ability.charAt(0).toUpperCase() + teddy.ability.slice(1);
+    return `${ABILITY_ICONS[teddy.ability] || '✨'} ${label}`;
+  }
+  if (teddy.effect === 'heal') return `💚 +${teddy.amount} HP`;
+  if (teddy.effect === 'draw') return `🃏 Draw ${teddy.amount}`;
+  if (teddy.effect === 'damage') return `💥 ${teddy.amount} DMG`;
+  if (teddy.effect === 'buff') return `💪 +${teddy.amount} ATK`;
+  return null;
+};
+
+/**
+ * TCG-anatomy card frame at hand size (96×144):
+ * name banner → cost gem → framed art window → type/rarity line → textbox,
+ * with circular attack/HP gems anchored in the bottom corners and a foil
+ * sheen on epic+ cards.
+ */
 const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false }) => {
   // Use rarity style if available, otherwise fall back to type style
   const rarityStyle = teddy.rarity ? RARITY[teddy.rarity] : null;
   const typeStyle = TYPE_STYLES[teddy.type] || TYPE_STYLES.action;
   const style = rarityStyle || typeStyle;
+
+  const isAction = teddy.type === 'action';
+  const hp = teddy.currentHp ?? teddy.defense;
+  const wounded = teddy.currentHp !== undefined && teddy.currentHp < teddy.defense;
+  const rules = rulesText(teddy);
 
   return (
     <motion.div
@@ -75,8 +115,7 @@ const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false }) =
     >
       <Card
         className={`
-          w-24 h-36 rounded-lg shadow-lg shadow-black/40 overflow-hidden cursor-pointer transition-all relative
-          stitched-plush
+          w-24 h-36 rounded-lg shadow-lg shadow-black/40 cursor-pointer transition-all relative flex flex-col p-0 overflow-hidden
           bg-gradient-to-b ${style.bg}
           border-2 ${style.border}
           ${isSelected ? 'ring-2 ring-brass-300 ring-offset-2 ring-offset-night-900' : ''}
@@ -84,77 +123,71 @@ const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false }) =
         `}
         onClick={!isDisabled ? onClick : undefined}
       >
-        {/* Legendary shine effect */}
+        {/* Foil sheen for high rarities */}
+        {teddy.rarity === 'epic' && (
+          <div className="absolute inset-0 pointer-events-none opacity-20 mix-blend-screen bg-[linear-gradient(115deg,transparent_25%,rgba(56,189,248,0.6)_40%,rgba(168,85,247,0.6)_55%,rgba(251,191,36,0.5)_70%,transparent_85%)]" />
+        )}
         {teddy.rarity === 'legendary' && (
-          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-brass-300/15 to-transparent pointer-events-none animate-pulse" />
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-brass-300/20 to-transparent pointer-events-none animate-pulse" />
         )}
 
-        <CardContent className="p-1.5 flex flex-col h-full relative">
-          {/* Cost badge top-right */}
-          {teddy.cost !== undefined && (
-            <div className="absolute top-0 right-0 bg-brass-400 text-night-950 w-6 h-6 rounded-bl-lg flex items-center justify-center text-xs font-bold shadow border-l border-b border-brass-500">
-              {teddy.cost}
-            </div>
-          )}
-
-          {/* Type badge */}
-          <div className={`${style.badge} text-white text-[7px] px-1 py-0.5 rounded uppercase font-bold self-start`}>
-            {teddy.type}
-          </div>
-
-          {/* Card art */}
-          <div className="flex-1 flex items-center justify-center my-1 min-h-0">
-            <ArtOrEmoji
-              teddy={teddy}
-              emojiClassName="text-3xl drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
-              imgClassName="max-h-full max-w-full object-contain rounded"
-            />
-          </div>
-
-          {/* Card name */}
-          <div className="text-[9px] font-display font-bold text-center text-plush-100 truncate leading-tight bg-night-950/50 rounded px-0.5 -mx-0.5" title={teddy.name}>
+        {/* Name banner */}
+        <div className="flex items-center shrink-0 h-[18px] pl-1.5 pr-6 bg-night-950/70 border-b border-white/10">
+          <span className="font-display font-bold text-[8px] text-plush-100 truncate leading-none" title={teddy.name}>
             {teddy.name}
+          </span>
+        </div>
+
+        {/* Cost gem */}
+        {teddy.cost !== undefined && (
+          <div className="absolute top-[2px] right-[3px] w-4 h-4 rounded-full bg-gradient-to-b from-brass-200 to-brass-500 border border-night-950 shadow text-night-950 text-[9px] font-bold grid place-items-center z-10">
+            {teddy.cost}
           </div>
+        )}
 
-          {/* Effect text */}
-          {teddy.effect && (
-            <div className={`text-[7px] text-center font-semibold ${style.text || 'text-plush-200'}`}>
-              {teddy.effect === 'heal' && `+${teddy.amount} HP`}
-              {teddy.effect === 'draw' && `Draw ${teddy.amount}`}
-              {teddy.effect === 'damage' && `${teddy.amount} DMG`}
-              {teddy.effect === 'buff' && `+${teddy.amount} ATK`}
-            </div>
-          )}
+        {/* Art window */}
+        <div className="mx-1 mt-1 h-[52px] shrink-0 rounded border border-white/15 bg-night-950/40 shadow-inner overflow-hidden grid place-items-center">
+          <ArtOrEmoji
+            teddy={teddy}
+            emojiClassName="text-[26px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+            imgClassName="w-full h-full object-cover"
+          />
+        </div>
 
-          {/* Action card stats */}
-          {teddy.type === 'action' && (
-            <div className="flex justify-between items-center px-1 mt-0.5">
-              <div className="flex items-center gap-0.5">
-                <span className="text-[10px]">⚔️</span>
-                <span className="text-red-400 font-bold text-xs">{teddy.attack}</span>
-              </div>
-              {teddy.ability && teddy.ability !== 'none' && (
-                <div className="text-[10px]" title={teddy.ability}>
-                  {ABILITY_ICONS[teddy.ability] || '✨'}
-                </div>
-              )}
-              <div className="flex items-center gap-0.5">
-                {/* defense is the HP pool; show remaining HP, tinted red when wounded */}
-                <span className={`font-bold text-xs ${teddy.currentHp !== undefined && teddy.currentHp < teddy.defense ? 'text-red-400' : 'text-sky-300'}`}>
-                  {teddy.currentHp ?? teddy.defense}
-                </span>
-                <span className="text-[10px]">🛡️</span>
-              </div>
-            </div>
-          )}
-
-          {/* Rarity indicator */}
+        {/* Type / rarity line */}
+        <div className="mx-1 mt-0.5 shrink-0 flex items-center justify-between h-[11px] px-1 rounded-sm bg-night-950/50">
+          <span className="text-[6px] uppercase tracking-wider font-bold text-plush-300">{teddy.type}</span>
           {teddy.rarity && (
-            <div className={`text-[6px] text-center uppercase tracking-wide font-bold ${style.text}`}>
-              {teddy.rarity}
+            <span className={`text-[6px] uppercase tracking-wider font-bold ${style.text}`}>{teddy.rarity}</span>
+          )}
+        </div>
+
+        {/* Textbox — ability keyword or effect line; stat gems overlap its
+            bottom corners like a real card frame. */}
+        <div className="mx-1 my-0.5 flex-1 rounded-sm bg-white/5 border border-white/10 px-1 pt-1 overflow-hidden">
+          {rules && (
+            <div className="text-[7px] leading-tight text-center font-semibold text-plush-200" title={teddy.ability && teddy.ability !== 'none' ? teddy.ability : undefined}>
+              {rules}
             </div>
           )}
-        </CardContent>
+        </div>
+
+        {/* Stat gems (creatures only): attack bottom-left, HP bottom-right */}
+        {isAction && (
+          <>
+            <div className="absolute bottom-[3px] left-[3px] w-[22px] h-[22px] rounded-full bg-gradient-to-b from-red-400 to-red-700 border-2 border-night-950 shadow text-white text-[10px] font-bold grid place-items-center z-10" title="Attack">
+              {teddy.attack}
+            </div>
+            <div
+              className={`absolute bottom-[3px] right-[3px] w-[22px] h-[22px] rounded-full bg-gradient-to-b border-2 border-night-950 shadow text-white text-[10px] font-bold grid place-items-center z-10 ${
+                wounded ? 'from-red-500 to-red-800' : 'from-sky-400 to-sky-700'
+              }`}
+              title="HP"
+            >
+              {hp}
+            </div>
+          </>
+        )}
       </Card>
     </motion.div>
   );

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import TeddyCard from './TeddyCard';
+import TeddyCard, { CardBack } from './TeddyCard';
 import { useGameStore } from '../stores/gameStore';
 import confetti from 'canvas-confetti';
 import { useDialog } from '@/hooks/useDialog';
@@ -257,11 +257,8 @@ const CardPackOpening = ({ onClose }) => {
                             )}
                           </>
                         ) : (
-                          <motion.div
-                            animate={{ rotateY: [180, 180] }}
-                            className="w-24 h-36 bg-gradient-to-br from-night-700 to-night-800 rounded-lg border-2 border-plush-700 stitched-plush flex items-center justify-center"
-                          >
-                            <span className="text-3xl">?</span>
+                          <motion.div animate={{ rotateY: [180, 180] }}>
+                            <CardBack />
                           </motion.div>
                         )}
                       </motion.div>
