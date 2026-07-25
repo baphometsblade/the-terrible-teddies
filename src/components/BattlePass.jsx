@@ -8,6 +8,7 @@ import { getCurrentSeason } from '../utils/season';
 import confetti from 'canvas-confetti';
 import { useDialog } from '@/hooks/useDialog';
 import { pressable } from '@/lib/a11y';
+import { RARITY } from '@/lib/rarity';
 
 const BATTLE_PASS_REWARDS = [
   { tier: 1, xpRequired: 0, free: { type: 'coins', amount: 100, icon: '🪙' }, premium: { type: 'card', cardId: 7, name: 'Peeping Pete', icon: '🃏', rarity: 'uncommon' } },
@@ -124,13 +125,8 @@ const BattlePass = ({ onClose }) => {
     const isClaimed = claimedRewards[isPremium ? 'premium' : 'free'].includes(tier);
     const canClaim = isUnlocked && !isClaimed && (!isPremium || hasPremium);
 
-    const rarityColors = {
-      common: 'border-gray-400',
-      uncommon: 'border-green-500',
-      rare: 'border-blue-500',
-      epic: 'border-purple-500',
-      legendary: 'border-yellow-500 shadow-yellow-500/50 shadow-lg',
-    };
+    const rarityBorder = (r) =>
+      r === 'legendary' ? `${RARITY[r].border} ${RARITY[r].glow} shadow-lg` : RARITY[r].border;
 
     return (
       <motion.div
@@ -143,9 +139,9 @@ const BattlePass = ({ onClose }) => {
         className={`
           relative w-20 h-24 rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-all
           ${isPremium 
-            ? 'bg-gradient-to-br from-yellow-600/30 to-orange-600/30 border-2' 
+            ? 'bg-gradient-to-br from-brass-600/25 to-amber-900/30 border-2' 
             : 'bg-white/10 border border-white/20'}
-          ${reward.rarity ? rarityColors[reward.rarity] : isPremium ? 'border-yellow-500/50' : ''}
+          ${reward.rarity ? rarityBorder(reward.rarity) : isPremium ? 'border-brass-400/50' : ''}
           ${!isUnlocked ? 'opacity-40' : ''}
           ${isClaimed ? 'opacity-60' : ''}
           ${canClaim ? 'hover:border-white' : ''}
@@ -170,11 +166,7 @@ const BattlePass = ({ onClose }) => {
            `${reward.amount ? '+' + reward.amount : ''}`}
         </div>
         {reward.rarity && (
-          <div className={`text-[8px] uppercase font-bold ${
-            reward.rarity === 'legendary' ? 'text-yellow-400' :
-            reward.rarity === 'epic' ? 'text-purple-400' :
-            reward.rarity === 'rare' ? 'text-blue-400' : 'text-green-400'
-          }`}>
+          <div className={`text-[8px] uppercase font-bold ${RARITY[reward.rarity].text}`}>
             {reward.rarity}
           </div>
         )}
@@ -193,10 +185,10 @@ const BattlePass = ({ onClose }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-indigo-900 via-purple-900 to-black rounded-2xl max-w-5xl w-full shadow-2xl border border-white/10 overflow-hidden"
+        className="bg-gradient-to-b from-night-700 via-night-800 to-night-950 rounded-2xl max-w-5xl w-full shadow-2xl border border-plush-700/40 overflow-hidden"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-yellow-600 via-orange-500 to-red-500 p-4 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-brass-600 via-brass-500 to-amber-900 p-4 relative overflow-hidden">
           <motion.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
             animate={{ x: ['-100%', '200%'] }}
@@ -204,7 +196,7 @@ const BattlePass = ({ onClose }) => {
           />
           <div className="flex justify-between items-center relative z-10">
             <div>
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+              <h2 className="text-2xl font-display font-bold text-white flex items-center gap-2">
                 <span className="text-3xl">🏆</span> Battle Pass
               </h2>
               <p className="text-white/80 text-sm">{season.name}</p>
@@ -217,13 +209,13 @@ const BattlePass = ({ onClose }) => {
               {!hasPremium && (
                 <Button
                   onClick={() => setShowPurchaseConfirm(true)}
-                  className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold hover:from-yellow-300 hover:to-orange-400"
+                  className="bg-night-900 text-brass-300 font-bold hover:bg-night-800 border border-brass-400/50"
                 >
                   💎 {PREMIUM_PASS_PRICE} - Unlock Premium
                 </Button>
               )}
               {hasPremium && (
-                <div className="bg-yellow-500 text-black px-4 py-2 rounded-lg font-bold flex items-center gap-2">
+                <div className="bg-night-900 text-brass-300 px-4 py-2 rounded-lg font-bold flex items-center gap-2 border border-brass-400/50">
                   ⭐ Premium Active
                 </div>
               )}
@@ -235,15 +227,15 @@ const BattlePass = ({ onClose }) => {
         {/* Progress Bar */}
         <div className="px-6 py-4 bg-black/30">
           <div className="flex items-center gap-4">
-            <div className="bg-yellow-500 text-black w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg">
+            <div className="bg-brass-400 text-night-950 w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg">
               {currentTier}
             </div>
             <div className="flex-1">
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-white/70">Tier {currentTier} → {currentTier + 1}</span>
-                <span className="text-yellow-400">{xpToNext} XP to next tier</span>
+                <span className="text-brass-300">{xpToNext} XP to next tier</span>
               </div>
-              <Progress value={xpProgress} className="h-3 bg-white/10" />
+              <Progress value={xpProgress} className="h-3 bg-white/10 [&>div]:bg-brass-400" />
             </div>
             <div className="text-white/50 text-sm">
               Total: {battlePassXP} XP
@@ -258,7 +250,7 @@ const BattlePass = ({ onClose }) => {
               <div key={reward.tier} className="flex flex-col items-center gap-2">
                 {/* Tier number */}
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                  reward.tier <= currentTier ? 'bg-yellow-500 text-black' : 'bg-white/20 text-white/50'
+                  reward.tier <= currentTier ? 'bg-brass-400 text-night-950' : 'bg-white/20 text-white/50'
                 }`}>
                   {reward.tier}
                 </div>
@@ -270,7 +262,7 @@ const BattlePass = ({ onClose }) => {
                 <RewardCard reward={reward.premium} isPremium={true} tier={reward.tier} />
 
                 {/* Divider */}
-                <div className={`w-16 h-0.5 ${reward.tier <= currentTier ? 'bg-yellow-500' : 'bg-white/20'}`} />
+                <div className={`w-16 h-0.5 ${reward.tier <= currentTier ? 'bg-brass-400' : 'bg-white/20'}`} />
 
                 {/* Free reward (bottom) */}
                 <RewardCard reward={reward.free} isPremium={false} tier={reward.tier} />
@@ -304,10 +296,10 @@ const BattlePass = ({ onClose }) => {
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
-              className="bg-gradient-to-b from-yellow-900 to-orange-900 rounded-2xl p-6 max-w-md w-full border-2 border-yellow-500"
+              className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-6 max-w-md w-full border-2 border-brass-400 worn"
               onClick={e => e.stopPropagation()}
             >
-              <h3 className="text-2xl font-bold text-white text-center mb-4">⭐ Unlock Premium Pass</h3>
+              <h3 className="text-2xl font-display font-bold text-white text-center mb-4">⭐ Unlock Premium Pass</h3>
               
               <div className="bg-black/30 rounded-xl p-4 mb-4">
                 <div className="text-white font-semibold mb-2">Premium Pass includes:</div>
@@ -322,7 +314,7 @@ const BattlePass = ({ onClose }) => {
 
               <div className="text-center mb-4">
                 <div className="text-white/50 text-sm">Price</div>
-                <div className="text-3xl font-bold text-yellow-400 flex items-center justify-center gap-2">
+                <div className="text-3xl font-bold text-brass-300 flex items-center justify-center gap-2">
                   💎 {PREMIUM_PASS_PRICE}
                 </div>
                 <div className="text-white/50 text-sm">You have: {gems} gems</div>
@@ -332,7 +324,7 @@ const BattlePass = ({ onClose }) => {
                 <Button
                   onClick={handlePurchasePremium}
                   disabled={gems < PREMIUM_PASS_PRICE}
-                  className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold hover:from-yellow-400 hover:to-orange-400"
+                  className="flex-1 bg-gradient-to-r from-brass-400 to-brass-500 text-night-950 font-bold hover:from-brass-300 hover:to-brass-400"
                 >
                   Purchase
                 </Button>

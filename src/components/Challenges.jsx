@@ -123,7 +123,7 @@ const Challenges = ({ onClose }) => {
           ${isClaimed 
             ? 'bg-green-900/20 border-green-500/30' 
             : isComplete 
-              ? 'bg-yellow-900/20 border-yellow-500/50 shadow-lg shadow-yellow-500/20' 
+              ? 'bg-brass-600/15 border-brass-400/50 shadow-lg shadow-brass-400/20' 
               : 'bg-white/5 border-white/10'}
         `}
       >
@@ -134,13 +134,13 @@ const Challenges = ({ onClose }) => {
         <div className="flex items-start gap-3">
           <div className={`
             w-12 h-12 rounded-xl flex items-center justify-center text-2xl
-            ${isComplete ? 'bg-yellow-500/30' : 'bg-white/10'}
+            ${isComplete ? 'bg-brass-400/20' : 'bg-white/10'}
           `}>
             {challenge.icon}
           </div>
 
           <div className="flex-1">
-            <h3 className={`font-bold ${isComplete ? 'text-yellow-400' : 'text-white'}`}>
+            <h3 className={`font-bold ${isComplete ? 'text-brass-300' : 'text-white'}`}>
               {challenge.name}
             </h3>
             <p className="text-white/50 text-sm">{challenge.description}</p>
@@ -148,7 +148,7 @@ const Challenges = ({ onClose }) => {
             <div className="mt-2">
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-white/70">{progress} / {challenge.target}</span>
-                <span className={isComplete ? 'text-yellow-400' : 'text-white/50'}>
+                <span className={isComplete ? 'text-brass-300' : 'text-white/50'}>
                   {progressPercent.toFixed(0)}%
                 </span>
               </div>
@@ -160,7 +160,7 @@ const Challenges = ({ onClose }) => {
             <div className={`
               px-3 py-1 rounded-lg text-sm font-semibold mb-2
               ${challenge.reward.type === 'gems' ? 'bg-purple-500/30 text-purple-300' :
-                challenge.reward.type === 'coins' ? 'bg-yellow-500/30 text-yellow-300' :
+                challenge.reward.type === 'coins' ? 'bg-brass-400/20 text-brass-200' :
                 challenge.reward.type === 'pack' || challenge.reward.type === 'legendaryPack' ? 'bg-blue-500/30 text-blue-300' :
                 'bg-green-500/30 text-green-300'}
             `}>
@@ -176,7 +176,7 @@ const Challenges = ({ onClose }) => {
               <Button
                 size="sm"
                 onClick={() => claimReward(challenge)}
-                className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+                className="bg-brass-400 hover:bg-brass-500 text-night-950 font-bold"
               >
                 Claim
               </Button>
@@ -219,7 +219,7 @@ const Challenges = ({ onClose }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-indigo-900 via-purple-900 to-black rounded-2xl max-w-2xl w-full shadow-2xl border border-white/10 overflow-hidden max-h-[90vh] flex flex-col"
+        className="bg-gradient-to-b from-night-700 via-night-800 to-night-950 rounded-2xl max-w-2xl w-full shadow-2xl border border-plush-700/40 overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-orange-600 to-red-600 p-4 flex justify-between items-center">
@@ -293,7 +293,7 @@ const Challenges = ({ onClose }) => {
         </div>
 
         {/* Bonus Progress */}
-        <div className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 p-4 border-t border-white/10">
+        <div className="bg-gradient-to-r from-night-800/70 to-night-700/70 p-4 border-t border-white/10">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-white font-semibold">Complete All {activeTab === 'daily' ? 'Daily' : 'Weekly'} Challenges</div>
@@ -302,7 +302,7 @@ const Challenges = ({ onClose }) => {
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <div className="text-purple-400">💎 {BONUS[activeTab].gems}</div>
-                <div className="text-yellow-400">🪙 {BONUS[activeTab].coins}</div>
+                <div className="text-brass-300">🪙 {BONUS[activeTab].coins}</div>
               </div>
               {(claimedChallenges ?? []).includes(BONUS[activeTab].key) ? (
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-green-600/40 text-white">
@@ -314,7 +314,7 @@ const Challenges = ({ onClose }) => {
                   disabled={!BONUS[activeTab].allDone}
                   className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-all ${
                     BONUS[activeTab].allDone
-                      ? 'bg-yellow-500 text-black hover:scale-105 cursor-pointer animate-pulse'
+                      ? 'bg-brass-400 text-night-950 hover:scale-105 cursor-pointer animate-pulse'
                       : 'bg-white/10 text-white/30 cursor-not-allowed'
                   }`}
                   aria-label="Claim all-challenges bonus"

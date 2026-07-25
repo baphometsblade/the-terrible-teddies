@@ -45,17 +45,17 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 to-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-night-800 to-night-950 worn flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="text-7xl mb-4">🧸</div>
-          <h1 className="text-4xl font-bold text-white mb-2">Terrible Teddies</h1>
-          <p className="text-purple-300">Stuffed animals. Unstuffed grudges.</p>
-          <p className="text-purple-400/70 text-xs mt-2">
+          <h1 className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-brass-200 via-brass-300 to-brass-200 mb-2">Terrible Teddies</h1>
+          <p className="text-plush-300">Stuffed animals. Unstuffed grudges.</p>
+          <p className="text-plush-400/80 text-xs mt-2">
             18+ — contains profanity, cartoon fluff violence, and bears with substance-abuse issues.
           </p>
         </div>
-        <div className="bg-white/10 backdrop-blur rounded-2xl p-8 border border-white/20 shadow-2xl">
+        <div className="bg-night-800/60 backdrop-blur rounded-2xl p-8 border border-plush-700/40 stitched shadow-2xl">
           <form onSubmit={handleSignIn}>
             <label htmlFor="auth-email" className="sr-only">Email</label>
             <Input
@@ -86,7 +86,7 @@ const Auth = () => {
               <Button
                 type="submit"
                 disabled={!!loadingAction}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3"
+                className="flex-1 bg-brass-500 hover:bg-brass-600 text-night-950 font-display font-bold py-3"
               >
                 {loadingAction === 'signin' ? 'Signing in…' : 'Sign In'}
               </Button>
@@ -95,7 +95,7 @@ const Auth = () => {
                 onClick={handleSignUp}
                 disabled={!!loadingAction}
                 variant="outline"
-                className="flex-1 border-white/30 text-white hover:bg-white/10 font-bold py-3"
+                className="flex-1 border-plush-400/40 text-white hover:bg-white/10 font-display font-bold py-3"
               >
                 {loadingAction === 'signup' ? 'Creating…' : 'Sign Up'}
               </Button>

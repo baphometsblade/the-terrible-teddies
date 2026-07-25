@@ -46,7 +46,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       const isDev = import.meta.env?.DEV;
       return (
-        <div className="min-h-screen bg-gradient-to-b from-purple-900 via-indigo-900 to-black flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-b from-night-800 via-night-900 to-night-950 flex items-center justify-center p-4">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 max-w-lg w-full border border-white/20 shadow-2xl">
             <div className="text-center mb-6">
               <div className="text-6xl mb-4">🧸💔</div>
@@ -59,7 +59,7 @@ class ErrorBoundary extends React.Component {
             <div className="space-y-3">
               <button
                 onClick={this.handleReset}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg"
+                className="w-full bg-gradient-to-r from-purple-700 to-fuchsia-800 hover:from-purple-800 hover:to-fuchsia-900 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg"
               >
                 Try Again
               </button>

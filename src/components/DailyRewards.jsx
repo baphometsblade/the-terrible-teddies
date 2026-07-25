@@ -38,7 +38,7 @@ const DailyRewards = ({ onClose }) => {
       transition={{ delay: day * 0.1 }}
       className={`relative p-3 rounded-xl text-center ${
         isToday
-          ? 'bg-gradient-to-br from-yellow-500 to-orange-500 border-4 border-yellow-300 shadow-lg shadow-yellow-500/50'
+          ? 'bg-gradient-to-br from-brass-400 to-brass-500 border-4 border-brass-200 shadow-lg shadow-brass-400/50'
           : isClaimed
           ? 'bg-green-600/30 border-2 border-green-500'
           : 'bg-white/10 border-2 border-white/20'
@@ -46,7 +46,7 @@ const DailyRewards = ({ onClose }) => {
     >
       <div className={`text-xs font-bold mb-1 ${isToday ? 'text-black' : 'text-white/70'}`}>Day {day}</div>
       <div className="space-y-0.5">
-        {coins > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-yellow-400'}`}>🪙 {coins}</div>}
+        {coins > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-brass-300'}`}>🪙 {coins}</div>}
         {gems > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-cyan-400'}`}>💎 {gems}</div>}
         {cards > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-blue-400'}`}>🃏 x{cards}</div>}
         {packs > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-purple-400'}`}>📦 x{packs}</div>}
@@ -70,9 +70,9 @@ const DailyRewards = ({ onClose }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-indigo-900 to-purple-900 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden"
+        className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden"
       >
-        <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-6 text-center">
+        <div className="bg-gradient-to-r from-brass-400 to-brass-500 p-6 text-center">
           <h2 className="text-3xl font-bold text-black">🎁 Daily Rewards</h2>
           <p className="text-black/70 mt-1">Login streak: {consecutiveLogins} day{consecutiveLogins !== 1 ? 's' : ''}</p>
         </div>
@@ -103,14 +103,14 @@ const DailyRewards = ({ onClose }) => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500 rounded-xl p-6 text-center"
+                className="bg-gradient-to-r from-brass-400/15 to-brass-500/15 border border-brass-400 rounded-xl p-6 text-center"
               >
                 <h3 className="text-white text-xl font-bold mb-4">🎉 Today&apos;s Reward Claimed!</h3>
                 <div className="flex justify-center gap-8">
                   {reward.coins > 0 && (
                     <div className="text-center">
                       <div className="text-4xl mb-1">🪙</div>
-                      <div className="text-yellow-400 font-bold text-xl">+{reward.coins}</div>
+                      <div className="text-brass-300 font-bold text-xl">+{reward.coins}</div>
                     </div>
                   )}
                   {reward.gems > 0 && (

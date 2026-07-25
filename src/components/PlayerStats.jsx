@@ -46,7 +46,7 @@ const PlayerStats = ({ onClose }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-indigo-900 to-purple-900 rounded-2xl max-w-4xl w-full shadow-2xl my-8"
+        className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl max-w-4xl w-full shadow-2xl my-8"
       >
         <div className="bg-indigo-800 p-6 rounded-t-2xl flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-4">
@@ -78,7 +78,7 @@ const PlayerStats = ({ onClose }) => {
               )}
               <div className="mt-2">
                 <div className="flex items-center gap-2 text-sm text-white/70">
-                  <span className="bg-yellow-500 text-black px-2 py-0.5 rounded font-bold">Lv. {level}</span>
+                  <span className="bg-brass-400 text-night-950 px-2 py-0.5 rounded font-bold">Lv. {level}</span>
                   <span>{xp} / {xpForNext} XP</span>
                 </div>
                 <Progress value={xpProgress} className="h-2 mt-1 w-48" />
@@ -88,7 +88,7 @@ const PlayerStats = ({ onClose }) => {
 
           <div className="flex items-center gap-4">
             <div className="text-center">
-              <div className="text-yellow-400 text-2xl font-bold">{coins.toLocaleString()}</div>
+              <div className="text-brass-300 text-2xl font-bold">{coins.toLocaleString()}</div>
               <div className="text-white/60 text-xs">Coins</div>
             </div>
             <div className="text-center">
@@ -105,7 +105,7 @@ const PlayerStats = ({ onClose }) => {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`flex-1 py-3 text-center font-semibold transition-colors ${
-                activeTab === tab ? 'text-white border-b-2 border-yellow-400' : 'text-white/50 hover:text-white/80'
+                activeTab === tab ? 'text-white border-b-2 border-brass-300' : 'text-white/50 hover:text-white/80'
               }`}
             >
               {tab === 'stats' ? '📊 Statistics' : `🏆 Achievements (${completedAchievements.length}/${ACHIEVEMENTS.length})`}
@@ -122,7 +122,7 @@ const PlayerStats = ({ onClose }) => {
                   <StatCard icon="🎮" label="Battles" value={totalBattles} />
                   <StatCard icon="🏆" label="Victories" value={totalWins} color="text-green-400" />
                   <StatCard icon="💔" label="Defeats" value={totalLosses} color="text-red-400" />
-                  <StatCard icon="📈" label="Win Rate" value={`${winRate}%`} color="text-yellow-400" />
+                  <StatCard icon="📈" label="Win Rate" value={`${winRate}%`} color="text-brass-300" />
                 </div>
               </div>
 
@@ -130,7 +130,7 @@ const PlayerStats = ({ onClose }) => {
                 <h3 className="text-white font-bold mb-3">🔥 Streaks</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <StatCard icon="🔥" label="Current" value={currentWinStreak} color="text-orange-400" />
-                  <StatCard icon="⭐" label="Best Streak" value={bestWinStreak} color="text-yellow-400" />
+                  <StatCard icon="⭐" label="Best Streak" value={bestWinStreak} color="text-brass-300" />
                   <StatCard icon="📅" label="Login Streak" value={consecutiveLogins} />
                   <StatCard icon="📚" label={`Cards (${ALL_CARDS.length})`} value={ownedCards.length} color="text-blue-400" />
                 </div>
@@ -172,7 +172,7 @@ const PlayerStats = ({ onClose }) => {
                       </div>
                       <div className="text-white/60 text-sm">{achievement.description}</div>
                     </div>
-                    <div className={`font-bold ${isCompleted ? 'text-yellow-400' : 'text-yellow-400/50'}`}>
+                    <div className={`font-bold ${isCompleted ? 'text-brass-300' : 'text-brass-300/50'}`}>
                       +{achievement.reward} 🪙
                     </div>
                   </motion.div>

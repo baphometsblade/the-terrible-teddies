@@ -87,7 +87,7 @@ const Leaderboard = ({ onClose }) => {
   const playerRank = leaderboardData.filter(p => p.trophies > playerTrophies).length + 1;
 
   const getRankDisplay = (rank) => {
-    if (rank === 1) return { icon: '🥇', color: 'text-yellow-400', bg: 'from-yellow-600/30 to-amber-600/30' };
+    if (rank === 1) return { icon: '🥇', color: 'text-brass-300', bg: 'from-brass-600/25 to-amber-800/25' };
     if (rank === 2) return { icon: '🥈', color: 'text-gray-300', bg: 'from-gray-500/30 to-gray-600/30' };
     if (rank === 3) return { icon: '🥉', color: 'text-orange-400', bg: 'from-orange-600/30 to-amber-700/30' };
     return { icon: rank.toString(), color: 'text-white/70', bg: 'from-white/5 to-white/10' };
@@ -103,7 +103,7 @@ const Leaderboard = ({ onClose }) => {
         className={`
           flex items-center gap-3 p-3 rounded-xl mb-2 transition-all
           bg-gradient-to-r ${rankDisplay.bg}
-          ${isPlayer ? 'ring-2 ring-yellow-400 shadow-lg shadow-yellow-500/20' : 'hover:bg-white/5'}
+          ${isPlayer ? 'ring-2 ring-brass-300 shadow-lg shadow-brass-400/20' : 'hover:bg-white/5'}
           ${player.rank <= 3 ? 'border border-white/20' : ''}
         `}
       >
@@ -115,10 +115,10 @@ const Leaderboard = ({ onClose }) => {
 
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className={`font-bold ${isPlayer ? 'text-yellow-400' : 'text-white'}`}>
+            <span className={`font-bold ${isPlayer ? 'text-brass-300' : 'text-white'}`}>
               {player.name}
             </span>
-            {isPlayer && <span className="text-xs bg-yellow-500 text-black px-2 py-0.5 rounded">YOU</span>}
+            {isPlayer && <span className="text-xs bg-brass-400 text-night-950 px-2 py-0.5 rounded">YOU</span>}
             {player.streak >= 5 && <span className="text-xs">🔥{player.streak}</span>}
           </div>
           <div className="text-white/50 text-xs">
@@ -146,10 +146,10 @@ const Leaderboard = ({ onClose }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-indigo-900 via-purple-900 to-black rounded-2xl max-w-2xl w-full shadow-2xl border border-white/10 overflow-hidden max-h-[90vh] flex flex-col"
+        className="bg-gradient-to-b from-night-700 via-night-800 to-night-950 rounded-2xl max-w-2xl w-full shadow-2xl border border-plush-700/40 overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 flex justify-between items-center">
+        <div className="bg-gradient-to-r from-plush-800 to-night-700 border-b border-brass-400/30 p-4 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <span className="text-3xl">🏆</span> Leaderboard
           </h2>
@@ -186,8 +186,8 @@ const Leaderboard = ({ onClose }) => {
             {activeTab === 'global' && (
               <motion.div key="global" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 {/* Your Position */}
-                <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 rounded-xl p-4 mb-4">
-                  <div className="text-yellow-400 text-sm mb-2">Your Ranking</div>
+                <div className="bg-gradient-to-r from-brass-600/20 to-amber-800/20 border border-brass-400/30 rounded-xl p-4 mb-4">
+                  <div className="text-brass-300 text-sm mb-2">Your Ranking</div>
                   <LeaderboardRow
                     player={{
                       rank: playerRank,
@@ -261,12 +261,12 @@ const Leaderboard = ({ onClose }) => {
                     className={`
                       flex items-center gap-4 p-4 rounded-xl mb-3 border transition-all
                       ${typeof reward.rank === 'number' && reward.rank <= 3
-                        ? 'bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border-yellow-500/50'
+                        ? 'bg-gradient-to-r from-brass-600/20 to-amber-800/20 border-brass-400/50'
                         : 'bg-white/5 border-white/10'}
                     `}
                   >
                     <div className={`w-16 text-center font-bold ${
-                      reward.rank === 1 ? 'text-yellow-400 text-2xl' :
+                      reward.rank === 1 ? 'text-brass-300 text-2xl' :
                       reward.rank === 2 ? 'text-gray-300 text-2xl' :
                       reward.rank === 3 ? 'text-orange-400 text-2xl' :
                       'text-white/70 text-lg'
@@ -282,13 +282,13 @@ const Leaderboard = ({ onClose }) => {
                       <div className="text-white font-semibold">{reward.title}</div>
                       <div className="flex gap-4 mt-1 text-sm">
                         <span className="text-purple-400">💎 {reward.gems}</span>
-                        <span className="text-yellow-400">🪙 {reward.coins.toLocaleString()}</span>
+                        <span className="text-brass-300">🪙 {reward.coins.toLocaleString()}</span>
                         <span className="text-blue-400">📦 {reward.packs}</span>
                       </div>
                     </div>
 
                     {typeof reward.rank === 'number' && reward.rank <= 3 && (
-                      <div className="text-yellow-500 text-2xl">👑</div>
+                      <div className="text-brass-400 text-2xl">👑</div>
                     )}
                   </div>
                 ))}

@@ -107,7 +107,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-gradient-to-b from-indigo-900 to-purple-900 rounded-2xl p-8 max-w-md w-full border border-purple-500/50 shadow-2xl text-center"
+        className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-8 max-w-md w-full border border-plush-700/60 shadow-2xl text-center"
       >
         {phase === 'verifying' && (
           <>
@@ -133,7 +133,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
             </p>
             <Button
               onClick={onDone}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 font-bold text-lg"
+              className="bg-gradient-to-r from-purple-700 to-fuchsia-800 hover:from-purple-800 hover:to-fuchsia-900 text-white px-8 py-3 font-bold text-lg"
             >
               Awesome! Let&apos;s Play
             </Button>

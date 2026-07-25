@@ -296,7 +296,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         particleCount: 150,
         spread: 100,
         origin: { y: 0.6 },
-        colors: ['#FFD700', '#FFA500', '#FF6347', '#9370DB', '#00CED1'],
+        colors: ['#fbbf24', '#f59e0b', '#fde68a', '#a855f7', '#38bdf8'],
       });
 
       toast({
@@ -812,8 +812,35 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     return descriptions[ability] || "";
   };
 
+  // Game-over styling: a win gets the brass trophy panel (dark ink text), a
+  // loss gets the night back-of-the-bar panel (light text). One object instead
+  // of a ternary per element.
+  const go = winner === 'player'
+    ? {
+        panel: 'bg-gradient-to-b from-brass-400 to-brass-600',
+        title: 'text-night-950',
+        body: 'text-night-950/70',
+        quip: 'text-night-950/60',
+        box: 'bg-night-950/20',
+        boxTitle: 'text-night-950',
+        reward: 'text-night-950',
+        again: 'bg-night-950 text-plush-100 hover:bg-night-900',
+        menu: 'border-night-950 text-night-950 hover:bg-night-950/10',
+      }
+    : {
+        panel: 'bg-gradient-to-b from-night-700 to-night-900',
+        title: 'text-plush-100',
+        body: 'text-plush-100/70',
+        quip: 'text-plush-100/60',
+        box: 'bg-white/10',
+        boxTitle: 'text-plush-100',
+        reward: 'text-brass-300',
+        again: 'bg-brass-500 hover:bg-brass-600 text-night-950',
+        menu: 'border-plush-300 text-plush-100 hover:bg-white/10',
+      };
+
   return (
-    <div className="relative w-full h-screen bg-gradient-to-b from-amber-100 to-amber-200 overflow-hidden">
+    <div className="relative w-full h-screen bg-gradient-to-b from-night-900 to-night-950 worn overflow-hidden">
       {/* Ability Popup */}
       <AnimatePresence>
         {showAbilityPopup && (
@@ -821,10 +848,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             initial={{ opacity: 0, y: -50, scale: 0.5 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.5 }}
-            className="absolute top-1/3 left-1/2 transform -translate-x-1/2 z-50 bg-purple-600 text-white px-6 py-3 rounded-lg shadow-lg"
+            className="absolute top-1/3 left-1/2 transform -translate-x-1/2 z-50 bg-night-700 border-2 border-brass-400/60 text-plush-100 px-6 py-3 rounded-lg shadow-lg shadow-black/50"
           >
             <div className="text-lg font-bold">{showAbilityPopup.name}</div>
-            <div className="text-sm text-purple-200">{getAbilityDescription(showAbilityPopup.ability)}</div>
+            <div className="text-sm text-plush-300">{getAbilityDescription(showAbilityPopup.ability)}</div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -839,11 +866,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             <motion.div
               initial={{ scale: 0.5, y: 50 }}
               animate={{ scale: 1, y: 0 }}
-              className={`rounded-2xl p-8 text-center max-w-md w-full mx-4 ${
-                winner === 'player'
-                  ? 'bg-gradient-to-b from-yellow-500 to-amber-600'
-                  : 'bg-gradient-to-b from-gray-700 to-gray-900'
-              }`}
+              className={`rounded-2xl p-8 text-center max-w-md w-full mx-4 worn ${go.panel}`}
             >
               <motion.div
                 animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
@@ -852,23 +875,23 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               >
                 {winner === 'player' ? '🏆' : '💔'}
               </motion.div>
-              <h2 className={`text-4xl font-bold mb-2 ${winner === 'player' ? 'text-black' : 'text-white'}`}>
+              <h2 className={`text-4xl font-display font-bold mb-2 ${go.title}`}>
                 {winner === 'player' ? 'TOTAL FLUFFING VICTORY!' : 'ABSOLUTELY UNSTUFFED!'}
               </h2>
-              <p className={`mb-2 ${winner === 'player' ? 'text-black/70' : 'text-white/70'}`}>
+              <p className={`mb-2 ${go.body}`}>
                 {winner === 'player'
                   ? `${OPPONENT_NAME} rage-quit into the toy chest.`
                   : `${OPPONENT_NAME} is doing a victory lap. It's insufferable.`}
               </p>
               {endQuip && (
-                <p className={`mb-6 text-sm italic ${winner === 'player' ? 'text-black/60' : 'text-white/60'}`}>
+                <p className={`mb-6 text-sm italic ${go.quip}`}>
                   🧸 {OPPONENT_NAME}: “{endQuip}”
                 </p>
               )}
 
               {/* Rewards */}
-              <div className={`rounded-xl p-4 mb-6 ${winner === 'player' ? 'bg-black/20' : 'bg-white/10'}`}>
-                <div className={`text-sm font-semibold mb-3 ${winner === 'player' ? 'text-black' : 'text-white'}`}>
+              <div className={`rounded-xl p-4 mb-6 ${go.box}`}>
+                <div className={`text-sm font-semibold mb-3 ${go.boxTitle}`}>
                   Battle Rewards
                 </div>
                 <div className="flex justify-center gap-8">
@@ -879,7 +902,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                     className="text-center"
                   >
                     <div className="text-3xl mb-1">⭐</div>
-                    <div className={`font-bold ${winner === 'player' ? 'text-black' : 'text-yellow-400'}`}>
+                    <div className={`font-bold ${go.reward}`}>
                       +{battleRewards.xp} XP
                     </div>
                   </motion.div>
@@ -890,7 +913,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                     className="text-center"
                   >
                     <div className="text-3xl mb-1">🪙</div>
-                    <div className={`font-bold ${winner === 'player' ? 'text-black' : 'text-yellow-400'}`}>
+                    <div className={`font-bold ${go.reward}`}>
                       +{battleRewards.coins}
                     </div>
                   </motion.div>
@@ -905,13 +928,13 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                   transition={{ delay: 0.8 }}
                   className="mb-4 bg-black/30 rounded-xl p-3 text-center"
                 >
-                  <p className={`text-sm mb-2 ${winner === 'player' ? 'text-black/70' : 'text-white/70'}`}>
+                  <p className={`text-sm mb-2 ${go.body}`}>
                     {cardPacks === 0 ? '📦 Out of packs? Your squad isn\u2019t going to recruit itself.' : '💎 Low on gems? Chuck says being broke is a personality flaw.'}
                   </p>
                   <Button
                     size="sm"
                     onClick={onOpenShop ?? onBackToMenu}
-                    className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
+                    className="bg-night-800 hover:bg-night-700 text-plush-100 text-xs"
                   >
                     Visit Shop
                   </Button>
@@ -921,7 +944,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               <div className="flex gap-3 justify-center">
                 <Button
                   onClick={restartGame}
-                  className={`${winner === 'player' ? 'bg-black text-white hover:bg-black/80' : 'bg-amber-500 hover:bg-amber-600'}`}
+                  className={go.again}
                 >
                   Play Again
                 </Button>
@@ -929,7 +952,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                   <Button
                     onClick={onBackToMenu}
                     variant="outline"
-                    className={`${winner === 'player' ? 'border-black text-black hover:bg-black/10' : 'border-white text-white hover:bg-white/10'}`}
+                    className={go.menu}
                   >
                     Menu
                   </Button>
@@ -942,7 +965,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
       {/* Sound indicator */}
       <div
-        className="absolute top-20 left-4 z-40 bg-white/80 p-2 rounded-full shadow"
+        className="absolute top-20 left-4 z-40 bg-night-800/80 border border-plush-700/40 p-2 rounded-full shadow"
         title={storeSoundEnabled ? "Sound on" : "Sound off"}
       >
         {storeSoundEnabled ? '🔊' : '🔇'}
@@ -961,19 +984,19 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             transition={{ type: 'spring', stiffness: 350, damping: 22 }}
             className="absolute top-[8.5rem] left-4 z-30 max-w-[230px] pointer-events-none"
           >
-            <div className="relative bg-white/95 text-gray-900 text-sm font-semibold rounded-2xl rounded-tl-sm px-3 py-2 shadow-lg border border-red-300">
+            <div className="relative bg-plush-100/95 text-night-900 text-sm font-semibold rounded-2xl rounded-tl-sm px-3 py-2 shadow-lg border border-brass-400/60">
               <span className="mr-1">🧸</span>
               {oppQuip.text}
-              <div className="absolute -top-2 left-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-b-8 border-b-white/95" />
+              <div className="absolute -top-2 left-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-b-8 border-b-plush-100/95" />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Top bar - Opponent info */}
-      <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-red-900 to-red-700 flex items-center justify-between px-4 shadow-lg">
+      <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-red-950 to-red-900 flex items-center justify-between px-4 shadow-lg">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
+          <div className="w-10 h-10 bg-red-800 rounded-full border-2 border-red-300 flex items-center justify-center">
             <span className="text-white text-xl">🧸</span>
           </div>
           <div className="min-w-0">
@@ -988,14 +1011,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             <motion.div
               key={opponentHealth}
               initial={{ scale: 1.6, color: '#fca5a5' }}
-              animate={{ scale: 1, color: '#ffffff' }}
+              animate={{ scale: 1, color: '#ece6f2' }}
               transition={{ type: 'spring', stiffness: 400, damping: 14 }}
               className="font-bold text-lg sm:text-xl whitespace-nowrap"
             >
               {opponentHealth}/30
             </motion.div>
           </div>
-          <Progress value={(opponentHealth / 30) * 100} className="w-16 sm:w-32 h-3 bg-red-900" />
+          <Progress value={(opponentHealth / 30) * 100} className="w-16 sm:w-32 h-3 bg-red-950 [&>div]:bg-red-400" />
         </div>
       </div>
 
@@ -1030,10 +1053,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         {targetingMode && getValidTargets(playerField, opponentField).length === 0 && (
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="w-24 h-36 border-2 border-dashed border-red-400 rounded-lg flex items-center justify-center cursor-crosshair bg-red-100/50"
+            className="w-24 h-36 border-2 border-dashed border-red-500 rounded-lg flex items-center justify-center cursor-crosshair bg-red-950/40"
             {...pressable(attackOpponentDirectly, opponentField.some(c => c.type === 'trap') ? 'Strike (springs trap)' : 'Attack opponent directly')}
           >
-            <span className="text-red-500 text-xs text-center">
+            <span className="text-red-300 text-xs text-center">
               {opponentField.some(c => c.type === 'trap') ? 'Strike (springs trap)' : 'Attack Directly'}
             </span>
           </motion.div>
@@ -1042,19 +1065,19 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
       {/* Battle log — full panel on md+ screens; on phones it would cover the
           opponent's cards, so show only the latest entry as a compact ticker. */}
-      <div className="hidden md:block absolute top-20 right-4 w-48 bg-black/60 rounded-lg p-2 max-h-40 overflow-y-auto">
-        <div className="text-amber-300 text-xs font-bold mb-1">Battle Log</div>
+      <div className="hidden md:block absolute top-20 right-4 w-48 bg-night-950/80 border border-plush-700/30 rounded-lg p-2 max-h-40 overflow-y-auto">
+        <div className="text-brass-300 text-xs font-display font-bold mb-1">Battle Log</div>
         {battleLog.map(entry => (
-          <div key={entry.id} className="text-white text-xs py-0.5 border-b border-white/10">
+          <div key={entry.id} className="text-plush-200 text-xs py-0.5 border-b border-white/10">
             {entry.message}
           </div>
         ))}
       </div>
 
       {/* Main battlefield */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4/5 h-1/3 bg-amber-300/50 rounded-xl border-4 border-amber-600 shadow-inner flex flex-col justify-between p-4">
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4/5 h-1/3 bg-gradient-to-b from-felt-700 to-felt-800 rounded-xl border-4 border-[#0a1a12] stitched shadow-[inset_0_4px_24px_rgba(0,0,0,0.5)] flex flex-col justify-between p-4">
         {/* Phase indicator */}
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-amber-600 text-white px-3 sm:px-4 py-1 rounded-t-lg font-bold text-sm sm:text-base whitespace-nowrap">
+        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-brass-500 text-night-950 px-3 sm:px-4 py-1 rounded-t-lg font-display font-bold text-sm sm:text-base whitespace-nowrap">
           Turn {turnCount} - {phase.charAt(0).toUpperCase() + phase.slice(1)} Phase
           {currentTurn === 'opponent' && ' (Opponent)'}
         </div>
@@ -1064,13 +1087,13 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           <motion.div
             className="flex items-center space-x-2 rounded-full px-2 py-0.5"
             animate={playerMomentum >= MOMENTUM_MAX
-              ? { boxShadow: ['0 0 0px #f59e0b', '0 0 12px #f59e0b', '0 0 0px #f59e0b'] }
+              ? { boxShadow: ['0 0 0px #fbbf24', '0 0 12px #fbbf24', '0 0 0px #fbbf24'] }
               : { boxShadow: '0 0 0px transparent' }}
             transition={playerMomentum >= MOMENTUM_MAX ? { duration: 1.2, repeat: Infinity } : {}}
           >
-            <span className={`text-xs font-semibold ${playerMomentum >= MOMENTUM_MAX ? 'text-orange-600' : 'text-amber-800'}`}>Momentum</span>
-            <Progress value={playerMomentum * 10} className="w-24 h-2" />
-            <span className={`text-xs font-bold ${playerMomentum >= MOMENTUM_MAX ? 'text-orange-600' : 'text-amber-800'}`}>{playerMomentum}/10</span>
+            <span className={`text-xs font-semibold ${playerMomentum >= MOMENTUM_MAX ? 'text-brass-200' : 'text-brass-300'}`}>Momentum</span>
+            <Progress value={playerMomentum * 10} className="w-24 h-2 bg-night-950/50 [&>div]:bg-brass-400" />
+            <span className={`text-xs font-bold ${playerMomentum >= MOMENTUM_MAX ? 'text-brass-200' : 'text-brass-300'}`}>{playerMomentum}/10</span>
           </motion.div>
         </div>
 
@@ -1081,7 +1104,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         {battleLog.length > 0 && (
           <div
             aria-live="polite"
-            className="md:hidden self-center max-w-full bg-black/60 text-white text-xs px-3 py-1 rounded-full truncate pointer-events-none"
+            className="md:hidden self-center max-w-full bg-night-950/80 text-plush-200 text-xs px-3 py-1 rounded-full truncate pointer-events-none"
           >
             {battleLog[battleLog.length - 1].message}
           </div>
@@ -1094,14 +1117,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               key={card.instanceId}
               whileHover={{ y: -5 }}
               className={`relative
-                ${selectedCard?.instanceId === card.instanceId ? 'ring-2 ring-yellow-400' : ''}
+                ${selectedCard?.instanceId === card.instanceId ? 'ring-2 ring-brass-300' : ''}
                 ${card.hasAttacked ? 'opacity-60' : 'cursor-pointer'}
               `}
               {...pressable(() => phase === 'battle' && !card.hasAttacked && selectCardForAttack(card), `Select ${card.name} to attack`)}
             >
               <TeddyCard teddy={card} />
               {card.hasAttacked && (
-                <div className="text-center text-xs text-gray-500 mt-1">Exhausted</div>
+                <div className="text-center text-xs text-plush-400 mt-1">Exhausted</div>
               )}
               {card.stealthActive && (
                 <div className="absolute top-0 left-0 right-0 bg-purple-500 text-white text-[8px] text-center rounded-t">
@@ -1109,7 +1132,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                 </div>
               )}
               {card.ability === 'taunt' && !card.stealthActive && (
-                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-black text-[8px] px-1 rounded">
+                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-brass-400 text-night-950 text-[8px] px-1 rounded">
                   TAUNT
                 </div>
               )}
@@ -1139,19 +1162,19 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       </div>
 
       {/* Bottom bar - Player info */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-r from-green-900 to-green-700 flex items-center justify-between px-4 shadow-lg">
+      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-r from-felt-900 to-felt-800 flex items-center justify-between px-4 shadow-lg">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg">
             <span className="text-white text-xl">🧸</span>
           </div>
           <div className="min-w-0">
             <div className="text-white font-bold truncate max-w-[7rem] sm:max-w-none">{playerName}</div>
-            <div className="text-green-200 text-xs whitespace-nowrap">Deck: {playerDeck.length} | Hand: {playerHand.length}</div>
+            <div className="text-emerald-200 text-xs whitespace-nowrap">Deck: {playerDeck.length} | Hand: {playerHand.length}</div>
           </div>
         </div>
         <div className="flex items-center space-x-2 sm:space-x-4">
           <div className="flex items-center space-x-1 sm:space-x-2">
-            <span className="text-yellow-300 text-lg">⚡</span>
+            <span className="text-brass-300 text-lg">⚡</span>
             <span className="text-white font-bold">{playerEnergy}</span>
           </div>
           <div className="text-right">
@@ -1159,14 +1182,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             <motion.div
               key={playerHealth}
               initial={{ scale: 1.6, color: '#fca5a5' }}
-              animate={{ scale: 1, color: '#ffffff' }}
+              animate={{ scale: 1, color: '#ece6f2' }}
               transition={{ type: 'spring', stiffness: 400, damping: 14 }}
               className="font-bold text-lg sm:text-xl whitespace-nowrap"
             >
               {playerHealth}/30
             </motion.div>
           </div>
-          <Progress value={(playerHealth / 30) * 100} className="w-16 sm:w-32 h-3 bg-green-900" />
+          <Progress value={(playerHealth / 30) * 100} className="w-16 sm:w-32 h-3 bg-felt-900 [&>div]:bg-emerald-400" />
         </div>
       </div>
 
@@ -1179,7 +1202,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       <div className="absolute top-[calc(66.67%+0.5rem)] inset-x-2 flex flex-row justify-center gap-2 sm:top-auto sm:inset-x-auto sm:bottom-20 sm:right-4 sm:flex-col sm:w-36">
         {targetingMode && (
           <Button
-            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-gray-500 hover:bg-gray-600 text-white"
+            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-plush-700 hover:bg-plush-800 text-white"
             onClick={cancelTargeting}
           >
             Cancel
@@ -1187,7 +1210,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         )}
         {!gameOver && playerMomentum >= MOMENTUM_MAX && currentTurn === 'player' && (
           <Button
-            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold animate-pulse"
+            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-gradient-to-r from-brass-400 to-brass-500 hover:from-brass-500 hover:to-brass-600 text-night-950 font-display font-bold animate-pulse"
             onClick={rally}
           >
             ⚡ Rally!
@@ -1195,7 +1218,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         )}
         {!gameOver && phase === 'main' && currentTurn === 'player' && (
           <Button
-            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-red-500 hover:bg-red-600 text-white"
+            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-red-600 hover:bg-red-700 text-white font-display"
             onClick={goToBattlePhase}
           >
             ⚔️ Battle
@@ -1203,7 +1226,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         )}
         {!gameOver && (phase === 'main' || phase === 'battle') && currentTurn === 'player' && (
           <Button
-            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-green-500 hover:bg-green-600 text-white"
+            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-emerald-600 hover:bg-emerald-700 text-white font-display"
             onClick={endTurn}
           >
             End Turn
@@ -1221,7 +1244,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
       {/* Targeting mode indicator */}
       {targetingMode && (
-        <div className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-yellow-500 text-black px-3 py-2 rounded-lg font-bold animate-pulse">
+        <div className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-brass-400 text-night-950 px-3 py-2 rounded-lg font-bold animate-pulse">
           Pick a victim for {selectedCard?.name}!
         </div>
       )}

@@ -80,22 +80,22 @@ const Shop = ({ onClose }) => {
       {...pressable(() => handleBuyItem(item), `Buy ${item.name} for ${item.price} ${item.currency}`)}
     >
       <div className={`p-4 h-full flex flex-col items-center justify-center text-center
-        ${item.type === 'legendary' ? 'bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600' :
-          item.type === 'premium' ? 'bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500' :
-          'bg-gradient-to-br from-blue-600 to-indigo-700'}
+        ${item.type === 'legendary' ? 'bg-gradient-to-br from-brass-500 via-brass-600 to-amber-900' :
+          item.type === 'premium' ? 'bg-gradient-to-br from-purple-700 via-purple-800 to-fuchsia-900' :
+          'bg-gradient-to-br from-sky-800 to-indigo-900'}
         ${featured ? 'min-h-[280px]' : 'min-h-[160px]'}`}>
         {item.type === 'legendary' && (
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
             animate={{ x: ['-100%', '200%'] }}
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
           />
         )}
         <div className={`${featured ? 'text-6xl' : 'text-4xl'} mb-2`}>{item.icon}</div>
-        <h3 className={`font-bold text-white ${featured ? 'text-2xl' : 'text-lg'}`}>{item.name}</h3>
+        <h3 className={`font-display font-bold text-white ${featured ? 'text-2xl' : 'text-lg'}`}>{item.name}</h3>
         <p className={`text-white/80 ${featured ? 'text-base' : 'text-xs'} mb-3`}>{item.description}</p>
         <div className={`flex items-center gap-1 px-4 py-2 rounded-full font-bold
-          ${item.currency === 'gems' ? 'bg-purple-900/50 text-purple-200' : 'bg-yellow-900/50 text-yellow-200'}`}>
+          ${item.currency === 'gems' ? 'bg-night-950/50 text-purple-200' : 'bg-night-950/50 text-brass-200'}`}>
           <span>{item.currency === 'gems' ? '💎' : '🪙'}</span>
           <span>{item.price}</span>
         </div>
@@ -109,18 +109,18 @@ const Shop = ({ onClose }) => {
       whileTap={{ scale: 0.98 }}
       {...pressable(() => !processing && handleGemPurchase(bundle), `Buy ${bundle.gems} gems for $${bundle.price.toFixed(2)}`)}
       className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all
-        ${bundle.popular ? 'border-yellow-400 shadow-lg shadow-yellow-500/30' : 'border-white/20 hover:border-white/40'}
-        bg-gradient-to-br from-purple-900/80 to-indigo-900/80`}
+        ${bundle.popular ? 'border-brass-400 shadow-lg shadow-brass-400/30' : 'border-plush-700/60 hover:border-plush-400/60'}
+        bg-gradient-to-br from-night-700/90 to-night-800/90`}
     >
       {bundle.popular && (
-        <div className="absolute top-0 left-0 right-0 bg-yellow-500 text-black text-xs font-bold py-1 text-center">BEST VALUE</div>
+        <div className="absolute top-0 left-0 right-0 bg-brass-400 text-night-950 text-xs font-bold py-1 text-center">BEST VALUE</div>
       )}
       <div className={`p-4 text-center ${bundle.popular ? 'pt-8' : ''}`}>
         <div className="text-4xl mb-2">💎</div>
         <div className="text-2xl font-bold text-white">{bundle.gems.toLocaleString()}</div>
         {bundle.bonus > 0 && <div className="text-green-400 text-sm font-semibold">+{bundle.bonus} BONUS</div>}
         {bundle.bonus > 0 && <div className="text-purple-300 text-xs mt-1">{bundle.gems + bundle.bonus} total</div>}
-        <div className="mt-3 bg-white text-purple-900 px-4 py-2 rounded-full font-bold">${bundle.price.toFixed(2)}</div>
+        <div className="mt-3 bg-brass-400 text-night-950 px-4 py-2 rounded-full font-bold">${bundle.price.toFixed(2)}</div>
       </div>
     </motion.div>
   );
@@ -131,20 +131,20 @@ const Shop = ({ onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-label="Shop"
-      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-night-950/95 flex items-center justify-center p-4 overflow-y-auto"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-indigo-900 via-purple-900 to-black rounded-2xl max-w-4xl w-full shadow-2xl border border-white/10 my-4"
+        className="bg-gradient-to-b from-night-700 via-night-800 to-night-950 rounded-2xl max-w-4xl w-full shadow-2xl border border-plush-700/40 worn my-4"
       >
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-t-2xl flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+        <div className="bg-gradient-to-r from-plush-800 to-night-700 border-b border-brass-400/30 p-4 rounded-t-2xl flex justify-between items-center">
+          <h2 className="text-2xl font-display font-bold text-white flex items-center gap-2">
             <span className="text-3xl">🏪</span> Shop
           </h2>
           <div className="flex items-center gap-4">
-            <div className="bg-yellow-500/20 px-3 py-1 rounded-full flex items-center gap-2">
-              <span>🪙</span><span className="text-yellow-400 font-bold">{coins.toLocaleString()}</span>
+            <div className="bg-brass-400/15 px-3 py-1 rounded-full flex items-center gap-2">
+              <span>🪙</span><span className="text-brass-300 font-bold">{coins.toLocaleString()}</span>
             </div>
             <div className="bg-purple-500/20 px-3 py-1 rounded-full flex items-center gap-2">
               <span>💎</span><span className="text-purple-300 font-bold">{gems}</span>
@@ -166,7 +166,7 @@ const Shop = ({ onClose }) => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 py-4 text-center font-semibold transition-all ${
-                activeTab === tab.id ? 'text-white bg-white/10 border-b-2 border-purple-400' : 'text-white/50 hover:text-white/80'
+                activeTab === tab.id ? 'text-brass-300 bg-white/10 border-b-2 border-brass-400' : 'text-white/50 hover:text-white/80'
               }`}
             >
               <span className="mr-2">{tab.icon}</span>{tab.label}
@@ -202,11 +202,11 @@ const Shop = ({ onClose }) => {
 
             {activeTab === 'special' && (
               <motion.div key="special" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                <div className="bg-gradient-to-r from-yellow-600/30 to-orange-600/30 border border-yellow-500/50 rounded-xl p-6 mb-6">
+                <div className="bg-gradient-to-r from-brass-600/25 to-amber-900/30 border border-brass-400/50 rounded-xl p-6 mb-6">
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div>
-                      <div className="text-yellow-400 text-sm font-semibold mb-1">NEW PLAYER BOOST</div>
-                      <h3 className="text-2xl font-bold text-white mb-2">Starter Gem Pack</h3>
+                      <div className="text-brass-300 text-sm font-semibold mb-1">NEW PLAYER BOOST</div>
+                      <h3 className="text-2xl font-display font-bold text-white mb-2">Starter Gem Pack</h3>
                       <p className="text-white/70 mb-3">A big gem boost to get you started.</p>
                       <ul className="text-white/80 text-sm space-y-1">
                         <li>💎 300 Gems</li>
@@ -215,12 +215,12 @@ const Shop = ({ onClose }) => {
                       </ul>
                     </div>
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-yellow-400">$4.99</div>
-                      <div className="text-green-400 text-sm font-semibold">vs 160 gems in the $2.99 pack</div>
+                      <div className="text-3xl font-bold text-brass-300">$4.99</div>
+                      <div className="text-emerald-300 text-sm font-semibold">vs 160 gems in the $2.99 pack</div>
                       <Button
                         onClick={() => handleGemPurchase({ id: 'starter_bundle', gems: 300, bonus: 0, price: 4.99 })}
                         disabled={processing}
-                        className="mt-3 bg-yellow-500 hover:bg-yellow-600 text-black font-bold"
+                        className="mt-3 bg-brass-400 hover:bg-brass-500 text-night-950 font-bold"
                       >
                         {processing ? '…' : 'Buy Now'}
                       </Button>
@@ -228,7 +228,7 @@ const Shop = ({ onClose }) => {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-purple-600/30 to-pink-600/30 border border-purple-500/50 rounded-xl p-4">
+                  <div className="bg-gradient-to-br from-purple-800/40 to-fuchsia-900/30 border border-purple-500/50 rounded-xl p-4">
                     <h4 className="font-bold text-white mb-2">💎 Mega Gem Pack</h4>
                     <p className="text-white/60 text-sm mb-3">A one-time gem boost — credited instantly.</p>
                     <div className="flex justify-between items-center">
@@ -237,18 +237,18 @@ const Shop = ({ onClose }) => {
                         size="sm"
                         onClick={() => handleGemPurchase({ id: 'weekly_gem_pass', gems: 350, bonus: 0, price: 5.99 })}
                         disabled={processing}
-                        className="bg-purple-500 hover:bg-purple-600"
+                        className="bg-purple-700 hover:bg-purple-800"
                       >
                         $5.99
                       </Button>
                     </div>
                   </div>
-                  <div className="bg-gradient-to-br from-green-600/20 to-teal-600/20 border border-green-500/30 rounded-xl p-4 opacity-60">
+                  <div className="bg-gradient-to-br from-emerald-800/25 to-teal-900/25 border border-emerald-500/30 rounded-xl p-4 opacity-60">
                     <h4 className="font-bold text-white mb-2">🪙 Coin Doubler</h4>
                     <p className="text-white/60 text-sm mb-3">Double coins from battles for 24h!</p>
                     <div className="flex justify-between items-center">
-                      <span className="text-green-300">Worth 500+ coins</span>
-                      <Button size="sm" disabled className="bg-green-500/50 text-black cursor-not-allowed">Coming Soon</Button>
+                      <span className="text-emerald-300">Worth 500+ coins</span>
+                      <Button size="sm" disabled className="bg-emerald-700/50 text-white/70 cursor-not-allowed">Coming Soon</Button>
                     </div>
                   </div>
                 </div>

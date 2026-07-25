@@ -71,6 +71,63 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-night-900 text-plush-100;
+  }
+}
+
+@layer utilities {
+  /* Dashed "thread" inset seam, like the stitching on a plush toy.
+     Drawn on a pseudo-element so it stacks on top of any bg-gradient. */
+  .stitched {
+    position: relative;
+  }
+  .stitched::before {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border: 2px dashed rgba(251, 191, 36, 0.4);
+    border-radius: 0.75rem;
+    pointer-events: none;
+  }
+
+  /* Softer pale-thread variant for cards and small panels. */
+  .stitched-plush {
+    position: relative;
+  }
+  .stitched-plush::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 1.5px dashed rgba(236, 230, 242, 0.28);
+    border-radius: 0.5rem;
+    pointer-events: none;
+  }
+
+  /* Worn-fabric grain: lamplight pooling at the top, threadbare shadow
+     patches below. Overlay pseudo-element; subtle enough to sit over text. */
+  .worn {
+    position: relative;
+  }
+  .worn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background-image: radial-gradient(
+        ellipse 80% 50% at 50% 0%,
+        rgba(245, 158, 11, 0.07),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 60% 40% at 15% 100%,
+        rgba(0, 0, 0, 0.28),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 50% 35% at 85% 85%,
+        rgba(0, 0, 0, 0.22),
+        transparent 70%
+      );
   }
 }

@@ -34,18 +34,18 @@ const MainMenu = ({
   const xpProgress = (xp / xpForNext) * 100;
 
   const menuOptions = [
-    { id: 'battle', title: 'Battle', description: 'Go make Chuck cry', icon: '⚔️', color: 'from-red-500 to-orange-500', action: onStartGame, badge: currentWinStreak > 0 ? `🔥 ${currentWinStreak}` : null },
-    { id: 'challenges', title: 'Challenges', description: 'Prove you have a problem', icon: '🎯', color: 'from-orange-500 to-red-600', action: onChallenges, badge: dailyAvailable ? '!' : null },
-    { id: 'battlepass', title: 'Battle Pass', description: 'Grind. Flex. Repeat.', icon: '🏆', color: 'from-yellow-500 to-orange-600', action: onBattlePass, badge: '⭐', highlight: true },
-    { id: 'shop', title: 'Shop', description: 'Spend money you don’t have', icon: '🏪', color: 'from-emerald-500 to-green-600', action: onShop, badge: '💎' },
-    { id: 'packs', title: 'Card Packs', description: 'Gambling, but cuter', icon: '📦', color: 'from-purple-500 to-pink-500', action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks}` : null, highlight: cardPacks > 0 },
-    { id: 'leaderboard', title: 'Rankings', description: 'See who has no life', icon: '🏅', color: 'from-indigo-500 to-purple-600', action: onLeaderboard },
-    { id: 'deck', title: 'Deck Builder', description: 'Assemble your goon squad', icon: '🃏', color: 'from-blue-500 to-indigo-500', action: onDeckBuilder },
-    { id: 'collection', title: 'Collection', description: 'Your emotional support army', icon: '🧸', color: 'from-amber-500 to-yellow-500', action: onCollection },
+    { id: 'battle', title: 'Battle', description: 'Go make Chuck cry', icon: '⚔️', color: 'from-red-700 to-red-900', action: onStartGame, badge: currentWinStreak > 0 ? `🔥 ${currentWinStreak}` : null },
+    { id: 'challenges', title: 'Challenges', description: 'Prove you have a problem', icon: '🎯', color: 'from-orange-700 to-red-900', action: onChallenges, badge: dailyAvailable ? '!' : null },
+    { id: 'battlepass', title: 'Battle Pass', description: 'Grind. Flex. Repeat.', icon: '🏆', color: 'from-brass-500 to-brass-600', action: onBattlePass, badge: '⭐', highlight: true },
+    { id: 'shop', title: 'Shop', description: 'Spend money you don’t have', icon: '🏪', color: 'from-emerald-700 to-emerald-900', action: onShop, badge: '💎' },
+    { id: 'packs', title: 'Card Packs', description: 'Gambling, but cuter', icon: '📦', color: 'from-purple-700 to-fuchsia-900', action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks}` : null, highlight: cardPacks > 0 },
+    { id: 'leaderboard', title: 'Rankings', description: 'See who has no life', icon: '🏅', color: 'from-indigo-700 to-purple-900', action: onLeaderboard },
+    { id: 'deck', title: 'Deck Builder', description: 'Assemble your goon squad', icon: '🃏', color: 'from-sky-700 to-indigo-900', action: onDeckBuilder },
+    { id: 'collection', title: 'Collection', description: 'Your emotional support army', icon: '🧸', color: 'from-brass-600 to-amber-900', action: onCollection },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-purple-800 to-indigo-900 flex flex-col p-4 md:p-6 overflow-y-auto">
+    <div className="min-h-screen bg-gradient-to-b from-night-800 via-night-900 to-night-950 flex flex-col p-4 md:p-6 overflow-y-auto">
       {/* Animated background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {[...Array(12)].map((_, i) => (
@@ -86,10 +86,10 @@ const MainMenu = ({
           <div>
             <div className="text-white font-bold">{playerName}</div>
             <div className="flex items-center gap-2">
-              <span className="bg-yellow-500 text-black px-2 py-0.5 rounded text-xs font-bold">Lv. {level}</span>
-              <div className="w-24"><Progress value={xpProgress} className="h-2" /></div>
+              <span className="bg-brass-400 text-night-950 px-2 py-0.5 rounded text-xs font-bold">Lv. {level}</span>
+              <div className="w-24"><Progress value={xpProgress} className="h-2 bg-night-950/50 [&>div]:bg-brass-400" /></div>
             </div>
-            <div className="text-white/50 text-xs mt-0.5">
+            <div className="text-plush-400 text-xs mt-0.5">
               {totalWins} wins • {consecutiveLogins} day streak
             </div>
           </div>
@@ -104,7 +104,7 @@ const MainMenu = ({
             onClick={onDailyRewards}
             className={`relative p-3 rounded-xl transition-all ${
               dailyAvailable
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500 shadow-lg shadow-yellow-500/50'
+                ? 'bg-gradient-to-r from-brass-400 to-brass-500 shadow-lg shadow-brass-400/50'
                 : 'bg-white/10'
             }`}
             whileHover={{ scale: 1.05 }}
@@ -120,14 +120,14 @@ const MainMenu = ({
             )}
           </motion.button>
 
-          <div className="bg-yellow-500/20 px-3 py-2 rounded-xl flex items-center gap-2">
+          <div className="bg-brass-400/15 px-3 py-2 rounded-xl flex items-center gap-2">
             <span className="text-lg">🪙</span>
-            <span className="text-yellow-400 font-bold">{coins.toLocaleString()}</span>
+            <span className="text-brass-300 font-bold">{coins.toLocaleString()}</span>
           </div>
 
           <div className="bg-purple-500/20 px-3 py-2 rounded-xl flex items-center gap-2">
             <span className="text-lg">💎</span>
-            <span className="text-purple-400 font-bold">{gems}</span>
+            <span className="text-purple-300 font-bold">{gems}</span>
           </div>
 
           <motion.button
@@ -159,10 +159,10 @@ const MainMenu = ({
         transition={{ duration: 0.8, type: 'spring' }}
         className="text-center mb-6 relative z-10"
       >
-        <h1 className="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300 mb-2 drop-shadow-lg">
+        <h1 className="text-4xl md:text-6xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-brass-200 via-brass-300 to-brass-200 mb-2 drop-shadow-lg">
           Terrible Teddies
         </h1>
-        <p className="text-purple-200 text-base md:text-lg">Bad bears. Worse decisions.</p>
+        <p className="text-plush-300 text-base md:text-lg">Bad bears. Worse decisions.</p>
         <div className="flex justify-center gap-2 mt-2">
           <span className="text-2xl">🧸</span>
           <span className="text-2xl">⚔️</span>
@@ -186,10 +186,10 @@ const MainMenu = ({
                 className={`
                   w-full h-40 md:h-48 cursor-pointer overflow-hidden
                   bg-gradient-to-b ${option.color}
-                  border-4 border-white/30 shadow-xl
+                  border-4 border-white/15 shadow-xl shadow-black/40
                   transition-all duration-300
                   ${hoveredOption === option.id ? 'scale-105 shadow-2xl' : 'scale-100'}
-                  ${option.highlight ? 'ring-4 ring-yellow-400 ring-offset-2 ring-offset-purple-900' : ''}
+                  ${option.highlight ? 'ring-4 ring-brass-300 ring-offset-2 ring-offset-night-900' : ''}
                 `}
                 {...pressable(option.action, option.title)}
               >
@@ -207,7 +207,7 @@ const MainMenu = ({
                   >
                     {option.icon}
                   </motion.div>
-                  <h2 className="text-base md:text-lg font-bold text-center">{option.title}</h2>
+                  <h2 className="text-base md:text-lg font-display font-bold text-center">{option.title}</h2>
                   <p className="text-xs text-white/80 text-center hidden md:block">{option.description}</p>
                 </div>
               </Card>
@@ -220,7 +220,7 @@ const MainMenu = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
-        className="text-center text-purple-300/50 text-xs relative z-10 mt-4"
+        className="text-center text-plush-400/60 text-xs relative z-10 mt-4"
       >
         <p>Version 1.0 • No teddies were harmed (lie)</p>
       </motion.div>

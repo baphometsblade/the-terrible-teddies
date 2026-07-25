@@ -76,9 +76,9 @@ const Settings = ({ onClose }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl max-w-lg w-full shadow-2xl"
+        className="bg-gradient-to-b from-night-900 to-night-700 rounded-2xl max-w-lg w-full shadow-2xl"
       >
-        <div className="bg-gray-800 p-6 rounded-t-2xl flex justify-between items-center border-b border-white/10">
+        <div className="bg-night-800 p-6 rounded-t-2xl flex justify-between items-center border-b border-white/10">
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">⚙️ Settings</h2>
           <button onClick={onClose} className="text-white/70 hover:text-white text-2xl" aria-label="Close settings">×</button>
         </div>
@@ -167,7 +167,7 @@ const Settings = ({ onClose }) => {
           </div>
         </div>
 
-        <div className="bg-gray-800/50 p-4 rounded-b-2xl text-center">
+        <div className="bg-night-800/50 p-4 rounded-b-2xl text-center">
           <p className="text-white/30 text-sm">Terrible Teddies v1.0</p>
         </div>
       </motion.div>

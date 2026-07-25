@@ -89,11 +89,11 @@ const Tutorial = ({ onClose, onStartGame }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-purple-900 to-indigo-900 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden"
+        className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl max-w-2xl w-full shadow-2xl border border-plush-700/40 worn overflow-hidden"
       >
         {/* Header */}
-        <div className="bg-purple-800 p-4 flex justify-between items-center">
-          <h2 className="text-white font-bold text-xl">How to Play</h2>
+        <div className="bg-night-800 border-b border-brass-400/30 p-4 flex justify-between items-center">
+          <h2 className="text-white font-display font-bold text-xl">How to Play</h2>
           <button
             onClick={onClose}
             className="text-white/70 hover:text-white text-2xl"
@@ -104,16 +104,16 @@ const Tutorial = ({ onClose, onStartGame }) => {
         </div>
 
         {/* Progress dots */}
-        <div className="flex justify-center gap-2 py-4 bg-purple-800/50">
+        <div className="flex justify-center gap-2 py-4 bg-night-800/50">
           {TUTORIAL_STEPS.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentStep(index)}
               className={`w-3 h-3 rounded-full transition-all ${
                 index === currentStep
-                  ? 'bg-yellow-400 scale-125'
+                  ? 'bg-brass-400 scale-125'
                   : index < currentStep
-                  ? 'bg-green-400'
+                  ? 'bg-emerald-500'
                   : 'bg-white/30'
               }`}
             />
@@ -133,11 +133,11 @@ const Tutorial = ({ onClose, onStartGame }) => {
               <span className="text-6xl">{step.icon}</span>
             </div>
 
-            <h3 className="text-2xl font-bold text-white text-center mb-4">
+            <h3 className="text-2xl font-display font-bold text-white text-center mb-4">
               {step.title}
             </h3>
 
-            <p className="text-purple-200 text-center whitespace-pre-line leading-relaxed">
+            <p className="text-plush-300 text-center whitespace-pre-line leading-relaxed">
               {step.content}
             </p>
 
@@ -147,7 +147,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
                 {exampleCards.map(card => (
                   <div key={card.id} className="transform scale-90">
                     <TeddyCard teddy={card} />
-                    <div className="text-center text-xs text-purple-300 mt-1">
+                    <div className="text-center text-xs text-plush-300 mt-1">
                       {card.type.charAt(0).toUpperCase() + card.type.slice(1)}
                     </div>
                   </div>
@@ -158,7 +158,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
         </AnimatePresence>
 
         {/* Navigation */}
-        <div className="bg-purple-800/50 p-4 flex justify-between items-center">
+        <div className="bg-night-800/50 p-4 flex justify-between items-center">
           <Button
             variant="outline"
             onClick={prevStep}
@@ -175,14 +175,14 @@ const Tutorial = ({ onClose, onStartGame }) => {
           {isLastStep ? (
             <Button
               onClick={onStartGame}
-              className="bg-green-500 hover:bg-green-600"
+              className="bg-emerald-600 hover:bg-emerald-700 font-display"
             >
               Start Playing! 🎮
             </Button>
           ) : (
             <Button
               onClick={nextStep}
-              className="bg-yellow-500 hover:bg-yellow-600 text-black"
+              className="bg-brass-400 hover:bg-brass-500 text-night-950"
             >
               Next →
             </Button>

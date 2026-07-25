@@ -6,13 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 
-const RARITY_COLORS = {
-  common: 'from-gray-400 to-gray-600',
-  uncommon: 'from-green-400 to-green-600',
-  rare: 'from-blue-400 to-blue-600',
-  epic: 'from-purple-400 to-purple-600',
-  legendary: 'from-yellow-400 to-orange-500',
-};
+import { RARITY } from '@/lib/rarity';
 
 const DECK_SIZE = 10;
 const MAX_COPIES = 2;
@@ -103,11 +97,11 @@ const DeckBuilder = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="text-4xl font-bold text-white mb-6 text-center">Deck Builder</h1>
+      <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-brass-300 to-brass-500 bg-clip-text text-transparent mb-6 text-center">Deck Builder</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <div className="bg-white/10 rounded-xl p-4">
+          <div className="bg-night-800/60 border border-plush-700/40 rounded-xl p-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-white">Your Cards ({ownedCardObjects.length})</h2>
             </div>
@@ -118,7 +112,7 @@ const DeckBuilder = () => {
                   key={type}
                   onClick={() => setFilter(type)}
                   className={`px-3 py-1 rounded text-sm font-semibold transition-all ${
-                    filter === type ? 'bg-white text-purple-900' : 'bg-white/20 text-white hover:bg-white/30'
+                    filter === type ? 'bg-brass-400 text-night-950' : 'bg-white/10 text-plush-300 hover:bg-white/20'
                   }`}
                 >
                   {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -138,10 +132,10 @@ const DeckBuilder = () => {
                     className={`relative cursor-pointer ${isMaxed ? 'opacity-50' : ''}`}
                     {...pressable(() => !isMaxed && addToDeck(card), `Add ${card.name} to deck`)}
                   >
-                    <div className={`absolute inset-0 rounded-lg blur-md -z-10 opacity-30 bg-gradient-to-r ${RARITY_COLORS[card.rarity]}`} />
+                    <div className={`absolute inset-0 rounded-lg blur-md -z-10 opacity-30 bg-gradient-to-r ${RARITY[card.rarity].gradient}`} />
                     <TeddyCard teddy={card} isDisabled={isMaxed} />
                     {copiesInDeck > 0 && (
-                      <div className="absolute -top-2 -right-2 bg-yellow-500 text-black w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold z-10">
+                      <div className="absolute -top-2 -right-2 bg-brass-400 text-night-950 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold z-10">
                         {copiesInDeck}
                       </div>
                     )}
@@ -157,7 +151,7 @@ const DeckBuilder = () => {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="bg-white/10 rounded-xl p-4 sticky top-4">
+          <div className="bg-night-800/60 border border-plush-700/40 rounded-xl p-4 sticky top-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-white">Deck ({deck.length}/{DECK_SIZE})</h2>
               <Button variant="outline" size="sm" onClick={clearDeck} className="text-red-400 border-red-400 hover:bg-red-400/20">
@@ -185,7 +179,7 @@ const DeckBuilder = () => {
                 count > 0 ? (
                   <div
                     key={rarity}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-r ${RARITY_COLORS[rarity]}`}
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-r ${RARITY[rarity].gradient}`}
                     title={rarity}
                   >
                     {count}
@@ -195,7 +189,7 @@ const DeckBuilder = () => {
             </div>
 
             <div className="text-white/70 text-sm mb-4">
-              Avg Cost: <span className="text-yellow-400 font-bold">{avgCost} ⚡</span>
+              Avg Cost: <span className="text-brass-300 font-bold">{avgCost} ⚡</span>
             </div>
 
             <div className="space-y-1 max-h-64 overflow-y-auto mb-4">
@@ -206,10 +200,10 @@ const DeckBuilder = () => {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className={`flex items-center justify-between rounded-lg p-2 bg-gradient-to-r ${RARITY_COLORS[card.rarity]} bg-opacity-20 border border-white/10`}
+                    className={`flex items-center justify-between rounded-lg p-2 bg-gradient-to-r ${RARITY[card.rarity].gradient} bg-opacity-20 border border-white/10`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-yellow-400 font-bold w-5">{card.cost}</span>
+                      <span className="text-brass-300 font-bold w-5">{card.cost}</span>
                       <span className="text-white text-sm truncate max-w-[120px]">{card.name}</span>
                     </div>
                     <button onClick={() => removeFromDeck(card)} className="text-red-400 hover:text-red-300 text-lg px-1" aria-label={`Remove ${card.name} from deck`}>×</button>
@@ -226,7 +220,7 @@ const DeckBuilder = () => {
               <Button
                 onClick={handleSaveDeck}
                 disabled={deck.length !== DECK_SIZE}
-                className={`w-full ${deck.length === DECK_SIZE ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-500 cursor-not-allowed'}`}
+                className={`w-full ${deck.length === DECK_SIZE ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-plush-700 cursor-not-allowed'}`}
               >
                 {deck.length === DECK_SIZE ? 'Set as Current Deck' : `Need ${DECK_SIZE - deck.length} more`}
               </Button>
@@ -272,7 +266,7 @@ const DeckBuilder = () => {
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
-              className="bg-gray-800 rounded-xl p-6 max-w-sm w-full"
+              className="bg-night-700 border border-plush-700/60 rounded-xl p-6 max-w-sm w-full"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-white text-xl font-bold mb-4">Save Deck</h3>
@@ -287,7 +281,7 @@ const DeckBuilder = () => {
                 autoFocus
               />
               <div className="flex gap-2">
-                <Button onClick={handleSaveDeck} disabled={!deckName.trim()} className="flex-1 bg-green-500 hover:bg-green-600">Save</Button>
+                <Button onClick={handleSaveDeck} disabled={!deckName.trim()} className="flex-1 bg-emerald-600 hover:bg-emerald-700">Save</Button>
                 <Button onClick={() => setShowSaveDialog(false)} variant="outline" className="flex-1 text-white border-white/30">Cancel</Button>
               </div>
             </motion.div>

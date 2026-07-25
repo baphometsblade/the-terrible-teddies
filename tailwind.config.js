@@ -17,7 +17,46 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        display: [
+          '"Baloo 2"',
+          "ui-rounded",
+          "system-ui",
+          "-apple-system",
+          "sans-serif",
+        ],
+      },
       colors: {
+        // "Toy chest after dark" palette — plush nursery shapes, dive-bar light.
+        night: {
+          950: "#120c1c",
+          900: "#1a1226",
+          800: "#241a35",
+          700: "#2f2344",
+          600: "#3b2d54",
+        },
+        plush: {
+          900: "#332944",
+          800: "#413456",
+          700: "#524368",
+          400: "#9b8ab3",
+          300: "#b6a8ca",
+          200: "#d3c9e0",
+          100: "#ece6f2",
+        },
+        brass: {
+          600: "#b45309",
+          500: "#d97706",
+          400: "#f59e0b",
+          300: "#fbbf24",
+          200: "#fde68a",
+        },
+        felt: {
+          900: "#0f2419",
+          800: "#163423",
+          700: "#1d442e",
+          600: "#275a3d",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

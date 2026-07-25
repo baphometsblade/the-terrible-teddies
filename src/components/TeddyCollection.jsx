@@ -1,19 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import TeddyCard from './TeddyCard';
+import TeddyCard, { ArtOrEmoji } from './TeddyCard';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
+import { RARITY, RARITY_ORDER as RARITY_ORDER_ASC } from '@/lib/rarity';
 
-const RARITY_COLORS = {
-  common: 'from-gray-400 to-gray-600',
-  uncommon: 'from-green-400 to-green-600',
-  rare: 'from-blue-400 to-blue-600',
-  epic: 'from-purple-400 to-purple-600',
-  legendary: 'from-yellow-400 to-orange-500',
-};
-
-const RARITY_ORDER = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
+// Collection sorts and lists rarest-first.
+const RARITY_ORDER = [...RARITY_ORDER_ASC].reverse();
 
 const TeddyCollection = () => {
   const { ownedCards } = useGameStore();
@@ -52,22 +46,22 @@ const TeddyCollection = () => {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6 text-center">
-        <h1 className="text-4xl font-bold text-white mb-4">Card Collection</h1>
+        <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-brass-300 to-brass-500 bg-clip-text text-transparent mb-4">Card Collection</h1>
         <div className="flex justify-center items-center gap-6 mb-4 flex-wrap">
-          <div className="bg-white/10 px-4 py-2 rounded-xl">
-            <div className="text-2xl font-bold text-white">{totalOwned} / {totalCards}</div>
-            <div className="text-white/50 text-xs">Collected</div>
+          <div className="bg-night-800/60 border border-plush-700/40 px-4 py-2 rounded-xl">
+            <div className="text-2xl font-bold text-plush-100">{totalOwned} / {totalCards}</div>
+            <div className="text-plush-400 text-xs">Collected</div>
           </div>
-          <div className="bg-white/10 px-4 py-2 rounded-xl">
-            <div className="text-2xl font-bold text-yellow-400">{completionPercent}%</div>
-            <div className="text-white/50 text-xs">Complete</div>
+          <div className="bg-night-800/60 border border-plush-700/40 px-4 py-2 rounded-xl">
+            <div className="text-2xl font-bold text-brass-300">{completionPercent}%</div>
+            <div className="text-plush-400 text-xs">Complete</div>
           </div>
         </div>
 
         <div className="flex justify-center gap-3 mb-4 flex-wrap">
           {rarityStats.map(({ rarity, total, owned }) => (
             <div key={rarity} className="text-center">
-              <div className={`w-12 h-12 rounded-full mx-auto mb-1 flex items-center justify-center bg-gradient-to-br ${RARITY_COLORS[rarity]} border-2 border-white/20`}>
+              <div className={`w-12 h-12 rounded-full mx-auto mb-1 flex items-center justify-center bg-gradient-to-br ${RARITY[rarity].gradient} border-2 border-white/20`}>
                 <span className="text-white font-bold text-xs">{owned}/{total}</span>
               </div>
               <div className="text-white/50 text-xs capitalize">{rarity}</div>
@@ -80,13 +74,13 @@ const TeddyCollection = () => {
         <div className="flex bg-white/10 rounded-lg overflow-hidden">
           <button
             onClick={() => setShowOwned(true)}
-            className={`px-4 py-2 text-sm font-semibold transition-colors ${showOwned ? 'bg-green-500 text-white' : 'text-white/70 hover:text-white'}`}
+            className={`px-4 py-2 text-sm font-semibold transition-colors ${showOwned ? 'bg-emerald-600 text-white' : 'text-plush-300 hover:text-white'}`}
           >
             Owned ({totalOwned})
           </button>
           <button
             onClick={() => setShowOwned(false)}
-            className={`px-4 py-2 text-sm font-semibold transition-colors ${!showOwned ? 'bg-gray-500 text-white' : 'text-white/70 hover:text-white'}`}
+            className={`px-4 py-2 text-sm font-semibold transition-colors ${!showOwned ? 'bg-plush-700 text-white' : 'text-plush-300 hover:text-white'}`}
           >
             Missing ({totalCards - totalOwned})
           </button>
@@ -98,7 +92,7 @@ const TeddyCollection = () => {
               key={type}
               onClick={() => setFilter(type)}
               className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-                filter === type ? 'bg-white text-purple-900' : 'bg-white/10 text-white/70 hover:bg-white/20'
+                filter === type ? 'bg-brass-400 text-night-950' : 'bg-white/10 text-plush-300 hover:bg-white/20'
               }`}
             >
               {type === 'all' ? 'All' : type.charAt(0).toUpperCase() + type.slice(1)}
@@ -114,9 +108,9 @@ const TeddyCollection = () => {
               className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all capitalize ${
                 rarityFilter === rarity
                   ? rarity === 'all'
-                    ? 'bg-white text-purple-900'
-                    : `bg-gradient-to-r ${RARITY_COLORS[rarity]} text-white`
-                  : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    ? 'bg-brass-400 text-night-950'
+                    : `bg-gradient-to-r ${RARITY[rarity].gradient} text-white`
+                  : 'bg-white/10 text-plush-300 hover:bg-white/20'
               }`}
             >
               {rarity}
@@ -137,7 +131,7 @@ const TeddyCollection = () => {
               {...pressable(() => setSelectedCard(card), `View ${card.name}`)}
               className={`cursor-pointer relative ${!card.owned ? 'opacity-40' : ''}`}
             >
-              <div className={`absolute inset-0 rounded-lg blur-lg -z-10 opacity-40 bg-gradient-to-r ${RARITY_COLORS[card.rarity]}`} />
+              <div className={`absolute inset-0 rounded-lg blur-lg -z-10 opacity-40 bg-gradient-to-r ${RARITY[card.rarity].gradient}`} />
               <TeddyCard teddy={card} />
               {!card.owned && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
@@ -166,22 +160,30 @@ const TeddyCollection = () => {
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
-              className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-6 max-w-md w-full border-4"
+              className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-6 max-w-md w-full border-4 worn"
               style={{
                 borderColor: {
-                  common: '#9CA3AF', uncommon: '#22C55E', rare: '#3B82F6', epic: '#A855F7', legendary: '#F59E0B',
+                  common: '#a8a29e', uncommon: '#10b981', rare: '#0ea5e9', epic: '#a855f7', legendary: '#f59e0b',
                 }[selectedCard.rarity],
               }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex gap-6">
-                <div className="relative">
-                  <div className={`absolute inset-0 rounded-lg blur-xl -z-10 bg-gradient-to-r ${RARITY_COLORS[selectedCard.rarity]}`} />
-                  <TeddyCard teddy={selectedCard} />
+                <div className="relative self-start">
+                  <div className={`absolute inset-0 rounded-lg blur-xl -z-10 bg-gradient-to-r ${RARITY[selectedCard.rarity].gradient}`} />
+                  {/* Big art frame: the card's illustration at gallery size,
+                      falling back to the emoji cast when no art has shipped. */}
+                  <div className={`w-32 h-44 rounded-xl border-2 ${RARITY[selectedCard.rarity].border} bg-gradient-to-b ${RARITY[selectedCard.rarity].bg} stitched-plush overflow-hidden flex items-center justify-center`}>
+                    <ArtOrEmoji
+                      teddy={selectedCard}
+                      emojiClassName="text-7xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
+                      imgClassName="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex-1">
-                  <div className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase mb-2 bg-gradient-to-r ${RARITY_COLORS[selectedCard.rarity]} text-white`}>
+                  <div className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase mb-2 bg-gradient-to-r ${RARITY[selectedCard.rarity].gradient} text-white`}>
                     {selectedCard.rarity}
                   </div>
                   <h2 className="text-2xl font-bold text-white mb-2">{selectedCard.name}</h2>
@@ -189,11 +191,11 @@ const TeddyCollection = () => {
 
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between"><span className="text-white/50">Type</span><span className="text-white capitalize">{selectedCard.type}</span></div>
-                    <div className="flex justify-between"><span className="text-white/50">Cost</span><span className="text-yellow-400">{selectedCard.cost} ⚡</span></div>
+                    <div className="flex justify-between"><span className="text-white/50">Cost</span><span className="text-brass-300">{selectedCard.cost} ⚡</span></div>
                     {selectedCard.type === 'action' && (
                       <>
                         <div className="flex justify-between"><span className="text-white/50">Attack</span><span className="text-red-400">{selectedCard.attack}</span></div>
-                        <div className="flex justify-between"><span className="text-white/50">Defense</span><span className="text-blue-400">{selectedCard.defense}</span></div>
+                        <div className="flex justify-between"><span className="text-white/50">Defense</span><span className="text-sky-300">{selectedCard.defense}</span></div>
                       </>
                     )}
                     {selectedCard.ability && selectedCard.ability !== 'none' && (

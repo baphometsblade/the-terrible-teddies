@@ -158,8 +158,8 @@ function App() {
 
   if (!isSupabaseConfigured) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-950 flex items-center justify-center p-6">
-        <div className="max-w-md text-center bg-white/10 border border-white/20 rounded-2xl p-8">
+      <div className="min-h-screen bg-gradient-to-b from-night-800 to-night-950 flex items-center justify-center p-6">
+        <div className="max-w-md text-center bg-night-800/60 border border-plush-700/40 rounded-2xl p-8">
           <div className="text-6xl mb-4">🧸🔧</div>
           <h1 className="text-2xl font-bold text-white mb-2">Setup needed</h1>
           <p className="text-white/70">
@@ -177,7 +177,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-purple-900 flex items-center justify-center">
+      <div className="min-h-screen bg-night-900 flex items-center justify-center">
         <div className="text-center">
           <motion.div
             animate={{ y: [0, -20, 0] }}
@@ -196,7 +196,7 @@ function App() {
 
   const BackButton = () => (
     <Button
-      className="absolute top-4 left-4 z-40 bg-purple-600 hover:bg-purple-700"
+      className="absolute top-4 left-4 z-40 bg-night-700 hover:bg-night-600 border border-plush-700/60 text-plush-100"
       onClick={() => navigateTo('menu')}
     >
       ← Menu
@@ -217,7 +217,7 @@ function App() {
         );
       case 'deck':
         return (
-          <div className="min-h-screen bg-gradient-to-b from-blue-900 to-purple-900 p-4 md:p-8">
+          <div className="min-h-screen bg-gradient-to-b from-night-800 via-night-900 to-night-950 p-4 md:p-8">
             <BackButton />
             <div className="pt-12">
               <DeckBuilder />
@@ -226,7 +226,7 @@ function App() {
         );
       case 'collection':
         return (
-          <div className="min-h-screen bg-gradient-to-b from-amber-900 to-orange-900 p-4 md:p-8">
+          <div className="min-h-screen bg-gradient-to-b from-night-800 via-night-900 to-night-950 p-4 md:p-8">
             <BackButton />
             <div className="pt-12">
               <TeddyCollection />

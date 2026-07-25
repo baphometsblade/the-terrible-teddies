@@ -6,21 +6,7 @@ import { useGameStore } from '../stores/gameStore';
 import confetti from 'canvas-confetti';
 import { useDialog } from '@/hooks/useDialog';
 
-const RARITY_COLORS = {
-  common: 'from-gray-400 to-gray-600',
-  uncommon: 'from-green-400 to-green-600',
-  rare: 'from-blue-400 to-blue-600',
-  epic: 'from-purple-400 to-purple-600',
-  legendary: 'from-yellow-400 to-orange-500',
-};
-
-const RARITY_GLOW = {
-  common: 'shadow-gray-400/50',
-  uncommon: 'shadow-green-400/50',
-  rare: 'shadow-blue-400/50',
-  epic: 'shadow-purple-400/50',
-  legendary: 'shadow-yellow-400/80',
-};
+import { RARITY, RARITY_ORDER } from '@/lib/rarity';
 
 const CardPackOpening = ({ onClose }) => {
   const { cardPacks, premiumPacks, legendaryPacks, openCardPack, coins, gems, buyShopItem, getNextPackType } = useGameStore();
@@ -46,16 +32,11 @@ const CardPackOpening = ({ onClose }) => {
   }, []);
 
   const fireConfetti = (rarity) => {
-    const colors = {
-      legendary: ['#FFD700', '#FFA500', '#FF8C00'],
-      epic: ['#9333EA', '#A855F7', '#C084FC'],
-      rare: ['#3B82F6', '#60A5FA', '#93C5FD'],
-    };
     confetti({
       particleCount: rarity === 'legendary' ? 150 : rarity === 'epic' ? 100 : 50,
       spread: 70,
       origin: { y: 0.6 },
-      colors: colors[rarity] || ['#FFFFFF'],
+      colors: RARITY[rarity]?.hex || ['#FFFFFF'],
     });
   };
 
@@ -131,17 +112,17 @@ const CardPackOpening = ({ onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-label="Card packs"
-      className="fixed inset-0 z-50 bg-gradient-to-b from-black/95 to-purple-900/95 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-gradient-to-b from-night-950/95 to-night-800/95 flex items-center justify-center p-4 overflow-y-auto"
     >
       <div className="max-w-5xl w-full">
         {/* Header */}
         <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-brass-300 to-brass-500">
             ✨ Card Packs
           </h1>
           <div className="flex items-center gap-3">
-            <div className="bg-yellow-500/20 px-4 py-2 rounded-lg flex items-center gap-2 border border-yellow-500/30">
-              <span className="text-yellow-400">🪙</span>
+            <div className="bg-brass-400/15 px-4 py-2 rounded-lg flex items-center gap-2 border border-brass-400/30">
+              <span className="text-brass-300">🪙</span>
               <span className="text-white font-bold">{coins.toLocaleString()}</span>
             </div>
             <div className="bg-purple-500/20 px-4 py-2 rounded-lg flex items-center gap-2 border border-purple-500/30">
@@ -168,7 +149,7 @@ const CardPackOpening = ({ onClose }) => {
         </div>
 
         {/* Main content */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-white/10">
+        <div className="bg-night-800/60 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-plush-700/40 worn">
           {/* Pack display / Card reveal */}
           <div className="flex flex-col items-center justify-center min-h-[350px]">
             <AnimatePresence mode="wait">
@@ -194,35 +175,35 @@ const CardPackOpening = ({ onClose }) => {
                     className={`
                       w-56 h-72 rounded-2xl
                       ${nextPackType === 'legendary'
-                        ? 'bg-gradient-to-br from-yellow-500 via-orange-600 to-red-700 border-4 border-yellow-300'
+                        ? 'bg-gradient-to-br from-brass-500 via-brass-600 to-red-900 border-4 border-brass-300'
                         : nextPackType === 'premium'
-                        ? 'bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 border-4 border-blue-300'
-                        : 'bg-gradient-to-br from-purple-600 via-pink-600 to-indigo-700 border-4 border-yellow-400'
+                        ? 'bg-gradient-to-br from-sky-700 via-purple-800 to-indigo-900 border-4 border-sky-300'
+                        : 'bg-gradient-to-br from-purple-800 via-fuchsia-900 to-night-800 border-4 border-brass-400'
                       }
-                      shadow-2xl shadow-purple-500/50
+                      shadow-2xl shadow-black/60
                       flex flex-col items-center justify-center
                       ${totalPacks > 0 && !isOpening ? 'hover:scale-105 transition-transform' : 'opacity-50'}
                     `}
                   >
                     <div className="text-7xl mb-4">{nextPackType === 'legendary' ? '⭐' : nextPackType === 'premium' ? '💎' : '📦'}</div>
-                    <div className="text-white font-bold text-2xl mb-1">
+                    <div className="text-white font-display font-bold text-2xl mb-1">
                       {nextPackType === 'legendary' ? 'Legendary Pack' : nextPackType === 'premium' ? 'Premium Pack' : 'Terrible Teddies'}
                     </div>
-                    <div className={`text-sm font-semibold ${nextPackType === 'legendary' ? 'text-yellow-300' : nextPackType === 'premium' ? 'text-blue-300' : 'text-yellow-300'}`}>
+                    <div className={`text-sm font-semibold ${nextPackType === 'legendary' ? 'text-brass-200' : nextPackType === 'premium' ? 'text-sky-300' : 'text-brass-300'}`}>
                       {nextPackType === 'legendary' ? 'GUARANTEED LEGENDARY!' : nextPackType === 'premium' ? 'GUARANTEED RARE+' : 'CARD PACK'}
                     </div>
                     <div className="text-white/70 text-xs mt-2">{nextPackType === 'legendary' ? '10 Cards Inside' : '5 Cards Inside'}</div>
                     <div className="mt-4 flex gap-1">
-                      {Object.keys(RARITY_COLORS).map((rarity) => (
+                      {RARITY_ORDER.map((rarity) => (
                         <div
                           key={rarity}
-                          className={`w-3 h-3 rounded-full bg-gradient-to-r ${RARITY_COLORS[rarity]}`}
+                          className={`w-3 h-3 rounded-full bg-gradient-to-r ${RARITY[rarity].gradient}`}
                           title={rarity}
                         />
                       ))}
                     </div>
                   </motion.div>
-                  <div className="absolute inset-0 rounded-2xl bg-purple-500/30 blur-2xl -z-10 animate-pulse" />
+                  <div className="absolute inset-0 rounded-2xl bg-brass-400/20 blur-2xl -z-10 animate-pulse" />
                 </motion.div>
               )}
 
@@ -250,10 +231,10 @@ const CardPackOpening = ({ onClose }) => {
                           <>
                             <div className={`
                               absolute inset-0 rounded-lg blur-xl -z-10
-                              bg-gradient-to-r ${RARITY_COLORS[card.rarity]}
+                              bg-gradient-to-r ${RARITY[card.rarity].gradient}
                               opacity-60
                             `} />
-                            <div className={`${RARITY_GLOW[card.rarity]} shadow-2xl`}>
+                            <div className={`${RARITY[card.rarity].glow} shadow-2xl`}>
                               <TeddyCard teddy={card} />
                             </div>
                             {card.isNew && (
@@ -278,7 +259,7 @@ const CardPackOpening = ({ onClose }) => {
                         ) : (
                           <motion.div
                             animate={{ rotateY: [180, 180] }}
-                            className="w-24 h-36 bg-gradient-to-br from-purple-800 to-indigo-800 rounded-lg border-2 border-purple-500 flex items-center justify-center"
+                            className="w-24 h-36 bg-gradient-to-br from-night-700 to-night-800 rounded-lg border-2 border-plush-700 stitched-plush flex items-center justify-center"
                           >
                             <span className="text-3xl">?</span>
                           </motion.div>
@@ -299,7 +280,7 @@ const CardPackOpening = ({ onClose }) => {
                         </div>
                       )}
                       {dupeCoins > 0 && (
-                        <div className="text-yellow-400 text-base">
+                        <div className="text-brass-300 text-base">
                           🪙 +{dupeCoins} coins for duplicate cards
                         </div>
                       )}
@@ -317,10 +298,10 @@ const CardPackOpening = ({ onClose }) => {
                 onClick={handleOpenPack}
                 className={`text-white px-8 py-3 text-lg font-bold shadow-lg ${
                   nextPackType === 'legendary'
-                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600'
+                    ? 'bg-gradient-to-r from-brass-400 to-brass-500 hover:from-brass-500 hover:to-brass-600'
                     : nextPackType === 'premium'
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
-                    : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
+                    ? 'bg-gradient-to-r from-sky-600 to-purple-700 hover:from-sky-700 hover:to-purple-800'
+                    : 'bg-gradient-to-r from-purple-700 to-fuchsia-800 hover:from-purple-800 hover:to-fuchsia-900'
                 }`}
               >
                 🎁 Open {nextPackType === 'legendary' ? 'Legendary' : nextPackType === 'premium' ? 'Premium' : ''} Pack ({totalPacks})
@@ -338,7 +319,7 @@ const CardPackOpening = ({ onClose }) => {
                 {totalPacks > 0 && (
                   <Button
                     onClick={() => { resetView(); handleOpenPack(); }}
-                    className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3"
+                    className="bg-purple-700 hover:bg-purple-800 text-white px-6 py-3"
                   >
                     Open Another ({totalPacks})
                   </Button>
@@ -357,7 +338,7 @@ const CardPackOpening = ({ onClose }) => {
           {/* Shop */}
           {!pulledCards && !isOpening && (
             <div className="mt-10 pt-6 border-t border-white/10">
-              <h3 className="text-white font-bold text-xl mb-4 text-center">💰 Shop</h3>
+              <h3 className="text-white font-display font-bold text-xl mb-4 text-center">💰 Shop</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <ShopItem
                   icon="📦"
@@ -423,11 +404,11 @@ const CardPackOpening = ({ onClose }) => {
           <div className="mt-6 text-center">
             <div className="text-white/50 text-xs mb-1">Drop Rates</div>
             <div className="flex justify-center flex-wrap gap-3 text-xs">
-              <span className="text-gray-400">Common 49%</span>
-              <span className="text-green-400">Uncommon 30%</span>
-              <span className="text-blue-400">Rare 15%</span>
-              <span className="text-purple-400">Epic 5%</span>
-              <span className="text-yellow-400">Legendary 1%</span>
+              <span className="text-stone-300">Common 49%</span>
+              <span className="text-emerald-300">Uncommon 30%</span>
+              <span className="text-sky-300">Rare 15%</span>
+              <span className="text-purple-300">Epic 5%</span>
+              <span className="text-brass-300">Legendary 1%</span>
             </div>
           </div>
         </div>
@@ -449,14 +430,14 @@ const ShopItem = ({ icon, name, description, price, currency, canAfford, onClick
     `}
   >
     {badge && (
-      <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">
+      <div className="absolute -top-2 -right-2 bg-gradient-to-r from-brass-400 to-brass-500 text-night-950 text-[9px] px-2 py-0.5 rounded-full font-bold">
         {badge}
       </div>
     )}
     <div className="text-3xl mb-1">{icon}</div>
     <div className="text-white text-sm font-bold">{name}</div>
     <div className="text-white/60 text-xs mb-2">{description}</div>
-    <div className={`text-xs font-bold ${currency === 'coins' ? 'text-yellow-400' : 'text-purple-400'}`}>
+    <div className={`text-xs font-bold ${currency === 'coins' ? 'text-brass-300' : 'text-purple-300'}`}>
       {currency === 'coins' ? '🪙' : '💎'} {price}
     </div>
   </button>
