@@ -51,6 +51,28 @@ open the full-size image. Opt out with `--no-monitor` (JS) or
 above whenever your local Fooocus is grinding through a batch.
 `ART_MONITOR_PORT` / `ART_DIR` override the defaults.
 
+## Using your GPU
+
+The python runner auto-detects and uses a GPU — CUDA (NVIDIA) or MPS
+(Apple silicon) — falling back to CPU only when neither is present. On a
+GPU the full 72-card batch takes minutes instead of hours:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cu121
+pip install diffusers transformers accelerate safetensors pillow
+npm run art:generate -- --manifest /tmp/art-manifest.json
+python3 scripts/generate-card-art-diffusers.py /tmp/art-manifest.json public/cards --force
+```
+
+It prints the detected GPU and VRAM at startup; `SD_DEVICE=cuda|mps|cpu`
+forces a specific device. On CUDA it loads fp16 weights and enables
+attention slicing, so 8 GB cards handle 768×1024 fine.
+
+Note: a cloud session (Claude Code on the web) runs in a container with
+no GPU and cannot reach the GPU in your own machine — run the command
+above locally, or expose a local Fooocus through a tunnel (below) and use
+the endpoint runner instead.
+
 If this repo runs in a cloud session, a Fooocus instance on your own
 machine needs a tunnel to be reachable, e.g.
 `cloudflared tunnel --url http://127.0.0.1:8888` or ngrok — pass the public

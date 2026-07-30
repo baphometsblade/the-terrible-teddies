@@ -16,6 +16,7 @@ Env:
             subjects at card resolution. SD_MODEL=stabilityai/sd-turbo with
             SD_WIDTH/SD_HEIGHT=512 stays available for fast/low-RAM runs.)
   SD_STEPS  inference steps (default 4)
+  SD_DEVICE force cuda | mps | cpu (default: auto-detect, GPU preferred)
   SD_WIDTH  render width in px (default 768)
   SD_HEIGHT render height in px (default 1024)
 
@@ -131,13 +132,43 @@ def main() -> int:
     steps = int(os.environ.get("SD_STEPS", "4"))
     width = int(os.environ.get("SD_WIDTH", "768"))
     height = int(os.environ.get("SD_HEIGHT", "1024"))
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    dtype = torch.float16 if device == "cuda" else torch.float32
+
+    # GPU is used automatically whenever CUDA (NVIDIA) or MPS (Apple silicon)
+    # is present — roughly 20-40x faster than CPU for this batch. Force a
+    # device with SD_DEVICE=cuda|mps|cpu.
+    if os.environ.get("SD_DEVICE"):
+        device = os.environ["SD_DEVICE"]
+    elif torch.cuda.is_available():
+        device = "cuda"
+    elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
+    dtype = torch.float32 if device == "cpu" else torch.float16
+
+    if device == "cuda":
+        name = torch.cuda.get_device_name(0)
+        vram = torch.cuda.get_device_properties(0).total_memory / 1024**3
+        print(f"GPU: {name} ({vram:.1f} GB VRAM)", flush=True)
+    elif device == "cpu":
+        print("no GPU detected — running on CPU (slow). See README for the GPU path.", flush=True)
 
     print(f"loading {model} on {device} ({len(todo)} cards to render)…", flush=True)
-    pipe = AutoPipelineForText2Image.from_pretrained(model, torch_dtype=dtype)
+    load_kwargs = {"torch_dtype": dtype}
+    if device == "cuda":
+        # fp16 weights: half the download, half the VRAM, same output.
+        load_kwargs.update(variant="fp16", use_safetensors=True)
+    try:
+        pipe = AutoPipelineForText2Image.from_pretrained(model, **load_kwargs)
+    except Exception:
+        # Not every repo publishes an fp16 variant — fall back to the default.
+        load_kwargs.pop("variant", None)
+        pipe = AutoPipelineForText2Image.from_pretrained(model, **load_kwargs)
     pipe = pipe.to(device)
     pipe.set_progress_bar_config(disable=True)
+    if device == "cuda":
+        # Keeps 8 GB cards comfortable at 768x1024; no-op on big GPUs.
+        pipe.enable_attention_slicing()
 
     def to_card_webp(img: Image.Image, dest: str) -> int:
         # center-crop to 3:4, resize to 768x1024, quality-step to <= 150 KB
