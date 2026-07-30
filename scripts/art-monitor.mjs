@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
+import { spawn } from 'node:child_process';
 
 export const STATUS_PATH = path.join(os.tmpdir(), 'card-art-status.json');
 
@@ -161,11 +162,30 @@ export function startMonitor({ dir, port = Number(process.env.ART_MONITOR_PORT ?
     res.end('not found');
   });
   return new Promise((resolve) => {
+    server.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        // A monitor is already serving (e.g. npm run art:monitor) — reuse it.
+        console.log(`🧸 art monitor already running: http://127.0.0.1:${port}`);
+        resolve(null);
+      } else {
+        throw err;
+      }
+    });
     server.listen(port, '127.0.0.1', () => {
       console.log(`🧸 art monitor: http://127.0.0.1:${port}  (watching ${absDir})`);
       resolve(server);
     });
   });
+}
+
+// Best-effort: pop the dashboard in the default browser (no-op on headless).
+export function openInBrowser(url) {
+  const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+  try {
+    spawn(cmd, [url], { detached: true, stdio: 'ignore', shell: process.platform === 'win32' }).unref();
+  } catch {
+    /* headless or no opener — the printed URL still works */
+  }
 }
 
 // Progress reporting shared by the generator runners.

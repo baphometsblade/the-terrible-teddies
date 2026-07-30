@@ -20,9 +20,13 @@ Output matches the JS pipeline's contract: public/cards/<id>.webp,
 import io
 import json
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
+import webbrowser
 
 STATUS_PATH = os.path.join(tempfile.gettempdir(), "card-art-status.json")
 
@@ -50,6 +54,40 @@ def make_status(items):
 
     flush()
     return state, update, flush
+
+
+def ensure_monitor():
+    """Force the watch window during generation (skip with ART_NO_MONITOR=1).
+
+    Reuses a monitor that is already serving; otherwise spawns
+    `node scripts/art-monitor.mjs` detached (it survives the batch so the
+    finished gallery stays clickable) and opens the dashboard in a browser.
+    """
+    if os.environ.get("ART_NO_MONITOR"):
+        return
+    port = os.environ.get("ART_MONITOR_PORT", "8877")
+    url = f"http://127.0.0.1:{port}"
+    try:
+        urllib.request.urlopen(f"{url}/status.json", timeout=1)
+        running = True
+    except Exception:
+        running = False
+    if not running:
+        node = shutil.which("node")
+        script = os.path.join(os.path.dirname(__file__), "art-monitor.mjs")
+        if node and os.path.exists(script):
+            subprocess.Popen(
+                [node, script],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            time.sleep(0.6)
+    print(f"art monitor: {url}", flush=True)
+    try:
+        webbrowser.open(url)
+    except Exception:
+        pass  # headless — the URL still works
 
 
 def main() -> int:
@@ -114,6 +152,7 @@ def main() -> int:
             out.write(buf.getvalue())
         return buf.tell()
 
+    ensure_monitor()
     state, update, flush = make_status(todo)
     done = failed = 0
     for i, m in enumerate(todo, 1):

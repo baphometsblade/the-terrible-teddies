@@ -29,7 +29,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import sharp from 'sharp';
-import { startMonitor, statusWriter } from './art-monitor.mjs';
+import { startMonitor, statusWriter, openInBrowser } from './art-monitor.mjs';
 
 // The game store touches localStorage at import time (zustand persist);
 // stub it before pulling in ALL_CARDS.
@@ -53,25 +53,27 @@ const GOONS = [
   { id: 108, name: 'Void Where Prohibited', type: 'action', description: 'A glitchy void-black teddy, edges dissolving into static.' },
 ];
 
+// Kept terse on purpose: CLIP truncates at 77 tokens, so subject identity
+// and the raunchy dive-bar mood must land before any tail gets clipped.
 const STYLE =
-  "flat stylized illustration, plain dark plum background (#2a1b3d), moody amber rim light, " +
-  "worn fabric texture, visible stitches, thick clean outlines, high contrast, " +
-  "children's-book style gone noir";
+  'seedy dive bar, amber lamplight, neon glow, smoky haze, hyper realistic, hyper detailed, film grain';
 const NEGATIVE =
-  'text, letters, watermark, logo, signature, photo, photorealistic, human, person, ' +
-  'extra limbs, deformed, blurry, frame, border';
+  'cartoon, illustration, drawing, flat colors, cel shading, text, letters, watermark, ' +
+  'logo, signature, human, person, extra limbs, deformed, blurry, frame, border';
 
+// Raunchy R-rated-comedy art direction: worn real-fur bears living badly.
 const promptFor = (card) => {
   if (card.type === 'trap') {
-    return `A sinister spring-loaded toy trap object: ${card.name}. ${card.description ?? ''} ` +
-      `Single object centered, no bear, ${STYLE}`;
+    return `Macro photo, sinister spring-loaded trap: ${card.name}. ${card.description ?? ''} ` +
+      `Sticky beer-stained bar table, ${STYLE}`;
   }
   if (card.type === 'special') {
-    return `A noir still-life object representing "${card.name}". ${card.description ?? ''} ` +
-      `Single object centered, no bear, ${STYLE}`;
+    return `Cinematic still-life photo: ${card.name}. ${card.description ?? ''} ` +
+      `Grimy dive-bar counter, whiskey rings, cigarette burns, ${STYLE}`;
   }
-  return `A single plush teddy bear character, chest-up, facing viewer: ${card.name}. ` +
-    `${card.description ?? ''} ${STYLE}`;
+  return `RAW photo, hyper realistic worn plush teddy bear, chest-up, attitude: ${card.name}. ` +
+    `${card.description ?? ''} Matted fur, stitched scars, bloodshot button eyes, ` +
+    `whiskey, cigarette smoke, ${STYLE}`;
 };
 
 const seedFor = (id) => 40_000 + id * 97; // stable per card, arbitrary base
@@ -226,8 +228,14 @@ async function main() {
   const call = flavor === 'a1111' ? callA1111 : callFooocus;
   let done = 0, skipped = 0, failed = 0;
 
-  // Live dashboard (npm run art:monitor watches the same status file).
-  if (has('--monitor')) await startMonitor({ dir: outDir });
+  // Live dashboard — forced on for every generation run so there's always
+  // a window to watch (opt out with --no-monitor; self-test stays headless).
+  let monitorServer = null;
+  const wantMonitor = !has('--no-monitor') && !selfTest;
+  if (wantMonitor) {
+    monitorServer = await startMonitor({ dir: outDir });
+    openInBrowser(`http://127.0.0.1:${Number(process.env.ART_MONITOR_PORT ?? 8877)}`);
+  }
   const pending = todo.filter((c) => has('--force') || !fs.existsSync(path.join(outDir, `${c.id}.webp`)));
   const status = statusWriter(pending);
 
@@ -256,9 +264,13 @@ async function main() {
   status.finish();
 
   console.log(`\n${done} generated, ${skipped} skipped (exist), ${failed} failed → ${outDir}`);
-  if (has('--monitor') && !selfTest) {
+  if (has('--monitor') && wantMonitor) {
     console.log('monitor is still serving — Ctrl-C to exit');
     return; // keep the server (and process) alive for browsing the results
+  }
+  if (monitorServer) {
+    monitorServer.close();
+    console.log('monitor closed — browse results any time with: npm run art:monitor');
   }
   if (selfTest) {
     // Exercise the a1111 flavor once too, then clean up.

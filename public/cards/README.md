@@ -23,7 +23,8 @@ npm run art:generate -- --dry-run       # print the prompt manifest
 npm run art:generate -- --only 1,6,30   # subset
 npm run art:generate -- --force         # regenerate existing files
 npm run art:generate -- --self-test     # exercise the pipeline w/ a mock server
-npm run art:generate -- --monitor       # serve the live dashboard during the run
+npm run art:generate -- --monitor       # keep the dashboard serving after the run
+npm run art:generate -- --no-monitor    # headless run (CI etc.)
 ```
 
 No endpoint at all? `scripts/generate-card-art-diffusers.py` renders the
@@ -36,12 +37,15 @@ GPU or CPU) — see its docstring.
 npm run art:monitor    # http://127.0.0.1:8877
 ```
 
-Opens a live dashboard: the generation queue with per-card state
-(pending / generating / done / failed, size, duration) and a clickable
-gallery of every finished file — click a card to open the full-size
-image. Works with all runners (they report progress to a shared status
-file) and standalone, whenever your local Fooocus is grinding through a
-batch. `ART_MONITOR_PORT` / `ART_DIR` override the defaults.
+The window is FORCED during generation: every runner (endpoint script
+and the python diffusers runner alike) auto-starts the dashboard and pops
+it in your default browser when a batch begins — a live generation queue
+with per-card state (pending / generating / done / failed, size,
+duration) and a clickable gallery of every finished file; click a card to
+open the full-size image. Opt out with `--no-monitor` (JS) or
+`ART_NO_MONITOR=1` (python). It also runs standalone via the command
+above whenever your local Fooocus is grinding through a batch.
+`ART_MONITOR_PORT` / `ART_DIR` override the defaults.
 
 If this repo runs in a cloud session, a Fooocus instance on your own
 machine needs a tunnel to be reachable, e.g.
@@ -55,11 +59,14 @@ card id, so re-runs are reproducible.
 
 ## Style contract (baked into the script's prompts)
 
-> Flat stylized illustration of a single plush teddy bear character,
-> chest-up, facing viewer, on a plain dark plum background (#2a1b3d),
-> moody amber rim light, worn fabric texture, visible stitches,
-> [CHARACTER], thick clean outlines, high contrast, no text, no watermark,
-> children's-book style gone noir.
+Raunchy R-rated-comedy realism — worn plush bears living badly:
 
-Traps and specials get object-centric art (the trap/item itself, same
-style, no bear).
+> RAW photo, hyper realistic worn plush teddy bear, chest-up, attitude:
+> [CHARACTER]. Matted fur, stitched scars, bloodshot button eyes, whiskey,
+> cigarette smoke, seedy dive bar, amber lamplight, neon glow, smoky haze,
+> hyper realistic, hyper detailed, film grain.
+
+Traps get macro shots of the contraption on a sticky bar table; specials
+get cinematic still-lifes on a grimy dive-bar counter. Prompts are kept
+terse on purpose — CLIP truncates at 77 tokens, so identity and mood are
+front-loaded.
