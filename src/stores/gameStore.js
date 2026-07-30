@@ -51,6 +51,44 @@ export const ALL_CARDS = [
   { id: 45, name: "Fluffing Bender", attack: 0, defense: 0, type: 'special', cost: 4, effect: 'draw', amount: 3, rarity: 'rare', description: "Three cards deep and still going. Tomorrow's problem." },
   { id: 46, name: "The Full Refluff", attack: 0, defense: 0, type: 'special', cost: 6, effect: 'heal', amount: 15, rarity: 'epic', description: "Head-to-toe restuffing. You didn't hear about the clinic from us." },
   { id: 47, name: "Last Call Blessing", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'buff', amount: 2, rarity: 'legendary', description: "One more round for everybody. All teddies +2 attack." },
+
+  // ——— The Barfly Expansion ———
+  // Twenty new bears (ids 50-69). Abilities are restricted to the ones the
+  // engine actually implements (taunt/protect/stealth targeting; shield/
+  // piercing/fury combat) — see cardSchema.test.js, which enforces this.
+  { id: 50, name: "Dumpster Dave", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Lives behind the bar. Smells like decisions." },
+  { id: 51, name: "Mange Marvin", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "The bald patches are from stress. And mange." },
+  { id: 52, name: "Two-Beer Tina", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Two beers in and she's everyone's problem." },
+  { id: 53, name: "Coupon Carl", attack: 1, defense: 2, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Fights dirty. Tips worse." },
+  { id: 54, name: "Sticky Mickey", attack: 1, defense: 3, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Nobody asks why he's sticky. Nobody wants to know." },
+  { id: 55, name: "Ashtray Annie", attack: 2, defense: 1, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Smells like 1987 and menthols." },
+  { id: 56, name: "Bouncer Bruno", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'taunt', rarity: 'uncommon', description: "You're not on the list. Nobody is on the list." },
+  { id: 57, name: "Hairball Harriet", attack: 3, defense: 2, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon', description: "Coughs up more than hairballs." },
+  { id: 58, name: "Prison-Wine Pierre", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'uncommon', description: "Ferments grudges in a toilet. Delicious." },
+  { id: 59, name: "Glitter Lungs", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'stealth', rarity: 'uncommon', description: "Inhaled a craft store in '09. Still sparkles when he coughs." },
+  { id: 60, name: "Beargaritaville", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'shield', rarity: 'uncommon', description: "Wastes away. Aggressively." },
+  { id: 61, name: "Snitchslap Sue", attack: 3, defense: 3, type: 'action', cost: 3, ability: 'none', rarity: 'uncommon', description: "Court-ordered to stay 50 feet from Stitches." },
+  { id: 62, name: "Chainsmoke Chad", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'fury', rarity: 'rare', description: "Lights the next one off your burning deck." },
+  { id: 63, name: "Bail-Money Bonnie", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'protect', rarity: 'rare', description: "She knows a guy. She IS the guy." },
+  { id: 64, name: "Sgt. Snuggles, Dishonorable", attack: 4, defense: 3, type: 'action', cost: 4, ability: 'shield', rarity: 'rare', description: "Discharged for conduct unbearable." },
+  { id: 65, name: "The Debt Collector", attack: 5, defense: 1, type: 'action', cost: 4, ability: 'piercing', rarity: 'rare', description: "Your kneecaps called. They're nervous." },
+  { id: 66, name: "Mama Mauls", attack: 5, defense: 3, type: 'action', cost: 5, ability: 'taunt', rarity: 'epic', description: "Ask about her cubs. Go ahead. Ask." },
+  { id: 67, name: "Whiskey Priest", attack: 3, defense: 5, type: 'action', cost: 5, ability: 'protect', rarity: 'epic', description: "Absolves everything but his own tab." },
+  { id: 68, name: "Duke of Dumpsterfire", attack: 6, defense: 2, type: 'action', cost: 5, ability: 'fury', rarity: 'epic', description: "Royalty of the alley. Arsonist of the heart." },
+  { id: 69, name: "Big Spoon, Last Warning", attack: 6, defense: 4, type: 'action', cost: 6, ability: 'shield', rarity: 'legendary', description: "The cuddle is mandatory. The survival is optional." },
+
+  // Five new traps (ids 70-74) and five new specials (ids 75-79). Specials
+  // only use effects applySpecialEffect implements: heal / draw / buff.
+  { id: 70, name: "Glass in the Gummy Bears", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common', description: "Chewy, with consequences." },
+  { id: 71, name: "Wet Floor, No Sign", attack: 0, defense: 0, type: 'trap', cost: 1, effect: 'damage', amount: 2, rarity: 'common', description: "OSHA has entered the chat. And slipped." },
+  { id: 72, name: "Loaded Claw Machine", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Rigged? Obviously. Deadly? Also yes." },
+  { id: 73, name: "Last Call Stampede", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Four words: two-for-one tequila night." },
+  { id: 74, name: "The Ol' Honey Bucket", attack: 0, defense: 0, type: 'trap', cost: 4, effect: 'damage', amount: 6, rarity: 'rare', description: "Classic. Disgusting. Effective." },
+  { id: 75, name: "Hair of the Bear", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'heal', amount: 3, rarity: 'common', description: "Cures what the bar did. Causes what the bar will." },
+  { id: 76, name: "Minibar Raid", attack: 0, defense: 0, type: 'special', cost: 1, effect: 'heal', amount: 2, rarity: 'common', description: "Tiny bottles. Tiny crimes. Tiny recovery." },
+  { id: 77, name: "The Group Chat Leaks", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'draw', amount: 4, rarity: 'rare', description: "Everyone's secrets, face up. Draw four, lose friends." },
+  { id: 78, name: "Bar-Top Baptism", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'heal', amount: 10, rarity: 'rare', description: "Fully submerged in the good stuff. Born again, smells worse." },
+  { id: 79, name: "Suspicious Brownies", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'draw', amount: 2, rarity: 'uncommon', description: "Don't ask what's in them. Draw two, feel weird later." },
 ];
 
 export const ACHIEVEMENTS = [

@@ -4,18 +4,23 @@
 Companion to generate-card-art.mjs for machines (or CI/cloud sandboxes)
 where no Fooocus/A1111 endpoint is reachable: runs Stable Diffusion
 directly through huggingface diffusers, on GPU if present, otherwise CPU
-(sd-turbo makes CPU batches tolerable at 1-4 steps).
+(turbo models make CPU batches tolerable at 1-4 steps).
 
 Usage:
   npm run art:generate -- --manifest /tmp/art-manifest.json   # export prompts
   python3 scripts/generate-card-art-diffusers.py /tmp/art-manifest.json public/cards [--force] [--only 1,6,30]
 
 Env:
-  SD_MODEL  huggingface model id (default stabilityai/sd-turbo)
-  SD_STEPS  inference steps (default 3)
+  SD_MODEL  huggingface model id (default stabilityai/sdxl-turbo, which is
+            natively 1024-trained — sd-turbo is 512-trained and doubles
+            subjects at card resolution. SD_MODEL=stabilityai/sd-turbo with
+            SD_WIDTH/SD_HEIGHT=512 stays available for fast/low-RAM runs.)
+  SD_STEPS  inference steps (default 4)
+  SD_WIDTH  render width in px (default 768)
+  SD_HEIGHT render height in px (default 1024)
 
 Output matches the JS pipeline's contract: public/cards/<id>.webp,
-384x512 (3:4), <= 60 KB each.
+768x1024 (3:4), <= 150 KB each.
 """
 import io
 import json
@@ -122,8 +127,10 @@ def main() -> int:
     from diffusers import AutoPipelineForText2Image
     from PIL import Image
 
-    model = os.environ.get("SD_MODEL", "stabilityai/sd-turbo")
-    steps = int(os.environ.get("SD_STEPS", "3"))
+    model = os.environ.get("SD_MODEL", "stabilityai/sdxl-turbo")
+    steps = int(os.environ.get("SD_STEPS", "4"))
+    width = int(os.environ.get("SD_WIDTH", "768"))
+    height = int(os.environ.get("SD_HEIGHT", "1024"))
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.float16 if device == "cuda" else torch.float32
 
@@ -133,7 +140,7 @@ def main() -> int:
     pipe.set_progress_bar_config(disable=True)
 
     def to_card_webp(img: Image.Image, dest: str) -> int:
-        # center-crop to 3:4, resize to 384x512, quality-step to <= 60 KB
+        # center-crop to 3:4, resize to 768x1024, quality-step to <= 150 KB
         w, h = img.size
         target = 3 / 4
         if w / h > target:
@@ -142,12 +149,17 @@ def main() -> int:
         else:
             new_h = int(w / target)
             img = img.crop((0, (h - new_h) // 2, w, (h + new_h) // 2))
-        img = img.resize((384, 512), Image.LANCZOS)
-        for quality in (80, 65, 50, 38):
+        img = img.resize((768, 1024), Image.LANCZOS)
+        budget = 150 * 1024
+        for quality in (85, 75, 65, 55):
             buf = io.BytesIO()
             img.save(buf, "WEBP", quality=quality)
-            if buf.tell() <= 60 * 1024:
+            if buf.tell() <= budget:
                 break
+        if buf.tell() > budget:
+            # Last resort: smaller canvas, regardless of budget.
+            buf = io.BytesIO()
+            img.resize((576, 768), Image.LANCZOS).save(buf, "WEBP", quality=50)
         with open(dest, "wb") as out:
             out.write(buf.getvalue())
         return buf.tell()
@@ -166,8 +178,8 @@ def main() -> int:
                 prompt=m["prompt"],
                 num_inference_steps=steps,
                 guidance_scale=0.0,
-                width=512,
-                height=512,
+                width=width,
+                height=height,
                 generator=gen,
             ).images[0]
             size = to_card_webp(img, dest)

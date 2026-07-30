@@ -28,8 +28,12 @@ npm run art:generate -- --no-monitor    # headless run (CI etc.)
 ```
 
 No endpoint at all? `scripts/generate-card-art-diffusers.py` renders the
-same manifest directly through huggingface diffusers (sd-turbo by default,
-GPU or CPU) — see its docstring.
+same manifest directly through huggingface diffusers (GPU or CPU; render
+size via `SD_WIDTH`/`SD_HEIGHT`, default 768×1024) — see its docstring.
+It defaults to **sdxl-turbo**, which is natively 1024-trained: the older
+sd-turbo is 512-trained and duplicates subjects (double noses) at card
+resolution. Set `SD_MODEL=stabilityai/sd-turbo` with `SD_WIDTH=512
+SD_HEIGHT=512` for a fast, low-RAM run at lower fidelity.
 
 ## Watching a run
 
@@ -53,8 +57,8 @@ machine needs a tunnel to be reachable, e.g.
 URL as `FOOOCUS_URL` (optional `FOOOCUS_AUTH` is sent as the Authorization
 header).
 
-Output is post-processed automatically: 3:4 cover crop at 384×512, webp
-stepped down in quality until each file is ≤60 KB. Seeds are stable per
+Output is post-processed automatically: 3:4 cover crop at 768×1024, webp
+stepped down in quality until each file is ≤150 KB. Seeds are stable per
 card id, so re-runs are reproducible.
 
 ## Style contract (baked into the script's prompts)

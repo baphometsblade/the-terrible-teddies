@@ -129,18 +129,18 @@ async function callA1111(base, auth, prompt, seed) {
 }
 
 // ---------------------------------------------------------------------------
-// Post-processing: 3:4 cover crop, webp stepped down to <= 60 KB
+// Post-processing: 3:4 cover crop, webp stepped down to <= 150 KB
 // ---------------------------------------------------------------------------
 async function toCardWebp(buf) {
-  for (const quality of [80, 65, 50, 38]) {
+  for (const quality of [85, 75, 65, 55]) {
     const out = await sharp(buf)
-      .resize(384, 512, { fit: 'cover', position: 'attention' })
+      .resize(768, 1024, { fit: 'cover', position: 'attention' })
       .webp({ quality })
       .toBuffer();
-    if (out.length <= 60 * 1024) return out;
+    if (out.length <= 150 * 1024) return out;
   }
-  // Last resort: smaller canvas
-  return sharp(buf).resize(288, 384, { fit: 'cover' }).webp({ quality: 40 }).toBuffer();
+  // Last resort: smaller canvas, regardless of budget.
+  return sharp(buf).resize(576, 768, { fit: 'cover' }).webp({ quality: 50 }).toBuffer();
 }
 
 // ---------------------------------------------------------------------------
