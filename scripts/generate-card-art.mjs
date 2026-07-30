@@ -189,6 +189,23 @@ async function main() {
     return;
   }
 
+  // Machine-readable prompt manifest, so external backends (e.g. a python
+  // diffusers runner) can reuse the exact same prompts and seeds.
+  const manifestPath = argOf('--manifest');
+  if (manifestPath) {
+    const manifest = todo.map((c) => ({
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      prompt: promptFor(c),
+      negative: NEGATIVE,
+      seed: seedFor(c.id),
+    }));
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    console.log(`wrote ${manifest.length} prompts to ${manifestPath}`);
+    return;
+  }
+
   if (selfTest) {
     mock = await startMockServer();
     base = mock.url;
