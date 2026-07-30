@@ -48,7 +48,7 @@ const PlayerStats = ({ onClose }) => {
         animate={{ opacity: 1, scale: 1 }}
         className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl max-w-4xl w-full shadow-2xl my-8"
       >
-        <div className="bg-indigo-800 p-6 rounded-t-2xl flex flex-wrap justify-between items-center gap-4">
+        <div className="bg-gradient-to-r from-plush-800 to-night-700 border-b border-brass-400/30 p-6 rounded-t-2xl flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-4xl border-4 border-white shadow-lg">
               🧸
@@ -81,7 +81,7 @@ const PlayerStats = ({ onClose }) => {
                   <span className="bg-brass-400 text-night-950 px-2 py-0.5 rounded font-bold">Lv. {level}</span>
                   <span>{xp} / {xpForNext} XP</span>
                 </div>
-                <Progress value={xpProgress} className="h-2 mt-1 w-48" />
+                <Progress value={xpProgress} className="h-2 mt-1 w-48 bg-night-950/50 [&>div]:bg-brass-400" />
               </div>
             </div>
           </div>

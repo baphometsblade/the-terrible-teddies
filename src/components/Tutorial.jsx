@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import TeddyCard from './TeddyCard';
+import { ALL_CARDS } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
 
 const TUTORIAL_STEPS = [
@@ -28,7 +29,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Energy",
-    content: "Cards cost energy (the yellow number). You start each turn with 3 and it climbs as the game drags on — just like a real bar tab.",
+    content: "Cards cost energy (the brass gem in the corner). You start each turn with 3 and it climbs as the game drags on — just like a real bar tab.",
     icon: "⚡",
   },
   {
@@ -53,11 +54,11 @@ const TUTORIAL_STEPS = [
   },
 ];
 
-const exampleCards = [
-  { id: 1, name: "Shit-Talk Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt' },
-  { id: 2, name: "Honey Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3 },
-  { id: 3, name: "Emergency Fluff Job", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'heal', amount: 5 },
-];
+// Real cards from the set, resolved by name so ids (and therefore shipped
+// card art) stay canonical.
+const exampleCards = ['Shit-Talk Sally', 'Honey Trap', 'Emergency Fluff Job']
+  .map((name) => ALL_CARDS.find((c) => c.name === name))
+  .filter(Boolean);
 
 const Tutorial = ({ onClose, onStartGame }) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -89,7 +90,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl max-w-2xl w-full shadow-2xl border border-plush-700/40 worn overflow-hidden"
+        className="relative bg-gradient-to-b from-night-700 to-night-900 rounded-2xl max-w-2xl w-full shadow-2xl border border-plush-700/40 worn overflow-hidden"
       >
         {/* Header */}
         <div className="bg-night-800 border-b border-brass-400/30 p-4 flex justify-between items-center">

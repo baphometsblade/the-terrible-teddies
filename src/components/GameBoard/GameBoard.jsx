@@ -207,21 +207,19 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       .filter(Boolean)
       .map((card, idx) => ({ ...card, instanceId: `p-${card.id}-${idx}` }));
 
-    // Fallback if no deck is set - use starter cards
+    // Fallback if no deck is set — the starter ten, resolved from ALL_CARDS
+    // by name so ids, stats, rarities (and shipped card art) stay canonical.
+    const starterNames = [
+      "Shitstarter Ted", "Shit-Talk Sally", "Honey Trap", "Emergency Fluff Job",
+      "Shiv-in-a-Pillow", "Chokehold Cuddles", "Peeping Pete", "Honey on the Rocks",
+      "The F-Bomb", "Restraining-Order Randy",
+    ];
     const deckToUse = playerDeckCards.length >= 5
       ? playerDeckCards
-      : [
-          { id: 1, name: "Shitstarter Ted", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
-          { id: 2, name: "Shit-Talk Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'common' },
-          { id: 3, name: "Honey Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common' },
-          { id: 4, name: "Emergency Fluff Job", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'heal', amount: 5, rarity: 'uncommon' },
-          { id: 5, name: "Shiv-in-a-Pillow", attack: 4, defense: 1, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon' },
-          { id: 6, name: "Chokehold Cuddles", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'shield', rarity: 'uncommon' },
-          { id: 7, name: "Peeping Pete", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'stealth', rarity: 'rare' },
-          { id: 8, name: "Honey on the Rocks", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'draw', amount: 2, rarity: 'common' },
-          { id: 9, name: "The F-Bomb", attack: 5, defense: 0, type: 'action', cost: 4, ability: 'none', rarity: 'rare' },
-          { id: 10, name: "Restraining-Order Randy", attack: 1, defense: 5, type: 'action', cost: 3, ability: 'protect', rarity: 'epic' },
-        ].map((card, idx) => ({ ...card, instanceId: `p-${card.id}-${idx}` }));
+      : starterNames
+          .map(name => ALL_CARDS.find(c => c.name === name))
+          .filter(Boolean)
+          .map((card, idx) => ({ ...card, instanceId: `p-${card.id}-${idx}` }));
 
     const initialPlayerDeck = shuffleDeck(deckToUse);
 
@@ -866,7 +864,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             <motion.div
               initial={{ scale: 0.5, y: 50 }}
               animate={{ scale: 1, y: 0 }}
-              className={`rounded-2xl p-8 text-center max-w-md w-full mx-4 worn ${go.panel}`}
+              className={`relative rounded-2xl p-8 text-center max-w-md w-full mx-4 worn ${go.panel}`}
             >
               <motion.div
                 animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
@@ -994,7 +992,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       </AnimatePresence>
 
       {/* Top bar - Opponent info */}
-      <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-red-950 to-red-900 flex items-center justify-between px-4 shadow-lg">
+      <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-red-950 to-red-900 flex items-center justify-between pl-28 pr-4 shadow-lg">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-red-800 rounded-full border-2 border-red-300 flex items-center justify-center">
             <span className="text-white text-xl">🧸</span>
@@ -1046,7 +1044,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             >
               <TeddyCard teddy={card} />
               {card.stealthActive && (
-                <div className="absolute top-[18px] left-0 right-0 bg-purple-500/90 text-white text-[8px] text-center z-10">
+                <div className="absolute top-[20px] left-0 right-0 bg-purple-500/90 text-white text-[8px] text-center z-10">
                   STEALTH
                 </div>
               )}
@@ -1132,10 +1130,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             >
               <TeddyCard teddy={card} />
               {card.hasAttacked && (
-                <div className="text-center text-xs text-plush-400 mt-1">Exhausted</div>
+                <div className="text-center text-xs text-plush-300 mt-1">Exhausted</div>
               )}
               {card.stealthActive && (
-                <div className="absolute top-[18px] left-0 right-0 bg-purple-500/90 text-white text-[8px] text-center z-10">
+                <div className="absolute top-[20px] left-0 right-0 bg-purple-500/90 text-white text-[8px] text-center z-10">
                   STEALTH
                 </div>
               )}
@@ -1151,7 +1149,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
       {/* Player's hand — caps width and scrolls horizontally so a full hand
           stays reachable on phones instead of overflowing off-screen. */}
-      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex justify-start md:justify-center space-x-2 max-w-[96vw] overflow-x-auto px-2 pb-1">
+      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex justify-start md:justify-center space-x-2 max-w-[96vw] overflow-x-auto px-4 pt-8 pb-3">
         <AnimatePresence>
           {playerHand.map((card, index) => (
             <motion.div

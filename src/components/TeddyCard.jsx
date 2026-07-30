@@ -44,9 +44,12 @@ const getTeddyEmoji = (teddy) => {
 // emoji cast when the file is missing or fails to load — art can never break
 // a card. alt="" keeps the art decorative so accessible names don't change.
 export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = '' }) => {
-  const [artFailed, setArtFailed] = useState(false);
+  // Track which card id failed (not a boolean): a reused component instance
+  // re-rendered with a different teddy must retry that card's art instead of
+  // inheriting the previous card's failure.
+  const [failedId, setFailedId] = useState(null);
 
-  if (!teddy.id || artFailed) {
+  if (!teddy.id || failedId === teddy.id) {
     return <div className={emojiClassName}>{getTeddyEmoji(teddy)}</div>;
   }
 
@@ -57,7 +60,7 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
       loading="lazy"
       draggable={false}
       className={imgClassName}
-      onError={() => setArtFailed(true)}
+      onError={() => setFailedId(teddy.id)}
     />
   );
 };
@@ -78,7 +81,8 @@ export const CardBack = ({ className = 'w-24 h-36', mini = false }) => (
 );
 
 // One-line rules text for the textbox, like a real TCG card. Ability
-// keywords for creatures; effect summaries for traps and specials.
+// keywords for creatures; effect summaries for traps and specials. Ability
+// wins over effect — no card in ALL_CARDS carries both; revisit if one does.
 const rulesText = (teddy) => {
   if (teddy.ability && teddy.ability !== 'none') {
     const label = teddy.ability.charAt(0).toUpperCase() + teddy.ability.slice(1);

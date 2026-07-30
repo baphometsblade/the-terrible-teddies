@@ -65,7 +65,7 @@ const BattlePass = ({ onClose }) => {
     if (spendGems(PREMIUM_PASS_PRICE)) {
       setBattlePassPremium(true);
       setShowPurchaseConfirm(false);
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#FFD700', '#FFA500', '#FF6347'] });
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#fbbf24', '#f59e0b', '#fde68a'] });
       toast({ title: "Premium Pass Unlocked!", description: "You now have access to all premium rewards!" });
     } else {
       toast({ title: "Not Enough Gems", description: `You need ${PREMIUM_PASS_PRICE} gems.`, variant: "destructive" });
@@ -296,7 +296,7 @@ const BattlePass = ({ onClose }) => {
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
-              className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-6 max-w-md w-full border-2 border-brass-400 worn"
+              className="relative bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-6 max-w-md w-full border-2 border-brass-400 worn"
               onClick={e => e.stopPropagation()}
             >
               <h3 className="text-2xl font-display font-bold text-white text-center mb-4">⭐ Unlock Premium Pass</h3>

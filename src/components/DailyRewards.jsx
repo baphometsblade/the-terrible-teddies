@@ -44,12 +44,12 @@ const DailyRewards = ({ onClose }) => {
           : 'bg-white/10 border-2 border-white/20'
       }`}
     >
-      <div className={`text-xs font-bold mb-1 ${isToday ? 'text-black' : 'text-white/70'}`}>Day {day}</div>
+      <div className={`text-xs font-bold mb-1 ${isToday ? 'text-night-950' : 'text-plush-300'}`}>Day {day}</div>
       <div className="space-y-0.5">
-        {coins > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-brass-300'}`}>🪙 {coins}</div>}
-        {gems > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-cyan-400'}`}>💎 {gems}</div>}
-        {cards > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-blue-400'}`}>🃏 x{cards}</div>}
-        {packs > 0 && <div className={`text-sm font-bold ${isToday ? 'text-black' : 'text-purple-400'}`}>📦 x{packs}</div>}
+        {coins > 0 && <div className={`text-sm font-bold ${isToday ? 'text-night-950' : 'text-brass-300'}`}>🪙 {coins}</div>}
+        {gems > 0 && <div className={`text-sm font-bold ${isToday ? 'text-night-950' : 'text-cyan-300'}`}>💎 {gems}</div>}
+        {cards > 0 && <div className={`text-sm font-bold ${isToday ? 'text-night-950' : 'text-sky-300'}`}>🃏 x{cards}</div>}
+        {packs > 0 && <div className={`text-sm font-bold ${isToday ? 'text-night-950' : 'text-purple-300'}`}>📦 x{packs}</div>}
       </div>
       {isClaimed && !isToday && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl">
@@ -72,9 +72,9 @@ const DailyRewards = ({ onClose }) => {
         animate={{ opacity: 1, scale: 1 }}
         className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden"
       >
-        <div className="bg-gradient-to-r from-brass-400 to-brass-500 p-6 text-center">
-          <h2 className="text-3xl font-bold text-black">🎁 Daily Rewards</h2>
-          <p className="text-black/70 mt-1">Login streak: {consecutiveLogins} day{consecutiveLogins !== 1 ? 's' : ''}</p>
+        <div className="bg-gradient-to-r from-brass-600 to-amber-900 border-b border-brass-400/40 p-6 text-center">
+          <h2 className="text-3xl font-display font-bold text-white">🎁 Daily Rewards</h2>
+          <p className="text-brass-200 mt-1">Login streak: {consecutiveLogins} day{consecutiveLogins !== 1 ? 's' : ''}</p>
         </div>
 
         <div className="p-6">
@@ -146,7 +146,7 @@ const DailyRewards = ({ onClose }) => {
         </div>
 
         <div className="p-4 bg-black/20">
-          <Button onClick={onClose} className="w-full bg-purple-600 hover:bg-purple-700">Continue</Button>
+          <Button onClick={onClose} className="w-full bg-brass-500 hover:bg-brass-600 text-night-950 font-bold">Continue</Button>
         </div>
       </motion.div>
     </div>

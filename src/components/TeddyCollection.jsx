@@ -160,20 +160,16 @@ const TeddyCollection = () => {
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
-              className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-6 max-w-md w-full border-4 worn"
-              style={{
-                borderColor: {
-                  common: '#a8a29e', uncommon: '#10b981', rare: '#0ea5e9', epic: '#a855f7', legendary: '#f59e0b',
-                }[selectedCard.rarity],
-              }}
+              className="relative bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-6 max-w-md w-full border-4 worn"
+              style={{ borderColor: RARITY[selectedCard.rarity].borderHex }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex gap-6">
-                <div className="relative self-start">
-                  <div className={`absolute inset-0 rounded-lg blur-xl -z-10 bg-gradient-to-r ${RARITY[selectedCard.rarity].gradient}`} />
+              <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
+                <div className="relative self-start shrink-0">
                   {/* Big art frame: the card's illustration at gallery size,
-                      falling back to the emoji cast when no art has shipped. */}
-                  <div className={`w-32 h-44 rounded-xl border-2 ${RARITY[selectedCard.rarity].border} bg-gradient-to-b ${RARITY[selectedCard.rarity].bg} stitched-plush overflow-hidden flex items-center justify-center`}>
+                      falling back to the emoji cast when no art has shipped.
+                      The rarity glow lives on the frame's own shadow. */}
+                  <div className={`relative w-32 h-44 rounded-xl border-2 ${RARITY[selectedCard.rarity].border} ${RARITY[selectedCard.rarity].glow} shadow-2xl bg-gradient-to-b ${RARITY[selectedCard.rarity].bg} stitched-plush overflow-hidden flex items-center justify-center`}>
                     <ArtOrEmoji
                       teddy={selectedCard}
                       emojiClassName="text-7xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
@@ -182,7 +178,7 @@ const TeddyCollection = () => {
                   </div>
                 </div>
 
-                <div className="flex-1">
+                <div className="flex-1 min-w-0 w-full">
                   <div className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase mb-2 bg-gradient-to-r ${RARITY[selectedCard.rarity].gradient} text-white`}>
                     {selectedCard.rarity}
                   </div>

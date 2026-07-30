@@ -59,7 +59,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
 
         confetti({
           particleCount: 200, spread: 120, origin: { y: 0.45 },
-          colors: ['#9333EA', '#A855F7', '#C084FC', '#E879F9', '#FFD700'],
+          colors: ['#9333EA', '#A855F7', '#C084FC', '#E879F9', '#fbbf24'],
         });
 
         analytics.trackPurchase({

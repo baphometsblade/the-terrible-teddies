@@ -149,7 +149,7 @@ const CardPackOpening = ({ onClose }) => {
         </div>
 
         {/* Main content */}
-        <div className="bg-night-800/60 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-plush-700/40 worn">
+        <div className="relative bg-night-800/60 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-plush-700/40 worn">
           {/* Pack display / Card reveal */}
           <div className="flex flex-col items-center justify-center min-h-[350px]">
             <AnimatePresence mode="wait">

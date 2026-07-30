@@ -16,7 +16,10 @@ const buttonVariants = cva(
           // Transparent, not bg-background: every outline usage in this app
           // sits on a dark surface with text-white — the default white
           // bg-background rendered those labels white-on-white (invisible).
-          "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
+          // Same story for hover: the shadcn accent tokens resolve to the
+          // light theme (.dark is never applied), so hover:text-accent-
+          // foreground flipped labels near-black on dark surfaces.
+          "border border-input bg-transparent hover:bg-white/10",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",

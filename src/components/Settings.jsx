@@ -105,7 +105,7 @@ const Settings = ({ onClose }) => {
             <h3 className="text-white/50 text-sm uppercase tracking-wider mb-4">AI Difficulty</h3>
             <div className="flex gap-3">
               <DifficultyButton value="easy" label="😊 Easy" description="Relaxed" color="bg-green-600" />
-              <DifficultyButton value="normal" label="😐 Normal" description="Balanced" color="bg-yellow-600" />
+              <DifficultyButton value="normal" label="😐 Normal" description="Balanced" color="bg-brass-600" />
               <DifficultyButton value="hard" label="😈 Hard" description="Challenge" color="bg-red-600" />
             </div>
           </div>

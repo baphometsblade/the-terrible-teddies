@@ -200,7 +200,7 @@ const DeckBuilder = () => {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className={`flex items-center justify-between rounded-lg p-2 bg-gradient-to-r ${RARITY[card.rarity].gradient} bg-opacity-20 border border-white/10`}
+                    className={`flex items-center justify-between rounded-lg p-2 bg-night-700/60 border-l-4 ${RARITY[card.rarity].border} border-y border-r border-white/10`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-brass-300 font-bold w-5">{card.cost}</span>

@@ -77,10 +77,11 @@
 
 @layer utilities {
   /* Dashed "thread" inset seam, like the stitching on a plush toy.
-     Drawn on a pseudo-element so it stacks on top of any bg-gradient. */
-  .stitched {
-    position: relative;
-  }
+     Drawn on a pseudo-element so it stacks on top of any bg-gradient.
+     NOTE: these utilities deliberately do NOT set position — a utility-layer
+     `position: relative` would silently override `absolute` on the same
+     element (cascade order, not class order, wins). Consumers must carry
+     their own `relative`/`absolute` class. */
   .stitched::before {
     content: "";
     position: absolute;
@@ -91,9 +92,6 @@
   }
 
   /* Softer pale-thread variant for cards and small panels. */
-  .stitched-plush {
-    position: relative;
-  }
   .stitched-plush::before {
     content: "";
     position: absolute;
@@ -104,14 +102,16 @@
   }
 
   /* Worn-fabric grain: lamplight pooling at the top, threadbare shadow
-     patches below. Overlay pseudo-element; subtle enough to sit over text. */
+     patches below. isolate + negative z-index pins the grain above the
+     element's own background but underneath all of its content. */
   .worn {
-    position: relative;
+    isolation: isolate;
   }
   .worn::after {
     content: "";
     position: absolute;
     inset: 0;
+    z-index: -1;
     border-radius: inherit;
     pointer-events: none;
     background-image: radial-gradient(

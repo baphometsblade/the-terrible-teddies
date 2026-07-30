@@ -152,7 +152,7 @@ const Challenges = ({ onClose }) => {
                   {progressPercent.toFixed(0)}%
                 </span>
               </div>
-              <Progress value={progressPercent} className="h-2" />
+              <Progress value={progressPercent} className="h-2 bg-night-950/50 [&>div]:bg-brass-400" />
             </div>
           </div>
 
@@ -204,7 +204,7 @@ const Challenges = ({ onClose }) => {
     if (!claimChallenge(bonus.key)) return;
     addGems(bonus.gems);
     addCoins(bonus.coins);
-    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#FFD700', '#9333EA', '#22c55e'] });
+    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#fbbf24', '#a855f7', '#34d399'] });
     toast({ title: "Bonus Claimed!", description: `+${bonus.gems} 💎 and +${bonus.coins} 🪙` });
   };
 
@@ -222,8 +222,8 @@ const Challenges = ({ onClose }) => {
         className="bg-gradient-to-b from-night-700 via-night-800 to-night-950 rounded-2xl max-w-2xl w-full shadow-2xl border border-plush-700/40 overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-600 to-red-600 p-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+        <div className="bg-gradient-to-r from-red-900 to-night-700 border-b border-brass-400/30 p-4 flex justify-between items-center">
+          <h2 className="text-2xl font-display font-bold text-white flex items-center gap-2">
             <span className="text-3xl">🎯</span> Challenges
           </h2>
           <button onClick={onClose} className="text-white/70 hover:text-white text-2xl" aria-label="Close challenges">×</button>

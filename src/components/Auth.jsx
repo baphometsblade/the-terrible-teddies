@@ -45,7 +45,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-night-800 to-night-950 worn flex items-center justify-center p-4">
+    <div className="min-h-screen relative bg-gradient-to-b from-night-800 to-night-950 worn flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="text-7xl mb-4">🧸</div>
@@ -55,7 +55,7 @@ const Auth = () => {
             18+ — contains profanity, cartoon fluff violence, and bears with substance-abuse issues.
           </p>
         </div>
-        <div className="bg-night-800/60 backdrop-blur rounded-2xl p-8 border border-plush-700/40 stitched shadow-2xl">
+        <div className="relative bg-night-800/60 backdrop-blur rounded-2xl p-8 border border-plush-700/40 stitched shadow-2xl">
           <form onSubmit={handleSignIn}>
             <label htmlFor="auth-email" className="sr-only">Email</label>
             <Input

@@ -136,7 +136,7 @@ const Shop = ({ onClose }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-night-700 via-night-800 to-night-950 rounded-2xl max-w-4xl w-full shadow-2xl border border-plush-700/40 worn my-4"
+        className="relative bg-gradient-to-b from-night-700 via-night-800 to-night-950 rounded-2xl max-w-4xl w-full shadow-2xl border border-plush-700/40 worn my-4"
       >
         <div className="bg-gradient-to-r from-plush-800 to-night-700 border-b border-brass-400/30 p-4 rounded-t-2xl flex justify-between items-center">
           <h2 className="text-2xl font-display font-bold text-white flex items-center gap-2">
