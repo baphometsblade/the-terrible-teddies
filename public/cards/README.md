@@ -1,18 +1,47 @@
 # Card art
 
-Drop generated card illustrations here as `<cardId>.webp` (player cards use
-their `ALL_CARDS` ids 1–43; Chuck's goons use their opponent ids 101–108).
-`TeddyCard`'s `ArtOrEmoji` slot picks them up automatically — any card without
-a file here (or whose image fails to load) falls back to the emoji cast, so
-partial art is safe to ship.
+Drop card illustrations here as `<cardId>.webp` (player cards use their
+`ALL_CARDS` ids; Chuck's goons use their opponent ids 101–108).
+`TeddyCard`'s `ArtOrEmoji` slot picks them up automatically — any card
+without a file here (or whose image fails to load) falls back to the emoji
+cast, so partial art is safe to ship.
 
-Style contract for generated art (keep the cast coherent):
+## Generating the set (local Fooocus / Stable Diffusion)
 
-> Flat stylized illustration of a single plush teddy bear character, chest-up,
-> facing viewer, on a plain dark plum background (#2a1b3d), moody amber rim
-> light, worn fabric texture, visible stitches, [CHARACTER], thick clean
-> outlines, high contrast, no text, no watermark, children's-book style gone
-> noir.
+The full set renders through `scripts/generate-card-art.mjs`, which reads
+`ALL_CARDS` directly (single source of truth for ids/names/descriptions)
+and talks to a self-hosted endpoint:
 
-Traps and specials get object-centric art (the trap/item itself, same style).
-Target ≤512px on the long edge, ≤60 KB per file, aspect ratio 3:4.
+```bash
+# Fooocus via Fooocus-API (default flavor; its default port is 8888)
+FOOOCUS_URL=https://<your-endpoint> npm run art:generate
+
+# AUTOMATIC1111-compatible webui (--api)
+FOOOCUS_URL=https://<your-endpoint> FOOOCUS_FLAVOR=a1111 npm run art:generate
+
+npm run art:generate -- --dry-run       # print the prompt manifest
+npm run art:generate -- --only 1,6,30   # subset
+npm run art:generate -- --force         # regenerate existing files
+npm run art:generate -- --self-test     # exercise the pipeline w/ a mock server
+```
+
+If this repo runs in a cloud session, a Fooocus instance on your own
+machine needs a tunnel to be reachable, e.g.
+`cloudflared tunnel --url http://127.0.0.1:8888` or ngrok — pass the public
+URL as `FOOOCUS_URL` (optional `FOOOCUS_AUTH` is sent as the Authorization
+header).
+
+Output is post-processed automatically: 3:4 cover crop at 384×512, webp
+stepped down in quality until each file is ≤60 KB. Seeds are stable per
+card id, so re-runs are reproducible.
+
+## Style contract (baked into the script's prompts)
+
+> Flat stylized illustration of a single plush teddy bear character,
+> chest-up, facing viewer, on a plain dark plum background (#2a1b3d),
+> moody amber rim light, worn fabric texture, visible stitches,
+> [CHARACTER], thick clean outlines, high contrast, no text, no watermark,
+> children's-book style gone noir.
+
+Traps and specials get object-centric art (the trap/item itself, same
+style, no bear).
