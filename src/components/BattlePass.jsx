@@ -14,13 +14,13 @@ const BATTLE_PASS_REWARDS = [
   { tier: 1, xpRequired: 0, free: { type: 'coins', amount: 100, icon: '🪙' }, premium: { type: 'card', cardId: 7, name: 'Peeping Pete', icon: '🃏', rarity: 'uncommon' } },
   { tier: 2, xpRequired: 100, free: { type: 'pack', amount: 1, icon: '📦' }, premium: { type: 'coins', amount: 500, icon: '🪙' } },
   { tier: 3, xpRequired: 250, free: { type: 'coins', amount: 150, icon: '🪙' }, premium: { type: 'gems', amount: 25, icon: '💎' } },
-  { tier: 4, xpRequired: 450, free: { type: 'gems', amount: 10, icon: '💎' }, premium: { type: 'card', cardId: 11, name: 'Restraining-Order Randy', icon: '🃏', rarity: 'rare' } },
+  { tier: 4, xpRequired: 450, free: { type: 'gems', amount: 10, icon: '💎' }, premium: { type: 'card', cardId: 62, name: 'Chainsmoke Chad', icon: '🃏', rarity: 'rare' } },
   { tier: 5, xpRequired: 700, free: { type: 'pack', amount: 1, icon: '📦' }, premium: { type: 'exclusive', name: 'Gold Border', icon: '✨' } },
   { tier: 6, xpRequired: 1000, free: { type: 'coins', amount: 200, icon: '🪙' }, premium: { type: 'pack', amount: 3, icon: '📦' } },
-  { tier: 7, xpRequired: 1350, free: { type: 'gems', amount: 15, icon: '💎' }, premium: { type: 'card', cardId: 16, name: 'Lord Fluffington, Disgraced', icon: '🃏', rarity: 'epic' } },
+  { tier: 7, xpRequired: 1350, free: { type: 'gems', amount: 15, icon: '💎' }, premium: { type: 'card', cardId: 66, name: 'Mama Mauls', icon: '🃏', rarity: 'epic' } },
   { tier: 8, xpRequired: 1750, free: { type: 'pack', amount: 2, icon: '📦' }, premium: { type: 'gems', amount: 50, icon: '💎' } },
   { tier: 9, xpRequired: 2200, free: { type: 'coins', amount: 300, icon: '🪙' }, premium: { type: 'exclusive', name: 'Teddy Emote', icon: '🎭' } },
-  { tier: 10, xpRequired: 2700, free: { type: 'pack', amount: 2, icon: '📦' }, premium: { type: 'card', cardId: 20, name: 'The Godfluffer', icon: '👑', rarity: 'legendary' } },
+  { tier: 10, xpRequired: 2700, free: { type: 'pack', amount: 2, icon: '📦' }, premium: { type: 'card', cardId: 69, name: "Big Spoon, Last Warning", icon: '👑', rarity: 'legendary' } },
 ];
 
 const PREMIUM_PASS_PRICE = 500; // gems

@@ -43,37 +43,42 @@ const { ALL_CARDS } = await import('@/stores/gameStore');
 // Chuck's goons (GameBoard.jsx opponent deck, base stats). They have no
 // descriptions in code, so the character lines live here.
 const GOONS = [
-  { id: 101, name: 'Repo Ted', type: 'action', description: 'A burly repo-man teddy with a clipboard and zero sympathy.' },
-  { id: 102, name: 'Loan-Shark Larry', type: 'action', description: 'A slick pinstriped teddy loan shark with a gold tooth.' },
-  { id: 103, name: 'Off-the-Grid Greg', type: 'action', description: 'A twitchy survivalist teddy in a tinfoil-lined beanie.' },
-  { id: 104, name: 'Unhinged Cuddles', type: 'action', description: 'A wide-eyed teddy with a too-big smile and loose stitching.' },
-  { id: 105, name: 'Whiskey Whiskers', type: 'action', description: 'A grizzled barfly teddy nursing a tiny tumbler.' },
-  { id: 106, name: 'Landlord Lucifur', type: 'action', description: 'A horned slumlord teddy in a smoking jacket, holding an eviction notice.' },
-  { id: 107, name: 'Custody-Battle Cub', type: 'action', description: 'A small sad-eyed teddy cub dragging a half-packed suitcase.' },
-  { id: 108, name: 'Void Where Prohibited', type: 'action', description: 'A glitchy void-black teddy, edges dissolving into static.' },
+  { id: 101, name: 'Repo Ted', type: 'action', visual: 'burly slate-grey bear, buzzed fur, hi-vis work vest, clipboard and bolt cutters' },
+  { id: 102, name: 'Loan-Shark Larry', type: 'action', visual: 'sleek silver-furred bear in a pinstripe suit, gold tooth, fat cigar, pinky rings' },
+  { id: 103, name: 'Off-the-Grid Greg', type: 'action', visual: 'twitchy sand-colored bear, matted fur, tinfoil-lined beanie, mismatched goggles' },
+  { id: 104, name: 'Unhinged Cuddles', type: 'action', visual: 'bubblegum-pink bear with a too-wide stitched grin, popped seams leaking stuffing' },
+  { id: 105, name: 'Whiskey Whiskers', type: 'action', visual: 'grizzled russet bear, greying muzzle, half-moon glasses, tiny tumbler in one paw' },
+  { id: 106, name: 'Landlord Lucifur', type: 'action', visual: 'crimson-black bear with small horns, velvet smoking jacket, eviction notice in claw' },
+  { id: 107, name: 'Custody-Battle Cub', type: 'action', visual: 'small pale-cream cub, one drooping eye, oversized coat, dragging a battered suitcase' },
+  { id: 108, name: 'Void Where Prohibited', type: 'action', visual: 'matte void-black bear, edges dissolving into static, hollow glowing eye sockets' },
 ];
 
 // Kept terse on purpose: CLIP truncates at 77 tokens, so subject identity
 // and the raunchy dive-bar mood must land before any tail gets clipped.
-const STYLE =
-  'seedy dive bar, amber lamplight, neon glow, smoky haze, hyper realistic, hyper detailed, film grain';
+const MOOD = 'warm dive-bar bokeh, amber light, hyper realistic, hyper detailed';
 const NEGATIVE =
   'cartoon, illustration, drawing, flat colors, cel shading, text, letters, watermark, ' +
   'logo, signature, human, person, extra limbs, deformed, blurry, frame, border';
 
 // Raunchy R-rated-comedy art direction: worn real-fur bears living badly.
+//
+// Every card carries a hand-authored `visual` — a concrete physical
+// description of the subject. That field exists because card names and
+// descriptions are jokes ("It felt nice for exactly one second"), which give
+// a diffusion model nothing to paint: without it every bear rendered as the
+// same generic brown teddy and every trap as an anonymous dark bar. The
+// subject leads the prompt, hero-framing keeps it dominant at the ~84x52px
+// art window, and the mood tail is kept short so it degrades gracefully
+// against CLIP's 77-token ceiling instead of crowding the subject out.
+const HERO = 'single subject centered, filling the frame, sharp focus, blurred background';
+
 const promptFor = (card) => {
-  if (card.type === 'trap') {
-    return `Macro photo, sinister spring-loaded trap: ${card.name}. ${card.description ?? ''} ` +
-      `Sticky beer-stained bar table, ${STYLE}`;
+  const subject = card.visual || card.description || card.name;
+  if (card.type === 'trap' || card.type === 'special') {
+    return `Product photo of ${subject}. ${HERO}, ${MOOD}`;
   }
-  if (card.type === 'special') {
-    return `Cinematic still-life photo: ${card.name}. ${card.description ?? ''} ` +
-      `Grimy dive-bar counter, whiskey rings, cigarette burns, ${STYLE}`;
-  }
-  return `RAW photo, hyper realistic worn plush teddy bear, chest-up, attitude: ${card.name}. ` +
-    `${card.description ?? ''} Matted fur, stitched scars, bloodshot button eyes, ` +
-    `whiskey, cigarette smoke, ${STYLE}`;
+  return `RAW photo of a worn plush teddy bear, chest-up, facing viewer: ${subject}. ` +
+    `Matted fur, stitched seams, ${HERO}, ${MOOD}`;
 };
 
 const seedFor = (id) => 40_000 + id * 97; // stable per card, arbitrary base

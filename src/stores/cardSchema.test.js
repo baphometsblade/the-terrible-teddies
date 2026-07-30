@@ -23,6 +23,34 @@ describe('ALL_CARDS catalog shape', () => {
     expect(ALL_CARDS.length).toBeGreaterThan(0);
   });
 
+  // `visual` is the concrete physical description handed to the art generator
+  // (scripts/generate-card-art.mjs promptFor). It exists because names and
+  // descriptions are jokes — "It felt nice for exactly one second" gives a
+  // diffusion model nothing to paint, so cards without a visual render as
+  // interchangeable dark blur instead of their own character or object.
+  it('every card has a non-empty visual description for art generation', () => {
+    for (const card of ALL_CARDS) {
+      expect(
+        typeof card.visual === 'string' && card.visual.trim().length > 0,
+        `${label(card)} is missing a non-empty \`visual\` — its art would render as generic blur`
+      ).toBe(true);
+    }
+  });
+
+  it('visual descriptions are unique, so no two cards render the same art', () => {
+    const seen = new Map();
+    for (const card of ALL_CARDS) {
+      const key = card.visual?.trim().toLowerCase();
+      if (!key) continue; // covered by the previous test
+      const dupe = seen.get(key);
+      expect(
+        dupe,
+        `${label(card)} shares its \`visual\` with "${dupe?.name}" — both would render identical art`
+      ).toBeUndefined();
+      seen.set(key, card);
+    }
+  });
+
   it('every card has a unique integer id below the reserved goon-deck range (101-108)', () => {
     const seen = new Map();
     for (const card of ALL_CARDS) {
