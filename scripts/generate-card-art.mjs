@@ -29,6 +29,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import sharp from 'sharp';
+import { startMonitor, statusWriter } from './art-monitor.mjs';
 
 // The game store touches localStorage at import time (zustand persist);
 // stub it before pulling in ALL_CARDS.
@@ -225,17 +226,26 @@ async function main() {
   const call = flavor === 'a1111' ? callA1111 : callFooocus;
   let done = 0, skipped = 0, failed = 0;
 
+  // Live dashboard (npm run art:monitor watches the same status file).
+  if (has('--monitor')) await startMonitor({ dir: outDir });
+  const pending = todo.filter((c) => has('--force') || !fs.existsSync(path.join(outDir, `${c.id}.webp`)));
+  const status = statusWriter(pending);
+
   for (const card of todo) {
     const dest = path.join(outDir, `${card.id}.webp`);
     if (!has('--force') && fs.existsSync(dest)) { skipped++; continue; }
+    const t0 = Date.now();
+    status.generating(card.id);
     try {
       const raw = await call(base, auth, promptFor(card), seedFor(card.id));
       const webp = await toCardWebp(raw);
       fs.writeFileSync(dest, webp);
       done++;
+      status.done(card.id, +(webp.length / 1024).toFixed(1), Date.now() - t0);
       console.log(`✓ #${card.id} ${card.name} (${(webp.length / 1024).toFixed(1)} KB)`);
     } catch (err) {
       failed++;
+      status.failed(card.id);
       console.error(`✗ #${card.id} ${card.name}: ${err.message}`);
       if (failed >= 3 && done === 0) {
         console.error('First three calls all failed — aborting. Check FOOOCUS_URL/FOOOCUS_FLAVOR.');
@@ -243,8 +253,13 @@ async function main() {
       }
     }
   }
+  status.finish();
 
   console.log(`\n${done} generated, ${skipped} skipped (exist), ${failed} failed → ${outDir}`);
+  if (has('--monitor') && !selfTest) {
+    console.log('monitor is still serving — Ctrl-C to exit');
+    return; // keep the server (and process) alive for browsing the results
+  }
   if (selfTest) {
     // Exercise the a1111 flavor once too, then clean up.
     const raw = await callA1111(base, null, 'self-test', 1);

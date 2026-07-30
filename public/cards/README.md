@@ -23,7 +23,25 @@ npm run art:generate -- --dry-run       # print the prompt manifest
 npm run art:generate -- --only 1,6,30   # subset
 npm run art:generate -- --force         # regenerate existing files
 npm run art:generate -- --self-test     # exercise the pipeline w/ a mock server
+npm run art:generate -- --monitor       # serve the live dashboard during the run
 ```
+
+No endpoint at all? `scripts/generate-card-art-diffusers.py` renders the
+same manifest directly through huggingface diffusers (sd-turbo by default,
+GPU or CPU) — see its docstring.
+
+## Watching a run
+
+```bash
+npm run art:monitor    # http://127.0.0.1:8877
+```
+
+Opens a live dashboard: the generation queue with per-card state
+(pending / generating / done / failed, size, duration) and a clickable
+gallery of every finished file — click a card to open the full-size
+image. Works with all runners (they report progress to a shared status
+file) and standalone, whenever your local Fooocus is grinding through a
+batch. `ART_MONITOR_PORT` / `ART_DIR` override the defaults.
 
 If this repo runs in a cloud session, a Fooocus instance on your own
 machine needs a tunnel to be reachable, e.g.

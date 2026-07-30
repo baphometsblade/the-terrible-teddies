@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "art:generate": "vite-node scripts/generate-card-art.mjs",
+    "art:monitor": "node scripts/art-monitor.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
