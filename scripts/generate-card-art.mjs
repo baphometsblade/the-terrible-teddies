@@ -43,14 +43,14 @@ const { ALL_CARDS } = await import('@/stores/gameStore');
 // Chuck's goons (GameBoard.jsx opponent deck, base stats). They have no
 // descriptions in code, so the character lines live here.
 const GOONS = [
-  { id: 101, name: 'Repo Ted', type: 'action', fur: 'gunmetal grey', visual: 'burly bear, buzzed fur, hi-vis work vest, clipboard and bolt cutters' },
-  { id: 102, name: 'Loan-Shark Larry', type: 'action', fur: 'silver white', visual: 'sleek bear in a pinstripe suit, gold tooth, fat cigar, pinky rings' },
-  { id: 103, name: 'Off-the-Grid Greg', type: 'action', fur: 'sand beige', visual: 'twitchy bear, matted fur, tinfoil-lined beanie, mismatched goggles' },
-  { id: 104, name: 'Unhinged Cuddles', type: 'action', fur: 'bubblegum pink', visual: 'bear with a too-wide stitched grin, popped seams leaking stuffing' },
-  { id: 105, name: 'Whiskey Whiskers', type: 'action', fur: 'russet ginger', visual: 'grizzled bear, greying muzzle, half-moon glasses, tiny tumbler in one paw' },
-  { id: 106, name: 'Landlord Lucifur', type: 'action', fur: 'crimson black', visual: 'bear with small horns, velvet smoking jacket, eviction notice in claw' },
-  { id: 107, name: 'Custody-Battle Cub', type: 'action', fur: 'pale cream', visual: 'small cub, one drooping eye, oversized coat, dragging a battered suitcase' },
-  { id: 108, name: 'Void Where Prohibited', type: 'action', fur: 'matte void black', visual: 'bear with edges dissolving into static, hollow glowing eye sockets' },
+  { id: 101, name: 'Repo Ted', type: 'action', fur: 'gunmetal grey', visual: 'burly bear, hi-vis work vest, bolt cutters, repossession clipboard', scene: 'Low angle in a parking lot under blue-and-red cop lights, towing a car mid-argument.' },
+  { id: 102, name: 'Loan-Shark Larry', type: 'action', fur: 'silver white', visual: 'sleek bear, pinstripe suit, gold tooth, fat cigar, pinky rings', scene: 'Over-the-shoulder in a casino back office under a green banker lamp, counting a fat roll of cash.' },
+  { id: 103, name: 'Off-the-Grid Greg', type: 'action', fur: 'sand beige', visual: 'twitchy bear, tinfoil beanie, mismatched goggles, hand-drawn conspiracy map', scene: 'Fisheye in a cluttered bunker under a flickering camp lantern, pinning string to a corkboard.' },
+  { id: 104, name: 'Unhinged Cuddles', type: 'action', fur: 'bubblegum pink', visual: 'bear with a too-wide stitched grin, popped seams leaking stuffing', scene: 'Extreme close-up in a padded room under harsh white strip light, grinning directly into the lens.' },
+  { id: 105, name: 'Whiskey Whiskers', type: 'action', fur: 'russet ginger', visual: 'grizzled bear, greying muzzle, half-moon glasses, tiny tumbler', scene: 'Tight profile at the far end of the bar under amber lamplight, staring into his last drink.' },
+  { id: 106, name: 'Landlord Lucifur', type: 'action', fur: 'crimson black', visual: 'horned bear, velvet smoking jacket, eviction notice, ring of keys', scene: 'Low hero angle in a condemned stairwell under a red exit-sign glow, nailing a notice to a door.' },
+  { id: 107, name: 'Custody-Battle Cub', type: 'action', fur: 'pale cream', visual: 'small cub, one drooping eye, oversized coat, battered suitcase', scene: 'Wide shot in an empty courthouse corridor at dawn, dragging a suitcase toward the doors.' },
+  { id: 108, name: 'Void Where Prohibited', type: 'action', fur: 'matte void black', visual: 'bear dissolving into static at the edges, hollow glowing eye sockets', scene: 'Dutch tilt in a pitch-dark room lit only by a buzzing broken TV, half-eaten by static.' },
 ];
 
 // Kept terse on purpose: CLIP truncates at 77 tokens, so subject identity
@@ -70,20 +70,26 @@ const NEGATIVE =
 // subject leads the prompt, hero-framing keeps it dominant at the ~84x52px
 // art window, and the mood tail is kept short so it degrades gracefully
 // against CLIP's 77-token ceiling instead of crowding the subject out.
-const HERO = 'single subject centered, filling the frame, sharp focus, blurred background';
-
+// Composition is per-card, not global. An identical "chest-up, facing viewer,
+// centered, blurred background" on every card made 41 bears read as recolours
+// of one portrait no matter how different their fur and wardrobe were — so the
+// pose, camera angle, setting and lighting now come from each card's `scene`,
+// and only a minimal sharpness cue is shared.
+// Segment order is a truncation strategy, not just phrasing. CLIP hard-cuts at
+// 77 tokens and silently discards the overflow, so everything that MUST land —
+// medium, fur colour (twice, to beat the brown-plush prior), then the subject —
+// is front-loaded, and the scene's lighting clause is deliberately last: if a
+// long card overflows, it loses a lighting adjective rather than its wardrobe
+// or its colour. No fixed framing/sharpness tail any more; it cost ~11 tokens
+// per card and pushed a quarter of the set over the limit.
 const promptFor = (card) => {
   const subject = card.visual || card.description || card.name;
+  const scene = card.scene || MOOD;
   if (card.type === 'trap' || card.type === 'special') {
-    return `Product photo of ${subject}. ${HERO}, ${MOOD}`;
+    return `Product photo, single object filling the frame — ${subject}. ${scene}`;
   }
-  // Colour first, and stated twice. The model's prior for "teddy bear" is
-  // overwhelmingly brown plush, so a colour buried mid-sentence loses to it —
-  // leading with the fur and echoing it after the wardrobe is what actually
-  // moves the palette.
   const fur = card.fur ? `${card.fur} ` : '';
-  return `RAW photo of a ${fur}teddy bear, worn plush, chest-up, facing viewer — ${subject}. ` +
-    `${fur}fur throughout, stitched seams, ${HERO}, ${MOOD}`;
+  return `RAW photo, ${fur}plush teddy bear, ${fur}fur — ${subject}. ${scene}`;
 };
 
 // Non-brown bears fight the model's brown-plush prior; when guidance is on

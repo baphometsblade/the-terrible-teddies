@@ -37,6 +37,27 @@ describe('ALL_CARDS catalog shape', () => {
     }
   });
 
+  // `scene` carries the pose, camera angle, setting and lighting. Without it
+  // every card was shot identically — same framing, same bokeh — so 41 bears
+  // read as recolours of one portrait however different their fur was.
+  it('every card has a unique, non-empty scene so no two share a composition', () => {
+    const seen = new Map();
+    for (const card of ALL_CARDS) {
+      expect(
+        typeof card.scene === 'string' && card.scene.trim().length > 0,
+        `${label(card)} is missing a non-empty \`scene\` — it would be shot identically to every other card`
+      ).toBe(true);
+      const key = card.scene?.trim().toLowerCase();
+      if (!key) continue;
+      const dupe = seen.get(key);
+      expect(
+        dupe,
+        `${label(card)} shares its \`scene\` with "${dupe?.name}" — both would render the same composition`
+      ).toBeUndefined();
+      seen.set(key, card);
+    }
+  });
+
   it('visual descriptions are unique, so no two cards render the same art', () => {
     const seen = new Map();
     for (const card of ALL_CARDS) {
