@@ -16,6 +16,11 @@ Env:
             subjects at card resolution. SD_MODEL=stabilityai/sd-turbo with
             SD_WIDTH/SD_HEIGHT=512 stays available for fast/low-RAM runs.)
   SD_STEPS  inference steps (default 4)
+  SD_GUIDANCE classifier-free guidance (default 0.0). Turbo models are
+            distilled for 0.0, where the negative prompt has NO effect.
+            Raise it (e.g. 2.0, with SD_STEPS=8) when prompt adherence
+            matters more than speed — that also switches the negative
+            prompt on.
   SD_DEVICE force cuda | mps | cpu (default: auto-detect, GPU preferred)
   SD_WIDTH  render width in px (default 768)
   SD_HEIGHT render height in px (default 1024)
@@ -130,6 +135,7 @@ def main() -> int:
 
     model = os.environ.get("SD_MODEL", "stabilityai/sdxl-turbo")
     steps = int(os.environ.get("SD_STEPS", "4"))
+    guidance = float(os.environ.get("SD_GUIDANCE", "0.0"))
     width = int(os.environ.get("SD_WIDTH", "768"))
     height = int(os.environ.get("SD_HEIGHT", "1024"))
 
@@ -204,14 +210,21 @@ def main() -> int:
         update(m["id"], state="generating")
         try:
             gen = torch.Generator(device=device).manual_seed(m["seed"])
-            # turbo models: guidance 0.0, negative prompt has no effect there
+            # Turbo models are distilled for guidance 0.0, where classifier-free
+            # guidance — and therefore the negative prompt — is inactive. Only
+            # send the negative when guidance is actually on, so the default
+            # path stays exactly as before.
+            kwargs = {}
+            if guidance > 0 and m.get("negative"):
+                kwargs["negative_prompt"] = m["negative"]
             img = pipe(
                 prompt=m["prompt"],
                 num_inference_steps=steps,
-                guidance_scale=0.0,
+                guidance_scale=guidance,
                 width=width,
                 height=height,
                 generator=gen,
+                **kwargs,
             ).images[0]
             size = to_card_webp(img, dest)
             done += 1

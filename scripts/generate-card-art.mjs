@@ -43,14 +43,14 @@ const { ALL_CARDS } = await import('@/stores/gameStore');
 // Chuck's goons (GameBoard.jsx opponent deck, base stats). They have no
 // descriptions in code, so the character lines live here.
 const GOONS = [
-  { id: 101, name: 'Repo Ted', type: 'action', visual: 'burly slate-grey bear, buzzed fur, hi-vis work vest, clipboard and bolt cutters' },
-  { id: 102, name: 'Loan-Shark Larry', type: 'action', visual: 'sleek silver-furred bear in a pinstripe suit, gold tooth, fat cigar, pinky rings' },
-  { id: 103, name: 'Off-the-Grid Greg', type: 'action', visual: 'twitchy sand-colored bear, matted fur, tinfoil-lined beanie, mismatched goggles' },
-  { id: 104, name: 'Unhinged Cuddles', type: 'action', visual: 'bubblegum-pink bear with a too-wide stitched grin, popped seams leaking stuffing' },
-  { id: 105, name: 'Whiskey Whiskers', type: 'action', visual: 'grizzled russet bear, greying muzzle, half-moon glasses, tiny tumbler in one paw' },
-  { id: 106, name: 'Landlord Lucifur', type: 'action', visual: 'crimson-black bear with small horns, velvet smoking jacket, eviction notice in claw' },
-  { id: 107, name: 'Custody-Battle Cub', type: 'action', visual: 'small pale-cream cub, one drooping eye, oversized coat, dragging a battered suitcase' },
-  { id: 108, name: 'Void Where Prohibited', type: 'action', visual: 'matte void-black bear, edges dissolving into static, hollow glowing eye sockets' },
+  { id: 101, name: 'Repo Ted', type: 'action', fur: 'gunmetal grey', visual: 'burly bear, buzzed fur, hi-vis work vest, clipboard and bolt cutters' },
+  { id: 102, name: 'Loan-Shark Larry', type: 'action', fur: 'silver white', visual: 'sleek bear in a pinstripe suit, gold tooth, fat cigar, pinky rings' },
+  { id: 103, name: 'Off-the-Grid Greg', type: 'action', fur: 'sand beige', visual: 'twitchy bear, matted fur, tinfoil-lined beanie, mismatched goggles' },
+  { id: 104, name: 'Unhinged Cuddles', type: 'action', fur: 'bubblegum pink', visual: 'bear with a too-wide stitched grin, popped seams leaking stuffing' },
+  { id: 105, name: 'Whiskey Whiskers', type: 'action', fur: 'russet ginger', visual: 'grizzled bear, greying muzzle, half-moon glasses, tiny tumbler in one paw' },
+  { id: 106, name: 'Landlord Lucifur', type: 'action', fur: 'crimson black', visual: 'bear with small horns, velvet smoking jacket, eviction notice in claw' },
+  { id: 107, name: 'Custody-Battle Cub', type: 'action', fur: 'pale cream', visual: 'small cub, one drooping eye, oversized coat, dragging a battered suitcase' },
+  { id: 108, name: 'Void Where Prohibited', type: 'action', fur: 'matte void black', visual: 'bear with edges dissolving into static, hollow glowing eye sockets' },
 ];
 
 // Kept terse on purpose: CLIP truncates at 77 tokens, so subject identity
@@ -77,9 +77,22 @@ const promptFor = (card) => {
   if (card.type === 'trap' || card.type === 'special') {
     return `Product photo of ${subject}. ${HERO}, ${MOOD}`;
   }
-  return `RAW photo of a worn plush teddy bear, chest-up, facing viewer: ${subject}. ` +
-    `Matted fur, stitched seams, ${HERO}, ${MOOD}`;
+  // Colour first, and stated twice. The model's prior for "teddy bear" is
+  // overwhelmingly brown plush, so a colour buried mid-sentence loses to it —
+  // leading with the fur and echoing it after the wardrobe is what actually
+  // moves the palette.
+  const fur = card.fur ? `${card.fur} ` : '';
+  return `RAW photo of a ${fur}teddy bear, worn plush, chest-up, facing viewer — ${subject}. ` +
+    `${fur}fur throughout, stitched seams, ${HERO}, ${MOOD}`;
 };
+
+// Non-brown bears fight the model's brown-plush prior; when guidance is on
+// (SD_GUIDANCE>0) the runner sends this as the negative prompt.
+const BROWNISH = /brown|tan|chocolate|espresso|caramel|amber|auburn|khaki|russet|beige|oxblood/i;
+const negativeFor = (card) =>
+  card.type === 'action' && card.fur && !BROWNISH.test(card.fur)
+    ? `${NEGATIVE}, brown fur, tan fur, beige fur`
+    : NEGATIVE;
 
 const seedFor = (id) => 40_000 + id * 97; // stable per card, arbitrary base
 
@@ -206,7 +219,7 @@ async function main() {
       name: c.name,
       type: c.type,
       prompt: promptFor(c),
-      negative: NEGATIVE,
+      negative: negativeFor(c),
       seed: seedFor(c.id),
     }));
     fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
