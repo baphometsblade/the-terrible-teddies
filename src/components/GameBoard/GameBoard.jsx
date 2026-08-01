@@ -11,6 +11,7 @@ import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack } from '
 import { pickQuip, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { syncBattleResult } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
+import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
 import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
 
@@ -225,29 +226,16 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
     const initialPlayerDeck = shuffleDeck(deckToUse);
 
-    // Generate opponent deck based on difficulty
-    const opponentBaseStats = {
-      easy: { attackMod: -1, defenseMod: -1, healthMod: -5 },
-      normal: { attackMod: 0, defenseMod: 0, healthMod: 0 },
-      hard: { attackMod: 1, defenseMod: 1, healthMod: 5 },
-    };
-    const diffMods = opponentBaseStats[aiDifficulty] || opponentBaseStats.normal;
-
-    const opponentCards = [
-      { id: 101, name: "Repo Ted", attack: 3 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
-      { id: 102, name: "Loan-Shark Larry", attack: 2 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'taunt', rarity: 'common' },
-      { id: 103, name: "Off-the-Grid Greg", attack: 4 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 3, ability: 'piercing', rarity: 'rare' },
-      { id: 104, name: "Unhinged Cuddles", attack: 3 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 3, ability: 'fury', rarity: 'epic' },
-      { id: 105, name: "Whiskey Whiskers", attack: 2 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
-      { id: 106, name: "Landlord Lucifur", attack: 4 + diffMods.attackMod, defense: 4 + diffMods.defenseMod, type: 'action', cost: 4, ability: 'shield', rarity: 'legendary' },
-      { id: 107, name: "Custody-Battle Cub", attack: 3 + diffMods.attackMod, defense: 2 + diffMods.defenseMod, type: 'action', cost: 2, ability: 'stealth', rarity: 'rare' },
-      { id: 108, name: "Void Where Prohibited", attack: 5 + diffMods.attackMod, defense: 3 + diffMods.defenseMod, type: 'action', cost: 4, ability: 'piercing', rarity: 'epic' },
-    ].map((card, idx) => ({ ...card, instanceId: `o-${card.id}-${idx}` }));
+    // Generate opponent deck based on difficulty — a fresh crew every fight,
+    // scaled by difficulty (see opponentDeck.js), instead of the same 8 goons
+    // forever.
+    const { cards: opponentCards, crewName } = buildOpponentDeck(aiDifficulty);
+    const healthMod = OPPONENT_HEALTH_MOD_BY_DIFFICULTY[aiDifficulty] ?? 0;
 
     const initialOpponentDeck = shuffleDeck(opponentCards);
 
     // Set opponent health based on difficulty
-    setOpponentHealth(30 + diffMods.healthMod);
+    setOpponentHealth(30 + healthMod);
 
     const playerInitialHand = initialPlayerDeck.slice(0, 5);
     const playerRemainingDeck = initialPlayerDeck.slice(5);
@@ -258,7 +246,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setOpponentField([withHp(initialOpponentDeck[0])]);
     setOpponentDeck(initialOpponentDeck.slice(1));
 
-    addToBattleLog(`${OPPONENT_NAME} slams his deck on the table. Difficulty: ${aiDifficulty.toUpperCase()}`);
+    addToBattleLog(`${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`);
     addToBattleLog("Your turn. Make it hurt.");
     setDeckReady(true);
     speak('gameStart');

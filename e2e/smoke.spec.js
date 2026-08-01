@@ -5,6 +5,7 @@
 // and every request to the fake Supabase project, the sound CDN, and PostHog
 // is stubbed or aborted in the browser. No real backend is contacted.
 import { test as base, expect } from '@playwright/test';
+import { getDailyChallenges } from '../src/stores/challenges.js';
 
 const REF = 'testproject'; // first host label of VITE_SUPABASE_URL
 
@@ -307,11 +308,14 @@ test('challenges dialog shows daily challenges and closes on Escape', async ({ p
   const dialog = page.getByRole('dialog', { name: 'Challenges' });
   await expect(dialog).toBeVisible(SLOW); // lazy-loaded chunk
 
-  // Daily tab is active by default and lists the daily challenges.
-  await expect(dialog.getByText('Win 3 Battles')).toBeVisible(SLOW);
-  await expect(dialog.getByText('Play 5 Games')).toBeVisible();
-  await expect(dialog.getByText('Deal 50 Damage')).toBeVisible();
-  await expect(dialog.getByText('Use 10 Cards')).toBeVisible();
+  // Daily tab is active by default and lists today's 4 rotating daily
+  // challenges (src/stores/challenges.js — deterministic by calendar date,
+  // so this matches whatever the app itself computed for "today").
+  const todaysDaily = getDailyChallenges();
+  expect(todaysDaily).toHaveLength(4);
+  for (const challenge of todaysDaily) {
+    await expect(dialog.getByText(challenge.name, { exact: true })).toBeVisible(SLOW);
+  }
 
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0, SLOW);

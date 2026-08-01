@@ -4,22 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore } from '../stores/gameStore';
+import { getDailyChallenges, getWeeklyChallenges } from '../stores/challenges';
 import confetti from 'canvas-confetti';
 import { useDialog } from '@/hooks/useDialog';
-
-const DAILY_CHALLENGES = [
-  { id: 'd1', name: 'Win 3 Battles', description: 'Achieve victory in 3 battles', target: 3, reward: { type: 'coins', amount: 150 }, icon: '⚔️', stat: 'dailyWins' },
-  { id: 'd2', name: 'Play 5 Games', description: 'Complete 5 battles (win or lose)', target: 5, reward: { type: 'xp', amount: 100 }, icon: '🎮', stat: 'dailyGames' },
-  { id: 'd3', name: 'Deal 50 Damage', description: 'Deal a total of 50 damage', target: 50, reward: { type: 'coins', amount: 100 }, icon: '💥', stat: 'dailyDamage' },
-  { id: 'd4', name: 'Use 10 Cards', description: 'Play 10 cards in battles', target: 10, reward: { type: 'pack', amount: 1 }, icon: '🃏', stat: 'dailyCardsPlayed' },
-];
-
-const WEEKLY_CHALLENGES = [
-  { id: 'w1', name: 'Win 15 Battles', description: 'Achieve 15 victories this week', target: 15, reward: { type: 'gems', amount: 50 }, icon: '🏆', stat: 'weeklyWins' },
-  { id: 'w2', name: 'Win Streak of 5', description: 'Achieve a 5 game win streak', target: 5, reward: { type: 'pack', amount: 3 }, icon: '🔥', stat: 'weeklyBestStreak' },
-  { id: 'w3', name: 'Collect 5 New Cards', description: 'Add 5 new cards to your collection', target: 5, reward: { type: 'gems', amount: 30 }, icon: '📚', stat: 'weeklyNewCards' },
-  { id: 'w4', name: 'Earn 500 Coins', description: 'Earn 500 coins from battles', target: 500, reward: { type: 'legendaryPack', amount: 1 }, icon: '🪙', stat: 'weeklyCoinsEarned' },
-];
 
 const getTimeUntilReset = (isWeekly = false) => {
   const now = new Date();
@@ -56,6 +43,14 @@ const Challenges = ({ onClose }) => {
   const [dailyResetTime, setDailyResetTime] = useState(getTimeUntilReset(false));
   const [weeklyResetTime, setWeeklyResetTime] = useState(getTimeUntilReset(true));
   const dialogRef = useDialog(onClose);
+
+  // The visible set rotates deterministically by calendar date (see
+  // src/stores/challenges.js) — same 4 all day/week, different set on the
+  // next day/week. Recomputed every render (cheap: a shuffle over ~12 items)
+  // so a dialog left open across midnight/Monday picks up the new set
+  // without a remount.
+  const DAILY_CHALLENGES = getDailyChallenges();
+  const WEEKLY_CHALLENGES = getWeeklyChallenges();
 
   // Roll over daily/weekly stats and the claimed ledger if the calendar has
   // advanced since the last battle, so the panel never shows stale challenges.
