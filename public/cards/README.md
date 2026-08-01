@@ -116,8 +116,10 @@ a full `--force` art regeneration.
 
 ## Style contract (built by `promptFor()` in scripts/generate-card-art.mjs)
 
-Each card carries three hand-authored fields in `ALL_CARDS`, and the prompt is
-assembled from them. They exist because card names and descriptions are jokes —
+Each card has three hand-authored fields in `src/data/cardArt.js` (`CARD_ART`,
+keyed by card id), and the prompt is assembled from them. They live there rather
+than on the cards themselves so this prose never ships in the client bundle —
+no app code imports it. They exist because card names and descriptions are jokes:
 "It felt nice for exactly one second" gives a diffusion model nothing to paint.
 
 | field | what it holds | example (Shitstarter Ted) |
