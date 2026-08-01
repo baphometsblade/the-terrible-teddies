@@ -172,6 +172,7 @@ const TeddyCollection = () => {
                   <div className={`relative w-32 h-44 rounded-xl border-2 ${RARITY[selectedCard.rarity].border} ${RARITY[selectedCard.rarity].glow} shadow-2xl bg-gradient-to-b ${RARITY[selectedCard.rarity].bg} stitched-plush overflow-hidden flex items-center justify-center`}>
                     <ArtOrEmoji
                       teddy={selectedCard}
+                      variant="full"
                       emojiClassName="text-7xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
                       imgClassName="w-full h-full object-cover"
                     />

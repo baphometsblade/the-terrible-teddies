@@ -40,27 +40,51 @@ const getTeddyEmoji = (teddy) => {
 };
 
 // Card art slot: shows the generated illustration for this card if one has
-// been shipped under public/cards/<id>.webp, and silently falls back to the
-// emoji cast when the file is missing or fails to load — art can never break
-// a card. alt="" keeps the art decorative so accessible names don't change.
-export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = '' }) => {
-  // Track which card id failed (not a boolean): a reused component instance
-  // re-rendered with a different teddy must retry that card's art instead of
-  // inheriting the previous card's failure.
-  const [failedId, setFailedId] = useState(null);
+// been shipped under public/cards/<id>.webp (or its small-viewport twin at
+// public/cards/thumbs/<id>.webp), and silently falls back to the emoji cast
+// when no file loads — art can never break a card. alt="" keeps the art
+// decorative so accessible names don't change.
+//
+// `variant` picks the source: 'thumb' (default) serves the 192x256
+// thumbnail for the many places art renders small (collection grid, battle
+// hand) — those spots have no use for a 768x1024 original and downloading
+// one there is pure waste (~9x the bytes a thumb needs, see
+// scripts/make-card-thumbs.mjs). 'full' serves the original for the few
+// spots that render art large enough to need it (e.g. the collection
+// detail modal).
+//
+// Fallback is two-stage: a failed thumb retries the full-res image before
+// giving up on the emoji, so a missing/stale thumbs/ entry never regresses
+// a card that does have full art.
+export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = '', variant = 'thumb' }) => {
+  // Track which card id failed at which stage (not a boolean): a reused
+  // component instance re-rendered with a different teddy must retry that
+  // card's art instead of inheriting the previous card's failure, and a
+  // thumb failure for this card must not be confused with a full-image
+  // failure for it.
+  const [failed, setFailed] = useState({ id: null, stage: null });
 
-  if (!teddy.id || failedId === teddy.id) {
+  const thumbFailed = failed.id === teddy.id && failed.stage === 'thumb';
+  const fullFailed = failed.id === teddy.id && failed.stage === 'full';
+
+  if (!teddy.id || fullFailed) {
     return <div className={emojiClassName}>{getTeddyEmoji(teddy)}</div>;
   }
 
+  // Once the thumb has failed for this card, fall through to the full
+  // image regardless of the requested variant — that's the whole point of
+  // the fallback chain.
+  const useFull = variant === 'full' || thumbFailed;
+  const src = useFull ? `/cards/${teddy.id}.webp` : `/cards/thumbs/${teddy.id}.webp`;
+
   return (
     <img
-      src={`/cards/${teddy.id}.webp`}
+      src={src}
       alt=""
       loading="lazy"
       draggable={false}
       className={imgClassName}
-      onError={() => setFailedId(teddy.id)}
+      onError={() => setFailed({ id: teddy.id, stage: useFull ? 'full' : 'thumb' })}
     />
   );
 };
