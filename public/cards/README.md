@@ -83,16 +83,40 @@ Output is post-processed automatically: 3:4 cover crop at 768×1024, webp
 stepped down in quality until each file is ≤150 KB. Seeds are stable per
 card id, so re-runs are reproducible.
 
-## Style contract (baked into the script's prompts)
+## Style contract (built by `promptFor()` in scripts/generate-card-art.mjs)
 
-Raunchy R-rated-comedy realism — worn plush bears living badly:
+Each card carries three hand-authored fields in `ALL_CARDS`, and the prompt is
+assembled from them. They exist because card names and descriptions are jokes —
+"It felt nice for exactly one second" gives a diffusion model nothing to paint.
 
-> RAW photo, hyper realistic worn plush teddy bear, chest-up, attitude:
-> [CHARACTER]. Matted fur, stitched scars, bloodshot button eyes, whiskey,
-> cigarette smoke, seedy dive bar, amber lamplight, neon glow, smoky haze,
-> hyper realistic, hyper detailed, film grain.
+| field | what it holds | example (Shitstarter Ted) |
+|---|---|---|
+| `fur` | colour + texture, bears only | `chocolate brown` |
+| `visual` | the subject: build, damage, wardrobe, props | `barrel-chested bear, torn ear, novelty condom necklace, brass knuckles` |
+| `scene` | action + camera + setting + lighting | `Low hero angle on the bar top under amber jukebox glow, cracking a beer bottle over a rival's head` |
 
-Traps get macro shots of the contraption on a sticky bar table; specials
-get cinematic still-lifes on a grimy dive-bar counter. Prompts are kept
-terse on purpose — CLIP truncates at 77 tokens, so identity and mood are
-front-loaded.
+Bears:
+
+> `RAW photo, {fur} plush teddy bear, {fur} fur — {visual}. {scene}`
+
+Traps and specials (object still-lifes):
+
+> `Product photo, single object filling the frame — {visual}. {scene}`
+
+Two deliberate choices, both learned the hard way:
+
+- **Colour is stated twice and leads the prompt.** The model's prior for "teddy
+  bear" is overwhelmingly brown plush; a colour buried mid-sentence loses to it.
+- **Composition is per-card, never global.** An identical "chest-up, facing
+  viewer, centered, blurred background" on every card made 41 bears read as
+  recolours of one portrait regardless of their fur and wardrobe. There is no
+  fixed framing or sharpness tail any more.
+
+Segment order is also a truncation strategy: CLIP hard-cuts at 77 tokens and
+silently discards the overflow, so medium, colour and subject are front-loaded
+and the lighting clause sits last — an overflow costs an adjective, not a
+wardrobe. `npm run art:generate -- --dry-run` prints every prompt; keep the
+longest under 77 tokens.
+
+The tone is 18+ dive-bar comedy — squalor, booze, bad decisions and regret,
+suggestive rather than explicit.

@@ -19,11 +19,17 @@
  *   FOOOCUS_FLAVOR  'fooocus' (Fooocus-API, default) | 'a1111' (AUTOMATIC1111 webui --api)
  *   FOOOCUS_AUTH    optional. Sent as the Authorization header verbatim.
  *
+ *   ART_MONITOR_PORT  port for the forced progress dashboard (default 8877)
+ *
  * Flags:
- *   --only 1,6,30   generate only these card ids
- *   --force         regenerate even if public/cards/<id>.webp exists
- *   --dry-run       print the prompt manifest and exit
- *   --self-test     run against a built-in mock server (no endpoint needed)
+ *   --only 1,6,30      generate only these card ids
+ *   --force            regenerate even if public/cards/<id>.webp exists
+ *   --dry-run          print every prompt and exit
+ *   --manifest <path>  write the prompts as JSON for the python diffusers
+ *                      runner, then exit
+ *   --monitor          keep the dashboard serving after the batch finishes
+ *   --no-monitor       skip the dashboard entirely (CI / headless)
+ *   --self-test        run against a built-in mock server (no endpoint needed)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -60,28 +66,25 @@ const NEGATIVE =
   'cartoon, illustration, drawing, flat colors, cel shading, text, letters, watermark, ' +
   'logo, signature, human, person, extra limbs, deformed, blurry, frame, border';
 
-// Raunchy R-rated-comedy art direction: worn real-fur bears living badly.
+// Raunchy R-rated-comedy art direction: worn plush bears living badly.
 //
-// Every card carries a hand-authored `visual` — a concrete physical
-// description of the subject. That field exists because card names and
-// descriptions are jokes ("It felt nice for exactly one second"), which give
-// a diffusion model nothing to paint: without it every bear rendered as the
-// same generic brown teddy and every trap as an anonymous dark bar. The
-// subject leads the prompt, hero-framing keeps it dominant at the ~84x52px
-// art window, and the mood tail is kept short so it degrades gracefully
-// against CLIP's 77-token ceiling instead of crowding the subject out.
-// Composition is per-card, not global. An identical "chest-up, facing viewer,
-// centered, blurred background" on every card made 41 bears read as recolours
-// of one portrait no matter how different their fur and wardrobe were — so the
-// pose, camera angle, setting and lighting now come from each card's `scene`,
-// and only a minimal sharpness cue is shared.
-// Segment order is a truncation strategy, not just phrasing. CLIP hard-cuts at
-// 77 tokens and silently discards the overflow, so everything that MUST land —
-// medium, fur colour (twice, to beat the brown-plush prior), then the subject —
-// is front-loaded, and the scene's lighting clause is deliberately last: if a
-// long card overflows, it loses a lighting adjective rather than its wardrobe
-// or its colour. No fixed framing/sharpness tail any more; it cost ~11 tokens
-// per card and pushed a quarter of the set over the limit.
+// Every card carries three hand-authored fields, because names and descriptions
+// are jokes ("It felt nice for exactly one second") and give a diffusion model
+// nothing to paint: `fur` (colour), `visual` (build/wardrobe/props) and `scene`
+// (action, camera, setting, lighting).
+//
+// Two rules are load-bearing, both learned by shipping the failure first:
+//   1. Colour leads and is stated twice. The prior for "teddy bear" is
+//      overwhelmingly brown plush; a colour buried mid-sentence loses to it.
+//   2. Composition is per-card. A shared "chest-up, facing viewer, centered,
+//      blurred background" made 41 bears read as recolours of one portrait
+//      however different their fur and wardrobe were, so there is no global
+//      framing tail at all now.
+//
+// Segment order doubles as a truncation strategy: CLIP hard-cuts at 77 tokens
+// and silently drops the overflow, so medium, colour and subject are
+// front-loaded and the scene's lighting clause sits last — an overflow costs an
+// adjective rather than a wardrobe. Check with `--dry-run` after editing.
 const promptFor = (card) => {
   const subject = card.visual || card.description || card.name;
   const scene = card.scene || MOOD;

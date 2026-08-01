@@ -10,7 +10,7 @@ import { useDialog } from '@/hooks/useDialog';
 import { pressable } from '@/lib/a11y';
 import { RARITY } from '@/lib/rarity';
 
-const BATTLE_PASS_REWARDS = [
+export const BATTLE_PASS_REWARDS = [
   { tier: 1, xpRequired: 0, free: { type: 'coins', amount: 100, icon: '🪙' }, premium: { type: 'card', cardId: 7, name: 'Peeping Pete', icon: '🃏', rarity: 'uncommon' } },
   { tier: 2, xpRequired: 100, free: { type: 'pack', amount: 1, icon: '📦' }, premium: { type: 'coins', amount: 500, icon: '🪙' } },
   { tier: 3, xpRequired: 250, free: { type: 'coins', amount: 150, icon: '🪙' }, premium: { type: 'gems', amount: 25, icon: '💎' } },
@@ -21,6 +21,21 @@ const BATTLE_PASS_REWARDS = [
   { tier: 8, xpRequired: 1750, free: { type: 'pack', amount: 2, icon: '📦' }, premium: { type: 'gems', amount: 50, icon: '💎' } },
   { tier: 9, xpRequired: 2200, free: { type: 'coins', amount: 300, icon: '🪙' }, premium: { type: 'exclusive', name: 'Teddy Emote', icon: '🎭' } },
   { tier: 10, xpRequired: 2700, free: { type: 'pack', amount: 2, icon: '📦' }, premium: { type: 'card', cardId: 69, name: "Big Spoon, Last Warning", icon: '👑', rarity: 'legendary' } },
+  { tier: 11, xpRequired: 3250, free: { type: 'coins', amount: 350, icon: '🪙' }, premium: { type: 'gems', amount: 60, icon: '💎' } },
+  { tier: 12, xpRequired: 3850, free: { type: 'pack', amount: 2, icon: '📦' }, premium: { type: 'pack', amount: 3, icon: '📦' } },
+  { tier: 13, xpRequired: 4500, free: { type: 'gems', amount: 20, icon: '💎' }, premium: { type: 'card', cardId: 65, name: "The Debt Collector", icon: '🃏', rarity: 'rare' } },
+  { tier: 14, xpRequired: 5200, free: { type: 'coins', amount: 400, icon: '🪙' }, premium: { type: 'gems', amount: 70, icon: '💎' } },
+  { tier: 15, xpRequired: 5950, free: { type: 'pack', amount: 3, icon: '📦' }, premium: { type: 'exclusive', name: 'Diamond Border', icon: '💠' } },
+  { tier: 16, xpRequired: 6750, free: { type: 'gems', amount: 25, icon: '💎' }, premium: { type: 'card', cardId: 68, name: "Duke of Dumpsterfire", icon: '🃏', rarity: 'epic' } },
+  { tier: 17, xpRequired: 7600, free: { type: 'coins', amount: 450, icon: '🪙' }, premium: { type: 'coins', amount: 800, icon: '🪙' } },
+  { tier: 18, xpRequired: 8500, free: { type: 'pack', amount: 3, icon: '📦' }, premium: { type: 'pack', amount: 4, icon: '📦' } },
+  { tier: 19, xpRequired: 9450, free: { type: 'gems', amount: 30, icon: '💎' }, premium: { type: 'card', cardId: 19, name: "The Seam Reaper", icon: '🃏', rarity: 'epic' } },
+  { tier: 20, xpRequired: 10450, free: { type: 'coins', amount: 500, icon: '🪙' }, premium: { type: 'gems', amount: 90, icon: '💎' } },
+  { tier: 21, xpRequired: 11500, free: { type: 'pack', amount: 4, icon: '📦' }, premium: { type: 'exclusive', name: 'Confetti Cannon Emote', icon: '🎉' } },
+  { tier: 22, xpRequired: 12600, free: { type: 'gems', amount: 35, icon: '💎' }, premium: { type: 'card', cardId: 20, name: "The Godfluffer", icon: '👑', rarity: 'legendary' } },
+  { tier: 23, xpRequired: 13750, free: { type: 'coins', amount: 550, icon: '🪙' }, premium: { type: 'coins', amount: 1000, icon: '🪙' } },
+  { tier: 24, xpRequired: 14950, free: { type: 'pack', amount: 4, icon: '📦' }, premium: { type: 'pack', amount: 5, icon: '📦' } },
+  { tier: 25, xpRequired: 16200, free: { type: 'pack', amount: 5, icon: '📦' }, premium: { type: 'card', cardId: 21, name: "Fluffpocalypse Now", icon: '👑', rarity: 'legendary' } },
 ];
 
 const PREMIUM_PASS_PRICE = 500; // gems
@@ -308,7 +323,7 @@ const BattlePass = ({ onClose }) => {
                   <li>✓ Premium cosmetic rewards</li>
                   <li>✓ Bonus gems and coins</li>
                   <li>✓ Special card borders & emotes</li>
-                  <li>✓ All 10 premium tier rewards</li>
+                  <li>✓ All {BATTLE_PASS_REWARDS.length} premium tier rewards</li>
                 </ul>
               </div>
 

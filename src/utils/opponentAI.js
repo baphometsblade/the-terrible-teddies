@@ -1,7 +1,7 @@
 // Pure decision logic for the AI opponent — extracted from GameBoard so the
 // behavior is unit-testable and difficulty actually changes how the opponent
 // plays (not just its stat mods).
-import { damageToCreatureHp } from './battleUtils';
+import { damageToCreatureHp, effectiveCost } from './battleUtils';
 
 // Per-turn energy budget by difficulty: the behavioral half of the difficulty
 // setting. Hard can afford its most expensive cards; easy is limited to cheap
@@ -18,15 +18,22 @@ export const OPPONENT_ENERGY_BY_DIFFICULTY = { easy: 2, normal: 3, hard: 4 };
  * what prevents a permanent stall: a top card costing more than the per-turn
  * budget would otherwise block the opponent for the rest of the game.
  *
+ * Pricing goes through `effectiveCost` (same helper the player's UI uses) so
+ * a `swarm` card is budgeted at its discounted cost once the opponent already
+ * controls another creature — either one already on the field (`fieldCards`)
+ * or one it played earlier in this same loop (`plays`, folded in as we go).
+ * `fieldCards` is optional and defaults to empty so existing callers that
+ * only pass a `fieldCount` number keep their old (no-discount) behavior.
+ *
  * @returns {{ plays: object[], remainingDeck: object[], energyLeft: number }}
  */
-export function chooseOpponentPlays(deck, fieldCount, energy, maxField = 3) {
+export function chooseOpponentPlays(deck, fieldCount, energy, maxField = 3, fieldCards = []) {
   const plays = [];
   const remainingDeck = [];
   let energyLeft = energy;
 
   for (const card of deck) {
-    const cost = card.cost ?? 0;
+    const cost = effectiveCost(card, [...fieldCards, ...plays]) ?? 0;
     if (fieldCount + plays.length < maxField && cost <= energyLeft) {
       plays.push(card);
       energyLeft -= cost;

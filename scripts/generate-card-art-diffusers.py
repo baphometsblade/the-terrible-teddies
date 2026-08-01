@@ -24,6 +24,8 @@ Env:
   SD_DEVICE force cuda | mps | cpu (default: auto-detect, GPU preferred)
   SD_WIDTH  render width in px (default 768)
   SD_HEIGHT render height in px (default 1024)
+  ART_NO_MONITOR    set to skip the forced progress dashboard
+  ART_MONITOR_PORT  port the dashboard serves on (default 8877)
 
 Output matches the JS pipeline's contract: public/cards/<id>.webp,
 768x1024 (3:4), <= 150 KB each.

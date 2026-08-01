@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Howl } from 'howler';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
-import { resolveCreatureHit, rallyField } from '../../utils/battleUtils';
+import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack } from '../../utils/battleUtils';
 import { pickQuip, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { syncBattleResult } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
@@ -74,7 +74,9 @@ const GameOverDialog = ({ label, onEscape, children }) => {
  * - shield: Takes 50% less damage (halved, floored)
  * - stealth: Can't be targeted for one turn after played
  * - protect: Other cards can't be targeted while this is on field
- * - fury: Gains +1 attack each time it survives a hit
+ * - fury: Gains +1 attack each time it survives a hit, capped at +3 total
+ * - swarm: Costs 1 less energy (min 1) once you control another creature
+ * - royal: Aura — other creatures you control get +1 attack while it's on the field
  */
 const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // Get store data
@@ -392,10 +394,16 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const playCard = (card) => {
     if (currentTurn !== 'player' || phase !== 'main') return;
 
-    if (playerEnergy < card.cost) {
+    // A 'swarm' card is 1 energy cheaper (min 1) once another creature is
+    // already on the field — see effectiveCost. Use this for both the
+    // affordability check and the deduction below so the rule and the UI
+    // (and the "not enough energy" message) always agree.
+    const cost = effectiveCost(card, playerField);
+
+    if (playerEnergy < cost) {
       toast({
         title: "Not enough energy!",
-        description: `${card.name} costs ${card.cost} energy`,
+        description: `${card.name} costs ${cost} energy`,
         variant: "destructive",
       });
       return;
@@ -404,7 +412,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // Handle special cards
     if (card.type === 'special') {
       applySpecialEffect(card);
-      setPlayerEnergy(prev => prev - card.cost);
+      setPlayerEnergy(prev => prev - cost);
       setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
       setPlayerMomentum(prev => Math.min(10, prev + 1));
       battleStatsRef.current.cardsPlayed += 1;
@@ -429,7 +437,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
     setPlayerField(prev => [...prev, cardToPlay]);
     setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
-    setPlayerEnergy(prev => prev - card.cost);
+    setPlayerEnergy(prev => prev - cost);
     setPlayerMomentum(prev => Math.min(10, prev + 1));
     battleStatsRef.current.cardsPlayed += 1;
     playSound('cardPlay');
@@ -513,7 +521,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
     // Resolve against the target's HP: it survives a non-lethal hit (and its
     // fury fires), or dies and trample overkill spills to the opponent's face.
-    const { survivor, overkill, dmg } = resolveCreatureHit(selectedCard, target);
+    // Pass playerField so a 'royal' ally on the attacker's side buffs the hit.
+    const { survivor, overkill, dmg } = resolveCreatureHit(selectedCard, target, playerField);
     playSound('attack');
     battleStatsRef.current.damageDealt += dmg;
 
@@ -567,12 +576,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       addToBattleLog(`${trap.name} sprang! ${trapDamage} damage, right in your pride`);
       toast({ title: "It's a Trap!", description: `${trap.name} got you for ${trapDamage}. ${OPPONENT_NAME} is giggling.`, variant: "destructive" });
     } else {
+      // Include a 'royal' ally's aura in the face-damage too, not just creature-vs-creature hits.
+      const faceDamage = effectiveAttack(selectedCard, playerField);
       playSound('attack');
-      setOpponentHealth(prev => Math.max(0, prev - selectedCard.attack));
-      battleStatsRef.current.damageDealt += selectedCard.attack;
-      addToBattleLog(`${selectedCard.name} decked ${OPPONENT_NAME} in the face for ${selectedCard.attack}!`);
-      toast({ title: "Right in the Face!", description: `${selectedCard.attack} damage straight to ${OPPONENT_NAME}'s smug mug.` });
-      if (selectedCard.attack >= 4) speak('oppTakesFaceHit');
+      setOpponentHealth(prev => Math.max(0, prev - faceDamage));
+      battleStatsRef.current.damageDealt += faceDamage;
+      addToBattleLog(`${selectedCard.name} decked ${OPPONENT_NAME} in the face for ${faceDamage}!`);
+      toast({ title: "Right in the Face!", description: `${faceDamage} damage straight to ${OPPONENT_NAME}'s smug mug.` });
+      if (faceDamage >= 4) speak('oppTakesFaceHit');
     }
 
     setPlayerField(prev => prev.map(c =>
@@ -639,7 +650,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // budget (difficulty-scaled) while the field has room. Only played cards
     // leave the deck, so a full board never mills it.
     const energyBudget = OPPONENT_ENERGY_BY_DIFFICULTY[aiDifficulty] ?? OPPONENT_ENERGY_BY_DIFFICULTY.normal;
-    const { plays, remainingDeck } = chooseOpponentPlays(opponentDeck, opponentField.length, energyBudget);
+    // Pass activeOpponentField so a 'swarm' card in the opponent's hand is
+    // budgeted at its discounted cost under the same rule the player follows.
+    const { plays, remainingDeck } = chooseOpponentPlays(opponentDeck, opponentField.length, energyBudget, 3, activeOpponentField);
     if (plays.length > 0) {
       setOpponentDeck(remainingDeck);
       const played = plays.map(c => (c.ability === 'stealth' ? { ...withHp(c), stealthActive: true } : withHp(c)));
@@ -674,7 +687,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           // player's attackTarget — it survives (fury fires) or dies with trample
           // overkill carrying through to the player's face.
           const target = chooseAttackTarget(targets, card);
-          const { survivor, overkill, dmg } = resolveCreatureHit(card, target);
+          // Pass activeOpponentField so a 'royal' ally on the opponent's own
+          // field buffs this attacker's hit, same as the player's attackTarget.
+          const { survivor, overkill, dmg } = resolveCreatureHit(card, target, activeOpponentField);
           playSound('attack');
           if (survivor) {
             livePlayerField = livePlayerField.map(c => c.instanceId === target.instanceId ? survivor : c);
@@ -804,8 +819,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       shield: "Takes 50% less damage",
       stealth: "Can't be targeted for one turn",
       protect: "Other cards can't be targeted",
-      fury: "Gains +1 attack when damaged",
-      swarm: "Costs only 1 energy",
+      fury: "Gains +1 attack when damaged (up to +3)",
+      swarm: "Costs 1 less energy (min 1) if you already control another creature",
+      royal: "Other creatures you control get +1 attack while this is on the field",
     };
     return descriptions[ability] || "";
   };
@@ -1159,7 +1175,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               exit={{ y: 50, opacity: 0 }}
               whileHover={{ y: -20, scale: 1.1, zIndex: 10 }}
               style={{ transformOrigin: 'bottom center' }}
-              className={`cursor-pointer ${playerEnergy < card.cost ? 'opacity-50' : ''}`}
+              className={`cursor-pointer ${playerEnergy < effectiveCost(card, playerField) ? 'opacity-50' : ''}`}
               {...pressable(() => phase === 'main' && playCard(card), `Play ${card.name}`)}
             >
               <TeddyCard teddy={card} />

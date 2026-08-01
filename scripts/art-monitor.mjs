@@ -9,7 +9,8 @@
  * a clickable gallery of every finished file in public/cards — click any
  * card to open the full-size image.
  *
- * Env: ART_MONITOR_PORT (default 8877), ART_DIR (default public/cards)
+ * Env:   ART_MONITOR_PORT (default 8877), ART_DIR (default public/cards)
+ * Flags: --port <n>, --dir <path> (override the env vars)
  */
 import fs from 'node:fs';
 import os from 'node:os';

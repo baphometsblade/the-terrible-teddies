@@ -11,6 +11,9 @@ npm run preview      # Preview production build locally
 npm run lint         # ESLint check (js,jsx files)
 npm test             # Run the Vitest suite once
 npm run test:watch   # Vitest in watch mode
+npm run test:e2e     # Playwright end-to-end suite
+npm run art:generate # Regenerate card art (see public/cards/README.md)
+npm run art:monitor  # Live dashboard for an art-generation run
 ```
 
 Tests use **Vitest** (jsdom) and live next to the code as `*.test.js`. The
@@ -61,7 +64,7 @@ Gem bundles are defined server-side in the edge function (prices cannot be tampe
 
 ### Battle System
 
-`src/components/GameBoard/GameBoard.jsx` (890 lines) handles the full battle loop:
+`src/components/GameBoard/GameBoard.jsx` handles the full battle loop:
 - Phases: draw → main → battle → end
 - Card abilities: taunt, piercing, shield, stealth, protect, fury
 - `battleStatsRef` accumulates damage/healing/cardsPlayed per game for challenge tracking
@@ -77,6 +80,22 @@ Daily/weekly challenges use real stats from the store:
 ### Code Splitting
 
 Vite config uses `manualChunks` for vendor/animations/ui/state/effects. Dialog components (`Shop`, `BattlePass`, `Challenges`, etc.) are lazy-loaded via `React.lazy()`.
+
+### Card Art
+
+Every card in `ALL_CARDS` carries three art-only fields — `fur`, `visual` and
+`scene` — consumed exclusively by the generation scripts, never by the app.
+`scripts/generate-card-art.mjs` builds a prompt from them and renders through a
+self-hosted Fooocus/A1111 endpoint; `scripts/generate-card-art-diffusers.py` is
+the no-endpoint fallback (huggingface diffusers, GPU-aware). Output is
+`public/cards/<id>.webp` at 768x1024, which `TeddyCard`'s `ArtOrEmoji` slot
+picks up automatically, falling back to emoji when a file is missing.
+`scripts/art-monitor.mjs` serves a live progress dashboard, forced on during
+any run. Full details in `public/cards/README.md`.
+
+`src/stores/cardSchema.test.js` guards the catalog: it fails CI if a card has an
+ability the engine does not implement, an effect `applySpecialEffect` cannot
+resolve, or a missing/duplicate `visual` or `scene`.
 
 ### Path Aliases
 
