@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_CARDS } from './gameStore';
+import { CARD_ART } from '@/data/cardArt';
 import { RARITY_ORDER } from '@/lib/rarity';
 
 // Data-invariant guard over the card catalog: every card added here must
@@ -23,6 +24,13 @@ describe('ALL_CARDS catalog shape', () => {
     expect(ALL_CARDS.length).toBeGreaterThan(0);
   });
 
+  // `visual`/`scene`/`fur` live in src/data/cardArt.js (CARD_ART), keyed by
+  // card id, NOT on the card objects in ALL_CARDS — they're only consumed by
+  // scripts/generate-card-art.mjs and are deliberately kept out of ALL_CARDS
+  // so this ~15 KB of prompt prose never ships in the client bundle. These
+  // tests validate CARD_ART directly instead of the card objects, but with
+  // the same strictness as before the split.
+
   // `visual` is the concrete physical description handed to the art generator
   // (scripts/generate-card-art.mjs promptFor). It exists because names and
   // descriptions are jokes — "It felt nice for exactly one second" gives a
@@ -30,9 +38,10 @@ describe('ALL_CARDS catalog shape', () => {
   // interchangeable dark blur instead of their own character or object.
   it('every card has a non-empty visual description for art generation', () => {
     for (const card of ALL_CARDS) {
+      const art = CARD_ART[card.id];
       expect(
-        typeof card.visual === 'string' && card.visual.trim().length > 0,
-        `${label(card)} is missing a non-empty \`visual\` — its art would render as generic blur`
+        typeof art?.visual === 'string' && art.visual.trim().length > 0,
+        `${label(card)} is missing a non-empty \`visual\` in CARD_ART — its art would render as generic blur`
       ).toBe(true);
     }
   });
@@ -43,11 +52,12 @@ describe('ALL_CARDS catalog shape', () => {
   it('every card has a unique, non-empty scene so no two share a composition', () => {
     const seen = new Map();
     for (const card of ALL_CARDS) {
+      const art = CARD_ART[card.id];
       expect(
-        typeof card.scene === 'string' && card.scene.trim().length > 0,
-        `${label(card)} is missing a non-empty \`scene\` — it would be shot identically to every other card`
+        typeof art?.scene === 'string' && art.scene.trim().length > 0,
+        `${label(card)} is missing a non-empty \`scene\` in CARD_ART — it would be shot identically to every other card`
       ).toBe(true);
-      const key = card.scene?.trim().toLowerCase();
+      const key = art?.scene?.trim().toLowerCase();
       if (!key) continue;
       const dupe = seen.get(key);
       expect(
@@ -61,7 +71,7 @@ describe('ALL_CARDS catalog shape', () => {
   it('visual descriptions are unique, so no two cards render the same art', () => {
     const seen = new Map();
     for (const card of ALL_CARDS) {
-      const key = card.visual?.trim().toLowerCase();
+      const key = CARD_ART[card.id]?.visual?.trim().toLowerCase();
       if (!key) continue; // covered by the previous test
       const dupe = seen.get(key);
       expect(
@@ -69,6 +79,32 @@ describe('ALL_CARDS catalog shape', () => {
         `${label(card)} shares its \`visual\` with "${dupe?.name}" — both would render identical art`
       ).toBeUndefined();
       seen.set(key, card);
+    }
+  });
+
+  // `fur` leads the art prompt twice (colour beats the model's brown-plush
+  // prior only if stated up front) and is only meaningful for actual bears —
+  // trap/special cards are objects, not teddies, so they carry no `fur`.
+  it('every action card has a non-empty fur colour in CARD_ART', () => {
+    for (const card of ALL_CARDS.filter((c) => c.type === 'action')) {
+      const art = CARD_ART[card.id];
+      expect(
+        typeof art?.fur === 'string' && art.fur.trim().length > 0,
+        `${label(card)} is missing a non-empty \`fur\` in CARD_ART — its prompt would omit its colour`
+      ).toBe(true);
+    }
+  });
+
+  // Catches orphaned art data left behind when a card is deleted from
+  // ALL_CARDS — without this guard CARD_ART could silently accumulate dead
+  // entries forever.
+  it('CARD_ART has no entries for ids that no longer exist in ALL_CARDS', () => {
+    const validIds = new Set(ALL_CARDS.map((c) => c.id));
+    for (const idKey of Object.keys(CARD_ART)) {
+      expect(
+        validIds.has(Number(idKey)),
+        `CARD_ART has an entry for id ${idKey}, which does not exist in ALL_CARDS — delete the orphaned entry`
+      ).toBe(true);
     }
   });
 

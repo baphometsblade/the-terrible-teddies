@@ -45,6 +45,11 @@ globalThis.localStorage ??= {
   removeItem: () => {},
 };
 const { ALL_CARDS } = await import('@/stores/gameStore');
+// fur/visual/scene were split out of ALL_CARDS into a store-adjacent data
+// file so they don't ship in the client bundle (see src/data/cardArt.js for
+// why). Re-merge them here so promptFor() and everything below sees the same
+// shape it always did.
+const { CARD_ART } = await import('@/data/cardArt');
 
 // Chuck's goons (GameBoard.jsx opponent deck, base stats). They have no
 // descriptions in code, so the character lines live here.
@@ -209,7 +214,7 @@ async function main() {
   let flavor = (process.env.FOOOCUS_FLAVOR ?? 'fooocus').toLowerCase();
   const auth = process.env.FOOOCUS_AUTH ?? null;
 
-  const cards = [...ALL_CARDS, ...GOONS];
+  const cards = [...ALL_CARDS.map((c) => ({ ...c, ...(CARD_ART[c.id] ?? {}) })), ...GOONS];
   const only = argOf('--only')?.split(',').map(Number);
   const todo = cards.filter((c) => !only || only.includes(c.id));
 
