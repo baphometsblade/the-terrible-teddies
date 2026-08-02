@@ -87,7 +87,13 @@ const MainMenu = ({
             <div className="text-white font-bold">{playerName}</div>
             <div className="flex items-center gap-2">
               <span className="bg-brass-400 text-night-950 px-2 py-0.5 rounded text-xs font-bold">Lv. {level}</span>
-              <div className="w-24"><Progress value={xpProgress} className="h-2 bg-night-950/50 [&>div]:bg-brass-400" /></div>
+              <div className="w-24">
+                <Progress
+                  value={xpProgress}
+                  className="h-2 bg-night-950/50 [&>div]:bg-brass-400"
+                  aria-label={`Level ${level} XP progress: ${xp} of ${xpForNext}`}
+                />
+              </div>
             </div>
             <div className="text-plush-400 text-xs mt-0.5">
               {totalWins} wins • {consecutiveLogins} day streak

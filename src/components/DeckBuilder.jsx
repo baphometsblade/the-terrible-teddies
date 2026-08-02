@@ -220,7 +220,10 @@ const DeckBuilder = () => {
               <Button
                 onClick={handleSaveDeck}
                 disabled={deck.length !== DECK_SIZE}
-                className={`w-full ${deck.length === DECK_SIZE ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-plush-700 cursor-not-allowed'}`}
+                // Button's default variant text-primary-foreground renders near-white;
+                // bg-emerald-600 only measured 3.6:1 against it (fails AA). emerald-700
+                // clears 4.5:1 (5.24:1 measured).
+                className={`w-full ${deck.length === DECK_SIZE ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-plush-700 cursor-not-allowed'}`}
               >
                 {deck.length === DECK_SIZE ? 'Set as Current Deck' : `Need ${DECK_SIZE - deck.length} more`}
               </Button>
@@ -281,7 +284,7 @@ const DeckBuilder = () => {
                 autoFocus
               />
               <div className="flex gap-2">
-                <Button onClick={handleSaveDeck} disabled={!deckName.trim()} className="flex-1 bg-emerald-600 hover:bg-emerald-700">Save</Button>
+                <Button onClick={handleSaveDeck} disabled={!deckName.trim()} className="flex-1 bg-emerald-700 hover:bg-emerald-800">Save</Button>
                 <Button onClick={() => setShowSaveDialog(false)} variant="outline" className="flex-1 text-white border-white/30">Cancel</Button>
               </div>
             </motion.div>

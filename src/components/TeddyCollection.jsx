@@ -74,7 +74,9 @@ const TeddyCollection = () => {
         <div className="flex bg-white/10 rounded-lg overflow-hidden">
           <button
             onClick={() => setShowOwned(true)}
-            className={`px-4 py-2 text-sm font-semibold transition-colors ${showOwned ? 'bg-emerald-600 text-white' : 'text-plush-300 hover:text-white'}`}
+            // bg-emerald-600 + text-white measured 3.76:1 (fails AA's 4.5:1);
+            // emerald-700 clears it at 5.48:1.
+            className={`px-4 py-2 text-sm font-semibold transition-colors ${showOwned ? 'bg-emerald-700 text-white' : 'text-plush-300 hover:text-white'}`}
           >
             Owned ({totalOwned})
           </button>

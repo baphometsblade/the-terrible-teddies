@@ -147,7 +147,11 @@ const Challenges = ({ onClose }) => {
                   {progressPercent.toFixed(0)}%
                 </span>
               </div>
-              <Progress value={progressPercent} className="h-2 bg-night-950/50 [&>div]:bg-brass-400" />
+              <Progress
+                value={progressPercent}
+                className="h-2 bg-night-950/50 [&>div]:bg-brass-400"
+                aria-label={`${challenge.name} progress: ${progress} of ${challenge.target}`}
+              />
             </div>
           </div>
 
@@ -263,7 +267,12 @@ const Challenges = ({ onClose }) => {
         </div>
 
         {/* Content */}
-        <div className="p-4 flex-1 overflow-y-auto space-y-3">
+        <div
+          role="region"
+          aria-label={`${activeTab === 'daily' ? 'Daily' : 'Weekly'} challenges`}
+          tabIndex={0}
+          className="p-4 flex-1 overflow-y-auto space-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+        >
           <AnimatePresence mode="wait">
             {activeTab === 'daily' && (
               <motion.div key="daily" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

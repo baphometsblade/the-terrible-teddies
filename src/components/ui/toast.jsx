@@ -63,6 +63,7 @@ const ToastClose = React.forwardRef(({ className, ...props }, ref) => (
       className
     )}
     toast-close=""
+    aria-label="Dismiss notification"
     {...props}>
     <X className="h-4 w-4" />
   </ToastPrimitives.Close>

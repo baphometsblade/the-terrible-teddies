@@ -61,7 +61,10 @@ const Settings = ({ onClose }) => {
       }`}
     >
       <div className="text-white font-bold">{label}</div>
-      <div className="text-white/60 text-xs mt-1">{description}</div>
+      {/* Full-opacity (not /60) so the description clears 4.5:1 against all
+          three selected-state backgrounds (green-700/brass-600/red-600) —
+          see contrast notes on the `color` values below. */}
+      <div className="text-white text-xs mt-1">{description}</div>
     </button>
   );
 
@@ -87,24 +90,30 @@ const Settings = ({ onClose }) => {
           <div className="mb-6">
             <h3 className="text-white/50 text-sm uppercase tracking-wider mb-2">Audio</h3>
             <SettingRow icon="🔊" label="Sound Effects" description="Card plays, attacks, and abilities">
-              <Switch checked={soundEnabled} onCheckedChange={setSoundEnabled} />
+              <Switch checked={soundEnabled} onCheckedChange={setSoundEnabled} aria-label="Sound Effects" />
             </SettingRow>
             <SettingRow icon="🎵" label="Music" description="Background music">
-              <Switch checked={musicEnabled} onCheckedChange={setMusicEnabled} />
+              <Switch checked={musicEnabled} onCheckedChange={setMusicEnabled} aria-label="Music" />
             </SettingRow>
           </div>
 
           <div className="mb-6">
             <h3 className="text-white/50 text-sm uppercase tracking-wider mb-2">Visual</h3>
             <SettingRow icon="✨" label="Animations" description="Card animations and effects">
-              <Switch checked={animationsEnabled} onCheckedChange={setAnimationsEnabled} />
+              <Switch checked={animationsEnabled} onCheckedChange={setAnimationsEnabled} aria-label="Animations" />
             </SettingRow>
           </div>
 
           <div className="mb-6">
             <h3 className="text-white/50 text-sm uppercase tracking-wider mb-4">AI Difficulty</h3>
             <div className="flex gap-3">
-              <DifficultyButton value="easy" label="😊 Easy" description="Relaxed" color="bg-green-600" />
+              {/* bg-green-600 measured 3.29:1 for white bold text against AA's
+                  4.5:1 minimum (and only 2.07:1 for the dimmed description).
+                  green-700 clears it: white-on-green-700 = 5.02:1 for both
+                  the bold label and the (now full-opacity) description. */}
+              <DifficultyButton value="easy" label="😊 Easy" description="Relaxed" color="bg-green-700" />
+              {/* Sibling shades already clear AA at full opacity: white-on-
+                  brass-600 = 5.02:1, white-on-red-600 = 4.83:1 — unchanged. */}
               <DifficultyButton value="normal" label="😐 Normal" description="Balanced" color="bg-brass-600" />
               <DifficultyButton value="hard" label="😈 Hard" description="Challenge" color="bg-red-600" />
             </div>

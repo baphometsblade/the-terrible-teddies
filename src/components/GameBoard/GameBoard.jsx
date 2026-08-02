@@ -1028,7 +1028,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               {opponentHealth}/30
             </motion.div>
           </div>
-          <Progress value={(opponentHealth / 30) * 100} className="w-16 sm:w-32 h-3 bg-red-950 [&>div]:bg-red-400" />
+          <Progress
+            value={(opponentHealth / 30) * 100}
+            className="w-16 sm:w-32 h-3 bg-red-950 [&>div]:bg-red-400"
+            aria-label={`${OPPONENT_NAME} health: ${opponentHealth} of 30`}
+          />
         </div>
       </div>
 
@@ -1074,8 +1078,18 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       </div>
 
       {/* Battle log — full panel on md+ screens; on phones it would cover the
-          opponent's cards, so show only the latest entry as a compact ticker. */}
-      <div className="hidden md:block absolute top-20 right-4 w-48 bg-night-950/80 border border-plush-700/30 rounded-lg p-2 max-h-40 overflow-y-auto">
+          opponent's cards, so show only the latest entry as a compact ticker.
+          tabIndex + role/aria-label make the scrolling panel keyboard-
+          reachable (axe: scrollable-region-focusable) so it can be read on
+          demand. It intentionally has no aria-live: the phone ticker below
+          already announces each new entry, and this panel repeating that
+          would double-announce for screen-reader users on md+ too. */}
+      <div
+        role="region"
+        aria-label="Battle log"
+        tabIndex={0}
+        className="hidden md:block absolute top-20 right-4 w-48 bg-night-950/80 border border-plush-700/30 rounded-lg p-2 max-h-40 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+      >
         <div className="text-brass-300 text-xs font-display font-bold mb-1">Battle Log</div>
         {battleLog.map(entry => (
           <div key={entry.id} className="text-plush-200 text-xs py-0.5 border-b border-white/10">
@@ -1102,7 +1116,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             transition={playerMomentum >= MOMENTUM_MAX ? { duration: 1.2, repeat: Infinity } : {}}
           >
             <span className={`text-xs font-semibold ${playerMomentum >= MOMENTUM_MAX ? 'text-brass-200' : 'text-brass-300'}`}>Momentum</span>
-            <Progress value={playerMomentum * 10} className="w-24 h-2 bg-night-950/50 [&>div]:bg-brass-400" />
+            <Progress
+              value={playerMomentum * 10}
+              className="w-24 h-2 bg-night-950/50 [&>div]:bg-brass-400"
+              aria-label={`Momentum: ${playerMomentum} of ${MOMENTUM_MAX}`}
+            />
             <span className={`text-xs font-bold ${playerMomentum >= MOMENTUM_MAX ? 'text-brass-200' : 'text-brass-300'}`}>{playerMomentum}/10</span>
           </motion.div>
         </div>
@@ -1208,7 +1226,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               {playerHealth}/30
             </motion.div>
           </div>
-          <Progress value={(playerHealth / 30) * 100} className="w-16 sm:w-32 h-3 bg-felt-900 [&>div]:bg-emerald-400" />
+          <Progress
+            value={(playerHealth / 30) * 100}
+            className="w-16 sm:w-32 h-3 bg-felt-900 [&>div]:bg-emerald-400"
+            aria-label={`Your health: ${playerHealth} of 30`}
+          />
         </div>
       </div>
 

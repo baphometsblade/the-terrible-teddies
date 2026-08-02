@@ -250,7 +250,11 @@ const BattlePass = ({ onClose }) => {
                 <span className="text-white/70">Tier {currentTier} → {currentTier + 1}</span>
                 <span className="text-brass-300">{xpToNext} XP to next tier</span>
               </div>
-              <Progress value={xpProgress} className="h-3 bg-white/10 [&>div]:bg-brass-400" />
+              <Progress
+                value={xpProgress}
+                className="h-3 bg-white/10 [&>div]:bg-brass-400"
+                aria-label={`Battle pass progress: tier ${currentTier}, ${xpToNext} XP to tier ${currentTier + 1}`}
+              />
             </div>
             <div className="text-white/50 text-sm">
               Total: {battlePassXP} XP

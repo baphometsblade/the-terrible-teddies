@@ -81,7 +81,11 @@ const PlayerStats = ({ onClose }) => {
                   <span className="bg-brass-400 text-night-950 px-2 py-0.5 rounded font-bold">Lv. {level}</span>
                   <span>{xp} / {xpForNext} XP</span>
                 </div>
-                <Progress value={xpProgress} className="h-2 mt-1 w-48 bg-night-950/50 [&>div]:bg-brass-400" />
+                <Progress
+                  value={xpProgress}
+                  className="h-2 mt-1 w-48 bg-night-950/50 [&>div]:bg-brass-400"
+                  aria-label={`Level ${level} XP progress: ${xp} of ${xpForNext}`}
+                />
               </div>
             </div>
           </div>

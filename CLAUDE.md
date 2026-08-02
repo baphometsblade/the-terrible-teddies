@@ -24,11 +24,16 @@ checkout session, webhook, analytics) ever drift. Run a single file with
 `npx vitest run src/stores/gameStore.test.js`.
 
 End-to-end tests (`npm run test:e2e`, Playwright, `e2e/`) boot the real app
-hermetically (fake session seeded in localStorage, all network stubbed) and
-cover boot, a full battle turn including an attack/exhaustion cycle, the
-game-over → Play Again flow, shop/deck-builder/challenges, and nested-dialog
-Escape handling. CI (`.github/workflows/node.js.yml`) runs lint, build, unit,
-and e2e on every PR to `main`.
+hermetically (fake session seeded in localStorage, all network stubbed; the
+shared boot lives in `e2e/helpers/session.js`). `e2e/smoke.spec.js` covers
+boot, a full battle turn including an attack/exhaustion cycle, the game-over →
+Play Again flow, shop/deck-builder/challenges, and nested-dialog Escape
+handling. `e2e/a11y.spec.js` runs axe-core (WCAG 2.1 A/AA) against every
+screen and dialog and fails on any violation — it audits the *settled* page,
+because axe composites colours and an element caught mid-fade reports a
+blended colour rather than its resting one. CI
+(`.github/workflows/node.js.yml`) runs lint, build, unit, and e2e on every PR
+to `main`.
 
 ## Architecture Overview
 
