@@ -88,7 +88,7 @@ const TeddyCollection = () => {
           </button>
         </div>
 
-        <div className="flex gap-1">
+        <div className="flex flex-wrap justify-center gap-1">
           {['all', 'action', 'trap', 'special'].map(type => (
             <button
               key={type}
@@ -102,7 +102,11 @@ const TeddyCollection = () => {
           ))}
         </div>
 
-        <div className="flex gap-1">
+        {/* flex-wrap, not just flex: the parent wraps its children, but this
+            row is a single flex item, so without wrapping here its six
+            buttons form one 494px line that pushed the whole document 52px
+            sideways at 390px. */}
+        <div className="flex flex-wrap justify-center gap-1">
           {['all', ...RARITY_ORDER].map(rarity => (
             <button
               key={rarity}

@@ -31,7 +31,8 @@ Play Again flow, shop/deck-builder/challenges, and nested-dialog Escape
 handling. `e2e/a11y.spec.js` runs axe-core (WCAG 2.1 A/AA) against every
 screen and dialog and fails on any violation — it audits the *settled* page,
 because axe composites colours and an element caught mid-fade reports a
-blended colour rather than its resting one. CI
+blended colour rather than its resting one. `e2e/responsive.spec.js` asserts
+the document never scrolls sideways on any screen at 390px. CI
 (`.github/workflows/node.js.yml`) runs lint, build, unit, and e2e on every PR
 to `main`.
 
@@ -42,6 +43,13 @@ to `main`.
 - **Zustand** with `persist` middleware for all game state (localStorage)
 - **Supabase** for auth + edge functions + database
 - **Framer Motion** for animations, **Howler.js** for sounds, **canvas-confetti** for effects
+
+Battle sound effects live in `src/utils/sounds.js`. The `Howl` objects are
+built on first play, never at module scope: Howler preloads on construction,
+so an eager table fetched all eight cross-origin clips as soon as the battle
+chunk loaded — including for players who had sound switched off. `playSound(name, enabled)`
+is the only entry point; `src/utils/sounds.test.js` fails if construction ever
+becomes eager again.
 
 ### State Management
 

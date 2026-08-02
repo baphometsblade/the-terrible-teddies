@@ -4,7 +4,7 @@ import TeddyCard, { CardBack } from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
-import { Howl } from 'howler';
+import { playSound as playSoundEffect } from '@/utils/sounds';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
 import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack } from '../../utils/battleUtils';
@@ -14,18 +14,6 @@ import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY 
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
 import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
-
-// Sound effects
-const sounds = {
-  cardPlay: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'], volume: 0.3 }),
-  attack: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2803/2803-preview.mp3'], volume: 0.4 }),
-  damage: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2012/2012-preview.mp3'], volume: 0.3 }),
-  heal: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3'], volume: 0.3 }),
-  victory: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3'], volume: 0.5 }),
-  defeat: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'], volume: 0.4 }),
-  draw: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2073/2073-preview.mp3'], volume: 0.2 }),
-  trap: new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/209/209-preview.mp3'], volume: 0.4 }),
-};
 
 // Cap the hand so unbounded draw (per-turn + draw specials) can't overflow the
 // fixed-width hand layout into an unclickable, off-screen stack.
@@ -175,9 +163,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
   // Play sound helper
   const playSound = useCallback((soundName) => {
-    if (storeSoundEnabled && sounds[soundName]) {
-      sounds[soundName].play();
-    }
+    playSoundEffect(soundName, storeSoundEnabled);
   }, [storeSoundEnabled]);
 
   // Shuffle deck helper
