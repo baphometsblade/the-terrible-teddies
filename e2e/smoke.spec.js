@@ -164,21 +164,28 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
   const endTurn = page.getByRole('button', { name: 'End Turn' });
   await expect(endTurn).toBeVisible(SLOW);
 
+  // Chuck's opener is summoning-sick too. The player's field is empty before
+  // the first play, so exactly one "Warming Up" here is Chuck's — without this
+  // the opener would get a free turn-1 swing the player cannot answer.
+  await expect(page.getByText('Warming Up')).toHaveCount(1);
+
   // Turn 1 — play a creature. It arrives summoning-sick, so it must NOT be
-  // able to swing this turn: selecting it opens no targets.
+  // able to swing this turn: selecting it never opens targeting.
   await page.getByRole('button', { name: /^Play / }).first().click();
   const attacker = page.getByRole('button', { name: /^Select .+ to attack$/ }).first();
   await expect(attacker).toBeVisible(SLOW);
-  await expect(page.getByText('Warming Up').first()).toBeVisible(SLOW);
+  await expect(page.getByText('Warming Up')).toHaveCount(2); // Chuck's opener + the new arrival
   await page.getByRole('button', { name: '⚔️ Battle' }).click();
   await attacker.click();
-  // Assert the outcome, not the rejection toast: the toast auto-dismisses, so
-  // racing it under parallel load is flaky. A creature that attacked would be
-  // Exhausted — staying "Warming Up" with nothing exhausted proves it did not.
-  // (Opponent cards always carry an "Attack <name>" accessible name — only the
-  // handler is gated on targeting mode — so their presence proves nothing.)
-  await expect(page.getByText('Warming Up').first()).toBeVisible();
-  await expect(page.getByText('Exhausted')).toHaveCount(0);
+  // The crosshair affordance renders only while targeting is open, so its
+  // absence is what proves the selection was refused.
+  //
+  // Weaker assertions that look right but are not: "Warming Up is visible"
+  // passes on Chuck's opener even with player sickness deleted, and "Exhausted
+  // has count 0" passes because this test never clicks a target — so a creature
+  // that DID open targeting still would not be exhausted. Both would keep
+  // passing with the whole rule removed.
+  await expect(page.locator('.cursor-crosshair')).toHaveCount(0);
 
   // Turn 2 — sickness has lifted, so the same creature can now attack. This is
   // also the exhaustion regression: the opponent turn write-back must not
