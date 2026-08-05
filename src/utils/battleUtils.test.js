@@ -1,5 +1,6 @@
 import {
   damageToCreatureHp, resolveCreatureHit, rallyField, effectiveCost, effectiveAttack,
+  canAttack, readyCreatures,
 } from './battleUtils';
 
 describe('damageToCreatureHp (creature-HP model)', () => {
@@ -210,5 +211,79 @@ describe('fury cap (resolveCreatureHit)', () => {
     const next = resolveCreatureHit(weakAttacker, rallied);
     expect(next.survivor.furyStacks).toBe(3);
     expect(next.survivor.attack).toBe(7); // 6 + 1
+  });
+});
+
+describe('canAttack / readyCreatures (summoning sickness)', () => {
+  const creature = (over = {}) => ({ type: 'action', attack: 2, defense: 2, ...over });
+
+  it('a creature played this turn cannot attack', () => {
+    expect(canAttack(creature({ summoningSick: true }))).toBe(false);
+  });
+
+  it('a settled creature that has not swung yet can attack', () => {
+    expect(canAttack(creature())).toBe(true);
+    expect(canAttack(creature({ summoningSick: false, hasAttacked: false }))).toBe(true);
+  });
+
+  it('a creature that already swung this turn cannot attack again', () => {
+    expect(canAttack(creature({ hasAttacked: true }))).toBe(false);
+  });
+
+  it('traps never attack, however their flags happen to be set', () => {
+    expect(canAttack({ type: 'trap', hasAttacked: false, summoningSick: false })).toBe(false);
+  });
+
+  it('readyCreatures lifts both flags together, so last turn\'s arrivals can swing', () => {
+    const field = [
+      creature({ instanceId: 'a', summoningSick: true }),
+      creature({ instanceId: 'b', hasAttacked: true }),
+      creature({ instanceId: 'c', summoningSick: true, hasAttacked: true }),
+    ];
+    const ready = readyCreatures(field);
+    expect(ready.every(canAttack)).toBe(true);
+  });
+
+  it('readyCreatures does not mutate the field it is given', () => {
+    const sick = creature({ summoningSick: true });
+    const field = [sick];
+    readyCreatures(field);
+    expect(sick.summoningSick).toBe(true);
+    expect(field[0]).toBe(sick);
+  });
+
+  it('readyCreatures preserves everything else on the card', () => {
+    const [out] = readyCreatures([
+      creature({ instanceId: 'x', currentHp: 3, furyStacks: 2, attack: 5, summoningSick: true }),
+    ]);
+    expect(out.instanceId).toBe('x');
+    expect(out.currentHp).toBe(3);
+    expect(out.furyStacks).toBe(2);
+    expect(out.attack).toBe(5);
+  });
+
+  // The full lifecycle the board relies on: arrive sick, sit out a turn, swing
+  // once, then be spent until the next turn boundary.
+  it('a creature arrives sick, swings next turn, then is spent until the turn after', () => {
+    let card = { ...creature(), summoningSick: true }; // played
+    expect(canAttack(card)).toBe(false);
+
+    [card] = readyCreatures([card]); // player's next turn begins
+    expect(canAttack(card)).toBe(true);
+
+    card = { ...card, hasAttacked: true }; // it swings
+    expect(canAttack(card)).toBe(false);
+
+    [card] = readyCreatures([card]); // and the turn after
+    expect(canAttack(card)).toBe(true);
+  });
+
+  // Rally is a stat pump, not a wake-up: it must not smuggle a freshly played
+  // creature into attacking the turn it arrived.
+  it('rallyField does not clear summoning sickness', () => {
+    const [rallied] = rallyField([creature({ summoningSick: true, currentHp: 1 })]);
+    expect(rallied.summoningSick).toBe(true);
+    expect(canAttack(rallied)).toBe(false);
+    expect(rallied.attack).toBe(3); // rally's +1 still applies
   });
 });

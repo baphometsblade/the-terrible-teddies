@@ -17,6 +17,37 @@ const isSameCard = (a, b) => {
 };
 
 /**
+ * Summoning sickness: a creature cannot attack on the turn it is played. It
+ * enters stamped `summoningSick` and is cleared by readyCreatures() at the
+ * player's next turn boundary.
+ *
+ * This exists because without it, taunt and protect barely mattered: any
+ * blocker the player put up could be answered by simply playing a fresh
+ * creature and swinging with it the same turn, so board position never had to
+ * be established a turn ahead. It also removes a real asymmetry — the
+ * opponent already could not attack with what it had just played, because
+ * executeOpponentTurn resolves attacks against `activeOpponentField`, the
+ * snapshot taken *before* that turn's plays are appended. The rule was
+ * therefore already being applied to the AI and only the player was exempt.
+ *
+ * @param {object} card
+ * @returns {boolean} whether `card` may declare an attack right now
+ */
+export const canAttack = (card) =>
+  card.type === 'action' && !card.hasAttacked && !card.summoningSick;
+
+/**
+ * Clear the per-turn attack flags on a field, readying every creature for its
+ * controller's next turn: `hasAttacked` (spent this turn) and `summoningSick`
+ * (arrived this turn) both lift together.
+ *
+ * Applied to the whole field, traps included, so the shape of a card on the
+ * field never depends on which flags happen to have been stamped on it.
+ */
+export const readyCreatures = (field) =>
+  field.map((c) => ({ ...c, hasAttacked: false, summoningSick: false }));
+
+/**
  * Energy cost to play a card, accounting for `swarm`: a swarm card is cheaper
  * (1 less energy, minimum 1) once you already control another creature on the
  * field — the idea being a swarm card is only cheap when it's joining an

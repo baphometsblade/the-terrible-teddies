@@ -83,6 +83,16 @@ Gem bundles are defined server-side in the edge function (prices cannot be tampe
 - `battleStatsRef` accumulates damage/healing/cardsPlayed per game for challenge tracking
 - On game end, calls `recordBattleResult(won, damageDealt, healingDone, finalHP, cardsPlayed)`
 
+**Summoning sickness.** A creature cannot attack on the turn it arrives. It
+enters stamped `summoningSick` (shown as "Warming Up") and both per-turn flags
+— `summoningSick` and `hasAttacked` — are lifted together by `readyCreatures()`
+at its controller's next turn boundary; `canAttack(card)` is the single
+predicate. Chuck's opening creature is stamped too, so neither side swings on
+its first turn. Two traps to know about: the opponent-turn write-back must
+re-ready its stale copy of the player's field or surviving creatures brick
+permanently, and the opponent's field is readied *after* its attack wave, so
+cards it played that turn still sit out the turn they arrived.
+
 ### Challenge System
 
 Daily/weekly challenges use real stats from the store:

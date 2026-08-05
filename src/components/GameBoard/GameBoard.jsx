@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { playSound as playSoundEffect } from '@/utils/sounds';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
-import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack } from '../../utils/battleUtils';
+import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures } from '../../utils/battleUtils';
 import { pickQuip, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { syncBattleResult } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
@@ -229,7 +229,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setPlayerHand(playerInitialHand);
     setPlayerDeck(playerRemainingDeck);
 
-    setOpponentField([withHp(initialOpponentDeck[0])]);
+    // Chuck's opener is summoning-sick too, so neither side swings on its
+    // first turn. Without this the rule is lopsided: the player's turn-1 play
+    // has to sit still while the opener — placed before the game even starts —
+    // hits it for free, handing Chuck first blood every single game.
+    setOpponentField([{ ...withHp(initialOpponentDeck[0]), summoningSick: true }]);
     setOpponentDeck(initialOpponentDeck.slice(1));
 
     addToBattleLog(`${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`);
@@ -404,10 +408,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       return;
     }
 
-    // Stamp starting HP; apply stealth on play.
-    const cardToPlay = card.ability === 'stealth'
-      ? { ...withHp(card), stealthActive: true }
-      : withHp(card);
+    // Stamp starting HP; apply stealth on play. Creatures also enter
+    // summoning-sick, so they cannot swing until the player's next turn (see
+    // canAttack in battleUtils) — traps never attack, so they carry no flag.
+    const cardToPlay = {
+      ...withHp(card),
+      ...(card.type === 'action' ? { summoningSick: true } : {}),
+      ...(card.ability === 'stealth' ? { stealthActive: true } : {}),
+    };
 
     setPlayerField(prev => [...prev, cardToPlay]);
     setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
@@ -461,6 +469,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     if (currentTurn !== 'player' || phase !== 'battle') return;
     if (card.type === 'trap') {
       toast({ title: "Traps can't attack", description: `${card.name} springs automatically when an enemy strikes it.`, variant: "destructive" });
+      return;
+    }
+    if (card.summoningSick) {
+      toast({
+        title: "Still finding the floor",
+        description: `${card.name} only just staggered in — it can swing from your next turn.`,
+        variant: "destructive",
+      });
       return;
     }
     if (card.hasAttacked) {
@@ -582,7 +598,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // it — so a stray call during the opponent's turn can't queue a second
     // executeOpponentTurn.
     if (currentTurn !== 'player') return;
-    setPlayerField(prev => prev.map(c => ({ ...c, hasAttacked: false })));
+    setPlayerField(prev => readyCreatures(prev));
     setSelectedCard(null);
     setTargetingMode(false);
     setCurrentTurn('opponent');
@@ -629,7 +645,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     const { plays, remainingDeck } = chooseOpponentPlays(opponentDeck, opponentField.length, energyBudget, 3, activeOpponentField);
     if (plays.length > 0) {
       setOpponentDeck(remainingDeck);
-      const played = plays.map(c => (c.ability === 'stealth' ? { ...withHp(c), stealthActive: true } : withHp(c)));
+      const played = plays.map(c => ({
+        ...withHp(c),
+        summoningSick: true,
+        ...(c.ability === 'stealth' ? { stealthActive: true } : {}),
+      }));
       setOpponentField(prev => [...prev, ...played]);
       playSound('cardPlay');
       plays.forEach(c => addToBattleLog(`${OPPONENT_NAME} slammed down ${c.name}`));
@@ -640,18 +660,19 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // re-evaluates targets (taunt/protect) as creatures fall, instead of every
     // attacker piling onto a single stale target and the rest no-opping.
     safeTimeout(() => {
-      // Clear hasAttacked in the working copy: endTurn already reset it in
-      // state, but this closure predates that render, and the unconditional
-      // write-back below would otherwise restore hasAttacked:true — bricking
-      // any attacker that survives an opponent turn as permanently Exhausted.
-      let livePlayerField = playerField.map(c => ({ ...c, hasAttacked: false }));
+      // Ready the working copy: endTurn already cleared these flags in state,
+      // but this closure predates that render, and the unconditional write-back
+      // below would otherwise restore them — bricking any attacker that
+      // survives an opponent turn as permanently Exhausted, and any creature
+      // played last turn as permanently summoning-sick.
+      let livePlayerField = readyCreatures(playerField);
       let faceDamage = 0;
       let trapDamageToOpponent = 0;
       let killedPlayerCreature = false;
       const logs = [];
 
       activeOpponentField.forEach(card => {
-        if (card.stealthActive) return; // can't attack the turn it's played
+        if (!canAttack(card)) return; // summoning-sick, spent, or not a creature
 
         // Creature blockers (taunt/protect/normal) must be dealt with first.
         const targets = getValidTargets(opponentField, livePlayerField);
@@ -695,6 +716,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       });
 
       setPlayerField(livePlayerField);
+      // Chuck's board has now sat through a full round, so everything on it —
+      // the opener, and whatever he just slammed down — is settled and free to
+      // swing next turn. Done after the wave rather than before it so cards
+      // played this turn still sit out the turn they arrived.
+      setOpponentField(prev => readyCreatures(prev));
       if (faceDamage > 0) setPlayerHealth(prev => Math.max(0, prev - faceDamage));
       if (trapDamageToOpponent > 0) {
         setOpponentHealth(prev => Math.max(0, prev - trapDamageToOpponent));
@@ -1037,6 +1063,12 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               {...pressable(() => targetingMode && isValidTarget && attackTarget(card), `Attack ${card.name}`)}
             >
               <TeddyCard teddy={card} />
+              {/* Tells the player which of Chuck's teddies can actually swing
+                  at them next turn — without it, summoning sickness is only
+                  legible on their own half of the table. */}
+              {card.summoningSick && (
+                <div className="text-center text-xs text-plush-300 mt-1">Warming Up</div>
+              )}
               {card.stealthActive && (
                 <div className="absolute top-[20px] left-0 right-0 bg-purple-500/90 text-white text-[8px] text-center z-10">
                   STEALTH
@@ -1132,13 +1164,20 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               whileHover={{ y: -5 }}
               className={`relative
                 ${selectedCard?.instanceId === card.instanceId ? 'ring-2 ring-brass-300' : ''}
-                ${card.hasAttacked ? 'opacity-60' : 'cursor-pointer'}
+                ${card.type === 'action' && !canAttack(card) ? 'opacity-60' : 'cursor-pointer'}
               `}
-              {...pressable(() => phase === 'battle' && !card.hasAttacked && selectCardForAttack(card), `Select ${card.name} to attack`)}
+              /* Always delegate to selectCardForAttack rather than
+                 short-circuiting here: it owns every rejection message
+                 (trap / exhausted / summoning-sick), so a player who taps an
+                 unavailable creature is told why instead of getting silence. */
+              {...pressable(() => phase === 'battle' && selectCardForAttack(card), `Select ${card.name} to attack`)}
             >
               <TeddyCard teddy={card} />
               {card.hasAttacked && (
                 <div className="text-center text-xs text-plush-300 mt-1">Exhausted</div>
+              )}
+              {card.summoningSick && !card.hasAttacked && (
+                <div className="text-center text-xs text-plush-300 mt-1">Warming Up</div>
               )}
               {card.stealthActive && (
                 <div className="absolute top-[20px] left-0 right-0 bg-purple-500/90 text-white text-[8px] text-center z-10">

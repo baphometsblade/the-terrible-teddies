@@ -142,7 +142,7 @@ test('manifest app shortcuts (?action=) route to the right screen', async ({ pag
   await expect(page.getByRole('dialog', { name: 'Daily Rewards' })).toBeVisible(SLOW);
 });
 
-test('an attacker that survives the opponent turn is usable again (exhaustion regression)', async ({ page, pageErrors }) => {
+test('a played creature waits a turn to attack, then exhausts and recovers', async ({ page, pageErrors }) => {
   // Force a deck of pure cheap action cards so the first play is always an
   // attack-capable creature (the default deck shuffles in traps/specials).
   //
@@ -164,24 +164,44 @@ test('an attacker that survives the opponent turn is usable again (exhaustion re
   const endTurn = page.getByRole('button', { name: 'End Turn' });
   await expect(endTurn).toBeVisible(SLOW);
 
-  // Play a creature, enter battle phase, and attack the opponent's opener.
+  // Turn 1 — play a creature. It arrives summoning-sick, so it must NOT be
+  // able to swing this turn: selecting it opens no targets.
   await page.getByRole('button', { name: /^Play / }).first().click();
   const attacker = page.getByRole('button', { name: /^Select .+ to attack$/ }).first();
   await expect(attacker).toBeVisible(SLOW);
+  await expect(page.getByText('Warming Up').first()).toBeVisible(SLOW);
   await page.getByRole('button', { name: '⚔️ Battle' }).click();
   await attacker.click();
-  const target = page.getByRole('button', { name: /^Attack / }).first();
-  if (await target.count()) {
-    await target.click();
-  } else {
-    await page.getByRole('button', { name: /Attack opponent directly|Strike/ }).click();
-  }
+  // Assert the outcome, not the rejection toast: the toast auto-dismisses, so
+  // racing it under parallel load is flaky. A creature that attacked would be
+  // Exhausted — staying "Warming Up" with nothing exhausted proves it did not.
+  // (Opponent cards always carry an "Attack <name>" accessible name — only the
+  // handler is gated on targeting mode — so their presence proves nothing.)
+  await expect(page.getByText('Warming Up').first()).toBeVisible();
+  await expect(page.getByText('Exhausted')).toHaveCount(0);
+
+  // Turn 2 — sickness has lifted, so the same creature can now attack. This is
+  // also the exhaustion regression: the opponent turn write-back must not
+  // restore the flags it was stamped with on turn 1.
+  await endTurn.click();
+  await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+  await expect(page.getByText('Warming Up')).toHaveCount(0);
+  await page.getByRole('button', { name: '⚔️ Battle' }).click();
+  await attacker.click();
+  // Click whatever the board marks as hittable — a valid creature target, or
+  // the direct-attack zone when only traps/stealth remain. Taking the first
+  // "Attack <name>" button instead is wrong once Chuck has several creatures:
+  // taunt can make the first one an invalid target, and the click then
+  // silently no-ops.
+  const hittable = page.locator('.cursor-crosshair').first();
+  await expect(hittable).toBeVisible(SLOW);
+  await hittable.click();
   await expect(page.getByText('Exhausted').first()).toBeVisible(SLOW);
 
   // Survive the opponent's turn: the attacker must NOT still be Exhausted on
-  // turn 2 (a stale write-back once bricked surviving attackers permanently).
+  // turn 3 (a stale write-back once bricked surviving attackers permanently).
   await endTurn.click();
-  await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+  await expect(page.getByText(/Turn 3/)).toBeVisible(SLOW);
   await expect(endTurn).toBeVisible(SLOW);
   await expect(page.getByText('Exhausted')).toHaveCount(0);
 
