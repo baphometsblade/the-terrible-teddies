@@ -472,3 +472,77 @@ describe('persist migrate (returning-player safety)', () => {
     expect(Array.isArray(get().claimedChallenges)).toBe(true);
   });
 });
+
+describe('resetProgress keeps the server-gem high-water mark', () => {
+  // The exploit this closes: resetProgress used to restore the whole
+  // initialState, including lastSyncedServerGems: 0. The mark records how much
+  // purchased currency has already been credited locally, so zeroing it made
+  // the next login's reconcileServerGems see the player's entire purchase
+  // history as a fresh positive delta and credit it again. Reset, relog,
+  // collect — repeatable, so a single real purchase mints gems forever.
+  it('does not re-credit a purchase history that was already granted', () => {
+    // Player buys 500 gems: the webhook credits the server, the client syncs.
+    get().reconcileServerGems(500);
+    expect(get().gems).toBe(510); // 10 starting + 500 purchased
+    expect(get().lastSyncedServerGems).toBe(500);
+
+    // They spend the lot, then wipe their progress.
+    get().spendGems(510);
+    expect(get().gems).toBe(0);
+    get().resetProgress();
+
+    // Next login re-reads the same authoritative server total. The server has
+    // not sold them anything new, so nothing may be credited.
+    const afterReset = get().gems;
+    get().reconcileServerGems(500);
+    expect(get().gems).toBe(afterReset);
+    expect(get().lastSyncedServerGems).toBe(500);
+  });
+
+  it('still credits a genuine purchase made after a reset', () => {
+    get().reconcileServerGems(500);
+    get().resetProgress();
+    const afterReset = get().gems;
+
+    // A real second purchase raises the server total to 800.
+    get().reconcileServerGems(800);
+    expect(get().gems).toBe(afterReset + 300); // only the new 300, not all 800
+  });
+
+  it('resets everything else it is supposed to', () => {
+    useGameStore.setState({ coins: 99999, totalWins: 42, level: 7 });
+    get().resetProgress();
+    expect(get().coins).toBe(500);
+    expect(get().totalWins).toBe(0);
+    expect(get().level).toBe(1);
+  });
+});
+
+describe('purchaseBattlePassPremium is atomic', () => {
+  // Split as `if (spendGems(price)) setBattlePassPremium(true)` in the
+  // component, two clicks landing before React re-renders both read
+  // hasBattlePassPremium as false from the same closure while spendGems reads
+  // live store state — so a player holding 1000 gems paid 1000 for one pass.
+  it('a double-click charges once, not twice', () => {
+    useGameStore.setState({ gems: 1000, hasBattlePassPremium: false });
+
+    expect(get().purchaseBattlePassPremium(500)).toBe('purchased');
+    expect(get().purchaseBattlePassPremium(500)).toBe('already-owned');
+
+    expect(get().gems).toBe(500); // charged exactly once
+    expect(get().hasBattlePassPremium).toBe(true);
+  });
+
+  it('refuses and charges nothing when the player cannot afford it', () => {
+    useGameStore.setState({ gems: 499, hasBattlePassPremium: false });
+    expect(get().purchaseBattlePassPremium(500)).toBe('insufficient-gems');
+    expect(get().gems).toBe(499);
+    expect(get().hasBattlePassPremium).toBe(false);
+  });
+
+  it('debits exactly the price on a successful buy', () => {
+    useGameStore.setState({ gems: 500, hasBattlePassPremium: false });
+    expect(get().purchaseBattlePassPremium(500)).toBe('purchased');
+    expect(get().gems).toBe(0);
+  });
+});

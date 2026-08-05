@@ -42,8 +42,8 @@ const PREMIUM_PASS_PRICE = 500; // gems
 
 const BattlePass = ({ onClose }) => {
   const {
-    gems, spendGems, addCoins, addGems, addCardPack, addCard, seasonXP,
-    hasBattlePassPremium, setBattlePassPremium,
+    gems, addCoins, addGems, addCardPack, addCard, seasonXP,
+    hasBattlePassPremium, purchaseBattlePassPremium,
     claimedBattlePassRewards, claimBattlePassReward, syncSeason,
   } = useGameStore();
   const { toast } = useToast();
@@ -77,11 +77,15 @@ const BattlePass = ({ onClose }) => {
     : 100;
 
   const handlePurchasePremium = () => {
-    if (spendGems(PREMIUM_PASS_PRICE)) {
-      setBattlePassPremium(true);
+    // One store-side step, so a double-click can't pay twice for one pass (see
+    // purchaseBattlePassPremium).
+    const outcome = purchaseBattlePassPremium(PREMIUM_PASS_PRICE);
+    if (outcome === 'purchased') {
       setShowPurchaseConfirm(false);
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#fbbf24', '#f59e0b', '#fde68a'] });
       toast({ title: "Premium Pass Unlocked!", description: "You now have access to all premium rewards!" });
+    } else if (outcome === 'already-owned') {
+      setShowPurchaseConfirm(false);
     } else {
       toast({ title: "Not Enough Gems", description: `You need ${PREMIUM_PASS_PRICE} gems.`, variant: "destructive" });
     }

@@ -325,6 +325,23 @@ export const useGameStore = create(
         get().syncSeason();
         set({ hasBattlePassPremium: value });
       },
+      // Atomic buy: check ownership and debit in one store-side step, matching
+      // claimBattlePassReward's "don't trust the component's render" rule.
+      //
+      // Split across the component as `if (spendGems(price)) setBattlePassPremium(true)`
+      // this double-charges. Both handlers read `hasBattlePassPremium` from the
+      // same render closure, so two clicks landing before React re-renders each
+      // see `false`, and spendGems reads live store state — so a player holding
+      // 1000 gems pays twice for one pass. Reading ownership through get() here
+      // means the second call sees the first call's write and bails.
+      purchaseBattlePassPremium: (price) => {
+        get().syncSeason();
+        const state = get();
+        if (state.hasBattlePassPremium) return 'already-owned';
+        if (state.gems < price) return 'insufficient-gems';
+        set({ gems: state.gems - price, hasBattlePassPremium: true });
+        return 'purchased';
+      },
       // Atomic claim with store-side eligibility. Rolls the season first so a
       // dialog held open across a quarter boundary can't claim expired-season
       // tiers into the fresh pass; validates XP and premium ownership here
@@ -729,7 +746,18 @@ export const useGameStore = create(
       setDifficulty: (difficulty) => set({ difficulty }),
       setTutorialCompleted: (completed) => set({ tutorialCompleted: completed }),
 
-      resetProgress: () => set({ ...initialState, pendingAchievements: [] }),
+      // Wiping progress must NOT wipe the server-gem high-water mark. That mark
+      // records how much purchased currency has already been credited locally;
+      // zeroing it makes the next login's reconcileServerGems see the player's
+      // entire purchase history as a fresh positive delta and credit it again.
+      // Reset, relog, collect — repeatable, so one real purchase mints gems
+      // forever. Progress resets; what the player already paid for does not
+      // un-happen.
+      resetProgress: () => set({
+        ...initialState,
+        lastSyncedServerGems: get().lastSyncedServerGems,
+        pendingAchievements: [],
+      }),
     }),
     {
       name: 'terrible-teddies-storage',
