@@ -278,3 +278,36 @@ describe('money-path RPCs are not reachable with the anon key', () => {
     ).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// players is not client-writable.
+//
+// The bug this exists to prevent: players had an RLS UPDATE policy scoped to
+// the caller's own row but not by column, so an authenticated user could PATCH
+// their own coins/wins/level and forge their public leaderboard standing. All
+// legitimate writes go through SECURITY DEFINER functions (which run as owner),
+// so the client needs no direct write grant at all.
+// ---------------------------------------------------------------------------
+describe('players table is not directly writable by clients', () => {
+  const allSql = loadMigrations().map((m) => m.sql).join('\n');
+
+  it('revokes UPDATE on players from the authenticated role', () => {
+    // A REVOKE ... ON public.players FROM ...authenticated... covering UPDATE.
+    const re = /REVOKE\s+([^;]*?)\s+ON\s+(?:TABLE\s+)?public\.players\s+FROM\s+([^;]+);/gi;
+    let locksUpdate = false;
+    let m;
+    while ((m = re.exec(allSql))) {
+      const privs = m[1].toUpperCase();
+      const roles = m[2].toLowerCase();
+      const coversUpdate = /\bUPDATE\b/.test(privs) || /\bALL\b/.test(privs);
+      if (coversUpdate && /\banon\b|\bauthenticated\b/.test(roles)) locksUpdate = true;
+    }
+    expect(
+      locksUpdate,
+      'No migration revokes UPDATE on public.players from anon/authenticated. ' +
+        'A row-scoped RLS UPDATE policy still lets a client rewrite its own ' +
+        'coins/wins/level (leaderboard fraud) — writes must go through the ' +
+        'SECURITY DEFINER sync_* functions only.'
+    ).toBe(true);
+  });
+});
