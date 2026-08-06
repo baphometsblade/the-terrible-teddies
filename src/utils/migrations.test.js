@@ -407,3 +407,42 @@ describe('set_player_username grants', () => {
     expect(/length\(/i.test(body[1])).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// check_rate_limit must not let the caller set its own limits.
+//
+// The bug: it used p_max_requests / p_window_seconds verbatim, so an
+// authenticated user could call it from the browser console with
+// p_window_seconds:0 and turn the checkout rate limiter into a no-op.
+// ---------------------------------------------------------------------------
+describe('check_rate_limit derives its window server-side', () => {
+  const allSql = loadMigrations().map((m) => m.sql).join('\n');
+
+  function finalBody(fn) {
+    const re = new RegExp(
+      `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${fn}\\s*\\([\\s\\S]*?\\$\\$([\\s\\S]*?)\\$\\$;`,
+      'gi'
+    );
+    let last = null, m;
+    while ((m = re.exec(allSql))) last = m[1];
+    return last;
+  }
+
+  it('the live definition ignores the client-supplied max/window', () => {
+    const body = finalBody('check_rate_limit');
+    expect(body, 'no check_rate_limit body found').toBeTruthy();
+    // The cutoff must be computed from a server-derived window, never directly
+    // from the p_window_seconds argument.
+    expect(
+      /NOW\(\)\s*-\s*\(\s*p_window_seconds/i.test(body),
+      'check_rate_limit computes its cutoff straight from p_window_seconds — a ' +
+        'client passing 0 makes the limit a no-op. Derive the window server-side.'
+    ).toBe(false);
+    expect(
+      /v_count\s*>=\s*p_max_requests/i.test(body),
+      'check_rate_limit compares against the client-supplied p_max_requests.'
+    ).toBe(false);
+    // And it must actually key a server-owned limit off the action type.
+    expect(/CASE\s+p_action_type/i.test(body)).toBe(true);
+  });
+});

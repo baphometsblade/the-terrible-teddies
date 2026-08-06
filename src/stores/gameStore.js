@@ -415,6 +415,10 @@ export const useGameStore = create(
       // Grant cards: new ids are added to the collection, duplicates are refunded
       // as coins so a pull is never worthless. Returns the coins awarded.
       addCards: (cardIds) => {
+        // Roll the week over first, so cards collected after a week boundary
+        // count toward the NEW week's "Collect N New Cards" — not the old one,
+        // which would leave the counter stuck high and the challenge re-claimable.
+        get().syncPeriods();
         const state = get();
         const newCards = [];
         let dupeCoins = 0;
@@ -596,9 +600,22 @@ export const useGameStore = create(
         const state = get();
         const today = new Date().toDateString();
         const weekKey = getWeekKey();
-        const dailyReset = state.dailyStatsDate && state.dailyStatsDate !== today;
-        const weeklyReset = state.weeklyStatsDate && state.weeklyStatsDate !== weekKey;
-        if (!dailyReset && !weeklyReset) return;
+
+        // A null stamp means "never anchored to a period" — stamp it to now
+        // WITHOUT resetting, grandfathering current progress. A non-null stamp
+        // that no longer matches is a genuine rollover: reset that period.
+        //
+        // Stamping on null (rather than early-returning) is the fix for a
+        // free-gems path: weekNewCards is bumped by addCards, but a player who
+        // only collects cards and never battles had weeklyStatsDate stuck at
+        // null forever, so syncPeriods early-returned and the counter never
+        // reset across real week boundaries — leaving "Collect N New Cards"
+        // permanently satisfied and re-claimable every rotation.
+        const dailyReset = state.dailyStatsDate !== null && state.dailyStatsDate !== today;
+        const weeklyReset = state.weeklyStatsDate !== null && state.weeklyStatsDate !== weekKey;
+        const dailyStamp = state.dailyStatsDate === null;
+        const weeklyStamp = state.weeklyStatsDate === null;
+        if (!dailyReset && !weeklyReset && !dailyStamp && !weeklyStamp) return;
 
         let claimed = state.claimedChallenges;
         const patch = {};
@@ -608,6 +625,8 @@ export const useGameStore = create(
             todayWins: 0, todayBattles: 0, todayDamageDealt: 0, todayCardsPlayed: 0,
             dailyStatsDate: today,
           });
+        } else if (dailyStamp) {
+          patch.dailyStatsDate = today; // first anchor, keep progress
         }
         if (weeklyReset) {
           claimed = claimed.filter(id => !id.startsWith('w'));
@@ -615,6 +634,8 @@ export const useGameStore = create(
             weekWins: 0, weekCoinsEarned: 0, weekBestStreak: 0, weekNewCards: 0,
             weeklyStatsDate: weekKey,
           });
+        } else if (weeklyStamp) {
+          patch.weeklyStatsDate = weekKey; // first anchor, keep progress
         }
         set({ ...patch, claimedChallenges: claimed });
       },

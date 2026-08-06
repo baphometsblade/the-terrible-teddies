@@ -295,14 +295,25 @@ describe('addXP — leveling and monotonic seasonXP', () => {
 });
 
 describe('recordBattleResult', () => {
-  it('on a win increments wins, streak, coins and returns the coin gain', () => {
-    useGameStore.setState({ totalWins: 0, currentWinStreak: 0, coins: 0 });
-    const res = get().recordBattleResult(true, 10, 0, 30, 3);
-    expect(get().totalWins).toBe(1);
+  it('on a win pays exactly 25 + streak*5 coins', () => {
+    // Assert the EXACT battle payout, not just "> 0". The old >= assertion
+    // survived deleting `if (won) addCoins(coinsThisBattle)` entirely, because
+    // the flawless-win achievement (finalHP 30, no damage) adds 1000 coins and
+    // masked the missing battle reward. So: take a NON-flawless result (finalHP
+    // 20, 10 damage taken -> no perfect_win, no comeback) and pre-complete the
+    // win/battle-count achievements so nothing else moves the balance.
+    useGameStore.setState({
+      totalWins: 100, totalBattles: 200, currentWinStreak: 0, coins: 0,
+      completedAchievements: ['first_win', 'win_10', 'win_50', 'win_streak_5', 'play_100'],
+      dailyStatsDate: new Date().toDateString(), weeklyStatsDate: 'x',
+    });
+    const before = get().coins;
+    const res = get().recordBattleResult(true, 10, 0, 20, 3, 10);
+
+    expect(get().totalWins).toBe(101);
     expect(get().currentWinStreak).toBe(1);
-    expect(res.coinsGain).toBeGreaterThan(0);
-    // coins increased by exactly the reported gain
-    expect(get().coins).toBeGreaterThanOrEqual(res.coinsGain);
+    expect(res.coinsGain).toBe(30);              // 25 + newStreak(1)*5
+    expect(get().coins - before).toBe(30);       // nothing else touched the balance
   });
 
   it('on a loss resets the win streak and still grants consolation coins', () => {
@@ -646,5 +657,39 @@ describe('premium Battle Pass exclusive tiers grant a real entitlement', () => {
     get().unlockCosmetic('');
     get().unlockCosmetic(undefined);
     expect(get().unlockedCosmetics).toEqual([]);
+  });
+});
+
+describe('weekNewCards is reset-aware (no permanent "Collect N New Cards")', () => {
+  afterEach(() => vi.useRealTimers());
+
+  // The bug: addCards bumped weekNewCards, but a player who only collects cards
+  // (never battles) had weeklyStatsDate stuck at null, so syncPeriods
+  // early-returned and the counter never reset across real week boundaries —
+  // leaving the weekly challenge permanently satisfied and re-claimable.
+  it('anchors the week on first addCards and resets the counter across a real week boundary', () => {
+    vi.useFakeTimers();
+    // A Monday.
+    vi.setSystemTime(new Date('2026-06-01T12:00:00Z'));
+    useGameStore.setState({ ownedCards: [], weekNewCards: 0, weeklyStatsDate: null, claimedChallenges: [] });
+
+    get().addCards([1, 2, 3, 4, 5]);
+    expect(get().weekNewCards).toBe(5);
+    expect(get().weeklyStatsDate).not.toBeNull(); // anchored, so a rollover can be detected
+
+    // Next week: collecting again must count toward the fresh week, not stack.
+    vi.setSystemTime(new Date('2026-06-08T12:00:00Z'));
+    get().addCards([6, 7]);
+    expect(get().weekNewCards).toBe(2); // reset to 0 on rollover, then +2 — NOT 7
+  });
+
+  it('same-week collection keeps accumulating', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-01T12:00:00Z'));
+    useGameStore.setState({ ownedCards: [], weekNewCards: 0, weeklyStatsDate: null });
+    get().addCards([1, 2]);
+    vi.setSystemTime(new Date('2026-06-03T12:00:00Z')); // same week
+    get().addCards([3, 4]);
+    expect(get().weekNewCards).toBe(4);
   });
 });
