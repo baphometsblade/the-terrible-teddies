@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { playSound as playSoundEffect } from '@/utils/sounds';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
-import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures } from '../../utils/battleUtils';
+import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures, getValidTargets } from '../../utils/battleUtils';
 import { pickQuip, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { syncBattleResult } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
@@ -365,19 +365,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // Get valid attack targets considering abilities. Traps are excluded: they
   // are not creatures and spring on their own, so they must never gate a direct
   // attack — otherwise a board of only traps soft-locks the game.
-  const getValidTargets = useCallback((attackerField, defenderField) => {
-    const creatures = defenderField.filter(c => c.type !== 'trap' && !c.stealthActive);
-
-    // Taunt must be attacked first
-    const tauntCards = creatures.filter(c => c.ability === 'taunt');
-    if (tauntCards.length > 0) return tauntCards;
-
-    // Protect — only the protector can be targeted while it's on the field
-    const protectCards = creatures.filter(c => c.ability === 'protect');
-    if (protectCards.length > 0) return protectCards;
-
-    return creatures;
-  }, []);
+  // getValidTargets now lives in battleUtils (pure, and unit-tested for the
+  // taunt > protect > all precedence — see battleUtils.test.js). Imported at
+  // the top; both call sites here pass (attackerField, defenderField) as before.
 
   // Play a card from hand
   const playCard = (card) => {
@@ -598,12 +588,17 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       addToBattleLog(`${trap.name} sprang! ${trapDamage} damage, right in your pride`);
       toast({ title: "It's a Trap!", description: `${trap.name} got you for ${trapDamage}. ${OPPONENT_NAME} is giggling.`, variant: "destructive" });
     } else {
-      // Include a 'royal' ally's aura in the face-damage too, not just creature-vs-creature hits.
-      const faceDamage = effectiveAttack(selectedCard, playerField);
+      // Re-read the attacker from the live field, not the selection snapshot:
+      // Rally mid-targeting replaces every field card with a +1-attack copy, so
+      // computing from selectedCard would deal the pre-Rally value straight to
+      // face — the same stale-snapshot bug already fixed in attackTarget.
+      // effectiveAttack then folds in any 'royal' ally aura on top.
+      const attacker = playerField.find(c => c.instanceId === selectedCard.instanceId) || selectedCard;
+      const faceDamage = effectiveAttack(attacker, playerField);
       playSound('attack');
       setOpponentHealth(prev => Math.max(0, prev - faceDamage));
       battleStatsRef.current.damageDealt += faceDamage;
-      addToBattleLog(`${selectedCard.name} decked ${OPPONENT_NAME} in the face for ${faceDamage}!`);
+      addToBattleLog(`${attacker.name} decked ${OPPONENT_NAME} in the face for ${faceDamage}!`);
       toast({ title: "Right in the Face!", description: `${faceDamage} damage straight to ${OPPONENT_NAME}'s smug mug.` });
       if (faceDamage >= 4) speak('oppTakesFaceHit');
     }

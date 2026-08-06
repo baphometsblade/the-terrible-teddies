@@ -1,6 +1,6 @@
 import {
   damageToCreatureHp, resolveCreatureHit, rallyField, effectiveCost, effectiveAttack,
-  canAttack, readyCreatures,
+  canAttack, readyCreatures, getValidTargets,
 } from './battleUtils';
 
 describe('damageToCreatureHp (creature-HP model)', () => {
@@ -285,5 +285,42 @@ describe('canAttack / readyCreatures (summoning sickness)', () => {
     expect(rallied.summoningSick).toBe(true);
     expect(canAttack(rallied)).toBe(false);
     expect(rallied.attack).toBe(3); // rally's +1 still applies
+  });
+});
+
+describe('getValidTargets (taunt > protect > all, stealth excluded)', () => {
+  const C = (over) => ({ type: 'action', ability: 'none', ...over });
+
+  it('returns every non-trap creature when no keyword is present', () => {
+    const field = [C({ instanceId: 'a' }), C({ instanceId: 'b' }), { type: 'trap', instanceId: 't' }];
+    expect(getValidTargets([], field).map((c) => c.instanceId)).toEqual(['a', 'b']);
+  });
+
+  it('restricts to taunt creatures when any taunt is present', () => {
+    const field = [C({ instanceId: 'a' }), C({ instanceId: 'taunt', ability: 'taunt' }), C({ instanceId: 'prot', ability: 'protect' })];
+    expect(getValidTargets([], field).map((c) => c.instanceId)).toEqual(['taunt']);
+  });
+
+  it('taunt outranks protect: with both present, only taunt is targetable', () => {
+    const field = [C({ instanceId: 'prot', ability: 'protect' }), C({ instanceId: 'taunt', ability: 'taunt' })];
+    expect(getValidTargets([], field).map((c) => c.instanceId)).toEqual(['taunt']);
+  });
+
+  it('restricts to protect creatures when protect but no taunt is present', () => {
+    const field = [C({ instanceId: 'a' }), C({ instanceId: 'prot', ability: 'protect' })];
+    expect(getValidTargets([], field).map((c) => c.instanceId)).toEqual(['prot']);
+  });
+
+  it('excludes a stealthed creature at every level, including a stealthed taunt', () => {
+    // A stealthed taunt is not a valid target, and because it is filtered out
+    // BEFORE the taunt check, it also does not lock targeting onto itself —
+    // the rest of the board stays attackable.
+    const field = [C({ instanceId: 'a' }), C({ instanceId: 'sneaky', ability: 'taunt', stealthActive: true })];
+    expect(getValidTargets([], field).map((c) => c.instanceId)).toEqual(['a']);
+  });
+
+  it('never returns traps', () => {
+    const field = [{ type: 'trap', instanceId: 't', ability: 'none' }];
+    expect(getValidTargets([], field)).toEqual([]);
   });
 });

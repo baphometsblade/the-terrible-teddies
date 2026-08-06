@@ -154,3 +154,30 @@ export const rallyField = (field) =>
   field.map((c) => (c.type === 'action'
     ? { ...c, attack: c.attack + 1, currentHp: c.defense }
     : c));
+
+/**
+ * Valid attack targets on a defending field, honouring the targeting keywords.
+ *
+ * Precedence, highest first:
+ *   - taunt:   if any taunt creature is present, ONLY taunt creatures may be
+ *              targeted.
+ *   - protect: else if any protect creature is present, ONLY those may be
+ *              targeted (the protector shields the rest of the board).
+ *   - else every non-trap, non-stealthed creature is fair game.
+ * Traps are never targets (they spring on their own), and a stealthed creature
+ * is excluded at every level — it cannot be targeted for the turn it is hidden.
+ *
+ * Pure and symmetric: both the player (attacking Chuck) and the opponent AI
+ * call this with their own/opponent fields. Extracted from GameBoard so the
+ * precedence chain — which is what taunt/protect actually MEAN — can be
+ * unit-tested; the first argument is unused today but kept so existing
+ * two-argument call sites don't change.
+ */
+export const getValidTargets = (_attackerField, defenderField) => {
+  const creatures = defenderField.filter((c) => c.type !== 'trap' && !c.stealthActive);
+  const taunts = creatures.filter((c) => c.ability === 'taunt');
+  if (taunts.length > 0) return taunts;
+  const protectors = creatures.filter((c) => c.ability === 'protect');
+  if (protectors.length > 0) return protectors;
+  return creatures;
+};
