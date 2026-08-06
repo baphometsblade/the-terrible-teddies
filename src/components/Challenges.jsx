@@ -53,18 +53,25 @@ const Challenges = ({ onClose }) => {
   const WEEKLY_CHALLENGES = getWeeklyChallenges();
 
   // Roll over daily/weekly stats and the claimed ledger if the calendar has
-  // advanced since the last battle, so the panel never shows stale challenges.
+  // advanced, so the panel never shows stale challenges.
+  //
+  // This must keep firing, not run once on mount: the visible challenge SET is
+  // recomputed every render and rotates at midnight/Monday, but the STATS
+  // (todayWins etc.) only roll over when syncPeriods runs. A dialog left open
+  // across midnight would otherwise show tomorrow's challenges scored against
+  // today's progress — e.g. yesterday's 3 wins auto-completing today's
+  // "win 3 games". Re-syncing on the same 60s tick as the reset countdown
+  // keeps the set and the stats on the same calendar day (syncPeriods
+  // early-returns when the date is unchanged, so the extra calls are free).
   useEffect(() => {
     syncPeriods();
-  }, [syncPeriods]);
-
-  useEffect(() => {
     const timer = setInterval(() => {
+      syncPeriods();
       setDailyResetTime(getTimeUntilReset(false));
       setWeeklyResetTime(getTimeUntilReset(true));
     }, 60000);
     return () => clearInterval(timer);
-  }, []);
+  }, [syncPeriods]);
 
   const getChallengeProgress = (challenge) => {
     switch (challenge.stat) {

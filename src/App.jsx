@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import Auth from './components/Auth';
 import GameBoard from './components/GameBoard/GameBoard';
@@ -55,26 +55,33 @@ function App() {
   const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, reconcileServerGems } = useGameStore();
   const { toast } = useToast();
 
-  // Show achievement unlock toasts — process ALL queued achievements with staggered timing
+  // Show achievement unlock toasts — process ALL queued achievements with staggered timing.
+  //
+  // Dedupe by id rather than cancelling timers in the effect cleanup. Draining
+  // the queue below calls setState, which re-renders and re-runs this effect;
+  // the old cleanup (`() => timers.forEach(clearTimeout)`) then fired on that
+  // re-render and cancelled every toast timer it had just scheduled — so the
+  // toasts NEVER appeared. The same cleanup also fired on StrictMode's
+  // double-invoke. An id Set makes the drain idempotent instead: each
+  // achievement is earned exactly once, so a second pass over the same batch
+  // (StrictMode, or the drain re-render) schedules nothing and cancels nothing.
+  const shownAchievementIds = useRef(new Set());
   useEffect(() => {
-    if (!pendingAchievements || pendingAchievements.length === 0) return undefined;
+    if (!pendingAchievements || pendingAchievements.length === 0) return;
 
-    // Process all pending achievements with 600ms stagger. Track the timers so
-    // they're cancelled on unmount (and on StrictMode's remount cleanup, which
-    // otherwise schedules the batch twice).
-    const timers = pendingAchievements.map((achievement, i) =>
+    const fresh = pendingAchievements.filter((a) => !shownAchievementIds.current.has(a.id));
+    useGameStore.setState({ pendingAchievements: [] });
+
+    fresh.forEach((achievement, i) => {
+      shownAchievementIds.current.add(achievement.id);
       setTimeout(() => {
         toast({
           title: `${achievement.icon} Achievement Unlocked!`,
           description: `${achievement.name} — +${achievement.reward.toLocaleString()} 🪙`,
           duration: 5000,
         });
-      }, i * 600)
-    );
-
-    // Clear the queue in a single state update
-    useGameStore.setState({ pendingAchievements: [] });
-    return () => timers.forEach(clearTimeout);
+      }, i * 600);
+    });
   }, [pendingAchievements, toast]);
 
   // Tie analytics events to the signed-in user (or clear the identity on
