@@ -270,3 +270,31 @@ test('challenges dialog shows daily challenges and closes on Escape', async ({ p
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0, SLOW);
 });
+
+test('a dialog chunk that fails to load degrades gracefully, not a full-app crash', async ({ page }) => {
+  // Regression guard for the app-killing lazy-chunk failure: a dynamic import
+  // that rejects (flaky network, or a stale chunk hash after a deploy) used to
+  // throw past Suspense to the app-level ErrorBoundary, which wraps EVERYTHING —
+  // replacing the menu and any in-progress game with the full crash screen over
+  // a dialog the user merely tried to open. DialogErrorBoundary now scopes it.
+  //
+  // Force the Shop chunk to fail. In dev the dynamic import resolves to the
+  // Shop module URL; aborting it rejects the import.
+  await page.route('**/components/Shop*', (r) => r.abort());
+
+  await page.getByRole('button', { name: 'Shop', exact: true }).click();
+
+  // The scoped notice appears...
+  const notice = page.getByRole('alertdialog', { name: /failed to load/i });
+  await expect(notice).toBeVisible(SLOW);
+
+  // ...and crucially the app itself survived: the menu's Battle button is still
+  // there, and the app-level crash screen ("Oh no!") is NOT shown.
+  await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible();
+  await expect(page.getByText('Oh no!')).toHaveCount(0);
+
+  // Dismissing returns to a fully usable app.
+  await notice.getByRole('button', { name: 'OK' }).click();
+  await expect(notice).toHaveCount(0, SLOW);
+  await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible();
+});

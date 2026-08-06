@@ -8,6 +8,7 @@ import TeddyCollection from './components/TeddyCollection';
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/components/ui/use-toast";
 import ErrorBoundary from './components/ErrorBoundary';
+import DialogErrorBoundary from './components/DialogErrorBoundary';
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from './stores/gameStore';
@@ -50,6 +51,19 @@ function App() {
   const [showBattlePass, setShowBattlePass] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
+
+  // Close every dialog at once — used by DialogErrorBoundary to return the app
+  // to a usable state when a dialog chunk fails to load. Its result also keys
+  // the boundary's reset, so opening any dialog re-attempts the chunk.
+  const dialogFlags = [
+    showTutorial, showCardPacks, showPlayerStats, showSettings, showDailyRewards,
+    showShop, showBattlePass, showLeaderboard, showChallenges,
+  ];
+  const closeAllDialogs = () => {
+    setShowTutorial(false); setShowCardPacks(false); setShowPlayerStats(false);
+    setShowSettings(false); setShowDailyRewards(false); setShowShop(false);
+    setShowBattlePass(false); setShowLeaderboard(false); setShowChallenges(false);
+  };
   const [purchaseSessionId, setPurchaseSessionId] = useState(null);
 
   const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, reconcileServerGems } = useGameStore();
@@ -278,6 +292,7 @@ function App() {
               </motion.div>
             </AnimatePresence>
 
+            <DialogErrorBoundary resetKey={dialogFlags.join()} onDismiss={closeAllDialogs}>
             <Suspense fallback={<DialogLoader />}>
               <AnimatePresence>
                 {showTutorial && (
@@ -304,6 +319,7 @@ function App() {
                 {showChallenges && <Challenges onClose={() => setShowChallenges(false)} />}
               </AnimatePresence>
             </Suspense>
+            </DialogErrorBoundary>
           </>
         ) : (
           <Auth />
@@ -314,12 +330,14 @@ function App() {
             slow or fails the buyer must still see confirmation rather than a
             bare login screen with their paid session_id silently dropped. */}
         {purchaseSessionId && (
-          <Suspense fallback={<DialogLoader />}>
-            <PurchaseSuccess
-              sessionId={purchaseSessionId}
-              onDone={() => setPurchaseSessionId(null)}
-            />
-          </Suspense>
+          <DialogErrorBoundary resetKey={purchaseSessionId} onDismiss={() => setPurchaseSessionId(null)}>
+            <Suspense fallback={<DialogLoader />}>
+              <PurchaseSuccess
+                sessionId={purchaseSessionId}
+                onDone={() => setPurchaseSessionId(null)}
+              />
+            </Suspense>
+          </DialogErrorBoundary>
         )}
 
         <Toaster />
