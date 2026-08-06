@@ -211,6 +211,12 @@ const initialState = {
   // Battle Pass
   hasBattlePassPremium: false,
   claimedBattlePassRewards: { free: [], premium: [] },
+  // Cosmetic entitlements (borders, emotes) unlocked from premium Battle Pass
+  // tiers. Persisted by name so the grant survives even though no UI renders
+  // them yet — before this, claiming an 'exclusive' tier recorded the tier as
+  // claimed but granted nothing at all, so a player who paid 500 gems for the
+  // premium pass got an empty claim.
+  unlockedCosmetics: [],
   // Which season the pass progress belongs to; null until first stamped.
   // When the rolling season advances past this, syncSeason() resets the pass.
   seasonKey: null,
@@ -344,6 +350,7 @@ export const useGameStore = create(
           seasonKey: key,
           seasonXP: 0,
           claimedBattlePassRewards: { free: [], premium: [] },
+          unlockedCosmetics: [],
           hasBattlePassPremium: false,
         });
       },
@@ -391,6 +398,16 @@ export const useGameStore = create(
           },
         });
         return true;
+      },
+
+      // Record a cosmetic entitlement (idempotent). The Battle Pass 'exclusive'
+      // tiers grant borders/emotes; storing the name here makes the claim a real
+      // grant rather than a no-op, and persists it for a future cosmetics UI.
+      unlockCosmetic: (name) => {
+        if (!name) return;
+        const state = get();
+        if (state.unlockedCosmetics.includes(name)) return;
+        set({ unlockedCosmetics: [...state.unlockedCosmetics, name] });
       },
 
       addCard: (cardId) => get().addCards([cardId]),
@@ -814,6 +831,7 @@ export const useGameStore = create(
           free: persisted?.claimedBattlePassRewards?.free ?? [],
           premium: persisted?.claimedBattlePassRewards?.premium ?? [],
         };
+        s.unlockedCosmetics = Array.isArray(persisted?.unlockedCosmetics) ? persisted.unlockedCosmetics : [];
         s.claimedChallenges = Array.isArray(persisted?.claimedChallenges) ? persisted.claimedChallenges : [];
         // Pre-rollover saves have no season stamp — null means "stamp without
         // resetting" on the first syncSeason(), grandfathering their progress.

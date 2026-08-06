@@ -42,7 +42,7 @@ const PREMIUM_PASS_PRICE = 500; // gems
 
 const BattlePass = ({ onClose }) => {
   const {
-    gems, addCoins, addGems, addCardPack, addCard, seasonXP,
+    gems, addCoins, addGems, addCardPack, addCard, unlockCosmetic, seasonXP,
     hasBattlePassPremium, purchaseBattlePassPremium,
     claimedBattlePassRewards, claimBattlePassReward, syncSeason,
   } = useGameStore();
@@ -134,6 +134,11 @@ const BattlePass = ({ onClose }) => {
         toast({ title: "Card Unlocked!", description: `You got ${rewardData.name}!` });
         break;
       case 'exclusive':
+        // Record the cosmetic as owned so the claim is a real grant, not a
+        // no-op. No UI renders borders/emotes yet, but the entitlement now
+        // persists (and survives a season reset by being cleared with the pass).
+        unlockCosmetic(rewardData.name);
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
         toast({ title: "Exclusive Unlocked!", description: `You got ${rewardData.name}!` });
         break;
     }

@@ -628,3 +628,23 @@ describe('bindToUser isolates saves per account on a shared device', () => {
     expect(get().ownerUserId).toBe(A);
   });
 });
+
+describe('premium Battle Pass exclusive tiers grant a real entitlement', () => {
+  // The bug: claiming an 'exclusive' tier (border/emote) recorded the tier as
+  // claimed and showed a toast but granted NOTHING — a player who paid 500 gems
+  // for premium got an empty claim. unlockCosmetic now records it.
+  it('unlockCosmetic records a cosmetic and is idempotent', () => {
+    useGameStore.setState({ unlockedCosmetics: [] });
+    get().unlockCosmetic('Gold Border');
+    get().unlockCosmetic('Gold Border'); // repeat click
+    get().unlockCosmetic('Teddy Emote');
+    expect(get().unlockedCosmetics).toEqual(['Gold Border', 'Teddy Emote']);
+  });
+
+  it('ignores an empty name', () => {
+    useGameStore.setState({ unlockedCosmetics: [] });
+    get().unlockCosmetic('');
+    get().unlockCosmetic(undefined);
+    expect(get().unlockedCosmetics).toEqual([]);
+  });
+});
