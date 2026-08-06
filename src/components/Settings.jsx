@@ -6,6 +6,46 @@ import { useGameStore } from '../stores/gameStore';
 import { supabase } from '../utils/supabaseClient';
 import { useDialog } from '@/hooks/useDialog';
 
+// Declared at module scope, NOT inside Settings.
+//
+// Defining a component inside a render creates a brand-new component TYPE on
+// every render, so React unmounts the previous subtree and mounts a fresh one
+// instead of updating it. That destroys the DOM node the user is interacting
+// with: pressing Enter on a difficulty button re-rendered Settings, remounted
+// all three buttons, and dropped focus to <body> — a keyboard user lost their
+// place on every single toggle. (An axe audit can't see this; it inspects a
+// static snapshot, not focus across interactions.)
+const SettingRow = ({ icon, label, description, children }) => (
+  <div className="flex items-center justify-between py-4 border-b border-white/10">
+    <div className="flex items-center gap-3">
+      <span className="text-2xl">{icon}</span>
+      <div>
+        <div className="text-white font-semibold">{label}</div>
+        {description && <div className="text-white/50 text-sm">{description}</div>}
+      </div>
+    </div>
+    {children}
+  </div>
+);
+
+// `difficulty`/`setDifficulty` were closed over when this lived inside the
+// component; hoisting means they arrive as props instead.
+const DifficultyButton = ({ value, label, description, color, difficulty, setDifficulty }) => (
+  <button
+    onClick={() => setDifficulty(value)}
+    aria-pressed={difficulty === value}
+    className={`flex-1 p-4 rounded-lg border-2 transition-all ${
+      difficulty === value ? `${color} border-white scale-105` : 'bg-white/5 border-white/20 hover:border-white/40'
+    }`}
+  >
+    <div className="text-white font-bold">{label}</div>
+    {/* Full-opacity (not /60) so the description clears 4.5:1 against all
+        three selected-state backgrounds (green-700/brass-600/red-600) —
+        see contrast notes on the `color` values below. */}
+    <div className="text-white text-xs mt-1">{description}</div>
+  </button>
+);
+
 const Settings = ({ onClose }) => {
   const {
     soundEnabled, setSoundEnabled,
@@ -39,34 +79,6 @@ const Settings = ({ onClose }) => {
     onClose();
   };
 
-  const SettingRow = ({ icon, label, description, children }) => (
-    <div className="flex items-center justify-between py-4 border-b border-white/10">
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">{icon}</span>
-        <div>
-          <div className="text-white font-semibold">{label}</div>
-          {description && <div className="text-white/50 text-sm">{description}</div>}
-        </div>
-      </div>
-      {children}
-    </div>
-  );
-
-  const DifficultyButton = ({ value, label, description, color }) => (
-    <button
-      onClick={() => setDifficulty(value)}
-      aria-pressed={difficulty === value}
-      className={`flex-1 p-4 rounded-lg border-2 transition-all ${
-        difficulty === value ? `${color} border-white scale-105` : 'bg-white/5 border-white/20 hover:border-white/40'
-      }`}
-    >
-      <div className="text-white font-bold">{label}</div>
-      {/* Full-opacity (not /60) so the description clears 4.5:1 against all
-          three selected-state backgrounds (green-700/brass-600/red-600) —
-          see contrast notes on the `color` values below. */}
-      <div className="text-white text-xs mt-1">{description}</div>
-    </button>
-  );
 
   return (
     <div
@@ -111,11 +123,11 @@ const Settings = ({ onClose }) => {
                   4.5:1 minimum (and only 2.07:1 for the dimmed description).
                   green-700 clears it: white-on-green-700 = 5.02:1 for both
                   the bold label and the (now full-opacity) description. */}
-              <DifficultyButton value="easy" label="😊 Easy" description="Relaxed" color="bg-green-700" />
+              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="easy" label="😊 Easy" description="Relaxed" color="bg-green-700" />
               {/* Sibling shades already clear AA at full opacity: white-on-
                   brass-600 = 5.02:1, white-on-red-600 = 4.83:1 — unchanged. */}
-              <DifficultyButton value="normal" label="😐 Normal" description="Balanced" color="bg-brass-600" />
-              <DifficultyButton value="hard" label="😈 Hard" description="Challenge" color="bg-red-600" />
+              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="normal" label="😐 Normal" description="Balanced" color="bg-brass-600" />
+              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="hard" label="😈 Hard" description="Challenge" color="bg-red-600" />
             </div>
           </div>
 

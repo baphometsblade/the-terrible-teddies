@@ -448,15 +448,26 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // Apply special card effects
   const applySpecialEffect = (card) => {
     switch (card.effect) {
-      case 'heal':
+      case 'heal': {
+        // Credit the healing that actually landed, not the card's face value.
+        // Healing caps at 30, so playing a +10 heal at 28 HP restores 2 — but
+        // the full 10 was being counted toward the 'Medic Bear' achievement and
+        // the daily healing challenge, letting both be farmed at full HP.
+        const healed = Math.min(30, playerHealth + card.amount) - playerHealth;
         setPlayerHealth(prev => Math.min(30, prev + card.amount));
-        battleStatsRef.current.healingDone += card.amount;
+        battleStatsRef.current.healingDone += healed;
         playSound('heal');
-        addToBattleLog(`${card.name}: +${card.amount} HP. No questions asked.`);
-        toast({ title: "Patched Up!", description: `+${card.amount} HP. The stuffing guy owed you a favor.` });
+        addToBattleLog(`${card.name}: +${healed} HP. No questions asked.`);
+        toast({ title: "Patched Up!", description: `+${healed} HP. The stuffing guy owed you a favor.` });
         break;
+      }
       case 'draw': {
-        const cardsToDraw = Math.min(card.amount, playerDeck.length, Math.max(0, MAX_HAND_SIZE - playerHand.length));
+        // The card being played is still in playerHand here — playCard calls
+        // applySpecialEffect BEFORE filtering it out — so the hand cap has to
+        // account for the slot it is about to free. Without the -1 a 9-card
+        // hand playing "draw 2" only drew 1 and finished at 9 instead of 10.
+        const handAfterPlay = Math.max(0, playerHand.length - 1);
+        const cardsToDraw = Math.min(card.amount, playerDeck.length, Math.max(0, MAX_HAND_SIZE - handAfterPlay));
         const drawnCards = playerDeck.slice(0, cardsToDraw);
         setPlayerHand(prev => [...prev, ...drawnCards]);
         setPlayerDeck(prev => prev.slice(cardsToDraw));

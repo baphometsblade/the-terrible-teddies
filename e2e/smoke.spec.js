@@ -352,3 +352,29 @@ test('every pay line sends the right bundle id to checkout', async ({ page }) =>
     expect(calls.pop(), `the ${offer.id} offer must charge ${offer.id}`).toBe(offer.id);
   }
 });
+
+test('settings controls keep keyboard focus when toggled', async ({ page }) => {
+  // SettingRow/DifficultyButton used to be declared INSIDE the Settings render,
+  // which makes a new component type every render — so React remounted the
+  // subtree instead of updating it and focus fell to <body>. A keyboard user
+  // lost their place on every toggle. (axe can't catch this: it audits a static
+  // snapshot, not focus across interactions.)
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Settings' });
+  await expect(dialog).toBeVisible(SLOW);
+
+  // Difficulty buttons: activating one by keyboard must leave focus on it.
+  const hard = dialog.getByRole('button', { name: /Hard/ });
+  await hard.focus();
+  await page.keyboard.press('Enter');
+  await expect(hard).toHaveAttribute('aria-pressed', 'true');
+  await expect(hard).toBeFocused();
+
+  // The same for a Switch inside a SettingRow.
+  const sound = dialog.getByRole('switch', { name: 'Sound Effects' });
+  await sound.focus();
+  const before = await sound.getAttribute('aria-checked');
+  await page.keyboard.press('Space');
+  await expect(sound).not.toHaveAttribute('aria-checked', before ?? '');
+  await expect(sound).toBeFocused();
+});
