@@ -311,3 +311,70 @@ describe('players table is not directly writable by clients', () => {
     ).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// A migration that cannot actually be applied.
+//
+// This shipped: 20260806000000 redefined cleanup_rate_limits with
+// `RETURNS void` when 20260427000000 had declared it `RETURNS INTEGER`.
+// PostgreSQL refuses ("cannot change return type of existing function", 42P13)
+// and the CLI runs each migration file in one transaction, so the ENTIRE file
+// rolled back — including the REVOKEs that were the whole point of it. The
+// security fix silently became a no-op, and push halted there so the next
+// migration never applied either.
+//
+// Nothing caught it: lint, vitest and playwright never execute SQL, and the
+// other guards in this file only assert that certain STRINGS appear in the
+// text — which they did, in a file Postgres would not accept.
+// ---------------------------------------------------------------------------
+describe('migrations can actually be applied', () => {
+  const migrations = loadMigrations();
+
+  // [{ file, name, returns, dropped }] in application order.
+  function functionDefinitions() {
+    const defs = [];
+    const dropsBefore = new Set();
+    const defRe = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?(\w+)\s*\(([\s\S]*?)\)\s*RETURNS\s+(\w+)/gi;
+    const dropRe = /DROP\s+FUNCTION\s+(?:IF\s+EXISTS\s+)?(?:public\.)?(\w+)\s*\(/gi;
+
+    for (const { file, sql } of migrations) {
+      // Record drops that appear anywhere in this file; a dropped function may
+      // legitimately be recreated with a different return type afterwards.
+      let d;
+      while ((d = dropRe.exec(sql))) dropsBefore.add(d[1].toLowerCase());
+
+      let m;
+      while ((m = defRe.exec(sql))) {
+        defs.push({
+          file,
+          name: m[1].toLowerCase(),
+          argCount: m[2].trim() ? m[2].split(',').length : 0,
+          returns: m[3].toLowerCase(),
+          droppedFirst: dropsBefore.has(m[1].toLowerCase()),
+        });
+      }
+    }
+    return defs;
+  }
+
+  it('never changes a function return type via CREATE OR REPLACE', () => {
+    const lastReturn = new Map(); // "name/arity" -> { returns, file }
+    const problems = [];
+
+    for (const def of functionDefinitions()) {
+      const key = `${def.name}/${def.argCount}`;
+      const prev = lastReturn.get(key);
+      if (prev && prev.returns !== def.returns && !def.droppedFirst) {
+        problems.push(
+          `${def.name}(${def.argCount} args) changes RETURNS ${prev.returns} -> ${def.returns} ` +
+            `(${prev.file} -> ${def.file}) without a DROP FUNCTION first. PostgreSQL rejects this ` +
+            `with "cannot change return type of existing function", and the whole migration file ` +
+            `rolls back — so everything else in it silently never applies.`
+        );
+      }
+      lastReturn.set(key, { returns: def.returns, file: def.file });
+    }
+
+    expect(problems, problems.join('\n')).toEqual([]);
+  });
+});

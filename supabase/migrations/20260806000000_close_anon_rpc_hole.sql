@@ -233,12 +233,21 @@ BEGIN
 END;
 $$;
 
+-- RETURNS INTEGER, matching 20260427000000's original signature — NOT void.
+-- CREATE OR REPLACE cannot change a function's return type; Postgres raises
+-- "cannot change return type of existing function" (42P13) and, because the
+-- CLI runs each migration file in one transaction, the whole file rolls back.
+-- Every REVOKE below would then never run, leaving the exact anon hole this
+-- file exists to close — a security fix that silently no-ops. Keep the
+-- original return type and hand back the delete count.
 CREATE OR REPLACE FUNCTION cleanup_rate_limits(p_older_than_hours INTEGER DEFAULT 24)
-RETURNS void
+RETURNS INTEGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog, public
 AS $$
+DECLARE
+  v_deleted INTEGER;
 BEGIN
   IF NOT public.is_service_role() THEN
     RAISE EXCEPTION 'cleanup_rate_limits may only be called server-side';
@@ -246,6 +255,8 @@ BEGIN
 
   DELETE FROM rate_limits
   WHERE window_start < NOW() - (p_older_than_hours || ' hours')::INTERVAL;
+  GET DIAGNOSTICS v_deleted = ROW_COUNT;
+  RETURN v_deleted;
 END;
 $$;
 

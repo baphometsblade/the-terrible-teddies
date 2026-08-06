@@ -29,7 +29,16 @@
 -- SECURITY DEFINER functions are unaffected (they run as owner, not as the
 -- caller's role). SELECT is left intact.
 
-REVOKE INSERT, UPDATE, DELETE ON public.players FROM anon, authenticated;
+-- REVOKE ALL then re-grant SELECT, rather than naming INSERT/UPDATE/DELETE.
+-- Naming the three obvious writes leaves TRUNCATE granted, and TRUNCATE is not
+-- an ordinary write: it BYPASSES row-level security entirely, so the own-row
+-- policy would not contain it. PostgREST does not expose TRUNCATE today, which
+-- is the only reason that is not directly exploitable — not a property worth
+-- depending on. Revoking the whole set and granting back exactly what the app
+-- needs (own-row SELECT, still gated by players_select_own) is the version that
+-- stays correct if a future privilege is added to Postgres.
+REVOKE ALL ON public.players FROM anon, authenticated;
+GRANT SELECT ON public.players TO anon, authenticated;
 
 -- The policy only ever gated an UPDATE the client no longer holds a grant for;
 -- drop it so the table's remaining policies read as the real intent

@@ -55,3 +55,33 @@ jobs:
       run: npx playwright install --with-deps chromium
     - name: Run e2e smoke tests
       run: npm run test:e2e
+
+  # A migration PostgreSQL refuses to apply is invisible to every other job
+  # here: lint, build, vitest and playwright never execute SQL. A security
+  # migration once shipped with a return-type change that Postgres rejects,
+  # so the CLI's per-file transaction rolled back the REVOKEs that were the
+  # point of the file — while the whole suite stayed green. This job replays
+  # the migrations against a real Postgres and asserts the resulting grants.
+  migrations:
+
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Apply every migration and assert the security properties
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      run: ./scripts/check-migrations.sh
