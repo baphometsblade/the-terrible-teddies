@@ -18,7 +18,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'sha256-MBj3/+PMjYqN593UFQvtTI4ZVXNqie54E3TTNj174ys='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.supabase.co; font-src 'self' data:; media-src 'self' https://assets.mixkit.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://assets.mixkit.co; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self' 'sha256-nkc6+tJ/NzyK5D0b/QxcceujyhGJ0klJxd7W/moYVDA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.supabase.co; font-src 'self' data:; media-src 'self' https://assets.mixkit.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://assets.mixkit.co; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
         },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
         { "key": "X-Frame-Options", "value": "DENY" },

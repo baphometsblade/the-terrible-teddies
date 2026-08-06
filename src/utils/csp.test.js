@@ -88,4 +88,28 @@ describe('CSP script-src hash matches the actual inline script in index.html', (
     expect(html).not.toMatch(/\bonclick\s*=\s*["']/i);
     expect(html).not.toMatch(/\.innerHTML\s*=[\s\S]*?\bstyle\s*=\s*["']/i);
   });
+it('the boot-failure timeout does not kill the mount poll', () => {
+    // Regression guard: the 10s "Couldn't load the game" fallback used to call
+    // clearInterval(poll) before swapping in the error card. On a slow boot
+    // that mounts React AFTER the timeout fires (congested mobile, a
+    // stalled-then-resumed chunk), killing the poll left the error card
+    // covering a fully working app forever. The poll must survive the timeout
+    // so a late mount still triggers removeLoader(). This asserts the ONLY
+    // clearInterval(poll) is the one inside the poll's own success branch, not
+    // inside the setTimeout handler.
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    const script = inlineScriptContent(html);
+    // Anchor on the poll's own "}, 100);" so the capture starts at the 10s
+    // setTimeout, not an earlier one (a loose match would swallow the poll body
+    // and its legitimate clearInterval).
+    const timeoutBody = /\}, 100\);\s*setTimeout\(function \(\) \{([\s\S]*?)\}, 10000\)/.exec(script);
+    expect(timeoutBody, 'could not find the 10s boot-failure timeout in index.html').toBeTruthy();
+    expect(
+      /clearInterval\(poll\)/.test(timeoutBody[1]),
+      'the boot-failure timeout clears the mount poll — a late React mount would then ' +
+        'never remove the "Couldn\'t load" overlay from a working app. Leave the poll running.'
+    ).toBe(false);
+    // And there is exactly one clearInterval(poll) total (the poll's success branch).
+    expect((script.match(/clearInterval\(poll\)/g) || []).length).toBe(1);
+  });
 });

@@ -51,7 +51,48 @@ test('battle board does not scroll sideways on a phone', async ({ page }) => {
   await expectNoHorizontalOverflow(page, 'battle board');
 });
 
-// Dialogs render above the page, so an over-wide one shows up here too.
+// Measuring the DOCUMENT is not enough for dialogs: the panels have
+// overflow-hidden / overflow-y-auto, so an over-wide row inside is silently
+// CLIPPED — it never pushes the document, and a document-level check passes no
+// matter how wide the content is (the exact reason the original six dialog
+// tests could not fail). Measure INSIDE the dialog instead: no visible
+// descendant may extend past the viewport's right edge.
+async function expectDialogContentFits(page, dialogName) {
+  const offenders = await page.evaluate((name) => {
+    const dialog = [...document.querySelectorAll('[role="dialog"]')].find(
+      (d) => (d.getAttribute('aria-label') || '').toLowerCase() === name.toLowerCase()
+    );
+    if (!dialog) return ['<dialog not found>'];
+    const vw = window.innerWidth;
+    const out = [];
+    for (const el of dialog.querySelectorAll('*')) {
+      const b = el.getBoundingClientRect();
+      if (b.width === 0 || b.height === 0) continue;
+      const st = getComputedStyle(el);
+      if (st.visibility === 'hidden' || st.display === 'none' || st.opacity === '0') continue;
+      if (b.right <= vw + 1) continue;
+      // Reachable content is fine: if any ancestor up to the dialog root is a
+      // horizontal scroller (overflow-x auto/scroll), the user can scroll to
+      // this element — that is an intentional wide strip (e.g. the Battle Pass
+      // tier rail), not a clipped-and-unreachable overflow. Only flag content
+      // with no such escape: clipped by overflow-hidden, permanently off-screen.
+      let reachable = false;
+      for (let a = el.parentElement; a && a !== dialog.parentElement; a = a.parentElement) {
+        const ox = getComputedStyle(a).overflowX;
+        if (ox === 'auto' || ox === 'scroll') { reachable = true; break; }
+      }
+      if (reachable) continue;
+      out.push(`${el.tagName.toLowerCase()}.${(el.className || '').toString().split(' ').slice(0, 3).join('.')} right=${Math.round(b.right)} (vw=${vw})`);
+    }
+    return [...new Set(out)].slice(0, 6);
+  }, dialogName);
+  expect(
+    offenders,
+    `content inside the "${dialogName}" dialog extends past the ${PHONE.width}px viewport ` +
+      `(clipped, so a document-level check would miss it):\n  ${offenders.join('\n  ')}`
+  ).toEqual([]);
+}
+
 const DIALOGS = [
   { trigger: 'Shop', dialog: 'Shop' },
   { trigger: 'Challenges', dialog: 'Challenges' },
@@ -62,9 +103,12 @@ const DIALOGS = [
 ];
 
 for (const { trigger, dialog } of DIALOGS) {
-  test(`${dialog} dialog does not scroll sideways on a phone`, async ({ page }) => {
+  test(`${dialog} dialog content fits the phone width`, async ({ page }) => {
     await page.getByRole('button', { name: trigger, exact: true }).click();
     await expect(page.getByRole('dialog', { name: dialog })).toBeVisible(SLOW);
+    // The document must still not scroll sideways...
     await expectNoHorizontalOverflow(page, `${dialog} dialog`);
+    // ...and nothing inside the (overflow-clipped) panel may spill past the edge.
+    await expectDialogContentFits(page, dialog);
   });
 }

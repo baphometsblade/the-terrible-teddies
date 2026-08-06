@@ -118,7 +118,13 @@
         }, 100);
         setTimeout(function () {
           if (removed || (root && root.childElementCount > 0)) return;
-          clearInterval(poll);
+          // Do NOT clear the poll here. A slow boot (congested mobile, a
+          // stalled-then-resumed chunk) can mount React AFTER this fires;
+          // killing the poll would leave the "Couldn't load" card covering a
+          // working app forever. Leaving the poll running means a late mount
+          // still triggers removeLoader(), which removes the whole loader —
+          // error card included. The card is a hint with a reload option, not
+          // a terminal state.
           var content = loader && loader.querySelector('.loader-content');
           if (content) {
             content.innerHTML =

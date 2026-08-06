@@ -218,14 +218,18 @@ const BattlePass = ({ onClose }) => {
             animate={{ x: ['-100%', '200%'] }}
             transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
           />
-          <div className="flex justify-between items-center relative z-10">
+          {/* flex-wrap + tighter gaps so the header fits a 390px phone. Without
+              it the title + "Season ends" + Unlock button + close ran to ~453px
+              and the panel's overflow-hidden clipped the close button off the
+              right edge, leaving no way to dismiss the pass on a phone. */}
+          <div className="flex flex-wrap justify-between items-center gap-2 relative z-10">
             <div>
               <h2 className="text-2xl font-display font-bold text-white flex items-center gap-2">
                 <span className="text-3xl">🏆</span> Battle Pass
               </h2>
               <p className="text-white/80 text-sm">{season.name}</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
               <div className="text-right">
                 <div className="text-white/70 text-xs">Season ends in</div>
                 <div className="text-white font-bold">{season.daysLeft} day{season.daysLeft !== 1 ? 's' : ''}</div>
