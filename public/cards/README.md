@@ -151,5 +151,34 @@ and the lighting clause sits last — an overflow costs an adjective, not a
 wardrobe. `npm run art:generate -- --dry-run` prints every prompt; keep the
 longest under 77 tokens.
 
-The tone is 18+ dive-bar comedy — squalor, booze, bad decisions and regret,
-suggestive rather than explicit.
+The tone is 18+ dive-bar comedy — squalor, booze, bad decisions and regret.
+The generator runs in the **raunchy/NSFW register by default**: `promptFor()`
+injects `raunchy adult NSFW comedy, risqué, suggestive` right after the
+medium/colour clause (early, so CLIP's 77-token cut never drops it — a
+tail-appended tag would be the first thing clipped on the busiest cards). The
+register is suggestive and innuendo-heavy, not explicit anatomy. For a tamer
+pass set `ART_SFW=1`, which omits the tag entirely:
+
+```bash
+ART_SFW=1 npm run art:generate -- --dry-run   # inspect the toned-down prompts
+```
+
+### Regenerating the raunchy set against your own Fooocus
+
+Actual generation needs a GPU/endpoint this repo can reach. A cloud session
+(Claude Code on the web) has neither a GPU nor a route to your machine, so run
+this locally, or expose your local Fooocus through a tunnel and pass its URL:
+
+```bash
+# On your own machine, with Fooocus-API running on :8888
+FOOOCUS_URL=http://127.0.0.1:8888 npm run art:generate -- --force
+npm run art:thumbs -- --force        # rebuild thumbnails from the new art
+
+# From a cloud session: tunnel your local Fooocus, then use the public URL
+cloudflared tunnel --url http://127.0.0.1:8888   # prints https://<id>.trycfargotunnel.com
+FOOOCUS_URL=https://<id>.trycfargotunnel.com npm run art:generate -- --force
+```
+
+`--dry-run` first to read the prompts, `--only <ids>` to spot-check a few, and
+the forced monitor dashboard (http://127.0.0.1:8877) shows each render as it
+lands.

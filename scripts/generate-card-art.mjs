@@ -90,14 +90,29 @@ const NEGATIVE =
 // and silently drops the overflow, so medium, colour and subject are
 // front-loaded and the scene's lighting clause sits last — an overflow costs an
 // adjective rather than a wardrobe. Check with `--dry-run` after editing.
+// Adult register. The game is an 18+ dive-bar comedy, so this is ON by default;
+// set ART_SFW=1 for a tamer pass. It pushes the tone to the raunchy, crude,
+// suggestive, morning-after end the writing already lives at — innuendo and bad
+// decisions, deliberately NOT explicit anatomy or sex acts (the subjects are
+// plush toys and the joke is the squalor, not pornography).
+//
+// The marker sits EARLY — right after the medium/colour clause, before the
+// per-card subject — not appended at the end. CLIP truncates at 77 tokens and
+// the busiest cards already run to ~59 words, so a tail-appended tag would be
+// the first thing clipped on exactly the prompts that overflow. Placed early it
+// always survives; the descriptive wardrobe/scene tail still clips an adjective
+// at most, as before.
+const SFW = /^(1|true|yes|on)$/i.test(process.env.ART_SFW ?? '');
+const ADULT = SFW ? '' : ', raunchy adult NSFW comedy, risqué, suggestive';
+
 const promptFor = (card) => {
   const subject = card.visual || card.description || card.name;
   const scene = card.scene || MOOD;
   if (card.type === 'trap' || card.type === 'special') {
-    return `Product photo, single object filling the frame — ${subject}. ${scene}`;
+    return `Product photo${ADULT}, single object filling the frame — ${subject}. ${scene}`;
   }
   const fur = card.fur ? `${card.fur} ` : '';
-  return `RAW photo, ${fur}plush teddy bear, ${fur}fur — ${subject}. ${scene}`;
+  return `RAW photo, ${fur}plush teddy bear, ${fur}fur${ADULT} — ${subject}. ${scene}`;
 };
 
 // Non-brown bears fight the model's brown-plush prior; when guidance is on
