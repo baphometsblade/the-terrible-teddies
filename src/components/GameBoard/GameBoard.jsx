@@ -80,7 +80,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   } = useGameStore();
 
   // Accumulate per-game stats for challenge/achievement tracking
-  const battleStatsRef = useRef({ damageDealt: 0, healingDone: 0, cardsPlayed: 0 });
+  // damageTaken is what the 'Flawless' achievement actually means. Final HP
+  // can't answer it: heal is capped at 30, so a player who gets hit and then
+  // heals back finishes at full and would have claimed "Win without losing HP".
+  const battleStatsRef = useRef({ damageDealt: 0, healingDone: 0, cardsPlayed: 0, damageTaken: 0 });
 
   // Track timeouts so queued turn steps can be cancelled on restart/concede/
   // game-over/unmount, instead of firing later and mutating a fresh game.
@@ -125,6 +128,12 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
   // Opponent state
   const [opponentHealth, setOpponentHealth] = useState(30);
+  // Chuck's starting HP is difficulty-scaled (hard adds +5), so the bar's
+  // denominator has to travel with it. Hardcoding 30 made hard render "35/30"
+  // at 117% — and Radix rejects a value above max by logging an error AND
+  // falling back to null, which silently drops the aria-valuenow the
+  // accessibility pass added and reports the bar as indeterminate.
+  const [opponentMaxHealth, setOpponentMaxHealth] = useState(30);
   const [opponentField, setOpponentField] = useState([]);
   const [opponentDeck, setOpponentDeck] = useState([]);
 
@@ -222,6 +231,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
     // Set opponent health based on difficulty
     setOpponentHealth(30 + healthMod);
+    setOpponentMaxHealth(30 + healthMod);
 
     const playerInitialHand = initialPlayerDeck.slice(0, 5);
     const playerRemainingDeck = initialPlayerDeck.slice(5);
@@ -261,7 +271,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         battleStatsRef.current.damageDealt,
         battleStatsRef.current.healingDone,
         playerHealth,
-        battleStatsRef.current.cardsPlayed
+        battleStatsRef.current.cardsPlayed,
+        battleStatsRef.current.damageTaken
       );
       setBattleRewards({ xp: xpGain, coins: coinsGain });
 
@@ -509,22 +520,31 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       return;
     }
 
+    // Re-read the attacker from the live field instead of trusting the
+    // selection snapshot. selectedCard is captured when targeting opens, but
+    // the board can change while targeting is still up — Rally is the reachable
+    // case: it replaces every field card with a +1-attack, fully-restuffed copy,
+    // so attacking after rallying mid-targeting resolved with the stale
+    // pre-Rally attack and silently ate the buff the player just spent a full
+    // momentum gauge on.
+    const attacker = playerField.find(c => c.instanceId === selectedCard.instanceId) || selectedCard;
+
     // Resolve against the target's HP: it survives a non-lethal hit (and its
     // fury fires), or dies and trample overkill spills to the opponent's face.
     // Pass playerField so a 'royal' ally on the attacker's side buffs the hit.
-    const { survivor, overkill, dmg } = resolveCreatureHit(selectedCard, target, playerField);
+    const { survivor, overkill, dmg } = resolveCreatureHit(attacker, target, playerField);
     playSound('attack');
     battleStatsRef.current.damageDealt += dmg;
 
     if (survivor) {
       setOpponentField(prev => prev.map(c => c.instanceId === target.instanceId ? survivor : c));
       if (target.ability === 'fury') addToBattleLog(`${target.name}'s fury activated! +1 attack`);
-      addToBattleLog(`${selectedCard.name} smacked ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
+      addToBattleLog(`${attacker.name} smacked ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
       toast({ title: "Hit!", description: `${target.name} is hanging on at ${survivor.currentHp} HP.` });
     } else {
       setOpponentField(prev => prev.filter(c => c.instanceId !== target.instanceId));
       if (overkill > 0) setOpponentHealth(prev => Math.max(0, prev - overkill));
-      addToBattleLog(`UNSTUFFED! ${selectedCard.name} took ${target.name} apart${overkill > 0 ? ` — ${overkill} trampled right into ${OPPONENT_NAME}'s beans` : ''}`);
+      addToBattleLog(`UNSTUFFED! ${attacker.name} took ${target.name} apart${overkill > 0 ? ` — ${overkill} trampled right into ${OPPONENT_NAME}'s beans` : ''}`);
       toast({ title: "UNSTUFFED!", description: `${target.name} is fluff on the floor${overkill > 0 ? ` — ${overkill} tramples through!` : '.'}` });
       speak('oppLosesCreature');
     }
@@ -561,6 +581,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     if (trap) {
       const trapDamage = trap.amount || 3;
       setPlayerHealth(prev => Math.max(0, prev - trapDamage));
+      battleStatsRef.current.damageTaken += trapDamage;
       setOpponentField(prev => prev.filter(c => c.instanceId !== trap.instanceId));
       playSound('trap');
       addToBattleLog(`${trap.name} sprang! ${trapDamage} damage, right in your pride`);
@@ -721,7 +742,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       // swing next turn. Done after the wave rather than before it so cards
       // played this turn still sit out the turn they arrived.
       setOpponentField(prev => readyCreatures(prev));
-      if (faceDamage > 0) setPlayerHealth(prev => Math.max(0, prev - faceDamage));
+      if (faceDamage > 0) {
+        setPlayerHealth(prev => Math.max(0, prev - faceDamage));
+        battleStatsRef.current.damageTaken += faceDamage;
+      }
       if (trapDamageToOpponent > 0) {
         setOpponentHealth(prev => Math.max(0, prev - trapDamageToOpponent));
         battleStatsRef.current.damageDealt += trapDamageToOpponent;
@@ -770,7 +794,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     clearAllTimeouts();
 
     // Reset battle stats ref
-    battleStatsRef.current = { damageDealt: 0, healingDone: 0, cardsPlayed: 0 };
+    battleStatsRef.current = { damageDealt: 0, healingDone: 0, cardsPlayed: 0, damageTaken: 0 };
 
     // Reset game state. deckReady gates the draw phase until the init effect
     // has dealt the new opening hand.
@@ -787,8 +811,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setPlayerField([]);
     setPlayerDeck([]);
 
-    // Reset opponent state
+    // Reset opponent state (initializeGame re-applies the difficulty mod to
+    // both of these when the fresh game deals).
     setOpponentHealth(30);
+    setOpponentMaxHealth(30);
     setOpponentField([]);
     setOpponentDeck([]);
 
@@ -1037,13 +1063,13 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               transition={{ type: 'spring', stiffness: 400, damping: 14 }}
               className="font-bold text-lg sm:text-xl whitespace-nowrap"
             >
-              {opponentHealth}/30
+              {opponentHealth}/{opponentMaxHealth}
             </motion.div>
           </div>
           <Progress
-            value={(opponentHealth / 30) * 100}
+            value={(opponentHealth / opponentMaxHealth) * 100}
             className="w-16 sm:w-32 h-3 bg-red-950 [&>div]:bg-red-400"
-            aria-label={`${OPPONENT_NAME} health: ${opponentHealth} of 30`}
+            aria-label={`${OPPONENT_NAME} health: ${opponentHealth} of ${opponentMaxHealth}`}
           />
         </div>
       </div>

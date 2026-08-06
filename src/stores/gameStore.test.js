@@ -546,3 +546,27 @@ describe('purchaseBattlePassPremium is atomic', () => {
     expect(get().gems).toBe(0);
   });
 });
+
+describe("'Flawless' keys off damage taken, not final HP", () => {
+  // The bug: perfect_win fired on `won && finalHP === 30`. Healing is capped at
+  // 30, so a player who got hit for 12 and healed back to full finished the
+  // battle at 30 and claimed "Win without losing HP".
+  it('does not award Flawless for a win that took damage but healed back to full', () => {
+    useGameStore.setState({ completedAchievements: [] });
+    // won, damageDealt, healingDone, finalHP=30 (healed back), cardsPlayed, damageTaken=12
+    get().recordBattleResult(true, 20, 12, 30, 4, 12);
+    expect(get().completedAchievements).not.toContain('perfect_win');
+  });
+
+  it('awards Flawless for a genuinely untouched win', () => {
+    useGameStore.setState({ completedAchievements: [] });
+    get().recordBattleResult(true, 30, 0, 30, 4, 0);
+    expect(get().completedAchievements).toContain('perfect_win');
+  });
+
+  it('never awards Flawless on a loss', () => {
+    useGameStore.setState({ completedAchievements: [] });
+    get().recordBattleResult(false, 0, 0, 30, 1, 0);
+    expect(get().completedAchievements).not.toContain('perfect_win');
+  });
+});

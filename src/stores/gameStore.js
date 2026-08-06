@@ -420,7 +420,9 @@ export const useGameStore = create(
         }));
       },
 
-      recordBattleResult: (won, damageDealt = 0, healingDone = 0, finalHP = 0, cardsPlayed = 0) => {
+      // damageTaken defaults to 0 so existing 5-arg callers keep working; the
+      // battle board passes the real figure, which is what 'Flawless' needs.
+      recordBattleResult: (won, damageDealt = 0, healingDone = 0, finalHP = 0, cardsPlayed = 0, damageTaken = 0) => {
         const state = get();
 
         // All-time counters
@@ -497,7 +499,10 @@ export const useGameStore = create(
         get().checkAchievement('play_100', newTotalBattles >= 100);
         get().checkAchievement('deal_1000_damage', newTotalDamage >= 1000);
         get().checkAchievement('heal_500', newTotalHealing >= 500);
-        get().checkAchievement('perfect_win', won && finalHP === 30);
+        // 'Flawless' is "Win without losing HP", so it must key off damage
+        // actually taken. finalHP === 30 alone is wrong: heal caps at 30, so a
+        // player who got hit and healed back finished at full and claimed it.
+        get().checkAchievement('perfect_win', won && finalHP === 30 && damageTaken === 0);
         get().checkAchievement('comeback', won && finalHP <= 5);
 
         return { xpGain, coinsGain: coinsThisBattle };
