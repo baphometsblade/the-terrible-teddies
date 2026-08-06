@@ -570,3 +570,61 @@ describe("'Flawless' keys off damage taken, not final HP", () => {
     expect(get().completedAchievements).not.toContain('perfect_win');
   });
 });
+
+describe('bindToUser isolates saves per account on a shared device', () => {
+  const A = '11111111-1111-4111-8111-111111111111';
+  const B = '22222222-2222-4222-8222-222222222222';
+
+  // The store persists to ONE device-wide localStorage key and sign-out clears
+  // nothing, so a second account inherited the first player's progress — and
+  // their lastSyncedServerGems mark, which silently broke the newcomer's
+  // purchases.
+  it("a different account does not inherit the previous player's progress", () => {
+    get().bindToUser(A);
+    useGameStore.setState({ coins: 99999, totalWins: 40, ownedCards: [1, 2, 3, 4, 5] });
+
+    get().bindToUser(B);
+    expect(get().coins).toBe(500);      // initialState, not A's hoard
+    expect(get().totalWins).toBe(0);
+    expect(get().ownerUserId).toBe(B);
+  });
+
+  it("a newcomer's purchase credits in full rather than being swallowed by the previous player's high-water mark", () => {
+    // Player A buys 500 gems on this device.
+    get().bindToUser(A);
+    get().reconcileServerGems(500);
+    expect(get().lastSyncedServerGems).toBe(500);
+
+    // Player B signs in on the same device and buys 500 gems of their own.
+    get().bindToUser(B);
+    const before = get().gems;
+    get().reconcileServerGems(500);
+
+    // Without the reset, delta would be 500 - 500 = 0: B pays and gets nothing.
+    expect(get().gems).toBe(before + 500);
+  });
+
+  it('the same account signing back in keeps its progress', () => {
+    get().bindToUser(A);
+    useGameStore.setState({ coins: 4242, totalWins: 7 });
+    get().bindToUser(A);
+    expect(get().coins).toBe(4242);
+    expect(get().totalWins).toBe(7);
+  });
+
+  it('adopts a pre-existing unowned save instead of wiping it', () => {
+    // A save from before ownerUserId existed.
+    useGameStore.setState({ ownerUserId: null, coins: 8888 });
+    get().bindToUser(A);
+    expect(get().coins).toBe(8888);
+    expect(get().ownerUserId).toBe(A);
+  });
+
+  it('signing out (no user id) leaves the save alone', () => {
+    get().bindToUser(A);
+    useGameStore.setState({ coins: 1234 });
+    get().bindToUser(undefined);
+    expect(get().coins).toBe(1234);
+    expect(get().ownerUserId).toBe(A);
+  });
+});

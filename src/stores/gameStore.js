@@ -160,6 +160,12 @@ const initialState = {
   // credited locally. Login/purchase only credits the positive delta above this
   // mark, so spent gems are never restored by re-reading the server balance.
   lastSyncedServerGems: 0,
+  // Which account this save belongs to. The persisted store is one device-wide
+  // localStorage key, so without an owner stamp a second account signing in on
+  // the same device inherits the first player's coins, cards, level AND their
+  // lastSyncedServerGems high-water mark — which silently breaks their
+  // purchases (see bindToUser).
+  ownerUserId: null,
   coins: 500,
   gems: 10,
   ownedCards: [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42],
@@ -264,6 +270,31 @@ export const useGameStore = create(
       // balance has risen since we last synced), then advance the high-water
       // mark. Re-reading the server balance after spending therefore can't
       // restore spent gems, while purchases made on another device still land.
+      // Claim this save for `userId`, wiping it first if it belongs to someone
+      // else. Must run BEFORE reconcileServerGems on login.
+      //
+      // The bug this closes: the store persists to a single device-wide key with
+      // no user scoping, and signing out clears nothing. A second account on the
+      // same device therefore inherited the first player's progress and, worse,
+      // their lastSyncedServerGems mark. reconcileServerGems credits
+      // `serverBalance - lastSyncedServerGems`, so if player A had synced 500 and
+      // player B then bought 500 gems, B's delta was 500 - 500 = 0: B paid real
+      // money and received nothing. Preserving the mark across resetProgress
+      // (correct on its own, it stops purchases being re-credited) made that
+      // state unrecoverable from inside the app.
+      //
+      // A null owner means a save from before this existed — claim it rather
+      // than wiping it, so existing players keep their progress.
+      bindToUser: (userId) => {
+        if (!userId) return;                       // signed out: keep state for their return
+        const state = get();
+        if (state.ownerUserId === userId) return;  // same player, nothing to do
+        if (state.ownerUserId === null) {
+          set({ ownerUserId: userId });            // adopt a pre-existing save
+          return;
+        }
+        set({ ...initialState, ownerUserId: userId, pendingAchievements: [] });
+      },
       reconcileServerGems: (serverBalance) => {
         if (typeof serverBalance !== 'number' || Number.isNaN(serverBalance)) return;
         const state = get();

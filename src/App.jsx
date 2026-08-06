@@ -66,7 +66,7 @@ function App() {
   };
   const [purchaseSessionId, setPurchaseSessionId] = useState(null);
 
-  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, reconcileServerGems } = useGameStore();
+  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, reconcileServerGems, bindToUser } = useGameStore();
   const { toast } = useToast();
 
   // Show achievement unlock toasts — process ALL queued achievements with staggered timing.
@@ -111,6 +111,13 @@ function App() {
   // Sync player profile and gem balance from server on login
   useEffect(() => {
     if (!session) return;
+    // Claim the save for this account FIRST, synchronously. The persisted
+    // store is one device-wide key, so a different account signing in here
+    // must not inherit the previous player's progress — or their
+    // lastSyncedServerGems mark, which would make their next purchase credit
+    // nothing. Must precede reconcileServerGems below.
+    bindToUser(session.user?.id);
+
     const syncProfile = async () => {
       try {
         // Ensure player profile exists in database
@@ -127,7 +134,7 @@ function App() {
       }
     };
     syncProfile();
-  }, [session, reconcileServerGems]);
+  }, [session, reconcileServerGems, bindToUser]);
 
   // Detect Stripe Checkout return
   useEffect(() => {

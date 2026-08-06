@@ -97,13 +97,23 @@ const NEGATIVE =
 // plush toys and the joke is the squalor, not pornography).
 //
 // The marker sits EARLY — right after the medium/colour clause, before the
-// per-card subject — not appended at the end. CLIP truncates at 77 tokens and
-// the busiest cards already run to ~59 words, so a tail-appended tag would be
-// the first thing clipped on exactly the prompts that overflow. Placed early it
-// always survives; the descriptive wardrobe/scene tail still clips an adjective
-// at most, as before.
+// per-card subject — so CLIP's 77-token cut can never drop it.
+//
+// It is also kept to TWO WORDS, and that is not cosmetic. Measured with the
+// real CLIP tokenizer (openai/clip-vit-large-patch14), the SFW prompt set peaks
+// at 76 of the 77 available tokens — one token of headroom. The first version
+// of this marker was ", raunchy adult NSFW comedy, risqué, suggestive" (~13
+// tokens), which pushed 29 of 72 prompts over the limit, peaking at 89. What
+// CLIP discarded was the tail: the `scene` clause — the per-card action, camera
+// and lighting that exists precisely to stop every bear reading as the same
+// portrait. So the NSFW pass was silently destroying the differentiation an
+// earlier pass had been built to add, on 40% of the set, with no error anywhere.
+//
+// Keep this short. src/data/cardArt.test.js fails the build if any prompt
+// exceeds the budget, so an overlong marker or scene is caught rather than
+// silently truncated.
 const SFW = /^(1|true|yes|on)$/i.test(process.env.ART_SFW ?? '');
-const ADULT = SFW ? '' : ', raunchy adult NSFW comedy, risqué, suggestive';
+const ADULT = SFW ? '' : ', raunchy NSFW';
 
 const promptFor = (card) => {
   const subject = card.visual || card.description || card.name;
