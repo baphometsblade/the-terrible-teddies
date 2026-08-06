@@ -55,6 +55,24 @@ export const ensurePlayerProfile = async (username = null) => {
   return true;
 };
 
+// Set the player's public display name (the leaderboard reads players.username).
+// Server-side validation lives in set_player_username; this returns the stored
+// name on success or null on failure so the caller can keep the local store in
+// step only when the write actually landed.
+export const setPlayerUsername = async (username) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase.rpc('set_player_username', {
+    p_username: username,
+  });
+  if (error) {
+    console.error('Error setting username:', error);
+    return null;
+  }
+  return data ?? username;
+};
+
 export const syncBattleResult = async (won, damageDealt = 0, healingDone = 0, coinsEarned = 0) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;

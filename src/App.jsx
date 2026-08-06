@@ -120,8 +120,12 @@ function App() {
 
     const syncProfile = async () => {
       try {
-        // Ensure player profile exists in database
-        await ensurePlayerProfile(session.user?.email?.split('@')[0]);
+        // Ensure player profile exists in database. Pass NO username: the
+        // server then uses its anonymous 'Player_<8 uuid chars>' default rather
+        // than the email local part, which used to be published to every player
+        // on the leaderboard permanently. A chosen name is set explicitly via
+        // set_player_username (PlayerStats rename).
+        await ensurePlayerProfile();
         // Credit any gems purchased since our last sync (e.g. on another device
         // or a checkout whose success screen never loaded) without restoring
         // gems already spent locally.

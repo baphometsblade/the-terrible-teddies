@@ -104,6 +104,19 @@ BEGIN
       AND privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE')
   ) THEN bad := bad || '  anon/authenticated still hold a write grant on players' || chr(10); END IF;
 
+  -- set_player_username is a user-callable rename: authenticated may execute it,
+  -- anon may not (an unauthenticated caller must not be able to set names).
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'set_player_username'
+      AND has_function_privilege('authenticated', p.oid, 'EXECUTE')
+  ) THEN bad := bad || '  authenticated cannot EXECUTE set_player_username' || chr(10); END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'set_player_username'
+      AND has_function_privilege('anon', p.oid, 'EXECUTE')
+  ) THEN bad := bad || '  anon can EXECUTE set_player_username' || chr(10); END IF;
+
   IF bad <> '' THEN
     RAISE EXCEPTION E'Security assertions FAILED:\n%', bad;
   END IF;

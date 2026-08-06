@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useGameStore, ACHIEVEMENTS, ALL_CARDS } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
+import { setPlayerUsername } from '../utils/supabaseClient';
 
 const PlayerStats = ({ onClose }) => {
   const {
@@ -23,7 +24,15 @@ const PlayerStats = ({ onClose }) => {
   const winRate = totalBattles > 0 ? ((totalWins / totalBattles) * 100).toFixed(1) : 0;
 
   const handleSaveName = () => {
-    if (newName.trim()) setPlayerName(newName.trim());
+    const trimmed = newName.trim();
+    if (trimmed) {
+      setPlayerName(trimmed);
+      // Push the name to the server too, so it reaches the public leaderboard
+      // (players.username) rather than living only in local state. Fire and
+      // forget: the local rename should feel instant, and the server validates
+      // and is the source of truth for what other players see.
+      setPlayerUsername(trimmed);
+    }
     setEditingName(false);
   };
 

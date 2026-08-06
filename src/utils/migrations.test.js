@@ -378,3 +378,32 @@ describe('migrations can actually be applied', () => {
     expect(problems, problems.join('\n')).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// set_player_username — the user-callable rename that reaches the leaderboard.
+// It is deliberately NOT service-role-only (a player renames themselves), so it
+// has a different grant shape from the money functions: authenticated may call
+// it, anon may not.
+// ---------------------------------------------------------------------------
+describe('set_player_username grants', () => {
+  const allSql = loadMigrations().map((m) => m.sql).join('\n');
+
+  it('is defined by a migration', () => {
+    expect(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?set_player_username/i.test(allSql)).toBe(true);
+  });
+
+  it('is granted to authenticated but explicitly revoked from anon', () => {
+    const grantsAuth = /GRANT\s+EXECUTE\s+ON\s+FUNCTION\s+(?:public\.)?set_player_username\s*\([^)]*\)\s+TO\s+[^;]*\bauthenticated\b/i.test(allSql);
+    const revokesAnon = /REVOKE\s+EXECUTE\s+ON\s+FUNCTION\s+(?:public\.)?set_player_username\s*\([^)]*\)\s+FROM\s+[^;]*\banon\b/i.test(allSql);
+    expect(grantsAuth, 'set_player_username must be GRANTed to authenticated').toBe(true);
+    expect(revokesAnon, 'set_player_username must be REVOKEd from anon').toBe(true);
+  });
+
+  it('pins search_path (SECURITY DEFINER hardening) and validates length', () => {
+    const body = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?set_player_username[\s\S]*?\$\$([\s\S]*?)\$\$;/i.exec(allSql);
+    expect(body, 'no function body found').toBeTruthy();
+    expect(/SET\s+search_path/i.test(allSql.slice(0, body.index + 400))).toBe(true);
+    // It must reject out-of-range names, not just trust the client.
+    expect(/length\(/i.test(body[1])).toBe(true);
+  });
+});
