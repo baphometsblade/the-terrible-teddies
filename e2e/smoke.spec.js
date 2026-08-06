@@ -298,3 +298,57 @@ test('a dialog chunk that fails to load degrades gracefully, not a full-app cras
   await expect(notice).toHaveCount(0, SLOW);
   await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible();
 });
+
+test('every pay line sends the right bundle id to checkout', async ({ page }) => {
+  // The revenue path has SEVEN entry points — five gem tiles plus two special
+  // offers — and only one of them was covered. A tile wired to the wrong id
+  // charges the wrong price (or, if the id is unknown to the edge function,
+  // 400s and the sale is simply lost), and the webhook refuses to credit on any
+  // amount mismatch. This walks all seven.
+  const calls = [];
+  await page.route('**/functions/v1/create-checkout-session', async (route) => {
+    calls.push(route.request().postDataJSON().bundle_id);
+    // Reply WITHOUT a url. redirectToStripeCheckout then throws
+    // "No checkout URL returned" before it ever assigns window.location.href,
+    // so the page never navigates and the shop stays open for the next tile.
+    // (Returning a url instead makes the app navigate, which races this test's
+    // own page.goto and fails the run under parallelism.) The bundle id is
+    // already captured above — that is the whole assertion. Shop's catch calls
+    // setProcessing(false), so the next tile is immediately clickable.
+    await route.fulfill({ json: {} });
+  });
+
+  await page.getByRole('button', { name: 'Shop', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Shop' });
+  await expect(dialog).toBeVisible(SLOW);
+
+  // --- The five gem tiles, keyed by their accessible "Buy N gems for $X" name.
+  const TILES = [
+    { label: 'Buy 50 gems for $0.99', id: 'gems_small' },
+    { label: 'Buy 150 gems for $2.99', id: 'gems_medium' },
+    { label: 'Buy 500 gems for $9.99', id: 'gems_large' },
+    { label: 'Buy 1200 gems for $19.99', id: 'gems_huge' },
+    { label: 'Buy 3000 gems for $49.99', id: 'gems_mega' },
+  ];
+
+  await dialog.getByRole('button', { name: 'Buy Gems' }).click();
+  for (const tile of TILES) {
+    await dialog.getByRole('button', { name: tile.label }).click();
+    await expect.poll(() => calls.length, SLOW).toBeGreaterThan(0);
+    expect(calls.pop(), `"${tile.label}" must charge ${tile.id}`).toBe(tile.id);
+  }
+
+  // --- The two special offers, which live on their own tab.
+  const OFFERS = [
+    { tile: /Starter/i, id: 'starter_bundle', button: 'Buy Now' },
+    { tile: /Mega Gem Pack/i, id: 'weekly_gem_pass', button: '$5.99' },
+  ];
+
+  await dialog.getByRole('button', { name: 'Special Offers' }).click();
+  for (const offer of OFFERS) {
+    await expect(dialog.getByText(offer.tile).first()).toBeVisible(SLOW);
+    await dialog.getByRole('button', { name: offer.button, exact: true }).first().click();
+    await expect.poll(() => calls.length, SLOW).toBeGreaterThan(0);
+    expect(calls.pop(), `the ${offer.id} offer must charge ${offer.id}`).toBe(offer.id);
+  }
+});
