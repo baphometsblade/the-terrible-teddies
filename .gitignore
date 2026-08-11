@@ -35,3 +35,7 @@ playwright-report/
 # Art-generation prompt manifests (--manifest output); scratch, never source.
 *.manifest.json
 m_*.json
+
+# Python bytecode
+__pycache__/
+*.pyc
