@@ -179,13 +179,18 @@ describe('ALL_CARDS catalog shape', () => {
       for (const card of actionCards) {
         for (const field of ['attack', 'defense']) {
           expect(Number.isInteger(card[field]), `${label(card)} must have an integer ${field}`).toBe(true);
+          // defense is the creature's HP pool: a 0-defense creature enters play
+          // already dead (destroyed by any hit, including a 0-damage one), so it
+          // can never actually be on the field. Require at least 1. attack may be
+          // 0 (a pure wall).
+          const min = field === 'defense' ? 1 : 0;
           expect(
             card[field],
-            `${label(card)} has ${field} ${card[field]}, expected between 0 and 10`
-          ).toBeGreaterThanOrEqual(0);
+            `${label(card)} has ${field} ${card[field]}, expected between ${min} and 10`
+          ).toBeGreaterThanOrEqual(min);
           expect(
             card[field],
-            `${label(card)} has ${field} ${card[field]}, expected between 0 and 10`
+            `${label(card)} has ${field} ${card[field]}, expected between ${min} and 10`
           ).toBeLessThanOrEqual(10);
         }
       }

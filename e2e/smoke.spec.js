@@ -46,6 +46,33 @@ test('battle starts and a full turn plays out', async ({ page, pageErrors }) => 
     .toHaveLength(0);
 });
 
+test('abandoning a battle mid-game records a loss and resets the win streak', async ({ page }) => {
+  // Seed a live win streak, then bail out of a joined battle via "← Menu".
+  // Leaving must count as a loss — otherwise a losing game can be dropped with
+  // the streak intact. Runs after the beforeEach seed (init scripts fire in
+  // registration order), patching the state it wrote.
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.currentWinStreak = 3;
+    stored.state.totalLosses = 0;
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  // End Turn visible == the opening hand was dealt (deckReady) == battle joined.
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  await page.getByRole('button', { name: '← Menu' }).click();
+  await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('terrible-teddies-storage')).state);
+  expect(state.totalLosses).toBe(1);
+  expect(state.currentWinStreak).toBe(0);
+});
+
 test('shop opens, shows gem bundles with prices, and closes on Escape', async ({ page }) => {
   await page.getByRole('button', { name: 'Shop', exact: true }).click();
 

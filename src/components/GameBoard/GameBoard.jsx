@@ -165,6 +165,36 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const lastQuipRef = useRef(null);
   const nearDeathQuippedRef = useRef(false);
 
+  // Snapshot of the in-progress state for the unmount handler below — a cleanup
+  // closes over its mount-time values, so it must read the latest through a ref.
+  const liveRef = useRef({ gameOver, deckReady, playerHealth });
+  liveRef.current = { gameOver, deckReady, playerHealth };
+
+  // Leaving a battle mid-game counts as a loss. The "← Menu" control lives in
+  // App, outside this component, so abandoning simply unmounts the board — with
+  // no result recorded, a player could bail out of a losing game and keep their
+  // win streak intact. Record the loss on unmount, but only for a battle that
+  // was actually joined (deckReady) and isn't already resolved (gameOver) — a
+  // finished game recorded its own result, and the `deckReady` gate also makes
+  // this inert under React 18 StrictMode's mount→unmount→remount in dev, where
+  // the opening hand hasn't been dealt yet at the throwaway cleanup.
+  const abandonHandledRef = useRef(false);
+  useEffect(() => {
+    // Empty deps + reading the action through getState() means this effect never
+    // re-runs, so its cleanup fires only on a genuine unmount — never mid-battle
+    // because a dependency changed.
+    return () => {
+      const { gameOver: over, deckReady: ready, playerHealth: hp } = liveRef.current;
+      if (over || !ready || abandonHandledRef.current) return;
+      abandonHandledRef.current = true;
+      const stats = battleStatsRef.current;
+      useGameStore.getState().recordBattleResult(false, stats.damageDealt, stats.healingDone, hp, stats.cardsPlayed);
+      syncBattleResult(false, stats.damageDealt, stats.healingDone, 5)
+        .catch(err => console.error('Abandon sync failed:', err));
+      syncLevelToServer();
+    };
+  }, []);
+
   const speak = useCallback((pool) => {
     const text = pickQuip(pool, lastQuipRef.current);
     if (!text) return;

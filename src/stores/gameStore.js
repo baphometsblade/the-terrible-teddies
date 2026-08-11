@@ -21,7 +21,7 @@ export const ALL_CARDS = [
   // Rare
   { id: 11, name: "Restraining-Order Randy", attack: 1, defense: 5, type: 'action', cost: 3, ability: 'protect', rarity: 'rare', description: "You legally cannot get within 50 feet of his friends." },
   { id: 12, name: "'Roid-Rage Reggie", attack: 2, defense: 3, type: 'action', cost: 3, ability: 'fury', rarity: 'rare', description: "The stuffing is 90% pre-workout." },
-  { id: 13, name: "The F-Bomb", attack: 5, defense: 0, type: 'action', cost: 4, ability: 'none', rarity: 'rare', description: "Drops hard. Offends everyone. No survivors." },
+  { id: 13, name: "The F-Bomb", attack: 5, defense: 1, type: 'action', cost: 4, ability: 'none', rarity: 'rare', description: "Drops hard. Offends everyone. No survivors." },
   { id: 14, name: "Slumlord Cotton", attack: 3, defense: 3, type: 'action', cost: 4, ability: 'royal', rarity: 'rare', description: "Owns half the toy chest. Fixes none of it." },
   { id: 15, name: "Tax-Fraud Teddy", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'stealth', rarity: 'rare', description: "Officially, he doesn't exist. Ask his accountant." },
 

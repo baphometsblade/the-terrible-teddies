@@ -313,6 +313,10 @@ describe('addXP — leveling and monotonic seasonXP', () => {
     get().addXP(250); // level 1 needs 100, level 2 needs 150 -> reaches level 3, 0 remainder
     expect(get().level).toBe(3);
     expect(get().seasonXP).toBe(250);
+    // Each level-up pays a 100*newLevel coin bonus: +200 reaching L2, +300
+    // reaching L3 = 500. This was previously unasserted, so a regression in the
+    // bonus formula would pass silently.
+    expect(get().coins).toBe(500);
   });
 
   it('seasonXP never decreases across multiple level-ups', () => {
@@ -458,6 +462,31 @@ describe('checkDailyLogin', () => {
     expect(get().consecutiveLogins).toBe(2);
     expect(get().coins).toBe(75 + 50);
   });
+
+  it('grants the gem and pack rewards on a day that awards them (day 7)', () => {
+    // The two tests above only cover coin/card grants, so a regression that
+    // dropped the gem or pack credit would pass. Streak of 6 -> today is day 7,
+    // which awards 300 coins + 25 gems + 2 packs.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-07T08:00:00Z'));
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    useGameStore.setState({
+      coins: 0, gems: 0, cardPacks: 0,
+      lastLoginDate: yesterday.toDateString(),
+      consecutiveLogins: 6, // -> newConsecutive 7 -> day 7
+    });
+    const reward = get().checkDailyLogin();
+    expect(reward.day).toBe(7);
+    expect(get().consecutiveLogins).toBe(7);
+    // The gem and pack grants are the point of this test — nothing else touches
+    // them, so these are exact.
+    expect(get().gems).toBe(25);
+    expect(get().cardPacks).toBe(2);
+    // Coins get the 300 day-7 reward plus the 'daily_7' achievement bonus that a
+    // 7-day streak also unlocks, so assert the reward landed as a lower bound.
+    expect(get().coins).toBeGreaterThanOrEqual(300);
+  });
 });
 
 describe('buyShopItem', () => {
@@ -499,11 +528,17 @@ describe('persist migrate (returning-player safety)', () => {
     expect(get().seasonXP).toBe(250);
   });
 
-  it('coerces corrupt numeric fields back to defaults', async () => {
-    await rehydrateWith({ coins: 'lots', gems: NaN });
-    expect(typeof get().coins).toBe('number');
-    expect(Number.isNaN(get().coins)).toBe(false);
-    expect(typeof get().gems).toBe('number');
+  it('coerces corrupt numeric fields back to their concrete defaults', async () => {
+    // A string ('lots') and a real NaN — both must land on the initialState
+    // default, not merely "some number". The old assertions only checked the
+    // type, so a coercion that produced NaN or left the string would have passed
+    // (NaN is typeof 'number'); this pins the actual repaired values.
+    await rehydrateWith({ coins: 'lots', gems: NaN, xp: 'x', level: NaN });
+    expect(get().coins).toBe(500);   // initialState.coins
+    expect(get().gems).toBe(10);     // initialState.gems
+    expect(Number.isNaN(get().gems)).toBe(false);
+    expect(get().level).toBe(1);     // initialState.level — NaN must not survive
+    expect(Number.isNaN(get().xp)).toBe(false);
   });
 
   it('defaults missing array fields without throwing', async () => {
