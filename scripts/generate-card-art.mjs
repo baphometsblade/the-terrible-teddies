@@ -138,13 +138,13 @@ const seedFor = (id) => 40_000 + id * 97; // stable per card, arbitrary base
 // ---------------------------------------------------------------------------
 // Endpoint flavors
 // ---------------------------------------------------------------------------
-async function callFooocus(base, auth, prompt, seed) {
+async function callFooocus(base, auth, prompt, seed, negative = NEGATIVE) {
   const res = await fetch(`${base.replace(/\/$/, '')}/v1/generation/text-to-image`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(auth ? { Authorization: auth } : {}) },
     body: JSON.stringify({
       prompt,
-      negative_prompt: NEGATIVE,
+      negative_prompt: negative,
       style_selections: ['Fooocus V2', 'Fooocus Sharp'],
       performance_selection: 'Speed',
       aspect_ratios_selection: '896*1152',
@@ -164,13 +164,13 @@ async function callFooocus(base, auth, prompt, seed) {
   return Buffer.from(b64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
 }
 
-async function callA1111(base, auth, prompt, seed) {
+async function callA1111(base, auth, prompt, seed, negative = NEGATIVE) {
   const res = await fetch(`${base.replace(/\/$/, '')}/sdapi/v1/txt2img`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(auth ? { Authorization: auth } : {}) },
     body: JSON.stringify({
       prompt,
-      negative_prompt: NEGATIVE,
+      negative_prompt: negative,
       width: 896,
       height: 1152,
       seed,
@@ -302,7 +302,10 @@ async function main() {
     const t0 = Date.now();
     status.generating(card.id);
     try {
-      const raw = await call(base, auth, promptFor(card), seedFor(card.id));
+      // Pass the per-card negative (anti-brown for non-brown bears) — the
+      // endpoint runners previously ignored it and always sent the global
+      // NEGATIVE, so the brown-plush prior was never fought at generation time.
+      const raw = await call(base, auth, promptFor(card), seedFor(card.id), negativeFor(card));
       const webp = await toCardWebp(raw);
       fs.writeFileSync(dest, webp);
       done++;
@@ -328,6 +331,13 @@ async function main() {
   if (monitorServer) {
     monitorServer.close();
     console.log('monitor closed — browse results any time with: npm run art:monitor');
+  }
+  // A batch that attempted renders and produced nothing is a failure, not a
+  // success — otherwise a broken/unreachable endpoint (every call throwing)
+  // exits 0 and a CI or scripted run reads it as "art regenerated".
+  if (!selfTest && done === 0 && failed > 0) {
+    console.error(`All ${failed} render(s) failed — exiting non-zero.`);
+    process.exit(1);
   }
   if (selfTest) {
     // Exercise the a1111 flavor once too, then clean up.

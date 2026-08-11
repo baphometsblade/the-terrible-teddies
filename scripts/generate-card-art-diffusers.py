@@ -112,10 +112,22 @@ def main() -> int:
     manifest_path, out_dir = args[0], args[1]
     force = "--force" in flags
     only = None
+    only_given = any(f.startswith("--only") for f in flags)
     for f in flags:
         if f.startswith("--only"):
             raw = f.split("=", 1)[1] if "=" in f else args[2] if len(args) > 2 else ""
             only = {int(x) for x in raw.replace(",", " ").split()}
+    # An empty --only (no ids parsed) is an error, not "all cards". Falling
+    # through to the full set — which with --force silently overwrites every
+    # rendered card — is never what someone who typed --only intended.
+    if only_given and not only:
+        print(
+            "error: --only was given but no card ids were parsed from it. "
+            "Refusing to fall back to ALL cards (with --force that would "
+            "overwrite the whole set). Pass ids like --only=3,7 or omit --only.",
+            file=sys.stderr,
+        )
+        return 1
 
     with open(manifest_path) as fh:
         manifest = json.load(fh)

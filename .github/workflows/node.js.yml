@@ -56,6 +56,34 @@ jobs:
     - name: Run e2e smoke tests
       run: npm run test:e2e
 
+  # The e2e job above runs against `vite dev`, so a break that only shows in the
+  # production bundle (minification, code-splitting, a stale CSP hash) ships
+  # green. This job builds dist/ and runs the smoke spec against `vite preview`,
+  # exercising the real build output at least once per PR.
+  e2e-prod:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+    - run: npm ci
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+    - name: Build production bundle
+      env:
+        VITE_SUPABASE_URL: https://testproject.supabase.co
+        VITE_SUPABASE_ANON_KEY: test-anon-key
+      run: npm run build
+    - name: Run smoke spec against the production preview
+      env:
+        E2E_PREVIEW: '1'
+      run: npx playwright test smoke.spec.js
+
   # A migration PostgreSQL refuses to apply is invisible to every other job
   # here: lint, build, vitest and playwright never execute SQL. A security
   # migration once shipped with a return-type change that Postgres rejects,

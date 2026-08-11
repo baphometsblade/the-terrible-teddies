@@ -76,6 +76,31 @@ describe('CSP script-src hash matches the actual inline script in index.html', (
     ).toBe(true);
   });
 
+  it("the CSP's connect-src also allows PostHog's -assets host (remote config)", () => {
+    // Ingestion (events) and static assets/remote-config live on DIFFERENT
+    // hosts: api_host us.i.posthog.com but config/array assets on
+    // us-assets.i.posthog.com. Allowing only the ingestion host lets events
+    // through while silently blocking the remote-config fetch — a partial,
+    // hard-to-spot breakage. Derive the assets host from api_host by the
+    // documented "<region>-assets.i.posthog.com" convention and require it.
+    const analyticsSrc = readFileSync(resolve(process.cwd(), 'src/utils/analytics.js'), 'utf8');
+    const apiHost = analyticsSrc.match(/api_host:\s*'([^']+)'/)[1];
+    const assetsHost = apiHost.replace(/^https:\/\/([a-z]+)\.i\.posthog\.com$/, 'https://$1-assets.i.posthog.com');
+    expect(assetsHost, `could not derive an assets host from api_host ${apiHost}`).not.toBe(apiHost);
+
+    const vercelConfig = JSON.parse(readFileSync(resolve(process.cwd(), 'vercel.json'), 'utf8'));
+    const cspHeader = vercelConfig.headers
+      .flatMap((h) => h.headers)
+      .find((h) => h.key === 'Content-Security-Policy')?.value;
+    const connectSrc = cspHeader.split(';').map((d) => d.trim()).find((d) => d.startsWith('connect-src'));
+
+    expect(
+      connectSrc.includes(assetsHost),
+      `PostHog serves remote config from ${assetsHost}, but vercel.json's connect-src ` +
+        `(${connectSrc}) does not allow it — remote config would be silently CSP-blocked`
+    ).toBe(true);
+  });
+
   it('index.html has no dynamically-injected inline event-handler or style attributes', () => {
     // Both would be silently dropped by this CSP (script-src has no
     // 'unsafe-inline'; style-src's 'unsafe-inline' only covers markup that's
