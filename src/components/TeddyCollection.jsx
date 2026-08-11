@@ -5,9 +5,81 @@ import TeddyCard, { ArtOrEmoji } from './TeddyCard';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 import { RARITY, RARITY_ORDER as RARITY_ORDER_ASC } from '@/lib/rarity';
+import { useDialog } from '@/hooks/useDialog';
 
 // Collection sorts and lists rarest-first.
 const RARITY_ORDER = [...RARITY_ORDER_ASC].reverse();
+
+// The card-detail panel mounts conditionally, so it hosts its own useDialog
+// (the hook must live in a component that mounts with the overlay). Gives the
+// panel dialog semantics + focus containment + Escape, so keyboard users can't
+// tab into the 40+ card tiles behind it. Mirrors GameBoard's GameOverDialog.
+const CardDetailDialog = ({ card, onClose }) => {
+  const ref = useDialog(onClose);
+  return (
+    <motion.div
+      ref={ref}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${card.name} details`}
+      initial={{ scale: 0.8 }}
+      animate={{ scale: 1 }}
+      exit={{ scale: 0.8 }}
+      className="relative bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-6 max-w-md w-full border-4 worn"
+      style={{ borderColor: RARITY[card.rarity].borderHex }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
+        <div className="relative self-start shrink-0">
+          {/* Big art frame: the card's illustration at gallery size,
+              falling back to the emoji cast when no art has shipped.
+              The rarity glow lives on the frame's own shadow. */}
+          <div className={`relative w-32 h-44 rounded-xl border-2 ${RARITY[card.rarity].border} ${RARITY[card.rarity].glow} shadow-2xl bg-gradient-to-b ${RARITY[card.rarity].bg} stitched-plush overflow-hidden flex items-center justify-center`}>
+            <ArtOrEmoji
+              teddy={card}
+              variant="full"
+              emojiClassName="text-7xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
+              imgClassName="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 min-w-0 w-full">
+          <div className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase mb-2 bg-gradient-to-r ${RARITY[card.rarity].gradient} text-white`}>
+            {card.rarity}
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">{card.name}</h2>
+          <p className="text-white/70 text-sm mb-4">{card.description}</p>
+
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between"><span className="text-white/50">Type</span><span className="text-white capitalize">{card.type}</span></div>
+            <div className="flex justify-between"><span className="text-white/50">Cost</span><span className="text-brass-300">{card.cost} ⚡</span></div>
+            {card.type === 'action' && (
+              <>
+                <div className="flex justify-between"><span className="text-white/50">Attack</span><span className="text-red-400">{card.attack}</span></div>
+                <div className="flex justify-between"><span className="text-white/50">Defense</span><span className="text-sky-300">{card.defense}</span></div>
+              </>
+            )}
+            {card.ability && card.ability !== 'none' && (
+              <div className="flex justify-between"><span className="text-white/50">Ability</span><span className="text-purple-400 capitalize">{card.ability}</span></div>
+            )}
+            {card.effect && (
+              <div className="flex justify-between"><span className="text-white/50">Effect</span><span className="text-cyan-400 capitalize">{card.effect} {card.amount}</span></div>
+            )}
+          </div>
+
+          {!card.owned && (
+            <div className="mt-4 bg-red-500/20 border border-red-500 rounded-lg p-3 text-center">
+              <span className="text-red-400 text-sm">🔒 Not yet collected</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Button onClick={onClose} className="w-full mt-6 bg-white/10 hover:bg-white/20">Close</Button>
+    </motion.div>
+  );
+};
 
 const TeddyCollection = () => {
   const { ownedCards } = useGameStore();
@@ -162,63 +234,7 @@ const TeddyCollection = () => {
             className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
             onClick={() => setSelectedCard(null)}
           >
-            <motion.div
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              className="relative bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-6 max-w-md w-full border-4 worn"
-              style={{ borderColor: RARITY[selectedCard.rarity].borderHex }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
-                <div className="relative self-start shrink-0">
-                  {/* Big art frame: the card's illustration at gallery size,
-                      falling back to the emoji cast when no art has shipped.
-                      The rarity glow lives on the frame's own shadow. */}
-                  <div className={`relative w-32 h-44 rounded-xl border-2 ${RARITY[selectedCard.rarity].border} ${RARITY[selectedCard.rarity].glow} shadow-2xl bg-gradient-to-b ${RARITY[selectedCard.rarity].bg} stitched-plush overflow-hidden flex items-center justify-center`}>
-                    <ArtOrEmoji
-                      teddy={selectedCard}
-                      variant="full"
-                      emojiClassName="text-7xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
-                      imgClassName="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex-1 min-w-0 w-full">
-                  <div className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase mb-2 bg-gradient-to-r ${RARITY[selectedCard.rarity].gradient} text-white`}>
-                    {selectedCard.rarity}
-                  </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">{selectedCard.name}</h2>
-                  <p className="text-white/70 text-sm mb-4">{selectedCard.description}</p>
-
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between"><span className="text-white/50">Type</span><span className="text-white capitalize">{selectedCard.type}</span></div>
-                    <div className="flex justify-between"><span className="text-white/50">Cost</span><span className="text-brass-300">{selectedCard.cost} ⚡</span></div>
-                    {selectedCard.type === 'action' && (
-                      <>
-                        <div className="flex justify-between"><span className="text-white/50">Attack</span><span className="text-red-400">{selectedCard.attack}</span></div>
-                        <div className="flex justify-between"><span className="text-white/50">Defense</span><span className="text-sky-300">{selectedCard.defense}</span></div>
-                      </>
-                    )}
-                    {selectedCard.ability && selectedCard.ability !== 'none' && (
-                      <div className="flex justify-between"><span className="text-white/50">Ability</span><span className="text-purple-400 capitalize">{selectedCard.ability}</span></div>
-                    )}
-                    {selectedCard.effect && (
-                      <div className="flex justify-between"><span className="text-white/50">Effect</span><span className="text-cyan-400 capitalize">{selectedCard.effect} {selectedCard.amount}</span></div>
-                    )}
-                  </div>
-
-                  {!selectedCard.owned && (
-                    <div className="mt-4 bg-red-500/20 border border-red-500 rounded-lg p-3 text-center">
-                      <span className="text-red-400 text-sm">🔒 Not yet collected</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <Button onClick={() => setSelectedCard(null)} className="w-full mt-6 bg-white/10 hover:bg-white/20">Close</Button>
-            </motion.div>
+            <CardDetailDialog card={selectedCard} onClose={() => setSelectedCard(null)} />
           </motion.div>
         )}
       </AnimatePresence>

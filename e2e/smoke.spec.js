@@ -128,6 +128,39 @@ test('deck builder renders the owned-card grid', async ({ page }) => {
   expect(await ownedCards.count()).toBeGreaterThanOrEqual(5);
 });
 
+test('collection card-detail is a real dialog: focus enters it, Escape closes it', async ({ page }) => {
+  await page.getByRole('button', { name: 'Collection', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Card Collection' })).toBeVisible(SLOW);
+
+  // Open the first owned card's detail. Tiles are "View <name>" pressables.
+  await page.getByRole('button', { name: /^View / }).first().click();
+
+  const detail = page.getByRole('dialog', { name: /details$/ });
+  await expect(detail).toBeVisible(SLOW);
+  // useDialog moves focus into the panel (its Close button is the first control).
+  await expect(detail.getByRole('button', { name: 'Close' })).toBeFocused();
+
+  // Escape closes it (the raw overlay it replaced had no keyboard exit).
+  await page.keyboard.press('Escape');
+  await expect(detail).toHaveCount(0, SLOW);
+});
+
+test('deck builder Save-As is a real dialog: focus enters it, Escape closes it', async ({ page }) => {
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible(SLOW);
+
+  // The seeded currentDeck is a full 10 cards, so "Save As..." is enabled.
+  await page.getByRole('button', { name: 'Save As...' }).click();
+
+  const save = page.getByRole('dialog', { name: 'Save deck' });
+  await expect(save).toBeVisible(SLOW);
+  // The hook focuses the first control — the deck-name input — with no autoFocus.
+  await expect(save.getByRole('textbox', { name: 'Deck name' })).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(save).toHaveCount(0, SLOW);
+});
+
 test('manifest app shortcuts (?action=) route to the right screen', async ({ page }) => {
   // The PWA manifest's shortcuts (long-press the installed icon) launch the
   // app with ?action=battle|shop|rewards — verify each actually navigates,

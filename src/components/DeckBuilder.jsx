@@ -5,11 +5,49 @@ import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
+import { useDialog } from '@/hooks/useDialog';
 
 import { RARITY } from '@/lib/rarity';
 
 const DECK_SIZE = 10;
 const MAX_COPIES = 2;
+
+// Save-Deck modal. Hosts its own useDialog (the hook must mount with the
+// overlay) for dialog semantics, Escape, and a focus trap — otherwise the deck
+// tiles behind it stay tab-reachable. The hook focuses the first control (the
+// name input), so no manual autoFocus is needed. Mirrors GameBoard's
+// GameOverDialog / TeddyCollection's CardDetailDialog.
+const SaveDeckDialog = ({ deckName, setDeckName, onSave, onClose }) => {
+  const ref = useDialog(onClose);
+  return (
+    <motion.div
+      ref={ref}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Save deck"
+      initial={{ scale: 0.9 }}
+      animate={{ scale: 1 }}
+      exit={{ scale: 0.9 }}
+      className="bg-night-700 border border-plush-700/60 rounded-xl p-6 max-w-sm w-full"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3 className="text-white text-xl font-bold mb-4">Save Deck</h3>
+      <input
+        type="text"
+        value={deckName}
+        onChange={(e) => setDeckName(e.target.value)}
+        placeholder="Enter deck name..."
+        aria-label="Deck name"
+        className="w-full bg-white/10 border border-white/20 text-white px-4 py-2 rounded-lg mb-4"
+        maxLength={20}
+      />
+      <div className="flex gap-2">
+        <Button onClick={onSave} disabled={!deckName.trim()} className="flex-1 bg-emerald-700 hover:bg-emerald-800">Save</Button>
+        <Button onClick={onClose} variant="outline" className="flex-1 text-white border-white/30">Cancel</Button>
+      </div>
+    </motion.div>
+  );
+};
 
 const DeckBuilder = () => {
   const { ownedCards, currentDeck, setCurrentDeck, savedDecks, saveDeck, deleteDeck } = useGameStore();
@@ -51,6 +89,17 @@ const DeckBuilder = () => {
     setDeck(deck.filter(c => c.deckId !== deckCard.deckId));
   };
 
+  // Dismiss the Save-As dialog AND clear the typed name. Leaving deckName
+  // populated after a cancel was the bug: handleSaveDeck is shared with the
+  // green "Set as Current Deck" button, and it took the named-save branch
+  // whenever deckName was non-empty — so cancelling the dialog with a name
+  // typed, then clicking "Set as Current Deck", silently saved/overwrote a
+  // named deck the player never confirmed.
+  const closeSaveDialog = () => {
+    setShowSaveDialog(false);
+    setDeckName('');
+  };
+
   const handleSaveDeck = () => {
     if (deck.length !== DECK_SIZE) {
       toast({ title: "Invalid Deck", description: `Need ${DECK_SIZE} cards!`, variant: "destructive" });
@@ -59,7 +108,10 @@ const DeckBuilder = () => {
     const cardIds = deck.map(c => c.id);
     setCurrentDeck(cardIds);
 
-    if (deckName.trim()) {
+    // Only save a *named* deck when the request came from the Save-As dialog.
+    // The green "Set as Current Deck" button calls this too, and must never
+    // perform a named save just because a stale name lingers in state.
+    if (showSaveDialog && deckName.trim()) {
       saveDeck(deckName.trim(), cardIds);
       setShowSaveDialog(false);
       setDeckName('');
@@ -263,31 +315,14 @@ const DeckBuilder = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-            onClick={() => setShowSaveDialog(false)}
+            onClick={closeSaveDialog}
           >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-night-700 border border-plush-700/60 rounded-xl p-6 max-w-sm w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-white text-xl font-bold mb-4">Save Deck</h3>
-              <input
-                type="text"
-                value={deckName}
-                onChange={(e) => setDeckName(e.target.value)}
-                placeholder="Enter deck name..."
-                aria-label="Deck name"
-                className="w-full bg-white/10 border border-white/20 text-white px-4 py-2 rounded-lg mb-4"
-                maxLength={20}
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <Button onClick={handleSaveDeck} disabled={!deckName.trim()} className="flex-1 bg-emerald-700 hover:bg-emerald-800">Save</Button>
-                <Button onClick={() => setShowSaveDialog(false)} variant="outline" className="flex-1 text-white border-white/30">Cancel</Button>
-              </div>
-            </motion.div>
+            <SaveDeckDialog
+              deckName={deckName}
+              setDeckName={setDeckName}
+              onSave={handleSaveDeck}
+              onClose={closeSaveDialog}
+            />
           </motion.div>
         )}
       </AnimatePresence>
