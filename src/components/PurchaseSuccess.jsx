@@ -119,7 +119,18 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
               💎
             </motion.div>
             <h2 className="text-2xl font-bold text-white mb-2">Verifying Payment…</h2>
-            <p className="text-white/60 text-sm">Hang tight while we confirm your purchase.</p>
+            <p className="text-white/60 text-sm mb-6">Hang tight while we confirm your purchase.</p>
+            {/* Manual escape hatch: if the verification hangs (a slow/stalled
+                network), the buyer must not be trapped on a control-free spinner.
+                Escape stays disabled here to avoid an accidental mid-check
+                dismissal, but this explicit control lets them leave — any
+                credited gems reconcile on the next login, so nothing is lost. */}
+            <button
+              onClick={onDone}
+              className="text-white/40 hover:text-white/70 text-sm underline underline-offset-2"
+            >
+              Taking too long? Close and check back later
+            </button>
           </>
         )}
 

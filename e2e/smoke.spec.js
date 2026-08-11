@@ -116,6 +116,24 @@ test('returning from a completed checkout confirms the credited gems', async ({ 
   await expect(dialog).toHaveCount(0, SLOW);
 });
 
+test('a stuck verification is not a trap: the verifying phase has an escape hatch', async ({ page }) => {
+  // Hang the purchase-verification read so the dialog stays in 'verifying'.
+  // Escape is intentionally disabled during verification, so without an explicit
+  // control the buyer would be stranded on a control-free spinner.
+  await page.route(/\/rest\/v1\/purchases/, () => { /* never fulfilled */ });
+
+  await page.goto('/?purchase=success&session_id=cs_test_stuck');
+
+  const dialog = page.getByRole('dialog', { name: 'Purchase status' });
+  await expect(dialog).toBeVisible(SLOW);
+  await expect(dialog.getByText('Verifying Payment…')).toBeVisible(SLOW);
+
+  const escape = dialog.getByRole('button', { name: /Close and check back later/ });
+  await expect(escape).toBeVisible();
+  await escape.click();
+  await expect(dialog).toHaveCount(0, SLOW);
+});
+
 test('deck builder renders the owned-card grid', async ({ page }) => {
   await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
 

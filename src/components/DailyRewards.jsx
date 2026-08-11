@@ -81,8 +81,15 @@ const DailyRewards = ({ onClose }) => {
           <div className="grid grid-cols-7 gap-2 mb-6">
             {DAILY_REWARDS.map((dayReward, index) => {
               const day = index + 1;
-              const isToday = reward && day === reward.day;
-              const isClaimed = claimed || (reward && day < reward.day);
+              // Today's position in the 1..7 cycle. On a fresh claim we read it
+              // from the reward; on a same-day reopen (reward === null) we derive
+              // it from the persisted streak. The old code fell back to a blanket
+              // `claimed` flag, which marked ALL seven days — future days included
+              // — as claimed on every reopen, wiping the streak-progress view.
+              const cycleDay = consecutiveLogins > 0 ? ((consecutiveLogins - 1) % 7) + 1 : 1;
+              const currentDay = reward ? reward.day : cycleDay;
+              const isToday = day === currentDay;
+              const isClaimed = day < currentDay; // today is always the highlighted tile, not a claimed one
               return (
                 <RewardDay
                   key={day}

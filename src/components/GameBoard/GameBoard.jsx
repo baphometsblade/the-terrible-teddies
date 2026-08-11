@@ -752,9 +752,13 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           playSound('trap');
           logs.push(`Your ${trap.name} sprang! ${OPPONENT_NAME} ate ${trapDamage} damage. Delicious.`);
         } else {
-          faceDamage += card.attack;
+          // Include a 'royal' ally's aura in the opponent's face damage too, not
+          // just its creature-vs-creature hits (which already resolve through
+          // activeOpponentField). Mirrors the player-side fix at attackOpponentDirectly.
+          const oppFaceDamage = effectiveAttack(card, activeOpponentField);
+          faceDamage += oppFaceDamage;
           playSound('attack');
-          logs.push(`${card.name} socked you right in the face for ${card.attack}!`);
+          logs.push(`${card.name} socked you right in the face for ${oppFaceDamage}!`);
         }
       });
 

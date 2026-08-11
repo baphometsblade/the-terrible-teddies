@@ -113,9 +113,9 @@ const Leaderboard = ({ onClose }) => {
           {player.rank <= 3 ? rankDisplay.icon : `#${player.rank}`}
         </div>
 
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className={`font-bold ${isPlayer ? 'text-brass-300' : 'text-white'}`}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className={`font-bold truncate ${isPlayer ? 'text-brass-300' : 'text-white'}`}>
               {player.name}
             </span>
             {isPlayer && <span className="text-xs bg-brass-400 text-night-950 px-2 py-0.5 rounded">YOU</span>}
