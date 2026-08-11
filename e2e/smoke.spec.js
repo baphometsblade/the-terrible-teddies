@@ -356,9 +356,11 @@ test('a dialog chunk that fails to load degrades gracefully, not a full-app cras
   // replacing the menu and any in-progress game with the full crash screen over
   // a dialog the user merely tried to open. DialogErrorBoundary now scopes it.
   //
-  // Force the Shop chunk to fail. In dev the dynamic import resolves to the
-  // Shop module URL; aborting it rejects the import.
-  await page.route('**/components/Shop*', (r) => r.abort());
+  // Force the Shop chunk to fail. In dev the dynamic import resolves to the Shop
+  // module URL (…/components/Shop.jsx); in a production build it's a hashed asset
+  // (…/assets/Shop-<hash>.js). Match both — "Shop" followed by a dot or dash — so
+  // this guard holds under the prod-preview e2e run too.
+  await page.route(/Shop[-.]/, (r) => r.abort());
 
   await page.getByRole('button', { name: 'Shop', exact: true }).click();
 
