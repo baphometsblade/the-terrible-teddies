@@ -18,6 +18,64 @@ const GEM_BUNDLES = [
   { id: 'gems_mega', gems: 3000, price: 49.99, bonus: 750, popular: true },
 ];
 
+// Hoisted to module scope so their identity is stable across renders. Declared
+// inside Shop they were redefined every render, so a coin/pack purchase (which
+// stays on the shop screen and re-renders it) remounted every tile and replayed
+// its entrance animation, dropping focus from the just-clicked card. The parent
+// passes the buy handler (and processing flag) as props.
+const PackCard = ({ item, featured = false, onBuy }) => (
+  <motion.div
+    whileHover={{ scale: 1.03, y: -5 }}
+    whileTap={{ scale: 0.98 }}
+    className={`relative rounded-xl overflow-hidden cursor-pointer ${featured ? 'col-span-2 row-span-2' : ''}`}
+    {...pressable(onBuy, `Buy ${item.name} for ${item.price} ${item.currency}`)}
+  >
+    <div className={`p-4 h-full flex flex-col items-center justify-center text-center
+      ${item.type === 'legendary' ? 'bg-gradient-to-br from-brass-500 via-brass-600 to-amber-900' :
+        item.type === 'premium' ? 'bg-gradient-to-br from-purple-700 via-purple-800 to-fuchsia-900' :
+        'bg-gradient-to-br from-sky-800 to-indigo-900'}
+      ${featured ? 'min-h-[280px]' : 'min-h-[160px]'}`}>
+      {item.type === 'legendary' && (
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          animate={{ x: ['-100%', '200%'] }}
+          transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+        />
+      )}
+      <div className={`${featured ? 'text-6xl' : 'text-4xl'} mb-2`}>{item.icon}</div>
+      <h3 className={`font-display font-bold text-white ${featured ? 'text-2xl' : 'text-lg'}`}>{item.name}</h3>
+      <p className={`text-white/80 ${featured ? 'text-base' : 'text-xs'} mb-3`}>{item.description}</p>
+      <div className={`flex items-center gap-1 px-4 py-2 rounded-full font-bold
+        ${item.currency === 'gems' ? 'bg-night-950/50 text-purple-200' : 'bg-night-950/50 text-brass-200'}`}>
+        <span>{item.currency === 'gems' ? '💎' : '🪙'}</span>
+        <span>{item.price}</span>
+      </div>
+    </div>
+  </motion.div>
+);
+
+const GemBundle = ({ bundle, processing, onBuy }) => (
+  <motion.div
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+    {...pressable(() => !processing && onBuy(), `Buy ${bundle.gems} gems for $${bundle.price.toFixed(2)}`)}
+    className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all
+      ${bundle.popular ? 'border-brass-400 shadow-lg shadow-brass-400/30' : 'border-plush-700/60 hover:border-plush-400/60'}
+      bg-gradient-to-br from-night-700/90 to-night-800/90`}
+  >
+    {bundle.popular && (
+      <div className="absolute top-0 left-0 right-0 bg-brass-400 text-night-950 text-xs font-bold py-1 text-center">BEST VALUE</div>
+    )}
+    <div className={`p-4 text-center ${bundle.popular ? 'pt-8' : ''}`}>
+      <div className="text-4xl mb-2">💎</div>
+      <div className="text-2xl font-bold text-white">{bundle.gems.toLocaleString()}</div>
+      {bundle.bonus > 0 && <div className="text-green-400 text-sm font-semibold">+{bundle.bonus} BONUS</div>}
+      {bundle.bonus > 0 && <div className="text-purple-300 text-xs mt-1">{bundle.gems + bundle.bonus} total</div>}
+      <div className="mt-3 bg-brass-400 text-night-950 px-4 py-2 rounded-full font-bold">${bundle.price.toFixed(2)}</div>
+    </div>
+  </motion.div>
+);
+
 const Shop = ({ onClose }) => {
   const { coins, gems, cardPacks, buyShopItem } = useGameStore();
   const { session } = useSupabaseAuth();
@@ -71,59 +129,6 @@ const Shop = ({ onClose }) => {
       });
     }
   };
-
-  const PackCard = ({ item, featured = false }) => (
-    <motion.div
-      whileHover={{ scale: 1.03, y: -5 }}
-      whileTap={{ scale: 0.98 }}
-      className={`relative rounded-xl overflow-hidden cursor-pointer ${featured ? 'col-span-2 row-span-2' : ''}`}
-      {...pressable(() => handleBuyItem(item), `Buy ${item.name} for ${item.price} ${item.currency}`)}
-    >
-      <div className={`p-4 h-full flex flex-col items-center justify-center text-center
-        ${item.type === 'legendary' ? 'bg-gradient-to-br from-brass-500 via-brass-600 to-amber-900' :
-          item.type === 'premium' ? 'bg-gradient-to-br from-purple-700 via-purple-800 to-fuchsia-900' :
-          'bg-gradient-to-br from-sky-800 to-indigo-900'}
-        ${featured ? 'min-h-[280px]' : 'min-h-[160px]'}`}>
-        {item.type === 'legendary' && (
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-            animate={{ x: ['-100%', '200%'] }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-          />
-        )}
-        <div className={`${featured ? 'text-6xl' : 'text-4xl'} mb-2`}>{item.icon}</div>
-        <h3 className={`font-display font-bold text-white ${featured ? 'text-2xl' : 'text-lg'}`}>{item.name}</h3>
-        <p className={`text-white/80 ${featured ? 'text-base' : 'text-xs'} mb-3`}>{item.description}</p>
-        <div className={`flex items-center gap-1 px-4 py-2 rounded-full font-bold
-          ${item.currency === 'gems' ? 'bg-night-950/50 text-purple-200' : 'bg-night-950/50 text-brass-200'}`}>
-          <span>{item.currency === 'gems' ? '💎' : '🪙'}</span>
-          <span>{item.price}</span>
-        </div>
-      </div>
-    </motion.div>
-  );
-
-  const GemBundle = ({ bundle }) => (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      {...pressable(() => !processing && handleGemPurchase(bundle), `Buy ${bundle.gems} gems for $${bundle.price.toFixed(2)}`)}
-      className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all
-        ${bundle.popular ? 'border-brass-400 shadow-lg shadow-brass-400/30' : 'border-plush-700/60 hover:border-plush-400/60'}
-        bg-gradient-to-br from-night-700/90 to-night-800/90`}
-    >
-      {bundle.popular && (
-        <div className="absolute top-0 left-0 right-0 bg-brass-400 text-night-950 text-xs font-bold py-1 text-center">BEST VALUE</div>
-      )}
-      <div className={`p-4 text-center ${bundle.popular ? 'pt-8' : ''}`}>
-        <div className="text-4xl mb-2">💎</div>
-        <div className="text-2xl font-bold text-white">{bundle.gems.toLocaleString()}</div>
-        {bundle.bonus > 0 && <div className="text-green-400 text-sm font-semibold">+{bundle.bonus} BONUS</div>}
-        {bundle.bonus > 0 && <div className="text-purple-300 text-xs mt-1">{bundle.gems + bundle.bonus} total</div>}
-        <div className="mt-3 bg-brass-400 text-night-950 px-4 py-2 rounded-full font-bold">${bundle.price.toFixed(2)}</div>
-      </div>
-    </motion.div>
-  );
 
   return (
     <div
@@ -179,7 +184,7 @@ const Shop = ({ onClose }) => {
             {activeTab === 'packs' && (
               <motion.div key="packs" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {SHOP_ITEMS.filter(i => ['pack', 'premium', 'legendary'].includes(i.type)).map(item => (
-                  <PackCard key={item.id} item={item} featured={item.type === 'legendary'} />
+                  <PackCard key={item.id} item={item} featured={item.type === 'legendary'} onBuy={() => handleBuyItem(item)} />
                 ))}
               </motion.div>
             )}
@@ -191,7 +196,7 @@ const Shop = ({ onClose }) => {
                   <p className="text-white/60">Use gems to buy premium packs with guaranteed rare cards!</p>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  {GEM_BUNDLES.map(bundle => (<GemBundle key={bundle.id} bundle={bundle} />))}
+                  {GEM_BUNDLES.map(bundle => (<GemBundle key={bundle.id} bundle={bundle} processing={processing} onBuy={() => handleGemPurchase(bundle)} />))}
                 </div>
                 <div className="mt-6 text-center text-white/40 text-sm">
                   <p>Secure payment processing powered by Stripe</p>

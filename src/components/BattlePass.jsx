@@ -10,6 +10,58 @@ import { useDialog } from '@/hooks/useDialog';
 import { pressable } from '@/lib/a11y';
 import { RARITY } from '@/lib/rarity';
 
+const rarityBorder = (r) =>
+  r === 'legendary' ? `${RARITY[r].border} ${RARITY[r].glow} shadow-lg` : RARITY[r].border;
+
+// Hoisted to module scope for a stable component identity. Declared inside
+// BattlePass it got a fresh type every render, so claiming a reward (or any
+// toast) remounted all 30 tiles and replayed their entrance. The parent now
+// passes the derived unlocked/claimed/canClaim flags and the claim handler.
+const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, onClaim }) => (
+  <motion.div
+    whileHover={canClaim ? { scale: 1.05 } : {}}
+    whileTap={canClaim ? { scale: 0.95 } : {}}
+    {...pressable(
+      () => canClaim && onClaim(),
+      `Claim tier ${tier} ${isPremium ? 'premium' : 'free'} reward`,
+    )}
+    className={`
+      relative w-20 h-24 rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-all
+      ${isPremium
+        ? 'bg-gradient-to-br from-brass-600/25 to-amber-900/30 border-2'
+        : 'bg-white/10 border border-white/20'}
+      ${reward.rarity ? rarityBorder(reward.rarity) : isPremium ? 'border-brass-400/50' : ''}
+      ${!isUnlocked ? 'opacity-40' : ''}
+      ${isClaimed ? 'opacity-60' : ''}
+      ${canClaim ? 'hover:border-white' : ''}
+    `}
+  >
+    {isClaimed && (
+      <div className="absolute inset-0 bg-green-500/30 rounded-lg flex items-center justify-center">
+        <span className="text-2xl">✅</span>
+      </div>
+    )}
+
+    {!isUnlocked && (
+      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+        <span className="text-xl">🔒</span>
+      </div>
+    )}
+
+    <div className="text-2xl mb-1">{reward.icon}</div>
+    <div className="text-white text-[10px] font-semibold text-center">
+      {reward.type === 'card' ? reward.name :
+       reward.type === 'exclusive' ? reward.name :
+       `${reward.amount ? '+' + reward.amount : ''}`}
+    </div>
+    {reward.rarity && (
+      <div className={`text-[8px] uppercase font-bold ${RARITY[reward.rarity].text}`}>
+        {reward.rarity}
+      </div>
+    )}
+  </motion.div>
+);
+
 export const BATTLE_PASS_REWARDS = [
   { tier: 1, xpRequired: 0, free: { type: 'coins', amount: 100, icon: '🪙' }, premium: { type: 'card', cardId: 7, name: 'Peeping Pete', icon: '🃏', rarity: 'uncommon' } },
   { tier: 2, xpRequired: 100, free: { type: 'pack', amount: 1, icon: '📦' }, premium: { type: 'coins', amount: 500, icon: '🪙' } },
@@ -144,60 +196,6 @@ const BattlePass = ({ onClose }) => {
     }
   };
 
-  const RewardCard = ({ reward, isPremium, tier }) => {
-    const isUnlocked = tier <= currentTier;
-    const isClaimed = claimedRewards[isPremium ? 'premium' : 'free'].includes(tier);
-    const canClaim = isUnlocked && !isClaimed && (!isPremium || hasPremium);
-
-    const rarityBorder = (r) =>
-      r === 'legendary' ? `${RARITY[r].border} ${RARITY[r].glow} shadow-lg` : RARITY[r].border;
-
-    return (
-      <motion.div
-        whileHover={canClaim ? { scale: 1.05 } : {}}
-        whileTap={canClaim ? { scale: 0.95 } : {}}
-        {...pressable(
-          () => canClaim && claimReward(tier, isPremium),
-          `Claim tier ${tier} ${isPremium ? 'premium' : 'free'} reward`,
-        )}
-        className={`
-          relative w-20 h-24 rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-all
-          ${isPremium 
-            ? 'bg-gradient-to-br from-brass-600/25 to-amber-900/30 border-2' 
-            : 'bg-white/10 border border-white/20'}
-          ${reward.rarity ? rarityBorder(reward.rarity) : isPremium ? 'border-brass-400/50' : ''}
-          ${!isUnlocked ? 'opacity-40' : ''}
-          ${isClaimed ? 'opacity-60' : ''}
-          ${canClaim ? 'hover:border-white' : ''}
-        `}
-      >
-        {isClaimed && (
-          <div className="absolute inset-0 bg-green-500/30 rounded-lg flex items-center justify-center">
-            <span className="text-2xl">✅</span>
-          </div>
-        )}
-
-        {!isUnlocked && (
-          <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-            <span className="text-xl">🔒</span>
-          </div>
-        )}
-
-        <div className="text-2xl mb-1">{reward.icon}</div>
-        <div className="text-white text-[10px] font-semibold text-center">
-          {reward.type === 'card' ? reward.name : 
-           reward.type === 'exclusive' ? reward.name :
-           `${reward.amount ? '+' + reward.amount : ''}`}
-        </div>
-        {reward.rarity && (
-          <div className={`text-[8px] uppercase font-bold ${RARITY[reward.rarity].text}`}>
-            {reward.rarity}
-          </div>
-        )}
-      </motion.div>
-    );
-  };
-
   return (
     <div
       ref={dialogRef}
@@ -291,13 +289,29 @@ const BattlePass = ({ onClose }) => {
                 <div className="text-white/50 text-[10px]">{reward.xpRequired} XP</div>
 
                 {/* Premium reward (top) */}
-                <RewardCard reward={reward.premium} isPremium={true} tier={reward.tier} />
+                <RewardCard
+                  reward={reward.premium}
+                  isPremium={true}
+                  tier={reward.tier}
+                  isUnlocked={reward.tier <= currentTier}
+                  isClaimed={claimedRewards.premium.includes(reward.tier)}
+                  canClaim={reward.tier <= currentTier && !claimedRewards.premium.includes(reward.tier) && hasPremium}
+                  onClaim={() => claimReward(reward.tier, true)}
+                />
 
                 {/* Divider */}
                 <div className={`w-16 h-0.5 ${reward.tier <= currentTier ? 'bg-brass-400' : 'bg-white/20'}`} />
 
                 {/* Free reward (bottom) */}
-                <RewardCard reward={reward.free} isPremium={false} tier={reward.tier} />
+                <RewardCard
+                  reward={reward.free}
+                  isPremium={false}
+                  tier={reward.tier}
+                  isUnlocked={reward.tier <= currentTier}
+                  isClaimed={claimedRewards.free.includes(reward.tier)}
+                  canClaim={reward.tier <= currentTier && !claimedRewards.free.includes(reward.tier)}
+                  onClaim={() => claimReward(reward.tier, false)}
+                />
 
                 {/* Free label */}
                 <div className="text-white/40 text-[10px]">FREE</div>

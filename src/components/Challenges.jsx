@@ -30,6 +30,93 @@ const getTimeUntilReset = (isWeekly = false) => {
     : `${hours}h ${minutes}m`;
 };
 
+// Hoisted to module scope so it keeps a stable component identity across
+// renders. Declared inside Challenges, it got a fresh type every render — and
+// the 60s syncPeriods/countdown tick re-renders the panel once a minute, so
+// every card visibly re-ran its entrance animation and any focused Claim button
+// lost focus each minute. Reads nothing from the closure now; the parent passes
+// the derived progress/claimed state and the claim handler.
+const ChallengeCard = ({ challenge, progress, isClaimed, onClaim }) => {
+  const isComplete = progress >= challenge.target;
+  const progressPercent = Math.min((progress / challenge.target) * 100, 100);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`
+        relative p-4 rounded-xl border transition-all
+        ${isClaimed
+          ? 'bg-green-900/20 border-green-500/30'
+          : isComplete
+            ? 'bg-brass-600/15 border-brass-400/50 shadow-lg shadow-brass-400/20'
+            : 'bg-white/5 border-white/10'}
+      `}
+    >
+      {isClaimed && (
+        <div className="absolute top-2 right-2 text-2xl">✅</div>
+      )}
+
+      <div className="flex items-start gap-3">
+        <div className={`
+          w-12 h-12 rounded-xl flex items-center justify-center text-2xl
+          ${isComplete ? 'bg-brass-400/20' : 'bg-white/10'}
+        `}>
+          {challenge.icon}
+        </div>
+
+        <div className="flex-1">
+          <h3 className={`font-bold ${isComplete ? 'text-brass-300' : 'text-white'}`}>
+            {challenge.name}
+          </h3>
+          <p className="text-white/50 text-sm">{challenge.description}</p>
+
+          <div className="mt-2">
+            <div className="flex justify-between text-xs mb-1">
+              <span className="text-white/70">{progress} / {challenge.target}</span>
+              <span className={isComplete ? 'text-brass-300' : 'text-white/50'}>
+                {progressPercent.toFixed(0)}%
+              </span>
+            </div>
+            <Progress
+              value={progressPercent}
+              className="h-2 bg-night-950/50 [&>div]:bg-brass-400"
+              aria-label={`${challenge.name} progress: ${progress} of ${challenge.target}`}
+            />
+          </div>
+        </div>
+
+        <div className="text-right">
+          <div className={`
+            px-3 py-1 rounded-lg text-sm font-semibold mb-2
+            ${challenge.reward.type === 'gems' ? 'bg-purple-500/30 text-purple-300' :
+              challenge.reward.type === 'coins' ? 'bg-brass-400/20 text-brass-200' :
+              challenge.reward.type === 'pack' || challenge.reward.type === 'legendaryPack' ? 'bg-blue-500/30 text-blue-300' :
+              'bg-green-500/30 text-green-300'}
+          `}>
+            {challenge.reward.type === 'gems' && '💎'}
+            {challenge.reward.type === 'coins' && '🪙'}
+            {challenge.reward.type === 'pack' && '📦'}
+            {challenge.reward.type === 'legendaryPack' && '⭐'}
+            {challenge.reward.type === 'xp' && '⭐'}
+            {' '}{challenge.reward.amount}
+          </div>
+
+          {isComplete && !isClaimed && (
+            <Button
+              size="sm"
+              onClick={onClaim}
+              className="bg-brass-400 hover:bg-brass-500 text-night-950 font-bold"
+            >
+              Claim
+            </Button>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 const Challenges = ({ onClose }) => {
   const {
     addCoins, addGems, addXP, addCardPack, claimChallenge, claimedChallenges, syncPeriods,
@@ -108,89 +195,6 @@ const Challenges = ({ onClose }) => {
       title: "Challenge Complete!",
       description: `Claimed: ${challenge.reward.amount} ${challenge.reward.type}`,
     });
-  };
-
-  const ChallengeCard = ({ challenge }) => {
-    const progress = getChallengeProgress(challenge);
-    const isComplete = progress >= challenge.target;
-    const isClaimed = (claimedChallenges ?? []).includes(challenge.id);
-    const progressPercent = Math.min((progress / challenge.target) * 100, 100);
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`
-          relative p-4 rounded-xl border transition-all
-          ${isClaimed 
-            ? 'bg-green-900/20 border-green-500/30' 
-            : isComplete 
-              ? 'bg-brass-600/15 border-brass-400/50 shadow-lg shadow-brass-400/20' 
-              : 'bg-white/5 border-white/10'}
-        `}
-      >
-        {isClaimed && (
-          <div className="absolute top-2 right-2 text-2xl">✅</div>
-        )}
-
-        <div className="flex items-start gap-3">
-          <div className={`
-            w-12 h-12 rounded-xl flex items-center justify-center text-2xl
-            ${isComplete ? 'bg-brass-400/20' : 'bg-white/10'}
-          `}>
-            {challenge.icon}
-          </div>
-
-          <div className="flex-1">
-            <h3 className={`font-bold ${isComplete ? 'text-brass-300' : 'text-white'}`}>
-              {challenge.name}
-            </h3>
-            <p className="text-white/50 text-sm">{challenge.description}</p>
-
-            <div className="mt-2">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-white/70">{progress} / {challenge.target}</span>
-                <span className={isComplete ? 'text-brass-300' : 'text-white/50'}>
-                  {progressPercent.toFixed(0)}%
-                </span>
-              </div>
-              <Progress
-                value={progressPercent}
-                className="h-2 bg-night-950/50 [&>div]:bg-brass-400"
-                aria-label={`${challenge.name} progress: ${progress} of ${challenge.target}`}
-              />
-            </div>
-          </div>
-
-          <div className="text-right">
-            <div className={`
-              px-3 py-1 rounded-lg text-sm font-semibold mb-2
-              ${challenge.reward.type === 'gems' ? 'bg-purple-500/30 text-purple-300' :
-                challenge.reward.type === 'coins' ? 'bg-brass-400/20 text-brass-200' :
-                challenge.reward.type === 'pack' || challenge.reward.type === 'legendaryPack' ? 'bg-blue-500/30 text-blue-300' :
-                'bg-green-500/30 text-green-300'}
-            `}>
-              {challenge.reward.type === 'gems' && '💎'}
-              {challenge.reward.type === 'coins' && '🪙'}
-              {challenge.reward.type === 'pack' && '📦'}
-              {challenge.reward.type === 'legendaryPack' && '⭐'}
-              {challenge.reward.type === 'xp' && '⭐'}
-              {' '}{challenge.reward.amount}
-            </div>
-
-            {isComplete && !isClaimed && (
-              <Button
-                size="sm"
-                onClick={() => claimReward(challenge)}
-                className="bg-brass-400 hover:bg-brass-500 text-night-950 font-bold"
-              >
-                Claim
-              </Button>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    );
   };
 
   const dailyComplete = DAILY_CHALLENGES.filter(c => getChallengeProgress(c) >= c.target).length;
@@ -285,7 +289,12 @@ const Challenges = ({ onClose }) => {
               <motion.div key="daily" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 {DAILY_CHALLENGES.map((challenge) => (
                   <div key={challenge.id} className="mb-3">
-                    <ChallengeCard challenge={challenge} />
+                    <ChallengeCard
+                      challenge={challenge}
+                      progress={getChallengeProgress(challenge)}
+                      isClaimed={(claimedChallenges ?? []).includes(challenge.id)}
+                      onClaim={() => claimReward(challenge)}
+                    />
                   </div>
                 ))}
               </motion.div>
@@ -295,7 +304,12 @@ const Challenges = ({ onClose }) => {
               <motion.div key="weekly" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 {WEEKLY_CHALLENGES.map((challenge) => (
                   <div key={challenge.id} className="mb-3">
-                    <ChallengeCard challenge={challenge} />
+                    <ChallengeCard
+                      challenge={challenge}
+                      progress={getChallengeProgress(challenge)}
+                      isClaimed={(claimedChallenges ?? []).includes(challenge.id)}
+                      onClaim={() => claimReward(challenge)}
+                    />
                   </div>
                 ))}
               </motion.div>

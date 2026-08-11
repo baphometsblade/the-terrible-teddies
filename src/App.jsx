@@ -38,6 +38,19 @@ const DialogLoader = () => (
   </div>
 );
 
+// Hoisted to module scope for a stable identity. Declared inside App it was a
+// fresh component type on every render, so any toast (which re-renders App)
+// remounted the "← Menu" control mid-screen, replaying its mount and dropping
+// keyboard focus. Takes its navigate handler as a prop.
+const BackButton = ({ onClick }) => (
+  <Button
+    className="absolute top-4 left-4 z-40 bg-night-700 hover:bg-night-600 border border-plush-700/60 text-plush-100"
+    onClick={onClick}
+  >
+    ← Menu
+  </Button>
+);
+
 function App() {
   const { session, loading } = useSupabaseAuth();
   const [currentScreen, setCurrentScreen] = useState('menu');
@@ -226,21 +239,12 @@ function App() {
 
   const navigateTo = (screen) => setCurrentScreen(screen);
 
-  const BackButton = () => (
-    <Button
-      className="absolute top-4 left-4 z-40 bg-night-700 hover:bg-night-600 border border-plush-700/60 text-plush-100"
-      onClick={() => navigateTo('menu')}
-    >
-      ← Menu
-    </Button>
-  );
-
   const renderScreen = () => {
     switch (currentScreen) {
       case 'game':
         return (
           <div className="relative">
-            <BackButton />
+            <BackButton onClick={() => navigateTo('menu')} />
             <GameBoard
               onBackToMenu={() => navigateTo('menu')}
               onOpenShop={() => { navigateTo('menu'); setShowShop(true); }}
@@ -250,7 +254,7 @@ function App() {
       case 'deck':
         return (
           <div className="min-h-screen bg-gradient-to-b from-night-800 via-night-900 to-night-950 p-4 md:p-8">
-            <BackButton />
+            <BackButton onClick={() => navigateTo('menu')} />
             <div className="pt-12">
               <DeckBuilder />
             </div>
@@ -259,7 +263,7 @@ function App() {
       case 'collection':
         return (
           <div className="min-h-screen bg-gradient-to-b from-night-800 via-night-900 to-night-950 p-4 md:p-8">
-            <BackButton />
+            <BackButton onClick={() => navigateTo('menu')} />
             <div className="pt-12">
               <TeddyCollection />
             </div>
