@@ -86,6 +86,17 @@ describe('gem bundle price tables stay in sync', () => {
     }
   });
 
+  it('every server bundle is present in analytics BUNDLE_PRICES', () => {
+    // The reverse of the check above. PurchaseSuccess looks each completed
+    // purchase up in BUNDLE_PRICES for its revenue event; a server bundle
+    // missing from that table logs `?? 0` for a real sale — silent under-
+    // reporting that only this direction catches.
+    const analytics = parseAnalyticsPrices();
+    for (const id of Object.keys(checkout)) {
+      expect(analytics[id], `server bundle id missing from BUNDLE_PRICES: ${id}`).toBeDefined();
+    }
+  });
+
   it('no bundle strictly dominates a pricier one (price curve sanity)', () => {
     // Sort by price ascending; total gems must strictly increase with price —
     // otherwise a cheaper SKU gives more gems and the pricier one is dead

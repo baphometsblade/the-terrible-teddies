@@ -9,7 +9,7 @@ import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
 import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures, getValidTargets } from '../../utils/battleUtils';
 import { pickQuip, OPPONENT_NAME } from '../../utils/teddyTalk';
-import { syncBattleResult } from '../../utils/supabaseClient';
+import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
 import { pressable } from '@/lib/a11y';
@@ -26,6 +26,16 @@ const withHp = (card) => ({ ...card, currentHp: card.defense });
 
 // A full momentum gauge unlocks the Rally payoff.
 const MOMENTUM_MAX = 10;
+
+// Push the player's current level/xp to the server on the leaderboard's
+// experience scale. Fire-and-forget; syncPlayerLevel no-ops when signed out.
+// Reads live store state (not a hook) so it's safe to call from effects without
+// threading level/xp through dependency arrays.
+function syncLevelToServer() {
+  const state = useGameStore.getState();
+  syncPlayerLevel(state.level, state.getLeaderboardExperience())
+    .catch(err => console.error('Level sync failed:', err));
+}
 
 // The game-over overlay mounts conditionally, so it hosts its own useDialog
 // (the hook must live in a component that mounts with the overlay). Gives the
@@ -279,6 +289,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       // Sync to server (fire and forget - don't block UI)
       syncBattleResult(true, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain)
         .catch(err => console.error('Battle sync failed:', err));
+      // recordBattleResult ran addXP synchronously, so the store level/xp are
+      // now current. Push them so the leaderboard's rival rows stop reading as
+      // Level 1 (players.experience is otherwise never written).
+      syncLevelToServer();
 
       // Victory confetti
       confetti({
@@ -313,6 +327,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       // Sync to server (fire and forget - don't block UI)
       syncBattleResult(false, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain)
         .catch(err => console.error('Battle sync failed:', err));
+      // Keep the server level/xp current even on a loss (a loss still grants XP).
+      syncLevelToServer();
 
       toast({
         title: "Defeat!",

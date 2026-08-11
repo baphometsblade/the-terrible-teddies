@@ -259,6 +259,18 @@ export const useGameStore = create(
 
       getXPForNextLevel: () => getXPForLevel(get().level),
 
+      // Cumulative experience in the leaderboard's flat 100-per-level scale, so
+      // a rival row's calculateLevel() (floor(experience/100)+1 in
+      // Leaderboard.jsx) reproduces this player's true store level. The store's
+      // own `xp` is within-level on a 1.5^level curve, which the flat leaderboard
+      // formula can't read directly — writing it raw left every rival computing
+      // Level 1. Capped just under 10000 to match sync_player_level's clamp.
+      getLeaderboardExperience: () => {
+        const { level, xp } = get();
+        const within = Math.min(99, Math.floor((100 * xp) / getXPForLevel(level)));
+        return Math.min(9999, (level - 1) * 100 + within);
+      },
+
       addCoins: (amount) => set((state) => ({ coins: state.coins + amount })),
       spendCoins: (amount) => {
         const state = get();

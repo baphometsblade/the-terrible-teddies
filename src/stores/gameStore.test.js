@@ -15,6 +15,36 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe('leaderboard experience mapping', () => {
+  // Mirrors Leaderboard.jsx's calculateLevel — a rival row derives its level
+  // from players.experience this way. getLeaderboardExperience must round-trip
+  // through it, or every rival reads as Level 1 (the bug: experience was never
+  // written, so it stayed 0 → floor(0/100)+1 → 1).
+  const calculateLevel = (experience) => Math.floor((experience || 0) / 100) + 1;
+
+  it('round-trips the store level through the leaderboard formula', () => {
+    for (const level of [1, 2, 5, 12, 40, 100]) {
+      useGameStore.setState({ level, xp: 0 });
+      const exp = get().getLeaderboardExperience();
+      expect(calculateLevel(exp), `level ${level}`).toBe(level);
+    }
+  });
+
+  it('within-level xp advances experience without crossing a level boundary', () => {
+    useGameStore.setState({ level: 5, xp: 0 });
+    const floor = get().getLeaderboardExperience();
+    useGameStore.setState({ level: 5, xp: 10_000 }); // well past this level's need
+    const high = get().getLeaderboardExperience();
+    expect(high).toBeGreaterThan(floor);
+    expect(calculateLevel(high)).toBe(5); // still Level 5, never bleeds into 6
+  });
+
+  it('never exceeds sync_player_level’s 10000 clamp', () => {
+    useGameStore.setState({ level: 100, xp: 10_000 });
+    expect(get().getLeaderboardExperience()).toBeLessThan(10_000);
+  });
+});
+
 describe('currency primitives', () => {
   it('spendCoins succeeds only when affordable and never goes negative', () => {
     useGameStore.setState({ coins: 100 });
