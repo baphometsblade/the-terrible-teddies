@@ -128,6 +128,11 @@ export const SHOP_ITEMS = [
   { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards, guaranteed legendary!', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
   { id: 'coins_small', name: 'Small Coin Bag', description: '+500 coins', icon: '💰', price: 10, currency: 'gems', type: 'coins', quantity: 500 },
   { id: 'coins_large', name: 'Large Coin Bag', description: '+3000 coins', icon: '💰', price: 50, currency: 'gems', type: 'coins', quantity: 3000 },
+  // Timed booster rather than a lump sum: pays out only as you play, so it
+  // rewards an active day instead of being a flat coin bag (those already
+  // exist above at a guaranteed rate). Priced between the two bags — it beats
+  // coins_small for anyone who plays more than ~10 battles in the window.
+  { id: 'coin_doubler', name: 'Coin Doubler', description: 'Double battle coins for 24h', icon: '🪙', price: 25, currency: 'gems', type: 'booster', durationHours: 24 },
 ];
 
 const getXPForLevel = (level) => Math.floor(100 * Math.pow(1.5, level - 1));
@@ -218,6 +223,12 @@ const initialState = {
   // claimed but granted nothing at all, so a player who paid 500 gems for the
   // premium pass got an empty claim.
   unlockedCosmetics: [],
+  // Coin Doubler booster: epoch ms at which the 2x battle-coin multiplier
+  // lapses, or null when it has never been bought. A timestamp (not a
+  // remaining-duration counter) so the window keeps elapsing while the game is
+  // closed — a "24h" booster that only ticks during play would never expire for
+  // an occasional player.
+  coinDoublerExpiresAt: null,
   // Which season the pass progress belongs to; null until first stamped.
   // When the rolling season advances past this, syncSeason() resets the pass.
   seasonKey: null,
@@ -499,8 +510,14 @@ export const useGameStore = create(
         const newTotalHealing = state.totalHealingDone + healingDone;
         const newTotalBattles = state.totalBattles + 1;
 
-        // Coins earned this battle (used for weekly tracking)
-        const coinsThisBattle = won ? 25 + (newStreak * 5) : 5;
+        // Coins earned this battle (also drives the weekly coins challenge).
+        // The Coin Doubler booster multiplies the payout while its window is
+        // open; the doubled figure is the real grant, so it is what the weekly
+        // total counts too.
+        const baseCoins = won ? 25 + (newStreak * 5) : 5;
+        const doublerActive = typeof state.coinDoublerExpiresAt === 'number'
+          && state.coinDoublerExpiresAt > Date.now();
+        const coinsThisBattle = doublerActive ? baseCoins * 2 : baseCoins;
 
         // Daily stats — auto-reset when the calendar date changes
         const today = new Date().toDateString();
@@ -560,8 +577,11 @@ export const useGameStore = create(
 
         const xpGain = won ? 50 : 20;
         get().addXP(xpGain);
-        if (won) get().addCoins(coinsThisBattle);
-        else get().addCoins(5); // consolation
+        // One grant for both outcomes — coinsThisBattle already encodes the
+        // consolation amount on a loss. Granting a separate hardcoded 5 there
+        // would drift from the figure weekCoinsEarned tracks the moment any
+        // multiplier (like the Coin Doubler) applies.
+        get().addCoins(coinsThisBattle);
 
         get().checkAchievement('first_win', newWins >= 1);
         get().checkAchievement('win_10', newWins >= 10);
@@ -829,8 +849,31 @@ export const useGameStore = create(
           set((s) => ({ coins: s.coins + item.quantity }));
           return { success: true, message: `Got ${item.quantity} coins!` };
         }
+        if (item.type === 'booster') {
+          // Re-buying while one is already running EXTENDS it rather than
+          // restarting from now — otherwise a player who buys a second day
+          // early silently burns the remainder of the one they already paid for.
+          const current = typeof state.coinDoublerExpiresAt === 'number' ? state.coinDoublerExpiresAt : 0;
+          const from = Math.max(Date.now(), current);
+          set({ coinDoublerExpiresAt: from + item.durationHours * 60 * 60 * 1000 });
+          return { success: true, message: `${item.name} active for ${item.durationHours}h!`, type: item.type };
+        }
 
         return { success: false, message: "Unknown item type" };
+      },
+
+      // True while the Coin Doubler window is still open. Read at battle-end and
+      // by the Shop; derived from the timestamp so it self-expires with no timer.
+      isCoinDoublerActive: () => {
+        const expiry = get().coinDoublerExpiresAt;
+        return typeof expiry === 'number' && expiry > Date.now();
+      },
+
+      // Whole hours left on the booster (0 when inactive) — for the Shop badge.
+      coinDoublerHoursLeft: () => {
+        const expiry = get().coinDoublerExpiresAt;
+        if (typeof expiry !== 'number') return 0;
+        return Math.max(0, Math.ceil((expiry - Date.now()) / (60 * 60 * 1000)));
       },
 
       setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
@@ -882,6 +925,12 @@ export const useGameStore = create(
           premium: persisted?.claimedBattlePassRewards?.premium ?? [],
         };
         s.unlockedCosmetics = Array.isArray(persisted?.unlockedCosmetics) ? persisted.unlockedCosmetics : [];
+        // Booster expiry is a nullable timestamp, so it can't join the
+        // numeric-coercion sweep below (that would rewrite every inactive null).
+        // Anything that isn't a finite number means "no booster running".
+        s.coinDoublerExpiresAt = Number.isFinite(persisted?.coinDoublerExpiresAt)
+          ? persisted.coinDoublerExpiresAt
+          : null;
         s.claimedChallenges = Array.isArray(persisted?.claimedChallenges) ? persisted.claimedChallenges : [];
         // Pre-rollover saves have no season stamp — null means "stamp without
         // resetting" on the first syncSeason(), grandfathering their progress.

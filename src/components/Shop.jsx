@@ -77,7 +77,14 @@ const GemBundle = ({ bundle, processing, onBuy }) => (
 );
 
 const Shop = ({ onClose }) => {
-  const { coins, gems, cardPacks, buyShopItem } = useGameStore();
+  const { coins, gems, cardPacks, buyShopItem, coinDoublerExpiresAt } = useGameStore();
+  // Derived here rather than via the store selectors so the card re-renders the
+  // moment the expiry changes (the component subscribes to the whole store).
+  const doubler = SHOP_ITEMS.find(i => i.id === 'coin_doubler');
+  const doublerActive = typeof coinDoublerExpiresAt === 'number' && coinDoublerExpiresAt > Date.now();
+  const doublerHoursLeft = doublerActive
+    ? Math.max(1, Math.ceil((coinDoublerExpiresAt - Date.now()) / 3_600_000))
+    : 0;
   const { session } = useSupabaseAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('packs');
@@ -248,12 +255,28 @@ const Shop = ({ onClose }) => {
                       </Button>
                     </div>
                   </div>
-                  <div className="bg-gradient-to-br from-emerald-800/25 to-teal-900/25 border border-emerald-500/30 rounded-xl p-4 opacity-60">
+                  <div className={`bg-gradient-to-br from-emerald-800/25 to-teal-900/25 border rounded-xl p-4 ${
+                    doublerActive ? 'border-emerald-400' : 'border-emerald-500/30'
+                  }`}>
                     <h4 className="font-bold text-white mb-2">🪙 Coin Doubler</h4>
-                    <p className="text-white/60 text-sm mb-3">Double coins from battles for 24h!</p>
+                    <p className="text-white/60 text-sm mb-3">
+                      {doublerActive
+                        ? `Active — every battle pays double for ${doublerHoursLeft} more hour${doublerHoursLeft === 1 ? '' : 's'}.`
+                        : `Double coins from every battle for ${doubler.durationHours}h!`}
+                    </p>
                     <div className="flex justify-between items-center">
-                      <span className="text-emerald-300">Worth 500+ coins</span>
-                      <Button size="sm" disabled className="bg-emerald-700/50 text-white/70 cursor-not-allowed">Coming Soon</Button>
+                      <span className="text-emerald-300">
+                        {doublerActive ? `⏳ ${doublerHoursLeft}h left` : 'Pays out as you play'}
+                      </span>
+                      <Button
+                        size="sm"
+                        onClick={() => handleBuyItem(doubler)}
+                        disabled={gems < doubler.price}
+                        aria-label={`Buy Coin Doubler for ${doubler.price} gems`}
+                        className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50"
+                      >
+                        💎 {doubler.price}{doublerActive ? ' · Extend' : ''}
+                      </Button>
                     </div>
                   </div>
                 </div>

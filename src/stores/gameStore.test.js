@@ -533,6 +533,91 @@ describe('buyShopItem', () => {
   });
 });
 
+describe('Coin Doubler booster', () => {
+  const HOUR = 60 * 60 * 1000;
+  const doubler = SHOP_ITEMS.find((i) => i.id === 'coin_doubler');
+
+  it('is a real purchasable item, not a placeholder', () => {
+    // It shipped as an advertised card behind a disabled "Coming Soon" button.
+    expect(doubler).toBeDefined();
+    expect(doubler.currency).toBe('gems');
+    expect(doubler.durationHours).toBeGreaterThan(0);
+  });
+
+  it('refuses the purchase and changes nothing when gems are short', () => {
+    useGameStore.setState({ gems: doubler.price - 1, coinDoublerExpiresAt: null });
+    expect(get().buyShopItem('coin_doubler').success).toBe(false);
+    expect(get().gems).toBe(doubler.price - 1);
+    expect(get().coinDoublerExpiresAt).toBeNull();
+    expect(get().isCoinDoublerActive()).toBe(false);
+  });
+
+  it('debits gems and opens the window on purchase', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-01T12:00:00Z'));
+    useGameStore.setState({ gems: 100, coinDoublerExpiresAt: null });
+
+    expect(get().buyShopItem('coin_doubler').success).toBe(true);
+    expect(get().gems).toBe(100 - doubler.price);
+    expect(get().isCoinDoublerActive()).toBe(true);
+    expect(get().coinDoublerExpiresAt).toBe(Date.now() + doubler.durationHours * HOUR);
+  });
+
+  it('doubles battle coins while active, and stops when the window lapses', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-01T12:00:00Z'));
+    // Assert on weekCoinsEarned: it accumulates exactly the battle payout,
+    // whereas the raw coins balance also absorbs one-off achievement and
+    // level-up bonuses that would mask the multiplier.
+    const payoutOf = (opts) => {
+      useGameStore.setState({ weekCoinsEarned: 0, currentWinStreak: 0, weeklyStatsDate: 'x', ...opts });
+      get().recordBattleResult(true, 0, 0, 30, 1);
+      return get().weekCoinsEarned;
+    };
+
+    // Base rate for a first win: 25 + streak(1)*5 = 30.
+    expect(payoutOf({ coinDoublerExpiresAt: null })).toBe(30);
+    // Same battle shape with the booster running pays double.
+    expect(payoutOf({ coinDoublerExpiresAt: Date.now() + 2 * HOUR })).toBe(60);
+
+    // Past the expiry it is inert again — no timer, purely timestamp-driven.
+    const expiry = Date.now() + 2 * HOUR;
+    vi.setSystemTime(new Date('2026-06-02T12:00:00Z'));
+    expect(payoutOf({ coinDoublerExpiresAt: expiry })).toBe(30);
+    expect(get().isCoinDoublerActive()).toBe(false);
+  });
+
+  it('keeps the weekly coin total equal to what was actually granted', () => {
+    // weekCoinsEarned drives a weekly challenge, so it must track the real
+    // payout. A hardcoded consolation grant used to sit beside the tracked
+    // figure and would drift the moment any multiplier applied.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-03T12:00:00Z'));
+    useGameStore.setState({
+      coins: 0, weekCoinsEarned: 0, weeklyStatsDate: 'prior-week',
+      coinDoublerExpiresAt: Date.now() + HOUR,
+    });
+    get().recordBattleResult(false, 0, 0, 0, 1); // a LOSS: consolation payout
+    expect(get().coins).toBe(get().weekCoinsEarned);
+    expect(get().coins).toBe(10); // 5 consolation, doubled
+  });
+
+  it('extends an already-running booster instead of truncating it', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-01T12:00:00Z'));
+    useGameStore.setState({ gems: 500, coinDoublerExpiresAt: null });
+    get().buyShopItem('coin_doubler');
+    const afterFirst = get().coinDoublerExpiresAt;
+
+    // Buying again a hour later must ADD a full window to the remaining time,
+    // not restart from now (which would burn the hours already paid for).
+    vi.setSystemTime(new Date('2026-06-01T13:00:00Z'));
+    get().buyShopItem('coin_doubler');
+    expect(get().coinDoublerExpiresAt).toBe(afterFirst + doubler.durationHours * HOUR);
+    expect(get().coinDoublerHoursLeft()).toBe(2 * doubler.durationHours - 1);
+  });
+});
+
 describe('persist migrate (returning-player safety)', () => {
   async function rehydrateWith(persistedState, version = 2) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: persistedState, version }));

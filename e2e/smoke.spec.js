@@ -147,6 +147,31 @@ test('shop opens, shows gem bundles with prices, and closes on Escape', async ({
   await expect(dialog).toHaveCount(0, SLOW);
 });
 
+test('the Coin Doubler is buyable and then shows as active', async ({ page }) => {
+  // It shipped as an advertised card behind a permanently disabled "Coming
+  // Soon" button — a product players could read about but never buy.
+  await page.getByRole('button', { name: 'Shop', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Shop' });
+  await expect(dialog).toBeVisible(SLOW);
+  await dialog.getByRole('button', { name: 'Special Offers' }).click();
+
+  const buy = dialog.getByRole('button', { name: /Buy Coin Doubler for \d+ gems/ });
+  await expect(buy).toBeVisible(SLOW);
+  await expect(buy).toBeEnabled(); // the seed has 300 gems
+  await buy.click();
+
+  // The card flips to the active state with time remaining, and the button
+  // becomes an extend rather than a fresh buy.
+  await expect(dialog.getByText(/h left/)).toBeVisible(SLOW);
+  await expect(buy).toContainText('Extend');
+
+  // The entitlement is persisted, so it survives a reload mid-window.
+  const expiry = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('terrible-teddies-storage')).state.coinDoublerExpiresAt);
+  expect(typeof expiry).toBe('number');
+  expect(expiry).toBeGreaterThan(Date.now());
+});
+
 test('buying a gem bundle starts Stripe checkout for that exact bundle', async ({ page }) => {
   // Guards the revenue path end to end (button -> edge function). Intercept the
   // create-checkout-session call, capture the bundle id it was invoked with, and

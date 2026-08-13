@@ -163,9 +163,13 @@ const Leaderboard = ({ onClose }) => {
 
         {/* Tabs */}
         <div className="flex border-b border-white/10">
+          {/* No 'Friends' tab: it rendered a "Coming Soon!" panel with a
+              disabled "Connect Social Account" button, promising social login
+              that has no implementation behind it. A tab that costs a click and
+              delivers nothing is worse than no tab — restore it alongside the
+              real friendships/RLS work, not before. */}
           {[
             { id: 'global', label: 'Global', icon: '🌍' },
-            { id: 'friends', label: 'Friends', icon: '👥' },
             { id: 'rewards', label: 'Rewards', icon: '🎁' },
           ].map(tab => (
             <button
@@ -235,19 +239,6 @@ const Leaderboard = ({ onClose }) => {
                 {!loading && !error && leaderboardData.map(player => (
                   <LeaderboardRow key={player.rank} player={player} />
                 ))}
-              </motion.div>
-            )}
-
-            {activeTab === 'friends' && (
-              <motion.div key="friends" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">👥</div>
-                  <h3 className="text-white text-xl font-bold mb-2">Coming Soon!</h3>
-                  <p className="text-white/50">Add friends to compete against them directly!</p>
-                  <Button disabled className="mt-4 bg-purple-600/50 text-white/70 cursor-not-allowed">
-                    Connect Social Account
-                  </Button>
-                </div>
               </motion.div>
             )}
 
