@@ -592,6 +592,33 @@ describe('resetProgress keeps the server-gem high-water mark', () => {
     expect(get().totalWins).toBe(0);
     expect(get().level).toBe(1);
   });
+
+  it('keeps the save bound to the current account (does not null ownerUserId)', () => {
+    // Nulling the owner would leave an "unowned" save carrying this player's
+    // high-water mark, which the next different account would ADOPT (keep)
+    // rather than wipe.
+    const A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    useGameStore.setState({ ownerUserId: A });
+    get().resetProgress();
+    expect(get().ownerUserId).toBe(A);
+  });
+
+  it("a different account after a reset wipes the mark, so its first purchase credits in full", () => {
+    // The regression: reset nulled ownerUserId while keeping lastSyncedServerGems,
+    // so account B adopted A's mark and B's real purchase credited 0.
+    const A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+    get().bindToUser(A);
+    get().reconcileServerGems(500); // A's mark is now 500
+    get().resetProgress();
+
+    // B signs in on the same device: different owner -> wipe branch -> mark zeroed.
+    get().bindToUser(B);
+    expect(get().lastSyncedServerGems).toBe(0);
+    const before = get().gems;
+    get().reconcileServerGems(500); // B's own $9.99 bundle -> server total 500
+    expect(get().gems).toBe(before + 500); // credited in full, not swallowed
+  });
 });
 
 describe('purchaseBattlePassPremium is atomic', () => {

@@ -841,6 +841,16 @@ export const useGameStore = create(
       // un-happen.
       resetProgress: () => set({
         ...initialState,
+        // Keep the save bound to the CURRENT account. Spreading initialState
+        // would null ownerUserId, leaving an "unowned" save that still carries
+        // this player's lastSyncedServerGems mark — the next DIFFERENT account to
+        // sign in would then hit bindToUser's null-owner "adopt" branch (which
+        // keeps state) instead of the wipe branch, inheriting the stale mark. A
+        // brand-new buyer (no user_gems row → login reconcile is skipped) whose
+        // purchase total lands at or below that mark would then be credited 0
+        // gems: pay real money, receive nothing. Preserving the owner makes the
+        // next different sign-in take the wiping branch that zeroes the mark.
+        ownerUserId: get().ownerUserId,
         lastSyncedServerGems: get().lastSyncedServerGems,
         pendingAchievements: [],
       }),
