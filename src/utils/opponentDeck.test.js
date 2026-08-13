@@ -99,8 +99,25 @@ describe('buildOpponentDeck', () => {
       const mod = expectedMods[difficulty];
       for (const card of cards) {
         const baseline = baselineById.get(card.id);
-        expect(card.attack).toBe(baseline.attack + mod.attack);
-        expect(card.defense).toBe(baseline.defense + mod.defense);
+        // The delta is clamped so a modifier can't push a stat out of range:
+        // attack floors at 0, defense (the HP pool) at 1.
+        expect(card.attack).toBe(Math.max(0, baseline.attack + mod.attack));
+        expect(card.defense).toBe(Math.max(1, baseline.defense + mod.defense));
+      }
+    }
+  });
+
+  it('never fields a creature with defense < 1 (dead on arrival) on any difficulty', () => {
+    // easy's defenseMod -1 unclamped turned any common/uncommon def-1 card into a
+    // 0-HP creature destroyed by any hit — including a 0-damage one — the moment
+    // it entered play. Sweep many seeds so the RNG surfaces those cards.
+    for (let i = 0; i < 200; i++) {
+      for (const difficulty of DIFFICULTIES) {
+        const { cards } = buildOpponentDeck(difficulty, mulberry32(i * 17 + 5));
+        for (const card of cards) {
+          expect(card.defense, `${difficulty} #${card.id} ${card.name}`).toBeGreaterThanOrEqual(1);
+          expect(card.attack, `${difficulty} #${card.id} ${card.name}`).toBeGreaterThanOrEqual(0);
+        }
       }
     }
   });

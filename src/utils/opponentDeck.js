@@ -127,8 +127,13 @@ export const buildOpponentDeck = (difficulty, rng = Math.random) => {
   // above. Copies every card — ALL_CARDS and OPPONENT_GOONS are never mutated.
   const withModsAndInstance = combined.map((card, idx) => ({
     ...card,
-    attack: card.attack + attackMod,
-    defense: card.defense + defenseMod,
+    // Clamp the difficulty deltas: attack floors at 0, defense at 1. defense is
+    // the creature's HP pool, so an unclamped easy-mode -1 turned any def-1 card
+    // into a 0-HP creature that enters play already dead (destroyed by any hit,
+    // including a 0-damage one) — the same "dead on arrival" state cardSchema
+    // forbids for the catalog.
+    attack: Math.max(0, card.attack + attackMod),
+    defense: Math.max(1, card.defense + defenseMod),
     instanceId: `o-${card.id}-${idx}`,
   }));
 
