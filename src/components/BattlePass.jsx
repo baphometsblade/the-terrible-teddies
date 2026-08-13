@@ -92,6 +92,67 @@ export const BATTLE_PASS_REWARDS = [
 
 const PREMIUM_PASS_PRICE = 500; // gems
 
+// The Unlock-Premium confirmation is a modal over the Battle Pass dialog, so it
+// hosts its own useDialog: it pushes onto the dialog stack (so it owns Escape and
+// its own focus trap), moves focus into itself, and carries role=dialog/aria-modal.
+// Without it, the outer BattlePass trap treated the 50-tile reward track and the
+// confirm buttons as one flat focus set — Tab walked the whole background behind
+// the overlay before reaching Purchase/Cancel. Matches SaveDeckDialog / CardDetailDialog.
+const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }) => {
+  const ref = useDialog(onClose);
+  return (
+    <motion.div
+      ref={ref}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Unlock Premium Pass"
+      initial={{ scale: 0.9 }}
+      animate={{ scale: 1 }}
+      exit={{ scale: 0.9 }}
+      className="relative bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-6 max-w-md w-full border-2 border-brass-400 worn"
+      onClick={e => e.stopPropagation()}
+    >
+      <h3 className="text-2xl font-display font-bold text-white text-center mb-4">⭐ Unlock Premium Pass</h3>
+
+      <div className="bg-black/30 rounded-xl p-4 mb-4">
+        <div className="text-white font-semibold mb-2">Premium Pass includes:</div>
+        <ul className="text-white/80 text-sm space-y-1">
+          <li>✓ Exclusive legendary cards</li>
+          <li>✓ Premium cosmetic rewards</li>
+          <li>✓ Bonus gems and coins</li>
+          <li>✓ Special card borders & emotes</li>
+          <li>✓ All {rewardCount} premium tier rewards</li>
+        </ul>
+      </div>
+
+      <div className="text-center mb-4">
+        <div className="text-white/50 text-sm">Price</div>
+        <div className="text-3xl font-bold text-brass-300 flex items-center justify-center gap-2">
+          💎 {price}
+        </div>
+        <div className="text-white/50 text-sm">You have: {gems} gems</div>
+      </div>
+
+      <div className="flex gap-3">
+        <Button
+          onClick={onPurchase}
+          disabled={gems < price}
+          className="flex-1 bg-gradient-to-r from-brass-400 to-brass-500 text-night-950 font-bold hover:from-brass-300 hover:to-brass-400"
+        >
+          Purchase
+        </Button>
+        <Button
+          onClick={onClose}
+          variant="outline"
+          className="flex-1 text-white border-white/30"
+        >
+          Cancel
+        </Button>
+      </div>
+    </motion.div>
+  );
+};
+
 const BattlePass = ({ onClose }) => {
   const {
     gems, addCoins, addGems, addCardPack, addCard, unlockCosmetic, seasonXP,
@@ -338,51 +399,13 @@ const BattlePass = ({ onClose }) => {
             className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
             onClick={() => setShowPurchaseConfirm(false)}
           >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="relative bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-6 max-w-md w-full border-2 border-brass-400 worn"
-              onClick={e => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-display font-bold text-white text-center mb-4">⭐ Unlock Premium Pass</h3>
-              
-              <div className="bg-black/30 rounded-xl p-4 mb-4">
-                <div className="text-white font-semibold mb-2">Premium Pass includes:</div>
-                <ul className="text-white/80 text-sm space-y-1">
-                  <li>✓ Exclusive legendary cards</li>
-                  <li>✓ Premium cosmetic rewards</li>
-                  <li>✓ Bonus gems and coins</li>
-                  <li>✓ Special card borders & emotes</li>
-                  <li>✓ All {BATTLE_PASS_REWARDS.length} premium tier rewards</li>
-                </ul>
-              </div>
-
-              <div className="text-center mb-4">
-                <div className="text-white/50 text-sm">Price</div>
-                <div className="text-3xl font-bold text-brass-300 flex items-center justify-center gap-2">
-                  💎 {PREMIUM_PASS_PRICE}
-                </div>
-                <div className="text-white/50 text-sm">You have: {gems} gems</div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={handlePurchasePremium}
-                  disabled={gems < PREMIUM_PASS_PRICE}
-                  className="flex-1 bg-gradient-to-r from-brass-400 to-brass-500 text-night-950 font-bold hover:from-brass-300 hover:to-brass-400"
-                >
-                  Purchase
-                </Button>
-                <Button
-                  onClick={() => setShowPurchaseConfirm(false)}
-                  variant="outline"
-                  className="flex-1 text-white border-white/30"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </motion.div>
+            <PurchaseConfirmDialog
+              gems={gems}
+              price={PREMIUM_PASS_PRICE}
+              rewardCount={BATTLE_PASS_REWARDS.length}
+              onPurchase={handlePurchasePremium}
+              onClose={() => setShowPurchaseConfirm(false)}
+            />
           </motion.div>
         )}
       </AnimatePresence>

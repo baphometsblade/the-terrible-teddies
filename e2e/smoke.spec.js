@@ -345,12 +345,19 @@ test('Escape closes only the innermost layer of nested dialogs', async ({ page }
   const pass = page.getByRole('dialog', { name: /battle pass/i });
   await expect(pass).toBeVisible(SLOW);
 
-  // Open the nested premium purchase confirmation.
+  // Open the nested premium purchase confirmation — now a real dialog with its
+  // own role/aria-modal and focus containment (was a role-less overlay that let
+  // Tab walk the reward track behind it).
   await pass.getByRole('button', { name: /unlock premium/i }).click();
-  await expect(page.getByText(/500/).first()).toBeVisible();
+  const confirm = page.getByRole('dialog', { name: /unlock premium pass/i });
+  await expect(confirm).toBeVisible();
+  // Focus is moved INTO the confirm (which enabled control is first depends on
+  // the seed's gem balance, so assert containment, not a specific button).
+  await expect.poll(() => confirm.evaluate((el) => el.contains(document.activeElement))).toBe(true);
 
   // First Escape dismisses the confirm overlay but keeps the pass open…
   await page.keyboard.press('Escape');
+  await expect(confirm).toHaveCount(0);
   await expect(pass).toBeVisible();
   // …second Escape closes the pass itself.
   await page.keyboard.press('Escape');
