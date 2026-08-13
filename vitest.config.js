@@ -10,6 +10,10 @@ export default defineConfig({
   test: {
     // jsdom gives the store's persist middleware a real localStorage to write to.
     environment: 'jsdom',
+    // ...except under Node >= 26, whose built-in localStorage global shadows
+    // jsdom's and resolves to undefined without --localstorage-file. See
+    // vitest.setup.js.
+    setupFiles: ['./vitest.setup.js'],
     globals: true,
     include: ['src/**/*.{test,spec}.{js,jsx}'],
     restoreMocks: true,
