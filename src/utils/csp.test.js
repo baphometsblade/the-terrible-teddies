@@ -8,6 +8,19 @@ import { readFileSync } from 'fs';
 import { createHash } from 'crypto';
 import { resolve } from 'path';
 
+// Read a repo file with line endings normalised to LF.
+//
+// This matters for the hash below. Vercel builds from a fresh git checkout on
+// Linux, so the index.html that actually ships has LF endings and the digest
+// in vercel.json is the LF one. But git's core.autocrlf=true — the default on
+// Windows — rewrites index.html to CRLF in the working tree, which changes the
+// bytes and therefore the SHA-256. Hashing the raw file made this test fail on
+// every Windows checkout while production was perfectly fine. Normalising is a
+// no-op on Linux and CI, and makes the test platform-independent.
+function readRepoText(relPath) {
+  return readFileSync(resolve(process.cwd(), relPath), 'utf8').replace(/\r\n/g, '\n');
+}
+
 function inlineScriptContent(html) {
   const re = /<script((?:\s[^>]*)?)>([\s\S]*?)<\/script>/g;
   const blocks = [];
@@ -22,7 +35,7 @@ function inlineScriptContent(html) {
 
 describe('CSP script-src hash matches the actual inline script in index.html', () => {
   it('the computed sha256 of the inline script is present in vercel.json\'s CSP', () => {
-    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    const html = readRepoText('index.html');
     const content = inlineScriptContent(html);
     const hash = createHash('sha256').update(content, 'utf8').digest('base64');
 
@@ -82,7 +95,7 @@ describe('CSP script-src hash matches the actual inline script in index.html', (
     // present in the initial parse, not injected via innerHTML after the
     // fact in every browser). Keep the fallback UI's interactivity wired
     // through addEventListener + CSS classes, not onclick=/style= strings.
-    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    const html = readRepoText('index.html');
     // Require the actual attribute shape (name=" or name=') so this doesn't
     // false-positive on a comment merely discussing onclick=/style= by name.
     expect(html).not.toMatch(/\bonclick\s*=\s*["']/i);
@@ -97,7 +110,7 @@ it('the boot-failure timeout does not kill the mount poll', () => {
     // so a late mount still triggers removeLoader(). This asserts the ONLY
     // clearInterval(poll) is the one inside the poll's own success branch, not
     // inside the setTimeout handler.
-    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    const html = readRepoText('index.html');
     const script = inlineScriptContent(html);
     // Anchor on the poll's own "}, 100);" so the capture starts at the 10s
     // setTimeout, not an earlier one (a loose match would swallow the poll body
