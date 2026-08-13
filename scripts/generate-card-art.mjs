@@ -66,10 +66,29 @@ const GOONS = [
 
 // Kept terse on purpose: CLIP truncates at 77 tokens, so subject identity
 // and the raunchy dive-bar mood must land before any tail gets clipped.
-const MOOD = 'warm dive-bar bokeh, amber light, hyper realistic, hyper detailed';
+// "hyper realistic" dropped as redundant — every prompt already opens with
+// "RAW photo". Small saving, but tokens here are not free: see the overrun
+// note above CARD_ART_OVERLONG below.
+const MOOD = 'warm dive-bar bokeh, amber light, hyper detailed';
+
+// Measured with CLIP's own tokenizer, these 10 cards compose to 78-81 tokens
+// and are silently truncated at 77. What gets dropped is the tail of `scene`
+// — the end of the sentence, which is exactly where the staging and the
+// visual punchline sit. Nothing warns you; the tokenizer discards the
+// overflow and renders the rest.
+//
+// Left as data rather than auto-trimmed: the right fix is to reword each
+// `scene` in src/data/cardArt.js by hand, since mechanical truncation cuts
+// mid-phrase and loses the joke just as surely.
+export const CARD_ART_OVERLONG = [6, 19, 20, 21, 53, 55, 58, 60, 66, 68];
 const NEGATIVE =
   'cartoon, illustration, drawing, flat colors, cel shading, text, letters, watermark, ' +
   'logo, signature, human, person, extra limbs, deformed, blurry, frame, border';
+// NB: this list is inert on the default path. Negative prompts only take
+// effect when classifier-free guidance is on, and turbo renders at
+// SD_GUIDANCE=0.0 — so nothing here is actually constraining the shipped art.
+// It starts working the moment SD_GUIDANCE is raised; see the note on
+// CARD_ART_OVERLONG and the warning below about raising it.
 
 // Raunchy R-rated-comedy art direction: worn plush bears living badly.
 //

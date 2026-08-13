@@ -21,6 +21,16 @@ Env:
             Raise it (e.g. 2.0, with SD_STEPS=8) when prompt adherence
             matters more than speed — that also switches the negative
             prompt on.
+            MEASURED, so you don't repeat it: rendering the current
+            cardArt.js at SD_GUIDANCE=6.5 / SD_STEPS=30 on SDXL base is
+            clearly WORSE than the turbo default, not better. High guidance
+            amplifies every token, so "raunchy NSFW" and the character
+            names start to dominate — #12 came back a cartoon comic-panel
+            collage and #66 rendered a human, both of which the negative
+            prompt nominally forbids. The prompts in cardArt.js are written
+            and tuned for guidance 0.0; the render config is not separable
+            from the prompt style. If you raise guidance, expect to rewrite
+            the prompts to match, and re-check a sample before a full pass.
   SD_DEVICE force cuda | mps | cpu (default: auto-detect, GPU preferred)
   SD_WIDTH  render width in px (default 768)
   SD_HEIGHT render height in px (default 1024)
@@ -40,6 +50,17 @@ import tempfile
 import time
 import urllib.request
 import webbrowser
+
+# Windows consoles default to cp1252, which cannot encode the check/cross
+# glyphs in the per-card progress lines below. Without this the *success*
+# print raises UnicodeEncodeError inside the per-card try block — so a good
+# render is misreported as a failure, and the except handler then dies
+# printing its own glyph, taking the whole batch down after card one.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):  # non-reconfigurable stream (pipe, IDE)
+        pass
 
 STATUS_PATH = os.path.join(tempfile.gettempdir(), "card-art-status.json")
 
