@@ -188,6 +188,7 @@ const initialState = {
   // Weekly challenge stats (reset each Monday)
   weekWins: 0,
   weekCoinsEarned: 0,
+  weekStreak: 0,      // running win streak scoped to THIS week (resets Mondays / on a loss)
   weekBestStreak: 0,
   weekNewCards: 0,
   weeklyStatsDate: null,
@@ -515,9 +516,14 @@ export const useGameStore = create(
         const newWeekWins = (weeklyReset ? 0 : state.weekWins) + (won ? 1 : 0);
         const newWeekCoins = (weeklyReset ? 0 : state.weekCoinsEarned) + coinsThisBattle;
         // Best streak achieved *this week* — weekly challenges must measure
-        // weekly progress, not the all-time bestWinStreak (which would make the
-        // weekly streak challenge permanently complete).
-        const newWeekBestStreak = Math.max(weeklyReset ? 0 : state.weekBestStreak, newStreak);
+        // weekly progress. Track a week-scoped running streak (resets on the
+        // Monday rollover and on a loss) rather than folding in the all-time
+        // currentWinStreak: a streak carried over from last week would otherwise
+        // satisfy the weekly streak challenge after a single win, making its pack
+        // rewards re-claimable every week for one game.
+        const priorWeekStreak = weeklyReset ? 0 : (state.weekStreak ?? 0);
+        const newWeekStreak = won ? priorWeekStreak + 1 : 0;
+        const newWeekBestStreak = Math.max(weeklyReset ? 0 : state.weekBestStreak, newWeekStreak);
 
         // Clear claimed challenges for any period that just rolled over, so the
         // same daily/weekly challenge ids become claimable again. Challenge ids
@@ -544,6 +550,7 @@ export const useGameStore = create(
           // Weekly
           weekWins: newWeekWins,
           weekCoinsEarned: newWeekCoins,
+          weekStreak: newWeekStreak,
           weekBestStreak: newWeekBestStreak,
           weekNewCards: weeklyReset ? 0 : state.weekNewCards,
           weeklyStatsDate: weekKey,
@@ -643,7 +650,7 @@ export const useGameStore = create(
         if (weeklyReset) {
           claimed = claimed.filter(id => !id.startsWith('w'));
           Object.assign(patch, {
-            weekWins: 0, weekCoinsEarned: 0, weekBestStreak: 0, weekNewCards: 0,
+            weekWins: 0, weekCoinsEarned: 0, weekStreak: 0, weekBestStreak: 0, weekNewCards: 0,
             weeklyStatsDate: weekKey,
           });
         } else if (weeklyStamp) {
@@ -898,7 +905,7 @@ export const useGameStore = create(
         }
 
         for (const k of ['coins', 'gems', 'xp', 'level', 'cardPacks', 'premiumPacks',
-          'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'weekBestStreak', 'weekNewCards',
+          'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'weekStreak', 'weekBestStreak', 'weekNewCards',
           'consecutiveLogins', 'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak',
           'lastSyncedServerGems']) {
           if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];

@@ -380,6 +380,32 @@ describe('weekly challenge stats are week-scoped (not lifetime)', () => {
     expect(get().weekBestStreak).toBe(1);
   });
 
+  it('does not fold a streak carried from a prior week into weekBestStreak', () => {
+    // The exploit: weekBestStreak was Math.max(prev, currentWinStreak+1), and
+    // currentWinStreak is the ALL-TIME cross-week streak. A player entering a new
+    // week mid-streak would satisfy the w4/w5 streak challenges (targets 3/5)
+    // after a single win, re-claiming their pack rewards weekly for one game.
+    useGameStore.setState({
+      currentWinStreak: 6,        // long streak carried from last week
+      weekStreak: 0, weekBestStreak: 0,
+      weeklyStatsDate: 'prior-week', // != this week's key -> weeklyReset fires
+    });
+    get().recordBattleResult(true, 0, 0, 30, 1); // one win this week
+    expect(get().currentWinStreak).toBe(7); // all-time streak still advances
+    expect(get().weekBestStreak).toBe(1);   // but the WEEKLY best is 1, not 7
+  });
+
+  it('resets the weekly streak on a loss but keeps the weekly best', () => {
+    useGameStore.setState({ weekStreak: 0, weekBestStreak: 0, weeklyStatsDate: 'prior-week' });
+    get().recordBattleResult(true, 0, 0, 30, 1);
+    get().recordBattleResult(true, 0, 0, 30, 1);
+    expect(get().weekStreak).toBe(2);
+    expect(get().weekBestStreak).toBe(2);
+    get().recordBattleResult(false, 0, 0, 0, 1); // a loss
+    expect(get().weekStreak).toBe(0);            // running streak resets
+    expect(get().weekBestStreak).toBe(2);        // but the best this week stands
+  });
+
   it('weekNewCards counts only cards added this week, not the whole collection', () => {
     useGameStore.setState({ ownedCards: [1, 2, 3, 4, 5], weekNewCards: 0 });
     expect(get().weekNewCards).toBe(0);
