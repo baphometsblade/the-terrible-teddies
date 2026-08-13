@@ -73,6 +73,33 @@ test('abandoning a battle mid-game records a loss and resets the win streak', as
   expect(state.currentWinStreak).toBe(0);
 });
 
+test('reloading/closing mid-battle also records the loss (pagehide), not just "← Menu"', async ({ page }) => {
+  // The unmount-only safeguard is bypassed by F5/tab-close: React cleanups don't
+  // run on a full page unload, and battle state isn't persisted. A pagehide
+  // handler must record the loss. We fire pagehide directly and read the
+  // synchronously-persisted store — a real reload would re-run the seed init
+  // script and clobber the write, hiding the very thing under test.
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.currentWinStreak = 3;
+    stored.state.totalLosses = 0;
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  // Simulate the tab being unloaded (reload/close) without actually navigating.
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('terrible-teddies-storage')).state);
+  expect(state.totalLosses).toBe(1);
+  expect(state.currentWinStreak).toBe(0);
+});
+
 test('shop opens, shows gem bundles with prices, and closes on Escape', async ({ page }) => {
   await page.getByRole('button', { name: 'Shop', exact: true }).click();
 

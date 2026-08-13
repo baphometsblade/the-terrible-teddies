@@ -181,17 +181,30 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const abandonHandledRef = useRef(false);
   useEffect(() => {
     // Empty deps + reading the action through getState() means this effect never
-    // re-runs, so its cleanup fires only on a genuine unmount — never mid-battle
+    // re-runs, so it only tears down on a genuine unmount — never mid-battle
     // because a dependency changed.
-    return () => {
+    const recordAbandonment = () => {
       const { gameOver: over, deckReady: ready, playerHealth: hp } = liveRef.current;
       if (over || !ready || abandonHandledRef.current) return;
       abandonHandledRef.current = true;
       const stats = battleStatsRef.current;
+      // The local record persists synchronously through the store — that is what
+      // closes the streak exploit even mid-unload. The server syncs are best-effort.
       useGameStore.getState().recordBattleResult(false, stats.damageDealt, stats.healingDone, hp, stats.cardsPlayed);
       syncBattleResult(false, stats.damageDealt, stats.healingDone, 5)
         .catch(err => console.error('Abandon sync failed:', err));
       syncLevelToServer();
+    };
+    // pagehide covers reload / tab-close / cross-document navigation — the cases
+    // where React effect cleanups do NOT run, so the unmount path alone would
+    // miss them and a losing game could be dropped (F5) with the streak intact.
+    // Battle state is component-local, not persisted, so nothing else records it.
+    window.addEventListener('pagehide', recordAbandonment);
+    // Unmount — e.g. the "← Menu" SPA button, which does NOT fire pagehide.
+    // abandonHandledRef makes the two paths mutually idempotent.
+    return () => {
+      window.removeEventListener('pagehide', recordAbandonment);
+      recordAbandonment();
     };
   }, []);
 
@@ -716,6 +729,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // Pass activeOpponentField so a 'swarm' card in the opponent's hand is
     // budgeted at its discounted cost under the same rule the player follows.
     const { plays, remainingDeck } = chooseOpponentPlays(opponentDeck, opponentField.length, energyBudget, 3, activeOpponentField);
+    // Creatures the opponent plays THIS turn. They can't attack (summoning-sick),
+    // but a 'royal' among them must still project its aura to the opponent's
+    // other attackers this turn — mirroring the player, whose just-played royal
+    // buffs immediately. The attack loop reads this for aura only.
+    let playedThisTurn = [];
     if (plays.length > 0) {
       setOpponentDeck(remainingDeck);
       const played = plays.map(c => ({
@@ -723,6 +741,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         summoningSick: true,
         ...(c.ability === 'stealth' ? { stealthActive: true } : {}),
       }));
+      playedThisTurn = played;
       setOpponentField(prev => [...prev, ...played]);
       playSound('cardPlay');
       plays.forEach(c => addToBattleLog(`${OPPONENT_NAME} slammed down ${c.name}`));
@@ -744,6 +763,12 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       let killedPlayerCreature = false;
       const logs = [];
 
+      // Aura field for royal: the pre-existing board PLUS what was just played,
+      // so a royal the opponent dropped this turn buffs its other attackers.
+      // Attackers still come only from activeOpponentField (played cards are
+      // summoning-sick and filtered by canAttack).
+      const auraField = [...activeOpponentField, ...playedThisTurn];
+
       activeOpponentField.forEach(card => {
         if (!canAttack(card)) return; // summoning-sick, spent, or not a creature
 
@@ -755,9 +780,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           // player's attackTarget — it survives (fury fires) or dies with trample
           // overkill carrying through to the player's face.
           const target = chooseAttackTarget(targets, card);
-          // Pass activeOpponentField so a 'royal' ally on the opponent's own
-          // field buffs this attacker's hit, same as the player's attackTarget.
-          const { survivor, overkill, dmg } = resolveCreatureHit(card, target, activeOpponentField);
+          // Pass auraField so a 'royal' ally on the opponent's own field —
+          // including one it just played this turn — buffs this attacker's hit,
+          // same as the player's attackTarget.
+          const { survivor, overkill, dmg } = resolveCreatureHit(card, target, auraField);
           playSound('attack');
           if (survivor) {
             livePlayerField = livePlayerField.map(c => c.instanceId === target.instanceId ? survivor : c);
@@ -783,9 +809,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           logs.push(`Your ${trap.name} sprang! ${OPPONENT_NAME} ate ${trapDamage} damage. Delicious.`);
         } else {
           // Include a 'royal' ally's aura in the opponent's face damage too, not
-          // just its creature-vs-creature hits (which already resolve through
-          // activeOpponentField). Mirrors the player-side fix at attackOpponentDirectly.
-          const oppFaceDamage = effectiveAttack(card, activeOpponentField);
+          // just its creature-vs-creature hits. Uses auraField so a royal played
+          // this turn counts. Mirrors the player-side fix at attackOpponentDirectly.
+          const oppFaceDamage = effectiveAttack(card, auraField);
           faceDamage += oppFaceDamage;
           playSound('attack');
           logs.push(`${card.name} socked you right in the face for ${oppFaceDamage}!`);
