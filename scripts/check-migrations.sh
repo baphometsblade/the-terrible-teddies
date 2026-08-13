@@ -124,4 +124,43 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting leaderboard-integrity BEHAVIOUR (not just grants)"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  uid   UUID := '11111111-1111-4111-8111-111111111111';
+  v_exp INTEGER;
+  v_wins INTEGER;
+BEGIN
+  INSERT INTO auth.users (id, email) VALUES (uid, 'jane.doe@example.com') ON CONFLICT DO NOTHING;
+  INSERT INTO public.players (user_id) VALUES (uid) ON CONFLICT DO NOTHING;
+  -- Impersonate the authenticated caller so auth.uid() = uid inside the RPCs.
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', uid::text, 'role', 'authenticated')::text, true);
+
+  -- (1) A single huge sync must NOT set experience to the raw client value —
+  --     the fraud that showed as level 101 / ~1010 trophies with zero battles.
+  PERFORM public.sync_player_level(uid, 2, 10000);
+  SELECT experience INTO v_exp FROM public.players WHERE user_id = uid;
+  IF v_exp > 200 THEN
+    RAISE EXCEPTION 'sync_player_level did NOT cap the experience increase: got %', v_exp;
+  END IF;
+
+  -- (2) Rapid battle syncs must be rate-limited: with the server default of
+  --     5 per window, the 6th win in one window must not land.
+  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
+  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
+  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
+  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
+  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
+  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
+  SELECT wins INTO v_wins FROM public.players WHERE user_id = uid;
+  IF v_wins <> 5 THEN
+    RAISE EXCEPTION 'sync_battle_result is NOT rate-limited: expected 5 wins, got %', v_wins;
+  END IF;
+
+  RAISE NOTICE 'leaderboard-integrity behavioural assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"

@@ -415,6 +415,64 @@ describe('set_player_username grants', () => {
 // authenticated user could call it from the browser console with
 // p_window_seconds:0 and turn the checkout rate limiter into a no-op.
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Leaderboard-integrity hardening.
+//
+// The earlier money-path pass throttled the `level` column but left three
+// ranking vectors open: sync_player_level wrote `experience` (the column the
+// leaderboard actually reads) to the raw client value, sync_battle_result had
+// no rate limit so a console loop forged unlimited wins, and the username fix
+// scrubbed only NEW email-derived names. This asserts the follow-up fixes.
+// ---------------------------------------------------------------------------
+describe('leaderboard-integrity hardening', () => {
+  const allSql = loadMigrations().map((m) => m.sql).join('\n');
+
+  function finalBody(fn) {
+    const re = new RegExp(
+      `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${fn}\\s*\\([\\s\\S]*?\\$\\$([\\s\\S]*?)\\$\\$;`,
+      'gi'
+    );
+    let last = null, m;
+    while ((m = re.exec(allSql))) last = m[1];
+    return last;
+  }
+
+  it('sync_player_level caps the per-call experience increase (not the raw client value)', () => {
+    const body = finalBody('sync_player_level');
+    expect(body, 'no sync_player_level body found').toBeTruthy();
+    // The write must bound the increase relative to the CURRENT stored value —
+    // setting experience straight from p_xp is the fraud (level 101 in one call).
+    expect(
+      /experience\s*=\s*LEAST\s*\(\s*GREATEST\s*\(\s*COALESCE\s*\(\s*experience/i.test(body),
+      "sync_player_level must bound experience to a per-call increase over its " +
+        'current value; writing the raw client p_xp lets a fresh account jump to ' +
+        'experience 10000 (level 101) in one RPC.'
+    ).toBe(true);
+    // And still auth-guarded to the caller's own row.
+    expect(/auth\.uid\(\)/.test(body)).toBe(true);
+  });
+
+  it('sync_battle_result is rate-limited via check_rate_limit', () => {
+    const body = finalBody('sync_battle_result');
+    expect(body, 'no sync_battle_result body found').toBeTruthy();
+    expect(
+      /check_rate_limit\s*\(\s*p_user_id\s*,\s*'battle_result'/i.test(body),
+      'sync_battle_result increments wins with no throttle — a console loop forges ' +
+        'unlimited leaderboard wins. Gate it behind check_rate_limit.'
+    ).toBe(true);
+  });
+
+  it('a migration backfills existing email-derived usernames off the leaderboard', () => {
+    // The forward username fix left already-published email local parts in place.
+    // Require a one-time UPDATE that overwrites existing player usernames.
+    expect(
+      /UPDATE\s+public\.players\s+SET\s+username\s*=/i.test(allSql),
+      'no migration scrubs the pre-existing email-derived usernames that the ' +
+        'leaderboard view still publishes'
+    ).toBe(true);
+  });
+});
+
 describe('check_rate_limit derives its window server-side', () => {
   const allSql = loadMigrations().map((m) => m.sql).join('\n');
 
