@@ -35,3 +35,12 @@ playwright-report/
 # Art-generation prompt manifests (--manifest output); scratch, never source.
 *.manifest.json
 m_*.json
+
+# Local GPU render environment: torch + CUDA wheels and scratch renders,
+# ~3 GB. Created by scripts/generate-card-art-diffusers.py runs; never
+# belongs in the repo, and is large enough that an accidental 'git add -A'
+# is worth guarding against.
+.venv-art/
+
+# Serena MCP session cache
+.serena/
