@@ -14,6 +14,7 @@ import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY 
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
 import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
+import { bestOwnedBorder, ownedEmotes } from '@/lib/cosmetics';
 
 // Cap the hand so unbounded draw (per-turn + draw specials) can't overflow the
 // fixed-width hand layout into an unclickable, off-screen stack.
@@ -87,7 +88,13 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     playerName,
     gems,
     cardPacks,
+    unlockedCosmetics,
   } = useGameStore();
+
+  // Battle Pass cosmetics: premium card frames on the player's own cards (never
+  // Chuck's), and unlocked table emotes. Pure derivations, cheap per render.
+  const cosmeticBorder = bestOwnedBorder(unlockedCosmetics);
+  const emotes = ownedEmotes(unlockedCosmetics);
 
   // Accumulate per-game stats for challenge/achievement tracking
   // damageTaken is what the 'Flawless' achievement actually means. Final HP
@@ -207,6 +214,33 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       recordAbandonment();
     };
   }, []);
+
+  // Player-side emote bubble (Battle Pass emote cosmetics). Mirrors Chuck's
+  // quip bubble: decorative and aria-hidden, with the battle log carrying the
+  // accessible record of every emote.
+  const [playerQuip, setPlayerQuip] = useState(null);
+  const playerQuipIdRef = useRef(0);
+  const lastEmoteAtRef = useRef(0);
+  const sendEmote = (emote) => {
+    // Small cooldown so mashing the button can't spam confetti/bubbles.
+    const now = Date.now();
+    if (now - lastEmoteAtRef.current < 2500) return;
+    lastEmoteAtRef.current = now;
+
+    if (emote.effect === 'confetti') {
+      confetti({ particleCount: 90, spread: 75, origin: { y: 0.75 } });
+      addToBattleLog('🎉 You fire the confetti cannon. Chuck is unimpressed but covered in glitter.');
+      return;
+    }
+    const text = pickQuip('playerEmote', playerQuip?.text ?? null);
+    if (!text) return;
+    const id = ++playerQuipIdRef.current;
+    setPlayerQuip({ id, text });
+    addToBattleLog(`🎭 You: "${text}"`);
+    safeTimeout(() => {
+      setPlayerQuip((q) => (q && q.id === id ? null : q));
+    }, 3500);
+  };
 
   const speak = useCallback((pool) => {
     const text = pickQuip(pool, lastQuipRef.current);
@@ -1115,6 +1149,28 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         )}
       </AnimatePresence>
 
+      {/* The player's emote bubble (Teddy Emote cosmetic) — same decorative
+          treatment as Chuck's; the battle log carries the accessible record. */}
+      <AnimatePresence>
+        {playerQuip && (
+          <motion.div
+            key={playerQuip.id}
+            aria-hidden="true"
+            initial={{ opacity: 0, y: 8, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+            className="absolute bottom-[9.5rem] right-4 z-30 max-w-[230px] pointer-events-none"
+          >
+            <div className="relative bg-brass-100/95 text-night-900 text-sm font-semibold rounded-2xl rounded-br-sm px-3 py-2 shadow-lg border border-brass-400/60">
+              <span className="mr-1">🎭</span>
+              {playerQuip.text}
+              <div className="absolute -bottom-2 right-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-brass-100/95" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top bar - Opponent info */}
       <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-red-950 to-red-900 flex items-center justify-between pl-28 pr-4 shadow-lg">
         <div className="flex items-center space-x-3">
@@ -1280,7 +1336,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                  unavailable creature is told why instead of getting silence. */
               {...pressable(() => phase === 'battle' && selectCardForAttack(card), `Select ${card.name} to attack`)}
             >
-              <TeddyCard teddy={card} />
+              <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
               {card.hasAttacked && (
                 <div className="text-center text-xs text-plush-300 mt-1">Exhausted</div>
               )}
@@ -1317,7 +1373,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               className={`cursor-pointer ${playerEnergy < effectiveCost(card, playerField) ? 'opacity-50' : ''}`}
               {...pressable(() => phase === 'main' && playCard(card), `Play ${card.name}`)}
             >
-              <TeddyCard teddy={card} />
+              <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -1374,6 +1430,23 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           bottom offset overlapped the player's field cards on short phones.
           sm+ keeps the vertical right-side stack. */}
       <div className="absolute top-[calc(66.67%+0.5rem)] inset-x-2 flex flex-row justify-center gap-2 sm:top-auto sm:inset-x-auto sm:bottom-20 sm:right-4 sm:flex-col sm:w-36">
+        {/* Battle Pass emote cosmetics — only rendered once unlocked. Usable on
+            either turn (heckling Chuck mid-swing is the point). */}
+        {!gameOver && emotes.length > 0 && (
+          <div className="flex flex-row justify-center gap-2 sm:w-full">
+            {emotes.map((emote) => (
+              <Button
+                key={emote.name}
+                onClick={() => sendEmote(emote)}
+                aria-label={emote.name}
+                title={emote.name}
+                className="flex-none h-9 w-9 p-0 text-lg sm:h-10 sm:w-10 bg-night-800/90 hover:bg-night-700 border border-brass-400/40"
+              >
+                {emote.icon}
+              </Button>
+            ))}
+          </div>
+        )}
         {targetingMode && (
           <Button
             className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-plush-700 hover:bg-plush-800 text-white"

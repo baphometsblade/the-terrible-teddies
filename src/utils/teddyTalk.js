@@ -74,6 +74,16 @@ export const QUIPS = {
     "My beans... my beautiful beans...",
     "You haven't seen the last of me. I literally live here.",
   ],
+  // The player's Teddy Emote (Battle Pass exclusive) — trash talk fired at
+  // Chuck on demand. Same register as his own lines: crude, never explicit.
+  playerEmote: [
+    "Your deck called. It wants a lawyer.",
+    "I've seen scarier bears in a claw machine.",
+    "Smell that? That's your win rate.",
+    "My grandma slaps harder, and she's a beanbag.",
+    "Cry about it, fuzzball.",
+    "You play like your stitching's loose.",
+  ],
 };
 
 /**

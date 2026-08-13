@@ -10,6 +10,14 @@ const TYPE_STYLES = {
   special: { bg: 'from-cyan-900 to-night-800', border: 'border-cyan-500', text: 'text-cyan-300' },
 };
 
+// Battle Pass border cosmetics (see src/lib/cosmetics.js). Replaces the
+// rarity frame color with the premium treatment; the rarity remains readable
+// from the badge line and face gradient.
+const COSMETIC_BORDERS = {
+  gold: 'border-brass-300 shadow-[0_0_10px_rgba(251,191,36,0.45)]',
+  diamond: 'border-cyan-200 shadow-[0_0_10px_rgba(103,232,249,0.55)]',
+};
+
 const ABILITY_ICONS = {
   taunt: '🛡️',
   piercing: '🗡️',
@@ -125,7 +133,7 @@ const rulesText = (teddy) => {
  * with circular attack/HP gems anchored in the bottom corners and a foil
  * sheen on epic+ cards.
  */
-const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false }) => {
+const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null }) => {
   // Use rarity style if available, otherwise fall back to type style
   const rarityStyle = teddy.rarity ? RARITY[teddy.rarity] : null;
   const typeStyle = TYPE_STYLES[teddy.type] || TYPE_STYLES.action;
@@ -142,10 +150,11 @@ const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false }) =
       whileTap={!isDisabled ? { scale: 0.97 } : {}}
     >
       <Card
+        data-cosmetic={cosmeticBorder || undefined}
         className={`
           w-24 h-36 rounded-lg shadow-lg shadow-black/40 cursor-pointer transition-all relative flex flex-col p-0 overflow-hidden
           bg-gradient-to-b ${style.bg}
-          border-2 ${style.border}
+          border-2 ${(cosmeticBorder && COSMETIC_BORDERS[cosmeticBorder]) || style.border}
           ${isSelected ? 'ring-2 ring-brass-300 ring-offset-2 ring-offset-night-900' : ''}
           ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-xl hover:shadow-black/50'}
         `}

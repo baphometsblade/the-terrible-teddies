@@ -100,6 +100,33 @@ test('reloading/closing mid-battle also records the loss (pagehide), not just "�
   expect(state.currentWinStreak).toBe(0);
 });
 
+test('owned Battle Pass cosmetics render in battle: gold frames and working emotes', async ({ page }) => {
+  // The pass sells 'exclusive' cosmetics; unlockCosmetic records them. This
+  // guards the rendering half — without it the entitlement is a paid no-op.
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.unlockedCosmetics = ['Gold Border', 'Teddy Emote'];
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  // The player's dealt hand carries the gold cosmetic frame. (Opponent cards
+  // never receive the prop — it is only passed on the player-side renders.)
+  await expect(page.locator('[data-cosmetic="gold"]').first()).toBeVisible(SLOW);
+
+  // The Teddy Emote is a usable table emote: click → crude line in the log.
+  const emoteBtn = page.getByRole('button', { name: 'Teddy Emote' });
+  await expect(emoteBtn).toBeVisible();
+  await emoteBtn.click();
+  await expect(
+    page.getByRole('region', { name: 'Battle log' }).getByText(/🎭 You:/)
+  ).toBeVisible(SLOW);
+});
+
 test('shop opens, shows gem bundles with prices, and closes on Escape', async ({ page }) => {
   await page.getByRole('button', { name: 'Shop', exact: true }).click();
 

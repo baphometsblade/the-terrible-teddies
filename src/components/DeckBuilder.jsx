@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
+import { bestOwnedBorder } from '@/lib/cosmetics';
 
 import { RARITY } from '@/lib/rarity';
 
@@ -50,7 +51,10 @@ const SaveDeckDialog = ({ deckName, setDeckName, onSave, onClose }) => {
 };
 
 const DeckBuilder = () => {
-  const { ownedCards, currentDeck, setCurrentDeck, savedDecks, saveDeck, deleteDeck } = useGameStore();
+  const { ownedCards, currentDeck, setCurrentDeck, savedDecks, saveDeck, deleteDeck, unlockedCosmetics } = useGameStore();
+  // Show the Battle Pass border cosmetic on the player's own cards here too,
+  // so the paid frame is visible while building, not only mid-battle.
+  const cosmeticBorder = bestOwnedBorder(unlockedCosmetics);
   const [deck, setDeck] = useState([]);
   const [filter, setFilter] = useState('all');
   const [deckName, setDeckName] = useState('');
@@ -185,7 +189,7 @@ const DeckBuilder = () => {
                     {...pressable(() => !isMaxed && addToDeck(card), `Add ${card.name} to deck`)}
                   >
                     <div className={`absolute inset-0 rounded-lg blur-md -z-10 opacity-30 bg-gradient-to-r ${RARITY[card.rarity].gradient}`} />
-                    <TeddyCard teddy={card} isDisabled={isMaxed} />
+                    <TeddyCard teddy={card} isDisabled={isMaxed} cosmeticBorder={cosmeticBorder} />
                     {copiesInDeck > 0 && (
                       <div className="absolute -top-2 -right-2 bg-brass-400 text-night-950 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold z-10">
                         {copiesInDeck}
