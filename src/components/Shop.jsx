@@ -78,12 +78,20 @@ const GemBundle = ({ bundle, processing, onBuy }) => (
 
 const Shop = ({ onClose }) => {
   const { coins, gems, cardPacks, buyShopItem, coinDoublerExpiresAt } = useGameStore();
-  // Derived here rather than via the store selectors so the card re-renders the
-  // moment the expiry changes (the component subscribes to the whole store).
+  // Purchases re-render via the store subscription, but time ELAPSING is not a
+  // store write — a dialog left open across the expiry would keep advertising
+  // an "Active" booster that recordBattleResult (which recomputes from
+  // Date.now()) no longer honors. Tick once a minute so the card follows the
+  // clock, same pattern as the Challenges reset countdown.
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
   const doubler = SHOP_ITEMS.find(i => i.id === 'coin_doubler');
-  const doublerActive = typeof coinDoublerExpiresAt === 'number' && coinDoublerExpiresAt > Date.now();
+  const doublerActive = typeof coinDoublerExpiresAt === 'number' && coinDoublerExpiresAt > now;
   const doublerHoursLeft = doublerActive
-    ? Math.max(1, Math.ceil((coinDoublerExpiresAt - Date.now()) / 3_600_000))
+    ? Math.max(1, Math.ceil((coinDoublerExpiresAt - now) / 3_600_000))
     : 0;
   const { session } = useSupabaseAuth();
   const { toast } = useToast();
@@ -272,7 +280,12 @@ const Shop = ({ onClose }) => {
                         size="sm"
                         onClick={() => handleBuyItem(doubler)}
                         disabled={gems < doubler.price}
-                        aria-label={`Buy Coin Doubler for ${doubler.price} gems`}
+                        // The accessible name must track the state AND contain
+                        // the visible text (WCAG 2.5.3 Label in Name): a voice
+                        // user saying "Click Extend" gets no match if the name
+                        // still says "Buy", and a screen reader announcing
+                        // "Buy" hides that this extends a running booster.
+                        aria-label={`${doublerActive ? 'Extend' : 'Buy'} Coin Doubler for ${doubler.price} gems`}
                         className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50"
                       >
                         💎 {doubler.price}{doublerActive ? ' · Extend' : ''}

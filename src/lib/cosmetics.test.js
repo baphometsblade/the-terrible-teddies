@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { BATTLE_PASS_REWARDS } from '@/components/BattlePass';
 import { bestOwnedBorder, ownedEmotes, RENDERABLE_COSMETICS } from './cosmetics';
 
 describe('cosmetic entitlement rendering', () => {
@@ -24,9 +23,18 @@ describe('cosmetic entitlement rendering', () => {
     // tier rewards, unlockCosmetic recorded them — and nothing anywhere
     // rendered them. A renamed or newly added exclusive in the reward table
     // that this module doesn't know about silently regresses to that state.
-    const src = readFileSync(resolve(process.cwd(), 'src/components/BattlePass.jsx'), 'utf8');
-    const sold = [...src.matchAll(/type:\s*'exclusive',\s*name:\s*'([^']+)'/g)].map((m) => m[1]);
-    expect(sold.length, 'no exclusive rewards found in BATTLE_PASS_REWARDS — parser drift?')
+    //
+    // Read the REAL exported table, not a regex over source text: the earlier
+    // source-scrape only matched single-quoted names with `type` written
+    // immediately before `name`, so a double-quoted name (the convention on
+    // half this table's rows), an apostrophe-bearing name, or a field reorder
+    // slipped past unseen — and its >=2 canary could not notice ONE missed
+    // entry among four matches.
+    const sold = BATTLE_PASS_REWARDS
+      .flatMap((tier) => [tier.free, tier.premium])
+      .filter((reward) => reward?.type === 'exclusive')
+      .map((reward) => reward.name);
+    expect(sold.length, 'no exclusive rewards found in BATTLE_PASS_REWARDS')
       .toBeGreaterThanOrEqual(2);
     for (const name of sold) {
       expect(

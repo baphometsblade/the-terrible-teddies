@@ -244,10 +244,14 @@ test('the Coin Doubler is buyable and then shows as active', async ({ page }) =>
   await expect(buy).toBeEnabled(); // the seed has 300 gems
   await buy.click();
 
-  // The card flips to the active state with time remaining, and the button
-  // becomes an extend rather than a fresh buy.
+  // The card flips to the active state with time remaining, and the button's
+  // ACCESSIBLE NAME flips to Extend with it (WCAG 2.5.3: the visible "Extend"
+  // must be in the name — re-locating by the new name is the guard; reusing
+  // the stale "Buy…" locator here previously enshrined the mismatch).
   await expect(dialog.getByText(/h left/)).toBeVisible(SLOW);
-  await expect(buy).toContainText('Extend');
+  const extend = dialog.getByRole('button', { name: /Extend Coin Doubler for \d+ gems/ });
+  await expect(extend).toBeVisible();
+  await expect(extend).toContainText('Extend');
 
   // The entitlement is persisted, so it survives a reload mid-window.
   const expiry = await page.evaluate(() =>
