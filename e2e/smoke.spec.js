@@ -100,6 +100,53 @@ test('reloading/closing mid-battle also records the loss (pagehide), not just "�
   expect(state.currentWinStreak).toBe(0);
 });
 
+test('a bfcache restore after mid-battle pagehide settles as the recorded loss — never two results', async ({ page }) => {
+  // pagehide fires when the page ENTERS the back-forward cache too, and the
+  // browser can then restore the exact mid-battle component state. The loss is
+  // already recorded at that point; the restored battle must settle as that
+  // defeat, not play on and record a second result.
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.currentWinStreak = 3;
+    stored.state.totalLosses = 0;
+    stored.state.totalBattles = 0;
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  // Enter bfcache (persisted pagehide) → the loss records…
+  await page.evaluate(() => {
+    window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }));
+  });
+  // …then the restore fires pageshow(persisted): the battle must settle as the
+  // already-booked defeat instead of resuming.
+  await page.evaluate(() => {
+    window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+  });
+
+  const defeat = page.getByRole('dialog', { name: 'Defeat' });
+  await expect(defeat).toBeVisible(SLOW);
+
+  // Exactly ONE result was recorded for the one battle.
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('terrible-teddies-storage')).state);
+  expect(state.totalLosses).toBe(1);
+  expect(state.totalBattles).toBe(1);
+  expect(state.currentWinStreak).toBe(0);
+
+  // Play Again re-arms cleanly: a fresh board deals, and no extra result
+  // appeared from the settled game.
+  await defeat.getByRole('button', { name: /Play Again/i }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  const after = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('terrible-teddies-storage')).state);
+  expect(after.totalBattles).toBe(1);
+});
+
 test('owned Battle Pass cosmetics render in battle: gold frames and working emotes', async ({ page }) => {
   // The pass sells 'exclusive' cosmetics; unlockCosmetic records them. This
   // guards the rendering half — without it the entitlement is a paid no-op.
@@ -125,6 +172,43 @@ test('owned Battle Pass cosmetics render in battle: gold frames and working emot
   await expect(
     page.getByRole('region', { name: 'Battle log' }).getByText(/🎭 You:/)
   ).toBeVisible(SLOW);
+
+  // The bubble must not strand across game over + Play Again: ending the game
+  // inside its 3.5s window cancels its dismiss timer (clearAllTimeouts), so the
+  // game-over and restart paths must clear it explicitly.
+  page.once('dialog', (d) => d.accept()); // window.confirm on concede
+  await page.getByRole('button', { name: /Concede/ }).click();
+  const defeat = page.getByRole('dialog', { name: 'Defeat' });
+  await expect(defeat).toBeVisible(SLOW);
+  await defeat.getByRole('button', { name: /Play Again/i }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  // Bubbles are the only aria-hidden 🎭 carriers (the button is not hidden;
+  // the old game's battle log was reset by the restart).
+  await expect(page.locator('div[aria-hidden="true"]').filter({ hasText: '🎭' })).toHaveCount(0);
+});
+
+test('emote buttons stay fully tappable on a 390px phone', async ({ page }) => {
+  // The phone controls row is centered inside an overflow-hidden board, so an
+  // over-wide row clips at BOTH ends with no scroll path — the fix wraps it.
+  // Guard the reachable state: both emotes owned, battle controls visible.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.unlockedCosmetics = ['Teddy Emote', 'Confetti Cannon Emote'];
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  for (const name of ['Teddy Emote', 'Confetti Cannon Emote', 'End Turn']) {
+    const box = await page.getByRole('button', { name, exact: true }).boundingBox();
+    expect(box, `${name} has no box`).not.toBeNull();
+    expect(box.x, `${name} clipped at the left edge`).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width, `${name} clipped at the right edge`).toBeLessThanOrEqual(390);
+  }
 });
 
 test('shop opens, shows gem bundles with prices, and closes on Escape', async ({ page }) => {

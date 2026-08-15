@@ -186,6 +186,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // this inert under React 18 StrictMode's mount→unmount→remount in dev, where
   // the opening hand hasn't been dealt yet at the throwaway cleanup.
   const abandonHandledRef = useRef(false);
+  // The xp/coins the abandonment loss actually granted, so a bfcache-restored
+  // defeat screen can show real figures instead of zeros.
+  const abandonRewardsRef = useRef(null);
   useEffect(() => {
     // Empty deps + reading the action through getState() means this effect never
     // re-runs, so it only tears down on a genuine unmount — never mid-battle
@@ -197,23 +200,49 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       const stats = battleStatsRef.current;
       // The local record persists synchronously through the store — that is what
       // closes the streak exploit even mid-unload. The server syncs are best-effort.
-      useGameStore.getState().recordBattleResult(false, stats.damageDealt, stats.healingDone, hp, stats.cardsPlayed);
+      abandonRewardsRef.current = useGameStore.getState()
+        .recordBattleResult(false, stats.damageDealt, stats.healingDone, hp, stats.cardsPlayed);
       syncBattleResult(false, stats.damageDealt, stats.healingDone, 5)
         .catch(err => console.error('Abandon sync failed:', err));
       syncLevelToServer();
+    };
+    // Back/forward-cache restore. pagehide fires when the page ENTERS bfcache
+    // too (pagehide listeners never block caching), so the loss above is
+    // recorded — and then the browser can restore this exact component state,
+    // mid-battle, gameOver still false. Without reconciliation, finishing that
+    // restored battle would book a SECOND result for the same game (the
+    // game-over effect checks only health). Settle the restored battle as the
+    // defeat that was already recorded: setGameOver(true) makes the game-over
+    // effect a permanent no-op (it early-returns on gameOver), so one battle
+    // can never record twice.
+    const onPageShow = (e) => {
+      if (!e.persisted || !abandonHandledRef.current) return;
+      if (liveRef.current.gameOver) return;
+      clearAllTimeouts();
+      setOppQuip(null);
+      setPlayerQuip(null);
+      setEndQuip(pickQuip('oppWins'));
+      if (abandonRewardsRef.current) {
+        setBattleRewards({ xp: abandonRewardsRef.current.xpGain, coins: abandonRewardsRef.current.coinsGain });
+      }
+      setWinner('opponent');
+      setGameOver(true);
     };
     // pagehide covers reload / tab-close / cross-document navigation — the cases
     // where React effect cleanups do NOT run, so the unmount path alone would
     // miss them and a losing game could be dropped (F5) with the streak intact.
     // Battle state is component-local, not persisted, so nothing else records it.
     window.addEventListener('pagehide', recordAbandonment);
+    window.addEventListener('pageshow', onPageShow);
     // Unmount — e.g. the "← Menu" SPA button, which does NOT fire pagehide.
     // abandonHandledRef makes the two paths mutually idempotent.
     return () => {
       window.removeEventListener('pagehide', recordAbandonment);
+      window.removeEventListener('pageshow', onPageShow);
       recordAbandonment();
     };
-  }, []);
+    // clearAllTimeouts is a stable [] useCallback, so this still runs once.
+  }, [clearAllTimeouts]);
 
   // Player-side emote bubble (Battle Pass emote cosmetics). Mirrors Chuck's
   // quip bubble: decorative and aria-hidden, with the battle log carrying the
@@ -349,6 +378,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       setGameOver(true);
       setWinner('player');
       setOppQuip(null);
+      setPlayerQuip(null); // its dismiss timer was just cancelled by clearAllTimeouts
       setEndQuip(pickQuip('oppLoses'));
       playSound('victory');
 
@@ -388,6 +418,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       setGameOver(true);
       setWinner('opponent');
       setOppQuip(null);
+      setPlayerQuip(null); // its dismiss timer was just cancelled by clearAllTimeouts
       setEndQuip(pickQuip('oppWins'));
       playSound('defeat');
 
@@ -943,11 +974,18 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setShowAbilityPopup(null);
     setBattleRewards({ xp: 0, coins: 0 });
 
-    // Reset Chuck's mouth
+    // Reset both mouths
     setOppQuip(null);
+    setPlayerQuip(null);
     setEndQuip(null);
     lastQuipRef.current = null;
     nearDeathQuippedRef.current = false;
+
+    // Re-arm abandonment tracking: after a bfcache-settled defeat, Play Again
+    // keeps this component mounted, so the latch must reset or the NEW
+    // battle's abandonment would silently never record.
+    abandonHandledRef.current = false;
+    abandonRewardsRef.current = null;
 
     // Increment gameId to trigger deck re-initialization useEffect
     setGameId(prev => prev + 1);
@@ -1429,7 +1467,13 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           the battlefield (which ends at 2/3 viewport height) — a fixed
           bottom offset overlapped the player's field cards on short phones.
           sm+ keeps the vertical right-side stack. */}
-      <div className="absolute top-[calc(66.67%+0.5rem)] inset-x-2 flex flex-row justify-center gap-2 sm:top-auto sm:inset-x-auto sm:bottom-20 sm:right-4 sm:flex-col sm:w-36">
+      {/* flex-wrap matters on phones: with both Battle Pass emotes owned AND a
+          full momentum gauge, emotes + Rally + the turn buttons exceed 390px.
+          The row sits inside the board's overflow-hidden with justify-center,
+          so without wrapping the spill is clipped at BOTH ends — the first
+          emote and Concede's right edge become untappable. Wrapping drops the
+          overflow onto a second row instead. */}
+      <div className="absolute top-[calc(66.67%+0.5rem)] inset-x-2 flex flex-row flex-wrap justify-center gap-2 sm:top-auto sm:inset-x-auto sm:bottom-20 sm:right-4 sm:flex-col sm:w-36">
         {/* Battle Pass emote cosmetics — only rendered once unlocked. Usable on
             either turn (heckling Chuck mid-swing is the point). */}
         {!gameOver && emotes.length > 0 && (
@@ -1440,7 +1484,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                 onClick={() => sendEmote(emote)}
                 aria-label={emote.name}
                 title={emote.name}
-                className="flex-none h-9 w-9 p-0 text-lg sm:h-10 sm:w-10 bg-night-800/90 hover:bg-night-700 border border-brass-400/40"
+                className="flex-none h-8 w-8 p-0 text-base sm:h-10 sm:w-10 sm:text-lg bg-night-800/90 hover:bg-night-700 border border-brass-400/40"
               >
                 {emote.icon}
               </Button>
