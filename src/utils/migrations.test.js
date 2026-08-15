@@ -462,13 +462,33 @@ describe('leaderboard-integrity hardening', () => {
     ).toBe(true);
   });
 
-  it('a migration backfills existing email-derived usernames off the leaderboard', () => {
-    // The forward username fix left already-published email local parts in place.
-    // Require a one-time UPDATE that overwrites existing player usernames.
+  it('sync_player_level is rate-limited too — the experience cap alone is loopable', () => {
+    // The +200/call bound only raises the cost of the forged-level fraud from
+    // one RPC to a 50-iteration console loop reaching experience=10000 in
+    // seconds. The call itself must be throttled like sync_battle_result.
+    const body = finalBody('sync_player_level');
+    expect(body, 'no sync_player_level body found').toBeTruthy();
     expect(
-      /UPDATE\s+public\.players\s+SET\s+username\s*=/i.test(allSql),
-      'no migration scrubs the pre-existing email-derived usernames that the ' +
-        'leaderboard view still publishes'
+      /check_rate_limit\s*\(\s*p_user_id\s*,\s*'level_sync'/i.test(body),
+      'sync_player_level has no check_rate_limit gate — a rapid loop of capped ' +
+        '+200 increases still forges level 101 / ~1010 trophies with zero battles.'
+    ).toBe(true);
+  });
+
+  it('backfills email-derived usernames off the leaderboard — and ONLY those', () => {
+    // The forward username fix left already-published email local parts in
+    // place; a backfill must scrub them. But the predicate must be targeted:
+    // an over-broad "WHERE username IS NOT NULL" also destroys every name a
+    // player deliberately set via set_player_username (live before the
+    // backfill shipped). Require the UPDATE to match against the email local
+    // part. check-migrations.sh proves the behaviour on real Postgres; this is
+    // the fast static tripwire.
+    const backfill = /UPDATE\s+public\.players(?:\s+\w+)?\s+SET\s+username\s*=[\s\S]{0,400}?split_part\s*\(\s*u?\.?email/i;
+    expect(
+      backfill.test(allSql),
+      'no migration scrubs email-derived usernames with a TARGETED predicate ' +
+        '(matching split_part(email, ...)) — either the backfill is missing, or ' +
+        'it blankets every non-null username and wipes deliberately-set names'
     ).toBe(true);
   });
 });

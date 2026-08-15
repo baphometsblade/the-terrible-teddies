@@ -9,7 +9,8 @@
 --      trophies from it (floor(experience/100)+1), so a fresh account could
 --      RPC experience=10000 straight from the console and show as level 101 /
 --      ~1010 trophies with zero battles. Cap the per-call experience INCREASE
---      to mirror the level throttle.
+--      to mirror the level throttle, AND rate-limit the call itself — the cap
+--      alone just turns the one-call fraud into a 50-call loop.
 --
 --   2. sync_battle_result increments wins/total_wins by +1 per call with no
 --      rate limit, so a for-loop in the console forged unlimited leaderboard
@@ -46,6 +47,16 @@ AS $$
 BEGIN
   IF auth.uid() IS NULL OR auth.uid() != p_user_id THEN
     RAISE EXCEPTION 'Unauthorized: cannot modify another user''s level';
+  END IF;
+
+  -- Throttle like sync_battle_result below. The +200/call bound alone only
+  -- raises the cost of the header's fraud from 1 RPC to a 50-iteration console
+  -- loop (a couple of seconds): experience climbs +200 per call to 10000 and
+  -- the leaderboard still shows level 101 with zero battles. check_rate_limit's
+  -- server-owned default (5/60s) turns that loop into a multi-minute grind
+  -- while honest play — one sync per battle — never notices.
+  IF NOT public.check_rate_limit(p_user_id, 'level_sync') THEN
+    RETURN;
   END IF;
 
   UPDATE public.players SET
@@ -138,14 +149,21 @@ $$;
 -- 3) One-time backfill: scrub email-derived usernames from the leaderboard.
 --
 -- Before the client stopped passing email.split('@')[0] (commit bba1f55), every
--- pre-existing player row stored the caller's email local part, and
--- upsert_player_profile uses ON CONFLICT DO NOTHING so those rows are never
--- overwritten. The forward fix left that PII published on the public leaderboard
--- view. Replace every existing name with a stable, non-identifying handle
--- derived from the (opaque) user_id; players can re-personalize via
--- set_player_username. Runs once. New signups pass NULL, so nothing re-introduces
--- an email name after this.
+-- player row stored the caller's email local part, and upsert_player_profile
+-- uses ON CONFLICT DO NOTHING so those rows are never overwritten. The forward
+-- fix left that PII published on the public leaderboard view.
+--
+-- The predicate is deliberately NARROW: it scrubs a row only when the stored
+-- username still equals the account email's local part — the leaked value.
+-- A blanket "WHERE username IS NOT NULL" would also destroy every name a
+-- player deliberately chose via set_player_username (live since bba1f55, a week
+-- before this migration), silently renaming customized accounts. Scrubbed rows
+-- get a stable, non-identifying handle derived from the opaque user_id;
+-- affected players can re-personalize via set_player_username. New signups pass
+-- NULL, so nothing re-introduces an email name after this.
 -- ============================================================================
-UPDATE public.players
-SET username = 'Teddy ' || upper(substr(md5(user_id::text), 1, 4))
-WHERE username IS NOT NULL;
+UPDATE public.players p
+SET username = 'Teddy ' || upper(substr(md5(p.user_id::text), 1, 4))
+FROM auth.users u
+WHERE p.user_id = u.id
+  AND p.username = split_part(u.email, '@', 1);

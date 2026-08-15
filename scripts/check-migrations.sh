@@ -59,6 +59,20 @@ CREATE TABLE IF NOT EXISTS public.players (
   xp       INTEGER DEFAULT 0,
   trophies INTEGER DEFAULT 0
 );
+
+-- Pre-migration fixture rows for the username-backfill assertion below: one
+-- account whose stored name is its email local part (the pre-bba1f55 leak),
+-- one whose name was deliberately customized after the fix. The backfill
+-- migration must scrub the first and MUST NOT touch the second — the
+-- over-broad "WHERE username IS NOT NULL" variant destroyed every custom name.
+INSERT INTO auth.users (id, email) VALUES
+  ('22222222-2222-4222-8222-222222222222', 'a.smith@corp.example'),
+  ('33333333-3333-4333-8333-333333333333', 'bob@mail.example')
+ON CONFLICT DO NOTHING;
+INSERT INTO public.players (user_id, username) VALUES
+  ('22222222-2222-4222-8222-222222222222', 'a.smith'),
+  ('33333333-3333-4333-8333-333333333333', 'DreadBear')
+ON CONFLICT DO NOTHING;
 SQL
 
 echo "==> Applying migrations in filename order"
@@ -138,12 +152,24 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', uid::text, 'role', 'authenticated')::text, true);
 
-  -- (1) A single huge sync must NOT set experience to the raw client value —
-  --     the fraud that showed as level 101 / ~1010 trophies with zero battles.
-  PERFORM public.sync_player_level(uid, 2, 10000);
+  -- (1) The experience fraud must fail BOTH ways: a single huge sync must not
+  --     set the raw client value, and a rapid LOOP of capped syncs must be
+  --     rate-limited — the +200/call cap alone just converts the one-call
+  --     exploit into a 50-iteration console loop. With the server default of
+  --     5 calls/window, six rapid syncs may apply at most five increases.
+  PERFORM public.sync_player_level(uid, 100, 10000);
   SELECT experience INTO v_exp FROM public.players WHERE user_id = uid;
   IF v_exp > 200 THEN
     RAISE EXCEPTION 'sync_player_level did NOT cap the experience increase: got %', v_exp;
+  END IF;
+  PERFORM public.sync_player_level(uid, 100, 10000);
+  PERFORM public.sync_player_level(uid, 100, 10000);
+  PERFORM public.sync_player_level(uid, 100, 10000);
+  PERFORM public.sync_player_level(uid, 100, 10000);
+  PERFORM public.sync_player_level(uid, 100, 10000); -- 6th call in the window
+  SELECT experience INTO v_exp FROM public.players WHERE user_id = uid;
+  IF v_exp > 1000 THEN
+    RAISE EXCEPTION 'sync_player_level is NOT rate-limited: a rapid loop reached experience %', v_exp;
   END IF;
 
   -- (2) Rapid battle syncs must be rate-limited: with the server default of
@@ -157,6 +183,24 @@ BEGIN
   SELECT wins INTO v_wins FROM public.players WHERE user_id = uid;
   IF v_wins <> 5 THEN
     RAISE EXCEPTION 'sync_battle_result is NOT rate-limited: expected 5 wins, got %', v_wins;
+  END IF;
+
+  -- (3) The username backfill must be TARGETED. The scaffold seeded two rows
+  --     before migrations ran: an email-derived name (the leak) and a
+  --     deliberately customized one. The backfill must scrub only the first —
+  --     the over-broad "WHERE username IS NOT NULL" variant renamed every
+  --     custom name in the game.
+  IF EXISTS (
+    SELECT 1 FROM public.players
+    WHERE user_id = '22222222-2222-4222-8222-222222222222' AND username = 'a.smith'
+  ) THEN
+    RAISE EXCEPTION 'username backfill left the email-derived name "a.smith" published';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.players
+    WHERE user_id = '33333333-3333-4333-8333-333333333333' AND username = 'DreadBear'
+  ) THEN
+    RAISE EXCEPTION 'username backfill destroyed a deliberately-set name (DreadBear) — it must scrub only email-derived names';
   END IF;
 
   RAISE NOTICE 'leaderboard-integrity behavioural assertions passed';
