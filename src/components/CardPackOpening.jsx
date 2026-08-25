@@ -354,7 +354,6 @@ const CardPackOpening = ({ onClose }) => {
                   currency="coins"
                   canAfford={coins >= 900}
                   onClick={() => handleBuyPack('pack_5')}
-                  badge="BEST VALUE"
                 />
                 <ShopItem
                   icon="📦📦"
@@ -364,6 +363,7 @@ const CardPackOpening = ({ onClose }) => {
                   currency="coins"
                   canAfford={coins >= 1600}
                   onClick={() => handleBuyPack('pack_10')}
+                  badge="BEST VALUE"
                 />
                 <ShopItem
                   icon="💎"
@@ -397,15 +397,24 @@ const CardPackOpening = ({ onClose }) => {
             </div>
           )}
 
-          {/* Rarity guide */}
+          {/* Rarity guide.
+              Scoped on purpose: these are the odds for an ordinary card slot
+              only. A Premium pack's first card rolls 75% rare / 20% epic / 5%
+              legendary, and a Legendary pack's first card is legendary
+              outright — that IS the guarantee those tiers are sold on. Posting
+              the base table unqualified, right beside the gem-priced tiles,
+              understated exactly what the player was paying for. */}
           <div className="mt-6 text-center">
-            <div className="text-white/50 text-xs mb-1">Drop Rates</div>
+            <div className="text-white/50 text-xs mb-1">Drop Rates — per card, standard packs</div>
             <div className="flex justify-center flex-wrap gap-3 text-xs">
               <span className="text-stone-300">Common 49%</span>
               <span className="text-emerald-300">Uncommon 30%</span>
               <span className="text-sky-300">Rare 15%</span>
               <span className="text-purple-300">Epic 5%</span>
               <span className="text-brass-300">Legendary 1%</span>
+            </div>
+            <div className="text-white/40 text-[10px] mt-1">
+              Premium and Legendary packs roll their first card on better odds.
             </div>
           </div>
         </div>

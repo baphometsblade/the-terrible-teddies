@@ -117,7 +117,7 @@ const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }
       <div className="bg-black/30 rounded-xl p-4 mb-4">
         <div className="text-white font-semibold mb-2">Premium Pass includes:</div>
         <ul className="text-white/80 text-sm space-y-1">
-          <li>✓ Exclusive legendary cards</li>
+          <li>✓ 3 guaranteed legendary cards</li>
           <li>✓ Premium cosmetic rewards</li>
           <li>✓ Bonus gems and coins</li>
           <li>✓ Special card borders & emotes</li>
