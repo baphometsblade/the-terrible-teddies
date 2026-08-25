@@ -13,7 +13,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "The Job",
-    content: "Beat the stuffing out of Chuck — the smuggest teddy alive — by getting his 30 HP to 0 before your 30 HP hits the floor. He WILL talk trash the entire time. Ignore him. Or don't. He hates both.",
+    content: "Beat the stuffing out of Chuck — the smuggest teddy alive — by getting his HP to 0 before your 30 hits the floor — he brings more of it on higher difficulty, because of course he does. He WILL talk trash the entire time. Ignore him. Or don't. He hates both.",
     icon: "🎯",
   },
   {
@@ -34,12 +34,12 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Rap Sheets (Abilities)",
-    content: "Taunt — talks so much shit, enemies HAVE to hit them first\nPiercing — cuts straight through Shield\nShield — takes 50% less damage, the coward\nStealth — untargetable for a turn (currently hiding in your hamper)\nFury — every hit they survive is +1 Attack. Do NOT keep poking them.",
+    content: "Taunt — talks so much shit, enemies HAVE to hit them first\nPiercing — cuts straight through Shield\nShield — takes 50% less damage, the coward\nStealth — untargetable for a turn (currently hiding in your hamper)\nFury — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nProtect — while they're upright, nothing else on their side can be touched\nSwarm — costs 1 less once you've already got someone on the table\nRoyal — struts around giving everyone ELSE +1 Attack. Never itself.",
     icon: "✨",
   },
   {
     title: "Violence 101",
-    content: "Click your teddy, then a victim. Damage comes off the target's HP — they stay on the table until it hits 0, and any leftover damage tramples straight into their owner's face. Big-HP teddies are bouncers: get past them (or bring Piercing) before you can deck Chuck directly.",
+    content: "Click your teddy, then a victim. Damage comes off the target's HP — they stay on the table until it hits 0, and any leftover damage tramples straight into their owner's face. Big-HP teddies are bouncers: clear them off the table before you can deck Chuck directly. Piercing does NOT walk you past a bouncer — it just carves through the Shielded ones.",
     icon: "⚔️",
   },
   {
