@@ -489,6 +489,29 @@ describe('checkDailyLogin', () => {
     expect(get().coins).toBe(75 + 50);
   });
 
+  it('reports the cards it actually granted, not the ones it promised', () => {
+    // The claim panel renders whatever this returns. Card rewards can only draw
+    // from cards the player doesn't own, and any shortfall is paid as coins —
+    // so a complete collection used to see "+2 cards" for a grant of zero.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-04T08:00:00Z'));
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    useGameStore.setState({
+      ownedCards: ALL_CARDS.map((c) => c.id), // nothing left to draw
+      coins: 0,
+      lastLoginDate: yesterday.toDateString(),
+      consecutiveLogins: 1, // -> day 2, which promises 1 card
+    });
+
+    const reward = get().checkDailyLogin();
+    expect(reward.day).toBe(2);
+    expect(reward.cards).toBe(0);            // truthful: none were granted
+    expect(reward.substitutedCards).toBe(1); // and it says what was swapped
+    // The coins it reports include the substitution, matching the real balance.
+    expect(reward.coins).toBe(get().coins);
+  });
+
   it('grants the gem and pack rewards on a day that awards them (day 7)', () => {
     // The two tests above only cover coin/card grants, so a regression that
     // dropped the gem or pack credit would pass. Streak of 6 -> today is day 7,

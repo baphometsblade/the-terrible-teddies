@@ -5,6 +5,8 @@ import {
   STAT_TO_STORE_FIELD,
   getDailyChallenges,
   getWeeklyChallenges,
+  challengeProgress,
+  countClaimable,
 } from './challenges';
 import { useGameStore } from './gameStore';
 
@@ -193,5 +195,47 @@ describe('claim safety across a rotation boundary', () => {
     vi.setSystemTime(new Date('2026-06-02T12:00:00Z'));
     get().syncPeriods();
     expect(get().claimedChallenges).not.toContain('d_all_bonus');
+  });
+});
+
+describe('challengeProgress / countClaimable', () => {
+  // The Challenges panel and the MainMenu badge both score challenges. They
+  // used to do it two different ways — a switch in the panel, and in the menu
+  // a badge keyed to the daily LOGIN gift, which is a different feature
+  // entirely. Both now read these helpers, so they cannot disagree.
+  const stats = {
+    todayWins: 2, todayBattles: 5, todayDamageDealt: 40, todayCardsPlayed: 9,
+    weekWins: 6, weekBestStreak: 3, weekNewCards: 1, weekCoinsEarned: 120,
+  };
+
+  it('reads the stat each challenge names, clamped to its target', () => {
+    expect(challengeProgress({ stat: 'dailyWins', target: 5 }, stats)).toBe(2);
+    expect(challengeProgress({ stat: 'weeklyWins', target: 5 }, stats)).toBe(5); // clamped
+    expect(challengeProgress({ stat: 'weeklyBestStreak', target: 3 }, stats)).toBe(3);
+  });
+
+  it('treats a missing stat as zero rather than NaN', () => {
+    expect(challengeProgress({ stat: 'dailyWins', target: 3 }, {})).toBe(0);
+    expect(challengeProgress({ stat: 'nonsense', target: 3 }, stats)).toBe(0);
+  });
+
+  it('counts only challenges that are finished AND unclaimed', () => {
+    const list = [
+      { id: 'a', stat: 'weeklyWins', target: 5 },      // 6 >= 5, done
+      { id: 'b', stat: 'weeklyBestStreak', target: 3 }, // 3 >= 3, done
+      { id: 'c', stat: 'weeklyNewCards', target: 5 },   // 1 < 5, not done
+    ];
+    expect(countClaimable(list, stats, [])).toBe(2);
+    expect(countClaimable(list, stats, ['a'])).toBe(1);
+    expect(countClaimable(list, stats, ['a', 'b'])).toBe(0);
+  });
+
+  it('every shipped challenge maps to a real stat field', () => {
+    // A typo'd `stat` would silently score 0 forever — the challenge would look
+    // permanently unstarted rather than broken.
+    for (const c of [...DAILY_POOL, ...WEEKLY_POOL]) {
+      expect(STAT_TO_STORE_FIELD[c.stat], `challenge ${c.id} has unknown stat "${c.stat}"`)
+        .toBeDefined();
+    }
   });
 });

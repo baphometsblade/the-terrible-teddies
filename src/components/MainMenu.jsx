@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { getDailyChallenges, getWeeklyChallenges, countClaimable } from '../stores/challenges';
 import { useGameStore } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 
@@ -23,6 +24,9 @@ const MainMenu = ({
     playerName, level, xp, getXPForNextLevel,
     coins, gems, cardPacks,
     totalWins, currentWinStreak, consecutiveLogins, lastLoginDate,
+    claimedChallenges,
+    todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
+    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
   } = useGameStore();
 
   const [hoveredOption, setHoveredOption] = useState(null);
@@ -30,12 +34,28 @@ const MainMenu = ({
   const today = new Date().toDateString();
   const dailyAvailable = lastLoginDate !== today;
 
+  // How many challenges are finished and waiting to be claimed.
+  //
+  // The Challenges tile used to badge `dailyAvailable` — whether the daily
+  // LOGIN gift was unclaimed — which has nothing to do with challenges, and is
+  // near-permanently false anyway because App auto-opens the Daily Rewards
+  // dialog moments after launch. So the one tile with claimable rewards behind
+  // it advertised the state of a different feature. Same helper the Challenges
+  // panel scores with, so the badge and the panel always agree.
+  const challengeStats = {
+    todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
+    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
+  };
+  const claimableChallenges =
+    countClaimable(getDailyChallenges(), challengeStats, claimedChallenges ?? []) +
+    countClaimable(getWeeklyChallenges(), challengeStats, claimedChallenges ?? []);
+
   const xpForNext = getXPForNextLevel();
   const xpProgress = (xp / xpForNext) * 100;
 
   const menuOptions = [
     { id: 'battle', title: 'Battle', description: 'Go make Chuck cry', icon: '⚔️', color: 'from-red-700 to-red-900', action: onStartGame, badge: currentWinStreak > 0 ? `🔥 ${currentWinStreak}` : null },
-    { id: 'challenges', title: 'Challenges', description: 'Prove you have a problem', icon: '🎯', color: 'from-orange-700 to-red-900', action: onChallenges, badge: dailyAvailable ? '!' : null },
+    { id: 'challenges', title: 'Challenges', description: 'Prove you have a problem', icon: '🎯', color: 'from-orange-700 to-red-900', action: onChallenges, badge: claimableChallenges > 0 ? `${claimableChallenges}` : null, highlight: claimableChallenges > 0 },
     { id: 'battlepass', title: 'Battle Pass', description: 'Grind. Flex. Repeat.', icon: '🏆', color: 'from-brass-500 to-brass-600', action: onBattlePass, badge: '⭐', highlight: true },
     { id: 'shop', title: 'Shop', description: 'Spend money you don’t have', icon: '🏪', color: 'from-emerald-700 to-emerald-900', action: onShop, badge: '💎' },
     { id: 'packs', title: 'Card Packs', description: 'Gambling, but cuter', icon: '📦', color: 'from-purple-700 to-fuchsia-900', action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks}` : null, highlight: cardPacks > 0 },

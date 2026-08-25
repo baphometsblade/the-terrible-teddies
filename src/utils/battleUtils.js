@@ -142,6 +142,20 @@ export const resolveCreatureHit = (attacker, target, attackerField) => {
 };
 
 /**
+ * Did this hit actually grow the target's fury bonus?
+ *
+ * Fury caps at +3 (see resolveCreatureHit above), so from the fourth survived
+ * hit onward the creature's attack does not move. The battle log used to
+ * announce "+1 attack" on every single survive regardless, telling the player
+ * a capped creature was still snowballing — which is exactly the misreading
+ * that makes people stop chipping at it when chipping has become free.
+ *
+ * Pure, and takes both sides of the hit so callers don't re-derive the cap.
+ */
+export const gainedFuryStack = (target, survivor) =>
+  target?.ability === 'fury' && (survivor?.furyStacks ?? 0) > (target?.furyStacks ?? 0);
+
+/**
  * "Rally" — the momentum payoff. Pump every creature on a field: +1 attack and
  * heal back to full HP (currentHp = defense). Non-creatures (traps) are left
  * untouched. Pure, so the board transform is unit-testable.

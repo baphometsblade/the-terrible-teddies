@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore } from '../stores/gameStore';
-import { getDailyChallenges, getWeeklyChallenges } from '../stores/challenges';
+import { getDailyChallenges, getWeeklyChallenges, challengeProgress } from '../stores/challenges';
 import confetti from 'canvas-confetti';
 import { useDialog } from '@/hooks/useDialog';
 
@@ -160,19 +160,13 @@ const Challenges = ({ onClose }) => {
     return () => clearInterval(timer);
   }, [syncPeriods]);
 
-  const getChallengeProgress = (challenge) => {
-    switch (challenge.stat) {
-      case 'dailyWins':        return Math.min(todayWins, challenge.target);
-      case 'dailyGames':       return Math.min(todayBattles, challenge.target);
-      case 'dailyDamage':      return Math.min(todayDamageDealt, challenge.target);
-      case 'dailyCardsPlayed': return Math.min(todayCardsPlayed, challenge.target);
-      case 'weeklyWins':       return Math.min(weekWins, challenge.target);
-      case 'weeklyBestStreak': return Math.min(weekBestStreak, challenge.target);
-      case 'weeklyNewCards':   return Math.min(weekNewCards, challenge.target);
-      case 'weeklyCoinsEarned':return Math.min(weekCoinsEarned, challenge.target);
-      default: return 0;
-    }
+  // Single source of truth for stat -> progress; MainMenu's claimable badge
+  // reads the same helper, so the two can't disagree about what's finished.
+  const challengeStats = {
+    todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
+    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
   };
+  const getChallengeProgress = (challenge) => challengeProgress(challenge, challengeStats);
 
   const claimReward = (challenge) => {
     const progress = getChallengeProgress(challenge);

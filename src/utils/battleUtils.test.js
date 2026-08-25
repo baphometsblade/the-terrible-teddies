@@ -1,6 +1,7 @@
 import {
   damageToCreatureHp, resolveCreatureHit, rallyField, effectiveCost, effectiveAttack,
   canAttack, readyCreatures, getValidTargets,
+  gainedFuryStack,
 } from './battleUtils';
 
 describe('damageToCreatureHp (creature-HP model)', () => {
@@ -322,5 +323,37 @@ describe('getValidTargets (taunt > protect > all, stealth excluded)', () => {
   it('never returns traps', () => {
     const field = [{ type: 'trap', instanceId: 't', ability: 'none' }];
     expect(getValidTargets([], field)).toEqual([]);
+  });
+});
+
+describe('gainedFuryStack — the battle log must not claim +1 at the cap', () => {
+  // Fury caps at +3. The log announced "+1 attack" on every survived hit
+  // regardless, so a capped creature looked like it was still snowballing and
+  // players kept avoiding a creature that had become free to chip at.
+  const furyAt = (stacks) => ({ ability: 'fury', attack: 3 + stacks, furyStacks: stacks });
+
+  it('is true while stacks are still growing', () => {
+    for (const prior of [0, 1, 2]) {
+      const target = furyAt(prior);
+      const { survivor } = resolveCreatureHit(
+        { attack: 1, ability: 'none' },
+        { ...target, defense: 10, currentHp: 10 },
+        []
+      );
+      expect(gainedFuryStack(target, survivor), `prior=${prior}`).toBe(true);
+    }
+  });
+
+  it('is false once the +3 cap is reached, when attack no longer moves', () => {
+    const target = { ...furyAt(3), defense: 10, currentHp: 10 };
+    const { survivor } = resolveCreatureHit({ attack: 1, ability: 'none' }, target, []);
+    expect(survivor.attack).toBe(target.attack); // the cap really is a no-op
+    expect(gainedFuryStack(target, survivor)).toBe(false);
+  });
+
+  it('is false for a creature without fury', () => {
+    const target = { ability: 'none', attack: 3, defense: 10, currentHp: 10 };
+    const { survivor } = resolveCreatureHit({ attack: 1, ability: 'none' }, target, []);
+    expect(gainedFuryStack(target, survivor)).toBe(false);
   });
 });

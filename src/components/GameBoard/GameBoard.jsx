@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { playSound as playSoundEffect } from '@/utils/sounds';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
-import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures, getValidTargets } from '../../utils/battleUtils';
+import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures, gainedFuryStack, getValidTargets } from '../../utils/battleUtils';
 import { pickQuip, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
@@ -663,7 +663,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
     if (survivor) {
       setOpponentField(prev => prev.map(c => c.instanceId === target.instanceId ? survivor : c));
-      if (target.ability === 'fury') addToBattleLog(`${target.name}'s fury activated! +1 attack`);
+      if (target.ability === 'fury') {
+        addToBattleLog(gainedFuryStack(target, survivor)
+          ? `${target.name}'s fury activated! +1 attack`
+          : `${target.name} is already as furious as they get — capped at +3.`);
+      }
       addToBattleLog(`${attacker.name} smacked ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
       toast({ title: "Hit!", description: `${target.name} is hanging on at ${survivor.currentHp} HP.` });
     } else {
@@ -852,7 +856,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           playSound('attack');
           if (survivor) {
             livePlayerField = livePlayerField.map(c => c.instanceId === target.instanceId ? survivor : c);
-            if (target.ability === 'fury') logs.push(`${target.name} is FURIOUS now! +1 attack`);
+            if (target.ability === 'fury') {
+              logs.push(gainedFuryStack(target, survivor)
+                ? `${target.name} is FURIOUS now! +1 attack`
+                : `${target.name} is capped out at +3 fury — poke away.`);
+            }
             logs.push(`${card.name} roughed up ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
           } else {
             livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
@@ -995,7 +1003,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const getAbilityDescription = (ability) => {
     const descriptions = {
       taunt: "Forces enemies to attack this card first",
-      piercing: "Ignores enemy defense",
+      piercing: "Cuts through Shield (defense here is HP, and piercing does not skip it)",
       shield: "Takes 50% less damage",
       stealth: "Can't be targeted for one turn",
       protect: "Other cards can't be targeted",

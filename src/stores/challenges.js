@@ -51,8 +51,8 @@ export const WEEKLY_POOL = [
   { id: 'w2', name: 'Win 15 Battles', description: 'Achieve 15 victories this week', target: 15, reward: { type: 'gems', amount: 50 }, icon: '🏆', stat: 'weeklyWins' },
   { id: 'w3', name: "Clear The Bar's Tab", description: 'Achieve 25 victories this week', target: 25, reward: { type: 'legendaryPack', amount: 1 }, icon: '🍾', stat: 'weeklyWins' },
   // weeklyBestStreak (weekBestStreak)
-  { id: 'w4', name: 'On A Roll', description: 'Achieve a 3 game win streak', target: 3, reward: { type: 'pack', amount: 2 }, icon: '🎲', stat: 'weeklyBestStreak' },
-  { id: 'w5', name: 'Win Streak of 5', description: 'Achieve a 5 game win streak', target: 5, reward: { type: 'pack', amount: 3 }, icon: '🔥', stat: 'weeklyBestStreak' },
+  { id: 'w4', name: 'On A Roll', description: 'Achieve a 3 game win streak this week', target: 3, reward: { type: 'pack', amount: 2 }, icon: '🎲', stat: 'weeklyBestStreak' },
+  { id: 'w5', name: 'Win Streak of 5', description: 'Achieve a 5 game win streak this week', target: 5, reward: { type: 'pack', amount: 3 }, icon: '🔥', stat: 'weeklyBestStreak' },
   // weeklyNewCards (weekNewCards)
   { id: 'w6', name: 'Fresh Meat For The Deck', description: 'Add 3 new cards to your collection', target: 3, reward: { type: 'gems', amount: 20 }, icon: '🆕', stat: 'weeklyNewCards' },
   { id: 'w7', name: 'Collect 5 New Cards', description: 'Add 5 new cards to your collection', target: 5, reward: { type: 'gems', amount: 30 }, icon: '📚', stat: 'weeklyNewCards' },
@@ -142,3 +142,21 @@ export function getWeeklyChallenges(date = new Date()) {
   // keeps the two rotations visibly independent).
   return pickChallenges(WEEKLY_POOL, WEEKLY_PICK_COUNT, localDayIndex(localMonday(date)) + 104729);
 }
+
+/**
+ * Progress toward a challenge, clamped to its target.
+ *
+ * `stats` is any object carrying the store's challenge counters (pass the
+ * store state, or a plain object in tests). Reads through STAT_TO_STORE_FIELD
+ * so the mapping lives in exactly one place — the Challenges panel used to
+ * carry its own switch over the same eight stats, which is two things to keep
+ * in sync and one of them was bound to drift.
+ */
+export const challengeProgress = (challenge, stats = {}) =>
+  Math.min(stats[STAT_TO_STORE_FIELD[challenge.stat]] ?? 0, challenge.target);
+
+/** How many of these challenges are finished and not yet claimed. */
+export const countClaimable = (challenges, stats = {}, claimedIds = []) =>
+  challenges.filter(
+    (c) => !claimedIds.includes(c.id) && challengeProgress(c, stats) >= c.target
+  ).length;

@@ -699,20 +699,39 @@ export const useGameStore = create(
           cardPacks: state.cardPacks + reward.packs,
         });
 
+        // Track what was ACTUALLY handed over, not what the table promised.
+        // Card rewards can only draw from cards the player doesn't own, so a
+        // full (or nearly full) collection converts the shortfall to coins —
+        // and the claim panel renders whatever comes back from here. Returning
+        // the untouched reward made it announce "+3 cards" to a player who
+        // received none of them.
+        let grantedCards = 0;
+        let substituteCoins = 0;
         if (reward.cards > 0) {
           const availableCards = ALL_CARDS.filter(c => !state.ownedCards.includes(c.id));
           const randomCards = shuffleDeck(availableCards)
             .slice(0, reward.cards)
             .map(c => c.id);
           if (randomCards.length > 0) get().addCards(randomCards);
+          grantedCards = randomCards.length;
           // Collection complete (or nearly): honor the promised cards as coins
           // so the daily reward is never silently empty.
-          const shortfall = reward.cards - randomCards.length;
-          if (shortfall > 0) get().addCoins(shortfall * 50);
+          const shortfall = reward.cards - grantedCards;
+          if (shortfall > 0) {
+            substituteCoins = shortfall * 50;
+            get().addCoins(substituteCoins);
+          }
         }
 
         get().checkAchievement('daily_7', newConsecutive >= 7);
-        return { ...reward, day: dayIndex + 1, consecutive: newConsecutive };
+        return {
+          ...reward,
+          cards: grantedCards,
+          coins: reward.coins + substituteCoins,
+          substitutedCards: reward.cards - grantedCards,
+          day: dayIndex + 1,
+          consecutive: newConsecutive,
+        };
       },
 
       addCardPack: (amount = 1, packType = 'regular') => {
