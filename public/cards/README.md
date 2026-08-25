@@ -151,6 +151,15 @@ and the lighting clause sits last — an overflow costs an adjective, not a
 wardrobe. `npm run art:generate -- --dry-run` prints every prompt; keep the
 longest under 77 tokens.
 
+**Measure, don't eyeball.** `npm run art:tokens` runs the prompts through
+CLIP's own tokenizer and fails if any exceeds 77 (needs `pip install
+tokenizers`). The current set peaks at exactly 77 with nothing truncated. Use
+it rather than counting by hand — and note it pins the text encoding as UTF-8
+on purpose: every prompt joins subject to scene with an em-dash (U+2014), and
+decoding that as cp1252 (the Windows console default) inflates each prompt by
+about four tokens. That artefact once produced a convincing list of ten
+"truncated" cards that were all comfortably inside the window.
+
 The tone is 18+ dive-bar comedy — squalor, booze, bad decisions and regret.
 The generator runs in the **raunchy/NSFW register by default**: `promptFor()`
 injects `raunchy adult NSFW comedy, risqué, suggestive` right after the

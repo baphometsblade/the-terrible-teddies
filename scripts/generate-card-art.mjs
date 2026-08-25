@@ -66,29 +66,41 @@ const GOONS = [
 
 // Kept terse on purpose: CLIP truncates at 77 tokens, so subject identity
 // and the raunchy dive-bar mood must land before any tail gets clipped.
-// "hyper realistic" dropped as redundant — every prompt already opens with
-// "RAW photo". Small saving, but tokens here are not free: see the overrun
-// note above CARD_ART_OVERLONG below.
+//
+// Note this is only a FALLBACK, for a card with no `scene` of its own — and
+// there is no such card: cardSchema.test.js fails the build unless every entry
+// in CARD_ART has a non-empty, unique `scene`, and the GOONS below all carry
+// one inline. So MOOD contributes nothing to any prompt actually sent, and
+// trimming words out of it saves no tokens. Left in place as the guard rail it
+// is; just don't optimise it expecting an effect.
 const MOOD = 'warm dive-bar bokeh, amber light, hyper detailed';
 
-// Measured with CLIP's own tokenizer, these 10 cards compose to 78-81 tokens
-// and are silently truncated at 77. What gets dropped is the tail of `scene`
-// — the end of the sentence, which is exactly where the staging and the
-// visual punchline sit. Nothing warns you; the tokenizer discards the
-// overflow and renders the rest.
+// Cards whose prompt exceeds CLIP's window, and so has its `scene` tail
+// silently discarded. Verified empty — every one of the 72 prompts fits, and
+// the set peaks at exactly 77.
 //
-// Left as data rather than auto-trimmed: the right fix is to reword each
-// `scene` in src/data/cardArt.js by hand, since mechanical truncation cuts
-// mid-phrase and loses the joke just as surely.
-export const CARD_ART_OVERLONG = [6, 19, 20, 21, 53, 55, 58, 60, 66, 68];
+// It was previously listed as [6, 19, 20, 21, 53, 55, 58, 60, 66, 68] at
+// "78-81 tokens". That measurement was an encoding artefact, not a real
+// overrun. Every prompt separates subject from scene with an em-dash (U+2014);
+// read the text as cp1252 rather than UTF-8 — the Windows console default, the
+// same trap that was crashing the Python runner on its own progress glyphs —
+// and that single character becomes three mojibake characters worth about four
+// extra tokens. Re-measuring with the em-dash deliberately mis-decoded
+// reproduces that exact ten-id list and that exact 78-81 range, because those
+// are precisely the ten prompts sitting within four tokens of the ceiling.
+//
+// So: nothing needs rewording. Don't rewrite ten jokes to fix a mojibake.
+// Re-measure any time with `npm run art:tokens` (scripts/check-art-tokens.py),
+// which runs CLIP's real tokenizer and pins the encoding so this can't recur.
+export const CARD_ART_OVERLONG = [];
 const NEGATIVE =
   'cartoon, illustration, drawing, flat colors, cel shading, text, letters, watermark, ' +
   'logo, signature, human, person, extra limbs, deformed, blurry, frame, border';
 // NB: this list is inert on the default path. Negative prompts only take
 // effect when classifier-free guidance is on, and turbo renders at
 // SD_GUIDANCE=0.0 — so nothing here is actually constraining the shipped art.
-// It starts working the moment SD_GUIDANCE is raised; see the note on
-// CARD_ART_OVERLONG and the warning below about raising it.
+// It starts working the moment SD_GUIDANCE is raised; see the SD_GUIDANCE
+// warning in scripts/generate-card-art-diffusers.py before you raise it.
 
 // Raunchy R-rated-comedy art direction: worn plush bears living badly.
 //

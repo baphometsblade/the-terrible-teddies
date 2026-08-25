@@ -36,15 +36,20 @@ const buildPrompt = (card, art) => {
 // tokenizer (openai/clip-vit-large-patch14) over 144 prompts — the SFW and NSFW
 // variants of all 72 cards — where it landed within -5/+6 tokens, mean -0.2.
 //
-// It is a tripwire, not a model of CLIP. The authoritative check was run with
-// the real tokenizer: the current set peaks at 77 tokens with ZERO prompts
-// truncated. This guard exists to fail the build if a future edit grows a scene
-// or the register marker materially beyond that verified state. To re-verify
-// exactly, dump the prompts and run them through the real tokenizer:
+// It is a tripwire, not a model of CLIP. The authoritative check is
 //
-//   npx vite-node scripts/generate-card-art.mjs -- --dry-run
+//   npm run art:tokens      (scripts/check-art-tokens.py)
 //
-// then tokenize with transformers' CLIPTokenizerFast and confirm max <= 77.
+// which runs CLIP's real tokenizer over the generator's own --dry-run output
+// and exits non-zero on any overrun. Re-verified with it: the current set of 72
+// prompts peaks at exactly 77 tokens with ZERO truncated. This guard exists to
+// fail CI fast if a future edit grows a scene or the register marker materially
+// beyond that verified state, without needing python or a model download.
+//
+// If the two ever disagree, trust art:tokens — but check its encoding first.
+// Reading the prompts as cp1252 instead of UTF-8 mis-decodes the em-dash every
+// prompt uses as its subject/scene separator and adds ~4 phantom tokens, which
+// is enough to invent an overrun that isn't there.
 function estimateClipTokens(text) {
   const pieces = text.match(/[A-Za-z0-9']+|[^\sA-Za-z0-9]/g) ?? [];
   let n = 0;

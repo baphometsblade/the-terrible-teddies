@@ -17,6 +17,7 @@
     "art:generate": "vite-node scripts/generate-card-art.mjs",
     "art:monitor": "node scripts/art-monitor.mjs",
     "art:thumbs": "node scripts/make-card-thumbs.mjs",
+    "art:tokens": "python3 scripts/check-art-tokens.py",
     "preview": "vite preview"
   },
   "dependencies": {
