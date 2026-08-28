@@ -56,6 +56,10 @@ __pycache__/
 # Ignored rather than committed for a concrete reason: src/__probe__/*.test.jsx
 # matches vitest's own include glob (src/**/*.{test,spec}.{js,jsx}), so a
 # committed half-written probe would run as part of the real suite in CI.
-src/__probe__/
-vitest.probe.config.js
+# Matched by convention rather than exact name: successive runs invented
+# src/__probe__/ and src/__perf_tmp__/, so a name-by-name list is whack-a-mole.
+# vitest.config.js itself does not match the pattern below; if you ever add a
+# real second vitest config, commit it with `git add -f`.
+src/__*__/
+vitest.*.config.js
 e2e/perf*.spec.js
