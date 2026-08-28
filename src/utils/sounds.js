@@ -1,17 +1,31 @@
 import { Howl } from 'howler';
 
-// Battle sound effects, hotlinked from the mixkit CDN.
+// Battle sound effects, served from our own origin.
+//
+// They used to hotlink assets.mixkit.co directly. That silently rotted: three
+// of the seven URLs now return 403 AccessDenied (verified with curl), killing
+// four of the eight sounds — cardPlay, heal, victory and trap — with no error
+// a player or a test would ever see, because a Howl that fails to load simply
+// never makes a noise. Self-hosting removes the whole class of failure: these
+// are now build assets under public/sounds/, same-origin, and covered by the
+// CSP's media-src 'self'.
+//
+// Only four clips survived the CDN, so four events currently share a clip with
+// a sibling. That is a deliberate interim: every event makes a sound again,
+// which is strictly better than four of them being silent. Replacing the
+// doubled-up ones with distinct clips is a content task, not a code one — drop
+// new files in public/sounds/ and repoint the specs below.
 export const SOUND_SPECS = {
-  cardPlay: { src: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3', volume: 0.3 },
-  attack: { src: 'https://assets.mixkit.co/active_storage/sfx/2803/2803-preview.mp3', volume: 0.4 },
-  damage: { src: 'https://assets.mixkit.co/active_storage/sfx/2012/2012-preview.mp3', volume: 0.3 },
-  heal: { src: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3', volume: 0.3 },
-  victory: { src: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3', volume: 0.5 },
-  defeat: { src: 'https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3', volume: 0.4 },
-  draw: { src: 'https://assets.mixkit.co/active_storage/sfx/2073/2073-preview.mp3', volume: 0.2 },
-  trap: { src: 'https://assets.mixkit.co/active_storage/sfx/209/209-preview.mp3', volume: 0.4 },
+  attack:   { src: '/sounds/attack.mp3', volume: 0.4 },
+  damage:   { src: '/sounds/damage.mp3', volume: 0.3 },
+  defeat:   { src: '/sounds/defeat.mp3', volume: 0.4 },
+  draw:     { src: '/sounds/draw.mp3',   volume: 0.2 },
+  // Shared until distinct replacements exist (see note above):
+  cardPlay: { src: '/sounds/draw.mp3',   volume: 0.3 }, // soft UI blip
+  heal:     { src: '/sounds/draw.mp3',   volume: 0.3 },
+  victory:  { src: '/sounds/attack.mp3', volume: 0.5 }, // punchy, not the defeat sting
+  trap:     { src: '/sounds/damage.mp3', volume: 0.4 },
 };
-
 // Howl instances, built on demand and reused thereafter.
 const cache = new Map();
 
@@ -28,7 +42,20 @@ export function getSound(name) {
   const spec = SOUND_SPECS[name];
   if (!spec) return null;
   if (!cache.has(name)) {
-    cache.set(name, new Howl({ src: [spec.src], volume: spec.volume }));
+    // onloaderror matters even now that the files are local: a Howl that can't
+    // load keeps every play() request queued forever, one entry per call, so a
+    // long session with an unreachable asset grows an unbounded queue that can
+    // never drain. Evicting the instance drops the queue with it and lets a
+    // later play retry from scratch instead of piling onto a dead object.
+    const howl = new Howl({
+      src: [spec.src],
+      volume: spec.volume,
+      onloaderror: () => {
+        howl.unload?.();
+        cache.delete(name);
+      },
+    });
+    cache.set(name, howl);
   }
   return cache.get(name);
 }

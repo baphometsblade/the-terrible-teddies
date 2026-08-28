@@ -49,6 +49,7 @@ describe('sound effects', () => {
     expect(howlCtor).toHaveBeenCalledWith({
       src: [SOUND_SPECS.attack.src],
       volume: SOUND_SPECS.attack.volume,
+      onloaderror: expect.any(Function),
     });
     expect(play).toHaveBeenCalledTimes(1);
   });
@@ -72,9 +73,44 @@ describe('sound effects', () => {
     const { SOUND_SPECS } = await freshModule();
     for (const [name, spec] of Object.entries(SOUND_SPECS)) {
       expect(typeof spec.src, `${name} needs a string src`).toBe('string');
-      expect(spec.src.startsWith('https://'), `${name} src must be https`).toBe(true);
       expect(spec.volume, `${name} volume out of range`).toBeGreaterThan(0);
       expect(spec.volume, `${name} volume out of range`).toBeLessThanOrEqual(1);
     }
+  });
+
+  it('serves every clip from our own origin, never a hotlink', async () => {
+    // The regression this exists to prevent, which actually shipped: the specs
+    // hotlinked assets.mixkit.co, and three of those URLs later started
+    // returning 403 AccessDenied. Four of the eight sounds went silent and
+    // nothing noticed, because a Howl that fails to load just makes no noise.
+    // Same-origin files under public/sounds/ cannot rot that way.
+    const { SOUND_SPECS } = await freshModule();
+    for (const [name, spec] of Object.entries(SOUND_SPECS)) {
+      expect(
+        /^https?:\/\//i.test(spec.src),
+        `${name} points at an external URL (${spec.src}). Put the clip in ` +
+          `public/sounds/ and reference it as /sounds/<file> — hotlinked audio ` +
+          `has already silently died once.`
+      ).toBe(false);
+      expect(spec.src.startsWith('/sounds/'), `${name} should live under /sounds/`).toBe(true);
+    }
+  });
+
+  it('evicts a Howl that fails to load, so its play queue cannot grow forever', async () => {
+    // Howler queues every play() against an instance that is still loading. If
+    // the load never succeeds the queue never drains — one entry per attempted
+    // sound, for the whole session. Dropping the instance on error takes the
+    // queue with it and lets the next play start clean.
+    const { playSound } = await freshModule();
+    playSound('attack', true);
+    expect(howlCtor).toHaveBeenCalledTimes(1);
+
+    // Fire the handler the module registered.
+    const { onloaderror } = howlCtor.mock.calls[0][0];
+    onloaderror();
+
+    // Next play must build a fresh Howl rather than reuse the dead one.
+    playSound('attack', true);
+    expect(howlCtor).toHaveBeenCalledTimes(2);
   });
 });
