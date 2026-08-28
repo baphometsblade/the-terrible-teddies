@@ -523,6 +523,56 @@ test('challenges dialog shows daily challenges and closes on Escape', async ({ p
   await expect(dialog).toHaveCount(0, SLOW);
 });
 
+test('challenge scoring is wired to the store: the menu badge and the panel agree', async ({ page }) => {
+  // Guards the WIRING of the shared challengeProgress helper, which unit tests
+  // cannot see. MainMenu and the Challenges panel each hand it a plain stats
+  // object whose keys must match STAT_TO_STORE_FIELD's values; rename one and
+  // every challenge silently scores 0% — the panel still renders, just
+  // permanently unstarted, and the badge never appears. Nothing would throw.
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    const s = stored.state;
+    // Finish every daily challenge. syncPeriods wipes these when the stamp is a
+    // DIFFERENT day, so stamp today or the seed is cleared the moment the panel
+    // opens. Weekly stats stay at zero, so only the dailies should count.
+    s.dailyStatsDate = new Date().toDateString();
+    s.todayWins = 999;
+    s.todayBattles = 999;
+    s.todayDamageDealt = 9999;
+    s.todayCardsPlayed = 999;
+    s.weekWins = 0;
+    s.weekBestStreak = 0;
+    s.weekNewCards = 0;
+    s.weekCoinsEarned = 0;
+    s.claimedChallenges = [];
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+
+  const expected = String(getDailyChallenges().length);
+
+  // The menu tile counts finished, unclaimed challenges — it used to badge
+  // whether the daily LOGIN gift was unclaimed, an unrelated feature.
+  const tile = page.getByRole('button', { name: 'Challenges', exact: true });
+  await expect(tile).toContainText(expected, SLOW);
+
+  await tile.click();
+  const dialog = page.getByRole('dialog', { name: 'Challenges' });
+  await expect(dialog).toBeVisible(SLOW);
+
+  // ...and the panel scores the same stats identically: all of them claimable.
+  // exact:true matters — Playwright matches accessible names by substring by
+  // default, which also picks up the "Claim all-challenges bonus" button that
+  // correctly appears once every daily is done.
+  await expect(dialog.getByRole('button', { name: 'Claim', exact: true }))
+    .toHaveCount(getDailyChallenges().length, SLOW);
+
+  // That bonus button is itself a signal the panel agrees the set is complete.
+  await expect(dialog.getByRole('button', { name: 'Claim all-challenges bonus' }))
+    .toBeVisible();
+});
+
 test('a dialog chunk that fails to load degrades gracefully, not a full-app crash', async ({ page }) => {
   // Regression guard for the app-killing lazy-chunk failure: a dynamic import
   // that rejects (flaky network, or a stale chunk hash after a deploy) used to
