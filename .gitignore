@@ -48,3 +48,14 @@ __pycache__/
 
 # Serena MCP session cache
 .serena/
+
+# Measurement scaffolding written by audit/profiling agents at runtime:
+# probe suites, throwaway perf specs, and the alternate vitest config they use
+# to run in isolation. Transient by nature — deleted once a run finishes.
+#
+# Ignored rather than committed for a concrete reason: src/__probe__/*.test.jsx
+# matches vitest's own include glob (src/**/*.{test,spec}.{js,jsx}), so a
+# committed half-written probe would run as part of the real suite in CI.
+src/__probe__/
+vitest.probe.config.js
+e2e/perf*.spec.js
