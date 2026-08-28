@@ -7,12 +7,23 @@ vi.mock('posthog-js', () => ({
 }));
 
 import posthog from 'posthog-js';
-import analytics from './analytics';
+import analytics, { initializePostHog } from './analytics';
 
-beforeEach(() => {
+// posthog-js is now loaded dynamically (it is 225 kB and inert without a key),
+// so the module binding is null until initializePostHog resolves. Await it
+// here with a stubbed key so these tests exercise the real init path instead
+// of the pre-load buffer — without this every assertion below would be
+// checking a queued entry rather than a call to the mock.
+beforeEach(async () => {
+  vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test_key');
+  await initializePostHog();
   posthog.capture.mockClear();
   posthog.identify.mockClear();
   posthog.reset.mockClear();
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe('analytics.trackError', () => {
