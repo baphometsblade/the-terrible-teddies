@@ -6,6 +6,7 @@ import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 import { RARITY, RARITY_ORDER as RARITY_ORDER_ASC } from '@/lib/rarity';
 import { useDialog } from '@/hooks/useDialog';
+import { buildVisibleOrder, staggerDelay } from '@/lib/collectionOrder';
 
 // Collection sorts and lists rarest-first.
 const RARITY_ORDER = [...RARITY_ORDER_ASC].reverse();
@@ -107,7 +108,11 @@ const TeddyCollection = () => {
     return true;
   };
 
-  const visibleCount = sortedCards.reduce((n, c) => n + (matchesFilters(c) ? 1 : 0), 0);
+  // Ordinal among the tiles that are actually SHOWING, not position in the
+  // catalog — the grid hides non-matching tiles rather than unmounting them, so
+  // the two differ under every filter but "all". `size` is the visible count.
+  const visibleOrder = buildVisibleOrder(sortedCards, matchesFilters);
+  const visibleCount = visibleOrder.size;
 
   const totalOwned = ownedCards.length;
   const totalCards = ALL_CARDS.length;
@@ -217,14 +222,14 @@ const TeddyCollection = () => {
 
             `hidden` is display:none, so hidden tiles also leave the
             accessibility tree and the tab order — which is what we want. */}
-        {sortedCards.map((card, index) => (
+        {sortedCards.map((card) => (
           <motion.div
             key={card.id}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: Math.min(index * 0.02, 0.5) }}
+            transition={{ delay: staggerDelay(visibleOrder.get(card.id)) }}
             {...pressable(() => setSelectedCard(card), `View ${card.name}`)}
-            className={`cursor-pointer relative ${!card.owned ? 'opacity-40' : ''} ${matchesFilters(card) ? '' : 'hidden'}`}
+            className={`cursor-pointer relative ${!card.owned ? 'opacity-40' : ''} ${visibleOrder.has(card.id) ? '' : 'hidden'}`}
           >
             <div className={`absolute inset-0 rounded-lg blur-lg -z-10 opacity-40 bg-gradient-to-r ${RARITY[card.rarity].gradient}`} />
             <TeddyCard teddy={card} />

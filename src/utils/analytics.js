@@ -14,6 +14,16 @@ const isBrowser = typeof window !== 'undefined';
 // fetches it at all, and a keyed one fetches it off the critical path.
 let ph = null;
 let loading = null;
+// A failed import must not be terminal. `loading` is the in-flight guard, so
+// leaving it set after a rejection wedged the module permanently: `ph` stayed
+// null, every later initializePostHog() returned at the guard, and the pending
+// buffer — which exists precisely to hold the early trackError calls — filled
+// to its cap and was never drained. One flaky chunk fetch silently cost the
+// deploy all of its crash telemetry. Failures now clear the guard and a later
+// send() re-arms the load, bounded so a permanently blocked SDK (ad blocker,
+// CSP) retries a few times rather than on every event forever.
+const MAX_INIT_ATTEMPTS = 3;
+let initAttempts = 0;
 
 // Calls made before the SDK finishes loading would otherwise vanish, and that
 // is most of them — the import races app startup, and trackError in particular
@@ -27,8 +37,15 @@ const send = (method, args) => {
   try {
     if (ph) {
       ph[method]?.(...args);
-    } else if (pending.length < MAX_PENDING) {
+      return;
+    }
+    if (pending.length < MAX_PENDING) {
       pending.push([method, args]);
+    }
+    // Not loaded and nothing in flight: a previous attempt failed. Try again
+    // so the queued events get a chance to ship.
+    if (!loading && initAttempts > 0 && initAttempts < MAX_INIT_ATTEMPTS) {
+      initializePostHog();
     }
   } catch (error) {
     console.error(`Failed to send analytics ${method}:`, error);
@@ -39,7 +56,9 @@ export const initializePostHog = async () => {
   try {
     const key = import.meta.env?.VITE_POSTHOG_KEY;
     // Key check FIRST: this is what keeps the 225 kB off a keyless deploy.
-    if (!key || !isBrowser || loading) return;
+    if (!key || !isBrowser || loading || ph) return;
+    if (initAttempts >= MAX_INIT_ATTEMPTS) return;
+    initAttempts += 1;
 
     loading = import('posthog-js');
     const mod = await loading;
@@ -69,6 +88,9 @@ export const initializePostHog = async () => {
     for (const [method, args] of pending.splice(0)) send(method, args);
   } catch (error) {
     console.error('Failed to initialize PostHog:', error);
+    // Clear the in-flight guard so the next send() can re-arm the load; the
+    // attempt counter is what stops this from retrying without end.
+    loading = null;
   }
 };
 

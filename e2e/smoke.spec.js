@@ -603,6 +603,27 @@ test('a dialog chunk that fails to load degrades gracefully, not a full-app cras
   await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible();
 });
 
+test('a failed battle chunk keeps the app alive too, not just dialogs', async ({ page }) => {
+  // GameBoard is lazy for the same reason the dialogs are — it drags Howler and
+  // canvas-confetti behind it — but it shipped with Suspense and NO error
+  // boundary, so it had exactly the app-killing failure mode the dialogs were
+  // fixed for. Battle is the single most-tapped button in the game, so a stale
+  // chunk hash after a deploy meant the whole app died on the first tap.
+  await page.route(/GameBoard[-.]/, (r) => r.abort());
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+
+  const notice = page.getByRole('alertdialog', { name: /failed to load/i });
+  await expect(notice).toBeVisible(SLOW);
+  // The app-level crash screen must NOT have taken over.
+  await expect(page.getByText('Oh no!')).toHaveCount(0);
+
+  // Dismissing drops the player back on a working menu.
+  await notice.getByRole('button', { name: 'OK' }).click();
+  await expect(notice).toHaveCount(0, SLOW);
+  await expect(page.getByRole('button', { name: 'Shop', exact: true })).toBeVisible();
+});
+
 test('every pay line sends the right bundle id to checkout', async ({ page }) => {
   // The revenue path has SEVEN entry points — five gem tiles plus two special
   // offers — and only one of them was covered. A tile wired to the wrong id

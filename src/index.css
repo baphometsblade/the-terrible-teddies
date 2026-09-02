@@ -152,6 +152,14 @@
   animation-name: teddy-drift;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
+  /* Each teddy gets its own negative-free start delay (0-3.7s) to spread the
+     drift out. Without `backwards`, an element renders UNTRANSFORMED during
+     its delay — i.e. parked at `top: 0`, the container's top edge, instead of
+     the -15vh offscreen position the keyframes start from. Measured at first
+     paint: 11 of 12 teddies visibly stacked along the top of the menu, then
+     jumping into place as each delay elapsed. `backwards` applies the `from`
+     frame during the delay, so they wait offscreen where they belong. */
+  animation-fill-mode: backwards;
 }
 
 /* MotionConfig covers Framer Motion, but this animation is pure CSS, so it

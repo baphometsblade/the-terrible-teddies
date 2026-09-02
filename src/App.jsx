@@ -259,15 +259,27 @@ function App() {
         return (
           <div className="relative">
             <BackButton onClick={() => navigateTo('menu')} />
-            {/* Same Suspense treatment the lazy dialogs get. The board chunk is
-                fetched on the tap that navigates here, so the spinner is
-                typically a single frame. */}
-            <Suspense fallback={<DialogLoader />}>
-              <GameBoard
-                onBackToMenu={() => navigateTo('menu')}
-                onOpenShop={() => { navigateTo('menu'); setShowShop(true); }}
-              />
-            </Suspense>
+            {/* Same Suspense + error-boundary treatment the lazy dialogs get.
+                The board chunk is fetched on the tap that navigates here, so
+                the spinner is typically a single frame.
+
+                The boundary is not optional: Suspense catches the *pending*
+                import promise, never a *rejected* one, so a battle chunk that
+                fails to arrive (flaky network, stale hash after a deploy)
+                would throw all the way to the app-level ErrorBoundary and
+                replace the entire app with the fatal crash screen. Scoped
+                here, a failed Battle tap is a dismissible notice that drops
+                the player back on the menu. resetKey is the screen, so
+                navigating away and tapping Battle again refetches the chunk
+                instead of being stuck on the failure. */}
+            <DialogErrorBoundary resetKey={currentScreen} onDismiss={() => navigateTo('menu')}>
+              <Suspense fallback={<DialogLoader />}>
+                <GameBoard
+                  onBackToMenu={() => navigateTo('menu')}
+                  onOpenShop={() => { navigateTo('menu'); setShowShop(true); }}
+                />
+              </Suspense>
+            </DialogErrorBoundary>
           </div>
         );
       case 'deck':
