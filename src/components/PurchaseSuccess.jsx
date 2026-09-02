@@ -39,11 +39,11 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
   // every tick (resetting its counter — the poll would never terminate) and
   // flash the spinner. A transient error during a silent poll also stays in
   // 'pending' so the next tick can retry.
-  const verify = useCallback(async (silent = false) => {
+  const verify = useCallback(async (silent = false, maxAttempts) => {
     if (!sessionId || synced.current) return;
     if (!silent && mountedRef.current) setPhase('verifying');
     try {
-      const purchase = await verifyPurchaseSession(sessionId);
+      const purchase = await verifyPurchaseSession(sessionId, maxAttempts);
       if (!mountedRef.current) return;
 
       if (purchase && purchase.status === 'completed') {
@@ -86,12 +86,28 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
   // ref so it survives phase flips (a local variable would reset every time
   // the effect re-ran, making the cap unreachable).
   const pollTriesRef = useRef(0);
+  // Guards against stacking loops. verifyPurchaseSession polls internally 12
+  // times with a back-off (~39 s end to end), and this interval used to launch
+  // a fresh one every 4 s with nothing checking whether the previous was still
+  // running — synced.current only latches after a SUCCESSFUL verify, which is
+  // exactly the case that never happens while the webhook is slow. Measured
+  // with the purchases row absent: 68 requests in 75 s, ramping to ~5/second,
+  // with a worst case of 12 + 6x12 = 84 for a single purchase.
+  const pollingRef = useRef(false);
   useEffect(() => {
     if (phase !== 'pending') return;
-    const id = setInterval(() => {
+    const id = setInterval(async () => {
       if (pollTriesRef.current >= 6) { clearInterval(id); return; }
+      if (pollingRef.current) return; // a tick is still in flight — do not stack
+      pollingRef.current = true;
       pollTriesRef.current += 1;
-      verify(true);
+      try {
+        // maxAttempts 1: this tick IS the retry cadence, so the background path
+        // is one request per 4 s rather than a nested 12-request back-off loop.
+        await verify(true, 1);
+      } finally {
+        pollingRef.current = false;
+      }
     }, 4000);
     return () => clearInterval(id);
   }, [phase, verify]);

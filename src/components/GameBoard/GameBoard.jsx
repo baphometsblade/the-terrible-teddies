@@ -34,7 +34,9 @@ const MOMENTUM_MAX = 10;
 // threading level/xp through dependency arrays.
 function syncLevelToServer() {
   const state = useGameStore.getState();
-  syncPlayerLevel(state.level, state.getLeaderboardExperience())
+  // ownerUserId is this account's id (bindToUser stamps it at login), so the
+  // helper can skip its auth.getUser() round-trip.
+  syncPlayerLevel(state.level, state.getLeaderboardExperience(), state.ownerUserId)
     .catch(err => console.error('Level sync failed:', err));
 }
 
@@ -202,7 +204,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       // closes the streak exploit even mid-unload. The server syncs are best-effort.
       abandonRewardsRef.current = useGameStore.getState()
         .recordBattleResult(false, stats.damageDealt, stats.healingDone, hp, stats.cardsPlayed);
-      syncBattleResult(false, stats.damageDealt, stats.healingDone, 5)
+      syncBattleResult(false, stats.damageDealt, stats.healingDone, 5, useGameStore.getState().ownerUserId)
         .catch(err => console.error('Abandon sync failed:', err));
       syncLevelToServer();
     };
@@ -394,7 +396,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       setBattleRewards({ xp: xpGain, coins: coinsGain });
 
       // Sync to server (fire and forget - don't block UI)
-      syncBattleResult(true, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain)
+      syncBattleResult(true, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain, useGameStore.getState().ownerUserId)
         .catch(err => console.error('Battle sync failed:', err));
       // recordBattleResult ran addXP synchronously, so the store level/xp are
       // now current. Push them so the leaderboard's rival rows stop reading as
@@ -433,7 +435,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       setBattleRewards({ xp: xpGain, coins: coinsGain });
 
       // Sync to server (fire and forget - don't block UI)
-      syncBattleResult(false, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain)
+      syncBattleResult(false, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain, useGameStore.getState().ownerUserId)
         .catch(err => console.error('Battle sync failed:', err));
       // Keep the server level/xp current even on a loss (a loss still grants XP).
       syncLevelToServer();

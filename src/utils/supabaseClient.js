@@ -22,14 +22,29 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder-anon-key'
 );
 
-export const fetchServerGemBalance = async () => {
+// Resolve whose account we are acting on.
+//
+// Every helper below used to open with `await supabase.auth.getUser()`. In
+// supabase-js v2 that is a real, uncached network round-trip (GoTrueClient
+// issues GET /auth/v1/user every call) — so a single login cost four
+// sequential requests, two of which re-fetched a user object the caller was
+// already holding. Callers that have the id (App has session.uid; the
+// battle board has the store's ownerUserId) pass it and skip the trip
+// entirely; callers that don't still work exactly as before.
+const resolveUserId = async (userId) => {
+  if (userId) return userId;
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  return user?.id ?? null;
+};
+
+export const fetchServerGemBalance = async (userId = null) => {
+  const uid = await resolveUserId(userId);
+  if (!uid) return null;
 
   const { data, error } = await supabase
     .from('user_gems')
     .select('gems')
-    .eq('user_id', user.id)
+    .eq('user_id', uid)
     .maybeSingle();
 
   if (error) {
@@ -39,12 +54,12 @@ export const fetchServerGemBalance = async () => {
   return data?.gems ?? null;
 };
 
-export const ensurePlayerProfile = async (username = null) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+export const ensurePlayerProfile = async (username = null, userId = null) => {
+  const uid = await resolveUserId(userId);
+  if (!uid) return null;
 
   const { error } = await supabase.rpc('upsert_player_profile', {
-    p_user_id: user.id,
+    p_user_id: uid,
     p_username: username,
   });
 
@@ -59,9 +74,9 @@ export const ensurePlayerProfile = async (username = null) => {
 // Server-side validation lives in set_player_username; this returns the stored
 // name on success or null on failure so the caller can keep the local store in
 // step only when the write actually landed.
-export const setPlayerUsername = async (username) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+export const setPlayerUsername = async (username, userId = null) => {
+  const uid = await resolveUserId(userId);
+  if (!uid) return null;
 
   const { data, error } = await supabase.rpc('set_player_username', {
     p_username: username,
@@ -73,12 +88,12 @@ export const setPlayerUsername = async (username) => {
   return data ?? username;
 };
 
-export const syncBattleResult = async (won, damageDealt = 0, healingDone = 0, coinsEarned = 0) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+export const syncBattleResult = async (won, damageDealt = 0, healingDone = 0, coinsEarned = 0, userId = null) => {
+  const uid = await resolveUserId(userId);
+  if (!uid) return null;
 
   const { error } = await supabase.rpc('sync_battle_result', {
-    p_user_id: user.id,
+    p_user_id: uid,
     p_won: won,
     p_damage_dealt: damageDealt,
     p_healing_done: healingDone,
@@ -92,12 +107,12 @@ export const syncBattleResult = async (won, damageDealt = 0, healingDone = 0, co
   return true;
 };
 
-export const syncPlayerLevel = async (level, xp) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+export const syncPlayerLevel = async (level, xp, userId = null) => {
+  const uid = await resolveUserId(userId);
+  if (!uid) return null;
 
   const { error } = await supabase.rpc('sync_player_level', {
-    p_user_id: user.id,
+    p_user_id: uid,
     p_level: level,
     p_xp: xp,
   });
@@ -109,14 +124,14 @@ export const syncPlayerLevel = async (level, xp) => {
   return true;
 };
 
-export const fetchPlayerProfile = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+export const fetchPlayerProfile = async (userId = null) => {
+  const uid = await resolveUserId(userId);
+  if (!uid) return null;
 
   const { data, error } = await supabase
     .from('players')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', uid)
     .maybeSingle();
 
   if (error) {
