@@ -8,6 +8,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/components/ui/use-toast";
 import ErrorBoundary from './components/ErrorBoundary';
 import DialogErrorBoundary from './components/DialogErrorBoundary';
+// Static, not lazy: this IS the boot path, so a chunk for it would be a
+// round-trip in front of the screen whose entire job is covering a round-trip.
+import BootScreen from './components/BootScreen';
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from './stores/gameStore';
@@ -235,20 +238,7 @@ function App() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-night-900 flex items-center justify-center">
-        <div className="text-center">
-          <motion.div
-            animate={{ y: [0, -20, 0] }}
-            transition={{ repeat: Infinity, duration: 1 }}
-            className="text-6xl mb-4"
-          >
-            🧸
-          </motion.div>
-          <div className="text-white text-xl">Loading Terrible Teddies...</div>
-        </div>
-      </div>
-    );
+    return <BootScreen />;
   }
 
   const navigateTo = (screen) => setCurrentScreen(screen);

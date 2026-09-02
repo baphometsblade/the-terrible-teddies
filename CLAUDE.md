@@ -104,6 +104,17 @@ The store is the single source of truth. Components read via hooks and dispatch 
 
 `src/integrations/supabase/auth.jsx` provides `SupabaseProvider` context. The `useSupabaseAuth` hook gives `{ session, loading }`. App.jsx gates all game content behind auth—unauthenticated users see the Auth component.
 
+While `loading` is true the app renders `BootScreen`, and that gate is longer
+than it looks. Every returning player's stored access token has expired — they
+last an hour — so restoring a session means a network refresh, and when the
+backend is unreachable supabase-js retries with a back-off before giving up.
+Measured: 8 requests over ~50 s, then the login screen. It does recover on its
+own if the network returns mid-retry, so waiting is right; what BootScreen adds
+is that the wait stops being silent (a hint at 6 s, a Reload button at 20 s).
+`e2e/boot.spec.js` pins both the escalation and the recovery. BootScreen is
+imported statically on purpose — a chunk for it would be a round-trip in front
+of the screen whose job is covering a round-trip.
+
 ### Monetization
 
 **Stripe Checkout** (real payments, not simulation):
