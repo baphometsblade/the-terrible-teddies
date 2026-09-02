@@ -1,7 +1,7 @@
 import {
   damageToCreatureHp, resolveCreatureHit, rallyField, effectiveCost, effectiveAttack,
   canAttack, readyCreatures, getValidTargets,
-  gainedFuryStack,
+  gainedFuryStack, describeBlockedTarget,
 } from './battleUtils';
 
 describe('damageToCreatureHp (creature-HP model)', () => {
@@ -355,5 +355,78 @@ describe('gainedFuryStack — the battle log must not claim +1 at the cap', () =
     const target = { ability: 'none', attack: 3, defense: 10, currentHp: 10 };
     const { survivor } = resolveCreatureHit({ attack: 1, ability: 'none' }, target, []);
     expect(gainedFuryStack(target, survivor)).toBe(false);
+  });
+});
+
+describe('describeBlockedTarget', () => {
+  const creature = (over = {}) => ({ type: 'action', name: 'Goon', attack: 2, defense: 3, ...over });
+
+  it('names the taunt that is blocking, not the card that was tapped', () => {
+    const field = [creature({ name: 'Bouncer', ability: 'taunt' }), creature({ name: 'Barfly' })];
+    const blocked = describeBlockedTarget(field[1], field);
+    expect(blocked.title).toMatch(/taunt/i);
+    expect(blocked.description).toContain('Bouncer');
+  });
+
+  it('explains protect once no taunt is in the way', () => {
+    const field = [creature({ name: 'Shieldbear', ability: 'protect' }), creature({ name: 'Barfly' })];
+    const blocked = describeBlockedTarget(field[1], field);
+    expect(blocked.title).toMatch(/protect/i);
+    expect(blocked.description).toContain('Shieldbear');
+  });
+
+  it('explains traps and stealth before any board-wide rule', () => {
+    const trap = { type: 'trap', name: 'Bear Trap' };
+    expect(describeBlockedTarget(trap, [trap]).description).toContain('Bear Trap');
+
+    const hidden = creature({ name: 'Sneak', stealthActive: true });
+    expect(describeBlockedTarget(hidden, [hidden]).title).toMatch(/see/i);
+  });
+
+  it('returns null for a target that is actually legal', () => {
+    const field = [creature({ name: 'Barfly' })];
+    expect(describeBlockedTarget(field[0], field)).toBeNull();
+  });
+
+  // The reason and the rule must never disagree: a reason the engine does not
+  // enforce teaches the player a rule that does not exist, and a rejection
+  // with no reason is the silent no-op this was written to kill. Enumerate
+  // every combination of the keywords that gate targeting and check both
+  // directions on every card of every field.
+  it('gives a reason for exactly the targets getValidTargets rejects', () => {
+    const KEYWORDS = [undefined, 'taunt', 'protect', 'none'];
+    let checkedBlocked = 0;
+    let checkedLegal = 0;
+
+    for (const a of KEYWORDS) {
+      for (const b of KEYWORDS) {
+        for (const stealthed of [false, true]) {
+          for (const withTrap of [false, true]) {
+            const field = [
+              creature({ name: 'A', ability: a, instanceId: 'a' }),
+              creature({ name: 'B', ability: b, instanceId: 'b', stealthActive: stealthed }),
+              ...(withTrap ? [{ type: 'trap', name: 'T', instanceId: 't' }] : []),
+            ];
+            const legal = getValidTargets([], field);
+            for (const card of field) {
+              const isLegal = legal.some((t) => t.instanceId === card.instanceId);
+              const reason = describeBlockedTarget(card, field);
+              if (isLegal) {
+                expect(reason, `${card.name} is legal but was given a reason`).toBeNull();
+                checkedLegal += 1;
+              } else {
+                expect(reason, `${card.name} was rejected with no reason`).not.toBeNull();
+                expect(typeof reason.description).toBe('string');
+                checkedBlocked += 1;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Guard the guard: a bug that made every card legal would vacuously pass.
+    expect(checkedBlocked).toBeGreaterThan(20);
+    expect(checkedLegal).toBeGreaterThan(20);
   });
 });

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { playSound as playSoundEffect } from '@/utils/sounds';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import confetti from 'canvas-confetti';
-import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures, gainedFuryStack, getValidTargets } from '../../utils/battleUtils';
+import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures, gainedFuryStack, getValidTargets, describeBlockedTarget } from '../../utils/battleUtils';
 import { pickQuip, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
@@ -636,14 +636,16 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // triggered by going face — see attackOpponentDirectly).
     const validTargets = getValidTargets(playerField, opponentField);
     if (!validTargets.find(t => t.instanceId === target.instanceId)) {
-      const tauntCard = opponentField.find(c => c.ability === 'taunt' && c.type !== 'trap');
-      if (tauntCard) {
-        toast({
-          title: "Must attack taunt!",
-          description: `${tauntCard.name} is taunting you!`,
-          variant: "destructive"
-        });
-      }
+      // Say WHY, for every reason a target can be blocked. This branch used to
+      // cover only taunt and, worse, could not run at all: the click handler
+      // was gated on isValidTarget, so tapping a blocked teddy did nothing
+      // whatsoever and the message below was dead code. The rule the player
+      // has just run into is the most interesting thing on the board — it is
+      // the whole point of taunt and protect — so it has to be spoken aloud.
+      // Mirrors getValidTargets' own precedence: traps and stealth first,
+      // then taunt, then protect.
+      const blocked = describeBlockedTarget(target, opponentField);
+      if (blocked) toast({ ...blocked, variant: "destructive" });
       return;
     }
 
@@ -1272,7 +1274,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               initial={{ y: -50, opacity: 0 }}
               animate={{ y: 0, opacity: card.stealthActive ? 0.5 : 1 }}
               className={`relative ${targetingMode && isValidTarget ? 'cursor-crosshair ring-2 ring-red-500 ring-offset-2' : ''}`}
-              {...pressable(() => targetingMode && isValidTarget && attackTarget(card), `Attack ${card.name}`)}
+              {...pressable(() => attackTarget(card), `Attack ${card.name}`, targetingMode)}
             >
               <TeddyCard teddy={card} />
               {/* Tells the player which of Chuck's teddies can actually swing
@@ -1382,7 +1384,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                  short-circuiting here: it owns every rejection message
                  (trap / exhausted / summoning-sick), so a player who taps an
                  unavailable creature is told why instead of getting silence. */
-              {...pressable(() => phase === 'battle' && selectCardForAttack(card), `Select ${card.name} to attack`)}
+              {...pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`, currentTurn === 'player' && phase === 'battle')}
             >
               <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
               {card.hasAttacked && (
@@ -1419,7 +1421,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               whileHover={{ y: -20, scale: 1.1, zIndex: 10 }}
               style={{ transformOrigin: 'bottom center' }}
               className={`cursor-pointer ${playerEnergy < effectiveCost(card, playerField) ? 'opacity-50' : ''}`}
-              {...pressable(() => phase === 'main' && playCard(card), `Play ${card.name}`)}
+              {...pressable(() => playCard(card), `Play ${card.name}`, currentTurn === 'player' && phase === 'main')}
             >
               <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
             </motion.div>

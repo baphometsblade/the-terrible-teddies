@@ -417,10 +417,16 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
   // Turn 1 — play a creature. It arrives summoning-sick, so it must NOT be
   // able to swing this turn: selecting it never opens targeting.
   await page.getByRole('button', { name: /^Play / }).first().click();
+  await expect(page.getByText('Warming Up')).toHaveCount(2); // Chuck's opener + the new arrival
+
+  // The creature is on the field, but choosing an attacker is a battle-phase
+  // action, so it must not offer itself as one yet — a card that does is a
+  // button that does nothing (see the phantom-button guard in a11y.spec.js).
+  await expect(page.getByRole('button', { name: /^Select .+ to attack$/ })).toHaveCount(0);
+
+  await page.getByRole('button', { name: '⚔️ Battle' }).click();
   const attacker = page.getByRole('button', { name: /^Select .+ to attack$/ }).first();
   await expect(attacker).toBeVisible(SLOW);
-  await expect(page.getByText('Warming Up')).toHaveCount(2); // Chuck's opener + the new arrival
-  await page.getByRole('button', { name: '⚔️ Battle' }).click();
   await attacker.click();
   // The crosshair affordance renders only while targeting is open, so its
   // absence is what proves the selection was refused.
@@ -443,8 +449,8 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
   // Click whatever the board marks as hittable — a valid creature target, or
   // the direct-attack zone when only traps/stealth remain. Taking the first
   // "Attack <name>" button instead is wrong once Chuck has several creatures:
-  // taunt can make the first one an invalid target, and the click then
-  // silently no-ops.
+  // taunt can make the first one an invalid target, and the click then only
+  // explains why it is blocked rather than resolving an attack.
   const hittable = page.locator('.cursor-crosshair').first();
   await expect(hittable).toBeVisible(SLOW);
   await hittable.click();

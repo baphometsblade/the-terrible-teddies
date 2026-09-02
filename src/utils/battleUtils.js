@@ -195,3 +195,57 @@ export const getValidTargets = (_attackerField, defenderField) => {
   if (protectors.length > 0) return protectors;
   return creatures;
 };
+
+/**
+ * Why can't this target be attacked? Returns `{ title, description }` for the
+ * toast, or null if the target is in fact legal.
+ *
+ * Kept beside getValidTargets, and deliberately mirrors its precedence chain
+ * (traps and stealth first, then taunt, then protect), because a reason that
+ * disagrees with the rule is worse than no reason: it teaches the player a
+ * rule the engine does not implement. Pure, so the two can be tested against
+ * each other — every field getValidTargets rejects must produce a reason here.
+ */
+export const describeBlockedTarget = (target, defenderField) => {
+  // Legality is decided by getValidTargets and nowhere else, so the two can
+  // never drift: this function only picks the wording once that call has
+  // already ruled the target out. Deciding legality here independently is the
+  // trap — an earlier draft tested for each blocker on its own and told a
+  // player tapping a legal taunt that it was "Protected!", because a
+  // protector was also on the board and the precedence chain was not being
+  // honoured.
+  if (getValidTargets(null, defenderField).some((c) => isSameCard(c, target))) return null;
+
+  if (target.type === 'trap') {
+    return {
+      title: "That's a trap, not a target",
+      description: `${target.name} springs on its own — go for the face and set it off.`,
+    };
+  }
+  if (target.stealthActive) {
+    return {
+      title: 'Can\u2019t see it, can\u2019t hit it',
+      description: `${target.name} is in stealth this turn. Try again once it shows itself.`,
+    };
+  }
+
+  const creatures = defenderField.filter((c) => c.type !== 'trap' && !c.stealthActive);
+
+  const taunt = creatures.find((c) => c.ability === 'taunt');
+  if (taunt) {
+    return {
+      title: 'Must attack taunt!',
+      description: `${taunt.name} is taunting you — nobody else until it's down.`,
+    };
+  }
+
+  const protector = creatures.find((c) => c.ability === 'protect');
+  if (protector) {
+    return {
+      title: 'Protected!',
+      description: `${protector.name} is shielding the rest. Go through it first.`,
+    };
+  }
+
+  return null;
+};

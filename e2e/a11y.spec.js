@@ -120,3 +120,59 @@ test('player stats dialog has no WCAG 2.1 A/AA violations', async ({ page }) => 
   await expect(page.getByRole('dialog', { name: 'Player stats' })).toBeVisible(SLOW);
   await expectNoViolations(page, 'player stats dialog');
 });
+
+// axe cannot catch this class of defect, which is exactly why it needs its own
+// test: an element with role="button", a tab stop and a good accessible name
+// is valid markup even when its handler declines to do anything. The battle
+// board used to gate every interaction INSIDE the handler —
+// `pressable(() => phase === 'main' && playCard(card), …)` — so a keyboard or
+// screen-reader player tabbed through as many as sixteen cards announcing
+// "Play Whiskey Bear, button" / "Attack Chuck's Goon, button" while it was not
+// even their turn, and activating any of them did nothing at all. Sighted
+// players never saw it: they can see whose turn it is.
+test('cards only advertise themselves as buttons when they can actually be used', async ({ page }) => {
+  // Force a deck of cheap action cards (as e2e/smoke.spec.js does) so the
+  // first play is affordable on 3 energy and lands a creature on the field —
+  // the default deck shuffles in specials, which never reach the field at all.
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.currentDeck = [1, 2, 3, 4, 5, 6];
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  const endTurn = page.getByRole('button', { name: 'End Turn' });
+  await expect(endTurn).toBeVisible(SLOW);
+
+  const playable = page.getByRole('button', { name: /^Play / });
+  const selectable = page.getByRole('button', { name: /to attack$/ });
+  const attackable = page.getByRole('button', { name: /^Attack .+/ });
+
+  // Main phase, player's turn: the hand is playable. This is also the control
+  // case — without it a change that made nothing focusable would pass here
+  // vacuously.
+  await expect.poll(() => playable.count(), { timeout: 15_000 }).toBeGreaterThan(0);
+  // A creature can only be picked as an attacker in the battle phase, and an
+  // enemy card only once an attacker has been chosen — so neither may claim to
+  // be a button yet, however many cards are on the table.
+  await expect(selectable).toHaveCount(0);
+  await expect(attackable).toHaveCount(0);
+
+  await playable.first().click();
+
+  await page.getByRole('button', { name: '⚔️ Battle' }).click();
+  await expect.poll(() => selectable.count(), { timeout: 15_000 }).toBeGreaterThan(0);
+  // ...and the hand stops advertising itself the moment the main phase ends.
+  await expect(playable).toHaveCount(0);
+  await expect(attackable).toHaveCount(0);
+
+  // On the opponent's turn nothing of the player's is actionable.
+  await endTurn.click();
+  await expect
+    .poll(() => playable.count().then((p) => selectable.count().then((c) => p + c)), {
+      timeout: 15_000,
+    })
+    .toBe(0);
+});
