@@ -113,4 +113,19 @@ describe('sound effects', () => {
     playSound('attack', true);
     expect(howlCtor).toHaveBeenCalledTimes(2);
   });
+  it('every clip it references actually exists on disk', async () => {
+    // The bug this closes for good: four of the eight sounds were silently
+    // dead in production because their hotlinked URLs had started returning
+    // 403, and a Howl that cannot load does not throw — it just never makes a
+    // noise, so nothing failed. Now that the clips are ours, a missing or
+    // renamed file is the same invisible failure, and this is the only thing
+    // that would notice.
+    const { existsSync } = await import('fs');
+    const { resolve } = await import('path');
+    const { SOUND_SPECS } = await freshModule();
+    for (const [name, spec] of Object.entries(SOUND_SPECS)) {
+      const file = resolve(process.cwd(), 'public', spec.src.replace(/^\//, ''));
+      expect(existsSync(file), `${name} points at ${spec.src}, but public${spec.src} does not exist`).toBe(true);
+    }
+  });
 });
