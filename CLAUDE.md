@@ -14,7 +14,17 @@ npm run test:watch   # Vitest in watch mode
 npm run test:e2e     # Playwright end-to-end suite
 npm run art:generate # Regenerate card art (see public/cards/README.md)
 npm run art:monitor  # Live dashboard for an art-generation run
+npm run art:thumbs   # Rebuild the 192x256 card thumbnails
+npm run art:tokens   # Check every art prompt against CLIP's 77-token limit
 ```
+
+`art:tokens` needs `pip install tokenizers` and is not in CI (it downloads a
+model). Run it after editing any `scene` in `src/data/cardArt.js`: CLIP
+silently discards everything past 77 tokens, and what it drops is the tail of
+the prompt — exactly where the staging and the visual punchline live. The
+script pins the text encoding as UTF-8 on purpose; decoding the em-dash each
+prompt uses as cp1252 inflates counts by ~4 tokens and invents overruns that
+are not there.
 
 Tests use **Vitest** (jsdom) and live next to the code as `*.test.js`. The
 suite focuses on the pure, high-stakes logic — the `gameStore` economy/money
@@ -22,6 +32,18 @@ paths, `battleUtils` damage math, the opponent AI, the deck/season helpers,
 and a `gemBundles` guard that fails if the four gem price tables (Shop UI,
 checkout session, webhook, analytics) ever drift. Run a single file with
 `npx vitest run src/stores/gameStore.test.js`.
+
+A second family of tests pins **claims against reality**, because prose and
+data drift apart silently while code keeps compiling. Each derives what it
+expects from the live tables rather than restating a number, so retuning the
+game fails the build until the copy is retuned with it:
+`Tutorial.test.js` (the tutorial must name every ability a card can actually
+carry), `shopCopy.test.js` (no advertising exclusivity the pack pool does not
+enforce; BEST VALUE must sit on the cheapest tier), `cosmetics.test.js` (every
+`exclusive` the Battle Pass sells must be renderable, or players pay for a
+no-op), `migrations.test.js` + `scripts/check-migrations.sh` (the SQL must
+apply to a real Postgres and the security properties must hold), and
+`stubs/supabase-stubs.test.js` (see Code Splitting).
 
 End-to-end tests (`npm run test:e2e`, Playwright, `e2e/`) boot the real app
 hermetically (fake session seeded in localStorage, all network stubbed; the
@@ -33,8 +55,13 @@ screen and dialog and fails on any violation — it audits the *settled* page,
 because axe composites colours and an element caught mid-fade reports a
 blended colour rather than its resting one. `e2e/responsive.spec.js` asserts
 the document never scrolls sideways on any screen at 390px. CI
-(`.github/workflows/node.js.yml`) runs lint, build, unit, and e2e on every PR
-to `main`.
+(`.github/workflows/node.js.yml`) runs lint, build, unit and e2e on every PR to
+`main`, plus two jobs worth knowing about: `e2e-prod` reruns the smoke spec
+against a real `vite preview` of `dist/` (a prod-only break — chunking,
+minification, a stale CSP hash — is invisible to the dev-server run), and
+`migrations` replays every SQL file against a postgres:16 service container and
+asserts the resulting grants, because a migration Postgres refuses to apply is
+invisible to every other gate.
 
 ## Architecture Overview
 
@@ -44,12 +71,24 @@ to `main`.
 - **Supabase** for auth + edge functions + database
 - **Framer Motion** for animations, **Howler.js** for sounds, **canvas-confetti** for effects
 
-Battle sound effects live in `src/utils/sounds.js`. The `Howl` objects are
-built on first play, never at module scope: Howler preloads on construction,
-so an eager table fetched all eight cross-origin clips as soon as the battle
-chunk loaded — including for players who had sound switched off. `playSound(name, enabled)`
-is the only entry point; `src/utils/sounds.test.js` fails if construction ever
-becomes eager again.
+Battle sound effects live in `src/utils/sounds.js`, served from
+`public/sounds/` — **never hotlinked**. They used to point at a third-party
+CDN, and three of those URLs silently started returning 403, killing four of
+the eight sounds with no error anyone could see: a `Howl` that fails to load
+does not throw, it just never makes a noise. `sounds.test.js` now fails if a
+spec points at an external URL or at a file that does not exist on disk.
+
+Only four clips survived that CDN, so four events currently share a sibling's
+clip (marked interim in the source). Replacing them is a content task: drop
+files in `public/sounds/` and repoint `SOUND_SPECS`.
+
+The `Howl` objects are built on first play, never at module scope — Howler
+preloads on construction, so an eager table fetched every clip as soon as the
+battle chunk loaded, including for players with sound switched off. Each Howl
+also carries an `onloaderror` that evicts it from the cache, because Howler
+queues every `play()` against a still-loading instance and a clip that never
+loads would grow that queue for the whole session. `playSound(name, enabled)`
+is the only entry point.
 
 ### State Management
 
@@ -100,9 +139,39 @@ Daily/weekly challenges use real stats from the store:
 - `weekWins`, `weekCoinsEarned` (reset Mondays)
 - `claimedChallenges[]` persisted to prevent double-claiming
 
-### Code Splitting
+### Code Splitting & Bundle Weight
 
-Vite config uses `manualChunks` for vendor/animations/ui/state/effects. Dialog components (`Shop`, `BattlePass`, `Challenges`, etc.) are lazy-loaded via `React.lazy()`.
+Vite config uses `manualChunks` for vendor/animations/ui/state/effects. The ten
+dialogs (`Shop`, `BattlePass`, `Challenges`, …) **and `GameBoard`** are
+lazy-loaded via `React.lazy()`. GameBoard matters: it is only reachable by
+tapping Battle, but a static import put it and its tail — Howler,
+canvas-confetti — on the boot path for everyone, and dragged the `effects`
+chunk into index.html's modulepreload list.
+
+Two non-obvious things keep the entry chunk small. Change either at your peril:
+
+- **posthog-js is imported dynamically, after the key check** (`src/utils/analytics.js`).
+  It is ~225 kB and does nothing without `VITE_POSTHOG_KEY`, so a static import
+  shipped a quarter-megabyte of inert SDK to every visitor. Because the import
+  now races startup, sends go through a bounded 50-entry buffer that flushes on
+  load — events fired before it arrives are queued, not dropped.
+- **`@supabase/realtime-js` and `@supabase/storage-js` are aliased to local
+  stubs** in `vite.config.js` (`src/stubs/`). supabase-js imports both at module
+  top level and constructs them eagerly, so ~85 kB of websocket and file-storage
+  code shipped on first paint although this app only uses auth, `.from()` and
+  `.rpc()`. **If you need Realtime or Storage, remove the alias** — the stubs
+  throw with a message saying exactly that. `src/stubs/supabase-stubs.test.js`
+  reads the installed supabase-js and fails if an upgrade starts importing or
+  calling something the stubs do not provide.
+
+Measured end to end, these took first-paint JS from 950.98 kB / 294.93 kB gzip
+to 546.03 kB / 167.23 kB gzip.
+
+Animations: the `animationsEnabled` store flag feeds `MotionConfig`'s
+`reducedMotion` at the root (`src/main.jsx`), so one switch governs every
+Framer Motion animation. The drifting menu teddies are deliberately CSS, not
+Framer Motion — as JS-driven infinite animations they kept a phone's main
+thread 57% busy on an idle menu.
 
 ### Card Art
 
@@ -138,7 +207,9 @@ Deploy with `supabase functions deploy <name>`. Required secrets:
 Frontend (Vite, must be prefixed with `VITE_`):
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
-- `VITE_POSTHOG_KEY` (optional, for analytics)
+- `VITE_POSTHOG_KEY` (optional, for analytics). Leaving it unset does not just
+  disable analytics — the posthog SDK is never downloaded at all, since the
+  import happens after the key check.
 
 For local edge-function development, also set `SUPABASE_SERVICE_ROLE_KEY` (used
 by the Stripe webhook to credit gems) and deploy the webhook with JWT
