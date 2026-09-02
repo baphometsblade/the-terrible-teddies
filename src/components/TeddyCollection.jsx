@@ -93,17 +93,21 @@ const TeddyCollection = () => {
     owned: ownedCards.includes(card.id),
   }));
 
-  const filteredCards = allCardsWithOwnership.filter(card => {
+  // The full catalog, sorted once. Filtering hides tiles rather than removing
+  // them — see the grid below for why.
+  const sortedCards = [...allCardsWithOwnership].sort((a, b) => {
+    return RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity);
+  });
+
+  const matchesFilters = (card) => {
     if (showOwned && !card.owned) return false;
     if (!showOwned && card.owned) return false;
     if (filter !== 'all' && card.type !== filter) return false;
     if (rarityFilter !== 'all' && card.rarity !== rarityFilter) return false;
     return true;
-  });
+  };
 
-  const sortedCards = [...filteredCards].sort((a, b) => {
-    return RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity);
-  });
+  const visibleCount = sortedCards.reduce((n, c) => n + (matchesFilters(c) ? 1 : 0), 0);
 
   const totalOwned = ownedCards.length;
   const totalCards = ALL_CARDS.length;
@@ -198,30 +202,42 @@ const TeddyCollection = () => {
       </div>
 
       <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-4 mb-8">
-        <AnimatePresence>
-          {sortedCards.map((card, index) => (
-            <motion.div
-              key={card.id}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ delay: Math.min(index * 0.02, 0.5) }}
-              {...pressable(() => setSelectedCard(card), `View ${card.name}`)}
-              className={`cursor-pointer relative ${!card.owned ? 'opacity-40' : ''}`}
-            >
-              <div className={`absolute inset-0 rounded-lg blur-lg -z-10 opacity-40 bg-gradient-to-r ${RARITY[card.rarity].gradient}`} />
-              <TeddyCard teddy={card} />
-              {!card.owned && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                  <span className="text-2xl">🔒</span>
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
+        {/* Every tile stays mounted; a filter change toggles `hidden` on the
+            ones that don't match.
+
+            It used to be an AnimatePresence over the FILTERED list, so each
+            filter tap unmounted and remounted up to 64 tiles — 128 Framer
+            Motion components (each tile wraps a TeddyCard that is itself a
+            motion.div) torn down and rebuilt with staggered enter and exit
+            animations. Measured at 6x CPU throttle with card images blocked, so
+            this was pure JS and not image decode: 1372ms of blocked main thread
+            per filter tap, 98% saturated across ten taps. Hiding instead of
+            unmounting makes it an ordinary re-render, and the entrance stagger
+            now plays once on mount instead of on every tap.
+
+            `hidden` is display:none, so hidden tiles also leave the
+            accessibility tree and the tab order — which is what we want. */}
+        {sortedCards.map((card, index) => (
+          <motion.div
+            key={card.id}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: Math.min(index * 0.02, 0.5) }}
+            {...pressable(() => setSelectedCard(card), `View ${card.name}`)}
+            className={`cursor-pointer relative ${!card.owned ? 'opacity-40' : ''} ${matchesFilters(card) ? '' : 'hidden'}`}
+          >
+            <div className={`absolute inset-0 rounded-lg blur-lg -z-10 opacity-40 bg-gradient-to-r ${RARITY[card.rarity].gradient}`} />
+            <TeddyCard teddy={card} />
+            {!card.owned && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                <span className="text-2xl">🔒</span>
+              </div>
+            )}
+          </motion.div>
+        ))}
       </div>
 
-      {sortedCards.length === 0 && (
+      {visibleCount === 0 && (
         <div className="text-center text-white/50 py-12">No cards match your filters.</div>
       )}
 

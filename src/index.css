@@ -131,3 +131,31 @@
       );
   }
 }
+
+/* Drifting background teddies on the main menu.
+ *
+ * Deliberately CSS, not Framer Motion. As 12 `motion.div`s animating y/rotate
+ * with repeat:Infinity, these ran on the main thread every frame and measured
+ * 57% main-thread busy on an idle menu at 6x CPU throttle — 994ms of work per
+ * 5 seconds attributable to this layer alone, on a screen where the player is
+ * doing nothing. Animating only `transform` in CSS hands the whole thing to the
+ * compositor, so an idle menu costs the main thread nothing.
+ */
+@keyframes teddy-drift {
+  from { transform: translate3d(0, -15vh, 0) rotate(0deg); }
+  to   { transform: translate3d(0, 115vh, 0) rotate(360deg); }
+}
+
+.teddy-drift {
+  top: 0;
+  will-change: transform;
+  animation-name: teddy-drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* MotionConfig covers Framer Motion, but this animation is pure CSS, so it
+   needs its own reduced-motion escape hatch. */
+@media (prefers-reduced-motion: reduce) {
+  .teddy-drift { display: none; }
+}

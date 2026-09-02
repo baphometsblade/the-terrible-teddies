@@ -6,6 +6,17 @@ import { getDailyChallenges, getWeeklyChallenges, countClaimable } from '../stor
 import { useGameStore } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 
+// Scatter/timing for the drifting background teddies. Hoisted to module scope
+// and made deterministic: these were Math.random() calls inside the render
+// body, so every re-render rebuilt all 12 animations with fresh values.
+const DRIFTERS = Array.from({ length: 12 }, (_, i) => ({
+  id: i,
+  left: `${(i * 8.37 + (i % 5) * 2.6) % 96}%`,
+  duration: `${15 + ((i * 7) % 10)}s`,
+  delay: `${((i * 1.7) % 5).toFixed(2)}s`,
+}));
+
+
 const MainMenu = ({
   onStartGame,
   onDeckBuilder,
@@ -23,7 +34,7 @@ const MainMenu = ({
   const {
     playerName, level, xp, getXPForNextLevel,
     coins, gems, cardPacks,
-    totalWins, currentWinStreak, consecutiveLogins, lastLoginDate,
+    totalWins, currentWinStreak, consecutiveLogins, lastLoginDate, animationsEnabled,
     claimedChallenges,
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
@@ -66,31 +77,22 @@ const MainMenu = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-night-800 via-night-900 to-night-950 flex flex-col p-4 md:p-6 overflow-y-auto">
-      {/* Animated background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(12)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute text-4xl opacity-10"
-            initial={{
-              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1000),
-              y: -50,
-              rotate: 0
-            }}
-            animate={{
-              y: (typeof window !== 'undefined' ? window.innerHeight : 800) + 50,
-              rotate: 360
-            }}
-            transition={{
-              duration: 15 + Math.random() * 10,
-              repeat: Infinity,
-              delay: Math.random() * 5
-            }}
-          >
-            🧸
-          </motion.div>
-        ))}
-      </div>
+      {/* Animated background — CSS-driven, and skipped entirely when the
+          player has turned Animations off. See the .teddy-drift note in
+          index.css for why this is not Framer Motion. */}
+      {animationsEnabled && (
+        <div className="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+          {DRIFTERS.map((d) => (
+            <div
+              key={d.id}
+              className="teddy-drift absolute text-4xl opacity-10"
+              style={{ left: d.left, animationDuration: d.duration, animationDelay: d.delay }}
+            >
+              🧸
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Top bar */}
       <div className="relative z-10 flex flex-wrap justify-between items-center mb-4 gap-3">
