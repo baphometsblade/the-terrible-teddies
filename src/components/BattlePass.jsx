@@ -22,8 +22,14 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
     whileHover={canClaim ? { scale: 1.05 } : {}}
     whileTap={canClaim ? { scale: 0.95 } : {}}
     {...pressable(
-      () => canClaim && onClaim(),
+      onClaim,
       `Claim tier ${tier} ${isPremium ? 'premium' : 'free'} reward`,
+      // enabled, not a gate inside the handler: there are 50 tiles on this
+      // track and only the claimable ones may present as buttons. Gating in
+      // the handler left every locked and every already-claimed tier a
+      // focusable "Claim tier N reward" that did nothing — a screen-reader
+      // player tabbing the pass heard fifty offers and could act on none.
+      canClaim,
     )}
     className={`
       relative w-20 h-24 rounded-lg flex flex-col items-center justify-center p-2 cursor-pointer transition-all

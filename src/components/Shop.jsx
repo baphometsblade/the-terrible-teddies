@@ -199,6 +199,13 @@ const Shop = ({ onClose }) => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              // Which tab is active was conveyed only by a text colour and a
+              // bottom border, so a screen-reader user heard three identical
+              // buttons and no indication of which panel they were looking at.
+              // aria-pressed rather than role=tab: these are plain buttons, and
+              // claiming the tab role would also require tablist/tabpanel
+              // wiring and arrow-key navigation that is not implemented here.
+              aria-pressed={activeTab === tab.id}
               className={`flex-1 py-4 text-center font-semibold transition-all ${
                 activeTab === tab.id ? 'text-brass-300 bg-white/10 border-b-2 border-brass-400' : 'text-white/50 hover:text-white/80'
               }`}

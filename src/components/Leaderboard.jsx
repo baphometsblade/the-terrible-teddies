@@ -184,6 +184,7 @@ const Leaderboard = ({ onClose }) => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              aria-pressed={activeTab === tab.id}
               className={`flex-1 py-3 text-center font-semibold transition-all ${
                 activeTab === tab.id ? 'text-white bg-white/10 border-b-2 border-purple-400' : 'text-white/50 hover:text-white/80'
               }`}

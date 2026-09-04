@@ -110,6 +110,13 @@ const Tutorial = ({ onClose, onStartGame }) => {
             <button
               key={index}
               onClick={() => setCurrentStep(index)}
+              // These dots render no text and had no label, so they were nine
+              // anonymous buttons — "button, button, button" — with no way to
+              // tell which step was current. axe reports an unnamed button, but
+              // e2e/a11y.spec.js never opened the Tutorial, so it never saw
+              // them; that gap is closed in the same change as this.
+              aria-label={`Go to step ${index + 1} of ${TUTORIAL_STEPS.length}`}
+              aria-current={index === currentStep ? 'step' : undefined}
               className={`w-3 h-3 rounded-full transition-all ${
                 index === currentStep
                   ? 'bg-brass-400 scale-125'

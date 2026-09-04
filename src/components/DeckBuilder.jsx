@@ -186,7 +186,7 @@ const DeckBuilder = () => {
                     whileHover={{ scale: isMaxed ? 1 : 1.05 }}
                     whileTap={{ scale: isMaxed ? 1 : 0.95 }}
                     className={`relative cursor-pointer ${isMaxed ? 'opacity-50' : ''}`}
-                    {...pressable(() => !isMaxed && addToDeck(card), `Add ${card.name} to deck`)}
+                    {...pressable(addToDeck.bind(null, card), `Add ${card.name} to deck`, !isMaxed)}
                   >
                     <div className={`absolute inset-0 rounded-lg blur-md -z-10 opacity-30 bg-gradient-to-r ${RARITY[card.rarity].gradient}`} />
                     <TeddyCard teddy={card} isDisabled={isMaxed} cosmeticBorder={cosmeticBorder} />

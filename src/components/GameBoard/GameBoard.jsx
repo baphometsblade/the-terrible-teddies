@@ -1320,9 +1320,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           opponent's cards, so show only the latest entry as a compact ticker.
           tabIndex + role/aria-label make the scrolling panel keyboard-
           reachable (axe: scrollable-region-focusable) so it can be read on
-          demand. It intentionally has no aria-live: the phone ticker below
-          already announces each new entry, and this panel repeating that
-          would double-announce for screen-reader users on md+ too. */}
+          demand. It has no aria-live of its own; the single sr-only live
+          region below is the one announcer, on every viewport. */}
       <div
         role="region"
         aria-label="Battle log"
@@ -1367,15 +1366,34 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         {/* Latest-event ticker (phones only) — the full battle-log panel is
             hidden below md because it covers the opponent's cards; the
             battlefield's top half is guaranteed empty, so surface the most
-            recent entry here instead. */}
+            recent entry here instead.
+
+            Purely visual: aria-hidden, because the sr-only region below is the
+            single announcer. This element used to BE the announcer, carrying
+            the only aria-live on the board — with md:hidden on it. A live
+            region inside a display:none subtree is out of the accessibility
+            tree, so on any viewport >= 768px nothing was ever announced: a
+            screen-reader player pressed End Turn and was told nothing about
+            Chuck's plays, their creature dying, the damage they took, or that
+            it was their turn again. The battle-log panel had deliberately
+            declined aria-live on the grounds that this ticker already covered
+            it, which was true only on phones. */}
         {battleLog.length > 0 && (
           <div
-            aria-live="polite"
+            aria-hidden="true"
             className="md:hidden self-center max-w-full bg-night-950/80 text-plush-200 text-xs px-3 py-1 rounded-full truncate pointer-events-none"
           >
             {battleLog[battleLog.length - 1].message}
           </div>
         )}
+
+        {/* The board's one announcer, present at every viewport. Visually
+            hidden rather than md:hidden/hidden, so it is always in the
+            accessibility tree; sighted players read the ticker above on phones
+            or the log panel on desktop. */}
+        <div aria-live="polite" className="sr-only">
+          {battleLog.length > 0 ? battleLog[battleLog.length - 1].message : ''}
+        </div>
 
         {/* Player's field */}
         <div className="flex justify-center space-x-3 mt-auto">

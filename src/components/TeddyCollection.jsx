@@ -155,6 +155,7 @@ const TeddyCollection = () => {
         <div className="flex bg-white/10 rounded-lg overflow-hidden">
           <button
             onClick={() => setShowOwned(true)}
+            aria-pressed={showOwned}
             // bg-emerald-600 + text-white measured 3.76:1 (fails AA's 4.5:1);
             // emerald-700 clears it at 5.48:1.
             className={`px-4 py-2 text-sm font-semibold transition-colors ${showOwned ? 'bg-emerald-700 text-white' : 'text-plush-300 hover:text-white'}`}
@@ -163,6 +164,7 @@ const TeddyCollection = () => {
           </button>
           <button
             onClick={() => setShowOwned(false)}
+            aria-pressed={!showOwned}
             className={`px-4 py-2 text-sm font-semibold transition-colors ${!showOwned ? 'bg-plush-700 text-white' : 'text-plush-300 hover:text-white'}`}
           >
             Missing ({totalCards - totalOwned})
@@ -174,6 +176,7 @@ const TeddyCollection = () => {
             <button
               key={type}
               onClick={() => setFilter(type)}
+              aria-pressed={filter === type}
               className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 filter === type ? 'bg-brass-400 text-night-950' : 'bg-white/10 text-plush-300 hover:bg-white/20'
               }`}
@@ -192,6 +195,7 @@ const TeddyCollection = () => {
             <button
               key={rarity}
               onClick={() => setRarityFilter(rarity)}
+              aria-pressed={rarityFilter === rarity}
               className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all capitalize ${
                 rarityFilter === rarity
                   ? rarity === 'all'

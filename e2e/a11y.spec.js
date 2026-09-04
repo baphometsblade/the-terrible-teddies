@@ -130,6 +130,35 @@ test('player stats dialog has no WCAG 2.1 A/AA violations', async ({ page }) => 
 // "Play Whiskey Bear, button" / "Attack Chuck's Goon, button" while it was not
 // even their turn, and activating any of them did nothing at all. Sighted
 // players never saw it: they can see whose turn it is.
+// The Tutorial was the one dialog this suite never opened, and that gap had a
+// cost: its nine step dots render no text and carried no aria-label, so they
+// were anonymous buttons — exactly what axe reports as a violation — and axe
+// never got to look at them. Every dialog the app can open belongs here.
+test('tutorial dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.getByRole('button', { name: 'How to play' }).click();
+  await expect(page.getByRole('button', { name: /Go to step 1 of \d+/ })).toBeVisible(SLOW);
+  await expectNoViolations(page, 'tutorial dialog');
+});
+
+// The battle board's announcements must reach a screen reader at EVERY
+// viewport. The only live region on the board used to carry md:hidden, so from
+// 768px up it sat in a display:none subtree — out of the accessibility tree —
+// and the whole opponent turn passed in silence. A desktop viewport is the
+// default here, which is precisely the case that was broken.
+test('the battle board has a live region that survives the desktop viewport', async ({ page }) => {
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  // Present, non-empty, and actually rendered (not display:none) — the last of
+  // those is the part md:hidden broke while leaving the element in the DOM.
+  const live = page.locator('[aria-live="polite"]:not([aria-hidden="true"])');
+  await expect.poll(() => live.count(), { timeout: 15_000 }).toBeGreaterThan(0);
+  await expect(live.first()).not.toBeEmpty();
+  expect(
+    await live.first().evaluate((el) => getComputedStyle(el).display)
+  ).not.toBe('none');
+});
+
 test('cards only advertise themselves as buttons when they can actually be used', async ({ page }) => {
   // Force a deck of cheap action cards (as e2e/smoke.spec.js does) so the
   // first play is affordable on 3 energy and lands a creature on the field —
