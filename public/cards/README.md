@@ -191,3 +191,57 @@ FOOOCUS_URL=https://<id>.trycfargotunnel.com npm run art:generate -- --force
 `--dry-run` first to read the prompts, `--only <ids>` to spot-check a few, and
 the forced monitor dashboard (http://127.0.0.1:8877) shows each render as it
 lands.
+
+## Prompt fidelity of the shipped art (measured 2026-09-04)
+
+Every one of the 72 shipped renders was compared against the prompt that
+produced it, by looking at the image. The result:
+
+| verdict | count | meaning |
+|---|---|---|
+| match   |  8 | subject details *and* staging both present |
+| partial | 60 | subject roughly right, props/clothing/staging largely absent |
+| miss    |  4 | little relation to the prompt |
+
+**64 of 72 do not depict what their card data asks for.** The pattern is
+consistent: the bear itself renders well, and almost everything *after* the
+subject is dropped — the props and clothing (75 missing elements), the camera
+and setting (72), the build and features (63), and the action the card is
+named for (12). Prompts describe a moment; the renders are calm portraits.
+Card #1 asks for brass knuckles, a novelty condom necklace, a torn ear and a
+beer bottle coming down on a rival's head mid-swing; the image is a bear
+sitting at a bar holding an intact bottle, wearing a plain gold chain.
+
+Four are outright wrong, and two of those are wrong in a way worth fixing
+before anything else:
+
+- **#2 (Dumpster Dennis)** is a photoreal live **raccoon**, not a plush bear.
+- **#6 (Sally)** is a photoreal **human woman's face** in extreme close-up,
+  screaming into a microphone in a pink bear-eared coat.
+- **#32** is missing the dynamite and whoopee cushion the card is built on.
+- **#43** renders a wide empty bar instead of the toolbox filling the frame.
+
+### Why, and what to change
+
+`NEGATIVE` already lists `human, person` — exactly what would have prevented
+#6 — but as the comment above it says, **the negative prompt is inert on the
+default path**: negatives only apply with classifier-free guidance, and turbo
+renders at `SD_GUIDANCE=0.0`. Nothing is constraining the output. That also
+explains the broader pattern, since low guidance is what lets a model ignore
+the tail of a long prompt.
+
+So a regeneration that only swaps the checkpoint will likely reproduce this.
+Raise guidance so the negatives engage:
+
+```bash
+# all 72 — 64 of them need it, so a full pass is simpler than a list
+SD_GUIDANCE=3.5 FOOOCUS_URL=http://127.0.0.1:8888 npm run art:generate -- --force
+
+# or start with the four that are outright wrong
+SD_GUIDANCE=3.5 FOOOCUS_URL=http://127.0.0.1:8888 npm run art:generate -- --force --only 2,6,32,43
+```
+
+Turbo checkpoints need low step counts *and* low guidance; if raising guidance
+washes the images out, the checkpoint is the constraint and a non-turbo model
+is the fix. The eight that already match — 20, 45, 46, 52, 101, 103, 105, 107 —
+are the reference for what "right" looks like.

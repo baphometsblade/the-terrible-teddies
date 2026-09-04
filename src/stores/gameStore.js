@@ -557,9 +557,9 @@ export const useGameStore = create(
         // currentWinStreak: a streak carried over from last week would otherwise
         // satisfy the weekly streak challenge after a single win, making its pack
         // rewards re-claimable every week for one game.
-        const priorWeekStreak = weeklyReset ? 0 : (state.weekStreak ?? 0);
+        const priorWeekStreak = (state.weekStreak ?? 0);
         const newWeekStreak = won ? priorWeekStreak + 1 : 0;
-        const newWeekBestStreak = Math.max(weeklyReset ? 0 : state.weekBestStreak, newWeekStreak);
+        const newWeekBestStreak = Math.max(state.weekBestStreak, newWeekStreak);
 
         // Clear claimed challenges for any period that just rolled over, so the
         // same daily/weekly challenge ids become claimable again. Challenge ids
