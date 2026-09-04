@@ -91,6 +91,41 @@ describe('reconcileServerGems (closes the gem-respend exploit)', () => {
     expect(get().gems).toBe(10);    // exploit closed — not restored
   });
 
+  // reverse_gem_purchase (migration 20260718000200) debits user_gems on a refund
+  // or chargeback. It is the ONLY thing that moves the server total down —
+  // every other writer is additive and spending never leaves the client — so a
+  // negative delta means a payment was reversed and must reach the balance the
+  // game actually spends from. It used to move only the high-water mark, which
+  // left every clawed-back gem fully spendable.
+  it('applies a refund/chargeback clawback to the spendable balance', () => {
+    useGameStore.setState({ gems: 10, lastSyncedServerGems: 0 });
+    get().reconcileServerGems(500);   // bought 500: gems 510, mark 500
+    expect(get().gems).toBe(510);
+
+    get().reconcileServerGems(0);     // charged back: server debits to 0
+    expect(get().gems).toBe(10);      // only the 10 they earned in-game remain
+    expect(get().lastSyncedServerGems).toBe(0);
+  });
+
+  it('floors the clawback at zero when the gems were already spent', () => {
+    useGameStore.setState({ gems: 0, lastSyncedServerGems: 0 });
+    get().reconcileServerGems(500);   // gems 500
+    get().spendGems(450);             // gems 50
+    get().reconcileServerGems(0);     // clawback of 500 against a balance of 50
+    expect(get().gems).toBe(0);       // floored, exactly as the server's GREATEST(gems - v, 0)
+  });
+
+  it('does not let a buy-chargeback cycle net free gems on repeat', () => {
+    useGameStore.setState({ gems: 0, lastSyncedServerGems: 0 });
+    get().reconcileServerGems(500);   // buy
+    get().reconcileServerGems(0);     // chargeback
+    expect(get().gems).toBe(0);
+    get().reconcileServerGems(500);   // buy again
+    expect(get().gems).toBe(500);     // 500, not 1000
+    get().reconcileServerGems(0);
+    expect(get().gems).toBe(0);
+  });
+
   it('credits only the delta on a second purchase', () => {
     useGameStore.setState({ gems: 0, lastSyncedServerGems: 0 });
     get().reconcileServerGems(100); // +100
@@ -99,10 +134,19 @@ describe('reconcileServerGems (closes the gem-respend exploit)', () => {
     expect(get().lastSyncedServerGems).toBe(150);
   });
 
-  it('a downward server move only tracks the mark, never debits', () => {
+  // This used to assert the opposite — "a downward server move only tracks the
+  // mark, never debits" — and that assertion was correct when it was written on
+  // 2026-06-27, next to a source comment reading "Server total moved down
+  // (shouldn't happen)". reverse_gem_purchase landed on 2026-07-18 and made it
+  // happen on purpose, on every refund and every chargeback. The test was never
+  // revisited, so for three weeks it actively defended the hole the migration
+  // was written to close. A partial debit is the ordinary shape of that event:
+  // the player bought 150, earned 50 in-game, and had 30 of the purchase
+  // reversed.
+  it('debits a partial reversal and leaves in-game earnings alone', () => {
     useGameStore.setState({ gems: 200, lastSyncedServerGems: 150 });
     get().reconcileServerGems(120);
-    expect(get().gems).toBe(200);
+    expect(get().gems).toBe(170);
     expect(get().lastSyncedServerGems).toBe(120);
   });
 

@@ -111,12 +111,22 @@ BEGIN
     WHERE n.nspname = 'public' AND p.proname = 'is_service_role'
   ) THEN bad := bad || '  is_service_role() was never created' || chr(10); END IF;
 
-  -- Clients must not hold any write privilege on players.
-  IF EXISTS (
-    SELECT 1 FROM information_schema.role_table_grants
-    WHERE table_name = 'players' AND grantee IN ('anon','authenticated')
-      AND privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE')
-  ) THEN bad := bad || '  anon/authenticated still hold a write grant on players' || chr(10); END IF;
+  -- Clients must not hold any write privilege on ANY of the three tables that
+  -- carry player state or money. This used to check `players` alone, and the
+  -- two tables holding real money were the ones left out: user_gems and
+  -- purchases still granted anon and authenticated the full arwdDxt set.
+  -- TRUNCATE is not gated by row-level security, so `TRUNCATE public.user_gems`
+  -- executed as `authenticated` with an ordinary JWT emptied the table — every
+  -- player's paid balance — while the same statement against `players` was
+  -- correctly denied. Loop, so adding a table cannot silently skip this.
+  FOR fn IN SELECT unnest(ARRAY['players','user_gems','purchases'])
+  LOOP
+    IF EXISTS (
+      SELECT 1 FROM information_schema.role_table_grants
+      WHERE table_name = fn AND grantee IN ('anon','authenticated')
+        AND privilege_type IN ('INSERT','UPDATE','DELETE','TRUNCATE')
+    ) THEN bad := bad || format('  anon/authenticated still hold a write grant on %s%s', fn, chr(10)); END IF;
+  END LOOP;
 
   -- set_player_username is a user-callable rename: authenticated may execute it,
   -- anon may not (an unauthenticated caller must not be able to set names).
@@ -204,6 +214,55 @@ BEGIN
   END IF;
 
   RAISE NOTICE 'leaderboard-integrity behavioural assertions passed';
+END $$;
+SQL
+
+echo "==> Asserting TRUNCATE is actually denied, and usernames are sanitised"
+"${PSQL[@]}" <<'SQL'
+-- Grants are the mechanism; these are the behaviours they are supposed to buy.
+-- Asserted by EXECUTING as the client role, because that is what an attacker
+-- does — a grant table read the way you expect can still be wrong.
+DO $$
+DECLARE
+  t        TEXT;
+  ok       BOOLEAN;
+  v_name   TEXT;
+  v_user   UUID := '99999999-9999-4999-8999-999999999999';
+BEGIN
+  FOR t IN SELECT unnest(ARRAY['players','user_gems','purchases'])
+  LOOP
+    ok := FALSE;
+    BEGIN
+      EXECUTE format('SET LOCAL ROLE authenticated');
+      EXECUTE format('TRUNCATE public.%I', t);
+    EXCEPTION WHEN insufficient_privilege THEN
+      ok := TRUE;
+    END;
+    RESET ROLE;
+    IF NOT ok THEN
+      RAISE EXCEPTION 'authenticated could TRUNCATE public.% — RLS does not gate TRUNCATE', t;
+    END IF;
+  END LOOP;
+
+  -- upsert_player_profile must not be a way around set_player_username's rules.
+  INSERT INTO auth.users(id) VALUES (v_user) ON CONFLICT DO NOTHING;
+  PERFORM set_config('request.jwt.claims',
+    format('{"sub":"%s","role":"authenticated"}', v_user), TRUE);
+  PERFORM upsert_player_profile(v_user, repeat('A', 500) || '<script>');
+  SELECT username INTO v_name FROM public.players WHERE user_id = v_user;
+  IF v_name IS NULL OR char_length(v_name) > 20 OR v_name !~ '^[A-Za-z0-9 _.!?-]+$' THEN
+    RAISE EXCEPTION 'upsert_player_profile stored an unvalidated username: %', left(coalesce(v_name,'<null>'), 40);
+  END IF;
+
+  -- ...while still keeping a name that WOULD pass set_player_username.
+  DELETE FROM public.players WHERE user_id = v_user;
+  PERFORM upsert_player_profile(v_user, 'Grizzly Pete');
+  SELECT username INTO v_name FROM public.players WHERE user_id = v_user;
+  IF v_name <> 'Grizzly Pete' THEN
+    RAISE EXCEPTION 'upsert_player_profile mangled a legitimate username: %', v_name;
+  END IF;
+
+  RAISE NOTICE 'truncate/username assertions passed';
 END $$;
 SQL
 

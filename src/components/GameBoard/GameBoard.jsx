@@ -204,7 +204,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       // closes the streak exploit even mid-unload. The server syncs are best-effort.
       abandonRewardsRef.current = useGameStore.getState()
         .recordBattleResult(false, stats.damageDealt, stats.healingDone, hp, stats.cardsPlayed);
-      syncBattleResult(false, stats.damageDealt, stats.healingDone, 5, useGameStore.getState().ownerUserId)
+      // The coins actually granted, not a hardcoded 5. recordBattleResult
+      // returns what it credited, which is 10 rather than 5 while the Coin
+      // Doubler is active — and sync_battle_result does
+      // `coins = coins + GREATEST(p_coins_earned, 0)`, so passing the literal
+      // drifted the server total 5 low on every abandoned battle. Both
+      // non-abandon call sites already pass their real coinsGain.
+      const abandonCoins = abandonRewardsRef.current?.coinsGain ?? 5;
+      syncBattleResult(false, stats.damageDealt, stats.healingDone, abandonCoins, useGameStore.getState().ownerUserId)
         .catch(err => console.error('Abandon sync failed:', err));
       syncLevelToServer();
     };

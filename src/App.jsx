@@ -101,6 +101,22 @@ function App() {
   // achievement is earned exactly once, so a second pass over the same batch
   // (StrictMode, or the drain re-render) schedules nothing and cancels nothing.
   const shownAchievementIds = useRef(new Set());
+
+  // The Set is what makes the drain idempotent, but it outlives the data it
+  // mirrors: App never unmounts (the auth gate swaps a subtree, it does not
+  // remount the root), so after Settings' "reset progress" — or an account
+  // switch on the same device, which bindToUser handles by wiping the save —
+  // the store's completedAchievements is empty while this Set still holds every
+  // id from the previous life. Re-earning them then schedules no toast at all.
+  // Clear it whenever the ledger shrinks, which is exactly the wipe signal.
+  const completedAchievementCount = useGameStore((s) => s.completedAchievements.length);
+  const lastCompletedCount = useRef(completedAchievementCount);
+  useEffect(() => {
+    if (completedAchievementCount < lastCompletedCount.current) {
+      shownAchievementIds.current = new Set();
+    }
+    lastCompletedCount.current = completedAchievementCount;
+  }, [completedAchievementCount]);
   useEffect(() => {
     if (!pendingAchievements || pendingAchievements.length === 0) return;
 

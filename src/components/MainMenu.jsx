@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -38,6 +38,7 @@ const MainMenu = ({
     claimedChallenges,
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
+    syncPeriods,
   } = useGameStore();
 
   const [hoveredOption, setHoveredOption] = useState(null);
@@ -53,6 +54,17 @@ const MainMenu = ({
   // dialog moments after launch. So the one tile with claimable rewards behind
   // it advertised the state of a different feature. Same helper the Challenges
   // panel scores with, so the badge and the panel always agree.
+  // Roll the day/week over BEFORE scoring. getDailyChallenges() is seeded by
+  // the local day index, so at midnight it returns a fresh set of ids — but the
+  // counters it is scored against (todayWins, todayDamageDealt, …) are only
+  // zeroed by syncPeriods, which nothing calls on the menu path. Yesterday's
+  // five wins therefore scored today's brand-new, unclaimed challenges, and the
+  // tile badged "4 claimable". Tapping it ran Challenges' own syncPeriods on
+  // mount, which zeroed the counters, and the panel showed 0/target with no
+  // Claim buttons anywhere. The comment above promises the badge and the panel
+  // always agree; this is what makes that true.
+  useEffect(() => { syncPeriods(); }, [syncPeriods]);
+
   const challengeStats = {
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,

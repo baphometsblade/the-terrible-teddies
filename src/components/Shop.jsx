@@ -58,7 +58,7 @@ const GemBundle = ({ bundle, processing, onBuy }) => (
   <motion.div
     whileHover={{ scale: 1.02 }}
     whileTap={{ scale: 0.98 }}
-    {...pressable(() => !processing && onBuy(), `Buy ${bundle.gems} gems for $${bundle.price.toFixed(2)}`)}
+    {...pressable(onBuy, `Buy ${bundle.gems} gems for $${bundle.price.toFixed(2)}`, !processing)}
     className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition-all
       ${bundle.popular ? 'border-brass-400 shadow-lg shadow-brass-400/30' : 'border-plush-700/60 hover:border-plush-400/60'}
       bg-gradient-to-br from-night-700/90 to-night-800/90`}
@@ -97,6 +97,20 @@ const Shop = ({ onClose }) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('packs');
   const [processing, setProcessing] = useState(false);
+
+  // handleGemPurchase sets `processing` and then hands the tab to Stripe via a
+  // cross-document navigation, so the only setProcessing(false) — in the catch
+  // — can never run. Pressing Back from Checkout restores this component from
+  // the back/forward cache with its React state intact, i.e. processing still
+  // true, and `processing && <overlay>` below is a full-screen blocking layer.
+  // The shopper who changes their mind at the payment page comes back to a
+  // spinner they cannot dismiss. pageshow with persisted=true is the one signal
+  // that distinguishes a bfcache restore from a fresh mount.
+  useEffect(() => {
+    const onPageShow = (e) => { if (e.persisted) setProcessing(false); };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, []);
   const dialogRef = useDialog(onClose);
 
   useEffect(() => {

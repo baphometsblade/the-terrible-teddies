@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { useGameStore } from '../stores/gameStore';
 import { supabase } from '../lib/supabase';
-import { getSeasonDaysLeft } from '../utils/season';
 import { useDialog } from '@/hooks/useDialog';
 
 // Calculate trophies based on player stats
@@ -16,14 +15,6 @@ const calculateLevel = (experience) => {
   return Math.floor((experience || 0) / 100) + 1;
 };
 
-const RANK_REWARDS = [
-  { rank: 1, gems: 500, coins: 5000, packs: 10, title: "Teddy Champion" },
-  { rank: 2, gems: 300, coins: 3000, packs: 7, title: "Teddy Legend" },
-  { rank: 3, gems: 200, coins: 2000, packs: 5, title: "Teddy Master" },
-  { rank: "4-10", gems: 100, coins: 1000, packs: 3, title: "Teddy Elite" },
-  { rank: "11-50", gems: 50, coins: 500, packs: 2, title: "Teddy Warrior" },
-  { rank: "51-100", gems: 25, coins: 250, packs: 1, title: "Teddy Fighter" },
-];
 
 const Leaderboard = ({ onClose }) => {
   const { playerName, level, totalWins, currentWinStreak, bestWinStreak } = useGameStore();
@@ -84,7 +75,16 @@ const Leaderboard = ({ onClose }) => {
   }, [fetchLeaderboard]);
 
   // Calculate player's rank based on real leaderboard data
-  const playerRank = leaderboardData.filter(p => p.trophies > playerTrophies).length + 1;
+  // null until a fetch has actually returned rows. The rank is derived from
+  // leaderboardData, which starts [] and STAYS [] when the fetch fails — so an
+  // ungated `filter(...).length + 1` is 1, and the panel confidently told every
+  // player "Your Current Rank: #1 — You're in the top 3! Keep it up!" while the
+  // list beneath it was showing a network error. The list was gated on
+  // loading/error; this was not.
+  const rankKnown = !loading && !error && leaderboardData.length > 0;
+  const playerRank = rankKnown
+    ? leaderboardData.filter(p => p.trophies > playerTrophies).length + 1
+    : null;
 
   const getRankDisplay = (rank) => {
     if (rank === 1) return { icon: '🥇', color: 'text-brass-300', bg: 'from-brass-600/25 to-amber-800/25' };
@@ -168,9 +168,18 @@ const Leaderboard = ({ onClose }) => {
               that has no implementation behind it. A tab that costs a click and
               delivers nothing is worse than no tab — restore it alongside the
               real friendships/RLS work, not before. */}
+          {/* No 'Rewards' tab either, and for the same reason. It rendered a
+              "Season End Rewards" table promising 500 gems / 5,000 coins / 10
+              packs for finishing first, down to 25/250/1 for the top 100, next
+              to a live countdown of days left in the season. RANK_REWARDS was
+              referenced by exactly one thing: the map that drew it. No grant
+              exists anywhere — not in the store, not in a migration, not in
+              either edge function — so the season ends and nobody is ever paid.
+              Advertising a payout with no code behind it is the same defect as
+              the Friends tab above, only more expensive for the player, who
+              grinds for it. Restore it with the payout, not before. */}
           {[
             { id: 'global', label: 'Global', icon: '🌍' },
-            { id: 'rewards', label: 'Rewards', icon: '🎁' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -194,7 +203,7 @@ const Leaderboard = ({ onClose }) => {
                   <div className="text-brass-300 text-sm mb-2">Your Ranking</div>
                   <LeaderboardRow
                     player={{
-                      rank: playerRank,
+                      rank: playerRank ?? '—',
                       name: playerName,
                       level: level,
                       wins: totalWins,
@@ -242,58 +251,6 @@ const Leaderboard = ({ onClose }) => {
               </motion.div>
             )}
 
-            {activeTab === 'rewards' && (
-              <motion.div key="rewards" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="text-white/50 text-sm mb-4">Season End Rewards ({getSeasonDaysLeft()} days left)</div>
-
-                {RANK_REWARDS.map((reward, idx) => (
-                  <div
-                    key={idx}
-                    className={`
-                      flex items-center gap-4 p-4 rounded-xl mb-3 border transition-all
-                      ${typeof reward.rank === 'number' && reward.rank <= 3
-                        ? 'bg-gradient-to-r from-brass-600/20 to-amber-800/20 border-brass-400/50'
-                        : 'bg-white/5 border-white/10'}
-                    `}
-                  >
-                    <div className={`w-16 text-center font-bold ${
-                      reward.rank === 1 ? 'text-brass-300 text-2xl' :
-                      reward.rank === 2 ? 'text-gray-300 text-2xl' :
-                      reward.rank === 3 ? 'text-orange-400 text-2xl' :
-                      'text-white/70 text-lg'
-                    }`}>
-                      {typeof reward.rank === 'number' ? (
-                        reward.rank === 1 ? '🥇' : reward.rank === 2 ? '🥈' : '🥉'
-                      ) : (
-                        `#${reward.rank}`
-                      )}
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="text-white font-semibold">{reward.title}</div>
-                      <div className="flex gap-4 mt-1 text-sm">
-                        <span className="text-purple-400">💎 {reward.gems}</span>
-                        <span className="text-brass-300">🪙 {reward.coins.toLocaleString()}</span>
-                        <span className="text-blue-400">📦 {reward.packs}</span>
-                      </div>
-                    </div>
-
-                    {typeof reward.rank === 'number' && reward.rank <= 3 && (
-                      <div className="text-brass-400 text-2xl">👑</div>
-                    )}
-                  </div>
-                ))}
-
-                <div className="mt-4 p-4 bg-purple-600/20 border border-purple-500/30 rounded-xl text-center">
-                  <div className="text-purple-300 text-sm">Your Current Rank: #{playerRank}</div>
-                  <div className="text-white font-semibold mt-1">
-                    {playerRank <= 3 ? "You're in the top 3! Keep it up!" :
-                     playerRank <= 10 ? "You're in the top 10! Push for higher!" :
-                     "Win more battles to climb the ranks!"}
-                  </div>
-                </div>
-              </motion.div>
-            )}
           </AnimatePresence>
         </div>
       </motion.div>

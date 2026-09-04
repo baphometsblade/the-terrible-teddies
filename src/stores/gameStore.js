@@ -332,9 +332,28 @@ export const useGameStore = create(
         if (delta > 0) {
           set({ gems: state.gems + delta, lastSyncedServerGems: serverBalance });
         } else if (delta < 0) {
-          // Server total moved down (shouldn't happen) — just track it, never
-          // remove gems the player already earned/spent locally.
-          set({ lastSyncedServerGems: serverBalance });
+          // The server total moved DOWN. Only one thing moves it down:
+          // reverse_gem_purchase, the refund/chargeback clawback
+          // (20260718000200). Every other writer of user_gems is additive, and
+          // spending is purely local — spendGems never touches the server — so
+          // a negative delta is unambiguously "a payment was reversed".
+          //
+          // This branch used to update only the high-water mark and leave the
+          // local balance alone, on the reasoning that the server "shouldn't"
+          // move down. The result was that the clawback landed on user_gems and
+          // never reached the balance the game actually spends from, so a player
+          // could buy gems, charge back, and keep every one of them — precisely
+          // the "buy, spend, chargeback, keep the goods" case that migration
+          // says it exists to close. Worse, it was repeatable: the mark was reset
+          // to the post-reversal total, so the next purchase credited in full again.
+          //
+          // Floor at zero exactly as the server does (GREATEST(gems - v_gems, 0)):
+          // the granted gems may already be partly spent, and a negative balance
+          // would strand the account.
+          set({
+            gems: Math.max(0, state.gems + delta),
+            lastSyncedServerGems: serverBalance,
+          });
         }
       },
       spendGems: (amount) => {

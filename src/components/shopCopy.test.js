@@ -95,3 +95,38 @@ describe('shop copy matches the economy it is selling', () => {
     ).toBeGreaterThan(0);
   });
 });
+
+// The Leaderboard used to carry a "Rewards" tab listing Season End Rewards —
+// 500 gems / 5,000 coins / 10 packs for finishing first, down to 25/250/1 for
+// the top 100 — beside a live countdown of days left in the season. RANK_REWARDS
+// was referenced by exactly one thing: the map that rendered it. No grant
+// existed in the store, in any migration, or in either edge function, so the
+// season ended and nobody was ever paid. This is the same class shopCopy.test.js
+// exists to prevent, one screen over: a paid-looking promise with no code behind
+// it, and this one costs the player a grind rather than a click.
+describe('the leaderboard does not advertise rewards nothing grants', () => {
+  // Comments stripped first: this asserts on what the component RENDERS, not on
+  // what its source discusses. The comment recording why the tab was removed
+  // necessarily names the copy it removed, and a guard that trips on its own
+  // rationale would just teach the next person to delete the rationale.
+  const stripComments = (src) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const leaderboard = stripComments(
+    readFileSync(resolve(__dirname, './Leaderboard.jsx'), 'utf8')
+  );
+
+  it('has no rank-reward payout table', () => {
+    expect(leaderboard).not.toMatch(/RANK_REWARDS\s*=/);
+  });
+
+  // Derived from the store rather than restated: if a real season-end payout is
+  // ever implemented, it will grant through these, and this test should then be
+  // replaced by one asserting the payout — not deleted to make room for the copy.
+  it('promises no season-end payout while no grant path exists', () => {
+    const store = readFileSync(resolve(__dirname, '../stores/gameStore.js'), 'utf8');
+    const grantsSeasonRewards = /seasonEndReward|grantSeasonRewards|claimSeasonReward/.test(store);
+    if (!grantsSeasonRewards) {
+      expect(leaderboard).not.toMatch(/Season End Rewards/i);
+    }
+  });
+});
