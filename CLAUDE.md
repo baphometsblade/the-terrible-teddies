@@ -119,7 +119,13 @@ of the screen whose job is covering a round-trip.
 
 **Stripe Checkout** (real payments, not simulation):
 - `supabase/functions/create-checkout-session/` — creates Stripe session, verifies JWT, validates origin
-- `supabase/functions/stripe-webhook/` — handles `checkout.session.completed`, credits gems via `add_user_gems()` RPC
+- `supabase/functions/stripe-webhook/` — handles `checkout.session.completed`, credits gems via `add_user_gems()` RPC.
+  It also reverses on `charge.refunded` (full refunds only) and on
+  `charge.dispute.created` — but **not** for a `warning_*` dispute status,
+  which is an inquiry Stripe takes no money for. `charge.dispute.closed` (won)
+  and `charge.dispute.funds_reinstated` put the gems back via
+  `restore_gem_purchase()`; without them a reversal is permanent, since
+  fulfillment is idempotent on `stripe_session_id` and cannot re-credit.
 - `src/utils/stripe.js` — `redirectToStripeCheckout(bundleId)` gets user's JWT and calls edge function
 - `src/components/PurchaseSuccess.jsx` — polls for webhook completion after return from Stripe
 

@@ -136,11 +136,51 @@ serve(async (req) => {
     }
   }
 
+  // ── Restoration: a dispute that took nothing, or that we won ─────────────
+  //
+  // These arrive AFTER a reversal has already debited the player, and put the
+  // gems back. Without them a paying customer was left permanently short:
+  // reverse_gem_purchase is one-way, and replaying the fulfillment cannot
+  // repair it either (fulfill_gem_purchase returns 'duplicate' on the existing
+  // stripe_session_id before it reaches the credit).
+  //
+  //   charge.dispute.funds_reinstated — Stripe has returned the money.
+  //   charge.dispute.closed           — only when we WON; a lost or accepted
+  //                                     dispute must stay reversed.
+  if (
+    event.type === "charge.dispute.funds_reinstated" ||
+    event.type === "charge.dispute.closed"
+  ) {
+    const dispute = event.data.object as Stripe.Dispute;
+    if (event.type === "charge.dispute.closed" && dispute.status !== "won") {
+      console.log("Dispute closed as", dispute.status, "— leaving the reversal in place:", dispute.id);
+      return json({ received: true, ignored: "dispute_not_won" });
+    }
+    const paymentIntent = paymentIntentId(dispute.payment_intent);
+    if (!paymentIntent) {
+      console.error("Restoration event without a payment_intent:", event.id);
+      return json({ received: true, ignored: "no_payment_intent" });
+    }
+    try {
+      const { data: outcome, error: rpcError } = await supabase.rpc("restore_gem_purchase", {
+        p_payment_intent: paymentIntent,
+      });
+      if (rpcError) {
+        console.error("Restoration failed:", rpcError, paymentIntent);
+        return new Response("Restoration failed", { status: 500 });
+      }
+      return json({ received: true, outcome });
+    } catch (err) {
+      console.error("Restoration error:", err);
+      return new Response("Restoration failed", { status: 500 });
+    }
+  }
+
   // ── Reversal: claw gems back on refund or dispute ────────────────────────
   if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
-    // A dispute (chargeback) always reverses the funds. A refund may be partial;
-    // only claw back the gems on a FULL refund — a partial refund leaves the
-    // purchase intact and is logged for manual handling.
+    // A refund may be partial; only claw back the gems on a FULL refund — a
+    // partial refund leaves the purchase intact and is logged for manual
+    // handling.
     let paymentIntent: string | null;
     let reason: "refunded" | "disputed";
 
@@ -156,6 +196,19 @@ serve(async (req) => {
       reason = "refunded";
     } else {
       const dispute = event.data.object as Stripe.Dispute;
+      // NOT every dispute takes the money. This branch used to assert that it
+      // did — "a dispute (chargeback) always reverses the funds" — and debit
+      // unconditionally. An inquiry or retrieval request is created with a
+      // warning_* status (warning_needs_response, warning_under_review,
+      // warning_closed): the issuer is asking for information and Stripe
+      // withdraws nothing. Debiting there takes the player's gems while the
+      // merchant keeps the payment, which is the wrong side of the error to be
+      // on. The refund branch above already declines to act when the money has
+      // not actually moved; this is the same rule for disputes.
+      if (dispute.status.startsWith("warning_")) {
+        console.log("Dispute inquiry", dispute.status, "— no funds withdrawn, leaving gems in place:", dispute.id);
+        return json({ received: true, ignored: "dispute_inquiry" });
+      }
       paymentIntent = paymentIntentId(dispute.payment_intent);
       reason = "disputed";
     }

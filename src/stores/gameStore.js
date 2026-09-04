@@ -325,9 +325,25 @@ export const useGameStore = create(
         }
         set({ ...initialState, ownerUserId: userId, pendingAchievements: [] });
       },
-      reconcileServerGems: (serverBalance) => {
+      // `forUserId` is the account the balance was READ for. When given, it
+      // must still match the account the save is bound to, or the reconcile is
+      // dropped.
+      //
+      // The race this closes is the shared-device one bindToUser exists for,
+      // arriving through the async tail. A's balance request is in flight when
+      // A signs out and B signs in; bindToUser(B) wipes the save and zeroes the
+      // mark; A's response then resolves and, unguarded, credits B with the
+      // gems A paid for AND sets B's mark to A's total — so B's own next
+      // purchase computes a delta of zero and credits nothing. That is exactly
+      // the "paid real money and received nothing" failure the bindToUser
+      // comment above says must not happen.
+      //
+      // Checked here rather than in the caller because this store is what knows
+      // who owns the save, and it is the only place all callers pass through.
+      reconcileServerGems: (serverBalance, forUserId = null) => {
         if (typeof serverBalance !== 'number' || Number.isNaN(serverBalance)) return;
         const state = get();
+        if (forUserId && state.ownerUserId && state.ownerUserId !== forUserId) return;
         const delta = serverBalance - state.lastSyncedServerGems;
         if (delta > 0) {
           set({ gems: state.gems + delta, lastSyncedServerGems: serverBalance });

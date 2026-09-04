@@ -176,8 +176,12 @@ function App() {
           // restoring gems already spent locally.
           fetchServerGemBalance(uid),
         ]);
+        // Pass the id this balance was read FOR. If the account has changed
+        // while the request was in flight (sign out, sign in as someone else on
+        // a shared device), the store drops it rather than crediting the new
+        // player with the previous one's purchases.
         if (serverBalance !== null) {
-          reconcileServerGems(serverBalance);
+          reconcileServerGems(serverBalance, uid);
         }
       } catch (err) {
         console.error('Profile sync failed:', err);

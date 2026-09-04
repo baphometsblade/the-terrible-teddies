@@ -96,7 +96,7 @@ DECLARE
   bad  TEXT := '';
 BEGIN
   -- No money-path function may be executable by anon.
-  FOR fn IN SELECT unnest(ARRAY['add_user_gems','fulfill_gem_purchase','reverse_gem_purchase','cleanup_rate_limits'])
+  FOR fn IN SELECT unnest(ARRAY['add_user_gems','fulfill_gem_purchase','reverse_gem_purchase','restore_gem_purchase','cleanup_rate_limits'])
   LOOP
     IF EXISTS (
       SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -263,6 +263,51 @@ BEGIN
   END IF;
 
   RAISE NOTICE 'truncate/username assertions passed';
+END $$;
+SQL
+
+echo "==> Asserting the reversal round-trip (reverse -> restore) behaves"
+"${PSQL[@]}" <<'SQL'
+-- restore_gem_purchase exists because reverse_gem_purchase is one-way, and the
+-- webhook calls it on every charge.dispute.created — including inquiries, where
+-- Stripe withdraws nothing. These assert the money actually comes back, exactly
+-- once, and that the function cannot be used to mint gems.
+DO $$
+DECLARE
+  v_user UUID := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  v_pi   TEXT := 'pi_check_restore';
+  v_out  TEXT;
+  v_gems INTEGER;
+BEGIN
+  INSERT INTO auth.users(id) VALUES (v_user) ON CONFLICT DO NOTHING;
+  INSERT INTO purchases(user_id, stripe_session_id, payment_intent, bundle_id,
+                        gems_granted, amount_paid, status)
+  VALUES (v_user, 'cs_check_restore', v_pi, 'gems_large', 500, 999, 'completed');
+  INSERT INTO user_gems(user_id, gems, total_purchased) VALUES (v_user, 500, 500)
+    ON CONFLICT (user_id) DO UPDATE SET gems = 500;
+
+  PERFORM reverse_gem_purchase(v_pi, 'disputed');
+  SELECT gems INTO v_gems FROM user_gems WHERE user_id = v_user;
+  IF v_gems <> 0 THEN RAISE EXCEPTION 'reverse_gem_purchase did not debit (gems=%)', v_gems; END IF;
+
+  SELECT restore_gem_purchase(v_pi) INTO v_out;
+  SELECT gems INTO v_gems FROM user_gems WHERE user_id = v_user;
+  IF v_out <> 'restored' OR v_gems <> 500 THEN
+    RAISE EXCEPTION 'restore did not put the gems back (out=%, gems=%)', v_out, v_gems;
+  END IF;
+
+  -- Idempotent: a replayed webhook must not credit twice.
+  SELECT restore_gem_purchase(v_pi) INTO v_out;
+  SELECT gems INTO v_gems FROM user_gems WHERE user_id = v_user;
+  IF v_out <> 'not_reversed' OR v_gems <> 500 THEN
+    RAISE EXCEPTION 'restore was not idempotent (out=%, gems=%)', v_out, v_gems;
+  END IF;
+
+  -- Cannot mint gems for a purchase that does not exist.
+  SELECT restore_gem_purchase('pi_no_such_intent') INTO v_out;
+  IF v_out <> 'not_found' THEN RAISE EXCEPTION 'unknown payment_intent not rejected (%)', v_out; END IF;
+
+  RAISE NOTICE 'reversal round-trip assertions passed';
 END $$;
 SQL
 

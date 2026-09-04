@@ -45,7 +45,7 @@ npx supabase functions deploy stripe-webhook --no-verify-jwt
 ```
 
 Configure the webhook in the Stripe dashboard to send `checkout.session.completed`
-(fulfillment) plus `charge.refunded` and `charge.dispute.created` (gem
+(fulfillment), `charge.refunded` and `charge.dispute.created` (gem
 clawback on refunds/chargebacks).
 
 ### Set Edge Function secrets
@@ -76,7 +76,18 @@ Dashboard → Edge Functions → Secrets (or `npx supabase secrets set KEY=value
    - Events:
      - `checkout.session.completed` — credits gems (fulfillment)
      - `charge.refunded` — claws gems back on a full refund
-     - `charge.dispute.created` — claws gems back on a chargeback
+     - `charge.dispute.created` — claws gems back on a chargeback that actually
+       withdrew the funds. A `warning_*` status is an inquiry or retrieval
+       request, where Stripe takes nothing, and is deliberately ignored.
+     - `charge.dispute.closed` — restores the gems when the dispute is **won**
+     - `charge.dispute.funds_reinstated` — restores the gems when Stripe
+       returns the money
+
+   The last two are not optional. Without them a reversal is permanent: a
+   customer whose dispute we win, or whose bank only ever raised an inquiry,
+   keeps paying and loses the gems, and no replay can repair it — fulfillment
+   is idempotent on `stripe_session_id` and returns `duplicate` before it
+   reaches the credit.
    - Copy the signing secret (`whsec_…`) into `STRIPE_WEBHOOK_SECRET`.
 
    Without the refund/dispute events the fulfillment still works, but a

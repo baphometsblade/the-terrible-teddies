@@ -126,6 +126,46 @@ describe('reconcileServerGems (closes the gem-respend exploit)', () => {
     expect(get().gems).toBe(0);
   });
 
+  // A shared device on a slow connection: player A's balance request is still
+  // in flight when A signs out and B signs in. bindToUser(B) wipes the save;
+  // A's response then resolves. Unguarded it credited B with the gems A paid
+  // for and set B's mark to A's total, so B's own purchase then credited
+  // nothing — "paid real money and received nothing", the exact failure
+  // bindToUser exists to prevent, reintroduced through the async tail.
+  it('drops a balance that was read for a different account', () => {
+    const A = '11111111-1111-4111-8111-111111111111';
+    const B = '22222222-2222-4222-8222-222222222222';
+
+    useGameStore.setState({ ownerUserId: A, gems: 0, lastSyncedServerGems: 0 });
+    get().bindToUser(B);                    // A signs out, B signs in — save wiped
+    expect(get().ownerUserId).toBe(B);
+
+    // B's save is fresh, so it holds the starting grant and nothing else.
+    const fresh = get().gems;
+
+    get().reconcileServerGems(500, A);      // A's in-flight response lands late
+    expect(get().gems).toBe(fresh);         // B is not handed A's purchase
+    expect(get().lastSyncedServerGems).toBe(0);   // ...nor A's high-water mark
+
+    get().reconcileServerGems(500, B);      // B's own purchase still credits
+    expect(get().gems).toBe(fresh + 500);
+  });
+
+  it('still applies a balance read for the current owner', () => {
+    const A = '11111111-1111-4111-8111-111111111111';
+    useGameStore.setState({ ownerUserId: A, gems: 10, lastSyncedServerGems: 0 });
+    get().reconcileServerGems(100, A);
+    expect(get().gems).toBe(110);
+  });
+
+  // PurchaseSuccess calls this with one argument; the guard must not change
+  // behaviour when no account is named.
+  it('applies unguarded when no account is passed', () => {
+    useGameStore.setState({ ownerUserId: 'someone', gems: 0, lastSyncedServerGems: 0 });
+    get().reconcileServerGems(250);
+    expect(get().gems).toBe(250);
+  });
+
   it('credits only the delta on a second purchase', () => {
     useGameStore.setState({ gems: 0, lastSyncedServerGems: 0 });
     get().reconcileServerGems(100); // +100
