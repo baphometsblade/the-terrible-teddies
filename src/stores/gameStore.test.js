@@ -439,6 +439,27 @@ describe('weekly challenge stats are week-scoped (not lifetime)', () => {
     expect(get().weekBestStreak).toBe(1);   // but the WEEKLY best is 1, not 7
   });
 
+  // The test above seeds weekStreak/weekBestStreak at 0 BEFORE the rollover, so
+  // it passes whether or not the rollover actually zeroes them — which left the
+  // `weeklyReset ? 0 :` guards on both values completely uncovered. Deleting
+  // them kept all 361 tests green, and an audit probe did exactly that; the
+  // deletion was then swept into a docs commit and shipped to main. This is the
+  // case that was missing: last week's values are non-zero going in.
+  it('drops LAST week\'s streak values at the rollover, not just a zeroed pair', () => {
+    useGameStore.setState({
+      weekStreak: 6,          // still running from last week
+      weekBestStreak: 6,      // and last week's best
+      weeklyStatsDate: 'prior-week',
+    });
+    get().recordBattleResult(true, 0, 0, 30, 1); // first win of the NEW week
+
+    // Both must restart from this week's single win. Carrying 6 across the
+    // Monday boundary completes w4 (3-streak, 2 packs) and w5 (5-streak, 3
+    // packs) off one game, every week, forever.
+    expect(get().weekStreak).toBe(1);
+    expect(get().weekBestStreak).toBe(1);
+  });
+
   it('resets the weekly streak on a loss but keeps the weekly best', () => {
     useGameStore.setState({ weekStreak: 0, weekBestStreak: 0, weeklyStatsDate: 'prior-week' });
     get().recordBattleResult(true, 0, 0, 30, 1);
