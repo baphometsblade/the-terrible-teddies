@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
+import fs, { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { ALL_CARDS, SHOP_ITEMS } from '@/stores/gameStore';
 import { BATTLE_PASS_REWARDS } from './BattlePass';
@@ -128,5 +128,48 @@ describe('the leaderboard does not advertise rewards nothing grants', () => {
     if (!grantsSeasonRewards) {
       expect(leaderboard).not.toMatch(/Season End Rewards/i);
     }
+  });
+});
+
+// Settings shipped a "Music — Background music" switch that wrote a persisted
+// musicEnabled flag no code has ever read, over a sounds folder containing four
+// effect clips and no music. Toggling it did nothing, and could not have done
+// anything. That is the same defect as a reward table with no payout: a promise
+// with no implementation, differing only in that this one cost a tap instead of
+// a grind.
+//
+// Generalised rather than pinned to that one flag: every store field a Settings
+// switch binds to must be read somewhere other than the store and the Settings
+// screen itself, or it controls nothing.
+describe('every Settings switch controls something real', () => {
+  const settings = readFileSync(resolve(__dirname, './Settings.jsx'), 'utf8');
+  const srcDir = resolve(__dirname, '..');
+
+  const readAll = (dir) =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const full = resolve(dir, e.name);
+      if (e.isDirectory()) return readAll(full);
+      if (!/\.(js|jsx)$/.test(e.name) || /\.test\./.test(e.name)) return [];
+      return [{ path: full, body: fs.readFileSync(full, 'utf8') }];
+    });
+
+  const files = readAll(srcDir);
+
+  const boundFlags = [...settings.matchAll(/<Switch\s+checked=\{(\w+)\}/g)].map(([, f]) => f);
+
+  it('finds the switches to check', () => {
+    expect(boundFlags.length).toBeGreaterThan(0);
+  });
+
+  it.each(boundFlags)('%s is read outside the store and the Settings screen', (flag) => {
+    const consumers = files.filter(
+      (f) =>
+        !/\/stores\/|Settings\.jsx$/.test(f.path) &&
+        new RegExp(`\\b${flag}\\b`).test(f.body)
+    );
+    expect(
+      consumers.map((c) => c.path.replace(srcDir, 'src')),
+      `${flag} is toggled in Settings but nothing reads it`
+    ).not.toHaveLength(0);
   });
 });

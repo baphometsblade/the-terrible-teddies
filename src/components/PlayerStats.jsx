@@ -23,17 +23,33 @@ const PlayerStats = ({ onClose }) => {
   const xpProgress = (xp / xpForNext) * 100;
   const winRate = totalBattles > 0 ? ((totalWins / totalBattles) * 100).toFixed(1) : 0;
 
-  const handleSaveName = () => {
+  const [nameError, setNameError] = useState(null);
+
+  const handleSaveName = async () => {
     const trimmed = newName.trim();
-    if (trimmed) {
-      setPlayerName(trimmed);
-      // Push the name to the server too, so it reaches the public leaderboard
-      // (players.username) rather than living only in local state. Fire and
-      // forget: the local rename should feel instant, and the server validates
-      // and is the source of truth for what other players see.
-      setPlayerUsername(trimmed);
-    }
+    if (!trimmed) { setEditingName(false); return; }
+
+    // Apply locally first so the rename still feels instant.
+    setPlayerName(trimmed);
     setEditingName(false);
+    setNameError(null);
+
+    // ...but do NOT discard what the server says. This was fire-and-forget, on
+    // the reasoning that the server "is the source of truth for what other
+    // players see" — which is exactly why a rejection matters. set_player_username
+    // enforces 2-20 characters and a charset, and is rate limited; on any of
+    // those, setPlayerUsername returns null, the leaderboard keeps the OLD name,
+    // and the player was never told. They saw their new name everywhere in the
+    // app and appeared to everyone else under the previous one, with nothing
+    // anywhere indicating a mismatch.
+    const stored = await setPlayerUsername(trimmed);
+    if (stored === null) {
+      setNameError("Couldn't save that name for the leaderboard — other players still see your old one.");
+      return;
+    }
+    // The server trims and may return a normalised form; adopt it so local and
+    // public names cannot drift apart.
+    if (stored !== trimmed) setPlayerName(stored);
   };
 
   const StatCard = ({ icon, label, value, color = 'text-white' }) => (
@@ -84,6 +100,12 @@ const PlayerStats = ({ onClose }) => {
                     ✏️
                   </button>
                 </div>
+              )}
+              {/* role=alert so the failure is announced, not merely drawn —
+                  a rename that silently did not reach the leaderboard is
+                  precisely the thing a player cannot otherwise discover. */}
+              {nameError && (
+                <p role="alert" className="mt-1 text-amber-300 text-xs max-w-xs">{nameError}</p>
               )}
               <div className="mt-2">
                 <div className="flex items-center gap-2 text-sm text-white/70">

@@ -149,6 +149,10 @@ const MainMenu = ({
             }`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            // Its only content is the 🎁 emoji, so without a label the
+            // accessible name was the emoji character itself — unlike its two
+            // siblings here, which are labelled "How to play" and "Settings".
+            aria-label={dailyAvailable ? 'Daily rewards — a reward is ready to claim' : 'Daily rewards'}
           >
             <span className="text-2xl">🎁</span>
             {dailyAvailable && (

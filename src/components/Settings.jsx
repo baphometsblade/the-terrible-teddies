@@ -49,7 +49,7 @@ const DifficultyButton = ({ value, label, description, color, difficulty, setDif
 const Settings = ({ onClose }) => {
   const {
     soundEnabled, setSoundEnabled,
-    musicEnabled, setMusicEnabled,
+
     animationsEnabled, setAnimationsEnabled,
     difficulty, setDifficulty,
     resetProgress,
@@ -71,11 +71,27 @@ const Settings = ({ onClose }) => {
     }
   };
 
+  const [signOutError, setSignOutError] = useState(null);
+
   const handleSignOut = async () => {
     setSigningOut(true);
+    setSignOutError(null);
     // The auth listener (hooks/useSupabaseAuth) nulls the session on sign-out,
     // which drops the app back to the Auth screen automatically.
-    await supabase.auth.signOut();
+    //
+    // The {error} was previously discarded and the dialog closed regardless.
+    // When sign-out fails — offline, or the token endpoint unreachable — the
+    // session survives, the auth listener never fires, and the app stays
+    // signed in while the UI reports success by simply closing. On a shared
+    // device that hands the next person a live session, so this must fail
+    // loudly and keep the dialog open.
+    const { error } = await supabase.auth.signOut();
+    setSigningOut(false);
+    if (error) {
+      console.error('Sign-out failed:', error);
+      setSignOutError("Couldn't sign out — check your connection and try again. You are still signed in.");
+      return;
+    }
     onClose();
   };
 
@@ -104,9 +120,11 @@ const Settings = ({ onClose }) => {
             <SettingRow icon="🔊" label="Sound Effects" description="Card plays, attacks, and abilities">
               <Switch checked={soundEnabled} onCheckedChange={setSoundEnabled} aria-label="Sound Effects" />
             </SettingRow>
-            <SettingRow icon="🎵" label="Music" description="Background music">
-              <Switch checked={musicEnabled} onCheckedChange={setMusicEnabled} aria-label="Music" />
-            </SettingRow>
+            {/* No "Music" row. It toggled a persisted musicEnabled flag that
+                nothing in the app has ever read, and there is no music to
+                control: public/sounds/ holds four effect clips and no track.
+                A switch that changes nothing is the same defect as a reward
+                table with no payout behind it — restore it with the music. */}
           </div>
 
           <div className="mb-6">
@@ -141,6 +159,9 @@ const Settings = ({ onClose }) => {
             >
               {signingOut ? 'Signing out…' : '🚪 Sign Out'}
             </Button>
+            {signOutError && (
+              <p role="alert" className="mt-2 text-amber-300 text-xs">{signOutError}</p>
+            )}
           </div>
 
           <div className="pt-6 border-t border-white/10">
