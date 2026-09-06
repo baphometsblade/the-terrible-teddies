@@ -184,6 +184,14 @@ Two non-obvious things keep the entry chunk small. Change either at your peril:
 Measured end to end, these took first-paint JS from 950.98 kB / 294.93 kB gzip
 to 546.03 kB / 167.23 kB gzip.
 
+Two runtime dependencies were also removed outright, because nothing consumed
+them: **react-router-dom** (no `Route`, `Link`, `useNavigate` or `useParams`
+anywhere — navigation is the `currentScreen` state in `App`) and
+**@tanstack/react-query** (no `useQuery` at all; the client existed only so
+`auth.jsx` could `invalidateQueries('user')`, a key nothing had registered).
+Removing both took the entry chunk from 273.19 kB / 78.07 kB gzip to
+243.30 kB / 69.19 kB gzip. Don't re-add either without a consumer.
+
 Animations: the `animationsEnabled` store flag feeds `MotionConfig`'s
 `reducedMotion` at the root (`src/main.jsx`), so one switch governs every
 Framer Motion animation. The drifting menu teddies are deliberately CSS, not

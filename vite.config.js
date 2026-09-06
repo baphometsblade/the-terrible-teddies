@@ -50,7 +50,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
+          // No `vendor: ['react', 'react-dom']` entry. It never matched — React
+          // resolves through a different specifier here, so Rollup put it in an
+          // auto-named chunk of its own and emitted `vendor` as a 1-byte file.
+          // Harmless (nothing preloads it) but the rule claimed to do something
+          // it did not, which is worse than not having it.
           animations: ['framer-motion'],
           ui: ['@radix-ui/react-slot', '@radix-ui/react-toast', '@radix-ui/react-progress', '@radix-ui/react-switch'],
           state: ['zustand'],

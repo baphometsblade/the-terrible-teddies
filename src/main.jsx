@@ -1,8 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
 import { MotionConfig } from 'framer-motion'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App.jsx'
 import '@fontsource/baloo-2/latin-600.css'
 import '@fontsource/baloo-2/latin-800.css'
@@ -35,20 +33,21 @@ function MotionPreference({ children }) {
 try {
   initializePostHog();
 
-  const queryClient = new QueryClient()
   const root = ReactDOM.createRoot(document.getElementById('root'));
 
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
         <MotionPreference>
-          <QueryClientProvider client={queryClient}>
-            <SupabaseProvider>
-              <BrowserRouter>
-                <App />
-              </BrowserRouter>
-            </SupabaseProvider>
-          </QueryClientProvider>
+          {/* No BrowserRouter and no QueryClientProvider. Neither had a
+              consumer: there is no Route, Link, useNavigate or useParams
+              anywhere — navigation is the `currentScreen` state in App — and
+              no useQuery either, so the query client existed only so auth.jsx
+              could invalidate a key nothing had ever registered. Two runtime
+              dependencies on the boot path, doing nothing. */}
+          <SupabaseProvider>
+            <App />
+          </SupabaseProvider>
         </MotionPreference>
       </ErrorBoundary>
     </React.StrictMode>
