@@ -100,6 +100,16 @@ All game state lives in `src/stores/gameStore.js`:
 
 The store is the single source of truth. Components read via hooks and dispatch actions; no prop drilling for game state.
 
+**Two tabs.** persist serialises the whole partialized state on every `set`, so
+tabs last-writer-wins over each other's entire save rather than per field — a
+tab holding a stale snapshot reverted everything another had earned on its next
+write. `useRehydrateOnFocus` (`src/hooks/`) re-reads the save on `focus` and
+`visibilitychange`, which necessarily precedes any interaction that could write.
+Deliberately *not* the `storage` event: that fires the moment the other tab
+writes, which can land mid-render and swap state under a screen being read.
+Safe mid-battle — the battle lives in GameBoard's React state, not the store —
+and `e2e/smoke.spec.js` pins both that and the cross-tab pickup.
+
 ### Authentication Flow
 
 `src/integrations/supabase/auth.jsx` provides `SupabaseProvider` context. The `useSupabaseAuth` hook gives `{ session, loading }`. App.jsx gates all game content behind auth—unauthenticated users see the Auth component.

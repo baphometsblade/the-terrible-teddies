@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from './stores/gameStore';
 import { fetchServerGemBalance, ensurePlayerProfile, isSupabaseConfigured } from './utils/supabaseClient';
 import analytics from './utils/analytics';
+import { useRehydrateOnFocus } from './hooks/useRehydrateOnFocus';
 
 // GameBoard is lazy for the same reason the dialogs are: it is only reachable
 // after tapping Battle, but a static import put it — and its dependency tail,
@@ -61,6 +62,11 @@ const BackButton = ({ onClick }) => (
 
 function App() {
   const { session, loading } = useSupabaseAuth();
+
+  // Pick up anything another tab saved while this one was in the background,
+  // before the player can act on a stale snapshot. See the hook for why focus
+  // rather than the storage event.
+  useRehydrateOnFocus();
   const [currentScreen, setCurrentScreen] = useState('menu');
 
   const [showTutorial, setShowTutorial] = useState(false);

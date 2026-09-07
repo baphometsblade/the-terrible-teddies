@@ -630,6 +630,82 @@ test('a failed battle chunk keeps the app alive too, not just dialogs', async ({
   await expect(page.getByRole('button', { name: 'Shop', exact: true })).toBeVisible();
 });
 
+test('a save written by another tab is picked up when this one is refocused', async ({ page }) => {
+  // The store persists to ONE device-wide key and the middleware serialises the
+  // whole partialized state on every set, so two tabs last-writer-wins over each
+  // other's entire save. A tab holding a stale snapshot reverted everything the
+  // other had earned — coins, cards, levels, achievements — on its very next
+  // write, silently. useRehydrateOnFocus re-reads the save when the tab returns
+  // to the foreground, which is necessarily before the player can act in it.
+  //
+  // The unit tests drive persist.rehydrate() directly; this covers the half they
+  // cannot, that a real focus event in a real browser actually reaches it.
+  await expect(page.getByText('1,234')).toBeVisible(SLOW);
+
+  // Stand in for the other tab: overwrite the shared key behind this tab's back.
+  await page.evaluate(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = JSON.parse(raw);
+    stored.state.coins = 98765;
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+
+  // Still stale: nothing has told this tab to look again.
+  await expect(page.getByText('1,234')).toBeVisible();
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('focus'));
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+
+  await expect(page.getByText('98,765')).toBeVisible(SLOW);
+});
+
+test('a mid-battle rehydrate refreshes the wallet without disturbing the game', async ({ page }) => {
+  // useRehydrateOnFocus can fire at any moment, including with a battle open,
+  // so this pins the claim its comment makes: the battle lives in GameBoard's
+  // React state (health, fields, hands) and not in the persisted store, so
+  // re-reading the save must refresh currency and progression while leaving the
+  // game in progress untouched. If that were wrong, switching tabs mid-fight
+  // would reset the board.
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.currentDeck = [1, 2, 3, 4, 5, 6];
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  // Put a creature on the board so there is game state that could be lost.
+  await page.getByRole('button', { name: /^Play / }).first().click();
+  await expect(page.getByText('Warming Up')).toHaveCount(2);
+
+  // Another tab banks a fortune; this tab is refocused mid-battle.
+  await page.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem('terrible-teddies-storage'));
+    stored.state.coins = 55555;
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+    window.dispatchEvent(new Event('focus'));
+  });
+
+  // The board survives: the creature is still there and the turn still ends here.
+  await expect(page.getByText('Warming Up')).toHaveCount(2);
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '⚔️ Battle' })).toBeVisible();
+
+  // ...and the refreshed wallet carried through. Leaving mid-battle records an
+  // abandonment, which CREDITS a few coins, so the total lands just above the
+  // rehydrated 55,555 rather than exactly on it — which is the whole point: the
+  // battle's write built on the other tab's save instead of reverting it to the
+  // 1,234 this tab booted with.
+  await page.getByRole('button', { name: /Menu/ }).click();
+  await expect(page.getByText(/55,5\d\d/)).toBeVisible(SLOW);
+  await expect(page.getByText('1,234')).toHaveCount(0);
+});
+
 test('every pay line sends the right bundle id to checkout', async ({ page }) => {
   // The revenue path has SEVEN entry points — five gem tiles plus two special
   // offers — and only one of them was covered. A tile wired to the wrong id
