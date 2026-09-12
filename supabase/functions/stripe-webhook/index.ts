@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
+// The decision layer — which event means what — lives in a pure module so it
+// can be unit tested. See eventRouting.js; every branch it owns has been wrong
+// at least once.
+import { ACTION, routeEvent, reversalNotFoundAction, paymentIntentId } from "./eventRouting.js";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   apiVersion: "2023-10-16",
@@ -29,11 +33,6 @@ const GEM_BUNDLES: Record<string, { gems: number; bonus: number; price: number }
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
 
-// A PaymentIntent reference on Stripe objects can be an id string or an
-// expanded object; normalize to the id we stored on the purchase row.
-const paymentIntentId = (pi: string | { id: string } | null | undefined): string | null =>
-  typeof pi === "string" ? pi : pi?.id ?? null;
-
 serve(async (req) => {
   const signature = req.headers.get("Stripe-Signature");
   if (!signature) {
@@ -56,8 +55,12 @@ serve(async (req) => {
     return new Response("Invalid signature", { status: 400 });
   }
 
+  // One decision, made in a pure function that is unit tested (eventRouting.js).
+  // The handlers below carry out whatever it returns.
+  const route = routeEvent(event as unknown as Record<string, unknown>);
+
   // ── Fulfillment: credit gems on a paid checkout ──────────────────────────
-  if (event.type === "checkout.session.completed") {
+  if (route.action === ACTION.FULFILL) {
     const session = event.data.object as Stripe.Checkout.Session;
 
     // Verify payment was actually successful (handles delayed payment methods)
@@ -147,26 +150,13 @@ serve(async (req) => {
   //   charge.dispute.funds_reinstated — Stripe has returned the money.
   //   charge.dispute.closed           — only when we WON; a lost or accepted
   //                                     dispute must stay reversed.
-  if (
-    event.type === "charge.dispute.funds_reinstated" ||
-    event.type === "charge.dispute.closed"
-  ) {
-    const dispute = event.data.object as Stripe.Dispute;
-    if (event.type === "charge.dispute.closed" && dispute.status !== "won") {
-      console.log("Dispute closed as", dispute.status, "— leaving the reversal in place:", dispute.id);
-      return json({ received: true, ignored: "dispute_not_won" });
-    }
-    const paymentIntent = paymentIntentId(dispute.payment_intent);
-    if (!paymentIntent) {
-      console.error("Restoration event without a payment_intent:", event.id);
-      return json({ received: true, ignored: "no_payment_intent" });
-    }
+  if (route.action === ACTION.RESTORE) {
     try {
       const { data: outcome, error: rpcError } = await supabase.rpc("restore_gem_purchase", {
-        p_payment_intent: paymentIntent,
+        p_payment_intent: route.paymentIntent,
       });
       if (rpcError) {
-        console.error("Restoration failed:", rpcError, paymentIntent);
+        console.error("Restoration failed:", rpcError, route.paymentIntent);
         return new Response("Restoration failed", { status: 500 });
       }
       return json({ received: true, outcome });
@@ -177,102 +167,49 @@ serve(async (req) => {
   }
 
   // ── Reversal: claw gems back on refund or dispute ────────────────────────
-  if (
-    event.type === "charge.refunded" ||
-    event.type === "charge.dispute.created" ||
-    event.type === "charge.dispute.updated"
-  ) {
-    // A refund may be partial; only claw back the gems on a FULL refund — a
-    // partial refund leaves the purchase intact and is logged for manual
-    // handling.
-    let paymentIntent: string | null;
-    let reason: "refunded" | "disputed";
-
-    if (event.type === "charge.refunded") {
-      const charge = event.data.object as Stripe.Charge;
-      // Compare against the captured amount (what can actually be refunded), so
-      // a full refund of a partially-captured charge still counts as full.
-      if (charge.amount_refunded < charge.amount_captured) {
-        console.log("Partial refund — leaving gems in place:", charge.id);
-        return json({ received: true, ignored: "partial_refund" });
-      }
-      paymentIntent = paymentIntentId(charge.payment_intent);
-      reason = "refunded";
-    } else {
-      const dispute = event.data.object as Stripe.Dispute;
-      // NOT every dispute takes the money. This branch used to assert that it
-      // did — "a dispute (chargeback) always reverses the funds" — and debit
-      // unconditionally. An inquiry or retrieval request is created with a
-      // warning_* status (warning_needs_response, warning_under_review,
-      // warning_closed): the issuer is asking for information and Stripe
-      // withdraws nothing. Debiting there takes the player's gems while the
-      // merchant keeps the payment, which is the wrong side of the error to be
-      // on. The refund branch above already declines to act when the money has
-      // not actually moved; this is the same rule for disputes.
-      //
-      // Which is exactly why charge.dispute.updated is handled here too. An
-      // inquiry can ESCALATE into a real chargeback, and Stripe reports that as
-      // an update to the existing dispute — the status moves off warning_* and
-      // the funds are withdrawn — not as a second charge.dispute.created.
-      // Skipping warning_* without also watching for the escalation would trade
-      // one money bug for its mirror image: gems never clawed back on a real
-      // chargeback. reverse_gem_purchase only acts on a purchase still marked
-      // 'completed', so an update for a dispute already reversed is a no-op and
-      // this cannot double-debit.
-      if (dispute.status.startsWith("warning_")) {
-        console.log("Dispute inquiry", dispute.status, "— no funds withdrawn, leaving gems in place:", dispute.id);
-        return json({ received: true, ignored: "dispute_inquiry" });
-      }
-      paymentIntent = paymentIntentId(dispute.payment_intent);
-      reason = "disputed";
-    }
-
-    if (!paymentIntent) {
-      console.error("Reversal event without a payment_intent:", event.id);
-      return json({ received: true, ignored: "no_payment_intent" });
-    }
-
+  //
+  // Which events reverse, and which are deliberately ignored (a partial refund,
+  // or a warning_* dispute where Stripe withdrew nothing), is decided in
+  // eventRouting.js and covered there by tests.
+  if (route.action === ACTION.REVERSE) {
     try {
       const { data: outcome, error: rpcError } = await supabase.rpc("reverse_gem_purchase", {
-        p_payment_intent: paymentIntent,
-        p_reason: reason,
+        p_payment_intent: route.paymentIntent,
+        p_reason: route.reversalReason,
       });
       if (rpcError) {
-        console.error("Reversal failed:", rpcError, paymentIntent);
+        console.error("Reversal failed:", rpcError, route.paymentIntent);
         return new Response("Reversal failed", { status: 500 });
       }
       if (outcome === "not_found") {
-        // No purchase row for this payment_intent. Two very different causes,
-        // and acking both was wrong:
-        //
-        //   * A RACE. Stripe does not guarantee event ordering, so a refund or
-        //     dispute can be delivered before the checkout.session.completed
-        //     that creates the purchase row. Acking there DROPS the reversal,
-        //     and the fulfillment that lands moments later then credits gems
-        //     for a payment that has already been given back.
-        //   * A genuinely unrelated charge, or a reconciliation gap. Retrying
-        //     that forever is pointless.
-        //
-        // The event's own age separates them. A reversal seen within the hour
-        // of being created is overwhelmingly the first case, so fail and let
-        // Stripe retry with its own back-off — by which time fulfillment has
-        // landed and the reversal applies. An older one is the second case:
-        // ack it and leave it for manual review.
-        const ageSeconds = Math.floor(Date.now() / 1000) - (event.created ?? 0);
-        if (ageSeconds < 3600) {
+        // No purchase row for this payment_intent. Two very different causes:
+        // a RACE (Stripe does not guarantee ordering, so the reversal can beat
+        // the checkout.session.completed that creates the row — acking there
+        // drops it and the later fulfillment credits money already given back),
+        // or a genuinely unrelated charge, which is pointless to retry. The
+        // event's own age separates them.
+        if (reversalNotFoundAction(event.created, Math.floor(Date.now() / 1000)) === "retry") {
           console.warn(
             "Reversal arrived before its purchase — asking Stripe to retry:",
-            paymentIntent, "age(s):", ageSeconds,
+            route.paymentIntent,
           );
           return new Response("Purchase not yet fulfilled; retry", { status: 409 });
         }
-        console.warn("Reversal for unknown payment_intent (stale, giving up):", paymentIntent);
+        console.warn("Reversal for unknown payment_intent (stale, giving up):", route.paymentIntent);
       }
       return json({ received: true, outcome });
     } catch (err) {
       console.error("Reversal error:", err);
       return new Response("Reversal failed", { status: 500 });
     }
+  }
+
+  // Everything else, plus the deliberate skips: partial refunds, dispute
+  // inquiries, a dispute closed any way but won, and event types this endpoint
+  // does not subscribe to. route.ignored says which.
+  if (route.ignored && route.ignored !== "unhandled") {
+    console.log("Ignoring event:", event.type, "-", route.ignored);
+    return json({ received: true, ignored: route.ignored });
   }
 
   return json({ received: true });

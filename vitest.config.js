@@ -15,7 +15,11 @@ export default defineConfig({
     // vitest.setup.js.
     setupFiles: ['./vitest.setup.js'],
     globals: true,
-    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    // The second pattern is the Stripe webhook's decision layer. It lives under
+    // supabase/functions/ beside the Deno code it serves, but it is plain JS
+    // with no Deno or network imports precisely so this suite can reach it —
+    // there is no Deno in CI, and that money path had no test of any kind.
+    include: ['src/**/*.{test,spec}.{js,jsx}', 'supabase/functions/**/*.{test,spec}.js'],
     // Profiling/audit agents write throwaway probe suites under dunder dirs
     // (src/__probe__/, src/__perf_tmp__/) to take measurements. Those match the
     // include glob above, so a stray one silently joins the real suite —

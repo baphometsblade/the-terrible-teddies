@@ -138,6 +138,16 @@ of the screen whose job is covering a round-trip.
   and `charge.dispute.funds_reinstated` put the gems back via
   `restore_gem_purchase()`; without them a reversal is permanent, since
   fulfillment is idempotent on `stripe_session_id` and cannot re-credit.
+- `supabase/functions/stripe-webhook/eventRouting.js` — the decision layer
+  (which event means fulfil / reverse / restore / ignore), extracted as pure JS
+  with no Deno or network imports so Vitest can reach it. `vitest.config.js`
+  includes `supabase/functions/**/*.test.js` for exactly this. Four separate
+  money bugs have lived in those few branches — disputes reversed
+  unconditionally, no restoration at all, restoration accepting refunds, and the
+  inquiry-to-chargeback escalation unhandled — and every one was a wrong answer
+  to a question with no side effects, which is to say unit-testable. Add a
+  branch here, add a case to `eventRouting.test.js`; there is no Deno in CI, so
+  this is the only gate that covers it.
 - `src/utils/stripe.js` — `redirectToStripeCheckout(bundleId)` gets user's JWT and calls edge function
 - `src/components/PurchaseSuccess.jsx` — polls for webhook completion after return from Stripe
 
