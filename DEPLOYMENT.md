@@ -79,6 +79,9 @@ Dashboard → Edge Functions → Secrets (or `npx supabase secrets set KEY=value
      - `charge.dispute.created` — claws gems back on a chargeback that actually
        withdrew the funds. A `warning_*` status is an inquiry or retrieval
        request, where Stripe takes nothing, and is deliberately ignored.
+     - `charge.dispute.updated` — the escalation path. An inquiry that becomes a
+       real chargeback is reported as an UPDATE to the existing dispute, not as
+       a second `created`, so without this the gems are never clawed back.
      - `charge.dispute.closed` — restores the gems when the dispute is **won**
      - `charge.dispute.funds_reinstated` — restores the gems when Stripe
        returns the money

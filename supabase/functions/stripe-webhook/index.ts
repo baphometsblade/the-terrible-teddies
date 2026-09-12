@@ -177,7 +177,11 @@ serve(async (req) => {
   }
 
   // ── Reversal: claw gems back on refund or dispute ────────────────────────
-  if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
+  if (
+    event.type === "charge.refunded" ||
+    event.type === "charge.dispute.created" ||
+    event.type === "charge.dispute.updated"
+  ) {
     // A refund may be partial; only claw back the gems on a FULL refund — a
     // partial refund leaves the purchase intact and is logged for manual
     // handling.
@@ -205,6 +209,16 @@ serve(async (req) => {
       // merchant keeps the payment, which is the wrong side of the error to be
       // on. The refund branch above already declines to act when the money has
       // not actually moved; this is the same rule for disputes.
+      //
+      // Which is exactly why charge.dispute.updated is handled here too. An
+      // inquiry can ESCALATE into a real chargeback, and Stripe reports that as
+      // an update to the existing dispute — the status moves off warning_* and
+      // the funds are withdrawn — not as a second charge.dispute.created.
+      // Skipping warning_* without also watching for the escalation would trade
+      // one money bug for its mirror image: gems never clawed back on a real
+      // chargeback. reverse_gem_purchase only acts on a purchase still marked
+      // 'completed', so an update for a dispute already reversed is a no-op and
+      // this cannot double-debit.
       if (dispute.status.startsWith("warning_")) {
         console.log("Dispute inquiry", dispute.status, "— no funds withdrawn, leaving gems in place:", dispute.id);
         return json({ received: true, ignored: "dispute_inquiry" });
@@ -228,9 +242,31 @@ serve(async (req) => {
         return new Response("Reversal failed", { status: 500 });
       }
       if (outcome === "not_found") {
-        // No matching purchase — an unrelated refund, or a reconciliation gap.
-        // Ack (Stripe shouldn't retry) but surface it for manual review.
-        console.warn("Reversal for unknown payment_intent:", paymentIntent);
+        // No purchase row for this payment_intent. Two very different causes,
+        // and acking both was wrong:
+        //
+        //   * A RACE. Stripe does not guarantee event ordering, so a refund or
+        //     dispute can be delivered before the checkout.session.completed
+        //     that creates the purchase row. Acking there DROPS the reversal,
+        //     and the fulfillment that lands moments later then credits gems
+        //     for a payment that has already been given back.
+        //   * A genuinely unrelated charge, or a reconciliation gap. Retrying
+        //     that forever is pointless.
+        //
+        // The event's own age separates them. A reversal seen within the hour
+        // of being created is overwhelmingly the first case, so fail and let
+        // Stripe retry with its own back-off — by which time fulfillment has
+        // landed and the reversal applies. An older one is the second case:
+        // ack it and leave it for manual review.
+        const ageSeconds = Math.floor(Date.now() / 1000) - (event.created ?? 0);
+        if (ageSeconds < 3600) {
+          console.warn(
+            "Reversal arrived before its purchase — asking Stripe to retry:",
+            paymentIntent, "age(s):", ageSeconds,
+          );
+          return new Response("Purchase not yet fulfilled; retry", { status: 409 });
+        }
+        console.warn("Reversal for unknown payment_intent (stale, giving up):", paymentIntent);
       }
       return json({ received: true, outcome });
     } catch (err) {

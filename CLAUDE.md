@@ -131,8 +131,10 @@ of the screen whose job is covering a round-trip.
 - `supabase/functions/create-checkout-session/` — creates Stripe session, verifies JWT, validates origin
 - `supabase/functions/stripe-webhook/` — handles `checkout.session.completed`, credits gems via `add_user_gems()` RPC.
   It also reverses on `charge.refunded` (full refunds only) and on
-  `charge.dispute.created` — but **not** for a `warning_*` dispute status,
-  which is an inquiry Stripe takes no money for. `charge.dispute.closed` (won)
+  `charge.dispute.created` / `charge.dispute.updated` — but **not** for a
+  `warning_*` dispute status, which is an inquiry Stripe takes no money for.
+  `updated` matters because an inquiry that escalates into a real chargeback is
+  reported as an update, not a second `created`. `charge.dispute.closed` (won)
   and `charge.dispute.funds_reinstated` put the gems back via
   `restore_gem_purchase()`; without them a reversal is permanent, since
   fulfillment is idempotent on `stripe_session_id` and cannot re-credit.

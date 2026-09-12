@@ -307,6 +307,57 @@ BEGIN
   SELECT restore_gem_purchase('pi_no_such_intent') INTO v_out;
   IF v_out <> 'not_found' THEN RAISE EXCEPTION 'unknown payment_intent not rejected (%)', v_out; END IF;
 
+  -- A REFUND must never be restorable. Refund and dispute are not symmetric:
+  -- a won dispute returns the funds, a refund is money we gave back on purpose.
+  -- Stripe allows both on one charge, and the webhook keys restore only on
+  -- payment_intent, so without this a refunded customer who also disputed would
+  -- keep the money AND the gems.
+  INSERT INTO purchases(user_id, stripe_session_id, payment_intent, bundle_id,
+                        gems_granted, amount_paid, status)
+  VALUES (v_user, 'cs_check_refund', 'pi_check_refund', 'gems_large', 500, 999, 'completed');
+  UPDATE user_gems SET gems = 500 WHERE user_id = v_user;
+
+  PERFORM reverse_gem_purchase('pi_check_refund', 'refunded');
+  SELECT gems INTO v_gems FROM user_gems WHERE user_id = v_user;
+  IF v_gems <> 0 THEN RAISE EXCEPTION 'refund did not debit (gems=%)', v_gems; END IF;
+
+  SELECT restore_gem_purchase('pi_check_refund') INTO v_out;
+  SELECT gems INTO v_gems FROM user_gems WHERE user_id = v_user;
+  IF v_out <> 'not_reversed' OR v_gems <> 0 THEN
+    RAISE EXCEPTION 'a REFUNDED purchase was restorable (out=%, gems=%)', v_out, v_gems;
+  END IF;
+
+  -- The rate limiter must not be an unmetered INSERT primitive. action_type is
+  -- half the primary key AND caller-supplied, so before this was closed to a
+  -- known set, every fresh string minted a permanent row and returned TRUE —
+  -- 500 calls, 500 rows, from one signed-in account, straight through the
+  -- REVOKE on rate_limits because the function is SECURITY DEFINER.
+  DECLARE
+    v_rows_before INT;
+    v_rows_after  INT;
+    v_rejected    BOOLEAN := FALSE;
+  BEGIN
+    SELECT count(*) INTO v_rows_before FROM rate_limits;
+    BEGIN
+      PERFORM check_rate_limit(v_user, 'definitely-not-a-real-action');
+    EXCEPTION WHEN OTHERS THEN
+      v_rejected := TRUE;
+    END;
+    SELECT count(*) INTO v_rows_after FROM rate_limits;
+    IF NOT v_rejected THEN
+      RAISE EXCEPTION 'check_rate_limit accepted an unknown action_type';
+    END IF;
+    IF v_rows_after <> v_rows_before THEN
+      RAISE EXCEPTION 'an unknown action_type still wrote % rate_limits row(s)', v_rows_after - v_rows_before;
+    END IF;
+    -- ...while the three real actions still work.
+    IF NOT (check_rate_limit(v_user, 'checkout')
+        AND check_rate_limit(v_user, 'battle_result')
+        AND check_rate_limit(v_user, 'level_sync')) THEN
+      RAISE EXCEPTION 'a legitimate rate-limit action was rejected';
+    END IF;
+  END;
+
   RAISE NOTICE 'reversal round-trip assertions passed';
 END $$;
 SQL
