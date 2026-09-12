@@ -208,7 +208,16 @@ serve(async (req) => {
   // inquiries, a dispute closed any way but won, and event types this endpoint
   // does not subscribe to. route.ignored says which.
   if (route.ignored && route.ignored !== "unhandled") {
-    console.log("Ignoring event:", event.type, "-", route.ignored);
+    // event.id rather than the charge/dispute id the per-branch logs used to
+    // carry: collapsing those branches would otherwise have cost the one
+    // identifier that makes a skipped event traceable during reconciliation,
+    // and event.id is available for every type and is what the Stripe
+    // dashboard indexes on.
+    // no_payment_intent is an error, not a routine skip — a reversal or
+    // restoration event that carries no payment_intent cannot be reconciled at
+    // all — so it keeps the console.error severity its own branch used to have.
+    const log = route.ignored === "no_payment_intent" ? console.error : console.log;
+    log("Ignoring event:", event.type, event.id, "-", route.ignored);
     return json({ received: true, ignored: route.ignored });
   }
 

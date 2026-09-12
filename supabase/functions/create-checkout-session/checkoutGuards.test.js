@@ -32,9 +32,16 @@ describe('origin allowlisting (open-redirect prevention)', () => {
     expect(resolveOrigin(undefined, ALLOWED)).toBe(PROD);
   });
 
+  // The fallback must NOT be the value under test, or this cannot tell
+  // "ignored the object" from "coerced it and matched" — both would return PROD.
+  // With a different origin first in the list, only coercion returns PROD.
   it('ignores a non-string Origin rather than coercing it', () => {
-    expect(resolveOrigin({ toString: () => PROD }, ALLOWED)).toBe(PROD);
-    expect(resolveOrigin(['https://evil.test'], ALLOWED)).toBe(PROD);
+    const FALLBACK_FIRST = ['https://fallback.example', PROD];
+    expect(resolveOrigin({ toString: () => PROD }, FALLBACK_FIRST)).toBe('https://fallback.example');
+    expect(resolveOrigin([PROD], FALLBACK_FIRST)).toBe('https://fallback.example');
+    // ...and a genuine string still matches, so the guard is not just rejecting
+    // everything.
+    expect(resolveOrigin(PROD, FALLBACK_FIRST)).toBe(PROD);
   });
 
   // Returning null makes the caller refuse; returning '' would let it build
@@ -95,13 +102,14 @@ describe('redirect urls', () => {
     expect(success_url).toContain('{CHECKOUT_SESSION_ID}');
   });
 
-  // The pair that actually ships: whatever resolveOrigin returns is the only
-  // thing that can reach a redirect URL.
-  it('cannot be pointed at an origin the allowlist rejected', () => {
-    const safe = resolveOrigin('https://evil.test', ALLOWED);
-    const { success_url, cancel_url } = redirectUrls(safe);
-    expect(success_url.startsWith(PROD)).toBe(true);
-    expect(cancel_url.startsWith(PROD)).toBe(true);
+  // redirectUrls itself guarantees nothing — it interpolates whatever it is
+  // given. What ships is the COMPOSITION, which is what this pins: the only
+  // origin that can reach a redirect URL is the one resolveOrigin approved.
+  // Named for that rather than for a property the function does not have.
+  it('composed with resolveOrigin, a rejected origin never reaches a redirect', () => {
+    const { success_url, cancel_url } = redirectUrls(resolveOrigin('https://evil.test', ALLOWED));
+    expect(success_url).toBe(`${PROD}/?purchase=success&session_id={CHECKOUT_SESSION_ID}`);
+    expect(cancel_url).toBe(`${PROD}/?purchase=cancelled`);
     expect(success_url).not.toContain('evil.test');
   });
 });

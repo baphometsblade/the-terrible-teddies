@@ -47,6 +47,10 @@ export function resolveOrigin(requestOrigin, allowedOrigins) {
  * @returns the bundle, or null if the id is not a real bundle
  */
 export function lookupBundle(table, bundleId) {
+  // Belt and braces: hasOwnProperty below already returns false for every
+  // non-string id, so removing this line changes no behaviour and no test can
+  // catch it. Kept as an explicit statement of the contract, not as
+  // load-bearing logic — don't add a test claiming to cover it.
   if (typeof bundleId !== 'string') return null;
   if (!Object.prototype.hasOwnProperty.call(table ?? {}, bundleId)) return null;
   return table[bundleId] ?? null;

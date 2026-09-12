@@ -26,10 +26,30 @@ export const ACTION = {
 export const paymentIntentId = (pi) =>
   typeof pi === 'string' ? pi : pi?.id ?? null;
 
-// Stripe dispute statuses beginning "warning_" are inquiries and retrieval
-// requests: the issuer is asking for information and no funds are withdrawn.
-// Everything else on a dispute means the money has actually gone.
+// Dispute statuses that mean the money is currently OUT of the account, and so
+// that the gems must come back.
+//
+// An ALLOWLIST, not "anything that is not warning_*". That denylist was the
+// first version and it was wrong in the most expensive direction: `won` is not
+// a warning_ status, so a dispute resolved IN OUR FAVOUR — which Stripe reports
+// as a charge.dispute.updated like any other change — was routed to a reversal
+// and debited the customer for winning. The asymmetry matters here. Wrongly
+// debiting a paying customer is silent and lands on them; a clawback we miss is
+// visible in the Stripe dashboard and recoverable. So an unrecognised future
+// status does nothing rather than guessing, and charge.dispute.funds_withdrawn
+// gives the genuine case a second, explicit route.
+const FUNDS_WITHDRAWN_STATUSES = new Set([
+  'needs_response',   // chargeback filed; Stripe has already taken the money
+  'under_review',     // we responded, Stripe still holds it
+  'lost',             // final, against us
+  'charge_refunded',  // resolved by refunding the charge
+]);
+
+// warning_* is an inquiry or retrieval request: the issuer is asking for
+// information and nothing has been withdrawn.
 export const isInquiry = (status) => typeof status === 'string' && status.startsWith('warning_');
+
+export const fundsAreWithdrawn = (status) => FUNDS_WITHDRAWN_STATUSES.has(status);
 
 /**
  * @param {object} event a Stripe event ({type, data:{object}})
@@ -60,6 +80,16 @@ export function routeEvent(event) {
     // Compare against the CAPTURED amount, so a full refund of a partially
     // captured charge still counts as full. A partial refund leaves the
     // purchase intact.
+    // The `?? 0` defaults are a deliberate divergence from the pre-extraction
+    // `charge.amount_refunded < charge.amount_captured`. With amount_refunded
+    // absent, that comparison was `undefined < 999` — NaN-false — so a charge
+    // event missing the field was treated as a FULL refund and debited. Reading
+    // a missing field as 0 makes it a partial refund instead, and debits
+    // nothing. Same principle as the dispute allowlist below: on a malformed
+    // event we do not know whether the money moved, and wrongly debiting a
+    // paying customer is the worse of the two errors. Not reachable in practice
+    // — every Charge Stripe emits populates amount_refunded — but this is the
+    // direction to fail in.
     if ((obj.amount_refunded ?? 0) < (obj.amount_captured ?? 0)) {
       return { action: ACTION.IGNORE, ignored: 'partial_refund' };
     }
@@ -71,9 +101,20 @@ export function routeEvent(event) {
   // created AND updated: an inquiry that escalates into a real chargeback is
   // reported by Stripe as an update to the existing dispute, not a second
   // created, so watching only `created` misses every escalation.
-  if (type === 'charge.dispute.created' || type === 'charge.dispute.updated') {
+  // funds_withdrawn is the event that says so outright, and is routed here too.
+  if (
+    type === 'charge.dispute.created' ||
+    type === 'charge.dispute.updated' ||
+    type === 'charge.dispute.funds_withdrawn'
+  ) {
     if (isInquiry(obj.status)) {
       return { action: ACTION.IGNORE, ignored: 'dispute_inquiry' };
+    }
+    // Only reverse for a status that actually means the money is gone.
+    // charge.dispute.funds_withdrawn says so by its own name, whatever status
+    // the object happens to carry.
+    if (type !== 'charge.dispute.funds_withdrawn' && !fundsAreWithdrawn(obj.status)) {
+      return { action: ACTION.IGNORE, ignored: 'dispute_funds_not_withdrawn' };
     }
     const paymentIntent = paymentIntentId(obj.payment_intent);
     if (!paymentIntent) return { action: ACTION.IGNORE, ignored: 'no_payment_intent' };

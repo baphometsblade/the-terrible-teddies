@@ -3,6 +3,7 @@ import {
   ACTION,
   routeEvent,
   isInquiry,
+  fundsAreWithdrawn,
   paymentIntentId,
   reversalNotFoundAction,
   REVERSAL_RACE_WINDOW_SECONDS,
@@ -60,6 +61,34 @@ describe('disputes that took no money', () => {
         .toMatchObject({ action: ACTION.REVERSE, reversalReason: 'disputed' });
     }
   );
+
+  // The bug this pins, which the first version of these tests shared: `won` is
+  // not a warning_ status, so a denylist of "anything not warning_*" routed a
+  // dispute resolved IN OUR FAVOUR to a reversal. Stripe reports that
+  // resolution as an ordinary charge.dispute.updated, so winning a dispute
+  // debited the customer.
+  it.each(['charge.dispute.created', 'charge.dispute.updated'])(
+    'never reverses a WON dispute arriving as %s',
+    (type) => {
+      expect(routeEvent(ev(type, dispute('won'))))
+        .toMatchObject({ action: ACTION.IGNORE, ignored: 'dispute_funds_not_withdrawn' });
+    }
+  );
+
+  // An allowlist, so a status Stripe adds later does nothing rather than
+  // guessing. Wrongly debiting a paying customer is silent and lands on them;
+  // a missed clawback is visible in the dashboard and recoverable.
+  it('does nothing for an unrecognised future status', () => {
+    expect(routeEvent(ev('charge.dispute.updated', dispute('some_status_from_2027'))))
+      .toMatchObject({ action: ACTION.IGNORE, ignored: 'dispute_funds_not_withdrawn' });
+  });
+
+  // The event whose name says the money left. Its status field is not consulted:
+  // the event type alone is the statement.
+  it('reverses on charge.dispute.funds_withdrawn', () => {
+    expect(routeEvent(ev('charge.dispute.funds_withdrawn', dispute('needs_response'))))
+      .toMatchObject({ action: ACTION.REVERSE, reversalReason: 'disputed' });
+  });
 });
 
 describe('an inquiry that escalates into a real chargeback', () => {
@@ -140,6 +169,14 @@ describe('events this endpoint does not act on', () => {
 describe('a reversal that arrives before its purchase', () => {
   const NOW = 1_700_000_000;
 
+  // Pin the VALUE, not just the behaviour relative to it. Every other
+  // assertion here derives its expectation from REVERSAL_RACE_WINDOW_SECONDS,
+  // so shrinking the window to one second would leave them all passing while
+  // silently turning the race guard off.
+  it('is a one-hour window', () => {
+    expect(REVERSAL_RACE_WINDOW_SECONDS).toBe(3600);
+  });
+
   it('asks Stripe to retry while the race is plausible', () => {
     expect(reversalNotFoundAction(NOW, NOW)).toBe('retry');
     expect(reversalNotFoundAction(NOW - 60, NOW)).toBe('retry');
@@ -156,10 +193,19 @@ describe('a reversal that arrives before its purchase', () => {
   });
 });
 
-describe('isInquiry', () => {
-  it('is true only for warning_ statuses', () => {
+describe('status predicates', () => {
+  it('isInquiry is true only for warning_ statuses', () => {
     expect(isInquiry('warning_needs_response')).toBe(true);
     expect(isInquiry('needs_response')).toBe(false);
     expect(isInquiry(undefined)).toBe(false);
+  });
+
+  it('fundsAreWithdrawn excludes won, warnings, and anything unknown', () => {
+    expect(fundsAreWithdrawn('needs_response')).toBe(true);
+    expect(fundsAreWithdrawn('lost')).toBe(true);
+    expect(fundsAreWithdrawn('won')).toBe(false);
+    expect(fundsAreWithdrawn('warning_under_review')).toBe(false);
+    expect(fundsAreWithdrawn('anything_else')).toBe(false);
+    expect(fundsAreWithdrawn(undefined)).toBe(false);
   });
 });
