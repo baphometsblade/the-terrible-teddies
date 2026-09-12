@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
+// Origin allowlisting and bundle lookup are pure decisions, so they live in a
+// module the test suite can import. See checkoutGuards.js.
+import { resolveOrigin, lookupBundle, redirectUrls } from "./checkoutGuards.js";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   apiVersion: "2023-10-16",
@@ -32,7 +35,7 @@ const ALLOWED_ORIGINS = [
 ].filter(Boolean) as string[];
 
 const getCorsHeaders = (requestOrigin: string | null) => {
-  const origin = ALLOWED_ORIGINS.includes(requestOrigin ?? "") ? requestOrigin : ALLOWED_ORIGINS[0];
+  const origin = resolveOrigin(requestOrigin, ALLOWED_ORIGINS);
   return {
     "Access-Control-Allow-Origin": origin ?? "",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -87,7 +90,9 @@ serve(async (req) => {
 
     const { bundle_id } = await req.json();
 
-    const bundle = GEM_BUNDLES[bundle_id];
+    // Own-property lookup: a bare index would hand back Object.prototype members
+    // for ids like "constructor", which are truthy and slip past this check.
+    const bundle = lookupBundle(GEM_BUNDLES, bundle_id);
     if (!bundle) {
       return new Response(
         JSON.stringify({ error: "Invalid bundle ID" }),
@@ -96,7 +101,7 @@ serve(async (req) => {
     }
 
     // Validate origin is in allowlist — prevent open redirect
-    const safeOrigin = ALLOWED_ORIGINS.includes(requestOrigin ?? "") ? requestOrigin : ALLOWED_ORIGINS[0];
+    const safeOrigin = resolveOrigin(requestOrigin, ALLOWED_ORIGINS);
     if (!safeOrigin) {
       return new Response(
         JSON.stringify({ error: "Invalid origin" }),
@@ -122,8 +127,7 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${safeOrigin}/?purchase=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${safeOrigin}/?purchase=cancelled`,
+      ...redirectUrls(safeOrigin),
       client_reference_id: user.id,
       metadata: {
         bundle_id,

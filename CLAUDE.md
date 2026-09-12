@@ -129,6 +129,14 @@ of the screen whose job is covering a round-trip.
 
 **Stripe Checkout** (real payments, not simulation):
 - `supabase/functions/create-checkout-session/` — creates Stripe session, verifies JWT, validates origin
+- `supabase/functions/create-checkout-session/checkoutGuards.js` — its two
+  security decisions, pure and tested: origin allowlisting (exact match only —
+  `success_url` is built from it, so a prefix comparison would turn a completed
+  checkout into an open redirect) and own-property bundle lookup (a bare
+  `TABLE[id]` returns a truthy function for `constructor`/`toString`, sails past
+  the `!bundle` check and prices the session from `undefined`). The gem table
+  itself deliberately stays in `index.ts`, because `gemBundles.test.js`
+  regex-parses it from there to guard price drift across all four tables.
 - `supabase/functions/stripe-webhook/` — handles `checkout.session.completed`, credits gems via `add_user_gems()` RPC.
   It also reverses on `charge.refunded` (full refunds only) and on
   `charge.dispute.created` / `charge.dispute.updated` — but **not** for a
