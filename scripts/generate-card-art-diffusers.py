@@ -150,7 +150,15 @@ def main() -> int:
         )
         return 1
 
-    with open(manifest_path) as fh:
+    # The manifest is UTF-8 (Node writes it). Without an explicit encoding,
+    # Python on Windows reads it as cp1252, turning the em-dash separator in
+    # every prompt into three junk characters ("â€”"). That is the same trap
+    # scripts/check-art-tokens.py pins against — but that script reads prompts
+    # from the generator, so it can't see this path. Here the model would
+    # actually receive the junk, and its ~4 extra tokens push the ten prompts
+    # nearest the 77-token ceiling over it, cutting the end of their scene.
+    # Linux defaults to UTF-8, which is why cloud-rendered art was never hit.
+    with open(manifest_path, encoding="utf-8") as fh:
         manifest = json.load(fh)
     if only:
         manifest = [m for m in manifest if m["id"] in only]
