@@ -27,6 +27,7 @@ Usage
 Exits non-zero if any prompt exceeds the limit, so it can gate an art run.
 """
 import re
+import shutil
 import subprocess
 import sys
 
@@ -37,8 +38,12 @@ MODEL = "openai/clip-vit-large-patch14"
 def dump_prompts() -> dict[int, str]:
     """Get the prompts from the generator itself, so this can never drift from
     what actually gets sent to the endpoint."""
+    # On Windows npx is npx.cmd, and CreateProcess will not find it from the
+    # bare name — the run dies with FileNotFoundError before measuring a thing.
+    # Resolve the real path first; this is a no-op on Linux and macOS.
+    npx = shutil.which("npx") or "npx"
     proc = subprocess.run(
-        ["npx", "vite-node", "scripts/generate-card-art.mjs", "--", "--dry-run"],
+        [npx, "vite-node", "scripts/generate-card-art.mjs", "--", "--dry-run"],
         capture_output=True,
         check=True,
     )
