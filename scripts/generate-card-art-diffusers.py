@@ -15,6 +15,13 @@ Env:
             natively 1024-trained — sd-turbo is 512-trained and doubles
             subjects at card resolution. SD_MODEL=stabilityai/sd-turbo with
             SD_WIDTH/SD_HEIGHT=512 stays available for fast/low-RAM runs.)
+            May also be a local diffusers-format folder, which loads with no
+            network at all. Prefer that over HF_HUB_OFFLINE=1: offline, this
+            diffusers asks the hub cache for the WHOLE repo, and
+            huggingface_hub >= 1.x refuses a snapshot missing any file
+            (IncompleteSnapshotError) — the README, the 6.9 GB single-file
+            checkpoint, everything — even though the fp16 subset this runner
+            loads is all present. Online, only that subset is checked.
   SD_STEPS  inference steps (default 4)
   SD_GUIDANCE classifier-free guidance (default 0.0). Turbo models are
             distilled for 0.0, where the negative prompt has NO effect.
