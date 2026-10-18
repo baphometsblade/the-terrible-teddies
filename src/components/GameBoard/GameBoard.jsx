@@ -1219,10 +1219,16 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             transition={{ type: 'spring', stiffness: 350, damping: 22 }}
             className="absolute bottom-[9.5rem] right-4 z-30 max-w-[230px] pointer-events-none"
           >
-            <div className="relative bg-brass-100/95 text-night-900 text-sm font-semibold rounded-2xl rounded-br-sm px-3 py-2 shadow-lg border border-brass-400/60">
+            {/* brass-200, not brass-100: the palette starts at 200, so
+                bg-brass-100 generated no CSS at all. The bubble was transparent
+                and its near-black text sat on the near-black battlefield — the
+                same rgb(26,18,38) behind it as in it, a 1:1 contrast ratio,
+                with the tail missing too. src/tailwindShades.test.js now
+                fails on any class naming a shade the palette lacks. */}
+            <div className="relative bg-brass-200/95 text-night-900 text-sm font-semibold rounded-2xl rounded-br-sm px-3 py-2 shadow-lg border border-brass-400/60">
               <span className="mr-1">🎭</span>
               {playerQuip.text}
-              <div className="absolute -bottom-2 right-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-brass-100/95" />
+              <div className="absolute -bottom-2 right-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-brass-200/95" />
             </div>
           </motion.div>
         )}

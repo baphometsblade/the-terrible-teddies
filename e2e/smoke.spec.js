@@ -284,6 +284,38 @@ test('buying a gem bundle starts Stripe checkout for that exact bundle', async (
   expect(checkoutBody.bundle_id).toBe('gems_small');
 });
 
+test('a checkout that never starts does not trap the buyer behind the spinner', async ({ page }) => {
+  // Shop covers the screen with a lone spinning gem — no text, no cancel —
+  // while it waits for create-checkout-session, and only clears it when that
+  // request fails. The request had no timeout, so a stalled or cold edge
+  // function stranded the buyer until the browser gave up, which can take
+  // minutes. Hang the request outright and fast-forward the app's own clock.
+  await page.route('**/functions/v1/create-checkout-session', () => {
+    // never fulfilled
+  });
+
+  await page.getByRole('button', { name: 'Shop', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Shop' });
+  await expect(dialog).toBeVisible(SLOW);
+  await dialog.getByRole('button', { name: 'Buy Gems' }).click();
+
+  // Installed only now, so it fakes the timer the purchase tap creates and
+  // nothing the boot path set up earlier.
+  await page.clock.install();
+  await dialog.getByRole('button', { name: 'Buy 50 gems for $0.99' }).click();
+
+  // The spinner is up and the purchase button is disabled while it waits.
+  await expect(dialog.getByRole('button', { name: 'Buy 50 gems for $0.99' })).toHaveCount(0);
+
+  await page.clock.runFor(21_000);
+
+  // It gives up, says so — including that nothing was charged — and hands the
+  // shop back.
+  await expect(page.getByText(/taking too long to start/i).first()).toBeVisible(SLOW);
+  await expect(page.getByText(/haven.t been charged/i).first()).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Buy 50 gems for $0.99' })).toBeVisible(SLOW);
+});
+
 test('returning from a completed checkout confirms the credited gems', async ({ page }) => {
   // The other half of the revenue path: after Stripe redirects back with
   // ?purchase=success&session_id=…, the app must verify the session and show the
@@ -306,8 +338,37 @@ test('returning from a completed checkout confirms the credited gems', async ({ 
   await expect(dialog.getByText('Purchase Complete!')).toBeVisible(SLOW);
   await expect(dialog.getByText(/500/)).toBeVisible();
 
+  // The balance read succeeded, so the counter is current and nothing extra
+  // needs saying — the control case for the test below.
+  await expect(dialog.getByText(/couldn.t refresh your balance/i)).toHaveCount(0);
+
   await dialog.getByRole('button', { name: /Let.?s Play/ }).click();
   await expect(dialog).toHaveCount(0, SLOW);
+});
+
+test('a completed purchase whose balance read fails does not pretend the counter moved', async ({ page }) => {
+  // The purchase verifies as completed, so the gems are credited server-side,
+  // but every read of the new balance fails. This used to skip the reconcile
+  // silently and still celebrate "500 gems added", over a gem counter that had
+  // not moved — a paying customer watching their money apparently vanish.
+  let balanceReads = 0;
+  await page.route(/\/rest\/v1\/purchases/, (route) =>
+    route.fulfill({ json: [{ gems_granted: 500, bundle_id: 'gems_large', status: 'completed' }] })
+  );
+  await page.route(/\/rest\/v1\/user_gems/, (route) => {
+    balanceReads += 1;
+    return route.fulfill({ status: 500, json: { message: 'upstream timeout' } });
+  });
+
+  await page.goto('/?purchase=success&session_id=cs_test_balance_fail');
+
+  const dialog = page.getByRole('dialog', { name: 'Purchase status' });
+  await expect(dialog.getByText('Purchase Complete!')).toBeVisible(SLOW);
+  await expect(dialog.getByText(/couldn.t refresh your balance/i)).toBeVisible();
+  await expect(dialog.getByText(/safely on your account/i)).toBeVisible();
+  // It retried before giving up, rather than conceding on one blip. (The
+  // login sync also reads user_gems once at boot, so count at least 3.)
+  expect(balanceReads).toBeGreaterThanOrEqual(3);
 });
 
 test('a stuck verification is not a trap: the verifying phase has an escape hatch', async ({ page }) => {
@@ -603,6 +664,11 @@ test('a dialog chunk that fails to load degrades gracefully, not a full-app cras
   await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible();
   await expect(page.getByText('Oh no!')).toHaveCount(0);
 
+  // Focus moves into the notice. An alertdialog is announced when focus
+  // enters it; this one used to render without taking focus, so it could
+  // appear silently to a screen reader with the keyboard still on Shop.
+  await expect(notice.getByRole('button', { name: 'OK' })).toBeFocused();
+
   // Dismissing returns to a fully usable app.
   await notice.getByRole('button', { name: 'OK' }).click();
   await expect(notice).toHaveCount(0, SLOW);
@@ -623,9 +689,11 @@ test('a failed battle chunk keeps the app alive too, not just dialogs', async ({
   await expect(notice).toBeVisible(SLOW);
   // The app-level crash screen must NOT have taken over.
   await expect(page.getByText('Oh no!')).toHaveCount(0);
+  await expect(notice.getByRole('button', { name: 'OK' })).toBeFocused();
 
-  // Dismissing drops the player back on a working menu.
-  await notice.getByRole('button', { name: 'OK' }).click();
+  // Escape dismisses it too — the same key every other dialog closes on — and
+  // drops the player back on a working menu.
+  await page.keyboard.press('Escape');
   await expect(notice).toHaveCount(0, SLOW);
   await expect(page.getByRole('button', { name: 'Shop', exact: true })).toBeVisible();
 });

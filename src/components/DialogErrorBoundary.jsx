@@ -17,6 +17,14 @@ class DialogErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false };
+    // Move focus onto the notice's only control the moment it appears. It is
+    // an alertdialog, and screen readers announce one when focus enters it —
+    // rendered without focus, this one could appear silently, leaving a
+    // keyboard player on whatever button opened the screen that failed.
+    // A stable callback ref (not an inline arrow) so it fires on mount only,
+    // rather than re-grabbing focus on every re-render.
+    this.focusOnMount = (el) => { if (el) el.focus(); };
+    this.onKeyDown = (e) => { if (e.key === 'Escape') this.props.onDismiss?.(); };
   }
 
   static getDerivedStateFromError() {
@@ -49,15 +57,19 @@ class DialogErrorBoundary extends React.Component {
           <div
             className="bg-night-800 border border-white/20 rounded-2xl p-6 max-w-sm w-full text-center"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={this.onKeyDown}
             role="alertdialog"
+            aria-modal="true"
             aria-label="That screen failed to load"
+            aria-describedby="dialog-load-failure-detail"
           >
-            <div className="text-5xl mb-3">🧸📡</div>
+            <div className="text-5xl mb-3" aria-hidden="true">🧸📡</div>
             <h2 className="text-xl font-bold text-white mb-2">Couldn&apos;t open that</h2>
-            <p className="text-white/70 text-sm mb-4">
+            <p id="dialog-load-failure-detail" className="text-white/70 text-sm mb-4">
               That screen failed to load — usually a network hiccup. Your game is fine; give it another try.
             </p>
             <button
+              ref={this.focusOnMount}
               onClick={this.props.onDismiss}
               className="w-full bg-brass-500 hover:bg-brass-400 text-night-950 font-bold py-2 rounded-lg transition-colors"
             >

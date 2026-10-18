@@ -14,10 +14,17 @@ const BUNDLE_PRICES = {
   gems_huge: 19.99, gems_mega: 49.99, starter_bundle: 4.99, weekly_gem_pass: 5.99,
 };
 
+// Reads of the post-purchase gem balance before giving up on showing it here.
+// The gems are already credited server-side; this only decides whether this
+// device's counter can be updated now or catches up on the next launch.
+const BALANCE_READ_ATTEMPTS = 3;
+
 const PurchaseSuccess = ({ sessionId, onDone }) => {
   const { reconcileServerGems } = useGameStore();
   const [phase, setPhase] = useState('verifying'); // verifying | success | pending | error
   const [gemsGranted, setGemsGranted] = useState(0);
+  // Whether this device's gem counter actually reflects the purchase yet.
+  const [balanceShown, setBalanceShown] = useState(true);
   const synced = useRef(false);
   const mountedRef = useRef(true);
   // Escape must not dismiss the dialog mid-verification — unmounting aborts
@@ -50,9 +57,25 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
         if (synced.current) return;
         synced.current = true;
 
-        const serverBalance = await fetchServerGemBalance();
+        // 'completed' is only ever written by fulfill_gem_purchase, in the
+        // same transaction that credits user_gems — so the gems are on the
+        // account by now. What can still fail is THIS device learning the new
+        // balance: one flaky read returned null, the reconcile was skipped, and
+        // the dialog announced "500 gems added to your account" over a gem
+        // counter that had not moved. The buyer has just paid real money and is
+        // watching it apparently not arrive — a support ticket, or a chargeback
+        // that would then claw the gems back for real. Retry briefly, and if it
+        // still fails, say what is true instead.
+        let serverBalance = null;
+        for (let attempt = 0; attempt < BALANCE_READ_ATTEMPTS; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 600 * attempt));
+          if (!mountedRef.current) return;
+          serverBalance = await fetchServerGemBalance();
+          if (serverBalance !== null) break;
+        }
         if (!mountedRef.current) return;
         if (serverBalance !== null) reconcileServerGems(serverBalance);
+        setBalanceShown(serverBalance !== null);
 
         setGemsGranted(purchase.gems_granted);
         setPhase('success');
@@ -120,7 +143,12 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
       aria-label="Purchase status"
       className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
     >
+      {/* aria-live: the whole body swaps between verifying / success /
+          pending / error with focus staying put, so a screen-reader buyer was
+          told nothing when "Verifying Payment…" became "Purchase Complete!" —
+          on the one screen where they most need to know what happened. */}
       <motion.div
+        aria-live="polite"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-8 max-w-md w-full border border-plush-700/60 shadow-2xl text-center"
@@ -158,6 +186,16 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
               <span className="font-bold text-white text-2xl">{gemsGranted.toLocaleString()} 💎</span>
               <br />added to your account
             </p>
+            {!balanceShown && (
+              // Not "something went wrong": nothing did. The purchase is
+              // complete and credited; only this screen's copy of the balance
+              // is behind, and the login sync brings it level on next launch.
+              <p className="text-plush-300 text-sm -mt-3 mb-6">
+                We couldn&apos;t refresh your balance on this screen just now, so the
+                counter may not show them yet. They&apos;re safely on your account and
+                will appear next time you open the game.
+              </p>
+            )}
             <Button
               onClick={onDone}
               className="bg-gradient-to-r from-purple-700 to-fuchsia-800 hover:from-purple-800 hover:to-fuchsia-900 text-white px-8 py-3 font-bold text-lg"
