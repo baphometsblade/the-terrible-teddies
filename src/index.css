@@ -267,6 +267,104 @@
     0 30px 60px -20px rgba(0, 0, 0, 0.85);
 }
 
+/* The battle board's two rails: Chuck's along the top lit crimson from his
+   side, the player's along the bottom lit green. */
+.hud-opponent {
+  background:
+    radial-gradient(ellipse 45% 160% at 100% 0%, rgba(220, 38, 38, 0.24), transparent 70%),
+    linear-gradient(180deg, rgba(44, 20, 34, 0.97), rgba(22, 13, 28, 0.95));
+  border-bottom: 1px solid rgba(248, 113, 113, 0.22);
+  box-shadow: 0 12px 28px -14px rgba(0, 0, 0, 0.85);
+}
+.hud-player {
+  background:
+    radial-gradient(ellipse 45% 160% at 100% 100%, rgba(16, 185, 129, 0.18), transparent 70%),
+    linear-gradient(0deg, rgba(14, 32, 26, 0.97), rgba(22, 15, 32, 0.95));
+  border-top: 1px solid rgba(52, 211, 153, 0.2);
+  box-shadow: 0 -12px 28px -14px rgba(0, 0, 0, 0.85);
+}
+
+/* The walnut rail the felt is set into: lit along its top edge, darker toward
+   the player, and seated on the room by a long shadow. */
+.table-rail {
+  padding: 7px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #6b4526 0%, #4a2d18 40%, #2f1c0f 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 214, 160, 0.3),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 26px 50px -22px rgba(0, 0, 0, 0.9);
+}
+
+/* The centre ring printed on the cloth. On ::after, so it combines with
+   .stitched (::before) on the same felt. */
+.felt-print::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(46%, 300px);
+  aspect-ratio: 2.2;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  border: 2px solid rgba(253, 230, 138, 0.09);
+  box-shadow: 0 0 0 10px rgba(253, 230, 138, 0.025);
+  pointer-events: none;
+}
+
+/* The board is a fixed-height screen, so on short viewports (a laptop at
+   720px, a small phone) the card rows and hand are scaled to fit rather than
+   clipped. zoom, not transform, because it scales layout too: the rows take
+   the space they appear to take. */
+@media (max-height: 760px) {
+  .board-zoom { zoom: 0.85; }
+}
+@media (max-height: 680px) {
+  .board-zoom { zoom: 0.72; }
+}
+
+/* Battle notifications sit on the table's centre line, where nothing is
+   tapped: the momentum meter and turn plaque, which a short-lived callout can
+   cover. In the default corner they covered the turn controls on desktop and
+   Chuck's health on phones. GameBoard sets html[data-screen="battle"] while a
+   game is in play. 37% is where the centre line falls with the board's rails,
+   hand and controls stacked around it. They pop in place rather than sliding
+   from an edge they no longer touch. */
+[data-screen="battle"] .toast-viewport {
+  top: 37%;
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  max-width: min(24rem, calc(100vw - 1rem));
+  padding: 0.5rem;
+}
+/* Wide screens have a battle log beside the table, and a battle toast IS the
+   newest log entry, so dock it over the top of the log instead and leave the
+   centre line (and the targeting prompt on it) clear. 4.75rem is the top rail
+   plus the gap above the log; 14rem and 1.5rem are the log column's width and
+   the board's side padding at lg. */
+@media (min-width: 1024px) {
+  [data-screen="battle"] .toast-viewport {
+    top: 4.75rem;
+    left: auto;
+    right: 1.5rem;
+    transform: none;
+    width: 14rem;
+    max-width: 14rem;
+    padding: 0;
+  }
+}
+[data-screen="battle"] .toast-viewport > li {
+  padding: 0.625rem 2rem 0.625rem 1rem;
+  --tw-enter-translate-x: 0;
+  --tw-enter-translate-y: 0;
+  --tw-enter-scale: 0.9;
+  --tw-exit-translate-x: 0;
+  --tw-exit-scale: 0.95;
+}
+
 /* Small-caps label used for section headings and metadata lines. */
 .label-caps {
   text-transform: uppercase;

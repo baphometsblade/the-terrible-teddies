@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Button } from "@/components/ui/button";
+import {
+  Coins, Crosshair, Flag, Ghost, Heart, HeartCrack, ScrollText, Shield, Star, Trophy, Volume2, VolumeX, Zap,
+} from 'lucide-react';
 import TeddyCard, { CardBack } from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
+import { RARITY_METAL } from '@/lib/rarity';
 import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
 import { playSound as playSoundEffect } from '@/utils/sounds';
@@ -27,6 +30,119 @@ const withHp = (card) => ({ ...card, currentHp: card.defense });
 
 // A full momentum gauge unlocks the Rally payoff.
 const MOMENTUM_MAX = 10;
+
+// Board metals. Brass is the player's (and the plaque on their turn); crimson
+// is Chuck's.
+const PLAQUE_BRASS = 'linear-gradient(180deg, #fde68a 0%, #fbbf24 45%, #d97706 100%)';
+const PLAQUE_CRIMSON = 'linear-gradient(180deg, #ef4444 0%, #b91c1c 50%, #7f1d1d 100%)';
+const OPPONENT_RING = 'linear-gradient(145deg, #fecaca 0%, #b91c1c 40%, #f87171 65%, #7f1d1d 100%)';
+
+// Shared shape of every board control; the material (btn-brass / btn-glass)
+// is added per button. Plain <button>s rather than the shadcn Button, whose
+// bg-primary is a utility and would beat a component-layer material.
+const ACTION =
+  'inline-flex items-center justify-center gap-1.5 h-10 px-4 lg:w-full rounded-xl font-display font-bold ' +
+  'text-sm sm:text-base whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 ' +
+  'focus-visible:ring-brass-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950';
+
+const Avatar = ({ ring }) => (
+  <div
+    className="h-10 w-10 shrink-0 rounded-full p-[2px] shadow-[0_4px_12px_-4px_rgba(0,0,0,0.8)]"
+    style={{ background: ring }}
+    aria-hidden="true"
+  >
+    <div className="flex h-full w-full items-center justify-center rounded-full bg-night-900 text-xl">🧸</div>
+  </div>
+);
+
+const HealthMeter = ({ hp, max, fill, label }) => (
+  <div className="flex flex-col items-end gap-1">
+    <div className="flex items-center gap-1.5 leading-none">
+      <Heart className="h-3.5 w-3.5 text-red-400" fill="currentColor" aria-hidden="true" />
+      {/* key-remount replays the pop on every HP change, so each hit reads. */}
+      <motion.span
+        key={hp}
+        initial={{ scale: 1.6, color: '#fca5a5' }}
+        animate={{ scale: 1, color: '#ece6f2' }}
+        transition={{ type: 'spring', stiffness: 400, damping: 14 }}
+        className="inline-block font-display text-lg sm:text-xl font-extrabold tabular-nums whitespace-nowrap"
+      >
+        {hp}/{max}
+      </motion.span>
+    </div>
+    <Progress
+      value={(hp / max) * 100}
+      className={`h-2 w-20 sm:w-36 bg-black/45 ring-1 ring-white/10 ${fill}`}
+      aria-label={label}
+    />
+  </div>
+);
+
+// Ten segments rather than a bar, so "two more hits to Rally" is countable at a
+// glance. The ring glows (CSS pulse, compositor-only) once it is full.
+const MomentumMeter = ({ value }) => {
+  const full = value >= MOMENTUM_MAX;
+  return (
+    <div
+      className="relative shrink-0 w-[6.5rem] sm:w-32"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={MOMENTUM_MAX}
+      aria-valuenow={value}
+      aria-label={`Momentum: ${value} of ${MOMENTUM_MAX}`}
+    >
+      <div className="flex items-baseline justify-between" aria-hidden="true">
+        <span className="label-caps text-[9px] text-brass-300">Momentum</span>
+        <span className="text-[10px] font-bold tabular-nums text-brass-200">{value}/{MOMENTUM_MAX}</span>
+      </div>
+      <div className="mt-1 flex gap-[3px]" aria-hidden="true">
+        {Array.from({ length: MOMENTUM_MAX }, (_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 flex-1 rounded-full ${i < value
+              ? 'bg-gradient-to-b from-brass-200 to-brass-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]'
+              : 'bg-black/45 ring-1 ring-inset ring-white/5'}`}
+          />
+        ))}
+      </div>
+      {full && (
+        <span
+          className="absolute -inset-1.5 rounded-lg ring-1 ring-brass-300/70 shadow-[0_0_14px_rgba(251,191,36,0.5)] animate-pulse pointer-events-none"
+          aria-hidden="true"
+        />
+      )}
+    </div>
+  );
+};
+
+// "Warming Up" / "Exhausted" under a creature. In the flow rather than
+// absolute, so a row keeps one height whatever states it shows. The e2e suite
+// counts these words exactly, so each state renders them here and nowhere else.
+const StatusChip = ({ children }) => (
+  <div className="mt-1.5 flex justify-center">
+    <span className="rounded-full bg-night-950/85 ring-1 ring-white/10 px-2 py-0.5 text-[10px] font-semibold text-plush-200 whitespace-nowrap">
+      {children}
+    </span>
+  </div>
+);
+
+const StealthBand = () => (
+  <div className="absolute inset-x-0 top-[22px] z-10 flex items-center justify-center gap-1 bg-purple-700/90 py-0.5 text-[9px] font-bold tracking-[0.12em] text-white">
+    <Ghost className="h-2.5 w-2.5" aria-hidden="true" />
+    STEALTH
+  </div>
+);
+
+const TauntTag = ({ tone }) => (
+  <div
+    className={`absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-[0.12em] shadow-[0_3px_8px_-2px_rgba(0,0,0,0.8)] ${tone === 'opponent'
+      ? 'bg-red-700 text-white'
+      : 'bg-brass-300 text-night-950'}`}
+  >
+    <Shield className="h-2.5 w-2.5" aria-hidden="true" />
+    TAUNT
+  </div>
+);
 
 // Push the player's current level/xp to the server on the leaderboard's
 // experience scale. Fire-and-forget; syncPlayerLevel no-ops when signed out.
@@ -54,7 +170,7 @@ const GameOverDialog = ({ label, onEscape, children }) => {
       aria-label={label}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="absolute inset-0 z-50 bg-black/80 flex items-center justify-center"
+      className="absolute inset-0 z-50 dialog-scrim flex items-center justify-center p-4"
     >
       {children}
     </motion.div>
@@ -293,7 +409,22 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     }, 3200);
   }, [safeTimeout]);
 
-  const { toast } = useToast();
+  // Battle callouts are short-lived: the battle log keeps the record, and one
+  // left up for the default five seconds sits on the table's centre line
+  // through the next play.
+  const { toast: notify, dismiss: dismissToasts } = useToast();
+  const toast = useCallback((t) => notify({ duration: 2600, ...t }), [notify]);
+
+  // While a battle is in play, notifications move to the table's centre line
+  // (see index.css). In their usual corner they covered the turn controls on
+  // desktop and Chuck's health on phones. Not once the game is over: the result
+  // dialog owns the centre then.
+  useEffect(() => {
+    if (gameOver) return undefined;
+    const root = document.documentElement;
+    root.dataset.screen = 'battle';
+    return () => { delete root.dataset.screen; };
+  }, [gameOver]);
 
   // Play sound helper
   const playSound = useCallback((soundName) => {
@@ -417,11 +548,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         origin: { y: 0.6 },
         colors: ['#fbbf24', '#f59e0b', '#fde68a', '#a855f7', '#38bdf8'],
       });
-
-      toast({
-        title: "Victory!",
-        description: `${OPPONENT_NAME} has been thoroughly unstuffed.`,
-      });
+      // No result toast, here or on a defeat: the game-over dialog announces
+      // the result (it is labelled Victory / Defeat), and a toast only landed
+      // on top of it saying the same thing.
     } else if (playerHealth <= 0) {
       clearAllTimeouts(); // cancel any queued opponent-turn steps
       setGameOver(true);
@@ -446,14 +575,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         .catch(err => console.error('Battle sync failed:', err));
       // Keep the server level/xp current even on a loss (a loss still grants XP).
       syncLevelToServer();
-
-      toast({
-        title: "Defeat!",
-        description: "Your squad got the stuffing beaten out of them.",
-        variant: "destructive",
-      });
     }
-  }, [playerHealth, opponentHealth, gameOver, toast, playSound, recordBattleResult, aiDifficulty, clearAllTimeouts]);
+  }, [playerHealth, opponentHealth, gameOver, playSound, recordBattleResult, aiDifficulty, clearAllTimeouts]);
 
   // Chuck starts sweating when he's nearly unstuffed — once per game.
   useEffect(() => {
@@ -558,14 +681,20 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     battleStatsRef.current.cardsPlayed += 1;
     playSound('cardPlay');
 
-    // Show ability popup
+    // One callout per play. A card with a rule gets the ability callout, which
+    // names the card as well; a plain card gets the toast. Both used to fire
+    // together and stack on the table's centre line, and the callout still
+    // clears a toast left over from earlier in the turn (a draw) for the same
+    // reason. The log entry below is what a screen reader hears either way.
     if (card.ability && card.ability !== 'none') {
+      dismissToasts();
       setShowAbilityPopup({ name: card.name, ability: card.ability });
       safeTimeout(() => setShowAbilityPopup(null), 1500);
+    } else {
+      toast({ title: "Card Played", description: `${card.name} enters the battlefield!` });
     }
 
     addToBattleLog(`Played ${card.name}${card.ability && card.ability !== 'none' ? ` (${card.ability})` : ''}`);
-    toast({ title: "Card Played", description: `${card.name} enters the battlefield!` });
   };
 
   // Apply special card effects
@@ -1025,47 +1154,37 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     return descriptions[ability] || "";
   };
 
-  // Game-over styling: a win gets the brass trophy panel (dark ink text), a
-  // loss gets the night back-of-the-bar panel (light text). One object instead
-  // of a ternary per element.
-  const go = winner === 'player'
-    ? {
-        panel: 'bg-gradient-to-b from-brass-400 to-brass-600',
-        title: 'text-night-950',
-        body: 'text-night-950/70',
-        quip: 'text-night-950/60',
-        box: 'bg-night-950/20',
-        boxTitle: 'text-night-950',
-        reward: 'text-night-950',
-        again: 'bg-night-950 text-plush-100 hover:bg-night-900',
-        menu: 'border-night-950 text-night-950 hover:bg-night-950/10',
-      }
-    : {
-        panel: 'bg-gradient-to-b from-night-700 to-night-900',
-        title: 'text-plush-100',
-        body: 'text-plush-100/70',
-        quip: 'text-plush-100/60',
-        box: 'bg-white/10',
-        boxTitle: 'text-plush-100',
-        reward: 'text-brass-300',
-        again: 'bg-brass-500 hover:bg-brass-600 text-night-950',
-        menu: 'border-plush-300 text-plush-100 hover:bg-white/10',
-      };
+  const won = winner === 'player';
+  const playerTurn = currentTurn === 'player';
+  const directTargets = targetingMode && getValidTargets(playerField, opponentField).length === 0;
+  const latestLog = battleLog.length > 0 ? battleLog[battleLog.length - 1].message : '';
 
   return (
-    <div className="relative w-full h-screen bg-gradient-to-b from-night-900 to-night-950 worn overflow-hidden">
-      {/* Ability Popup */}
+    <div className="relative w-full h-[100dvh] bar-backdrop overflow-hidden">
+      <div className="absolute inset-0 grain pointer-events-none" aria-hidden="true" />
+
+      {/* Ability callout — names the rule a card just brought to the table, on
+          the centre line where battle toasts sit (it replaces the toast for
+          that play). Centred by a plain wrapper: Framer Motion writes an inline
+          transform for y/scale, which silently replaced the -translate-x-1/2
+          this used to carry, so the callout hung off to the right. */}
       <AnimatePresence>
         {showAbilityPopup && (
-          <motion.div
-            initial={{ opacity: 0, y: -50, scale: 0.5 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            className="absolute top-1/3 left-1/2 transform -translate-x-1/2 z-50 bg-night-700 border-2 border-brass-400/60 text-plush-100 px-6 py-3 rounded-lg shadow-lg shadow-black/50"
+          <div
+            key={`${showAbilityPopup.name}-${showAbilityPopup.ability}`}
+            className="absolute top-[37%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-max max-w-[calc(100vw-2rem)] pointer-events-none"
           >
-            <div className="text-lg font-bold">{showAbilityPopup.name}</div>
-            <div className="text-sm text-plush-300">{getAbilityDescription(showAbilityPopup.ability)}</div>
-          </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: -16, scale: 0.85 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="dialog-panel rounded-xl px-5 py-3 text-center"
+            >
+              <div className="label-caps text-brass-300">{showAbilityPopup.ability}</div>
+              <div className="font-display text-lg font-extrabold text-white">{showAbilityPopup.name}</div>
+              <div className="text-sm text-plush-200">{getAbilityDescription(showAbilityPopup.ability)}</div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -1073,62 +1192,75 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       <AnimatePresence>
         {gameOver && (
           <GameOverDialog
-            label={winner === 'player' ? 'Victory' : 'Defeat'}
+            label={won ? 'Victory' : 'Defeat'}
             onEscape={() => onBackToMenu && onBackToMenu()}
           >
             <motion.div
-              initial={{ scale: 0.5, y: 50 }}
+              initial={{ scale: 0.85, y: 30 }}
               animate={{ scale: 1, y: 0 }}
-              className={`relative rounded-2xl p-8 text-center max-w-md w-full mx-4 worn ${go.panel}`}
+              className={`relative rounded-2xl px-6 py-7 sm:px-8 text-center max-w-md w-full overflow-hidden dialog-panel ${won ? 'trim-brass' : ''}`}
             >
+              {/* The light the medallion sits in: amber for a win, a cold
+                  wash for a loss. */}
+              <div
+                aria-hidden="true"
+                className={`absolute inset-x-0 top-0 h-48 pointer-events-none ${won
+                  ? 'bg-[radial-gradient(ellipse_60%_80%_at_50%_0%,rgba(251,191,36,0.28),transparent_70%)]'
+                  : 'bg-[radial-gradient(ellipse_60%_80%_at_50%_0%,rgba(129,140,248,0.16),transparent_70%)]'}`}
+              />
               <motion.div
-                animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 0.5 }}
-                className="text-6xl mb-4"
+                animate={{ scale: [1, 1.15, 1], rotate: [0, 8, -8, 0] }}
+                transition={{ duration: 0.6 }}
+                className="relative mx-auto mb-4 h-20 w-20 rounded-full p-[3px]"
+                style={{ background: won ? RARITY_METAL.legendary : RARITY_METAL.common }}
+                aria-hidden="true"
               >
-                {winner === 'player' ? '🏆' : '💔'}
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-night-900">
+                  {won
+                    ? <Trophy className="h-9 w-9 text-brass-300" strokeWidth={1.75} />
+                    : <HeartCrack className="h-9 w-9 text-plush-300" strokeWidth={1.75} />}
+                </div>
               </motion.div>
-              <h2 className={`text-4xl font-display font-bold mb-2 ${go.title}`}>
-                {winner === 'player' ? 'TOTAL FLUFFING VICTORY!' : 'ABSOLUTELY UNSTUFFED!'}
+              <h2 className={`relative font-display text-3xl sm:text-4xl font-extrabold leading-tight mb-2 ${won ? 'text-brass-gradient' : 'text-plush-100'}`}>
+                {won ? 'TOTAL FLUFFING VICTORY!' : 'ABSOLUTELY UNSTUFFED!'}
               </h2>
-              <p className={`mb-2 ${go.body}`}>
-                {winner === 'player'
+              <p className="relative mb-2 text-plush-200">
+                {won
                   ? `${OPPONENT_NAME} rage-quit into the toy chest.`
                   : `${OPPONENT_NAME} is doing a victory lap. It's insufferable.`}
               </p>
               {endQuip && (
-                <p className={`mb-6 text-sm italic ${go.quip}`}>
+                <p className="relative mb-5 text-sm italic text-plush-300">
                   🧸 {OPPONENT_NAME}: “{endQuip}”
                 </p>
               )}
 
               {/* Rewards */}
-              <div className={`rounded-xl p-4 mb-6 ${go.box}`}>
-                <div className={`text-sm font-semibold mb-3 ${go.boxTitle}`}>
-                  Battle Rewards
-                </div>
-                <div className="flex justify-center gap-8">
+              <div className="relative mb-5">
+                <div className="label-caps text-plush-300 mb-2">Battle Rewards</div>
+                <div className="flex justify-center gap-3">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.3 }}
-                    className="text-center"
+                    className="panel-glass rounded-xl px-4 py-2.5 flex items-center gap-2"
                   >
-                    <div className="text-3xl mb-1">⭐</div>
-                    <div className={`font-bold ${go.reward}`}>
+                    <Star className="h-5 w-5 text-brass-300" fill="currentColor" aria-hidden="true" />
+                    <span className="font-display text-lg font-extrabold text-white tabular-nums">
                       +{battleRewards.xp} XP
-                    </div>
+                    </span>
                   </motion.div>
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.5 }}
-                    className="text-center"
+                    className="panel-glass rounded-xl px-4 py-2.5 flex items-center gap-2"
                   >
-                    <div className="text-3xl mb-1">🪙</div>
-                    <div className={`font-bold ${go.reward}`}>
+                    <Coins className="h-5 w-5 text-brass-300" aria-hidden="true" />
+                    <span className="font-display text-lg font-extrabold text-white tabular-nums">
                       +{battleRewards.coins}
-                    </div>
+                    </span>
+                    <span className="sr-only">coins</span>
                   </motion.div>
                 </div>
               </div>
@@ -1139,50 +1271,35 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.8 }}
-                  className="mb-4 bg-black/30 rounded-xl p-3 text-center"
+                  className="relative mb-5 rounded-xl bg-black/25 ring-1 ring-white/5 p-3"
                 >
-                  <p className={`text-sm mb-2 ${go.body}`}>
-                    {cardPacks === 0 ? '📦 Out of packs? Your squad isn\u2019t going to recruit itself.' : '💎 Low on gems? Chuck says being broke is a personality flaw.'}
+                  <p className="text-sm mb-2 text-plush-200">
+                    {cardPacks === 0 ? '📦 Out of packs? Your squad isn’t going to recruit itself.' : '💎 Low on gems? Chuck says being broke is a personality flaw.'}
                   </p>
-                  <Button
-                    size="sm"
+                  <button
+                    type="button"
                     onClick={onOpenShop ?? onBackToMenu}
-                    className="bg-night-800 hover:bg-night-700 text-plush-100 text-xs"
+                    className="btn-glass rounded-lg px-3 h-8 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
                   >
                     Visit Shop
-                  </Button>
+                  </button>
                 </motion.div>
               )}
 
-              <div className="flex gap-3 justify-center">
-                <Button
-                  onClick={restartGame}
-                  className={go.again}
-                >
+              <div className="relative flex gap-3 justify-center">
+                <button type="button" onClick={restartGame} className={`${ACTION} btn-brass min-w-[8rem]`}>
                   Play Again
-                </Button>
+                </button>
                 {onBackToMenu && (
-                  <Button
-                    onClick={onBackToMenu}
-                    variant="outline"
-                    className={go.menu}
-                  >
+                  <button type="button" onClick={onBackToMenu} className={`${ACTION} btn-glass min-w-[6rem]`}>
                     Menu
-                  </Button>
+                  </button>
                 )}
               </div>
             </motion.div>
           </GameOverDialog>
         )}
       </AnimatePresence>
-
-      {/* Sound indicator */}
-      <div
-        className="absolute top-20 left-4 z-40 bg-night-800/80 border border-plush-700/40 p-2 rounded-full shadow"
-        title={storeSoundEnabled ? "Sound on" : "Sound off"}
-      >
-        {storeSoundEnabled ? '🔊' : '🔇'}
-      </div>
 
       {/* Chuck's trash talk — decorative speech bubble; the battle log is the
           accessible record, so this is hidden from assistive tech. */}
@@ -1195,12 +1312,12 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-            className="absolute top-[8.5rem] left-4 z-30 max-w-[230px] pointer-events-none"
+            className="absolute top-[4.25rem] sm:top-[4.75rem] left-3 sm:left-6 z-30 max-w-[190px] sm:max-w-[230px] pointer-events-none"
           >
-            <div className="relative bg-plush-100/95 text-night-900 text-sm font-semibold rounded-2xl rounded-tl-sm px-3 py-2 shadow-lg border border-brass-400/60">
+            <div className="relative bg-plush-100 text-night-900 text-sm font-semibold rounded-2xl rounded-tl-sm px-3 py-2 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.8)] ring-1 ring-red-300/70">
               <span className="mr-1">🧸</span>
               {oppQuip.text}
-              <div className="absolute -top-2 left-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-b-8 border-b-plush-100/95" />
+              <div className="absolute -top-2 left-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-b-8 border-b-plush-100" />
             </div>
           </motion.div>
         )}
@@ -1217,7 +1334,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-            className="absolute bottom-[9.5rem] right-4 z-30 max-w-[230px] pointer-events-none"
+            className="absolute bottom-[16.5rem] left-3 sm:left-6 z-30 max-w-[190px] sm:max-w-[230px] pointer-events-none"
           >
             {/* brass-200, not brass-100: the palette starts at 200, so
                 bg-brass-100 generated no CSS at all. The bubble was transparent
@@ -1225,363 +1342,347 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                 same rgb(26,18,38) behind it as in it, a 1:1 contrast ratio,
                 with the tail missing too. src/tailwindShades.test.js now
                 fails on any class naming a shade the palette lacks. */}
-            <div className="relative bg-brass-200/95 text-night-900 text-sm font-semibold rounded-2xl rounded-br-sm px-3 py-2 shadow-lg border border-brass-400/60">
+            <div className="relative bg-brass-200 text-night-900 text-sm font-semibold rounded-2xl rounded-bl-sm px-3 py-2 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.8)] ring-1 ring-brass-400/70">
               <span className="mr-1">🎭</span>
               {playerQuip.text}
-              <div className="absolute -bottom-2 right-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-brass-200/95" />
+              <div className="absolute -bottom-2 left-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-brass-200" />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Top bar - Opponent info */}
-      <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-r from-red-950 to-red-900 flex items-center justify-between pl-28 pr-4 shadow-lg">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-red-800 rounded-full border-2 border-red-300 flex items-center justify-center">
-            <span className="text-white text-xl">🧸</span>
-          </div>
-          <div className="min-w-0">
-            <div className="text-white font-bold truncate max-w-[7rem] sm:max-w-none">{OPPONENT_NAME}</div>
-            <div className="text-red-200 text-xs whitespace-nowrap">Deck: {opponentDeck.length}</div>
-          </div>
-          {/* Opponent's draw pile, face down on the table */}
-          {opponentDeck.length > 0 && (
-            <div className="relative w-8 h-11 shrink-0 hidden sm:block" aria-hidden="true">
-              <div className="absolute inset-0 rotate-6"><CardBack className="w-8 h-11" mini /></div>
-              <div className="absolute inset-0 -rotate-3"><CardBack className="w-8 h-11" mini /></div>
-              <CardBack className="w-8 h-11" mini />
+      <div className="relative z-10 flex h-full flex-col">
+        {/* Opponent's rail. pl-28 leaves room for App's "← Menu" control. */}
+        <header className="hud-opponent shrink-0 h-14 sm:h-16 flex items-center justify-between gap-2 pl-28 pr-3 sm:pr-5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Avatar ring={OPPONENT_RING} />
+            <div className="min-w-0">
+              <div className="font-display font-extrabold text-white leading-tight truncate max-w-[7rem] sm:max-w-none">{OPPONENT_NAME}</div>
+              <div className="text-red-200/80 text-[11px] whitespace-nowrap">Deck: {opponentDeck.length}</div>
             </div>
-          )}
-        </div>
-        <div className="flex items-center space-x-2 sm:space-x-4">
-          <div className="text-right">
-            <div className="text-white text-sm">HP</div>
-            {/* key-remount replays the pop on every HP change, so each hit reads. */}
-            <motion.div
-              key={opponentHealth}
-              initial={{ scale: 1.6, color: '#fca5a5' }}
-              animate={{ scale: 1, color: '#ece6f2' }}
-              transition={{ type: 'spring', stiffness: 400, damping: 14 }}
-              className="font-bold text-lg sm:text-xl whitespace-nowrap"
-            >
-              {opponentHealth}/{opponentMaxHealth}
-            </motion.div>
+            {/* Opponent's draw pile, face down on the table */}
+            {opponentDeck.length > 0 && (
+              <div className="relative w-8 h-11 shrink-0 hidden sm:block" aria-hidden="true">
+                <div className="absolute inset-0 rotate-6"><CardBack className="w-8 h-11" mini /></div>
+                <div className="absolute inset-0 -rotate-3"><CardBack className="w-8 h-11" mini /></div>
+                <CardBack className="w-8 h-11" mini />
+              </div>
+            )}
           </div>
-          <Progress
-            value={(opponentHealth / opponentMaxHealth) * 100}
-            className="w-16 sm:w-32 h-3 bg-red-950 [&>div]:bg-red-400"
-            aria-label={`${OPPONENT_NAME} health: ${opponentHealth} of ${opponentMaxHealth}`}
+          <HealthMeter
+            hp={opponentHealth}
+            max={opponentMaxHealth}
+            fill="[&>div]:bg-gradient-to-r [&>div]:from-red-600 [&>div]:to-rose-400"
+            label={`${OPPONENT_NAME} health: ${opponentHealth} of ${opponentMaxHealth}`}
           />
-        </div>
-      </div>
+        </header>
 
-      {/* Opponent's field */}
-      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 flex justify-center space-x-3">
-        {opponentField.map((card) => {
-          const validTargets = getValidTargets(playerField, opponentField);
-          const isValidTarget = validTargets.find(t => t.instanceId === card.instanceId);
+        {/* The table, and beside it on wide screens the log and the controls. */}
+        <div className="relative flex-1 min-h-0 flex flex-col lg:flex-row gap-2 lg:gap-4 px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3">
+          <div className="table-rail flex-1 min-h-0">
+            <div className="felt-table felt-print stitched relative h-full rounded-[15px] grid grid-rows-[1fr_auto_1fr] gap-1 px-2 py-3 sm:p-4">
+              {/* Chuck's half */}
+              <div className="board-zoom self-center flex justify-center items-start gap-2 sm:gap-3">
+                {opponentField.map((card) => {
+                  const validTargets = getValidTargets(playerField, opponentField);
+                  const isValidTarget = validTargets.find(t => t.instanceId === card.instanceId);
+                  const hittable = targetingMode && isValidTarget;
 
-          return (
-            <motion.div
-              key={card.instanceId}
-              initial={{ y: -50, opacity: 0 }}
-              animate={{ y: 0, opacity: card.stealthActive ? 0.5 : 1 }}
-              className={`relative ${targetingMode && isValidTarget ? 'cursor-crosshair ring-2 ring-red-500 ring-offset-2' : ''}`}
-              {...pressable(() => attackTarget(card), `Attack ${card.name}`, targetingMode)}
+                  return (
+                    <motion.div
+                      key={card.instanceId}
+                      initial={{ y: -40, opacity: 0 }}
+                      animate={{ y: 0, opacity: card.stealthActive ? 0.5 : 1 }}
+                      className={`relative ${hittable ? 'cursor-crosshair' : ''}`}
+                      {...pressable(() => attackTarget(card), `Attack ${card.name}`, targetingMode)}
+                    >
+                      <div className={`relative rounded-[10px] transition-shadow ${hittable ? 'ring-2 ring-red-400 shadow-[0_0_22px_4px_rgba(248,113,113,0.55)]' : ''}`}>
+                        <TeddyCard teddy={card} />
+                        {card.stealthActive && <StealthBand />}
+                        {card.ability === 'taunt' && !card.stealthActive && <TauntTag tone="opponent" />}
+                        {hittable && (
+                          <span className="absolute -top-2.5 -right-2.5 z-20 grid h-7 w-7 place-items-center rounded-full bg-red-600 ring-2 ring-red-200 shadow-lg" aria-hidden="true">
+                            <Crosshair className="h-4 w-4 text-white" />
+                          </span>
+                        )}
+                      </div>
+                      {/* Tells the player which of Chuck's teddies can actually swing
+                          at them next turn — without it, summoning sickness is only
+                          legible on their own half of the table. */}
+                      {card.summoningSick && <StatusChip>Warming Up</StatusChip>}
+                    </motion.div>
+                  );
+                })}
+                {directTargets && (
+                  <motion.div
+                    whileHover={{ scale: 1.04 }}
+                    className="w-24 h-36 rounded-[10px] border-2 border-dashed border-red-400/80 bg-red-950/50 shadow-[0_0_22px_rgba(248,113,113,0.35)] flex flex-col items-center justify-center gap-2 cursor-crosshair"
+                    {...pressable(attackOpponentDirectly, opponentField.some(c => c.type === 'trap') ? 'Strike (springs trap)' : 'Attack opponent directly')}
+                  >
+                    <Crosshair className="h-7 w-7 text-red-300" aria-hidden="true" />
+                    <span className="text-red-200 text-xs font-bold text-center px-1">
+                      {opponentField.some(c => c.type === 'trap') ? 'Strike (springs trap)' : 'Attack Directly'}
+                    </span>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* The centre line: momentum, the turn plaque, and on screens
+                  without the log panel, the latest event. */}
+              <div className="relative flex flex-col items-center gap-1.5">
+                <div className="flex w-full items-center gap-2 sm:gap-3">
+                  <MomentumMeter value={playerMomentum} />
+                  <span className="h-px flex-1 bg-gradient-to-r from-transparent to-brass-300/45" aria-hidden="true" />
+                  <div
+                    className={`shrink-0 rounded-lg px-3 sm:px-4 py-1 font-display font-extrabold text-sm sm:text-base whitespace-nowrap shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_6px_14px_-6px_rgba(0,0,0,0.8)] ${playerTurn ? 'text-night-950' : 'text-white'}`}
+                    style={{ background: playerTurn ? PLAQUE_BRASS : PLAQUE_CRIMSON }}
+                  >
+                    Turn {turnCount}
+                    <span className="mx-1.5 opacity-60" aria-hidden="true">·</span>
+                    {playerTurn ? `${phase.charAt(0).toUpperCase() + phase.slice(1)} Phase` : `${OPPONENT_NAME}'s turn`}
+                  </div>
+                  <span className="h-px flex-1 bg-gradient-to-l from-transparent to-brass-300/45" aria-hidden="true" />
+                  <span className="hidden sm:block w-32 shrink-0" aria-hidden="true" />
+                </div>
+
+                {targetingMode ? (
+                  <div className="flex items-center gap-1.5 rounded-full bg-red-950/85 ring-1 ring-red-400/60 px-3 py-1 text-xs font-bold text-red-100 animate-pulse">
+                    <Crosshair className="h-3.5 w-3.5" aria-hidden="true" />
+                    Pick a victim for {selectedCard?.name}!
+                  </div>
+                ) : latestLog && (
+                  /* Latest-event ticker for screens without the log panel.
+
+                     Purely visual: aria-hidden, because the sr-only region below
+                     is the single announcer. This element used to BE the
+                     announcer, carrying the only aria-live on the board — with
+                     md:hidden on it. A live region inside a display:none subtree
+                     is out of the accessibility tree, so on any viewport >= 768px
+                     nothing was ever announced: a screen-reader player pressed
+                     End Turn and was told nothing about Chuck's plays, their
+                     creature dying, the damage they took, or that it was their
+                     turn again. */
+                  <div
+                    aria-hidden="true"
+                    className="lg:hidden max-w-full truncate rounded-full bg-night-950/80 ring-1 ring-white/5 px-3 py-1 text-xs text-plush-200 pointer-events-none"
+                  >
+                    {latestLog}
+                  </div>
+                )}
+
+                {/* The board's one announcer, present at every viewport. Visually
+                    hidden rather than display:none, so it is always in the
+                    accessibility tree; sighted players read the ticker above or
+                    the log panel. */}
+                <div aria-live="polite" className="sr-only">
+                  {latestLog}
+                </div>
+              </div>
+
+              {/* The player's half */}
+              <div className="board-zoom self-center flex justify-center items-start gap-2 sm:gap-3">
+                {playerField.map((card) => {
+                  const selected = selectedCard?.instanceId === card.instanceId;
+                  const ready = playerTurn && phase === 'battle' && canAttack(card);
+                  return (
+                    <motion.div
+                      key={card.instanceId}
+                      whileHover={{ y: -5 }}
+                      className={`relative ${card.type === 'action' && !canAttack(card) ? 'opacity-60' : 'cursor-pointer'}`}
+                      /* Always delegate to selectCardForAttack rather than
+                         short-circuiting here: it owns every rejection message
+                         (trap / exhausted / summoning-sick), so a player who taps an
+                         unavailable creature is told why instead of getting silence. */
+                      {...pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`, playerTurn && phase === 'battle')}
+                    >
+                      <div className={`relative rounded-[10px] transition-shadow ${selected
+                        ? 'ring-2 ring-brass-300 shadow-[0_0_24px_4px_rgba(251,191,36,0.55)]'
+                        : ready ? 'shadow-[0_0_18px_2px_rgba(52,211,153,0.5)]' : ''}`}
+                      >
+                        <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
+                        {card.stealthActive && <StealthBand />}
+                        {card.ability === 'taunt' && !card.stealthActive && <TauntTag tone="player" />}
+                      </div>
+                      {card.hasAttacked && <StatusChip>Exhausted</StatusChip>}
+                      {card.summoningSick && !card.hasAttacked && <StatusChip>Warming Up</StatusChip>}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Beside the table on wide screens; a row under it otherwise. */}
+          <aside className="shrink-0 flex flex-col gap-3 lg:w-56 lg:pb-1">
+            {/* Battle log — a panel on wide screens; narrower ones get the ticker
+                on the centre line instead, since a panel there would cover cards.
+                tabIndex + role/aria-label make the scrolling panel keyboard-
+                reachable (axe: scrollable-region-focusable). It has no
+                aria-live of its own; the sr-only region on the table is the one
+                announcer, on every viewport. Newest first, so the entry that
+                just happened is the one in view. */}
+            <div
+              role="region"
+              aria-label="Battle log"
+              tabIndex={0}
+              // The region itself is the scroller: axe requires the scrolling
+              // element to be the focusable one, not a child of it.
+              className="hidden lg:block flex-1 min-h-0 overflow-y-auto panel-glass rounded-xl p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
             >
-              <TeddyCard teddy={card} />
-              {/* Tells the player which of Chuck's teddies can actually swing
-                  at them next turn — without it, summoning sickness is only
-                  legible on their own half of the table. */}
-              {card.summoningSick && (
-                <div className="text-center text-xs text-plush-300 mt-1">Warming Up</div>
-              )}
-              {card.stealthActive && (
-                <div className="absolute top-[20px] left-0 right-0 bg-purple-500/90 text-white text-[8px] text-center z-10">
-                  STEALTH
+              <div className="flex items-center gap-1.5 mb-2 text-brass-300">
+                <ScrollText className="h-3.5 w-3.5" aria-hidden="true" />
+                <span className="label-caps">Battle Log</span>
+              </div>
+              {[...battleLog].reverse().map((entry, i) => (
+                <div
+                  key={entry.id}
+                  className={`text-xs leading-snug py-1.5 border-b border-white/[0.06] last:border-0 ${i === 0 ? 'text-plush-100' : 'text-plush-300'}`}
+                >
+                  {entry.message}
+                </div>
+              ))}
+            </div>
+
+            {/* Game controls. flex-wrap matters on phones: with both Battle
+                Pass emotes owned AND a full momentum gauge, emotes + Rally + the
+                turn buttons exceed 390px, and without wrapping the spill is
+                clipped at both ends — the first emote and Concede's right edge
+                become untappable. Wrapping drops the overflow onto a second row. */}
+            <div className="flex flex-row flex-wrap justify-center gap-2 lg:flex-col">
+              {/* Battle Pass emote cosmetics — only rendered once unlocked. Usable on
+                  either turn (heckling Chuck mid-swing is the point). */}
+              {!gameOver && emotes.length > 0 && (
+                <div className="flex flex-row justify-center gap-2">
+                  {emotes.map((emote) => (
+                    <button
+                      type="button"
+                      key={emote.name}
+                      onClick={() => sendEmote(emote)}
+                      aria-label={emote.name}
+                      title={emote.name}
+                      className="btn-glass flex-none grid place-items-center h-10 w-10 rounded-xl text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
+                    >
+                      {emote.icon}
+                    </button>
+                  ))}
                 </div>
               )}
-              {card.ability === 'taunt' && !card.stealthActive && (
-                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-red-500 text-white text-[8px] px-1 rounded">
-                  TAUNT
-                </div>
+              {targetingMode && (
+                <button type="button" className={`${ACTION} btn-glass`} onClick={cancelTargeting}>
+                  Cancel
+                </button>
               )}
-            </motion.div>
-          );
-        })}
-        {targetingMode && getValidTargets(playerField, opponentField).length === 0 && (
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="w-24 h-36 border-2 border-dashed border-red-500 rounded-lg flex items-center justify-center cursor-crosshair bg-red-950/40"
-            {...pressable(attackOpponentDirectly, opponentField.some(c => c.type === 'trap') ? 'Strike (springs trap)' : 'Attack opponent directly')}
-          >
-            <span className="text-red-300 text-xs text-center">
-              {opponentField.some(c => c.type === 'trap') ? 'Strike (springs trap)' : 'Attack Directly'}
+              {!gameOver && playerMomentum >= MOMENTUM_MAX && playerTurn && (
+                <button type="button" className={`${ACTION} btn-brass foil relative`} onClick={rally}>
+                  ⚡ Rally!
+                </button>
+              )}
+              {!gameOver && phase === 'main' && playerTurn && (
+                <button type="button" className={`${ACTION} btn-brass`} onClick={goToBattlePhase}>
+                  ⚔️ Battle
+                </button>
+              )}
+              {!gameOver && (phase === 'main' || phase === 'battle') && playerTurn && (
+                <button
+                  type="button"
+                  className={`${ACTION} ${phase === 'battle' ? 'btn-brass' : 'btn-glass'}`}
+                  onClick={endTurn}
+                >
+                  End Turn
+                </button>
+              )}
+              {!gameOver && playerTurn && (
+                <button
+                  type="button"
+                  className={`${ACTION} btn-glass !text-plush-300 hover:!text-white text-xs lg:mt-1`}
+                  onClick={concedeGame}
+                >
+                  <Flag className="h-3.5 w-3.5" aria-hidden="true" />
+                  Concede
+                </button>
+              )}
+            </div>
+          </aside>
+        </div>
+
+        {/* Player's hand — caps width and scrolls horizontally so a full hand
+            stays reachable on phones instead of overflowing off-screen. The top
+            padding is the room a hovered card lifts into; overflow-y is hidden
+            so the lift never summons a vertical scrollbar. */}
+        <div className="board-zoom shrink-0 flex justify-start md:justify-center gap-2 max-w-full overflow-x-auto overflow-y-hidden px-4 pt-10 pb-3">
+          <AnimatePresence>
+            {playerHand.map((card, index) => {
+              const mid = (playerHand.length - 1) / 2;
+              const affordable = playerEnergy >= effectiveCost(card, playerField);
+              const playable = playerTurn && phase === 'main';
+              return (
+                <motion.div
+                  key={card.instanceId}
+                  initial={{ y: 50, opacity: 0 }}
+                  animate={{ y: Math.abs(index - mid) * 3, opacity: 1, rotate: (index - mid) * 3 }}
+                  exit={{ y: 50, opacity: 0 }}
+                  whileHover={{ y: -20, scale: 1.08, zIndex: 10 }}
+                  style={{ transformOrigin: 'bottom center' }}
+                  className={`shrink-0 rounded-[10px] cursor-pointer ${!affordable
+                    ? 'opacity-50 saturate-50'
+                    : playable ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
+                  {...pressable(() => playCard(card), `Play ${card.name}`, playable)}
+                >
+                  <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+
+        {/* Player's rail */}
+        <footer className="hud-player shrink-0 h-14 sm:h-16 flex items-center justify-between gap-2 px-3 sm:px-5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Avatar ring={RARITY_METAL.legendary} />
+            <div className="min-w-0">
+              <div className="font-display font-extrabold text-white leading-tight truncate max-w-[7rem] sm:max-w-none">{playerName}</div>
+              <div className="text-emerald-200/80 text-[11px] whitespace-nowrap">Deck: {playerDeck.length} | Hand: {playerHand.length}</div>
+            </div>
+            {/* Player's draw pile */}
+            {playerDeck.length > 0 && (
+              <div className="relative w-8 h-11 shrink-0 hidden sm:block" aria-hidden="true">
+                <div className="absolute inset-0 -rotate-6"><CardBack className="w-8 h-11" mini /></div>
+                <div className="absolute inset-0 rotate-3"><CardBack className="w-8 h-11" mini /></div>
+                <CardBack className="w-8 h-11" mini />
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3 sm:gap-5">
+            <span
+              role="img"
+              aria-label={storeSoundEnabled ? 'Sound on' : 'Sound off'}
+              title={storeSoundEnabled ? 'Sound on' : 'Sound off'}
+              className="hidden sm:grid h-8 w-8 place-items-center rounded-full bg-black/30 ring-1 ring-white/10 text-plush-300"
+            >
+              {storeSoundEnabled
+                ? <Volume2 className="h-4 w-4" aria-hidden="true" />
+                : <VolumeX className="h-4 w-4" aria-hidden="true" />}
             </span>
-          </motion.div>
-        )}
-      </div>
-
-      {/* Battle log — full panel on md+ screens; on phones it would cover the
-          opponent's cards, so show only the latest entry as a compact ticker.
-          tabIndex + role/aria-label make the scrolling panel keyboard-
-          reachable (axe: scrollable-region-focusable) so it can be read on
-          demand. It has no aria-live of its own; the single sr-only live
-          region below is the one announcer, on every viewport. */}
-      <div
-        role="region"
-        aria-label="Battle log"
-        tabIndex={0}
-        className="hidden md:block absolute top-20 right-4 w-48 bg-night-950/80 border border-plush-700/30 rounded-lg p-2 max-h-40 overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
-      >
-        <div className="text-brass-300 text-xs font-display font-bold mb-1">Battle Log</div>
-        {battleLog.map(entry => (
-          <div key={entry.id} className="text-plush-200 text-xs py-0.5 border-b border-white/10">
-            {entry.message}
-          </div>
-        ))}
-      </div>
-
-      {/* Main battlefield */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4/5 h-1/3 bg-gradient-to-b from-felt-700 to-felt-800 rounded-xl border-4 border-[#0a1a12] stitched shadow-[inset_0_4px_24px_rgba(0,0,0,0.5)] flex flex-col justify-between p-4">
-        {/* Phase indicator */}
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-brass-500 text-night-950 px-3 sm:px-4 py-1 rounded-t-lg font-display font-bold text-sm sm:text-base whitespace-nowrap">
-          Turn {turnCount} - {phase.charAt(0).toUpperCase() + phase.slice(1)} Phase
-          {currentTurn === 'opponent' && ' (Opponent)'}
-        </div>
-
-        {/* Momentum gauge — glows and pulses when full to signal Rally is ready. */}
-        <div className="absolute -left-4 top-1/2 transform -translate-y-1/2 -rotate-90 origin-center">
-          <motion.div
-            className="flex items-center space-x-2 rounded-full px-2 py-0.5"
-            animate={playerMomentum >= MOMENTUM_MAX
-              ? { boxShadow: ['0 0 0px #fbbf24', '0 0 12px #fbbf24', '0 0 0px #fbbf24'] }
-              : { boxShadow: '0 0 0px transparent' }}
-            transition={playerMomentum >= MOMENTUM_MAX ? { duration: 1.2, repeat: Infinity } : {}}
-          >
-            <span className={`text-xs font-semibold ${playerMomentum >= MOMENTUM_MAX ? 'text-brass-200' : 'text-brass-300'}`}>Momentum</span>
-            <Progress
-              value={playerMomentum * 10}
-              className="w-24 h-2 bg-night-950/50 [&>div]:bg-brass-400"
-              aria-label={`Momentum: ${playerMomentum} of ${MOMENTUM_MAX}`}
-            />
-            <span className={`text-xs font-bold ${playerMomentum >= MOMENTUM_MAX ? 'text-brass-200' : 'text-brass-300'}`}>{playerMomentum}/10</span>
-          </motion.div>
-        </div>
-
-        {/* Latest-event ticker (phones only) — the full battle-log panel is
-            hidden below md because it covers the opponent's cards; the
-            battlefield's top half is guaranteed empty, so surface the most
-            recent entry here instead.
-
-            Purely visual: aria-hidden, because the sr-only region below is the
-            single announcer. This element used to BE the announcer, carrying
-            the only aria-live on the board — with md:hidden on it. A live
-            region inside a display:none subtree is out of the accessibility
-            tree, so on any viewport >= 768px nothing was ever announced: a
-            screen-reader player pressed End Turn and was told nothing about
-            Chuck's plays, their creature dying, the damage they took, or that
-            it was their turn again. The battle-log panel had deliberately
-            declined aria-live on the grounds that this ticker already covered
-            it, which was true only on phones. */}
-        {battleLog.length > 0 && (
-          <div
-            aria-hidden="true"
-            className="md:hidden self-center max-w-full bg-night-950/80 text-plush-200 text-xs px-3 py-1 rounded-full truncate pointer-events-none"
-          >
-            {battleLog[battleLog.length - 1].message}
-          </div>
-        )}
-
-        {/* The board's one announcer, present at every viewport. Visually
-            hidden rather than md:hidden/hidden, so it is always in the
-            accessibility tree; sighted players read the ticker above on phones
-            or the log panel on desktop. */}
-        <div aria-live="polite" className="sr-only">
-          {battleLog.length > 0 ? battleLog[battleLog.length - 1].message : ''}
-        </div>
-
-        {/* Player's field */}
-        <div className="flex justify-center space-x-3 mt-auto">
-          {playerField.map((card) => (
-            <motion.div
-              key={card.instanceId}
-              whileHover={{ y: -5 }}
-              className={`relative
-                ${selectedCard?.instanceId === card.instanceId ? 'ring-2 ring-brass-300' : ''}
-                ${card.type === 'action' && !canAttack(card) ? 'opacity-60' : 'cursor-pointer'}
-              `}
-              /* Always delegate to selectCardForAttack rather than
-                 short-circuiting here: it owns every rejection message
-                 (trap / exhausted / summoning-sick), so a player who taps an
-                 unavailable creature is told why instead of getting silence. */
-              {...pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`, currentTurn === 'player' && phase === 'battle')}
-            >
-              <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
-              {card.hasAttacked && (
-                <div className="text-center text-xs text-plush-300 mt-1">Exhausted</div>
-              )}
-              {card.summoningSick && !card.hasAttacked && (
-                <div className="text-center text-xs text-plush-300 mt-1">Warming Up</div>
-              )}
-              {card.stealthActive && (
-                <div className="absolute top-[20px] left-0 right-0 bg-purple-500/90 text-white text-[8px] text-center z-10">
-                  STEALTH
-                </div>
-              )}
-              {card.ability === 'taunt' && !card.stealthActive && (
-                <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-brass-400 text-night-950 text-[8px] px-1 rounded">
-                  TAUNT
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      {/* Player's hand — caps width and scrolls horizontally so a full hand
-          stays reachable on phones instead of overflowing off-screen. */}
-      <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex justify-start md:justify-center space-x-2 max-w-[96vw] overflow-x-auto px-4 pt-8 pb-3">
-        <AnimatePresence>
-          {playerHand.map((card, index) => (
-            <motion.div
-              key={card.instanceId}
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1, rotate: (index - playerHand.length / 2) * 3 }}
-              exit={{ y: 50, opacity: 0 }}
-              whileHover={{ y: -20, scale: 1.1, zIndex: 10 }}
-              style={{ transformOrigin: 'bottom center' }}
-              className={`cursor-pointer ${playerEnergy < effectiveCost(card, playerField) ? 'opacity-50' : ''}`}
-              {...pressable(() => playCard(card), `Play ${card.name}`, currentTurn === 'player' && phase === 'main')}
-            >
-              <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
-      {/* Bottom bar - Player info */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-r from-felt-900 to-felt-800 flex items-center justify-between px-4 shadow-lg">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full border-2 border-white flex items-center justify-center shadow-lg">
-            <span className="text-white text-xl">🧸</span>
-          </div>
-          <div className="min-w-0">
-            <div className="text-white font-bold truncate max-w-[7rem] sm:max-w-none">{playerName}</div>
-            <div className="text-emerald-200 text-xs whitespace-nowrap">Deck: {playerDeck.length} | Hand: {playerHand.length}</div>
-          </div>
-          {/* Player's draw pile */}
-          {playerDeck.length > 0 && (
-            <div className="relative w-8 h-11 shrink-0 hidden sm:block" aria-hidden="true">
-              <div className="absolute inset-0 -rotate-6"><CardBack className="w-8 h-11" mini /></div>
-              <div className="absolute inset-0 rotate-3"><CardBack className="w-8 h-11" mini /></div>
-              <CardBack className="w-8 h-11" mini />
-            </div>
-          )}
-        </div>
-        <div className="flex items-center space-x-2 sm:space-x-4">
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            <span className="text-brass-300 text-lg">⚡</span>
-            <span className="text-white font-bold">{playerEnergy}</span>
-          </div>
-          <div className="text-right">
-            <div className="text-white text-sm">HP</div>
-            <motion.div
-              key={playerHealth}
-              initial={{ scale: 1.6, color: '#fca5a5' }}
-              animate={{ scale: 1, color: '#ece6f2' }}
-              transition={{ type: 'spring', stiffness: 400, damping: 14 }}
-              className="font-bold text-lg sm:text-xl whitespace-nowrap"
-            >
-              {playerHealth}/30
-            </motion.div>
-          </div>
-          <Progress
-            value={(playerHealth / 30) * 100}
-            className="w-16 sm:w-32 h-3 bg-felt-900 [&>div]:bg-emerald-400"
-            aria-label={`Your health: ${playerHealth} of 30`}
-          />
-        </div>
-      </div>
-
-      {/* Game controls */}
-      {/* On phones the old right-side stack rendered on top of the hand, so
-          lay the controls out as a compact horizontal row anchored just under
-          the battlefield (which ends at 2/3 viewport height) — a fixed
-          bottom offset overlapped the player's field cards on short phones.
-          sm+ keeps the vertical right-side stack. */}
-      {/* flex-wrap matters on phones: with both Battle Pass emotes owned AND a
-          full momentum gauge, emotes + Rally + the turn buttons exceed 390px.
-          The row sits inside the board's overflow-hidden with justify-center,
-          so without wrapping the spill is clipped at BOTH ends — the first
-          emote and Concede's right edge become untappable. Wrapping drops the
-          overflow onto a second row instead. */}
-      <div className="absolute top-[calc(66.67%+0.5rem)] inset-x-2 flex flex-row flex-wrap justify-center gap-2 sm:top-auto sm:inset-x-auto sm:bottom-20 sm:right-4 sm:flex-col sm:w-36">
-        {/* Battle Pass emote cosmetics — only rendered once unlocked. Usable on
-            either turn (heckling Chuck mid-swing is the point). */}
-        {!gameOver && emotes.length > 0 && (
-          <div className="flex flex-row justify-center gap-2 sm:w-full">
-            {emotes.map((emote) => (
-              <Button
-                key={emote.name}
-                onClick={() => sendEmote(emote)}
-                aria-label={emote.name}
-                title={emote.name}
-                className="flex-none h-8 w-8 p-0 text-base sm:h-10 sm:w-10 sm:text-lg bg-night-800/90 hover:bg-night-700 border border-brass-400/40"
+            <div className="flex items-center gap-1.5">
+              <span
+                className="grid h-7 w-7 place-items-center rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_3px_8px_-3px_rgba(0,0,0,0.8)]"
+                style={{ background: PLAQUE_BRASS }}
+                aria-hidden="true"
               >
-                {emote.icon}
-              </Button>
-            ))}
+                <Zap className="h-4 w-4 text-night-950" fill="currentColor" />
+              </span>
+              <span className="font-display text-xl font-extrabold text-white tabular-nums">{playerEnergy}</span>
+              <span className="sr-only">energy</span>
+            </div>
+            <HealthMeter
+              hp={playerHealth}
+              max={30}
+              fill="[&>div]:bg-gradient-to-r [&>div]:from-emerald-600 [&>div]:to-emerald-300"
+              label={`Your health: ${playerHealth} of 30`}
+            />
           </div>
-        )}
-        {targetingMode && (
-          <Button
-            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-plush-700 hover:bg-plush-800 text-white"
-            onClick={cancelTargeting}
-          >
-            Cancel
-          </Button>
-        )}
-        {!gameOver && playerMomentum >= MOMENTUM_MAX && currentTurn === 'player' && (
-          <Button
-            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-gradient-to-r from-brass-400 to-brass-500 hover:from-brass-500 hover:to-brass-600 text-night-950 font-display font-bold animate-pulse"
-            onClick={rally}
-          >
-            ⚡ Rally!
-          </Button>
-        )}
-        {!gameOver && phase === 'main' && currentTurn === 'player' && (
-          <Button
-            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-red-600 hover:bg-red-700 text-white font-display"
-            onClick={goToBattlePhase}
-          >
-            ⚔️ Battle
-          </Button>
-        )}
-        {!gameOver && (phase === 'main' || phase === 'battle') && currentTurn === 'player' && (
-          <Button
-            className="flex-none h-9 px-3 text-sm sm:h-10 sm:px-4 sm:text-base sm:w-full bg-emerald-600 hover:bg-emerald-700 text-white font-display"
-            onClick={endTurn}
-          >
-            End Turn
-          </Button>
-        )}
-        {!gameOver && currentTurn === 'player' && (
-          <Button
-            className="flex-none h-9 px-3 text-xs sm:h-10 sm:px-4 sm:w-full bg-white/10 hover:bg-white/20 text-white/80 text-xs border border-white/20"
-            onClick={concedeGame}
-          >
-            🏳️ Concede
-          </Button>
-        )}
+        </footer>
       </div>
-
-      {/* Targeting mode indicator */}
-      {targetingMode && (
-        <div className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-brass-400 text-night-950 px-3 py-2 rounded-lg font-bold animate-pulse">
-          Pick a victim for {selectedCard?.name}!
-        </div>
-      )}
     </div>
   );
 };

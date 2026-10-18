@@ -243,6 +243,43 @@ Framer Motion animation. The drifting menu teddies are deliberately CSS, not
 Framer Motion — as JS-driven infinite animations they kept a phone's main
 thread 57% busy on an idle menu.
 
+### Visual Materials
+
+Screens are built from one set of surfaces in `src/index.css` ("the bar after
+hours") rather than per-screen utility stacks: `.bar-backdrop` + a `.grain`
+overlay for a full screen, `.panel-glass` for tiles and panels,
+`.dialog-scrim` / `.dialog-panel` for overlays, `.btn-brass` for the one
+primary action and `.btn-glass` for the rest, `.felt-table` / `.table-rail` /
+`.hud-opponent` / `.hud-player` for the board, plus `.trim-brass`, `.foil` /
+`.foil-epic`, `.sheen`, `.label-caps` and `.text-brass-gradient`. Card frames
+come from `RARITY_METAL` (`src/lib/rarity.js`). Rules that are easy to break:
+
+- **They live in `@layer components`**, so a utility can refine a material.
+  Outside the layer they land after Tailwind's utilities and win — a
+  `.panel-glass` border once beat `border-l-[3px]` on the toast. The flip side:
+  a utility always beats a material, so don't put one on the shadcn `<Button>`,
+  whose default `bg-primary` replaces it. Use a plain `<button type="button">`.
+- **Pseudo-elements are claimed.** `.grain`, `.foil`, `.sheen`, `.worn` and
+  `.felt-print` use `::after`; `.trim-brass`, `.stitched` and `.stitched-plush`
+  use `::before`. Two claimants on one element silently lose one.
+- **No `backdrop-filter` on panels.** A blur over the drifting menu teddies is
+  recomputed every frame; the one blur is on `.dialog-scrim`.
+- **Light effects are CSS, transform/opacity only**, and stop under
+  `[data-motion="off"]`, which `MotionPreference` mirrors from the Animations
+  setting onto `<html>` (MotionConfig reaches only Framer Motion).
+- **Framer Motion owns `transform`** on anything it animates (x/y/scale/rotate):
+  its inline style replaces a Tailwind `translate-*`/`scale-*` class on the same
+  element. Centre with a plain wrapper. And never `whileTap`: it makes the
+  element focusable, which once put a dead tab stop inside every card;
+  `a11y.spec.js` now fails on any tab stop that is not a real control.
+
+The battle board is a fixed-height flex column (rails, table, hand), so short
+viewports scale the card rows and hand with `zoom` (`.board-zoom`, 0.85 under
+760px tall, 0.72 under 680px) rather than clipping them; the e2e suite's
+1280x720 default runs at 0.85. While a game is in play GameBoard sets
+`html[data-screen="battle"]`, which moves toasts off the controls: onto the
+table's centre line on narrow screens, over the top of the battle log at lg+.
+
 ### Card Art
 
 Every card in `ALL_CARDS` carries three art-only fields — `fur`, `visual` and
