@@ -227,6 +227,16 @@ anywhere — navigation is the `currentScreen` state in `App`) and
 Removing both took the entry chunk from 273.19 kB / 78.07 kB gzip to
 243.30 kB / 69.19 kB gzip. Don't re-add either without a consumer.
 
+**Dependency advisories.** As of October 2026 `npm audit` reports 8, all
+through Tailwind CSS v3's file watcher and globbing (`braces`, `chokidar`,
+`micromatch`, `fast-glob`, `postcss-selector-parser`, …). They are
+denial-of-service bugs triggered by hostile glob patterns, and the only
+patterns here are this repo's own Tailwind config, so exposure is nil; clearing
+them means Tailwind v4, which changes how the shipped CSS is generated. Before
+treating a new advisory as player-facing, check whether it reaches `dist/`:
+dompurify and fflate looked like they did, arriving through posthog-js, but
+no emitted chunk contains either.
+
 Animations: the `animationsEnabled` store flag feeds `MotionConfig`'s
 `reducedMotion` at the root (`src/main.jsx`), so one switch governs every
 Framer Motion animation. The drifting menu teddies are deliberately CSS, not
