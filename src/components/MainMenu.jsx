@@ -9,6 +9,7 @@ import { getDailyChallenges, getWeeklyChallenges, countClaimable } from '../stor
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 import { RARITY_ORDER } from '@/lib/rarity';
+import { bestOwnedBorder } from '@/lib/cosmetics';
 import TeddyCard from './TeddyCard';
 
 // Scatter/timing for the drifting background teddies. Hoisted to module scope
@@ -32,12 +33,20 @@ const FAN = [
 
 // Small icon button for the header. lucide icons, not emoji: emoji render
 // differently on every platform and read as stickers next to the card art.
+//
+// Focus is drawn as an outline, not a ring: a Tailwind ring is a box-shadow,
+// and it would replace the material's own (its rim light and depth). And the
+// transition leaves transform out — Framer Motion owns the transform here, and
+// a CSS transition on it retargets every animation frame and damps the press.
+const FOCUS_OUTLINE = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
+
 const HeaderButton = ({ icon: Icon, label, onClick, glow = false, children }) => (
   <motion.button
+    type="button"
     onClick={onClick}
     aria-label={label}
     whileTap={{ scale: 0.94 }}
-    className={`relative grid place-items-center w-11 h-11 rounded-xl ${glow ? 'btn-brass' : 'btn-glass'}`}
+    className={`relative grid place-items-center w-10 h-10 sm:w-11 sm:h-11 rounded-xl [transition-property:background,border-color,filter] ${FOCUS_OUTLINE} ${glow ? 'btn-brass' : 'btn-glass'}`}
   >
     <Icon aria-hidden="true" className={`w-5 h-5 ${glow ? 'text-night-950' : 'text-plush-200'}`} strokeWidth={2.2} />
     {children}
@@ -47,9 +56,9 @@ const HeaderButton = ({ icon: Icon, label, onClick, glow = false, children }) =>
 // The icon carries the meaning visually; the sr-only noun carries it for a
 // screen reader. (aria-label on a role-less div is prohibited in ARIA 1.2.)
 const Currency = ({ icon: Icon, value, tone, noun }) => (
-  <div className="panel-glass rounded-xl h-11 pl-2.5 pr-3.5 flex items-center gap-2">
-    <Icon aria-hidden="true" className={`w-[18px] h-[18px] ${tone}`} strokeWidth={2.4} />
-    <span className={`font-display font-extrabold text-[15px] tabular-nums ${tone}`}>{value}</span>
+  <div className="panel-glass rounded-xl h-10 sm:h-11 pl-2 pr-2.5 sm:pl-2.5 sm:pr-3.5 flex items-center gap-1.5 sm:gap-2">
+    <Icon aria-hidden="true" className={`w-4 h-4 sm:w-[18px] sm:h-[18px] ${tone}`} strokeWidth={2.4} />
+    <span className={`font-display font-extrabold text-[14px] sm:text-[15px] tabular-nums ${tone}`}>{value}</span>
     <span className="sr-only">{noun}</span>
   </div>
 );
@@ -70,7 +79,7 @@ const MainMenu = ({
 }) => {
   const {
     playerName, level, xp, getXPForNextLevel,
-    coins, gems, cardPacks,
+    coins, gems, cardPacks, premiumPacks, legendaryPacks, unlockedCosmetics,
     totalWins, currentWinStreak, consecutiveLogins, lastLoginDate, animationsEnabled,
     claimedChallenges,
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
@@ -124,6 +133,14 @@ const MainMenu = ({
   }, [ownedCards]);
   // Centre slot gets the rarest card.
   const fanned = heroCards.length === 3 ? [heroCards[1], heroCards[0], heroCards[2]] : heroCards;
+  // The player's Battle Pass frame, as on their cards everywhere else.
+  const cosmeticBorder = bestOwnedBorder(unlockedCosmetics);
+
+  // Every pack the Card Packs screen can open, not just the coin-bought kind:
+  // Premium and Legendary packs (bought with gems, or won from weekly
+  // challenges) are counted separately, and the tile used to show nothing to
+  // open while three were waiting.
+  const packsToOpen = (cardPacks ?? 0) + (premiumPacks ?? 0) + (legendaryPacks ?? 0);
 
   // Everything except Battle, which is the hero. `accent` marks the two
   // destinations that are currently asking for attention.
@@ -131,7 +148,7 @@ const MainMenu = ({
     { id: 'challenges', title: 'Challenges', description: 'Prove you have a problem', icon: Target, action: onChallenges, badge: claimableChallenges > 0 ? `${claimableChallenges} ready` : null, accent: claimableChallenges > 0 },
     { id: 'battlepass', title: 'Battle Pass', description: 'Grind. Flex. Repeat.', icon: Trophy, action: onBattlePass, accent: true },
     { id: 'shop', title: 'Shop', description: 'Spend money you don’t have', icon: Store, action: onShop },
-    { id: 'packs', title: 'Card Packs', description: 'Gambling, but cuter', icon: Package, action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks} to open` : null, accent: cardPacks > 0 },
+    { id: 'packs', title: 'Card Packs', description: 'Gambling, but cuter', icon: Package, action: onCardPacks, badge: packsToOpen > 0 ? `${packsToOpen} to open` : null, accent: packsToOpen > 0 },
     { id: 'deck', title: 'Deck Builder', description: 'Assemble your goon squad', icon: Layers, action: onDeckBuilder },
     { id: 'collection', title: 'Collection', description: 'Your emotional support army', icon: LibraryBig, action: onCollection },
     { id: 'leaderboard', title: 'Rankings', description: 'See who has no life', icon: Medal, action: onLeaderboard },
@@ -163,13 +180,15 @@ const MainMenu = ({
           initial={{ x: -24, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           {...pressable(onPlayerStats, 'View player stats')}
-          className="panel-glass sheen relative flex items-center gap-3 rounded-2xl pl-2 pr-4 py-2 cursor-pointer"
+          // The name above is the control's; this reads out what it shows.
+          aria-describedby="menu-player-summary"
+          className={`panel-glass sheen relative flex items-center gap-3 rounded-2xl pl-2 pr-4 py-2 cursor-pointer ${FOCUS_OUTLINE}`}
         >
           <div className="relative w-12 h-12 rounded-full p-[2px]" style={{ background: 'linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24)' }}>
             <div className="w-full h-full rounded-full bg-night-800 grid place-items-center text-2xl">🧸</div>
           </div>
-          <div className="min-w-0">
-            <div className="text-white font-display font-extrabold leading-tight truncate max-w-[9rem]">{playerName}</div>
+          <div className="min-w-0" id="menu-player-summary">
+            <div className="text-white font-display font-extrabold leading-tight truncate max-w-[9rem] sm:max-w-[16rem]" title={playerName}>{playerName}</div>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="btn-brass rounded-md px-1.5 py-[1px] text-[11px] font-extrabold leading-none">Lv {level}</span>
               <div className="w-20">
@@ -189,7 +208,11 @@ const MainMenu = ({
         <motion.div
           initial={{ x: 24, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          className="flex items-center gap-2"
+          // A touch smaller below sm, so the row fits one line from 360px with
+          // a five-digit balance; and it wraps below that rather than running
+          // off the edge, as it did — taking Settings with it, hidden, not
+          // scrollable, behind the root's overflow-x-hidden.
+          className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2"
         >
           <HeaderButton
             icon={Gift}
@@ -210,24 +233,32 @@ const MainMenu = ({
         </motion.div>
       </header>
 
+      {/* The page's main landmark: the hero and the destinations. The header
+          above is the banner; without a main, the h1 and the Battle button
+          sat outside every landmark a screen reader can jump to. */}
+      <main className="relative z-10 flex-1 flex flex-col">
       {/* Hero: title, the player's own cards, and the one big button. */}
-      <section className="relative z-10 flex-1 flex flex-col items-center justify-center py-6 md:py-8">
+      <section className="relative flex-1 flex flex-col items-center justify-center py-6 md:py-8 [@media(max-height:700px)]:py-3">
         <motion.div
           initial={{ y: -16, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="text-center"
         >
-          <h1 className="font-display font-extrabold text-5xl md:text-7xl leading-none tracking-tight text-brass-gradient">
+          {/* text-5xl wraps below 375px, and a gradient clipped to text then
+              stretches over both lines: one word pale, the other dark. */}
+          <h1 className="font-display font-extrabold text-[2.5rem] min-[375px]:text-5xl md:text-7xl leading-none tracking-tight text-brass-gradient">
             Terrible Teddies
           </h1>
           <p className="label-caps text-plush-300 mt-3">Bad bears · Worse decisions</p>
         </motion.div>
 
-        <div className="mt-6 md:mt-8 flex flex-col md:flex-row items-center gap-8 md:gap-14">
+        {/* On short screens (a phone with its browser toolbars, a landscape
+            phone) the fan shrinks, so the Battle button stays above the fold. */}
+        <div className="mt-6 md:mt-8 flex flex-col md:flex-row items-center gap-8 md:gap-14 [@media(max-height:700px)]:mt-3 [@media(max-height:700px)]:gap-4">
           {/* The fan. Decorative — the cards repeat what the Collection shows. */}
           {fanned.length > 0 && (
-            <div className="relative w-[230px] h-[200px] md:w-[270px] md:h-[236px] pointer-events-none select-none" aria-hidden="true">
+            <div className="relative w-[230px] h-[200px] md:w-[270px] md:h-[236px] [@media(max-height:700px)]:!h-[156px] pointer-events-none select-none" aria-hidden="true">
               <div className="absolute left-1/2 top-1/2 w-56 h-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brass-400/20 blur-3xl" />
               {fanned.map((card, i) => {
                 const f = fanned.length === 3 ? FAN[i] : FAN[1];
@@ -245,8 +276,10 @@ const MainMenu = ({
                       animate={{ opacity: 1, y: f.y, rotate: f.rotate, x: f.x }}
                       transition={{ delay: 0.15 + i * 0.08, type: 'spring', stiffness: 160, damping: 20 }}
                     >
-                      <div className="scale-[1.3] md:scale-[1.5] origin-center drop-shadow-[0_18px_24px_rgba(0,0,0,0.6)]">
-                        <TeddyCard teddy={card} />
+                      <div className="scale-[1.3] md:scale-[1.5] [@media(max-height:700px)]:!scale-100 origin-center drop-shadow-[0_18px_24px_rgba(0,0,0,0.6)]">
+                        {/* Drawn at up to 1.5x hand size, so it takes the
+                            full art where the screen's density calls for it. */}
+                        <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} artVariant="responsive" />
                       </div>
                     </motion.div>
                   </div>
@@ -260,13 +293,15 @@ const MainMenu = ({
             initial={{ y: 16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="flex flex-col items-center md:items-start gap-3"
+            // Above the fan: the cards' drop shadow fell across the top of the
+            // button on phones.
+            className="relative z-10 flex flex-col items-center md:items-start gap-3"
           >
             <motion.div
               {...pressable(onStartGame, 'Battle')}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
-              className="btn-brass sheen relative cursor-pointer rounded-2xl pl-6 pr-5 py-4 flex items-center gap-4 min-w-[260px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-200 focus-visible:ring-offset-4 focus-visible:ring-offset-night-900"
+              className="btn-brass sheen relative cursor-pointer rounded-2xl pl-6 pr-5 py-4 flex items-center gap-4 min-w-[260px] [transition-property:filter,box-shadow] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brass-200"
             >
               <Swords aria-hidden="true" className="w-9 h-9 shrink-0" strokeWidth={2.2} />
               <div className="flex-1 text-left">
@@ -297,30 +332,38 @@ const MainMenu = ({
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.35 + index * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               whileHover={{ y: -3 }}
-              className={index === destinations.length - 1 ? 'col-span-2 sm:col-span-1' : ''}
+              // Seven tiles: the last spans two columns wherever the grid has
+              // 2 or 4 of them, so no row ends in an empty cell.
+              className={index === destinations.length - 1 ? 'col-span-2 lg:col-span-1' : ''}
             >
               <div
                 {...pressable(d.action, d.title)}
+                // The name stays the bare title (the e2e suite and players'
+                // muscle memory use it); the badge is read as its description.
+                aria-describedby={d.badge ? `menu-badge-${d.id}` : undefined}
                 className={`panel-glass sheen relative h-full rounded-2xl p-4 cursor-pointer flex flex-col items-center text-center gap-2
-                  transition-colors hover:bg-night-700/60
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300
+                  transition-[filter] hover:brightness-110 ${FOCUS_OUTLINE}
                   ${d.accent ? 'trim-brass' : ''}`}
               >
                 <div className={`grid place-items-center w-11 h-11 rounded-full ${d.accent ? 'bg-brass-400/15' : 'bg-white/5'} ring-1 ${d.accent ? 'ring-brass-300/40' : 'ring-white/10'}`}>
                   <d.icon aria-hidden="true" className={`w-[22px] h-[22px] ${d.accent ? 'text-brass-300' : 'text-plush-200'}`} strokeWidth={2} />
                 </div>
                 <div className="font-display font-extrabold text-white text-[15px] leading-tight">{d.title}</div>
-                <div className="text-[11px] leading-snug text-plush-300 hidden md:block">{d.description}</div>
+                {/* In the flow under the title: pinned to the corner it sat on
+                    the icon ring at lg widths, and the tile clips anything
+                    hung over its edge (the sheen needs overflow hidden). */}
                 {d.badge && (
-                  <div className="absolute top-2 right-2 rounded-full bg-brass-400 text-night-950 px-1.5 py-[1px] text-[10px] font-extrabold leading-tight">
+                  <div id={`menu-badge-${d.id}`} className="rounded-full bg-brass-400 text-night-950 px-2 py-[1px] text-[10px] font-extrabold leading-tight">
                     {d.badge}
                   </div>
                 )}
+                <div className="text-[11px] leading-snug text-plush-300 hidden md:block">{d.description}</div>
               </div>
             </motion.div>
           ))}
         </div>
       </nav>
+      </main>
 
       <motion.p
         initial={{ opacity: 0 }}

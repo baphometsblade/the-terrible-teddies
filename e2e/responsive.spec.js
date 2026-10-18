@@ -51,6 +51,46 @@ test('battle board does not scroll sideways on a phone', async ({ page }) => {
   await expectNoHorizontalOverflow(page, 'battle board');
 });
 
+// The menu header at the narrowest widths, with a paying player's balance.
+// Its right-hand row (rewards, coins, gems, help, settings) could not wrap,
+// and the root's overflow-x-hidden turned the overflow into clipping rather
+// than scrolling — so the 390px document check above passed while Settings
+// sat half off the screen at 320px and wholly off it at 360px with five-digit
+// balances. And on a short phone (Safari's toolbars leave an iPhone SE about
+// 553px) the hero fan pushed the Battle button below the fold.
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 360, height: 640 },
+  { width: 375, height: 553 },
+]) {
+  test.describe(`main menu at ${viewport.width}x${viewport.height}`, () => {
+    test.use({ viewport });
+
+    test('every header control is on screen and Battle is above the fold', async ({ page }) => {
+      await page.addInitScript(() => {
+        const raw = localStorage.getItem('terrible-teddies-storage');
+        const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+        stored.state.coins = 12345;
+        stored.state.gems = 1400;
+        localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+      });
+      await page.reload();
+      const battle = page.getByRole('button', { name: 'Battle', exact: true });
+      await expect(battle).toBeVisible(SLOW);
+      await expect(page.getByText('12,345')).toBeVisible();
+      await page.waitForTimeout(800); // entrance animations
+
+      for (const name of ['Daily rewards', 'How to play', 'Settings']) {
+        const box = await page.getByRole('button', { name }).boundingBox();
+        expect(box.x, `${name} starts off the left edge`).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width, `${name} runs off the right edge`).toBeLessThanOrEqual(viewport.width);
+      }
+      const cta = await battle.boundingBox();
+      expect(cta.y + cta.height, 'Battle is below the fold').toBeLessThanOrEqual(viewport.height);
+    });
+  });
+}
+
 // The battle board is a fixed-height column, so on a short phone the risk is
 // vertical: the card rows used to be scaled by viewport-height breakpoints, and
 // on real phone viewports — shorter than the device, once the browser's

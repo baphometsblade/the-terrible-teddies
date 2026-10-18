@@ -85,10 +85,17 @@ const getTeddyEmoji = (teddy) => {
 // spots that render art large enough to need it (e.g. the collection
 // detail modal).
 //
+// 'responsive' offers both through srcset and lets the browser choose by
+// pixel density, for art drawn bigger than hand size but far smaller than
+// the original — the menu's enlarged hero cards, where a thumbnail on a
+// retina phone was upscaled about 2x and looked soft next to the frame.
+// A standard-density screen still downloads only the thumbnail.
+//
 // Fallback is two-stage: a failed thumb retries the full-res image before
 // giving up on the emoji, so a missing/stale thumbs/ entry never regresses
-// a card that does have full art.
-export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = '', variant = 'thumb' }) => {
+// a card that does have full art. A failed responsive image drops to that
+// same chain.
+export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = '', variant = 'thumb', sizes = '144px' }) => {
   // Track which card id failed at which stage (not a boolean): a reused
   // component instance re-rendered with a different teddy must retry that
   // card's art instead of inheriting the previous card's failure, and a
@@ -98,6 +105,7 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
 
   const thumbFailed = failed.id === teddy.id && failed.stage === 'thumb';
   const fullFailed = failed.id === teddy.id && failed.stage === 'full';
+  const responsiveFailed = failed.id === teddy.id && failed.stage === 'responsive';
 
   if (!teddy.id || fullFailed) {
     return <div className={emojiClassName}>{getTeddyEmoji(teddy)}</div>;
@@ -106,8 +114,24 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   // Once the thumb has failed for this card, fall through to the full
   // image regardless of the requested variant — that's the whole point of
   // the fallback chain.
+  const thumb = `/cards/thumbs/${teddy.id}.webp`;
+  const full = `/cards/${teddy.id}.webp`;
+  if (variant === 'responsive' && !responsiveFailed && !thumbFailed) {
+    return (
+      <img
+        src={thumb}
+        srcSet={`${thumb} 192w, ${full} 768w`}
+        sizes={sizes}
+        alt=""
+        loading="lazy"
+        draggable={false}
+        className={imgClassName}
+        onError={() => setFailed({ id: teddy.id, stage: 'responsive' })}
+      />
+    );
+  }
   const useFull = variant === 'full' || thumbFailed;
-  const src = useFull ? `/cards/${teddy.id}.webp` : `/cards/thumbs/${teddy.id}.webp`;
+  const src = useFull ? full : thumb;
 
   return (
     <img
@@ -158,7 +182,12 @@ const rulesFor = (teddy) => {
 };
 
 // The two stat badges. Enamel pins rather than flat circles: a coloured face
-// with a highlight on its upper half and a dark ring that seats it on the art.
+// with a highlight along its top edge and a dark ring that seats it on the
+// art. The faces are dark enough for white numerals at every point the digits
+// cross (red-600/sky-700 at the top, 4.8:1 and 5.9:1, deepening below), and
+// the highlight stays in the top band above them. The first version lit the
+// upper half, right through the digits, over faces that started at red-400 and
+// sky-400 — 2.8:1 and 2.1:1 — on every creature in the game.
 const StatBadge = ({ value, title, tone, className }) => (
   <div
     title={title}
@@ -166,7 +195,7 @@ const StatBadge = ({ value, title, tone, className }) => (
       text-white text-[11px] font-display font-extrabold leading-none tabular-nums
       ring-[1.5px] ring-night-950 shadow-[0_2px_4px_rgba(0,0,0,0.6)] ${className}`}
     style={{
-      background: `radial-gradient(circle at 50% 28%, rgba(255,255,255,0.45), transparent 55%), ${tone}`,
+      background: `radial-gradient(ellipse 70% 32% at 50% 0%, rgba(255,255,255,0.4), transparent 100%), ${tone}`,
       textShadow: '0 1px 1px rgba(0,0,0,0.6)',
     }}
   >
@@ -174,9 +203,9 @@ const StatBadge = ({ value, title, tone, className }) => (
   </div>
 );
 
-const ATTACK_TONE = 'linear-gradient(180deg, #f87171, #991b1b)';
-const HP_TONE = 'linear-gradient(180deg, #38bdf8, #075985)';
-const WOUNDED_TONE = 'linear-gradient(180deg, #ef4444, #7f1d1d)';
+const ATTACK_TONE = 'linear-gradient(180deg, #dc2626, #7f1d1d)';
+const HP_TONE = 'linear-gradient(180deg, #0369a1, #0c4a6e)';
+const WOUNDED_TONE = 'linear-gradient(180deg, #b91c1c, #450a0a)';
 
 /**
  * The card at hand size (96×144), built around its art.
@@ -190,7 +219,14 @@ const WOUNDED_TONE = 'linear-gradient(180deg, #ef4444, #7f1d1d)';
  * as a gradient border. Epic and legendary carry a slow foil sweep
  * (index.css .foil), which honours the Animations switch.
  */
-const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null }) => {
+// `lift` turns off the card's own hover lift, for wrappers that lift the card
+// themselves and draw rings around it (the battle board): two lifts stacked,
+// and the inner one moved the card out of the ring drawn around it.
+// `artVariant` is ArtOrEmoji's variant, for cards drawn larger than hand size.
+const TeddyCard = ({
+  teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null,
+  lift = true, artVariant = 'thumb',
+}) => {
   // Use rarity style if available, otherwise fall back to type style
   const rarityStyle = teddy.rarity ? RARITY[teddy.rarity] : null;
   const typeStyle = TYPE_STYLES[teddy.type] || TYPE_STYLES.action;
@@ -215,14 +251,13 @@ const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false, cos
     // :active does it without touching focus; the real controls are the
     // pressable wrappers each screen puts around the card.
     <motion.div
-      whileHover={!isDisabled ? { y: -3, scale: 1.03 } : {}}
+      whileHover={lift && !isDisabled ? { y: -3, scale: 1.03 } : {}}
       transition={{ type: 'spring', stiffness: 400, damping: 26 }}
     >
       <div
         data-cosmetic={cosmeticBorder || undefined}
         className={`
           w-24 h-36 rounded-[10px] cursor-pointer relative overflow-hidden transition-transform duration-100
-          ${isSelected ? 'ring-2 ring-brass-300 ring-offset-2 ring-offset-night-900' : ''}
           ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.97]'}
         `}
         style={{
@@ -230,7 +265,9 @@ const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false, cos
           // The face (padding-box) under the metal (border-box): the standard
           // way to give a rounded element a gradient border.
           background: `linear-gradient(#120c1c, #120c1c) padding-box, ${metal} border-box`,
-          boxShadow: `0 6px 14px -4px rgba(0,0,0,0.7)${cosmetic ? `, ${cosmetic.glow}` : ''}`,
+          // The selection ring lives in this same value: a Tailwind ring-2 is
+          // a box-shadow too, and an inline boxShadow silently replaced it.
+          boxShadow: `${isSelected ? '0 0 0 2px #1a1226, 0 0 0 4px #fcd34d, ' : ''}0 6px 14px -4px rgba(0,0,0,0.7)${cosmetic ? `, ${cosmetic.glow}` : ''}`,
         }}
         onClick={!isDisabled ? onClick : undefined}
       >
@@ -239,6 +276,7 @@ const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false, cos
         <div className={`absolute inset-0 rounded-[8px] overflow-hidden grid place-items-center bg-gradient-to-b ${style.bg}`}>
           <ArtOrEmoji
             teddy={teddy}
+            variant={artVariant}
             emojiClassName="text-[34px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] -mt-2"
             imgClassName="absolute inset-0 w-full h-full object-cover"
           />
@@ -252,10 +290,12 @@ const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false, cos
         <div className="absolute inset-x-0 top-0 h-9 bg-gradient-to-b from-black/80 via-black/45 to-transparent pointer-events-none" />
         <div className="absolute inset-x-0 bottom-0 h-[62px] bg-gradient-to-t from-black/95 via-black/70 to-transparent pointer-events-none" />
 
-        {/* Name */}
+        {/* Name: up to two lines, which the top scrim covers. On one line 38
+            of the 64 names were cut to an ellipsis, and the only way to read
+            the rest was a hover tooltip that touch screens never show. */}
         <div className="absolute top-[3px] left-[5px] right-[22px] z-10">
           <span
-            className="block font-display font-extrabold text-[9px] leading-[1.15] text-white truncate"
+            className="block font-display font-extrabold text-[9px] leading-[1.1] text-white line-clamp-2 break-words"
             style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}
             title={teddy.name}
           >
@@ -286,10 +326,13 @@ const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false, cos
         )}
 
         {/* Type · rarity, one line. On a creature the stat badges flank it and
-            leave ~44px, and the type is already implied — only creatures carry
+            leave ~42px, and the type is already implied — only creatures carry
             stats — so it shows the rarity alone. Traps and specials have the
-            full width and show both. */}
-        <div className={`absolute bottom-[10px] z-10 text-center leading-none whitespace-nowrap ${isAction ? 'inset-x-[25px]' : 'inset-x-[4px]'}`}>
+            full width and show both. In the display face on purpose: it is
+            the bundled font, so the width is the same on every platform, and
+            in a system sans (the Linux default, for one) UNCOMMON and
+            LEGENDARY ran under the badges. */}
+        <div className={`absolute bottom-[10px] z-10 text-center leading-none whitespace-nowrap font-display ${isAction ? 'inset-x-[25px]' : 'inset-x-[4px]'}`}>
           {!isAction && (
             <span className="text-[6px] uppercase tracking-[0.12em] font-bold text-plush-300">{teddy.type}</span>
           )}

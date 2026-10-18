@@ -29,11 +29,15 @@ const toastVariants = cva(
     // resolve to the LIGHT theme (.dark is never applied here), so every
     // in-game notification was a glaring white slab dropped over a dark bar
     // scene — the single loudest off-brand element on the battle board.
+    // bg-night-900 makes the glass opaque: panel-glass's fill is translucent
+    // (right for a tile on the room), but a toast lands on top of text — the
+    // currency row, a dialog's heading — which read through it. The utility
+    // sets background-color under the material's gradient image.
     variants: {
       variant: {
-        default: "panel-glass border-l-[3px] border-l-brass-400 text-plush-100",
+        default: "panel-glass bg-night-900 border-l-[3px] border-l-brass-400 text-plush-100",
         destructive:
-          "destructive group panel-glass border-l-[3px] border-l-red-500 text-plush-100",
+          "destructive group panel-glass bg-night-900 border-l-[3px] border-l-red-500 text-plush-100",
       },
     },
     defaultVariants: {
@@ -67,7 +71,7 @@ const ToastClose = React.forwardRef(({ className, ...props }, ref) => (
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 text-plush-300 opacity-0 transition-opacity hover:text-white focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
+      "absolute right-2 top-2 rounded-md p-1 text-plush-300 opacity-0 transition-opacity hover:text-white focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-brass-300 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600",
       className
     )}
     toast-close=""

@@ -479,6 +479,21 @@
    loader's animate-spin (those carry motion-safe: for the OS side). */
 [data-motion="off"] .foil::after,
 [data-motion="off"] .sheen::after { animation: none; transition: none; transform: translateX(-120%); }
+/* Toasts slide in from an edge and out to the right; with motion off they
+   fade in place instead. (0,2,1) beats the tailwindcss-animate slide
+   utilities on the li, which are (0,2,0). */
+[data-motion="off"] .toast-viewport > li {
+  --tw-enter-translate-x: 0;
+  --tw-enter-translate-y: 0;
+  --tw-exit-translate-x: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast-viewport > li[data-state] {
+    --tw-enter-translate-x: 0;
+    --tw-enter-translate-y: 0;
+    --tw-exit-translate-x: 0;
+  }
+}
 [data-motion="off"] .animate-pulse,
 [data-motion="off"] .motion-safe\:animate-pulse,
 [data-motion="off"] .motion-safe\:animate-spin { animation: none; }

@@ -1439,7 +1439,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                         {/* Only the card dims for stealth; the band and tags
                             stay at full strength so they keep their contrast. */}
                         <div className={card.stealthActive ? 'opacity-50' : ''}>
-                          <TeddyCard teddy={card} />
+                          <TeddyCard teddy={card} lift={false} />
                         </div>
                         {card.stealthActive && <StealthBand />}
                         {card.ability === 'taunt' && !card.stealthActive && <TauntTag tone="opponent" />}
@@ -1558,7 +1558,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                         : ready ? 'shadow-[0_0_18px_2px_rgba(52,211,153,0.5)]' : ''}`}
                       >
                         <div className={resting ? 'opacity-60' : ''}>
-                          <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
+                          <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} />
                         </div>
                         {card.stealthActive && <StealthBand />}
                         {card.ability === 'taunt' && !card.stealthActive && <TauntTag tone="player" />}
@@ -1760,7 +1760,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                       : playable ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
                     {...pressable(() => playCard(card), `Play ${card.name}`, playable)}
                   >
-                    <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
+                    <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} />
                   </motion.div>
                 );
               })}
