@@ -14,6 +14,7 @@ import { useGameStore } from './stores/gameStore';
 import { fetchServerGemBalance, ensurePlayerProfile, isSupabaseConfigured } from './utils/supabaseClient';
 import analytics from './utils/analytics';
 import { useRehydrateOnFocus } from './hooks/useRehydrateOnFocus';
+import { FOCUS_OUTLINE } from './lib/focus';
 
 // GameBoard is lazy for the same reason the dialogs are: it is only reachable
 // after tapping Battle, but a static import put it — and its dependency tail,
@@ -63,7 +64,7 @@ const DialogLoader = () => (
 const BackButton = ({ onClick }) => (
   <button
     type="button"
-    className="btn-glass absolute top-[calc(1rem+env(safe-area-inset-top))] left-4 z-40 inline-flex h-10 items-center rounded-xl px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
+    className={`btn-glass absolute top-[calc(1rem+env(safe-area-inset-top))] left-4 z-40 inline-flex h-10 items-center rounded-xl px-4 text-sm font-semibold ${FOCUS_OUTLINE}`}
     onClick={onClick}
   >
     ← Menu

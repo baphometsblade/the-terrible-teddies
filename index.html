@@ -34,13 +34,25 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
+      /* The loader painted before the app's JS arrives. Restyled to match the
+         BootScreen it cross-fades into (the bar backdrop, a brass-ringed bear
+         with a turning arc, brass lettering), so first paint does not flash a
+         different look. CSS only: the inline script below swaps in an error
+         state built from these same class names, and changing the script
+         would change its CSP hash (see csp.test.js). The app's fonts are not
+         loaded yet, so the lettering uses the system's rounded face. */
       #initial-loader {
         position: fixed;
         inset: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(180deg, #241a35 0%, #1a1226 100%);
+        background-color: #120c1c;
+        background-image:
+          radial-gradient(ellipse 70% 45% at 50% -5%, rgba(245, 158, 11, 0.16), transparent 70%),
+          radial-gradient(ellipse 45% 35% at 0% 100%, rgba(236, 72, 153, 0.08), transparent 70%),
+          radial-gradient(ellipse 45% 35% at 100% 90%, rgba(45, 212, 191, 0.06), transparent 70%),
+          linear-gradient(180deg, #241a35 0%, #1a1226 45%, #120c1c 100%);
         z-index: 9999;
         transition: opacity 0.5s;
       }
@@ -49,22 +61,53 @@
         pointer-events: none;
       }
       .loader-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         text-align: center;
-        color: white;
+        padding: 0 24px;
+        color: #ece6f2;
+        font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
       }
       .loader-teddy {
-        font-size: 80px;
-        animation: bounce 1s infinite;
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        font-size: 40px;
+        line-height: 1;
+        border: 3px solid transparent;
+        background:
+          linear-gradient(#1a1226, #1a1226) padding-box,
+          linear-gradient(145deg, #fef3c7 0%, #b45309 30%, #fde68a 55%, #78350f 80%, #fbbf24 100%) border-box;
+        box-shadow: 0 0 48px rgba(245, 158, 11, 0.22);
       }
-      @keyframes bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-20px); }
+      .loader-teddy::after {
+        content: "";
+        position: absolute;
+        inset: -13px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.07);
+        border-top-color: #fbbf24;
+        animation: loader-spin 1.6s linear infinite;
       }
+      @keyframes loader-spin {
+        to { transform: rotate(360deg); }
+      }
+      /* The failure card the script swaps in has the reload button: the arc
+         stops there, since a turning arc says "still loading" and it isn't. */
+      .loader-content:has(#loader-reload) .loader-teddy::after { display: none; }
+      /* Sized to one line at phone widths (a gradient clipped to text that
+         wraps stretches over both lines: one pale, one dark). */
       .loader-title {
-        font-size: 28px;
-        font-weight: bold;
-        margin-top: 16px;
-        background: linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24);
+        margin-top: 28px;
+        font-size: clamp(20px, 6vw, 30px);
+        white-space: nowrap;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        background: linear-gradient(180deg, #fef3c7 0%, #fbbf24 48%, #d97706 100%);
         -webkit-background-clip: text;
         background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -75,14 +118,26 @@
         margin-top: 8px;
       }
       .loader-reload-btn {
-        margin-top: 16px;
-        padding: 8px 22px;
-        border-radius: 8px;
+        margin-top: 18px;
+        padding: 10px 24px;
+        border-radius: 12px;
         border: none;
-        background: #f59e0b;
+        font: inherit;
+        font-weight: 800;
         color: #120c1c;
-        font-weight: bold;
+        background: linear-gradient(180deg, #fde68a 0%, #fbbf24 42%, #d97706 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.65),
+          inset 0 -2px 0 rgba(124, 45, 18, 0.45),
+          0 8px 20px -8px rgba(217, 119, 6, 0.7);
         cursor: pointer;
+      }
+      .loader-reload-btn:focus-visible {
+        outline: 2px solid #fbbf24;
+        outline-offset: 2px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .loader-teddy::after { animation: none; }
       }
     </style>
   </head>
