@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from 'framer-motion';
 import { playSound as playSoundEffect } from '@/utils/sounds';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
-import confetti from 'canvas-confetti';
+import { celebrate } from '@/lib/celebrate';
 import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures, gainedFuryStack, getValidTargets, describeBlockedTarget } from '../../utils/battleUtils';
 import { pickQuip, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
@@ -395,7 +395,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     lastEmoteAtRef.current = now;
 
     if (emote.effect === 'confetti') {
-      confetti({ particleCount: 90, spread: 75, origin: { y: 0.75 } });
+      celebrate({ particleCount: 90, spread: 75, origin: { y: 0.75 } });
       addToBattleLog('🎉 You fire the confetti cannon. Chuck is unimpressed but covered in glitter.');
       return;
     }
@@ -565,7 +565,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       syncLevelToServer();
 
       // Victory confetti
-      confetti({
+      celebrate({
         particleCount: 150,
         spread: 100,
         origin: { y: 0.6 },
@@ -936,7 +936,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setPlayerField(prev => rallyField(prev));
     setPlayerMomentum(0);
     playSound('heal');
-    confetti({
+    celebrate({
       particleCount: 120, spread: 90, origin: { y: 0.7 },
       colors: ['#fbbf24', '#f59e0b', '#f97316', '#fde68a'],
     });
