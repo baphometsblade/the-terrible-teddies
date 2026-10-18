@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, SearchX, X, Zap } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
+import { Medallion } from '@/components/ui/game-chrome';
 import TeddyCard, { ArtOrEmoji } from './TeddyCard';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
+import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 import { RARITY, RARITY_METAL, RARITY_ORDER as RARITY_ORDER_ASC } from '@/lib/rarity';
 import { useDialog } from '@/hooks/useDialog';
 import { buildVisibleOrder, staggerDelay } from '@/lib/collectionOrder';
@@ -12,26 +14,17 @@ import { buildVisibleOrder, staggerDelay } from '@/lib/collectionOrder';
 // Collection sorts and lists rarest-first.
 const RARITY_ORDER = [...RARITY_ORDER_ASC].reverse();
 
-const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300 ' +
-  'focus-visible:ring-offset-2 focus-visible:ring-offset-night-900';
-
-// Segmented filter controls: a recessed well with the selected segment raised
-// out of it as a glass key with a lit brass lip. Below sm each control is a
-// full-width grid, so the rows line up and wrap into tidy columns rather than
-// running off a phone; from sm up they shrink to their content and sit side
-// by side. The selected segment's box-shadow restates .btn-glass's own (rim +
-// drop) because a shadow utility replaces the material's, it cannot add to it.
-const SEG_GROUP =
-  'w-full sm:w-auto gap-1 rounded-xl bg-night-950/55 p-1 ring-1 ring-inset ring-white/[0.07] ' +
-  'shadow-[inset_0_1px_3px_rgba(0,0,0,0.45)]';
+// Segmented filter controls (.seg-well / .seg-on / .seg-off): a recessed well
+// with the selected segment raised out of it as a glass key with a lit brass
+// lip. Below sm each control is a full-width grid, so the rows line up and
+// wrap into tidy columns rather than running off a phone; from sm up they
+// shrink to their content and sit side by side. The raised key carries a
+// material shadow, so its focus is an outline (a ring would replace the
+// shadow); an unselected segment has none to lose and keeps the ring.
 const SEG =
   'inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold ' +
-  'whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300';
-const SEG_ON =
-  'btn-glass text-brass-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-2px_0_rgba(251,191,36,0.55),0_4px_10px_-6px_rgba(0,0,0,0.8)]';
-const SEG_OFF = 'border border-transparent text-plush-300 hover:bg-white/[0.04] hover:text-white';
-const seg = (on) => `${SEG} ${on ? SEG_ON : SEG_OFF}`;
+  'whitespace-nowrap transition-colors';
+const seg = (on) => `${SEG} ${on ? `seg-on ${FOCUS_OUTLINE}` : `seg-off ${FOCUS_RING}`}`;
 
 // A filter group: a small caption (sm and up — on a phone the segments explain
 // themselves and the height is better spent on cards) that also names the
@@ -39,7 +32,7 @@ const seg = (on) => `${SEG} ${on ? SEG_ON : SEG_OFF}`;
 const FilterGroup = ({ id, label, className, children }) => (
   <div className="flex w-full flex-col items-center gap-1.5 sm:w-auto">
     <span id={id} className="label-caps hidden text-[10px] text-plush-300 sm:block">{label}</span>
-    <div role="group" aria-labelledby={id} className={`${SEG_GROUP} ${className}`}>
+    <div role="group" aria-labelledby={id} className={`seg-well w-full gap-1 sm:w-auto ${className}`}>
       {children}
     </div>
   </div>
@@ -104,7 +97,7 @@ const CardDetailDialog = ({ card, onClose }) => {
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className={`btn-glass grid h-10 w-10 shrink-0 place-items-center rounded-xl ${FOCUS_RING}`}
+          className={`btn-glass grid h-10 w-10 shrink-0 place-items-center rounded-xl ${FOCUS_OUTLINE}`}
         >
           <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
         </button>
@@ -198,7 +191,8 @@ const TeddyCollection = () => {
 
   const totalOwned = ownedCards.length;
   const totalCards = ALL_CARDS.length;
-  const completionPercent = ((totalOwned / totalCards) * 100).toFixed(1);
+  const completion = (totalOwned / totalCards) * 100;
+  const completionPercent = completion.toFixed(1);
 
   const rarityStats = RARITY_ORDER.map(rarity => {
     const total = ALL_CARDS.filter(c => c.rarity === rarity).length;
@@ -216,8 +210,12 @@ const TeddyCollection = () => {
       {/* The album's cover sheet: how far along the set is, by tier, and the
           filters for what to look at. */}
       <div className="panel-glass mb-7 rounded-2xl p-4 sm:p-5">
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
-          <div className="md:w-72 md:shrink-0">
+        {/* From md the tally and the medallions share a row. Between md and
+            lg the tally is narrower and the gaps tighter, or the medallion
+            strip got 52px columns at 768: narrower than the 56px medallions,
+            with UNCOMMON's caption running into COMMON's. */}
+        <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-6 lg:gap-8">
+          <div className="md:w-56 md:shrink-0 lg:w-72">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <div className="label-caps text-plush-300">Collected</div>
@@ -230,30 +228,41 @@ const TeddyCollection = () => {
                 <div className="mt-1 font-display text-3xl font-extrabold leading-none text-brass-gradient tabular-nums">{completionPercent}%</div>
               </div>
             </div>
+            {/* The indicator is full-width and slid left by the unfilled
+                share, so a gradient on it spans the whole track and only its
+                dark right-hand end ever showed early on. Sized to the filled
+                share and pinned right, the full brass ramp sits on the part
+                that is visible. */}
             <Progress
-              value={(totalOwned / totalCards) * 100}
+              value={completion}
               aria-label={`Collection progress: ${totalOwned} of ${totalCards} cards`}
-              className="mt-3 h-2 bg-night-950/70 ring-1 ring-inset ring-white/[0.06] [&>div]:bg-gradient-to-r [&>div]:from-brass-200 [&>div]:to-brass-500"
+              style={{ '--fill': completion }}
+              className="mt-3 h-2 bg-night-950/70 ring-1 ring-inset ring-white/[0.06] [&>div]:bg-transparent [&>div]:bg-gradient-to-r [&>div]:from-brass-200 [&>div]:to-brass-500 [&>div]:bg-right [&>div]:bg-no-repeat [&>div]:[background-size:calc(var(--fill)*1%)_100%]"
             />
           </div>
 
           <div aria-hidden="true" className="hidden w-px self-stretch bg-white/[0.06] md:block" />
 
-          {/* One medallion per tier, rimmed in that tier's card metal. */}
+          {/* One medallion per tier, rimmed in that tier's card metal. The
+              medallion is decorative (aria-hidden), so the count is restated
+              for a screen reader beside the caption. The captions are in the
+              display face, as on the card itself: it is bundled, so the width
+              is the same everywhere, and in the system sans UNCOMMON ran into
+              COMMON at 320. */}
           <ul className="grid flex-1 grid-cols-5 gap-2 sm:gap-3">
             {rarityStats.map(({ rarity, total, owned }) => (
               <li key={rarity} className="flex min-w-0 flex-col items-center gap-1.5">
-                <div
-                  className="h-12 w-12 rounded-full p-[2px] shadow-[0_6px_14px_-6px_rgba(0,0,0,0.8)] sm:h-14 sm:w-14"
-                  style={{ background: RARITY_METAL[rarity] }}
+                <Medallion
+                  metal={RARITY_METAL[rarity]}
+                  className="shadow-[0_6px_14px_-6px_rgba(0,0,0,0.8)] sm:h-14 sm:w-14"
+                  discClassName="shadow-[inset_0_2px_6px_rgba(0,0,0,0.6)]"
                 >
-                  <div className="grid h-full w-full place-items-center rounded-full bg-night-900 shadow-[inset_0_2px_6px_rgba(0,0,0,0.6)]">
-                    <span className="font-display text-[13px] font-extrabold leading-none text-white tabular-nums sm:text-[15px]">
-                      {owned}<span className="text-plush-300">/{total}</span>
-                    </span>
-                  </div>
-                </div>
-                <div className={`label-caps text-[9px] tracking-[0.04em] sm:text-[10px] sm:tracking-[0.12em] ${RARITY[rarity].text}`}>{rarity}</div>
+                  <span className="font-display text-[13px] font-extrabold leading-none text-white tabular-nums sm:text-[15px]">
+                    {owned}<span className="text-plush-300">/{total}</span>
+                  </span>
+                </Medallion>
+                <span className="sr-only">{owned} of {total}</span>
+                <div className={`label-caps font-display text-[9px] tracking-[0.04em] sm:text-[10px] sm:tracking-[0.12em] ${RARITY[rarity].text}`}>{rarity}</div>
               </li>
             ))}
           </ul>
@@ -297,8 +306,11 @@ const TeddyCollection = () => {
 
           {/* Six segments never fit one phone line (the row once pushed the
               whole document 52px sideways at 390px): a 3x2 grid below sm,
-              a wrapping row above. */}
-          <FilterGroup id="collection-filter-rarity" label="Rarity" className="grid grid-cols-3 sm:inline-flex sm:flex-wrap sm:justify-center">
+              a wrapping row above. Under 390 a third of the well can be
+              narrower than "Uncommon" and its dot (at 360 in a wide system
+              sans, by 5px), which poked out of the raised key, so there it
+              is a 2x3 grid. */}
+          <FilterGroup id="collection-filter-rarity" label="Rarity" className="grid grid-cols-2 min-[390px]:grid-cols-3 sm:inline-flex sm:flex-wrap sm:justify-center">
             {['all', ...RARITY_ORDER].map(rarity => (
               <button
                 type="button"
@@ -345,12 +357,11 @@ const TeddyCollection = () => {
             {...pressable(() => setSelectedCard(card), `View ${card.name}`)}
             className={`relative cursor-pointer rounded-[10px] ${FOCUS_RING} ${visibleOrder.has(card.id) ? '' : 'hidden'}`}
           >
-            {/* Missing cards: drained of most colour and light, under a lock —
-                still recognisably the card you are hunting for, and a hint
-                of the tier's metal survives in the frame. */}
-            <div className={card.owned ? '' : 'saturate-[0.3] brightness-[0.55]'}>
-              <TeddyCard teddy={card} />
-            </div>
+            {/* Missing cards: the art drained of most colour and light, under
+                a lock — still recognisably the card you are hunting for. Only
+                the art: filtering the whole card took its name, cost, stats
+                and rules line below AA, on a tile that is still a control. */}
+            <TeddyCard teddy={card} dimmed={!card.owned} />
             {!card.owned && (
               <div className="pointer-events-none absolute inset-0 grid place-items-center">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-night-950/85 ring-1 ring-white/15 shadow-[0_6px_14px_-4px_rgba(0,0,0,0.8)]">

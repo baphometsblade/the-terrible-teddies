@@ -2,9 +2,11 @@ import { useState, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bomb, Check, Eraser, FolderOpen, PawPrint, Save, Sparkles, Trash2, X, Zap } from 'lucide-react';
 import TeddyCard, { ArtOrEmoji } from './TeddyCard';
+import { Medallion } from '@/components/ui/game-chrome';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
+import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder } from '@/lib/cosmetics';
 
@@ -13,26 +15,21 @@ import { RARITY, RARITY_METAL } from '@/lib/rarity';
 const DECK_SIZE = 10;
 const MAX_COPIES = 2;
 
-const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300 ' +
-  'focus-visible:ring-offset-2 focus-visible:ring-offset-night-900';
-
 // Shape of every full-size button here; the material (btn-brass / btn-glass)
 // is added per button. Plain <button>s, not the shadcn Button: its bg-primary
-// is a utility and would beat a component-layer material.
+// is a utility and would beat a component-layer material. Focus is an
+// outline, because every one of them carries a material shadow.
 const ACTION =
   'inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 font-display text-base font-bold ' +
-  `whitespace-nowrap ${FOCUS_RING}`;
+  `whitespace-nowrap ${FOCUS_OUTLINE}`;
 
-// Segmented type filter — the same recessed well and raised glass key as the
-// Collection's filters. The selected segment restates .btn-glass's shadow
-// because a shadow utility replaces the material's rather than adding to it.
+// Segmented type filter — the same .seg-well / .seg-on / .seg-off control as
+// the Collection's filters, with the same focus split: an outline on the
+// raised key (a ring would replace its shadow), the ring on the others.
 const SEG =
   'inline-flex h-8 items-center justify-center rounded-lg px-3 text-[13px] font-semibold whitespace-nowrap ' +
-  'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300';
-const SEG_ON =
-  'btn-glass text-brass-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-2px_0_rgba(251,191,36,0.55),0_4px_10px_-6px_rgba(0,0,0,0.8)]';
-const SEG_OFF = 'border border-transparent text-plush-300 hover:bg-white/[0.04] hover:text-white';
+  'transition-colors';
+const seg = (on) => `${SEG} ${on ? `seg-on ${FOCUS_OUTLINE}` : `seg-off ${FOCUS_RING}`}`;
 
 // A small recessed well for counts and rows inside the deck panel.
 const WELL = 'bg-night-950/45 ring-1 ring-inset ring-white/[0.06]';
@@ -75,10 +72,8 @@ const SaveDeckDialog = ({ deckName, setDeckName, onSave, onClose }) => {
       className="dialog-panel relative my-auto w-full max-w-sm rounded-2xl p-5 sm:p-6"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex min-h-10 items-center gap-3 pr-12">
-        <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brass-400/15 ring-1 ring-brass-300/40">
-          <Save className="h-5 w-5 text-brass-300" strokeWidth={2} />
-        </span>
+      <div className="flex items-center gap-3 pr-12">
+        <Medallion icon={Save} />
         <h3 className="font-display text-xl font-extrabold leading-tight text-white">Save Deck</h3>
       </div>
 
@@ -93,7 +88,7 @@ const SaveDeckDialog = ({ deckName, setDeckName, onSave, onClose }) => {
         onChange={(e) => setDeckName(e.target.value)}
         placeholder="Enter deck name..."
         aria-label="Deck name"
-        className="h-11 w-full rounded-xl bg-night-950/60 px-4 text-plush-100 ring-1 ring-inset ring-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] placeholder:text-plush-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
+        className={`h-11 w-full rounded-xl border border-white/10 bg-night-950/60 px-4 text-plush-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] placeholder:text-plush-400 ${FOCUS_RING}`}
         maxLength={20}
       />
 
@@ -109,11 +104,12 @@ const SaveDeckDialog = ({ deckName, setDeckName, onSave, onClose }) => {
         <button type="button" onClick={onClose} className={`${ACTION} btn-glass flex-1`}>Cancel</button>
       </div>
 
+      {/* Centred on the 44px medallion row: the panel's padding plus 2px. */}
       <button
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className={`btn-glass absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-xl sm:right-6 sm:top-6 ${FOCUS_RING}`}
+        className={`btn-glass absolute right-5 top-[22px] grid h-10 w-10 place-items-center rounded-xl sm:right-6 sm:top-[26px] ${FOCUS_OUTLINE}`}
       >
         <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
       </button>
@@ -131,6 +127,7 @@ const DeckBuilder = () => {
   const [deckName, setDeckName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const { toast } = useToast();
+  const copiesIdBase = useId();
 
   const ownedCardObjects = ALL_CARDS.filter(card => ownedCards.includes(card.id));
 
@@ -241,7 +238,7 @@ const DeckBuilder = () => {
               <div
                 role="group"
                 aria-label="Filter by type"
-                className="grid w-full grid-cols-4 gap-1 rounded-xl bg-night-950/55 p-1 ring-1 ring-inset ring-white/[0.07] shadow-[inset_0_1px_3px_rgba(0,0,0,0.45)] sm:inline-flex sm:w-auto"
+                className="seg-well grid w-full grid-cols-4 gap-1 sm:inline-flex sm:w-auto"
               >
                 {['all', 'action', 'trap', 'special'].map(type => (
                   <button
@@ -249,7 +246,7 @@ const DeckBuilder = () => {
                     key={type}
                     onClick={() => setFilter(type)}
                     aria-pressed={filter === type}
-                    className={`${SEG} ${filter === type ? SEG_ON : SEG_OFF}`}
+                    className={seg(filter === type)}
                   >
                     {type.charAt(0).toUpperCase() + type.slice(1)}
                   </button>
@@ -266,11 +263,16 @@ const DeckBuilder = () => {
                 {filteredCards.map((card) => {
                   const copiesInDeck = deck.filter(c => c.id === card.id).length;
                   const isMaxed = copiesInDeck >= MAX_COPIES;
+                  const copiesId = `${copiesIdBase}-copies-${card.id}`;
                   return (
                     <div key={card.id} className="flex flex-col items-center">
+                      {/* The copy count describes the tile, so a screen
+                          reader tabbing the grid hears "Add X to deck, 1 of 2
+                          copies in deck" rather than a bare "Add X to deck". */}
                       <div
                         className={`relative rounded-[10px] ${isMaxed ? '' : 'cursor-pointer'} ${FOCUS_RING}`}
                         {...pressable(addToDeck.bind(null, card), `Add ${card.name} to deck`, !isMaxed)}
+                        aria-describedby={copiesInDeck > 0 && !isMaxed ? copiesId : undefined}
                       >
                         <TeddyCard teddy={card} isDisabled={isMaxed} cosmeticBorder={cosmeticBorder} />
                       </div>
@@ -287,7 +289,7 @@ const DeckBuilder = () => {
                           />
                         ))}
                         {copiesInDeck > 0 && (
-                          <span className="sr-only">{copiesInDeck} of {MAX_COPIES} copies in deck</span>
+                          <span id={copiesId} className="sr-only">{copiesInDeck} of {MAX_COPIES} copies in deck</span>
                         )}
                       </div>
                     </div>
@@ -311,7 +313,7 @@ const DeckBuilder = () => {
               <button
                 type="button"
                 onClick={clearDeck}
-                className={`btn-glass inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-red-300 ${FOCUS_RING}`}
+                className={`btn-glass inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-red-300 ${FOCUS_OUTLINE}`}
               >
                 <Eraser aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
                 Clear
@@ -394,7 +396,7 @@ const DeckBuilder = () => {
                     <button
                       type="button"
                       onClick={() => removeFromDeck(card)}
-                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
+                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 ${FOCUS_RING}`}
                       aria-label={`Remove ${card.name} from deck`}
                     >
                       <X aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
@@ -440,7 +442,7 @@ const DeckBuilder = () => {
                       <button
                         type="button"
                         onClick={() => loadSavedDeck(savedDeck)}
-                        className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 text-left text-sm font-semibold text-plush-100 transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
+                        className={`flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 text-left text-sm font-semibold text-plush-100 transition-colors hover:bg-white/5 ${FOCUS_RING}`}
                       >
                         <FolderOpen aria-hidden="true" className="h-4 w-4 shrink-0 text-brass-300" strokeWidth={2.2} />
                         <span className="truncate">{savedDeck.name}</span>
@@ -449,7 +451,7 @@ const DeckBuilder = () => {
                         type="button"
                         onClick={() => deleteDeck(savedDeck.name)}
                         aria-label={`Delete deck ${savedDeck.name}`}
-                        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
+                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 ${FOCUS_RING}`}
                       >
                         <Trash2 aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
                       </button>
