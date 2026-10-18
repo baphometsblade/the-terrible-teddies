@@ -44,9 +44,13 @@ npx supabase functions deploy create-checkout-session
 npx supabase functions deploy stripe-webhook --no-verify-jwt
 ```
 
-Configure the webhook in the Stripe dashboard to send `checkout.session.completed`
-(fulfillment), `charge.refunded` and `charge.dispute.created` (gem
-clawback on refunds/chargebacks).
+Deploy the migrations **before** the functions. The webhook calls
+`restore_gem_purchase`, which only exists once `20260905000000` (narrowed by
+`20260912000000`) has been applied; deployed first, it fails every won-dispute
+event until the database catches up.
+
+The webhook needs seven Stripe events, not three — the full list, and why each
+one matters, is in step 3 of section 2.
 
 ### Set Edge Function secrets
 
@@ -82,6 +86,12 @@ Dashboard → Edge Functions → Secrets (or `npx supabase secrets set KEY=value
      - `charge.dispute.updated` — the escalation path. An inquiry that becomes a
        real chargeback is reported as an UPDATE to the existing dispute, not as
        a second `created`, so without this the gems are never clawed back.
+       Only statuses that mean the money is gone (`needs_response`,
+       `under_review`, `lost`, `charge_refunded`) reverse; an update to `won`
+       does nothing here.
+     - `charge.dispute.funds_withdrawn` — the event that says outright that
+       Stripe took the money. Reverses on the event type alone, so a dispute
+       whose status updates were missed is still clawed back.
      - `charge.dispute.closed` — restores the gems when the dispute is **won**
      - `charge.dispute.funds_reinstated` — restores the gems when Stripe
        returns the money
@@ -148,9 +158,22 @@ Point `ALLOWED_ORIGIN` (Supabase secret) at the deployed domain.
   re-runs cleanly instead of leaving a paid-but-uncredited order.
 - Refunds and chargebacks claw the gems back (`reverse_gem_purchase`, flooring
   the balance at 0), so a buy → spend → chargeback can't keep the goods.
+- A won dispute puts the gems back (`restore_gem_purchase`), but only for a
+  purchase reversed by a dispute — never one we refunded, which would let the
+  customer keep both the money and the goods.
 - The client-callable sync RPCs (`sync_battle_result`, `sync_player_level`)
-  clamp their inputs so a tampered client can't mint coins or jump levels.
-- Spending gems can't be undone by re-reading the server balance
-  (`reconcileServerGems` only credits new purchases above a high-water mark).
+  clamp each call (level +2, coins ≤ 1000 per battle) and are rate limited to
+  5 calls a minute per action. That bounds the *rate*, not the total: a
+  scripted client can still climb the public leaderboard over time — measured,
+  60 level syncs reach level 100, and wins accrue without a ceiling. Gems are
+  unaffected; they come only from the webhook. A cheat-proof leaderboard would
+  need battles resolved on the server.
+- The rate limiter accepts only the three actions the system uses
+  (`checkout`, `battle_result`, `level_sync`), so it cannot be used to write
+  unlimited rows.
+- Spending gems can't be undone by re-reading the server balance:
+  `reconcileServerGems` credits only purchases above a high-water mark. A
+  server total that moves *down* is a refund or chargeback reversal, and is
+  applied to the spendable balance (floored at 0) so the clawback lands.
 - The leaderboard reads a view exposing only ranking columns; direct `players`
   reads are restricted to the owner's own row.

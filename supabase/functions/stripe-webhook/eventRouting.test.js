@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import {
   ACTION,
   routeEvent,
@@ -207,5 +209,50 @@ describe('status predicates', () => {
     expect(fundsAreWithdrawn('warning_under_review')).toBe(false);
     expect(fundsAreWithdrawn('anything_else')).toBe(false);
     expect(fundsAreWithdrawn(undefined)).toBe(false);
+  });
+});
+
+// Handling an event in code does nothing unless the Stripe endpoint is
+// subscribed to it, and the subscription is set by hand from DEPLOYMENT.md.
+// That gap was real: charge.dispute.funds_withdrawn was routed here for weeks
+// while neither DEPLOYMENT.md nor CLAUDE.md mentioned it, so anyone following
+// the runbook would never have subscribed to it. Both directions are checked:
+// every event this router acts on must be in the runbook's list, and every
+// event the runbook lists must be one this router acts on.
+describe('the deployment runbook subscribes exactly the events this router handles', () => {
+  const root = process.cwd();
+  const router = readFileSync(resolve(root, 'supabase/functions/stripe-webhook/eventRouting.js'), 'utf8');
+  const runbook = readFileSync(resolve(root, 'DEPLOYMENT.md'), 'utf8');
+
+  // Event-type string literals in the router, e.g. 'charge.dispute.closed'.
+  const inCode = [...new Set(
+    [...router.matchAll(/'((?:checkout|charge)\.[a-z_.]+)'/g)].map(([, t]) => t)
+  )].sort();
+
+  // Only the bulleted Events list in section 2, step 3 — the runbook also
+  // mentions `checkout.session` in prose elsewhere, which is not a subscription.
+  const start = runbook.indexOf('- Events:');
+  const end = runbook.indexOf('The last two are not optional');
+  const eventsBlock = runbook.slice(start, end);
+  const inRunbook = [...new Set(
+    [...eventsBlock.matchAll(/^\s*- `((?:checkout|charge)\.[a-z_.]+)`/gm)].map(([, t]) => t)
+  )].sort();
+
+  it('finds both lists (the extraction still matches)', () => {
+    expect(start, 'DEPLOYMENT.md lost its "- Events:" list').toBeGreaterThan(-1);
+    expect(end, 'DEPLOYMENT.md lost the line closing the Events list').toBeGreaterThan(start);
+    expect(inCode.length).toBeGreaterThanOrEqual(7);
+    expect(inRunbook.length).toBeGreaterThanOrEqual(7);
+  });
+
+  it('every event in the code is acted on, not merely mentioned', () => {
+    for (const type of inCode) {
+      const r = routeEvent({ type, created: 0, data: { object: { status: 'lost', payment_intent: 'pi_1', amount_refunded: 1, amount_captured: 1 } } });
+      expect(r.ignored, `${type} is named in the router but routes to unhandled`).not.toBe('unhandled');
+    }
+  });
+
+  it('the runbook lists every event the router handles, and nothing else', () => {
+    expect(inRunbook).toEqual(inCode);
   });
 });
