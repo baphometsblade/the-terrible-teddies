@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from "@/components/ui/button";
+import { Trophy, Crown, Flame, Globe, X, TriangleAlert, RotateCcw } from 'lucide-react';
 import { useGameStore } from '../stores/gameStore';
 import { supabase } from '../lib/supabase';
 import { useDialog } from '@/hooks/useDialog';
+import { RARITY_METAL } from '@/lib/rarity';
 
 // Calculate trophies based on player stats
 const calculateTrophies = (wins, level, bestStreak) => {
@@ -15,6 +16,181 @@ const calculateLevel = (experience) => {
   return Math.floor((experience || 0) / 100) + 1;
 };
 
+// Focus on anything wearing a material (btn-glass, btn-brass) is an outline,
+// not a ring: a Tailwind ring is a box-shadow, and it would replace the
+// material's own rim light and depth.
+const FOCUS_OUTLINE =
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
+
+// The scope bar: the same recessed well and raised glass key as the
+// Collection's filters. The selected key restates .btn-glass's shadow because a
+// shadow utility replaces the material's rather than adding to it.
+const SEG_GROUP =
+  'flex gap-1 rounded-xl bg-night-950/55 p-1 ring-1 ring-inset ring-white/[0.07] shadow-[inset_0_1px_3px_rgba(0,0,0,0.45)]';
+const SEG_ON =
+  'btn-glass text-brass-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-2px_0_rgba(251,191,36,0.55),0_4px_10px_-6px_rgba(0,0,0,0.8)]';
+const SEG_OFF = 'border border-transparent text-plush-300 hover:bg-white/[0.04] hover:text-white';
+
+// The podium's three metals: gold is the game's brass (the legendary frame),
+// silver the pewter of a common one, and bronze in the same light-dark-light
+// polished-edge shape as RARITY_METAL. `tone` is the lettering in that metal;
+// on the plinth's tint and on the panel each clears 5.5:1.
+const PODIUM = {
+  1: {
+    metal: RARITY_METAL.legendary,
+    tone: 'text-brass-200',
+    light: 'rgba(251, 191, 36, 0.24)',
+    halo: 'rgba(251, 191, 36, 0.38)',
+    plinth: 'h-[4.5rem] sm:h-24',
+    medal: 'h-14 w-14 sm:h-16 sm:w-16',
+    numeral: 'text-2xl sm:text-3xl',
+  },
+  2: {
+    metal: RARITY_METAL.common,
+    tone: 'text-stone-200',
+    light: 'rgba(214, 211, 209, 0.14)',
+    halo: 'rgba(214, 211, 209, 0.2)',
+    plinth: 'h-12 sm:h-16',
+    medal: 'h-12 w-12 sm:h-14 sm:w-14',
+    numeral: 'text-xl sm:text-2xl',
+  },
+  3: {
+    metal: 'linear-gradient(145deg, #fed7aa 0%, #9a3412 32%, #fdba74 58%, #7c2d12 100%)',
+    tone: 'text-orange-300',
+    light: 'rgba(251, 146, 60, 0.16)',
+    halo: 'rgba(251, 146, 60, 0.24)',
+    plinth: 'h-8 sm:h-10',
+    medal: 'h-12 w-12 sm:h-14 sm:w-14',
+    numeral: 'text-xl sm:text-2xl',
+  },
+};
+
+// Visual order on the podium is 2-1-3; DOM order stays 1-2-3, so a screen
+// reader reads the ranking in rank order. Pinned columns rather than `order`,
+// so a podium of one or two still puts first place in the middle.
+const PODIUM_COLUMN = { 1: 'col-start-2 row-start-1', 2: 'col-start-1 row-start-1', 3: 'col-start-3 row-start-1' };
+
+// Rows stagger in, but capped: at 50ms a row, fifty rows had the last one
+// arriving two and a half seconds after the dialog opened.
+const rowDelay = (rank) => Math.min(typeof rank === 'number' ? rank : 0, 12) * 0.04;
+
+const Trophies = ({ value, className = 'text-white' }) => (
+  <span className={`inline-flex shrink-0 items-center gap-1.5 font-display font-extrabold tabular-nums ${className}`}>
+    <Trophy aria-hidden="true" className="h-4 w-4 text-brass-300" strokeWidth={2.2} />
+    {value.toLocaleString()}
+    <span className="sr-only">trophies</span>
+  </span>
+);
+
+const Streak = ({ streak }) => (
+  <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-orange-500/10 px-1.5 py-[1px] text-[11px] font-bold leading-4 tabular-nums text-orange-300 ring-1 ring-inset ring-orange-400/25">
+    <Flame aria-hidden="true" className="h-3 w-3" strokeWidth={2.4} />
+    {streak}
+    <span className="sr-only">win streak</span>
+  </span>
+);
+
+// Module scope, so a re-render of the dialog updates the places and rows in
+// place instead of remounting them (which replayed every entrance animation).
+const PodiumPlace = ({ player }) => {
+  const p = PODIUM[player.rank];
+  return (
+    <li className={`flex min-w-0 flex-col items-center ${PODIUM_COLUMN[player.rank]}`}>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 + rowDelay(player.rank), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className="flex w-full min-w-0 flex-col items-center text-center"
+      >
+        {player.rank === 1 && (
+          <Crown aria-hidden="true" className="mb-1 h-5 w-5 text-brass-300" fill="currentColor" strokeWidth={1.8} />
+        )}
+        <div
+          className={`${p.medal} shrink-0 rounded-full p-[3px]`}
+          style={{ background: p.metal, boxShadow: `0 0 24px ${p.halo}, 0 10px 18px -8px rgba(0, 0, 0, 0.8)` }}
+        >
+          <div className={`grid h-full w-full place-items-center rounded-full bg-night-900 font-display font-extrabold leading-none ${p.tone} ${p.numeral}`}>
+            <span><span className="sr-only">Rank </span>{player.rank}</span>
+          </div>
+        </div>
+        {/* Up to three lines: a twenty-character name in a 320px podium
+            column needs them. */}
+        <div className="mt-2 line-clamp-3 w-full break-words font-display text-[13px] font-bold leading-tight text-white min-[360px]:text-sm sm:text-base">
+          {player.name}
+        </div>
+        <Trophies value={player.trophies} className={`mt-1 text-sm ${p.tone}`} />
+        {/* Stacked on a phone, where a podium column is under 100px wide. */}
+        <div className="mt-0.5 flex flex-col items-center text-[11px] leading-snug text-plush-300 sm:flex-row sm:gap-1">
+          <span className="whitespace-nowrap">Level {player.level}</span>
+          <span aria-hidden="true" className="hidden sm:inline">·</span>
+          <span className="whitespace-nowrap">{player.wins} wins</span>
+        </div>
+        {player.streak >= 5 && <div className="mt-1.5"><Streak streak={player.streak} /></div>}
+      </motion.div>
+      {/* The step: a polished metal lip, lit from above in the place's own
+          colour and falling off into the floor. */}
+      <div
+        aria-hidden="true"
+        className={`relative mt-3 w-full overflow-hidden rounded-t-xl ${p.plinth}`}
+        style={{ background: `linear-gradient(180deg, ${p.light} 0%, rgba(255, 255, 255, 0.025) 100%)` }}
+      >
+        <div className="absolute inset-x-0 top-0 h-[3px]" style={{ background: p.metal }} />
+        <div className="absolute inset-x-0 top-[3px] h-px bg-white/10" />
+      </div>
+    </li>
+  );
+};
+
+const LeaderboardRow = ({ player, isPlayer = false }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 8 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: rowDelay(player.rank), duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+    className={`relative flex items-center gap-2.5 rounded-xl px-2.5 py-2.5 sm:gap-3 sm:px-3 ${isPlayer
+      ? 'trim-brass bg-brass-400/[0.08] shadow-[0_0_28px_-10px_rgba(251,191,36,0.55)]'
+      : 'bg-white/[0.03] ring-1 ring-inset ring-white/[0.06] transition-colors hover:bg-white/[0.06]'}`}
+  >
+    <div
+      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-[13px] font-extrabold tabular-nums sm:h-10 sm:w-10 sm:text-sm ${isPlayer
+        ? 'bg-brass-400/15 text-brass-200 ring-1 ring-inset ring-brass-300/40'
+        : 'bg-white/5 text-plush-200 ring-1 ring-inset ring-white/10'}`}
+    >
+      {/* No rank until the board has loaded: a bare dash, not "#—". */}
+      {typeof player.rank === 'number' ? `#${player.rank}` : player.rank}
+    </div>
+
+    <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className={`truncate font-display font-bold leading-tight ${isPlayer ? 'text-brass-200' : 'text-plush-100'}`}>
+          {player.name}
+        </span>
+        {/* night-950 on brass-400: 8.9:1 (a11y.spec.js waits for the row's
+            fade before sampling it). */}
+        {isPlayer && <span className="shrink-0 rounded bg-brass-400 px-1.5 py-[3px] text-[10px] font-extrabold leading-none tracking-wider text-night-950">YOU</span>}
+      </div>
+      {/* The streak rides on the meta line, not the name's: beside the name
+          and the YOU badge it squeezed a 320px row's name down to two
+          letters. */}
+      <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-plush-300">
+        <span className="whitespace-nowrap">Level {player.level} · {player.wins} wins</span>
+        {player.streak >= 5 && <Streak streak={player.streak} />}
+      </div>
+    </div>
+
+    <Trophies value={player.trophies} className={`text-[15px] ${isPlayer ? 'text-brass-200' : 'text-white'}`} />
+  </motion.div>
+);
+
+// The panel the loading / error / empty states share.
+const StatePanel = ({ tone = 'neutral', children }) => (
+  <div
+    className={`flex flex-col items-center rounded-xl px-5 py-9 text-center ring-1 ring-inset sm:px-6 sm:py-10 ${tone === 'error'
+      ? 'bg-red-950/30 ring-red-400/25'
+      : 'bg-night-950/40 ring-white/[0.06]'}`}
+  >
+    {children}
+  </div>
+);
 
 const Leaderboard = ({ onClose }) => {
   const { playerName, level, totalWins, currentWinStreak, bestWinStreak } = useGameStore();
@@ -86,54 +262,9 @@ const Leaderboard = ({ onClose }) => {
     ? leaderboardData.filter(p => p.trophies > playerTrophies).length + 1
     : null;
 
-  const getRankDisplay = (rank) => {
-    if (rank === 1) return { icon: '🥇', color: 'text-brass-300', bg: 'from-brass-600/25 to-amber-800/25' };
-    if (rank === 2) return { icon: '🥈', color: 'text-gray-300', bg: 'from-gray-500/30 to-gray-600/30' };
-    if (rank === 3) return { icon: '🥉', color: 'text-orange-400', bg: 'from-orange-600/30 to-amber-700/30' };
-    return { icon: rank.toString(), color: 'text-white/70', bg: 'from-white/5 to-white/10' };
-  };
-
-  const LeaderboardRow = ({ player, isPlayer = false }) => {
-    const rankDisplay = getRankDisplay(player.rank);
-    return (
-      <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: player.rank * 0.05 }}
-        className={`
-          flex items-center gap-3 p-3 rounded-xl mb-2 transition-all
-          bg-gradient-to-r ${rankDisplay.bg}
-          ${isPlayer ? 'ring-2 ring-brass-300 shadow-lg shadow-brass-400/20' : 'hover:bg-white/5'}
-          ${player.rank <= 3 ? 'border border-white/20' : ''}
-        `}
-      >
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
-          player.rank <= 3 ? 'text-2xl' : 'bg-white/10 ' + rankDisplay.color
-        }`}>
-          {player.rank <= 3 ? rankDisplay.icon : `#${player.rank}`}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className={`font-bold truncate ${isPlayer ? 'text-brass-300' : 'text-white'}`}>
-              {player.name}
-            </span>
-            {isPlayer && <span className="text-xs bg-brass-400 text-night-950 px-2 py-0.5 rounded">YOU</span>}
-            {player.streak >= 5 && <span className="text-xs">🔥{player.streak}</span>}
-          </div>
-          <div className="text-white/50 text-xs">
-            Level {player.level} • {player.wins} wins
-          </div>
-        </div>
-
-        <div className="text-right">
-          <div className={`font-bold ${rankDisplay.color}`}>
-            🏆 {player.trophies.toLocaleString()}
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
+  // The top three stand on the podium; everyone else is a row beneath it.
+  const podium = leaderboardData.slice(0, 3);
+  const rest = leaderboardData.slice(3);
 
   return (
     <div
@@ -141,28 +272,45 @@ const Leaderboard = ({ onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-label="Leaderboard"
-      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+      // The scrim scrolls and the panel centres with my-auto (not
+      // items-center: a centred flex item taller than its box overflows at
+      // both ends). Inside the panel only the list scrolls.
+      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-3 sm:p-6"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-night-700 via-night-800 to-night-950 rounded-2xl max-w-2xl w-full shadow-2xl border border-plush-700/40 overflow-hidden max-h-[90vh] flex flex-col"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl dialog-panel sm:max-h-[calc(100dvh-3rem)]"
       >
+        {/* Amber light over the bar, pooled behind the title. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(ellipse_55%_100%_at_50%_0%,rgba(251,191,36,0.12),transparent_70%)]"
+        />
+
         {/* Header */}
-        <div className="bg-gradient-to-r from-plush-800 to-night-700 border-b border-brass-400/30 p-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <span className="text-3xl">🏆</span> Leaderboard
-          </h2>
-          <div className="flex items-center gap-3">
-            <span className="bg-white/20 text-white rounded-lg px-3 py-1 text-sm">
-              All Time
-            </span>
-            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl" aria-label="Close leaderboard">×</button>
+        <div className="relative flex items-center gap-3 px-4 pb-4 pt-4 sm:px-6 sm:pt-5">
+          <div aria-hidden="true" className="h-11 w-11 shrink-0 rounded-full p-[2px]" style={{ background: RARITY_METAL.legendary }}>
+            <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
+              <Trophy className="h-5 w-5 text-brass-300" strokeWidth={2} />
+            </div>
           </div>
+          <h2 className="min-w-0 flex-1 font-display text-2xl font-extrabold leading-none text-brass-gradient sm:text-3xl">
+            Leaderboard
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className={`btn-glass grid h-10 w-10 shrink-0 place-items-center rounded-xl text-plush-200 hover:text-white ${FOCUS_OUTLINE}`}
+            aria-label="Close leaderboard"
+          >
+            <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
+          </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-white/10">
+        <div className="relative flex items-center justify-between gap-3 px-4 pb-4 sm:px-6">
           {/* No 'Friends' tab: it rendered a "Coming Soon!" panel with a
               disabled "Connect Social Account" button, promising social login
               that has no implementation behind it. A tab that costs a click and
@@ -178,77 +326,128 @@ const Leaderboard = ({ onClose }) => {
               Advertising a payout with no code behind it is the same defect as
               the Friends tab above, only more expensive for the player, who
               grinds for it. Restore it with the payout, not before. */}
-          {[
-            { id: 'global', label: 'Global', icon: '🌍' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              aria-pressed={activeTab === tab.id}
-              className={`flex-1 py-3 text-center font-semibold transition-all ${
-                activeTab === tab.id ? 'text-white bg-white/10 border-b-2 border-purple-400' : 'text-white/50 hover:text-white/80'
-              }`}
-            >
-              <span className="mr-2">{tab.icon}</span>{tab.label}
-            </button>
-          ))}
+          <div className={SEG_GROUP}>
+            {[
+              { id: 'global', label: 'Global', icon: Globe },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                aria-pressed={activeTab === tab.id}
+                className={`inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass-300 ${
+                  activeTab === tab.id ? SEG_ON : SEG_OFF
+                }`}
+              >
+                <tab.icon aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <span className="label-caps whitespace-nowrap rounded-full bg-white/5 px-3 py-1.5 text-plush-200 ring-1 ring-inset ring-white/10">
+            All Time
+          </span>
         </div>
 
-        {/* Content */}
-        <div className="p-4 flex-1 overflow-y-auto">
+        {/* Your Position — pinned above the list, so it stays in view while
+            the top fifty scroll beneath it. */}
+        <div className="relative px-4 pb-4 sm:px-6">
+          <h3 className="label-caps mb-2 text-brass-300">Your Ranking</h3>
+          <LeaderboardRow
+            player={{
+              rank: playerRank ?? '—',
+              name: playerName,
+              level: level,
+              wins: totalWins,
+              streak: currentWinStreak,
+              trophies: playerTrophies,
+            }}
+            isPlayer={true}
+          />
+        </div>
+
+        {/* Content. Focusable, because its rows hold no controls: without a
+            tab stop a keyboard user could not scroll the list at all. A plain
+            element, so its focus may be an (inset) ring. */}
+        <div
+          role="region"
+          aria-labelledby="leaderboard-top-players"
+          tabIndex={0}
+          className="relative min-h-0 flex-1 overflow-y-auto border-t border-white/[0.06] px-4 pb-5 pt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300/70 sm:px-6"
+        >
           <AnimatePresence mode="wait">
             {activeTab === 'global' && (
               <motion.div key="global" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                {/* Your Position */}
-                <div className="bg-gradient-to-r from-brass-600/20 to-amber-800/20 border border-brass-400/30 rounded-xl p-4 mb-4">
-                  <div className="text-brass-300 text-sm mb-2">Your Ranking</div>
-                  <LeaderboardRow
-                    player={{
-                      rank: playerRank ?? '—',
-                      name: playerName,
-                      level: level,
-                      wins: totalWins,
-                      streak: currentWinStreak,
-                      trophies: playerTrophies,
-                    }}
-                    isPlayer={true}
-                  />
+                {/* Top Players */}
+                <div className="mb-3 flex items-center gap-3">
+                  <h3 id="leaderboard-top-players" className="label-caps shrink-0 text-plush-300">Top Players</h3>
+                  <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
                 </div>
 
-                {/* Top Players */}
-                <div className="text-white/50 text-sm mb-2">Top Players</div>
-
                 {loading && (
-                  <div className="text-center py-8">
-                    <div className="text-4xl mb-4 animate-bounce">🐻</div>
-                    <p className="text-white/70">Loading leaderboard...</p>
-                  </div>
+                  <StatePanel>
+                    {/* A CSS spin on the compositor; it stops with the
+                        Animations switch and with reduced motion. */}
+                    <div className="relative mb-4 h-14 w-14" aria-hidden="true">
+                      <div className="absolute inset-0 rounded-full border-2 border-white/10 border-t-brass-300 motion-safe:animate-spin" />
+                      <div className="absolute inset-0 grid place-items-center text-2xl">🧸</div>
+                    </div>
+                    <p className="text-plush-200">Loading leaderboard...</p>
+                  </StatePanel>
                 )}
 
                 {error && (
-                  <div className="text-center py-8 bg-red-500/10 border border-red-500/30 rounded-xl">
-                    <div className="text-4xl mb-4">⚠️</div>
-                    <p className="text-red-400">Error loading leaderboard</p>
-                    <p className="text-white/50 text-sm mt-2">{error}</p>
-                    <Button
+                  <StatePanel tone="error">
+                    <div className="mb-4 grid h-14 w-14 place-items-center rounded-full bg-red-500/10 ring-1 ring-inset ring-red-400/40" aria-hidden="true">
+                      <TriangleAlert className="h-6 w-6 text-red-300" strokeWidth={2} />
+                    </div>
+                    <p className="font-display text-lg font-bold leading-tight text-red-300">Error loading leaderboard</p>
+                    <p className="mt-1.5 max-w-sm break-words text-sm text-plush-300">{error}</p>
+                    <button
+                      type="button"
                       onClick={fetchLeaderboard}
-                      className="mt-4 bg-red-600 hover:bg-red-700"
+                      className={`btn-brass mt-5 inline-flex h-11 items-center gap-2 rounded-xl px-5 font-display font-bold ${FOCUS_OUTLINE}`}
                     >
+                      <RotateCcw aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
                       Retry
-                    </Button>
-                  </div>
+                    </button>
+                  </StatePanel>
                 )}
 
                 {!loading && !error && leaderboardData.length === 0 && (
-                  <div className="text-center py-8">
-                    <div className="text-4xl mb-4">🏆</div>
-                    <p className="text-white/70">No players yet. Be the first!</p>
+                  <StatePanel>
+                    <div aria-hidden="true" className="mb-4 h-14 w-14 rounded-full p-[2px]" style={{ background: RARITY_METAL.common }}>
+                      <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
+                        <Trophy className="h-6 w-6 text-plush-300" strokeWidth={1.8} />
+                      </div>
+                    </div>
+                    <p className="text-plush-200">No players yet. Be the first!</p>
+                  </StatePanel>
+                )}
+
+                {!loading && !error && podium.length > 0 && (
+                  // Held to a podium's width on a wide panel, so the three
+                  // steps stand together instead of spreading to the edges.
+                  <div className="mx-auto max-w-lg px-1 sm:px-2">
+                    <ol className="grid grid-cols-3 items-end gap-1.5 min-[360px]:gap-2 sm:gap-4">
+                      {podium.map(player => (
+                        <PodiumPlace key={player.rank} player={player} />
+                      ))}
+                    </ol>
+                    {/* The floor the steps stand on. */}
+                    <div aria-hidden="true" className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                   </div>
                 )}
 
-                {!loading && !error && leaderboardData.map(player => (
-                  <LeaderboardRow key={player.rank} player={player} />
-                ))}
+                {!loading && !error && rest.length > 0 && (
+                  <ol start={4} className="mt-4 space-y-2">
+                    {rest.map(player => (
+                      <li key={player.rank}>
+                        <LeaderboardRow player={player} />
+                      </li>
+                    ))}
+                  </ol>
+                )}
               </motion.div>
             )}
 

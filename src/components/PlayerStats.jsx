@@ -1,10 +1,80 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Button } from "@/components/ui/button";
+import {
+  X, Pencil, Coins, Gem, BarChart3, Trophy, Gamepad2, HeartCrack, TrendingUp, Flame, Star,
+  CalendarDays, LibraryBig, Bomb, HeartPulse, Sparkles, Check, Lock,
+} from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useGameStore, ACHIEVEMENTS, ALL_CARDS } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
 import { setPlayerUsername } from '../utils/supabaseClient';
+import { RARITY_METAL } from '@/lib/rarity';
+
+// Focus on anything wearing a material (btn-glass, btn-brass) is an outline,
+// not a ring: a Tailwind ring is a box-shadow, and it would replace the
+// material's own rim light and depth.
+const FOCUS_OUTLINE =
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
+
+// The tab switch: the Collection's recessed well with the selected segment
+// raised out of it as a glass key with a lit brass lip. The selected key
+// restates .btn-glass's shadow because a shadow utility replaces the
+// material's rather than adding to it.
+const SEG_GROUP =
+  'grid grid-cols-2 gap-1 rounded-xl bg-night-950/55 p-1 ring-1 ring-inset ring-white/[0.07] shadow-[inset_0_1px_3px_rgba(0,0,0,0.45)]';
+const SEG_ON =
+  'btn-glass text-brass-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-2px_0_rgba(251,191,36,0.55),0_4px_10px_-6px_rgba(0,0,0,0.8)]';
+const SEG_OFF = 'border border-transparent text-plush-300 hover:bg-white/[0.04] hover:text-white';
+
+// The avatar ring the menu's player chip wears.
+const AVATAR_RING = 'linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24)';
+
+// Module scope (not inside PlayerStats), so a re-render updates the tiles in
+// place instead of remounting them. The icon carries the colour; the number
+// stays white so the grid reads as one set.
+const StatTile = ({ icon: Icon, label, value, tone = 'text-plush-200', bar, className = '' }) => (
+  <div className={`panel-glass rounded-xl p-3.5 sm:p-4 ${className}`}>
+    <span
+      aria-hidden="true"
+      className={`grid h-8 w-8 place-items-center rounded-lg bg-white/5 ring-1 ring-inset ring-white/10 ${tone}`}
+    >
+      <Icon className="h-4 w-4" strokeWidth={2.2} />
+    </span>
+    <div className="mt-3 font-display text-2xl font-extrabold leading-none tabular-nums text-white sm:text-[28px]">{value}</div>
+    <div className="label-caps mt-1.5 text-plush-300">{label}</div>
+    {/* The meter repeats the number above it, so it is hidden from a screen
+        reader rather than announced a second time. */}
+    {bar != null && (
+      <div aria-hidden="true" className="mt-3 h-1.5 overflow-hidden rounded-full bg-night-950/70">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-brass-300 to-brass-500"
+          style={{ width: `${Math.min(100, Math.max(0, bar))}%` }}
+        />
+      </div>
+    )}
+  </div>
+);
+
+const Section = ({ title, children }) => (
+  <section>
+    <div className="mb-3 flex items-center gap-3">
+      <h3 className="label-caps shrink-0 text-plush-300">{title}</h3>
+      <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
+    </div>
+    {children}
+  </section>
+);
+
+// The icon carries the meaning visually; the sr-only noun carries it for a
+// screen reader (aria-label on a role-less div is prohibited in ARIA 1.2).
+// The same chip the Shop and the menu use.
+const Balance = ({ icon: Icon, value, tone, noun }) => (
+  <div className="panel-glass flex h-10 items-center gap-1.5 rounded-xl pl-2.5 pr-3">
+    <Icon aria-hidden="true" className={`h-4 w-4 ${tone}`} strokeWidth={2.4} />
+    <span className={`font-display text-[15px] font-extrabold tabular-nums ${tone}`}>{value}</span>
+    <span className="sr-only">{noun}</span>
+  </div>
+);
 
 const PlayerStats = ({ onClose }) => {
   const {
@@ -18,10 +88,18 @@ const PlayerStats = ({ onClose }) => {
   const [newName, setNewName] = useState(playerName);
   const [activeTab, setActiveTab] = useState('stats');
   const dialogRef = useDialog(onClose);
+  const bodyRef = useRef(null);
+
+  // Each tab opens at its top: both share one scroller, so without this the
+  // achievements list opened wherever the statistics had been scrolled to.
+  useEffect(() => {
+    if (bodyRef.current) bodyRef.current.scrollTop = 0;
+  }, [activeTab]);
 
   const xpForNext = getXPForNextLevel();
   const xpProgress = (xp / xpForNext) * 100;
   const winRate = totalBattles > 0 ? ((totalWins / totalBattles) * 100).toFixed(1) : 0;
+  const completion = (ownedCards.length / ALL_CARDS.length) * 100;
 
   const [nameError, setNameError] = useState(null);
 
@@ -52,13 +130,10 @@ const PlayerStats = ({ onClose }) => {
     if (stored !== trimmed) setPlayerName(stored);
   };
 
-  const StatCard = ({ icon, label, value, color = 'text-white' }) => (
-    <div className="bg-white/10 rounded-lg p-4 text-center hover:bg-white/15 transition-colors">
-      <div className="text-2xl mb-1">{icon}</div>
-      <div className={`text-2xl font-bold ${color}`}>{value}</div>
-      <div className="text-white/60 text-sm">{label}</div>
-    </div>
-  );
+  const TABS = [
+    { id: 'stats', icon: BarChart3, label: 'Statistics' },
+    { id: 'achievements', icon: Trophy, label: 'Achievements', count: `(${completedAchievements.length}/${ACHIEVEMENTS.length})` },
+  ];
 
   return (
     <div
@@ -66,38 +141,74 @@ const PlayerStats = ({ onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-label="Player stats"
-      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 overflow-y-auto"
+      // The scrim scrolls and the panel centres with my-auto (not
+      // items-center: a centred flex item taller than its box overflows at
+      // both ends). Inside the panel only the tab content scrolls.
+      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-3 sm:p-6"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl max-w-4xl w-full shadow-2xl my-8"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl dialog-panel sm:max-h-[calc(100dvh-3rem)]"
       >
-        <div className="bg-gradient-to-r from-plush-800 to-night-700 border-b border-brass-400/30 p-6 rounded-t-2xl flex flex-wrap justify-between items-center gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-4xl border-4 border-white shadow-lg">
-              🧸
+        {/* Lamplight over the profile. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-44 bg-[radial-gradient(ellipse_60%_90%_at_50%_0%,rgba(251,191,36,0.12),transparent_70%)] md:bg-[radial-gradient(ellipse_45%_90%_at_15%_0%,rgba(251,191,36,0.12),transparent_70%)]"
+        />
+
+        {/* Profile. Below md it stacks and centres, so the name — and the
+            rename field, which needs room for twenty characters and a Save
+            button — gets the panel's full width rather than what is left
+            beside the avatar and the balances. From md up it is one row. The
+            close control is last in the markup and positioned into the corner,
+            so the dialog's first focus still lands on the name's edit button,
+            as it did. */}
+        <div className="relative px-4 pb-4 pt-5 sm:px-6">
+          <div className="flex flex-col items-center gap-3 text-center md:flex-row md:gap-4 md:pr-14 md:text-left">
+            <div
+              aria-hidden="true"
+              className="h-16 w-16 shrink-0 rounded-full p-[3px] shadow-[0_8px_20px_-8px_rgba(0,0,0,0.8)] md:h-[72px] md:w-[72px]"
+              style={{ background: AVATAR_RING }}
+            >
+              <div className="grid h-full w-full place-items-center rounded-full bg-night-800 text-3xl md:text-4xl">🧸</div>
             </div>
-            <div>
+
+            <div className="w-full min-w-0 md:flex-1">
               {editingName ? (
-                <div className="flex items-center gap-2">
+                <div className="mx-auto flex w-full max-w-xs items-center gap-2 md:mx-0">
+                  {/* A plain input, so its focus may be a ring. */}
                   <input
                     type="text"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     aria-label="Player name"
-                    className="bg-white/20 text-white px-3 py-1 rounded border border-white/30 focus:outline-none focus:border-white"
+                    className="h-10 min-w-0 flex-1 rounded-xl bg-night-950/70 px-3 font-display text-lg font-bold text-white ring-1 ring-inset ring-white/15 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 focus:ring-brass-300"
                     maxLength={20}
                     autoFocus
                     onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
                   />
-                  <Button size="sm" onClick={handleSaveName}>Save</Button>
+                  <button
+                    type="button"
+                    onClick={handleSaveName}
+                    className={`btn-brass inline-flex h-10 shrink-0 items-center rounded-xl px-4 font-display font-bold ${FOCUS_OUTLINE}`}
+                  >
+                    Save
+                  </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-bold text-white">{playerName}</h2>
-                  <button onClick={() => setEditingName(true)} aria-label="Edit player name" className="text-white/50 hover:text-white">
-                    ✏️
+                <div className="flex min-w-0 items-center justify-center gap-2 md:justify-start">
+                  {/* text-xl on the narrowest phones, where it keeps a
+                      twenty-character name on one line beside its pencil. */}
+                  <h2 className="min-w-0 break-words font-display text-xl font-extrabold leading-tight text-white min-[360px]:text-2xl">{playerName}</h2>
+                  <button
+                    type="button"
+                    onClick={() => setEditingName(true)}
+                    aria-label="Edit player name"
+                    className={`btn-glass grid h-8 w-8 shrink-0 place-items-center rounded-lg text-plush-200 hover:text-white ${FOCUS_OUTLINE}`}
+                  >
+                    <Pencil aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
                   </button>
                 </div>
               )}
@@ -105,115 +216,176 @@ const PlayerStats = ({ onClose }) => {
                   a rename that silently did not reach the leaderboard is
                   precisely the thing a player cannot otherwise discover. */}
               {nameError && (
-                <p role="alert" className="mt-1 text-amber-300 text-xs max-w-xs">{nameError}</p>
+                <p role="alert" className="mx-auto mt-1.5 max-w-xs text-xs text-amber-300 md:mx-0">{nameError}</p>
               )}
-              <div className="mt-2">
-                <div className="flex items-center gap-2 text-sm text-white/70">
-                  <span className="bg-brass-400 text-night-950 px-2 py-0.5 rounded font-bold">Lv. {level}</span>
-                  <span>{xp} / {xpForNext} XP</span>
+              <div className="mx-auto mt-2 w-full max-w-[16rem] md:mx-0">
+                <div className="flex items-center justify-center gap-2 text-xs text-plush-200 md:justify-start">
+                  <span className="btn-brass whitespace-nowrap rounded-md px-1.5 py-[3px] text-[11px] font-extrabold leading-none">Lv. {level}</span>
+                  <span className="whitespace-nowrap tabular-nums">{xp} / {xpForNext} XP</span>
                 </div>
                 <Progress
                   value={xpProgress}
-                  className="h-2 mt-1 w-48 bg-night-950/50 [&>div]:bg-brass-400"
+                  className="mt-1.5 h-1.5 bg-night-950/70 [&>div]:bg-gradient-to-r [&>div]:from-brass-300 [&>div]:to-brass-500"
                   aria-label={`Level ${level} XP progress: ${xp} of ${xpForNext}`}
                 />
               </div>
             </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2 md:shrink-0">
+              <Balance icon={Coins} value={coins.toLocaleString()} tone="text-brass-300" noun="coins" />
+              <Balance icon={Gem} value={gems.toLocaleString()} tone="text-fuchsia-300" noun="gems" />
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <div className="text-brass-300 text-2xl font-bold">{coins.toLocaleString()}</div>
-              <div className="text-white/60 text-xs">Coins</div>
-            </div>
-            <div className="text-center">
-              <div className="text-purple-400 text-2xl font-bold">{gems}</div>
-              <div className="text-white/60 text-xs">Gems</div>
-            </div>
-            <button onClick={onClose} className="text-white/70 hover:text-white text-2xl" aria-label="Close stats">×</button>
-          </div>
-        </div>
-
-        <div className="flex border-b border-white/10">
-          {['stats', 'achievements'].map((tab) => (
+          {/* Positioned by a wrapper: centred on the row from md up without a
+              translate on the button, whose material owns transform for its
+              press. */}
+          <div className="absolute right-4 top-4 sm:right-6 md:inset-y-0 md:top-0 md:flex md:items-center">
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-3 text-center font-semibold transition-colors ${
-                activeTab === tab ? 'text-white border-b-2 border-brass-300' : 'text-white/50 hover:text-white/80'
-              }`}
+              type="button"
+              onClick={onClose}
+              className={`btn-glass grid h-10 w-10 place-items-center rounded-xl text-plush-200 hover:text-white ${FOCUS_OUTLINE}`}
+              aria-label="Close stats"
             >
-              {tab === 'stats' ? '📊 Statistics' : `🏆 Achievements (${completedAchievements.length}/${ACHIEVEMENTS.length})`}
+              <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
             </button>
-          ))}
+          </div>
         </div>
 
-        <div className="p-6">
+        {/* Tabs */}
+        <div className="relative px-4 pb-4 sm:px-6">
+          <div className={SEG_GROUP}>
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                aria-pressed={activeTab === tab.id}
+                // Wraps rather than overflows: below 360px "Achievements
+                // (2/16)" is wider than its half of the switch, so the count
+                // drops under the label instead of running out of the
+                // segment. The icons join from sm up, where there is room.
+                className={`flex min-h-9 min-w-0 flex-wrap items-center justify-center gap-x-1.5 gap-y-0 rounded-lg px-2 py-1.5 text-[13px] font-semibold leading-tight transition-colors sm:gap-x-2 sm:text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass-300 ${
+                  activeTab === tab.id ? SEG_ON : SEG_OFF
+                }`}
+              >
+                <tab.icon aria-hidden="true" className="hidden h-4 w-4 shrink-0 sm:block" strokeWidth={2.2} />
+                <span>{tab.label}</span>
+                {tab.count && <span className="tabular-nums text-plush-300">{tab.count}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Focusable, because neither tab's content holds a control: without a
+            tab stop a keyboard user could not scroll it. A plain element, so
+            its focus may be an (inset) ring. */}
+        <div
+          ref={bodyRef}
+          role="region"
+          aria-label={activeTab === 'stats' ? 'Statistics' : 'Achievements'}
+          tabIndex={0}
+          className="relative min-h-0 flex-1 overflow-y-auto border-t border-white/[0.06] px-4 pb-6 pt-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300/70 sm:px-6"
+        >
           {activeTab === 'stats' && (
             <div className="space-y-6">
-              <div>
-                <h3 className="text-white font-bold mb-3">⚔️ Battle Statistics</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <StatCard icon="🎮" label="Battles" value={totalBattles} />
-                  <StatCard icon="🏆" label="Victories" value={totalWins} color="text-green-400" />
-                  <StatCard icon="💔" label="Defeats" value={totalLosses} color="text-red-400" />
-                  <StatCard icon="📈" label="Win Rate" value={`${winRate}%`} color="text-brass-300" />
+              <Section title="Battle Statistics">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <StatTile icon={Gamepad2} label="Battles" value={totalBattles} />
+                  <StatTile icon={Trophy} label="Victories" value={totalWins} tone="text-emerald-300" />
+                  <StatTile icon={HeartCrack} label="Defeats" value={totalLosses} tone="text-red-300" />
+                  <StatTile icon={TrendingUp} label="Win Rate" value={`${winRate}%`} tone="text-brass-300" bar={Number(winRate)} />
                 </div>
-              </div>
+              </Section>
 
-              <div>
-                <h3 className="text-white font-bold mb-3">🔥 Streaks</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <StatCard icon="🔥" label="Current" value={currentWinStreak} color="text-orange-400" />
-                  <StatCard icon="⭐" label="Best Streak" value={bestWinStreak} color="text-brass-300" />
-                  <StatCard icon="📅" label="Login Streak" value={consecutiveLogins} />
-                  <StatCard icon="📚" label={`Cards (${ALL_CARDS.length})`} value={ownedCards.length} color="text-blue-400" />
+              <Section title="Streaks">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <StatTile icon={Flame} label="Current" value={currentWinStreak} tone="text-orange-300" />
+                  <StatTile icon={Star} label="Best Streak" value={bestWinStreak} tone="text-brass-300" />
+                  <StatTile icon={CalendarDays} label="Login Streak" value={consecutiveLogins} tone="text-sky-300" />
+                  <StatTile icon={LibraryBig} label={`Cards (${ALL_CARDS.length})`} value={ownedCards.length} tone="text-sky-300" />
                 </div>
-              </div>
+              </Section>
 
-              <div>
-                <h3 className="text-white font-bold mb-3">💪 Combat Performance</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <StatCard icon="💥" label="Total Damage" value={totalDamageDealt.toLocaleString()} color="text-red-400" />
-                  <StatCard icon="💚" label="Total Healing" value={totalHealingDone.toLocaleString()} color="text-green-400" />
-                  <StatCard icon="✨" label="Completion" value={`${((ownedCards.length / ALL_CARDS.length) * 100).toFixed(0)}%`} color="text-purple-400" />
+              <Section title="Combat Performance">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                  <StatTile icon={Bomb} label="Total Damage" value={totalDamageDealt.toLocaleString()} tone="text-red-300" />
+                  <StatTile icon={HeartPulse} label="Total Healing" value={totalHealingDone.toLocaleString()} tone="text-emerald-300" />
+                  <StatTile
+                    icon={Sparkles}
+                    label="Completion"
+                    value={`${completion.toFixed(0)}%`}
+                    tone="text-purple-300"
+                    bar={completion}
+                    className="col-span-2 md:col-span-1"
+                  />
                 </div>
-              </div>
+              </Section>
             </div>
           )}
 
           {activeTab === 'achievements' && (
-            <div className="space-y-4">
-              {ACHIEVEMENTS.map(achievement => {
+            <ul className="space-y-2">
+              {ACHIEVEMENTS.map((achievement, i) => {
                 const isCompleted = completedAchievements.includes(achievement.id);
                 return (
-                  <motion.div
+                  <motion.li
                     key={achievement.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className={`rounded-lg p-4 flex items-center gap-3 border ${
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(i, 10) * 0.03, duration: 0.25 }}
+                    // Medal | text | reward from sm up; on a phone the reward
+                    // drops under the text, which keeps the row's full width.
+                    className={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-xl p-3 ring-1 ring-inset sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-4 sm:px-4 ${
                       isCompleted
-                        ? 'bg-green-500/10 border-green-500/50'
-                        : 'bg-white/5 border-white/10 opacity-60'
+                        ? 'bg-emerald-500/[0.07] ring-emerald-400/25'
+                        : 'bg-white/[0.03] ring-white/[0.06]'
                     }`}
                   >
-                    <div className={`text-4xl ${isCompleted ? '' : 'grayscale'}`}>
-                      {achievement.icon}
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-white font-semibold flex items-center gap-2">
-                        {achievement.name}
-                        {isCompleted && <span className="text-green-400 text-sm">✓</span>}
+                    {/* Only the badge dims on a locked achievement — never the
+                        row, which would take its text below AA with it. */}
+                    <div
+                      aria-hidden="true"
+                      className="row-span-2 h-12 w-12 rounded-full p-[2px] sm:row-span-1"
+                      style={{ background: isCompleted ? RARITY_METAL.legendary : 'rgba(255, 255, 255, 0.1)' }}
+                    >
+                      <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
+                        <span className={`text-2xl leading-none ${isCompleted ? '' : 'opacity-50 grayscale'}`}>{achievement.icon}</span>
                       </div>
-                      <div className="text-white/60 text-sm">{achievement.description}</div>
                     </div>
-                    <div className={`font-bold ${isCompleted ? 'text-brass-300' : 'text-brass-300/50'}`}>
-                      +{achievement.reward} 🪙
+                    <div className="min-w-0">
+                      <div className="font-display font-bold leading-tight text-plush-100">
+                        {achievement.name}
+                        {/* The tick and the lock are the only marks of
+                            state, so each carries its word for a screen
+                            reader. */}
+                        {isCompleted ? (
+                          <span className="ml-1.5 inline-grid h-4 w-4 place-items-center rounded-full bg-emerald-400 align-[-2px] text-night-950">
+                            <Check aria-hidden="true" className="h-3 w-3" strokeWidth={3.5} />
+                            <span className="sr-only">Unlocked</span>
+                          </span>
+                        ) : (
+                          <span className="ml-1.5 inline-block align-[-2px] text-plush-300">
+                            <Lock aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
+                            <span className="sr-only">Locked</span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-0.5 text-sm text-plush-300">{achievement.description}</div>
                     </div>
-                  </motion.div>
+                    <div
+                      className={`col-start-2 inline-flex items-center gap-1 justify-self-start rounded-full px-2.5 py-1 font-display text-sm font-extrabold tabular-nums ring-1 ring-inset sm:col-start-3 sm:row-start-1 sm:justify-self-end ${
+                        isCompleted ? 'bg-brass-400/10 text-brass-300 ring-brass-300/30' : 'bg-white/[0.04] text-plush-300 ring-white/10'
+                      }`}
+                    >
+                      +{achievement.reward}
+                      <Coins aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
+                      <span className="sr-only">coins</span>
+                    </div>
+                  </motion.li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </div>
       </motion.div>
