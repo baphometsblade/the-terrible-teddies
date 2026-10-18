@@ -132,6 +132,210 @@
   }
 }
 
+/* ==========================================================================
+   Materials — "the bar after hours"
+   ==========================================================================
+   One shared set of surfaces so every screen is built from the same stuff:
+   smoked glass panels, brass trim, pool-table felt, warm amber light. Each is a
+   plain CSS class rather than a stack of utilities, because a material is
+   several coordinated layers (fill, rim light, edge, depth) that have to move
+   together — copy-pasting six utilities per surface is how screens drift
+   apart. Animations here are transform/opacity only, so they run on the
+   compositor and never touch the main thread (see the .teddy-drift note).
+
+   In @layer components ON PURPOSE. Outside a layer these rules land after
+   Tailwind's utilities in the stylesheet, so .panel-glass's `border` shorthand
+   silently beat `border-l-[3px]` on the same element — a material must be
+   refinable by a utility, never the other way round.
+
+   The pseudo-elements are claimed: .grain, .foil and .sheen use ::after, as
+   does .worn; .trim-brass uses ::before, as do .stitched and .stitched-plush.
+   Never put two classes that claim the same pseudo-element on one element.
+   ========================================================================== */
+
+@layer components {
+
+/* The room. Amber light pooling from above the bar, a faint neon spill at the
+   edges, and a fine grain so large dark areas read as a surface rather than as
+   an empty screen. The grain is a tiny inline SVG noise tile: allowed by the
+   CSP's img-src data:, painted once, no network request. */
+.bar-backdrop {
+  background-color: #120c1c;
+  background-image:
+    radial-gradient(ellipse 70% 45% at 50% -5%, rgba(245, 158, 11, 0.16), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 0% 100%, rgba(236, 72, 153, 0.08), transparent 70%),
+    radial-gradient(ellipse 45% 35% at 100% 90%, rgba(45, 212, 191, 0.06), transparent 70%),
+    linear-gradient(180deg, #241a35 0%, #1a1226 45%, #120c1c 100%);
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Smoked glass: a dark translucent fill, a one-pixel rim light along the top
+   edge (the detail that makes a panel read as an object rather than a box),
+   and a soft drop shadow that seats it on the room.
+
+   No backdrop-filter, deliberately. A dozen of these sit over the menu's
+   drifting teddies, and a blur over moving content is recomputed every frame —
+   continuous GPU work on an idle screen, paid hardest by the weakest phones.
+   At this fill opacity the blur was invisible anyway: a pixel diff of the menu
+   with and without it shows no change inside any panel. The one blur kept is
+   on .dialog-scrim, a single layer where it shows. */
+.panel-glass {
+  background: linear-gradient(180deg, rgba(47, 35, 68, 0.78), rgba(26, 18, 38, 0.88));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 12px 32px -14px rgba(0, 0, 0, 0.75);
+}
+
+/* Brass trim: a metallic gradient edge drawn on ::before and masked to a
+   one-pixel ring, so it follows any border-radius and sits over any fill.
+   Mutually exclusive with .stitched / .stitched-plush, which also use
+   ::before. Consumers carry their own `relative` (see the note on .stitched). */
+.trim-brass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(135deg, #fde68a 0%, #b45309 28%, #fbbf24 52%, #7c2d12 78%, #fde68a 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* The primary call to action. Polished brass with a highlight on the upper lip
+   and a darker lower lip, so it reads as a pressable object; it settles 1px on
+   press. Text is night-950 on brass-300: 11.9:1. */
+.btn-brass {
+  color: #120c1c;
+  background: linear-gradient(180deg, #fde68a 0%, #fbbf24 42%, #d97706 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -2px 0 rgba(124, 45, 18, 0.45),
+    0 8px 20px -8px rgba(217, 119, 6, 0.7);
+  transition: filter 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+}
+.btn-brass:hover { filter: brightness(1.06); }
+.btn-brass:active { transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(124, 45, 18, 0.45); }
+
+/* The secondary button: dark glass with a quiet rim, same press behaviour. */
+.btn-glass {
+  color: #ece6f2;
+  background: linear-gradient(180deg, rgba(65, 52, 86, 0.9), rgba(36, 26, 53, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 6px 16px -10px rgba(0, 0, 0, 0.8);
+  transition: background 150ms ease, transform 150ms ease, border-color 150ms ease;
+}
+.btn-glass:hover { border-color: rgba(251, 191, 36, 0.35); }
+.btn-glass:active { transform: translateY(1px); }
+
+/* Pool-table felt: a lit centre falling off to dark edges, under the same grain,
+   with a deep inner shadow so the cloth reads as set into the table. */
+.felt-table {
+  background-color: #163423;
+  background-image:
+    radial-gradient(ellipse 65% 70% at 50% 45%, rgba(52, 140, 92, 0.55), transparent 75%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4), inset 0 0 50px rgba(0, 0, 0, 0.55);
+}
+
+/* Dialogs. Every overlay used its own `bg-black/90` and its own panel
+   gradient; these give them one shell. The scrim dims and slightly blurs the
+   room behind; the panel is the glass material made near-opaque (a dialog
+   carries dense text, so less of the room shows through) with a brass hairline
+   along its top edge. */
+.dialog-scrim {
+  background: rgba(10, 6, 16, 0.8);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.dialog-panel {
+  background:
+    linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.55), transparent) top / 100% 1px no-repeat,
+    linear-gradient(180deg, #2f2344 0%, #1a1226 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 30px 60px -20px rgba(0, 0, 0, 0.85);
+}
+
+/* Small-caps label used for section headings and metadata lines. */
+.label-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+/* Brass display lettering for titles. */
+.text-brass-gradient {
+  background-image: linear-gradient(180deg, #fef3c7 0%, #fbbf24 48%, #d97706 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(124, 45, 18, 0.6)) drop-shadow(0 8px 18px rgba(0, 0, 0, 0.55));
+}
+
+/* Foil: a band of light sweeping across rare cards. The band is a pseudo-element
+   wider than its card, moved with transform only, so it is composited rather
+   than repainted. Slow and infrequent on purpose: a premium shimmer, not a
+   flashing one. */
+.foil { overflow: hidden; }
+.foil::after {
+  content: "";
+  position: absolute;
+  inset: -40% -60%;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.0) 42%, var(--foil-a, rgba(253, 230, 138, 0.35)) 48%, var(--foil-b, rgba(255, 255, 255, 0.45)) 50%, var(--foil-a, rgba(253, 230, 138, 0.35)) 52%, transparent 58%);
+  transform: translateX(-60%);
+  animation: foil-sweep 5.5s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+.foil-epic::after {
+  --foil-a: rgba(192, 132, 252, 0.35);
+  --foil-b: rgba(125, 211, 252, 0.45);
+  animation-duration: 7s;
+}
+
+/* Hover sheen for tiles: the same band, but only on hover/focus. */
+.sheen { overflow: hidden; }
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.10) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform 700ms ease;
+}
+.sheen:hover::after,
+.sheen:focus-visible::after { transform: translateX(120%); }
+
+} /* end @layer components */
+
+@keyframes foil-sweep {
+  0%, 55% { transform: translateX(-60%); }
+  85%, 100% { transform: translateX(60%); }
+}
+
+/* Both kinds of light movement honour the player's Animations switch (which
+   MotionPreference mirrors onto <html data-motion>) as well as the OS-level
+   reduced-motion preference. */
+[data-motion="off"] .foil::after,
+[data-motion="off"] .sheen::after { animation: none; transition: none; transform: translateX(-120%); }
+@media (prefers-reduced-motion: reduce) {
+  .foil::after { animation: none; transform: translateX(-120%); }
+  .sheen::after { transition: none; }
+}
+
 /* Drifting background teddies on the main menu.
  *
  * Deliberately CSS, not Framer Motion. As 12 `motion.div`s animating y/rotate

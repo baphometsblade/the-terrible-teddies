@@ -1,10 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Card } from "@/components/ui/card";
+import {
+  Swords, Target, Trophy, Store, Package, Medal, Layers, LibraryBig,
+  Gift, CircleHelp, Settings, Coins, Gem, Flame, ChevronRight,
+} from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { getDailyChallenges, getWeeklyChallenges, countClaimable } from '../stores/challenges';
-import { useGameStore } from '../stores/gameStore';
+import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
+import { RARITY_ORDER } from '@/lib/rarity';
+import TeddyCard from './TeddyCard';
 
 // Scatter/timing for the drifting background teddies. Hoisted to module scope
 // and made deterministic: these were Math.random() calls inside the render
@@ -16,6 +21,38 @@ const DRIFTERS = Array.from({ length: 12 }, (_, i) => ({
   delay: `${((i * 1.7) % 5).toFixed(2)}s`,
 }));
 
+// The three cards fanned behind the Battle button: the player's own, rarest
+// first, so the hero shows what they actually have and improves as their
+// collection does. Fan geometry is fixed per slot (left, centre, right).
+const FAN = [
+  { rotate: -12, x: -58, y: 10, z: 1 },
+  { rotate: 0, x: 0, y: 0, z: 3 },
+  { rotate: 12, x: 58, y: 10, z: 2 },
+];
+
+// Small icon button for the header. lucide icons, not emoji: emoji render
+// differently on every platform and read as stickers next to the card art.
+const HeaderButton = ({ icon: Icon, label, onClick, glow = false, children }) => (
+  <motion.button
+    onClick={onClick}
+    aria-label={label}
+    whileTap={{ scale: 0.94 }}
+    className={`relative grid place-items-center w-11 h-11 rounded-xl ${glow ? 'btn-brass' : 'btn-glass'}`}
+  >
+    <Icon aria-hidden="true" className={`w-5 h-5 ${glow ? 'text-night-950' : 'text-plush-200'}`} strokeWidth={2.2} />
+    {children}
+  </motion.button>
+);
+
+// The icon carries the meaning visually; the sr-only noun carries it for a
+// screen reader. (aria-label on a role-less div is prohibited in ARIA 1.2.)
+const Currency = ({ icon: Icon, value, tone, noun }) => (
+  <div className="panel-glass rounded-xl h-11 pl-2.5 pr-3.5 flex items-center gap-2">
+    <Icon aria-hidden="true" className={`w-[18px] h-[18px] ${tone}`} strokeWidth={2.4} />
+    <span className={`font-display font-extrabold text-[15px] tabular-nums ${tone}`}>{value}</span>
+    <span className="sr-only">{noun}</span>
+  </div>
+);
 
 const MainMenu = ({
   onStartGame,
@@ -38,10 +75,8 @@ const MainMenu = ({
     claimedChallenges,
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
-    syncPeriods,
+    syncPeriods, ownedCards,
   } = useGameStore();
-
-  const [hoveredOption, setHoveredOption] = useState(null);
 
   const today = new Date().toDateString();
   const dailyAvailable = lastLoginDate !== today;
@@ -76,19 +111,34 @@ const MainMenu = ({
   const xpForNext = getXPForNextLevel();
   const xpProgress = (xp / xpForNext) * 100;
 
-  const menuOptions = [
-    { id: 'battle', title: 'Battle', description: 'Go make Chuck cry', icon: '⚔️', color: 'from-red-700 to-red-900', action: onStartGame, badge: currentWinStreak > 0 ? `🔥 ${currentWinStreak}` : null },
-    { id: 'challenges', title: 'Challenges', description: 'Prove you have a problem', icon: '🎯', color: 'from-orange-700 to-red-900', action: onChallenges, badge: claimableChallenges > 0 ? `${claimableChallenges}` : null, highlight: claimableChallenges > 0 },
-    { id: 'battlepass', title: 'Battle Pass', description: 'Grind. Flex. Repeat.', icon: '🏆', color: 'from-brass-500 to-brass-600', action: onBattlePass, badge: '⭐', highlight: true },
-    { id: 'shop', title: 'Shop', description: 'Spend money you don’t have', icon: '🏪', color: 'from-emerald-700 to-emerald-900', action: onShop, badge: '💎' },
-    { id: 'packs', title: 'Card Packs', description: 'Gambling, but cuter', icon: '📦', color: 'from-purple-700 to-fuchsia-900', action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks}` : null, highlight: cardPacks > 0 },
-    { id: 'leaderboard', title: 'Rankings', description: 'See who has no life', icon: '🏅', color: 'from-indigo-700 to-purple-900', action: onLeaderboard },
-    { id: 'deck', title: 'Deck Builder', description: 'Assemble your goon squad', icon: '🃏', color: 'from-sky-700 to-indigo-900', action: onDeckBuilder },
-    { id: 'collection', title: 'Collection', description: 'Your emotional support army', icon: '🧸', color: 'from-brass-600 to-amber-900', action: onCollection },
+  // Rarest three the player owns; rank is RARITY_ORDER's index, so legendary
+  // sorts first. Stable on equal rarity, by catalogue order.
+  const heroCards = useMemo(() => {
+    const owned = new Set(ownedCards ?? []);
+    return ALL_CARDS
+      .filter((c) => owned.has(c.id))
+      .map((c, i) => ({ c, i }))
+      .sort((a, b) => (RARITY_ORDER.indexOf(b.c.rarity) - RARITY_ORDER.indexOf(a.c.rarity)) || a.i - b.i)
+      .slice(0, 3)
+      .map(({ c }) => c);
+  }, [ownedCards]);
+  // Centre slot gets the rarest card.
+  const fanned = heroCards.length === 3 ? [heroCards[1], heroCards[0], heroCards[2]] : heroCards;
+
+  // Everything except Battle, which is the hero. `accent` marks the two
+  // destinations that are currently asking for attention.
+  const destinations = [
+    { id: 'challenges', title: 'Challenges', description: 'Prove you have a problem', icon: Target, action: onChallenges, badge: claimableChallenges > 0 ? `${claimableChallenges} ready` : null, accent: claimableChallenges > 0 },
+    { id: 'battlepass', title: 'Battle Pass', description: 'Grind. Flex. Repeat.', icon: Trophy, action: onBattlePass, accent: true },
+    { id: 'shop', title: 'Shop', description: 'Spend money you don’t have', icon: Store, action: onShop },
+    { id: 'packs', title: 'Card Packs', description: 'Gambling, but cuter', icon: Package, action: onCardPacks, badge: cardPacks > 0 ? `${cardPacks} to open` : null, accent: cardPacks > 0 },
+    { id: 'deck', title: 'Deck Builder', description: 'Assemble your goon squad', icon: Layers, action: onDeckBuilder },
+    { id: 'collection', title: 'Collection', description: 'Your emotional support army', icon: LibraryBig, action: onCollection },
+    { id: 'leaderboard', title: 'Rankings', description: 'See who has no life', icon: Medal, action: onLeaderboard },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-night-800 via-night-900 to-night-950 flex flex-col p-4 md:p-6 overflow-y-auto">
+    <div className="relative min-h-screen bar-backdrop flex flex-col px-4 md:px-8 pt-4 md:pt-6 pb-5 overflow-x-hidden overflow-y-auto">
       {/* Animated background — CSS-driven, and skipped entirely when the
           player has turned Animations off. See the .teddy-drift note in
           index.css for why this is not Framer Motion. */}
@@ -97,7 +147,7 @@ const MainMenu = ({
           {DRIFTERS.map((d) => (
             <div
               key={d.id}
-              className="teddy-drift absolute text-4xl opacity-10"
+              className="teddy-drift absolute text-4xl opacity-[0.06]"
               style={{ left: d.left, animationDuration: d.duration, animationDelay: d.delay }}
             >
               🧸
@@ -105,169 +155,181 @@ const MainMenu = ({
           ))}
         </div>
       )}
+      <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
 
       {/* Top bar */}
-      <div className="relative z-10 flex flex-wrap justify-between items-center mb-4 gap-3">
+      <header className="relative z-10 flex flex-wrap justify-between items-center gap-3">
         <motion.div
-          initial={{ x: -50, opacity: 0 }}
+          initial={{ x: -24, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           {...pressable(onPlayerStats, 'View player stats')}
-          className="flex items-center gap-3 bg-white/10 rounded-xl p-3 backdrop-blur-sm cursor-pointer hover:bg-white/15 transition-colors"
+          className="panel-glass sheen relative flex items-center gap-3 rounded-2xl pl-2 pr-4 py-2 cursor-pointer"
         >
-          <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-2xl border-2 border-white shadow-lg">
-            🧸
+          <div className="relative w-12 h-12 rounded-full p-[2px]" style={{ background: 'linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24)' }}>
+            <div className="w-full h-full rounded-full bg-night-800 grid place-items-center text-2xl">🧸</div>
           </div>
-          <div>
-            <div className="text-white font-bold">{playerName}</div>
-            <div className="flex items-center gap-2">
-              <span className="bg-brass-400 text-night-950 px-2 py-0.5 rounded text-xs font-bold">Lv. {level}</span>
-              <div className="w-24">
+          <div className="min-w-0">
+            <div className="text-white font-display font-extrabold leading-tight truncate max-w-[9rem]">{playerName}</div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="btn-brass rounded-md px-1.5 py-[1px] text-[11px] font-extrabold leading-none">Lv {level}</span>
+              <div className="w-20">
                 <Progress
                   value={xpProgress}
-                  className="h-2 bg-night-950/50 [&>div]:bg-brass-400"
+                  className="h-1.5 bg-night-950/70 [&>div]:bg-gradient-to-r [&>div]:from-brass-300 [&>div]:to-brass-500"
                   aria-label={`Level ${level} XP progress: ${xp} of ${xpForNext}`}
                 />
               </div>
             </div>
-            <div className="text-plush-400 text-xs mt-0.5">
-              {totalWins} wins • {consecutiveLogins} day streak
+            <div className="text-plush-300 text-[11px] mt-1">
+              {totalWins} wins · {consecutiveLogins} day streak
             </div>
           </div>
         </motion.div>
 
         <motion.div
-          initial={{ x: 50, opacity: 0 }}
+          initial={{ x: 24, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           className="flex items-center gap-2"
         >
-          <motion.button
+          <HeaderButton
+            icon={Gift}
             onClick={onDailyRewards}
-            className={`relative p-3 rounded-xl transition-all ${
-              dailyAvailable
-                ? 'bg-gradient-to-r from-brass-400 to-brass-500 shadow-lg shadow-brass-400/50'
-                : 'bg-white/10'
-            }`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            // Its only content is the 🎁 emoji, so without a label the
-            // accessible name was the emoji character itself — unlike its two
-            // siblings here, which are labelled "How to play" and "Settings".
-            aria-label={dailyAvailable ? 'Daily rewards — a reward is ready to claim' : 'Daily rewards'}
+            glow={dailyAvailable}
+            // Its only content is an icon, so it needs a label — unlike before,
+            // when the accessible name was the gift emoji character itself.
+            label={dailyAvailable ? 'Daily rewards — a reward is ready to claim' : 'Daily rewards'}
           >
-            <span className="text-2xl">🎁</span>
             {dailyAvailable && (
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ repeat: Infinity, duration: 1 }}
-                className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"
-              />
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 ring-2 ring-night-900" aria-hidden="true" />
             )}
-          </motion.button>
-
-          <div className="bg-brass-400/15 px-3 py-2 rounded-xl flex items-center gap-2">
-            <span className="text-lg">🪙</span>
-            <span className="text-brass-300 font-bold">{coins.toLocaleString()}</span>
-          </div>
-
-          <div className="bg-purple-500/20 px-3 py-2 rounded-xl flex items-center gap-2">
-            <span className="text-lg">💎</span>
-            <span className="text-purple-300 font-bold">{gems}</span>
-          </div>
-
-          <motion.button
-            onClick={onTutorial}
-            className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label="How to play"
-          >
-            <span className="text-2xl">❓</span>
-          </motion.button>
-
-          <motion.button
-            onClick={onSettings}
-            className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-colors"
-            whileHover={{ scale: 1.05, rotate: 90 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label="Settings"
-          >
-            <span className="text-2xl">⚙️</span>
-          </motion.button>
+          </HeaderButton>
+          <Currency icon={Coins} value={coins.toLocaleString()} tone="text-brass-300" noun="coins" />
+          <Currency icon={Gem} value={gems.toLocaleString()} tone="text-fuchsia-300" noun="gems" />
+          <HeaderButton icon={CircleHelp} onClick={onTutorial} label="How to play" />
+          <HeaderButton icon={Settings} onClick={onSettings} label="Settings" />
         </motion.div>
-      </div>
+      </header>
 
-      {/* Title */}
-      <motion.div
-        initial={{ y: -30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, type: 'spring' }}
-        className="text-center mb-6 relative z-10"
-      >
-        <h1 className="text-4xl md:text-6xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-brass-200 via-brass-300 to-brass-200 mb-2 drop-shadow-lg">
-          Terrible Teddies
-        </h1>
-        <p className="text-plush-300 text-base md:text-lg">Bad bears. Worse decisions.</p>
-        <div className="flex justify-center gap-2 mt-2">
-          <span className="text-2xl">🧸</span>
-          <span className="text-2xl">⚔️</span>
-          <span className="text-2xl">🧸</span>
-        </div>
-      </motion.div>
+      {/* Hero: title, the player's own cards, and the one big button. */}
+      <section className="relative z-10 flex-1 flex flex-col items-center justify-center py-6 md:py-8">
+        <motion.div
+          initial={{ y: -16, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center"
+        >
+          <h1 className="font-display font-extrabold text-5xl md:text-7xl leading-none tracking-tight text-brass-gradient">
+            Terrible Teddies
+          </h1>
+          <p className="label-caps text-plush-300 mt-3">Bad bears · Worse decisions</p>
+        </motion.div>
 
-      {/* Menu Options */}
-      <div className="flex-1 flex items-center justify-center relative z-10">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3 md:gap-4 max-w-7xl w-full">
-          {menuOptions.map((option, index) => (
-            <motion.div
-              key={option.id}
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.1 + index * 0.08, duration: 0.4 }}
-              onMouseEnter={() => setHoveredOption(option.id)}
-              onMouseLeave={() => setHoveredOption(null)}
-            >
-              <Card
-                className={`
-                  w-full h-40 md:h-48 cursor-pointer overflow-hidden
-                  bg-gradient-to-b ${option.color}
-                  border-4 border-white/15 shadow-xl shadow-black/40
-                  transition-all duration-300
-                  ${hoveredOption === option.id ? 'scale-105 shadow-2xl' : 'scale-100'}
-                  ${option.highlight ? 'ring-4 ring-brass-300 ring-offset-2 ring-offset-night-900' : ''}
-                `}
-                {...pressable(option.action, option.title)}
-              >
-                <div className="h-full flex flex-col items-center justify-center p-3 text-white relative">
-                  {option.badge && (
-                    <div className="absolute top-2 right-2 bg-black/40 px-2 py-1 rounded-full text-xs font-bold">
-                      {option.badge}
-                    </div>
-                  )}
-
-                  <motion.div
-                    className="text-4xl md:text-5xl mb-2"
-                    animate={hoveredOption === option.id ? { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] } : {}}
-                    transition={{ duration: 0.5 }}
+        <div className="mt-6 md:mt-8 flex flex-col md:flex-row items-center gap-8 md:gap-14">
+          {/* The fan. Decorative — the cards repeat what the Collection shows. */}
+          {fanned.length > 0 && (
+            <div className="relative w-[230px] h-[200px] md:w-[270px] md:h-[236px] pointer-events-none select-none" aria-hidden="true">
+              <div className="absolute left-1/2 top-1/2 w-56 h-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brass-400/20 blur-3xl" />
+              {fanned.map((card, i) => {
+                const f = fanned.length === 3 ? FAN[i] : FAN[1];
+                return (
+                  // Centring is plain CSS on the wrapper; the motion layer
+                  // animates only numeric offsets. (Framer Motion cannot
+                  // interpolate '-50%' into a calc() string.)
+                  <div
+                    key={card.id}
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                    style={{ zIndex: f.z }}
                   >
-                    {option.icon}
-                  </motion.div>
-                  <h2 className="text-base md:text-lg font-display font-bold text-center">{option.title}</h2>
-                  <p className="text-xs text-white/80 text-center hidden md:block">{option.description}</p>
+                    <motion.div
+                      initial={{ opacity: 0, y: 40, rotate: 0, x: 0 }}
+                      animate={{ opacity: 1, y: f.y, rotate: f.rotate, x: f.x }}
+                      transition={{ delay: 0.15 + i * 0.08, type: 'spring', stiffness: 160, damping: 20 }}
+                    >
+                      <div className="scale-[1.3] md:scale-[1.5] origin-center drop-shadow-[0_18px_24px_rgba(0,0,0,0.6)]">
+                        <TeddyCard teddy={card} />
+                      </div>
+                    </motion.div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Battle: the primary action, and the only brass button on screen. */}
+          <motion.div
+            initial={{ y: 16, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col items-center md:items-start gap-3"
+          >
+            <motion.div
+              {...pressable(onStartGame, 'Battle')}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="btn-brass sheen relative cursor-pointer rounded-2xl pl-6 pr-5 py-4 flex items-center gap-4 min-w-[260px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-200 focus-visible:ring-offset-4 focus-visible:ring-offset-night-900"
+            >
+              <Swords aria-hidden="true" className="w-9 h-9 shrink-0" strokeWidth={2.2} />
+              <div className="flex-1 text-left">
+                <div className="font-display font-extrabold text-3xl leading-none">Battle</div>
+                <div className="text-sm font-semibold mt-1 text-night-950/75">Go make Chuck cry</div>
+              </div>
+              <ChevronRight aria-hidden="true" className="w-6 h-6 shrink-0" strokeWidth={2.6} />
+            </motion.div>
+            {currentWinStreak > 0 && (
+              <div className="flex items-center gap-1.5 text-orange-300 text-sm font-semibold">
+                <Flame aria-hidden="true" className="w-4 h-4" /> {currentWinStreak}-win streak on the line
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Everywhere else. One material, one icon style, one accent: tiles that
+          are asking for attention get the brass trim instead of a different
+          colour each — the old eight-colour rainbow gave Rankings the same
+          weight as the thing you came to do. */}
+      <nav className="relative z-10 w-full max-w-6xl mx-auto" aria-label="Main menu">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          {destinations.map((d, index) => (
+            <motion.div
+              key={d.id}
+              initial={{ y: 14, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.35 + index * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={{ y: -3 }}
+              className={index === destinations.length - 1 ? 'col-span-2 sm:col-span-1' : ''}
+            >
+              <div
+                {...pressable(d.action, d.title)}
+                className={`panel-glass sheen relative h-full rounded-2xl p-4 cursor-pointer flex flex-col items-center text-center gap-2
+                  transition-colors hover:bg-night-700/60
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300
+                  ${d.accent ? 'trim-brass' : ''}`}
+              >
+                <div className={`grid place-items-center w-11 h-11 rounded-full ${d.accent ? 'bg-brass-400/15' : 'bg-white/5'} ring-1 ${d.accent ? 'ring-brass-300/40' : 'ring-white/10'}`}>
+                  <d.icon aria-hidden="true" className={`w-[22px] h-[22px] ${d.accent ? 'text-brass-300' : 'text-plush-200'}`} strokeWidth={2} />
                 </div>
-              </Card>
+                <div className="font-display font-extrabold text-white text-[15px] leading-tight">{d.title}</div>
+                <div className="text-[11px] leading-snug text-plush-300 hidden md:block">{d.description}</div>
+                {d.badge && (
+                  <div className="absolute top-2 right-2 rounded-full bg-brass-400 text-night-950 px-1.5 py-[1px] text-[10px] font-extrabold leading-tight">
+                    {d.badge}
+                  </div>
+                )}
+              </div>
             </motion.div>
           ))}
         </div>
-      </div>
+      </nav>
 
-      <motion.div
+      <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-        className="text-center text-plush-400/60 text-xs relative z-10 mt-4"
+        transition={{ delay: 0.9 }}
+        className="relative z-10 text-center text-plush-400 text-[11px] mt-5"
       >
-        <p>Version 1.0 • No teddies were harmed (lie)</p>
-      </motion.div>
+        Version 1.0 · No teddies were harmed (lie)
+      </motion.p>
     </div>
   );
 };

@@ -23,6 +23,12 @@ import { SupabaseProvider } from './integrations/supabase/auth'
 // so subscribing to the whole store would re-render the app on every coin.
 function MotionPreference({ children }) {
   const animationsEnabled = useGameStore((s) => s.animationsEnabled);
+  // MotionConfig reaches Framer Motion only. The foil and sheen effects are
+  // CSS (compositor-only, see index.css), so mirror the switch onto <html>
+  // where a stylesheet can see it; [data-motion="off"] stops them.
+  React.useEffect(() => {
+    document.documentElement.dataset.motion = animationsEnabled ? 'on' : 'off';
+  }, [animationsEnabled]);
   return (
     <MotionConfig reducedMotion={animationsEnabled ? 'user' : 'always'}>
       {children}

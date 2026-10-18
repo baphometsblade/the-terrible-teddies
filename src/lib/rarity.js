@@ -8,6 +8,19 @@
 
 export const RARITY_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
 
+// Metal for each tier's card frame, drawn as a gradient border (see TeddyCard):
+// pewter, verdigris, steel-blue, amethyst, brass. A flat border colour reads as
+// a coloured outline; a light-to-dark-to-light gradient reads as a polished
+// edge catching the light, which is most of what makes a card look printed
+// rather than drawn.
+export const RARITY_METAL = {
+  common: 'linear-gradient(145deg, #e7e5e4 0%, #78716c 35%, #d6d3d1 60%, #57534e 100%)',
+  uncommon: 'linear-gradient(145deg, #a7f3d0 0%, #047857 35%, #6ee7b7 60%, #064e3b 100%)',
+  rare: 'linear-gradient(145deg, #bae6fd 0%, #0369a1 35%, #7dd3fc 60%, #0c4a6e 100%)',
+  epic: 'linear-gradient(145deg, #f5d0fe 0%, #7e22ce 35%, #e879f9 60%, #4c1d95 100%)',
+  legendary: 'linear-gradient(145deg, #fef3c7 0%, #b45309 30%, #fde68a 55%, #78350f 80%, #fbbf24 100%)',
+};
+
 export const RARITY = {
   common: {
     // dark card-face gradient (TeddyCard frame)

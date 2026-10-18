@@ -73,6 +73,38 @@ test('battle board has no WCAG 2.1 A/AA violations', async ({ page }) => {
   await expectNoViolations(page, 'battle board');
 });
 
+// Every stop in the tab order must be a real control. axe checks the controls
+// it can recognise; it cannot see a stop that is NOT a control, because a
+// focusable element with no role is not "wrong" markup, merely useless. Two
+// such classes have shipped: cards that advertised actions they would not
+// perform, and — the one this pins — Framer Motion making every TeddyCard
+// focusable because it carried a whileTap gesture, which put a dead stop
+// inside every card in the game. Checked on the two densest screens.
+const deadTabStops = (page) =>
+  page.evaluate(() => {
+    const NATIVE = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'SUMMARY']);
+    const ROLES = new Set(['button', 'link', 'switch', 'checkbox', 'radio', 'tab', 'menuitem',
+      'option', 'slider', 'textbox', 'combobox', 'region', 'dialog', 'alertdialog', 'listbox']);
+    // One deliberate exception: a Radix toast. Its <li> is focusable so a
+    // keyboard user can reach it and dismiss it with Escape (Radix handles the
+    // key on the li itself), inside Radix's own labelled notification region.
+    // It is a control without a role attribute, not a dead stop.
+    const isRadixToast = (el) => el.tagName === 'LI' && el.hasAttribute('data-swipe-direction');
+    return [...document.querySelectorAll('[tabindex]')]
+      .filter((el) => el.tabIndex >= 0 && el.offsetParent !== null)
+      .filter((el) => !NATIVE.has(el.tagName) && !ROLES.has(el.getAttribute('role')) && !isRadixToast(el))
+      .map((el) => el.outerHTML.slice(0, 120));
+  });
+
+test('every tab stop on the menu and the battle board is a real control', async ({ page }) => {
+  expect(await deadTabStops(page), 'menu').toEqual([]);
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  await expect.poll(() => page.getByRole('button', { name: /^Play / }).count(), SLOW).toBeGreaterThan(0);
+  expect(await deadTabStops(page), 'battle board').toEqual([]);
+});
+
 test('shop dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
   await page.getByRole('button', { name: 'Shop', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Shop' })).toBeVisible(SLOW);

@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { Card } from "@/components/ui/card";
 import { motion } from 'framer-motion';
-import { RARITY } from '@/lib/rarity';
+import {
+  Shield, Crosshair, ShieldHalf, Ghost, Castle, Flame, Bug, Crown,
+  Heart, Layers, Bomb, Swords, Sparkles,
+} from 'lucide-react';
+import { RARITY, RARITY_METAL } from '@/lib/rarity';
 
 // Dark-face fallbacks for cards without a rarity (typed opponent cards).
 const TYPE_STYLES = {
@@ -9,24 +12,45 @@ const TYPE_STYLES = {
   trap: { bg: 'from-purple-900 to-night-800', border: 'border-purple-500', text: 'text-purple-300' },
   special: { bg: 'from-cyan-900 to-night-800', border: 'border-cyan-500', text: 'text-cyan-300' },
 };
-
-// Battle Pass border cosmetics (see src/lib/cosmetics.js). Replaces the
-// rarity frame color with the premium treatment; the rarity remains readable
-// from the badge line and face gradient.
-const COSMETIC_BORDERS = {
-  gold: 'border-brass-300 shadow-[0_0_10px_rgba(251,191,36,0.45)]',
-  diamond: 'border-cyan-200 shadow-[0_0_10px_rgba(103,232,249,0.55)]',
+const TYPE_METAL = {
+  action: RARITY_METAL.legendary,
+  trap: RARITY_METAL.epic,
+  special: RARITY_METAL.rare,
 };
 
+// Battle Pass border cosmetics (see src/lib/cosmetics.js). They replace the
+// rarity's metal with their own and add a glow; the rarity stays readable
+// from the type line. The frame is a gradient border now, so these are
+// gradients plus a glow rather than Tailwind border colours.
+const COSMETIC_FRAMES = {
+  gold: {
+    metal: 'linear-gradient(145deg, #fffbeb 0%, #f59e0b 30%, #fef3c7 50%, #b45309 75%, #fde68a 100%)',
+    glow: '0 0 12px rgba(251, 191, 36, 0.55)',
+  },
+  diamond: {
+    metal: 'linear-gradient(145deg, #ffffff 0%, #67e8f9 30%, #ecfeff 50%, #0891b2 75%, #a5f3fc 100%)',
+    glow: '0 0 12px rgba(103, 232, 249, 0.6)',
+  },
+};
+
+// One icon set for every ability and effect. These were emoji, which every
+// platform draws differently and which looked like stickers next to the
+// photographic card art.
 const ABILITY_ICONS = {
-  taunt: '🛡️',
-  piercing: '🗡️',
-  shield: '🔰',
-  stealth: '👻',
-  protect: '🏰',
-  fury: '😤',
-  swarm: '🐜',
-  royal: '👑',
+  taunt: Shield,
+  piercing: Crosshair,
+  shield: ShieldHalf,
+  stealth: Ghost,
+  protect: Castle,
+  fury: Flame,
+  swarm: Bug,
+  royal: Crown,
+};
+const EFFECT_ICONS = {
+  heal: Heart,
+  draw: Layers,
+  damage: Bomb,
+  buff: Swords,
 };
 
 const getTeddyEmoji = (teddy) => {
@@ -112,120 +136,181 @@ export const CardBack = ({ className = 'w-24 h-36', mini = false }) => (
   </div>
 );
 
-// One-line rules text for the textbox, like a real TCG card. Ability
-// keywords for creatures; effect summaries for traps and specials. Ability
-// wins over effect — no card in ALL_CARDS carries both; revisit if one does.
-const rulesText = (teddy) => {
+// One-line rules for the card: the ability keyword for creatures, an effect
+// summary for traps and specials. Ability wins over effect — no card in
+// ALL_CARDS carries both; revisit if one does.
+const rulesFor = (teddy) => {
   if (teddy.ability && teddy.ability !== 'none') {
-    const label = teddy.ability.charAt(0).toUpperCase() + teddy.ability.slice(1);
-    return `${ABILITY_ICONS[teddy.ability] || '✨'} ${label}`;
+    return {
+      Icon: ABILITY_ICONS[teddy.ability] || Sparkles,
+      label: teddy.ability.charAt(0).toUpperCase() + teddy.ability.slice(1),
+    };
   }
-  if (teddy.effect === 'heal') return `💚 +${teddy.amount} HP`;
-  if (teddy.effect === 'draw') return `🃏 Draw ${teddy.amount}`;
-  if (teddy.effect === 'damage') return `💥 ${teddy.amount} DMG`;
-  if (teddy.effect === 'buff') return `💪 +${teddy.amount} ATK`;
-  return null;
+  const Icon = EFFECT_ICONS[teddy.effect];
+  if (!Icon) return null;
+  const label = {
+    heal: `+${teddy.amount} HP`,
+    draw: `Draw ${teddy.amount}`,
+    damage: `${teddy.amount} DMG`,
+    buff: `+${teddy.amount} ATK`,
+  }[teddy.effect];
+  return { Icon, label };
 };
 
+// The two stat badges. Enamel pins rather than flat circles: a coloured face
+// with a highlight on its upper half and a dark ring that seats it on the art.
+const StatBadge = ({ value, title, tone, className }) => (
+  <div
+    title={title}
+    className={`absolute bottom-[3px] z-10 w-[22px] h-[22px] rounded-full grid place-items-center
+      text-white text-[11px] font-display font-extrabold leading-none tabular-nums
+      ring-[1.5px] ring-night-950 shadow-[0_2px_4px_rgba(0,0,0,0.6)] ${className}`}
+    style={{
+      background: `radial-gradient(circle at 50% 28%, rgba(255,255,255,0.45), transparent 55%), ${tone}`,
+      textShadow: '0 1px 1px rgba(0,0,0,0.6)',
+    }}
+  >
+    {value}
+  </div>
+);
+
+const ATTACK_TONE = 'linear-gradient(180deg, #f87171, #991b1b)';
+const HP_TONE = 'linear-gradient(180deg, #38bdf8, #075985)';
+const WOUNDED_TONE = 'linear-gradient(180deg, #ef4444, #7f1d1d)';
+
 /**
- * TCG-anatomy card frame at hand size (96×144):
- * name banner → cost gem → framed art window → type/rarity line → textbox,
- * with circular attack/HP gems anchored in the bottom corners and a foil
- * sheen on epic+ cards.
+ * The card at hand size (96×144), built around its art.
+ *
+ * The art fills the whole face. The previous frame gave it a 52px window — a
+ * third of the card — above a textbox that was empty on every creature without
+ * an ability, which is most of them: the one genuinely premium asset in the
+ * game, the photographic plush art, was the smallest thing on the card. Now
+ * the art is the card, with dark scrims at the top and bottom carrying the
+ * name, the rules line and the stats, and a metallic frame per rarity drawn
+ * as a gradient border. Epic and legendary carry a slow foil sweep
+ * (index.css .foil), which honours the Animations switch.
  */
 const TeddyCard = ({ teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null }) => {
   // Use rarity style if available, otherwise fall back to type style
   const rarityStyle = teddy.rarity ? RARITY[teddy.rarity] : null;
   const typeStyle = TYPE_STYLES[teddy.type] || TYPE_STYLES.action;
   const style = rarityStyle || typeStyle;
+  const cosmetic = cosmeticBorder ? COSMETIC_FRAMES[cosmeticBorder] : null;
+  const metal = cosmetic?.metal
+    || (teddy.rarity ? RARITY_METAL[teddy.rarity] : TYPE_METAL[teddy.type] || TYPE_METAL.action);
 
   const isAction = teddy.type === 'action';
   const hp = teddy.currentHp ?? teddy.defense;
   const wounded = teddy.currentHp !== undefined && teddy.currentHp < teddy.defense;
-  const rules = rulesText(teddy);
+  const rules = rulesFor(teddy);
+  const foil = teddy.rarity === 'legendary' ? 'foil' : teddy.rarity === 'epic' ? 'foil foil-epic' : '';
 
   return (
+    // whileHover only — no whileTap. Framer Motion makes any element with a
+    // tap gesture keyboard-reachable by giving it tabindex="0", so every card
+    // in the game was a hidden tab stop that did nothing when activated: a
+    // keyboard player tabbing a hand of seven met fourteen stops, half of them
+    // dead, and the decorative cards on the menu put focusable content inside
+    // aria-hidden (axe: aria-hidden-focus). The press is visual only, so CSS
+    // :active does it without touching focus; the real controls are the
+    // pressable wrappers each screen puts around the card.
     <motion.div
-      whileHover={!isDisabled ? { scale: 1.03 } : {}}
-      whileTap={!isDisabled ? { scale: 0.97 } : {}}
+      whileHover={!isDisabled ? { y: -3, scale: 1.03 } : {}}
+      transition={{ type: 'spring', stiffness: 400, damping: 26 }}
     >
-      <Card
+      <div
         data-cosmetic={cosmeticBorder || undefined}
         className={`
-          w-24 h-36 rounded-lg shadow-lg shadow-black/40 cursor-pointer transition-all relative flex flex-col p-0 overflow-hidden
-          bg-gradient-to-b ${style.bg}
-          border-2 ${(cosmeticBorder && COSMETIC_BORDERS[cosmeticBorder]) || style.border}
+          w-24 h-36 rounded-[10px] cursor-pointer relative overflow-hidden transition-transform duration-100
           ${isSelected ? 'ring-2 ring-brass-300 ring-offset-2 ring-offset-night-900' : ''}
-          ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-xl hover:shadow-black/50'}
+          ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.97]'}
         `}
+        style={{
+          border: '2px solid transparent',
+          // The face (padding-box) under the metal (border-box): the standard
+          // way to give a rounded element a gradient border.
+          background: `linear-gradient(#120c1c, #120c1c) padding-box, ${metal} border-box`,
+          boxShadow: `0 6px 14px -4px rgba(0,0,0,0.7)${cosmetic ? `, ${cosmetic.glow}` : ''}`,
+        }}
         onClick={!isDisabled ? onClick : undefined}
       >
-        {/* Foil sheen for high rarities */}
-        {teddy.rarity === 'epic' && (
-          <div className="absolute inset-0 pointer-events-none opacity-20 mix-blend-screen bg-[linear-gradient(115deg,transparent_25%,rgba(56,189,248,0.6)_40%,rgba(168,85,247,0.6)_55%,rgba(251,191,36,0.5)_70%,transparent_85%)]" />
-        )}
-        {teddy.rarity === 'legendary' && (
-          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-brass-300/20 to-transparent pointer-events-none animate-pulse" />
-        )}
+        {/* Full-bleed art. The emoji fallback sits on the tier's own face
+            gradient so a card without art still reads as its rarity. */}
+        <div className={`absolute inset-0 rounded-[8px] overflow-hidden grid place-items-center bg-gradient-to-b ${style.bg}`}>
+          <ArtOrEmoji
+            teddy={teddy}
+            emojiClassName="text-[34px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] -mt-2"
+            imgClassName="absolute inset-0 w-full h-full object-cover"
+          />
+        </div>
 
-        {/* Name banner */}
-        <div className="flex items-center shrink-0 h-[18px] pl-1.5 pr-6 bg-night-950/70 border-b border-white/10">
-          <span className="font-display font-bold text-[8px] text-plush-100 truncate leading-none" title={teddy.name}>
+        {/* Foil sweep (epic+) — above the art, below the text. */}
+        {foil && <div className={`absolute inset-0 rounded-[8px] pointer-events-none ${foil}`} />}
+
+        {/* Scrims: a shallow one under the name, a deeper one under the rules
+            and stats, so the text stays legible over any art. */}
+        <div className="absolute inset-x-0 top-0 h-9 bg-gradient-to-b from-black/80 via-black/45 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-[62px] bg-gradient-to-t from-black/95 via-black/70 to-transparent pointer-events-none" />
+
+        {/* Name */}
+        <div className="absolute top-[3px] left-[5px] right-[22px] z-10">
+          <span
+            className="block font-display font-extrabold text-[9px] leading-[1.15] text-white truncate"
+            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}
+            title={teddy.name}
+          >
             {teddy.name}
           </span>
         </div>
 
-        {/* Cost gem */}
+        {/* Cost: a brass coin. */}
         {teddy.cost !== undefined && (
-          <div className="absolute top-[2px] right-[3px] w-4 h-4 rounded-full bg-gradient-to-b from-brass-200 to-brass-500 border border-night-950 shadow text-night-950 text-[9px] font-bold grid place-items-center z-10">
+          <div
+            className="absolute top-[2px] right-[2px] z-10 w-[17px] h-[17px] rounded-full grid place-items-center text-night-950 text-[10px] font-display font-extrabold leading-none tabular-nums ring-1 ring-night-950/80 shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
+            style={{ background: 'radial-gradient(circle at 50% 30%, #fffbeb, #fbbf24 55%, #b45309)' }}
+          >
             {teddy.cost}
           </div>
         )}
 
-        {/* Art window */}
-        <div className="mx-1 mt-1 h-[52px] shrink-0 rounded border border-white/15 bg-night-950/40 shadow-inner overflow-hidden grid place-items-center">
-          <ArtOrEmoji
-            teddy={teddy}
-            emojiClassName="text-[26px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
-            imgClassName="w-full h-full object-cover"
-          />
-        </div>
+        {/* Rules line */}
+        {rules && (
+          <div
+            className="absolute inset-x-[4px] bottom-[34px] z-10 flex items-center justify-center gap-[3px] text-[8px] font-bold leading-none text-plush-100"
+            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}
+            title={teddy.ability && teddy.ability !== 'none' ? teddy.ability : undefined}
+          >
+            <rules.Icon aria-hidden="true" className="w-[9px] h-[9px] shrink-0 text-brass-300" strokeWidth={2.5} />
+            <span className="truncate">{rules.label}</span>
+          </div>
+        )}
 
-        {/* Type / rarity line */}
-        <div className="mx-1 mt-0.5 shrink-0 flex items-center justify-between h-[11px] px-1 rounded-sm bg-night-950/50">
-          <span className="text-[6px] uppercase tracking-wider font-bold text-plush-300">{teddy.type}</span>
-          {teddy.rarity && (
-            <span className={`text-[6px] uppercase tracking-wider font-bold ${style.text}`}>{teddy.rarity}</span>
+        {/* Type · rarity, one line. On a creature the stat badges flank it and
+            leave ~44px, and the type is already implied — only creatures carry
+            stats — so it shows the rarity alone. Traps and specials have the
+            full width and show both. */}
+        <div className={`absolute bottom-[10px] z-10 text-center leading-none whitespace-nowrap ${isAction ? 'inset-x-[25px]' : 'inset-x-[4px]'}`}>
+          {!isAction && (
+            <span className="text-[6px] uppercase tracking-[0.12em] font-bold text-plush-300">{teddy.type}</span>
+          )}
+          {!isAction && teddy.rarity && <span className="text-[6px] text-plush-400 mx-[3px]">·</span>}
+          {teddy.rarity ? (
+            // Tighter on creatures: the badges leave ~46px, and at 0.12em
+            // UNCOMMON and LEGENDARY ran under the HP badge.
+            <span className={`text-[6px] uppercase font-bold ${isAction ? 'tracking-[0.04em]' : 'tracking-[0.12em]'} ${style.text}`}>{teddy.rarity}</span>
+          ) : isAction && (
+            <span className="text-[6px] uppercase tracking-[0.12em] font-bold text-plush-300">{teddy.type}</span>
           )}
         </div>
 
-        {/* Textbox — ability keyword or effect line; stat gems overlap its
-            bottom corners like a real card frame. */}
-        <div className="mx-1 my-0.5 flex-1 rounded-sm bg-white/5 border border-white/10 px-1 pt-1 overflow-hidden">
-          {rules && (
-            <div className="text-[7px] leading-tight text-center font-semibold text-plush-200" title={teddy.ability && teddy.ability !== 'none' ? teddy.ability : undefined}>
-              {rules}
-            </div>
-          )}
-        </div>
-
-        {/* Stat gems (creatures only): attack bottom-left, HP bottom-right */}
+        {/* Stats (creatures only): attack bottom-left, HP bottom-right. */}
         {isAction && (
           <>
-            <div className="absolute bottom-[3px] left-[3px] w-[22px] h-[22px] rounded-full bg-gradient-to-b from-red-400 to-red-700 border-2 border-night-950 shadow text-white text-[10px] font-bold grid place-items-center z-10" title="Attack">
-              {teddy.attack}
-            </div>
-            <div
-              className={`absolute bottom-[3px] right-[3px] w-[22px] h-[22px] rounded-full bg-gradient-to-b border-2 border-night-950 shadow text-white text-[10px] font-bold grid place-items-center z-10 ${
-                wounded ? 'from-red-500 to-red-800' : 'from-sky-400 to-sky-700'
-              }`}
-              title="HP"
-            >
-              {hp}
-            </div>
+            <StatBadge value={teddy.attack} title="Attack" tone={ATTACK_TONE} className="left-[3px]" />
+            <StatBadge value={hp} title="HP" tone={wounded ? WOUNDED_TONE : HP_TONE} className="right-[3px]" />
           </>
         )}
-      </Card>
+      </div>
     </motion.div>
   );
 };
