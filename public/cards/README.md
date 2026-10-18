@@ -212,36 +212,56 @@ Card #1 asks for brass knuckles, a novelty condom necklace, a torn ear and a
 beer bottle coming down on a rival's head mid-swing; the image is a bear
 sitting at a bar holding an intact bottle, wearing a plain gold chain.
 
-Four are outright wrong, and two of those are wrong in a way worth fixing
-before anything else:
+At the time, four were outright misses:
 
-- **#2 (Dumpster Dennis)** is a photoreal live **raccoon**, not a plush bear.
-- **#6 (Sally)** is a photoreal **human woman's face** in extreme close-up,
-  screaming into a microphone in a pink bear-eared coat.
+- **#2 (Feral Tim)** was a photoreal live **raccoon**, not a plush bear.
+- **#6 (Shit-Talk Sally)** was a photoreal **human woman's face** in extreme
+  close-up, screaming into a microphone in a pink bear-eared coat.
 - **#32** is missing the dynamite and whoopee cushion the card is built on.
 - **#43** renders a wide empty bar instead of the toolbox filling the frame.
 
-### Why, and what to change
+That audit also **missed one**: **#18 (Grandpa Warcrimes)** was a hooded
+*human* soldier holding a teddy, and was graded "partial" rather than off-model.
+It was caught by a later full-deck pass.
 
-`NEGATIVE` already lists `human, person` — exactly what would have prevented
-#6 — but as the comment above it says, **the negative prompt is inert on the
-default path**: negatives only apply with classifier-free guidance, and turbo
-renders at `SD_GUIDANCE=0.0`. Nothing is constraining the output. That also
-explains the broader pattern, since low guidance is what lets a model ignore
-the tail of a long prompt.
+### Update, 2026-10-13: #2, #6 and #18 are on-model
 
-So a regeneration that only swaps the checkpoint will likely reproduce this.
-Raise guidance so the negatives engage:
+All three were re-rendered as teddy bears in `b76fa84`, on the same per-card
+seeds and the deck's default config (sdxl-turbo fp16, 4 steps, guidance 0.0),
+so they sit with the rest of the set. **The fix was wording, not guidance.**
+Each prompt had a specific trigger:
 
-```bash
-# all 72 — 64 of them need it, so a full pass is simpler than a list
-SD_GUIDANCE=3.5 FOOOCUS_URL=http://127.0.0.1:8888 npm run art:generate -- --force
+- #2's `fur` was "raccoon grey". Colour is stated twice at the front of every
+  prompt, the most heavily weighted position, so "raccoon" summoned the animal.
+- #6 asked for an "extreme close-up on the face", plus gold hoop earrings and a
+  karaoke stage, which read as a person.
+- #18 asked for the bear "shielding a fallen comrade with his own body", which
+  added a second figure; the model made the soldier human and the bear the
+  comrade.
 
-# or start with the four that are outright wrong
-SD_GUIDANCE=3.5 FOOOCUS_URL=http://127.0.0.1:8888 npm run art:generate -- --force --only 2,6,32,43
-```
+All three are now bears but still *partial* on fidelity — #2 has no gloves,
+leash or crouch, and #18 no bandage or burst pillow. With those three moved
+from miss/off-model to partial, the deck reads **8 match, 62 partial, 2 miss
+(#32, #43)**. That is a reading of the three new images, not a rerun of the
+whole audit.
 
-Turbo checkpoints need low step counts *and* low guidance; if raising guidance
-washes the images out, the checkpoint is the constraint and a non-turbo model
-is the fix. The eight that already match — 20, 45, 46, 52, 101, 103, 105, 107 —
-are the reference for what "right" looks like.
+### What is known about the cause
+
+`NEGATIVE` lists `human, person`, and it did not help, because **the shipped
+art came from the diffusers runner at guidance 0.0**, which does not send the
+negative prompt at all (see `scripts/generate-card-art-diffusers.py`). At that
+setting, wording is the only lever — which is what the October fix confirmed.
+
+Earlier versions of this section recommended raising `SD_GUIDANCE` to 3.5 and
+claimed low guidance was why the long tails of the prompts get dropped. Both
+are withdrawn. The causal claim was never measured, and the only guidance run
+on record (6.5, see the runner's docstring) was confounded by a prompt-encoding
+bug, so it shows nothing either way. The recommended command was also wrong in
+itself: it set `SD_GUIDANCE` on `npm run art:generate`, the Fooocus/A1111
+script, which never reads that variable. That script always sends the negative
+prompt, and lets the endpoint choose its own guidance (A1111 runs at cfg 7).
+
+If you want to test whether guidance helps, render the same cards on the same
+machine twice, changing only `SD_GUIDANCE` on the diffusers runner. The eight
+that already match — 20, 45, 46, 52, 101, 103, 105, 107 — are the reference for
+what "right" looks like.

@@ -96,11 +96,19 @@ export const CARD_ART_OVERLONG = [];
 const NEGATIVE =
   'cartoon, illustration, drawing, flat colors, cel shading, text, letters, watermark, ' +
   'logo, signature, human, person, extra limbs, deformed, blurry, frame, border';
-// NB: this list is inert on the default path. Negative prompts only take
-// effect when classifier-free guidance is on, and turbo renders at
-// SD_GUIDANCE=0.0 — so nothing here is actually constraining the shipped art.
-// It starts working the moment SD_GUIDANCE is raised; see the SD_GUIDANCE
-// warning in scripts/generate-card-art-diffusers.py before you raise it.
+// Whether this list does anything depends on WHICH runner renders:
+//
+//   - This script (Fooocus / A1111 endpoints) always sends it. Fooocus applies
+//     its own guidance (no value is passed below), A1111 runs at cfg_scale 7,
+//     so on these paths the negatives are live.
+//   - scripts/generate-card-art-diffusers.py (manifest from --manifest) reads
+//     SD_GUIDANCE, default 0.0 for sdxl-turbo, and at 0.0 it does not send the
+//     negative at all — classifier-free guidance is off, so it could not act.
+//     The shipped deck was rendered that way, so for the art actually in
+//     public/cards/ this list constrained nothing.
+//
+// SD_GUIDANCE is read ONLY by the diffusers runner. Setting it on an
+// `npm run art:generate` command line changes nothing.
 
 // Raunchy R-rated-comedy art direction: worn plush bears living badly.
 //
@@ -156,8 +164,9 @@ const promptFor = (card) => {
   return `RAW photo, ${fur}plush teddy bear, ${fur}fur${ADULT} — ${subject}. ${scene}`;
 };
 
-// Non-brown bears fight the model's brown-plush prior; when guidance is on
-// (SD_GUIDANCE>0) the runner sends this as the negative prompt.
+// Non-brown bears fight the model's brown-plush prior, so they get an
+// anti-brown negative. Sent on every request by this script; the diffusers
+// runner sends it only when SD_GUIDANCE > 0, and drops it otherwise.
 const BROWNISH = /brown|tan|chocolate|espresso|caramel|amber|auburn|khaki|russet|beige|oxblood/i;
 const negativeFor = (card) =>
   card.type === 'action' && card.fur && !BROWNISH.test(card.fur)
