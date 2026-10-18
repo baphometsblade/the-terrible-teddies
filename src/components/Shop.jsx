@@ -275,6 +275,9 @@ const Shop = ({ onClose }) => {
   const handleBuyItem = (item) => {
     const result = buyShopItem(item.id);
     if (result.success) {
+      // Re-read the clock: `now` only ticks once a minute, so it predates the
+      // purchase, and a 24h Coin Doubler bought a moment ago read "25h left".
+      setNow(Date.now());
       analytics.trackInGamePurchase({
         itemId: item.id,
         itemName: item.name,
