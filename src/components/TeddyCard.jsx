@@ -223,9 +223,12 @@ const WOUNDED_TONE = 'linear-gradient(180deg, #b91c1c, #450a0a)';
 // themselves and draw rings around it (the battle board): two lifts stacked,
 // and the inner one moved the card out of the ring drawn around it.
 // `artVariant` is ArtOrEmoji's variant, for cards drawn larger than hand size.
+// `dimmed` greys the art only — for a card the player does not own yet. The
+// collection used to filter the whole card, which took the name, cost and
+// stats below AA along with the picture.
 const TeddyCard = ({
   teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null,
-  lift = true, artVariant = 'thumb',
+  lift = true, artVariant = 'thumb', dimmed = false,
 }) => {
   // Use rarity style if available, otherwise fall back to type style
   const rarityStyle = teddy.rarity ? RARITY[teddy.rarity] : null;
@@ -273,7 +276,7 @@ const TeddyCard = ({
       >
         {/* Full-bleed art. The emoji fallback sits on the tier's own face
             gradient so a card without art still reads as its rarity. */}
-        <div className={`absolute inset-0 rounded-[8px] overflow-hidden grid place-items-center bg-gradient-to-b ${style.bg}`}>
+        <div className={`absolute inset-0 rounded-[8px] overflow-hidden grid place-items-center bg-gradient-to-b ${style.bg} ${dimmed ? 'saturate-[0.3] brightness-[0.55]' : ''}`}>
           <ArtOrEmoji
             teddy={teddy}
             variant={artVariant}
@@ -283,7 +286,7 @@ const TeddyCard = ({
         </div>
 
         {/* Foil sweep (epic+) — above the art, below the text. */}
-        {foil && <div className={`absolute inset-0 rounded-[8px] pointer-events-none ${foil}`} />}
+        {foil && !dimmed && <div className={`absolute inset-0 rounded-[8px] pointer-events-none ${foil}`} />}
 
         {/* Scrims: a shallow one under the name, a deeper one under the rules
             and stats, so the text stays legible over any art. */}
