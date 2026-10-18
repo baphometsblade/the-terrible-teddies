@@ -33,8 +33,11 @@ export function useDialog(onClose) {
     const previouslyFocused = document.activeElement;
     dialogStack.push(node);
 
+    // Skips inert subtrees: a dialog that makes part of itself inert (the
+    // Shop does while a checkout is starting) must not have the trap walk
+    // Tab back into the part it shut.
     const focusable = () => Array.from(node.querySelectorAll(FOCUSABLE))
-      .filter((el) => !el.disabled && el.offsetParent !== null);
+      .filter((el) => !el.disabled && el.offsetParent !== null && !el.closest('[inert]'));
 
     const first = focusable()[0];
     if (first) {
