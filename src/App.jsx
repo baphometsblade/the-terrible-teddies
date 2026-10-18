@@ -2,8 +2,6 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import Auth from './components/Auth';
 import MainMenu from './components/MainMenu';
-import DeckBuilder from './components/DeckBuilder';
-import TeddyCollection from './components/TeddyCollection';
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/components/ui/use-toast";
 import ErrorBoundary from './components/ErrorBoundary';
@@ -23,6 +21,10 @@ import { useRehydrateOnFocus } from './hooks/useRehydrateOnFocus';
 // Measured: this moves 83 kB (25 kB gzip) off first paint, because it also
 // drops the whole `effects` chunk out of index.html's modulepreload list.
 const GameBoard = lazy(() => import('./components/GameBoard/GameBoard'));
+// The two card screens likewise: each is one tile tap away, and imported
+// statically they carried their whole UI (and its icons) in the entry chunk.
+const DeckBuilder = lazy(() => import('./components/DeckBuilder'));
+const TeddyCollection = lazy(() => import('./components/TeddyCollection'));
 const Tutorial = lazy(() => import('./components/Tutorial'));
 const CardPackOpening = lazy(() => import('./components/CardPackOpening'));
 const PlayerStats = lazy(() => import('./components/PlayerStats'));
@@ -313,7 +315,11 @@ function App() {
             <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
             <BackButton onClick={() => navigateTo('menu')} />
             <div className="relative pt-12">
-              <DeckBuilder />
+              <DialogErrorBoundary resetKey={currentScreen} onDismiss={() => navigateTo('menu')}>
+                <Suspense fallback={<DialogLoader />}>
+                  <DeckBuilder />
+                </Suspense>
+              </DialogErrorBoundary>
             </div>
           </div>
         );
@@ -323,7 +329,11 @@ function App() {
             <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
             <BackButton onClick={() => navigateTo('menu')} />
             <div className="relative pt-12">
-              <TeddyCollection />
+              <DialogErrorBoundary resetKey={currentScreen} onDismiss={() => navigateTo('menu')}>
+                <Suspense fallback={<DialogLoader />}>
+                  <TeddyCollection />
+                </Suspense>
+              </DialogErrorBoundary>
             </div>
           </div>
         );

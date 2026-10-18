@@ -129,6 +129,26 @@ test('deck builder has no WCAG 2.1 A/AA violations', async ({ page }) => {
   await expectNoViolations(page, 'deck builder');
 });
 
+// The two dialogs that live on the card screens rather than the menu. Neither
+// was ever audited here: smoke.spec.js checks their focus and Escape handling,
+// which says nothing about contrast or names. The redesign gave both new
+// controls (a header close button, an icon medallion, a length counter).
+test('collection card-detail dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.getByRole('button', { name: 'Collection', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Card Collection' })).toBeVisible(SLOW);
+  await page.getByRole('button', { name: /^View / }).first().click();
+  await expect(page.getByRole('dialog', { name: /details$/ })).toBeVisible(SLOW);
+  await expectNoViolations(page, 'card-detail dialog');
+});
+
+test('deck builder Save-deck dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible(SLOW);
+  await page.getByRole('button', { name: 'Save As...' }).click();
+  await expect(page.getByRole('dialog', { name: 'Save deck' })).toBeVisible(SLOW);
+  await expectNoViolations(page, 'save-deck dialog');
+});
+
 // The remaining dialogs are all reached the same way and only need their
 // trigger + accessible dialog name, so they share one table-driven test
 // rather than five near-identical copies.
