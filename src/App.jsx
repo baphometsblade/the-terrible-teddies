@@ -34,15 +34,20 @@ const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const Challenges = lazy(() => import('./components/Challenges'));
 const PurchaseSuccess = lazy(() => import('./components/PurchaseSuccess'));
 
+// Shown for the moment a lazy dialog or the board chunk is in flight. A CSS
+// spin (transform only, on the compositor) rather than the Framer Motion
+// repeat: Infinity it used to be, which ran on the main thread — the thread
+// the arriving chunk needs. Stops with the Animations switch or reduced
+// motion; the word says "loading" either way.
 const DialogLoader = () => (
-  <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-    <motion.div
-      animate={{ rotate: 360 }}
-      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-      className="text-6xl"
-    >
-      🧸
-    </motion.div>
+  <div className="fixed inset-0 z-50 dialog-scrim flex items-center justify-center" role="status">
+    <div className="flex flex-col items-center gap-3">
+      <div className="relative h-16 w-16">
+        <div className="absolute inset-0 rounded-full border-2 border-white/10 border-t-brass-300 motion-safe:animate-spin" aria-hidden="true" />
+        <div className="absolute inset-0 flex items-center justify-center text-2xl" aria-hidden="true">🧸</div>
+      </div>
+      <span className="label-caps text-plush-300">Loading</span>
+    </div>
   </div>
 );
 
@@ -249,18 +254,19 @@ function App() {
 
   if (!isSupabaseConfigured) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-night-800 to-night-950 flex items-center justify-center p-6">
-        <div className="max-w-md text-center bg-night-800/60 border border-plush-700/40 rounded-2xl p-8">
-          <div className="text-6xl mb-4">🧸🔧</div>
-          <h1 className="text-2xl font-bold text-white mb-2">Setup needed</h1>
-          <p className="text-white/70">
+      <div className="relative min-h-screen bar-backdrop flex items-center justify-center p-6">
+        <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
+        <div className="relative max-w-md text-center dialog-panel rounded-2xl p-8">
+          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-night-950/60 ring-1 ring-brass-300/40 text-3xl" aria-hidden="true">🧸</div>
+          <h1 className="font-display text-2xl font-extrabold text-white mb-2">Setup needed</h1>
+          <p className="text-plush-200">
             The game isn&apos;t connected to its backend yet. Set
-            <code className="mx-1 px-1 bg-black/30 rounded">VITE_SUPABASE_URL</code>
+            <code className="mx-1 px-1.5 py-0.5 rounded bg-black/40 text-brass-200 text-sm">VITE_SUPABASE_URL</code>
             and
-            <code className="mx-1 px-1 bg-black/30 rounded">VITE_SUPABASE_ANON_KEY</code>
+            <code className="mx-1 px-1.5 py-0.5 rounded bg-black/40 text-brass-200 text-sm">VITE_SUPABASE_ANON_KEY</code>
             in the environment, then reload.
           </p>
-          <p className="text-white/40 text-sm mt-3">See <code>.env.example</code> and <code>DEPLOYMENT.md</code>.</p>
+          <p className="text-plush-300 text-sm mt-3">See <code>.env.example</code> and <code>DEPLOYMENT.md</code>.</p>
         </div>
       </div>
     );

@@ -475,12 +475,13 @@
 
 /* Both kinds of light movement honour the player's Animations switch (which
    MotionPreference mirrors onto <html data-motion>) as well as the OS-level
-   reduced-motion preference — and so does Tailwind's animate-pulse, which the
-   board uses for its "ready" glows (those use motion-safe: for the OS side). */
+   reduced-motion preference — and so do Tailwind's animate-pulse and the
+   loader's animate-spin (those carry motion-safe: for the OS side). */
 [data-motion="off"] .foil::after,
 [data-motion="off"] .sheen::after { animation: none; transition: none; transform: translateX(-120%); }
 [data-motion="off"] .animate-pulse,
-[data-motion="off"] .motion-safe\:animate-pulse { animation: none; }
+[data-motion="off"] .motion-safe\:animate-pulse,
+[data-motion="off"] .motion-safe\:animate-spin { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .foil::after { animation: none; transform: translateX(-120%); }
   .sheen::after { transition: none; }
