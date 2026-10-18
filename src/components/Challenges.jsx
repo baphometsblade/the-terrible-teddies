@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore } from '../stores/gameStore';
 import { getDailyChallenges, getWeeklyChallenges, challengeProgress } from '../stores/challenges';
-import confetti from 'canvas-confetti';
+import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
 
@@ -256,7 +256,7 @@ const Challenges = ({ onClose }) => {
       case 'pack':          addCardPack(challenge.reward.amount); break;
     }
 
-    confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
+    celebrate({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
     toast({
       title: "Challenge Complete!",
       description: `Claimed: ${challenge.reward.amount} ${challenge.reward.type}`,
@@ -280,7 +280,7 @@ const Challenges = ({ onClose }) => {
     if (!claimChallenge(bonus.key)) return;
     addGems(bonus.gems);
     addCoins(bonus.coins);
-    confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#fbbf24', '#a855f7', '#34d399'] });
+    celebrate({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#fbbf24', '#a855f7', '#34d399'] });
     toast({ title: "Bonus Claimed!", description: `+${bonus.gems} 💎 and +${bonus.coins} 🪙` });
   };
 

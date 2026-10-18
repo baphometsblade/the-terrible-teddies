@@ -21,8 +21,9 @@ const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 // treats opacity as vestibular-safe and keeps animating it under reduced
 // motion, dropping only the transform/layout part.
 //
-// The leaderboard staggers 10 rows at 50ms each, so the last one starts at
-// ~500ms; the buffer covers that plus the fade itself.
+// The leaderboard staggers its rows 40ms apart, capped at rank 12, so the
+// last one starts by ~0.6s (a 0.1s lead plus 0.48s) and its fade is done by
+// ~0.95s; the wait for running animations plus the buffer covers that.
 async function settle(page) {
   await page
     .waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'), null, {
@@ -165,6 +166,16 @@ for (const { trigger, dialog } of DIALOGS) {
     await expectNoViolations(page, `${dialog} dialog`);
   });
 }
+
+// Daily Rewards auto-opens on the first launch of each day, so for most
+// players it is the first dialog they ever see — and it was the one dialog
+// this suite never audited (the session seed marks today as already visited,
+// so it never auto-opens here). Opened from its header button instead.
+test('daily rewards dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.getByRole('button', { name: /^Daily rewards/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Daily Rewards' })).toBeVisible(SLOW);
+  await expectNoViolations(page, 'daily rewards dialog');
+});
 
 test('player stats dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
   // Opened from the avatar chip in the menu header, not a menu tile.

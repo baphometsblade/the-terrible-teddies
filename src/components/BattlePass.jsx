@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore } from '../stores/gameStore';
 import { getCurrentSeason } from '../utils/season';
-import confetti from 'canvas-confetti';
+import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 
@@ -310,7 +310,7 @@ const BattlePass = ({ onClose }) => {
     const outcome = purchaseBattlePassPremium(PREMIUM_PASS_PRICE);
     if (outcome === 'purchased') {
       setShowPurchaseConfirm(false);
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#fbbf24', '#f59e0b', '#fde68a'] });
+      celebrate({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#fbbf24', '#f59e0b', '#fde68a'] });
       toast({ title: "Premium Pass Unlocked!", description: "You now have access to all premium rewards!" });
     } else if (outcome === 'already-owned') {
       setShowPurchaseConfirm(false);
@@ -358,7 +358,7 @@ const BattlePass = ({ onClose }) => {
         break;
       case 'card':
         addCard(rewardData.cardId);
-        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+        celebrate({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
         toast({ title: "Card Unlocked!", description: `You got ${rewardData.name}!` });
         break;
       case 'exclusive':
@@ -366,7 +366,7 @@ const BattlePass = ({ onClose }) => {
         // no-op. No UI renders borders/emotes yet, but the entitlement now
         // persists (and survives a season reset by being cleared with the pass).
         unlockCosmetic(rewardData.name);
-        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+        celebrate({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
         toast({ title: "Exclusive Unlocked!", description: `You got ${rewardData.name}!` });
         break;
     }

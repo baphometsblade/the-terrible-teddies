@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, Coins, Gem, Package, GalleryVerticalEnd, Check, Flame, Sparkles, X } from 'lucide-react';
 import { useGameStore, DAILY_REWARDS } from '../stores/gameStore';
-import confetti from 'canvas-confetti';
+import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
 
@@ -104,7 +104,7 @@ const DailyRewards = ({ onClose }) => {
     setReward(dailyReward);
     // Cleared on unmount so a quick close doesn't burst confetti over the next screen.
     const t = setTimeout(() => {
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      celebrate({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }, 500);
     return () => clearTimeout(t);
   }, [checkDailyLogin]);
