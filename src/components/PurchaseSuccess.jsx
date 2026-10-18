@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Button } from "@/components/ui/button";
+import { Gem, Hourglass, CircleAlert } from 'lucide-react';
 import { useGameStore } from '../stores/gameStore';
 import { verifyPurchaseSession } from '../utils/stripe';
 import { fetchServerGemBalance } from '../utils/supabaseClient';
 import confetti from 'canvas-confetti';
 import analytics from '../utils/analytics';
 import { useDialog } from '@/hooks/useDialog';
+import { RARITY_METAL } from '@/lib/rarity';
 
 // Gem bundle prices for analytics (mirrors server-side definitions)
 const BUNDLE_PRICES = {
@@ -18,6 +19,22 @@ const BUNDLE_PRICES = {
 // The gems are already credited server-side; this only decides whether this
 // device's counter can be updated now or catches up on the next launch.
 const BALANCE_READ_ATTEMPTS = 3;
+
+// Plain <button>s rather than the shadcn Button: its bg-primary is a utility
+// and would beat the component-layer btn-brass / btn-glass materials.
+const FOCUS =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300 ' +
+  'focus-visible:ring-offset-2 focus-visible:ring-offset-night-900';
+const ACTION = `inline-flex items-center justify-center gap-2 h-11 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS}`;
+
+// The medallion and the light it sits in, per phase: brass for a completed
+// purchase, amethyst while the order is in flight, pewter for a failure.
+const PHASE_LOOK = {
+  verifying: { metal: RARITY_METAL.epic, light: 'rgba(192, 132, 252, 0.18)' },
+  success: { metal: RARITY_METAL.legendary, light: 'rgba(251, 191, 36, 0.3)' },
+  pending: { metal: RARITY_METAL.epic, light: 'rgba(192, 132, 252, 0.18)' },
+  error: { metal: RARITY_METAL.common, light: 'rgba(129, 140, 248, 0.14)' },
+};
 
 const PurchaseSuccess = ({ sessionId, onDone }) => {
   const { reconcileServerGems } = useGameStore();
@@ -135,13 +152,17 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
     return () => clearInterval(id);
   }, [phase, verify]);
 
+  const look = PHASE_LOOK[phase];
+
   return (
     <div
       ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Purchase status"
-      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+      // Scrolls, with the panel centred by my-auto rather than items-center: a
+      // centred flex item taller than its box overflows at both ends.
+      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center p-4 overflow-y-auto"
     >
       {/* aria-live: the whole body swaps between verifying / success /
           pending / error with focus staying put, so a screen-reader buyer was
@@ -149,102 +170,126 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
           on the one screen where they most need to know what happened. */}
       <motion.div
         aria-live="polite"
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-gradient-to-b from-night-700 to-night-900 rounded-2xl p-8 max-w-md w-full border border-plush-700/60 shadow-2xl text-center"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className={`relative my-auto w-full max-w-md overflow-hidden rounded-2xl dialog-panel px-6 py-8 sm:px-8 text-center ${
+          phase === 'success' ? 'trim-brass' : ''
+        }`}
       >
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-48 pointer-events-none"
+          style={{ background: `radial-gradient(ellipse 60% 80% at 50% 0%, ${look.light}, transparent 70%)` }}
+        />
+
+        {/* key={phase}: the medallion pops once each time the phase changes. */}
+        <motion.div
+          key={phase}
+          initial={{ scale: 0.7, opacity: 0 }}
+          animate={phase === 'success' ? { scale: [0.7, 1.15, 1], opacity: 1 } : { scale: 1, opacity: 1 }}
+          transition={{ duration: phase === 'success' ? 0.55 : 0.3 }}
+          className="relative mx-auto mb-5 h-20 w-20 rounded-full p-[3px] shadow-[0_10px_24px_-10px_rgba(0,0,0,0.9)]"
+          style={{ background: look.metal }}
+          aria-hidden="true"
+        >
+          <div className="relative flex h-full w-full items-center justify-center rounded-full bg-night-900">
+            {phase === 'verifying' && (
+              // CSS spin (compositor-only), stopped when motion is off.
+              <div className="absolute inset-1.5 rounded-full border-2 border-fuchsia-300/15 border-t-fuchsia-300 motion-safe:animate-spin [[data-motion=off]_&]:animate-none" />
+            )}
+            {phase === 'verifying' && <Gem className="h-8 w-8 text-fuchsia-300" strokeWidth={1.75} />}
+            {phase === 'success' && <Gem className="h-9 w-9 text-brass-300" strokeWidth={1.75} />}
+            {phase === 'pending' && <Hourglass className="h-9 w-9 text-fuchsia-300" strokeWidth={1.75} />}
+            {phase === 'error' && <CircleAlert className="h-9 w-9 text-plush-200" strokeWidth={1.75} />}
+          </div>
+        </motion.div>
+
         {phase === 'verifying' && (
-          <>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-              className="text-6xl mb-6 inline-block"
-            >
-              💎
-            </motion.div>
-            <h2 className="text-2xl font-bold text-white mb-2">Verifying Payment…</h2>
-            <p className="text-white/60 text-sm mb-6">Hang tight while we confirm your purchase.</p>
+          <div className="relative">
+            <h2 className="font-display text-3xl font-extrabold leading-tight text-white mb-2">Verifying Payment…</h2>
+            <p className="text-plush-300 text-sm mb-6">Hang tight while we confirm your purchase.</p>
             {/* Manual escape hatch: if the verification hangs (a slow/stalled
                 network), the buyer must not be trapped on a control-free spinner.
                 Escape stays disabled here to avoid an accidental mid-check
                 dismissal, but this explicit control lets them leave — any
                 credited gems reconcile on the next login, so nothing is lost. */}
             <button
+              type="button"
               onClick={onDone}
-              className="text-white/40 hover:text-white/70 text-sm underline underline-offset-2"
+              className={`rounded-md px-1 text-plush-300 hover:text-white text-sm underline underline-offset-4 decoration-plush-400/60 ${FOCUS}`}
             >
               Taking too long? Close and check back later
             </button>
-          </>
+          </div>
         )}
 
         {phase === 'success' && (
-          <>
-            <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-3xl font-bold text-white mb-2">Purchase Complete!</h2>
-            <p className="text-purple-300 text-lg mb-6">
-              <span className="font-bold text-white text-2xl">{gemsGranted.toLocaleString()} 💎</span>
-              <br />added to your account
-            </p>
+          <div className="relative">
+            <h2 className="font-display text-3xl sm:text-4xl font-extrabold leading-tight text-brass-gradient mb-4">Purchase Complete!</h2>
+            <div className="mb-6">
+              <div className="panel-glass inline-flex items-center gap-2.5 rounded-xl px-5 py-2.5">
+                <Gem aria-hidden="true" className="h-6 w-6 text-fuchsia-300" strokeWidth={2} />
+                <span className="font-display text-3xl font-extrabold leading-none text-white tabular-nums">{gemsGranted.toLocaleString()}</span>
+                <span className="sr-only">gems</span>
+              </div>
+              <p className="mt-2 text-plush-200">added to your account</p>
+            </div>
             {!balanceShown && (
               // Not "something went wrong": nothing did. The purchase is
               // complete and credited; only this screen's copy of the balance
               // is behind, and the login sync brings it level on next launch.
-              <p className="text-plush-300 text-sm -mt-3 mb-6">
+              <p className="text-plush-200 text-sm -mt-2 mb-6 rounded-xl bg-night-950/45 border border-white/5 px-4 py-3">
                 We couldn&apos;t refresh your balance on this screen just now, so the
                 counter may not show them yet. They&apos;re safely on your account and
                 will appear next time you open the game.
               </p>
             )}
-            <Button
-              onClick={onDone}
-              className="bg-gradient-to-r from-purple-700 to-fuchsia-800 hover:from-purple-800 hover:to-fuchsia-900 text-white px-8 py-3 font-bold text-lg"
-            >
+            <button type="button" onClick={onDone} className={`${ACTION} btn-brass px-8 text-lg`}>
               Awesome! Let&apos;s Play
-            </Button>
-          </>
+            </button>
+          </div>
         )}
 
         {phase === 'pending' && (
-          <>
-            <div className="text-6xl mb-4">⏳</div>
-            <h2 className="text-2xl font-bold text-white mb-2">Processing…</h2>
-            <p className="text-white/70 mb-2">
+          <div className="relative">
+            <h2 className="font-display text-3xl font-extrabold leading-tight text-white mb-2">Processing…</h2>
+            <p className="text-plush-200 mb-2">
               Your payment was received. Gems will appear within a minute.
             </p>
-            <p className="text-white/50 text-sm mb-6">
+            <p className="text-plush-300 text-sm mb-6">
               We&apos;re checking automatically. If gems don&apos;t appear, contact support with your order confirmation email.
             </p>
-            <div className="flex gap-3 justify-center">
-              <Button onClick={() => { pollTriesRef.current = 0; verify(); }} className="bg-purple-600 hover:bg-purple-700 text-white">
+            <div className="flex flex-wrap gap-3 justify-center">
+              <button type="button" onClick={() => { pollTriesRef.current = 0; verify(); }} className={`${ACTION} btn-brass px-6 text-base`}>
                 Check now
-              </Button>
-              <Button onClick={onDone} variant="outline" className="border-white/30 text-white hover:bg-white/10">
+              </button>
+              <button type="button" onClick={onDone} className={`${ACTION} btn-glass px-6 text-base`}>
                 Return to Game
-              </Button>
+              </button>
             </div>
-          </>
+          </div>
         )}
 
         {phase === 'error' && (
-          <>
-            <div className="text-6xl mb-4">😢</div>
-            <h2 className="text-2xl font-bold text-white mb-2">Something Went Wrong</h2>
-            <p className="text-white/70 mb-6">
+          <div className="relative">
+            <h2 className="font-display text-3xl font-extrabold leading-tight text-white mb-2">Something Went Wrong</h2>
+            <p className="text-plush-200 mb-6">
               If you were charged, please contact support — we&apos;ll sort it out immediately.
             </p>
-            <div className="flex gap-3 justify-center">
-              <Button
+            <div className="flex flex-wrap gap-3 justify-center">
+              <button
+                type="button"
                 onClick={() => { pollTriesRef.current = 0; synced.current = false; verify(); }}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className={`${ACTION} btn-brass px-6 text-base`}
               >
                 Try Again
-              </Button>
-              <Button onClick={onDone} variant="outline" className="border-white/30 text-white hover:bg-white/10">
+              </button>
+              <button type="button" onClick={onDone} className={`${ACTION} btn-glass px-6 text-base`}>
                 Return to Game
-              </Button>
+              </button>
             </div>
-          </>
+          </div>
         )}
       </motion.div>
     </div>
