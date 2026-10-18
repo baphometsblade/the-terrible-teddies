@@ -262,8 +262,9 @@ come from `RARITY_METAL` (`src/lib/rarity.js`). Rules that are easy to break:
 - **Pseudo-elements are claimed.** `.grain`, `.foil`, `.sheen`, `.worn` and
   `.felt-print` use `::after`; `.trim-brass`, `.stitched` and `.stitched-plush`
   use `::before`. Two claimants on one element silently lose one.
-- **No `backdrop-filter` on panels.** A blur over the drifting menu teddies is
-  recomputed every frame; the one blur is on `.dialog-scrim`.
+- **No `backdrop-filter`, anywhere.** What sits behind a panel or a dialog
+  keeps moving (the drifting menu teddies, rare-card foil), and a blur over
+  moving content is recomputed every frame. Darker fills do the separating.
 - **Light effects are CSS, transform/opacity only**, and stop under
   `[data-motion="off"]`, which `MotionPreference` mirrors from the Animations
   setting onto `<html>` (MotionConfig reaches only Framer Motion).
@@ -273,12 +274,25 @@ come from `RARITY_METAL` (`src/lib/rarity.js`). Rules that are easy to break:
   element focusable, which once put a dead tab stop inside every card;
   `a11y.spec.js` now fails on any tab stop that is not a real control.
 
-The battle board is a fixed-height flex column (rails, table, hand), so short
-viewports scale the card rows and hand with `zoom` (`.board-zoom`, 0.85 under
-760px tall, 0.72 under 680px) rather than clipping them; the e2e suite's
-1280x720 default runs at 0.85. While a game is in play GameBoard sets
-`html[data-screen="battle"]`, which moves toasts off the controls: onto the
-table's centre line on narrow screens, over the top of the battle log at lg+.
+The battle board is a fixed-height flex column (rails, table, controls,
+hand). The two card rows are fitted to the felt by measurement — `fitField`
+in GameBoard, a ResizeObserver that sets their CSS `zoom` — because
+viewport-height breakpoints cannot see a phone's browser toolbars or the
+control row wrapping, and with them the player's row spilled onto End Turn.
+`e2e/responsive.spec.js` pins this at real phone viewport sizes. Two things
+keep the measurement honest: the board's height must stay definite (the felt
+is measured from it), and anything that can appear mid-turn — status chips,
+the targeting prompt, the controls on Chuck's turn — reserves its space, or
+the table resizes under the player's finger. The hand steps down by viewport
+height (`.board-zoom`). With a mouse the board keeps at least 640px and
+scrolls past that, so zooming the browser in does not shrink the cards;
+landscape phones get a "turn your phone upright" card (`.rotate-hint`).
+
+While a game is in play GameBoard sets `html[data-screen="battle"]`, which
+moves toasts off the controls: onto the measured centre line on phones
+(`--battle-centre-y`), over the top of the battle log from md up. The board's
+screen-reader announcer is a `role="log"` of recent entries, not one line of
+text — Chuck's turn writes several entries in a single render.
 
 ### Card Art
 
