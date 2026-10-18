@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from "@/components/ui/button";
+import {
+  Target, X, Clock, Check, Gift, Gem, Coins, Package, Star, CalendarDays, CalendarRange,
+} from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore } from '../stores/gameStore';
 import { getDailyChallenges, getWeeklyChallenges, challengeProgress } from '../stores/challenges';
 import confetti from 'canvas-confetti';
 import { useDialog } from '@/hooks/useDialog';
+import { RARITY_METAL } from '@/lib/rarity';
 
 const getTimeUntilReset = (isWeekly = false) => {
   const now = new Date();
@@ -30,92 +33,161 @@ const getTimeUntilReset = (isWeekly = false) => {
     : `${hours}h ${minutes}m`;
 };
 
+// Plain <button>s throughout, not the shadcn Button: its bg-primary is a
+// utility and would beat the btn-brass / btn-glass materials.
+//
+// Focus is drawn as an outline, not a ring: a Tailwind ring is a box-shadow,
+// and it would replace the material's own (btn-brass's lit lip, btn-glass's
+// rim and depth).
+const FOCUS =
+  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
+
+// What each reward type looks like. lucide icons rather than emoji: emoji are
+// a different drawing on every platform. The noun is for screen readers.
+const REWARD_LOOK = {
+  coins: { Icon: Coins, tone: 'text-brass-300', noun: 'coins' },
+  gems: { Icon: Gem, tone: 'text-fuchsia-300', noun: 'gems' },
+  xp: { Icon: Star, tone: 'text-brass-300', noun: 'XP' },
+  pack: { Icon: Package, tone: 'text-sky-300', noun: 'card packs' },
+  legendaryPack: { Icon: Package, tone: 'text-brass-300', noun: 'legendary packs' },
+};
+const OTHER_REWARD = { Icon: Gift, tone: 'text-emerald-300' };
+
+const RewardChip = ({ type, amount, className = '' }) => {
+  const look = REWARD_LOOK[type] ?? { ...OTHER_REWARD, noun: type };
+  return (
+    <span className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg bg-night-950/60 px-2 font-display text-sm font-bold
+      tabular-nums text-white ring-1 ring-inset ring-white/10 ${className}`}
+    >
+      <look.Icon aria-hidden="true" className={`h-4 w-4 ${look.tone}`} strokeWidth={2.2} />
+      {amount}
+      <span className="sr-only"> {look.noun}</span>
+    </span>
+  );
+};
+
 // Hoisted to module scope so it keeps a stable component identity across
 // renders. Declared inside Challenges, it got a fresh type every render — and
 // the 60s syncPeriods/countdown tick re-renders the panel once a minute, so
 // every card visibly re-ran its entrance animation and any focused Claim button
 // lost focus each minute. Reads nothing from the closure now; the parent passes
 // the derived progress/claimed state and the claim handler.
+//
+// Three looks: in progress (smoked glass), finished and waiting (brass trim, a
+// warm glow, the Claim button), and claimed (sunk into the panel, a quiet tick).
+//
+// The title and the reward share the first row and the description runs
+// under both, so a long name has the most room it can get on a phone. The bar
+// row sits under the text from sm up and spans the whole card below that,
+// where indenting it past the icon left a bar barely wider than its label.
 const ChallengeCard = ({ challenge, progress, isClaimed, onClaim }) => {
   const isComplete = progress >= challenge.target;
   const progressPercent = Math.min((progress / challenge.target) * 100, 100);
+  const isReady = isComplete && !isClaimed;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`
-        relative p-4 rounded-xl border transition-all
-        ${isClaimed
-          ? 'bg-green-900/20 border-green-500/30'
-          : isComplete
-            ? 'bg-brass-600/15 border-brass-400/50 shadow-lg shadow-brass-400/20'
-            : 'bg-white/5 border-white/10'}
-      `}
+      className={`relative rounded-xl p-3.5 sm:p-4 ${
+        isClaimed
+          ? 'bg-black/20 ring-1 ring-inset ring-white/5'
+          : isReady
+            ? 'panel-glass trim-brass shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_0_28px_-10px_rgba(251,191,36,0.6)]'
+            : 'panel-glass'
+      }`}
     >
-      {isClaimed && (
-        <div className="absolute top-2 right-2 text-2xl">✅</div>
+      {isReady && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-xl bg-[radial-gradient(ellipse_45%_90%_at_0%_0%,rgba(251,191,36,0.14),transparent_70%)]"
+        />
       )}
 
-      <div className="flex items-start gap-3">
-        <div className={`
-          w-12 h-12 rounded-xl flex items-center justify-center text-2xl
-          ${isComplete ? 'bg-brass-400/20' : 'bg-white/10'}
-        `}>
-          {challenge.icon}
+      <div className="relative flex items-start gap-3 sm:gap-4">
+        {/* The challenge's own emoji is content, so it stays; only the tile
+            behind it is chrome. */}
+        <div
+          className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl text-2xl sm:h-12 sm:w-12 ${
+            isClaimed
+              ? 'bg-black/25 ring-1 ring-inset ring-white/5'
+              : isReady
+                ? 'bg-brass-400/15 ring-1 ring-inset ring-brass-300/40'
+                : 'bg-night-950/50 ring-1 ring-inset ring-white/10'
+          }`}
+        >
+          <span className={isClaimed ? 'opacity-50 grayscale' : ''}>{challenge.icon}</span>
         </div>
 
-        <div className="flex-1">
-          <h3 className={`font-bold ${isComplete ? 'text-brass-300' : 'text-white'}`}>
+        <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3">
+          <h3 className={`font-display font-bold leading-tight ${isClaimed ? 'text-plush-200' : isReady ? 'text-brass-200' : 'text-white'}`}>
             {challenge.name}
           </h3>
-          <p className="text-white/50 text-sm">{challenge.description}</p>
-
-          <div className="mt-2">
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-white/70">{progress} / {challenge.target}</span>
-              <span className={isComplete ? 'text-brass-300' : 'text-white/50'}>
-                {progressPercent.toFixed(0)}%
-              </span>
-            </div>
-            <Progress
-              value={progressPercent}
-              className="h-2 bg-night-950/50 [&>div]:bg-brass-400"
-              aria-label={`${challenge.name} progress: ${progress} of ${challenge.target}`}
-            />
-          </div>
+          <RewardChip type={challenge.reward.type} amount={challenge.reward.amount} className="-mt-0.5" />
+          <p className="col-span-2 mt-0.5 text-sm leading-snug text-plush-300">{challenge.description}</p>
         </div>
+      </div>
 
-        <div className="text-right">
-          <div className={`
-            px-3 py-1 rounded-lg text-sm font-semibold mb-2
-            ${challenge.reward.type === 'gems' ? 'bg-purple-500/30 text-purple-300' :
-              challenge.reward.type === 'coins' ? 'bg-brass-400/20 text-brass-200' :
-              challenge.reward.type === 'pack' || challenge.reward.type === 'legendaryPack' ? 'bg-blue-500/30 text-blue-300' :
-              'bg-green-500/30 text-green-300'}
-          `}>
-            {challenge.reward.type === 'gems' && '💎'}
-            {challenge.reward.type === 'coins' && '🪙'}
-            {challenge.reward.type === 'pack' && '📦'}
-            {challenge.reward.type === 'legendaryPack' && '⭐'}
-            {challenge.reward.type === 'xp' && '⭐'}
-            {' '}{challenge.reward.amount}
-          </div>
-
-          {isComplete && !isClaimed && (
-            <Button
-              size="sm"
+      <div className="relative mt-3 flex min-h-8 items-center gap-3 sm:pl-16">
+        <Progress
+          value={progressPercent}
+          className={`h-2 flex-1 bg-night-950/70 ring-1 ring-inset ring-white/[0.08] ${
+            isClaimed
+              ? '[&>div]:bg-plush-400/50'
+              : '[&>div]:bg-gradient-to-r [&>div]:from-brass-200 [&>div]:to-brass-500'
+          }`}
+          aria-label={`${challenge.name} progress: ${progress} of ${challenge.target}`}
+        />
+        {/* One fixed-width status slot, so every bar in the list ends at
+            the same x whatever sits beside it. */}
+        <div className="flex w-[4.75rem] shrink-0 justify-end">
+          {isReady && (
+            <button
+              type="button"
               onClick={onClaim}
-              className="bg-brass-400 hover:bg-brass-500 text-night-950 font-bold"
+              className={`btn-brass h-8 rounded-lg px-4 font-display text-sm font-bold ${FOCUS}`}
             >
               Claim
-            </Button>
+            </button>
+          )}
+          {isClaimed && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-plush-300">
+              <Check aria-hidden="true" className="h-3.5 w-3.5 text-emerald-300" strokeWidth={3} />
+              Claimed
+            </span>
+          )}
+          {!isComplete && !isClaimed && (
+            <span className="whitespace-nowrap font-display text-sm font-bold tabular-nums text-plush-100">
+              {progress}<span className="text-plush-300"> / {challenge.target}</span>
+            </span>
           )}
         </div>
       </div>
     </motion.div>
   );
 };
+
+// A segmented control recessed into the panel, the same as the Shop's tabs.
+// aria-pressed rather than role=tab: these are plain buttons, and the tab role
+// would also need tablist/tabpanel wiring and arrow-key handling.
+const TabButton = ({ active, onClick, icon: Icon, label, done, total }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-pressed={active}
+    className={`flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 py-2.5 font-display text-[15px] font-bold leading-tight
+      transition-colors ${FOCUS}
+      ${active ? 'btn-glass border-brass-300/40 text-brass-200' : 'border border-transparent text-plush-300 hover:text-white'}`}
+  >
+    <Icon aria-hidden="true" className={`hidden h-4 w-4 shrink-0 min-[360px]:block ${active ? 'text-brass-300' : ''}`} strokeWidth={2.2} />
+    {label}
+    <span className={`rounded-full px-2 py-0.5 text-[11px] leading-tight tabular-nums ${
+      active ? 'bg-brass-400/15 text-brass-200' : 'bg-white/5 text-plush-300'}`}
+    >
+      {done}/{total}
+    </span>
+  </button>
+);
 
 const Challenges = ({ onClose }) => {
   const {
@@ -218,55 +290,69 @@ const Challenges = ({ onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-label="Challenges"
-      className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 dialog-scrim flex items-center justify-center p-3 sm:p-6"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-night-700 via-night-800 to-night-950 rounded-2xl max-w-2xl w-full shadow-2xl border border-plush-700/40 overflow-hidden max-h-[90vh] flex flex-col"
+        className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl dialog-panel"
       >
+        {/* Amber light over the header, the same as the Shop's. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[radial-gradient(ellipse_55%_100%_at_0%_0%,rgba(251,191,36,0.14),transparent_70%)]"
+        />
+
         {/* Header */}
-        <div className="bg-gradient-to-r from-red-900 to-night-700 border-b border-brass-400/30 p-4 flex justify-between items-center">
-          <h2 className="text-2xl font-display font-bold text-white flex items-center gap-2">
-            <span className="text-3xl">🎯</span> Challenges
+        <div className="relative flex items-center gap-3 px-4 pt-4 pb-4 sm:px-6 sm:pt-5">
+          <div aria-hidden="true" className="h-11 w-11 shrink-0 rounded-full p-[2px]" style={{ background: RARITY_METAL.legendary }}>
+            <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
+              <Target className="h-5 w-5 text-brass-300" strokeWidth={2} />
+            </div>
+          </div>
+          <h2 className="min-w-0 flex-1 whitespace-nowrap font-display text-3xl font-extrabold leading-none text-brass-gradient">
+            Challenges
           </h2>
-          <button onClick={onClose} className="text-white/70 hover:text-white text-2xl" aria-label="Close challenges">×</button>
+          <button
+            type="button"
+            onClick={onClose}
+            className={`btn-glass grid h-10 w-10 shrink-0 place-items-center rounded-xl ${FOCUS}`}
+            aria-label="Close challenges"
+          >
+            <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
+          </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-white/10">
-          <button
-            onClick={() => setActiveTab('daily')}
-            className={`flex-1 py-4 text-center font-semibold transition-all relative ${
-              activeTab === 'daily' ? 'text-white bg-white/10' : 'text-white/50 hover:text-white/80'
-            }`}
-          >
-            <span className="mr-2">📅</span>Daily
-            <span className="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded-full">
-              {dailyComplete}/{DAILY_CHALLENGES.length}
-            </span>
-            {activeTab === 'daily' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-400" />}
-          </button>
-          <button
-            onClick={() => setActiveTab('weekly')}
-            className={`flex-1 py-4 text-center font-semibold transition-all relative ${
-              activeTab === 'weekly' ? 'text-white bg-white/10' : 'text-white/50 hover:text-white/80'
-            }`}
-          >
-            <span className="mr-2">📆</span>Weekly
-            <span className="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded-full">
-              {weeklyComplete}/{WEEKLY_CHALLENGES.length}
-            </span>
-            {activeTab === 'weekly' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-400" />}
-          </button>
+        {/* Tabs: a segmented control recessed into the panel. */}
+        <div className="relative px-4 sm:px-6">
+          <div className="flex gap-1 rounded-xl border border-white/5 bg-night-950/70 p-1 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+            <TabButton
+              active={activeTab === 'daily'}
+              onClick={() => setActiveTab('daily')}
+              icon={CalendarDays}
+              label="Daily"
+              done={dailyComplete}
+              total={DAILY_CHALLENGES.length}
+            />
+            <TabButton
+              active={activeTab === 'weekly'}
+              onClick={() => setActiveTab('weekly')}
+              icon={CalendarRange}
+              label="Weekly"
+              done={weeklyComplete}
+              total={WEEKLY_CHALLENGES.length}
+            />
+          </div>
         </div>
 
         {/* Reset Timer */}
-        <div className="px-4 py-2 bg-black/30 flex justify-between items-center text-sm">
-          <span className="text-white/50">
-            {activeTab === 'daily' ? 'Daily' : 'Weekly'} Reset In:
+        <div className="relative flex items-center gap-3 px-4 pt-4 pb-1 sm:px-6">
+          <span className="label-caps shrink-0 text-plush-300">
+            {activeTab === 'daily' ? 'Daily' : 'Weekly'} Reset In
           </span>
-          <span className="text-orange-400 font-mono font-bold">
+          <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
+          <span className="inline-flex shrink-0 items-center gap-1.5 font-display text-sm font-bold tabular-nums text-brass-200">
+            <Clock aria-hidden="true" className="h-3.5 w-3.5 text-brass-300" strokeWidth={2.4} />
             {activeTab === 'daily' ? dailyResetTime : weeklyResetTime}
           </span>
         </div>
@@ -276,13 +362,13 @@ const Challenges = ({ onClose }) => {
           role="region"
           aria-label={`${activeTab === 'daily' ? 'Daily' : 'Weekly'} challenges`}
           tabIndex={0}
-          className="p-4 flex-1 overflow-y-auto space-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+          className="relative flex-1 overflow-y-auto px-4 pt-2 pb-4 sm:px-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300"
         >
           <AnimatePresence mode="wait">
             {activeTab === 'daily' && (
-              <motion.div key="daily" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div key="daily" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
                 {DAILY_CHALLENGES.map((challenge) => (
-                  <div key={challenge.id} className="mb-3">
+                  <div key={challenge.id}>
                     <ChallengeCard
                       challenge={challenge}
                       progress={getChallengeProgress(challenge)}
@@ -295,9 +381,9 @@ const Challenges = ({ onClose }) => {
             )}
 
             {activeTab === 'weekly' && (
-              <motion.div key="weekly" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div key="weekly" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
                 {WEEKLY_CHALLENGES.map((challenge) => (
-                  <div key={challenge.id} className="mb-3">
+                  <div key={challenge.id}>
                     <ChallengeCard
                       challenge={challenge}
                       progress={getChallengeProgress(challenge)}
@@ -311,37 +397,53 @@ const Challenges = ({ onClose }) => {
           </AnimatePresence>
         </div>
 
-        {/* Bonus Progress */}
-        <div className="bg-gradient-to-r from-night-800/70 to-night-700/70 p-4 border-t border-white/10">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-white font-semibold">Complete All {activeTab === 'daily' ? 'Daily' : 'Weekly'} Challenges</div>
-              <div className="text-white/50 text-sm">Bonus reward for completing all challenges</div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <div className="text-purple-400">💎 {BONUS[activeTab].gems}</div>
-                <div className="text-brass-300">🪙 {BONUS[activeTab].coins}</div>
+        {/* Bonus Progress: the panel's foot, a darker shelf under the list. */}
+        <div className="relative border-t border-white/10 bg-night-950/45 px-4 py-3.5 sm:px-6 sm:py-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-[15px] font-bold leading-tight text-white sm:text-base">
+                Complete All {activeTab === 'daily' ? 'Daily' : 'Weekly'} Challenges
               </div>
-              {(claimedChallenges ?? []).includes(BONUS[activeTab].key) ? (
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl bg-green-600/40 text-white">
-                  ✅
-                </div>
-              ) : (
+              <div className="mt-0.5 text-xs leading-snug text-plush-300 sm:text-sm">Bonus reward for completing all challenges</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <RewardChip type="gems" amount={BONUS[activeTab].gems} />
+                <RewardChip type="coins" amount={BONUS[activeTab].coins} />
+              </div>
+            </div>
+            {(claimedChallenges ?? []).includes(BONUS[activeTab].key) ? (
+              <div className="inline-flex h-12 shrink-0 items-center gap-1.5 rounded-xl bg-black/25 px-3 ring-1 ring-inset ring-white/10">
+                <Check aria-hidden="true" className="h-5 w-5 text-emerald-300" strokeWidth={2.6} />
+                <span className="text-xs font-semibold text-plush-300">
+                  Claimed<span className="sr-only"> bonus</span>
+                </span>
+              </div>
+            ) : (
+              <div className="relative shrink-0">
+                {/* Ready: a glow breathes behind the button (opacity only, on
+                    the compositor) rather than the button itself pulsing, which
+                    would fade its own label in and out. */}
+                {BONUS[activeTab].allDone && (
+                  <span aria-hidden="true" className="absolute -inset-1 rounded-2xl bg-brass-300/40 blur-md motion-safe:animate-pulse" />
+                )}
+                {/* Not ready: the gift sits locked in a dim glass key. The
+                    button is disabled, so nothing it says has to be read —
+                    the tab's count already says how far there is to go. */}
                 <button
+                  type="button"
                   onClick={() => claimBonus(activeTab)}
                   disabled={!BONUS[activeTab].allDone}
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-all ${
+                  className={`relative inline-flex h-12 items-center justify-center gap-2 rounded-xl font-display font-bold ${FOCUS} ${
                     BONUS[activeTab].allDone
-                      ? 'bg-brass-400 text-night-950 hover:scale-105 cursor-pointer animate-pulse'
-                      : 'bg-white/10 text-white/30 cursor-not-allowed'
+                      ? 'btn-brass px-4'
+                      : 'btn-glass w-12 cursor-not-allowed text-plush-400 opacity-60'
                   }`}
                   aria-label="Claim all-challenges bonus"
                 >
-                  🎁
+                  <Gift aria-hidden="true" className="h-5 w-5" strokeWidth={2.2} />
+                  {BONUS[activeTab].allDone && <span>Claim</span>}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
