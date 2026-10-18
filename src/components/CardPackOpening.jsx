@@ -3,56 +3,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Package, PackageOpen, Gem, Crown, Coins, X, Sparkles, PartyPopper } from 'lucide-react';
 import TeddyCard, { CardBack } from './TeddyCard';
 import { useGameStore } from '../stores/gameStore';
-import confetti from 'canvas-confetti';
 import { useDialog } from '@/hooks/useDialog';
+import { celebrate } from '@/lib/celebrate';
+import { FOCUS_OUTLINE } from '@/lib/focus';
+import { Medallion, BalanceChip } from '@/components/ui/game-chrome';
+import { PACK_LOOK, HeroPack, PackStack } from './PackArt';
 
 import { RARITY, RARITY_ORDER, RARITY_METAL } from '@/lib/rarity';
 
 // Plain <button>s rather than the shadcn Button: its bg-primary is a utility
 // and would beat the component-layer btn-brass / btn-glass materials.
-const FOCUS =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300 ' +
-  'focus-visible:ring-offset-2 focus-visible:ring-offset-night-900';
-const ACTION = `inline-flex items-center justify-center gap-2 h-11 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS}`;
+const ACTION = `inline-flex items-center justify-center gap-2 h-11 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS_OUTLINE}`;
 
-// One look per pack tier, shared with the Shop's pack tiles: a metal frame from
-// the rarity ladder over a tinted face, with a foil sweep (index.css .foil,
-// CSS-only and off when Animations are). `glow` is the light the pack sits in.
-const PACK_LOOK = {
-  regular: {
-    metal: RARITY_METAL.common,
-    face: 'linear-gradient(165deg, #4b2a72 0%, #2b1845 55%, #170d25 100%)',
-    Icon: Package,
-    tone: 'text-brass-300',
-    tagTone: 'text-brass-300',
-    foil: 'foil',
-    glow: 'rgba(251, 191, 36, 0.28)',
-    light: 'rgba(251, 191, 36, 0.14)',
-  },
-  premium: {
-    metal: RARITY_METAL.epic,
-    face: 'linear-gradient(165deg, #6d28d9 0%, #3b0f6b 55%, #1a0b30 100%)',
-    Icon: Gem,
-    tone: 'text-fuchsia-200',
-    tagTone: 'text-sky-300',
-    foil: 'foil foil-epic',
-    glow: 'rgba(192, 132, 252, 0.4)',
-    light: 'rgba(192, 132, 252, 0.18)',
-  },
-  legendary: {
-    metal: RARITY_METAL.legendary,
-    face: 'linear-gradient(165deg, #92400e 0%, #7c2d12 45%, #3b1508 100%)',
-    Icon: Crown,
-    tone: 'text-brass-200',
-    tagTone: 'text-brass-200',
-    foil: 'foil',
-    glow: 'rgba(251, 191, 36, 0.5)',
-    light: 'rgba(251, 191, 36, 0.24)',
-  },
-};
+// panel-glass paints a gradient IMAGE, so a hover background-color sits under
+// it and never shows. The hover state is a lighter image instead.
+const TILE_HOVER = 'hover:[background-image:linear-gradient(180deg,rgba(59,45,84,0.85),rgba(32,23,47,0.92))]';
 
-// The crimped seal along the top and bottom of a foil pack.
-const CRIMP = 'bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.2)_0_1px,rgba(0,0,0,0.25)_1px_3px)]';
+// Same wiring as the GameBoard's fitField: CSS zoom, not transform, so bigger
+// cards take the room they appear to. The zoom is measured rather than set at
+// a breakpoint, because a breakpoint cannot know whether five zoomed cards fit:
+// at md:[zoom:1.4] an iPad in portrait dealt 4 + 1. The row is capped at five
+// cards (5 x 96 + 4 x 16 = 544, plus slack), and only zoomed once that cap
+// fits; below it the cards stay 96px and wrap. A ten-card pack is two rows.
+const ROW_CAP = 552;
 
 const CardPackOpening = ({ onClose }) => {
   const { cardPacks, premiumPacks, legendaryPacks, openCardPack, coins, gems, buyShopItem, getNextPackType } = useGameStore();
@@ -62,6 +35,13 @@ const CardPackOpening = ({ onClose }) => {
   const [revealedIndex, setRevealedIndex] = useState(-1);
   const [showPack, setShowPack] = useState(true);
   const [packAnimation, setPackAnimation] = useState(false);
+  // The tier being opened. The store consumes the pack 1.2s in, after which
+  // getNextPackType() already names the NEXT pack, so the stage light used to
+  // switch tiers for the whole reveal of the last premium or legendary pack.
+  const [openedType, setOpenedType] = useState(null);
+  // What a screen reader hears: the tear, each card as it turns, the summary.
+  // Always mounted, so a change to its text is announced.
+  const [announcement, setAnnouncement] = useState('');
 
   const totalPacks = cardPacks + premiumPacks + legendaryPacks;
   const nextPackType = getNextPackType();
@@ -77,8 +57,25 @@ const CardPackOpening = ({ onClose }) => {
     return () => timeouts.forEach(clearTimeout);
   }, []);
 
+  const stageRef = useRef(null);
+  const closeRef = useRef(null);
+  const openRef = useRef(null);
+  const openAnotherRef = useRef(null);
+  const doneRef = useRef(null);
+
+  // The card table's width, for the reveal row's zoom.
+  const fieldRef = useRef(null);
+  const [fieldWidth, setFieldWidth] = useState(0);
+  useEffect(() => {
+    const el = fieldRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(([entry]) => setFieldWidth(entry.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const fireConfetti = (rarity) => {
-    confetti({
+    celebrate({
       particleCount: rarity === 'legendary' ? 150 : rarity === 'epic' ? 100 : 50,
       spread: 70,
       origin: { y: 0.6 },
@@ -89,10 +86,16 @@ const CardPackOpening = ({ onClose }) => {
   const handleOpenPack = () => {
     if (totalPacks <= 0 || isOpening) return;
 
+    const opening = getNextPackType();
     setIsOpening(true);
     setPackAnimation(true);
     setPulledCards(null);
     setRevealedIndex(-1);
+    setOpenedType(opening);
+    setAnnouncement(`Opening ${opening === 'legendary' ? 'Legendary ' : opening === 'premium' ? 'Premium ' : ''}pack…`);
+    // The control that was pressed unmounts now. Hold focus on the table
+    // until the reveal ends, rather than letting it fall out of the dialog.
+    stageRef.current?.focus({ preventScroll: true });
 
     track(setTimeout(() => {
       setShowPack(false);
@@ -105,15 +108,21 @@ const CardPackOpening = ({ onClose }) => {
         setIsOpening(false);
         setShowPack(true);
         setPackAnimation(false);
+        setOpenedType(null);
+        setAnnouncement('');
         return;
       }
       const { cards, dupeCoins: refund } = result;
+      setOpenedType(packType);
       setPulledCards(cards);
       setDupeCoins(refund);
 
       cards.forEach((card, index) => {
         track(setTimeout(() => {
           setRevealedIndex(index);
+          setAnnouncement(
+            `${card.name}, ${card.rarity}${card.isNew ? ', new' : ''}. Card ${index + 1} of ${cards.length}.`
+          );
           if (card.rarity === 'legendary' || card.rarity === 'epic') {
             fireConfetti(card.rarity);
           } else if (card.rarity === 'rare' && card.isNew) {
@@ -126,6 +135,37 @@ const CardPackOpening = ({ onClose }) => {
         setIsOpening(false);
       }, 500 + cards.length * 500 + 500));
     }, 1200));
+  };
+
+  // When the reveal ends, hand focus to the next thing to do (Open Another, or
+  // Done), then say how it went: the summary goes after the focus move, which
+  // a screen reader would otherwise speak over it. Scrolled into view only for
+  // a keyboard user — a sighted mouse user is watching the cards.
+  const wasOpening = useRef(false);
+  useEffect(() => {
+    if (isOpening) { wasOpening.current = true; return; }
+    if (!wasOpening.current) return;
+    wasOpening.current = false;
+    const keyboard = document.activeElement?.matches?.(':focus-visible') ?? false;
+    const next = pulledCards ? (openAnotherRef.current || doneRef.current) : openRef.current;
+    next?.focus({ preventScroll: !keyboard });
+    if (pulledCards) {
+      const fresh = pulledCards.filter(c => c.isNew).length;
+      setAnnouncement([
+        `Pack opened: ${pulledCards.length} cards.`,
+        fresh > 0 ? `${fresh} new card${fresh > 1 ? 's' : ''} added to collection!` : '',
+        dupeCoins > 0 ? `+${dupeCoins} coins for duplicate cards.` : '',
+      ].filter(Boolean).join(' '));
+    }
+  }, [isOpening, pulledCards, dupeCoins]);
+
+  // While the table holds focus there is nothing after it to Tab to (the shop
+  // is hidden mid-reveal), and the browser would carry focus out of the dialog.
+  const onStageKeyDown = (e) => {
+    if (e.key !== 'Tab' || e.shiftKey || e.target !== e.currentTarget) return;
+    if (e.currentTarget.querySelector('button')) return;
+    e.preventDefault();
+    closeRef.current?.focus();
   };
 
   const handleBuyPack = (itemId) => {
@@ -141,6 +181,8 @@ const CardPackOpening = ({ onClose }) => {
     setRevealedIndex(-1);
     setShowPack(true);
     setPackAnimation(false);
+    setOpenedType(null);
+    setAnnouncement('');
   };
 
   const resetAndClose = () => {
@@ -153,8 +195,18 @@ const CardPackOpening = ({ onClose }) => {
   const newCardsCount = pulledCards ? pulledCards.filter(c => c.isNew).length : 0;
 
   const look = PACK_LOOK[nextPackType] || PACK_LOOK.regular;
+  // The stage is lit by the pack being opened while it opens and is revealed,
+  // and by the pack on the table otherwise.
+  const litType = ((isOpening || pulledCards) ? openedType : nextPackType) || nextPackType || 'regular';
   const tierName = nextPackType === 'legendary' ? 'Legendary' : nextPackType === 'premium' ? 'Premium' : '';
   const canOpen = totalPacks > 0 && !isOpening;
+  // Only the tear needs the case to clip (its flash grows to ~2.3x the pack).
+  // Clipping the reveal cut the rare+ glows off in a hard line along the case
+  // wall on phones and sat the legendary crown on the top edge.
+  const tearing = packAnimation && showPack;
+
+  const fits = fieldWidth >= ROW_CAP;
+  const zoom = pulledCards && fits ? Math.min(pulledCards.length > 5 ? 1.15 : 1.4, fieldWidth / ROW_CAP) : 1;
 
   return (
     <div
@@ -168,35 +220,40 @@ const CardPackOpening = ({ onClose }) => {
       className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center p-3 sm:p-6 overflow-y-auto"
     >
       <div className="relative w-full max-w-5xl rounded-2xl dialog-panel overflow-hidden">
-        {/* Header. On a phone the balances drop to their own row under the
-            title and the close control. */}
+        {/* Header. Below md the balances take their own row under the title
+            and the close control: from sm they no longer fit beside a
+            "Card Packs" title and the X wrapped under it. */}
         <div className="relative flex flex-wrap items-center gap-3 px-3 sm:px-6 pt-4 sm:pt-5 pb-4">
           <div className="flex items-center gap-3 min-w-0 mr-auto">
-            <div aria-hidden="true" className="w-11 h-11 shrink-0 rounded-full p-[2px]" style={{ background: RARITY_METAL.legendary }}>
-              <div className="grid place-items-center w-full h-full rounded-full bg-night-900">
-                <Package className="w-5 h-5 text-brass-300" strokeWidth={2} />
-              </div>
-            </div>
+            <Medallion icon={Package} />
             <h1 className="font-display text-3xl md:text-4xl font-extrabold leading-none text-brass-gradient">
               Card Packs
             </h1>
           </div>
-          <div className="order-last w-full sm:order-none sm:w-auto flex flex-wrap items-center gap-2">
-            <Balance icon={Coins} tone="text-brass-300" noun="coins">{coins.toLocaleString()}</Balance>
-            <Balance icon={Gem} tone="text-fuchsia-300" noun="gems">{gems.toLocaleString()}</Balance>
-            <Balance icon={Package} tone="text-sky-300" noun="packs to open">
-              {totalPacks}
-              {(premiumPacks > 0 || legendaryPacks > 0) && (
-                <span className="ml-1 font-sans text-xs font-semibold text-plush-300">
-                  ({cardPacks}+{premiumPacks}P+{legendaryPacks}L)
-                </span>
+          <div className="order-last w-full md:order-none md:w-auto flex flex-wrap items-center gap-2">
+            <BalanceChip icon={Coins} tone="text-brass-300" noun="coins" value={coins.toLocaleString()} />
+            <BalanceChip icon={Gem} tone="text-fuchsia-300" noun="gems" value={gems.toLocaleString()} />
+            <BalanceChip
+              icon={Package}
+              tone="text-sky-300"
+              noun="packs to open"
+              value={(
+                <>
+                  {totalPacks}
+                  {(premiumPacks > 0 || legendaryPacks > 0) && (
+                    <span className="ml-1 font-sans text-xs font-semibold text-plush-300">
+                      ({cardPacks}+{premiumPacks}P+{legendaryPacks}L)
+                    </span>
+                  )}
+                </>
               )}
-            </Balance>
+            />
           </div>
           <button
+            ref={closeRef}
             type="button"
             onClick={resetAndClose}
-            className={`btn-glass grid place-items-center w-10 h-10 shrink-0 rounded-xl ${FOCUS}`}
+            className={`btn-glass grid place-items-center w-10 h-10 shrink-0 rounded-xl ${FOCUS_OUTLINE}`}
             aria-label="Close card packs"
           >
             <X aria-hidden="true" className="w-5 h-5" strokeWidth={2.4} />
@@ -204,17 +261,37 @@ const CardPackOpening = ({ onClose }) => {
         </div>
 
         <div className="relative px-3 sm:px-6 pb-5 sm:pb-6">
+          <p role="status" className="sr-only">{announcement}</p>
+
           {/* The stage: a lit display case the pack sits in and the cards are
-              dealt onto. Isolated so the pack's glow can sit behind it. */}
-          <div className="relative isolate overflow-hidden rounded-2xl border border-white/5 bg-night-950/55 shadow-[inset_0_2px_24px_rgba(0,0,0,0.65)] px-3 py-6 sm:p-8">
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 -z-10 transition-[background] duration-500"
-              style={{ background: `radial-gradient(ellipse 60% 70% at 50% 0%, ${look.light}, transparent 70%)` }}
-            />
+              dealt onto. Isolated so the pack's glow can sit behind it. It
+              holds focus while a pack opens (the Open button is gone by then),
+              hence the tab index and the name. */}
+          <div
+            ref={stageRef}
+            tabIndex={-1}
+            role="group"
+            aria-label="Pack table"
+            onKeyDown={onStageKeyDown}
+            className={`relative isolate rounded-2xl border border-white/5 bg-night-950/55 shadow-[inset_0_2px_24px_rgba(0,0,0,0.65)] px-3 py-6 sm:p-8 outline-none ${
+              tearing ? 'overflow-hidden' : ''
+            }`}
+          >
+            {/* The tier's light, one layer per tier, cross-faded on opacity
+                (a gradient cannot be transitioned). */}
+            {Object.entries(PACK_LOOK).map(([type, l]) => (
+              <div
+                key={type}
+                aria-hidden="true"
+                className={`absolute inset-0 -z-10 rounded-[inherit] transition-opacity duration-500 motion-reduce:transition-none [[data-motion=off]_&]:transition-none ${
+                  type === litType ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{ background: `radial-gradient(ellipse 60% 70% at 50% 0%, ${l.light}, transparent 70%)` }}
+              />
+            ))}
 
             {/* Pack display / Card reveal */}
-            <div className="flex flex-col items-center justify-center min-h-[300px]">
+            <div ref={fieldRef} className="flex flex-col items-center justify-center min-h-[300px]">
               <AnimatePresence mode="wait">
                 {!pulledCards && showPack && (
                   <motion.div
@@ -234,13 +311,19 @@ const CardPackOpening = ({ onClose }) => {
                     className={`relative isolate ${canOpen ? 'cursor-pointer' : ''}`}
                     onClick={canOpen ? handleOpenPack : undefined}
                   >
-                    <div
-                      aria-hidden="true"
-                      className="absolute -inset-8 -z-10 rounded-[3rem] blur-2xl motion-safe:animate-pulse [[data-motion=off]_&]:animate-none"
-                      style={{ background: `radial-gradient(ellipse at center, ${look.glow}, transparent 70%)` }}
-                    />
-                    <div className={`transition-transform duration-300 ${canOpen ? 'hover:-translate-y-1.5' : ''} ${totalPacks === 0 ? 'opacity-50 saturate-50' : ''}`}>
-                      <HeroPack look={look} nextPackType={nextPackType} />
+                    {/* The light the pack sits in. No blur: the gradient already
+                        fades to nothing, and a pulsing 40px blur was redrawn on
+                        every frame of an idle screen. It pulses only while there
+                        is a pack to open, and goes out when there is none. */}
+                    {totalPacks > 0 && (
+                      <div
+                        aria-hidden="true"
+                        className={`absolute -inset-10 -z-10 rounded-full ${canOpen ? 'motion-safe:animate-pulse' : ''}`}
+                        style={{ background: `radial-gradient(ellipse at center, ${look.glow}, transparent 70%)` }}
+                      />
+                    )}
+                    <div className={`transition-transform duration-300 ${canOpen ? 'hover:-translate-y-1.5' : ''}`}>
+                      <HeroPack look={look} dimmed={totalPacks === 0} />
                     </div>
                     {/* The flash as it tears. Centred by the plain wrapper; the
                         motion layer animates only scale and opacity. */}
@@ -263,12 +346,12 @@ const CardPackOpening = ({ onClose }) => {
                     animate={{ opacity: 1 }}
                     className="w-full"
                   >
-                    {/* zoom, not transform, so the bigger cards take the room
-                        they appear to and the row still wraps honestly. Five
-                        across on a wide screen; a ten-card pack is two rows. */}
-                    <div className={`mx-auto flex flex-wrap justify-center gap-x-3 gap-y-4 md:gap-x-4 md:max-w-[552px] ${
-                      pulledCards.length > 5 ? 'md:[zoom:1.15]' : 'md:[zoom:1.4]'
-                    }`}>
+                    {/* gap-y-6: the legendary crown stands 24px above its card,
+                        and in a narrower gap it sat on the caption above. */}
+                    <div
+                      className={`mx-auto flex flex-wrap justify-center gap-y-6 max-w-[552px] ${fits ? 'gap-x-4' : 'gap-x-3'}`}
+                      style={zoom !== 1 ? { zoom } : undefined}
+                    >
                       {pulledCards.map((card, index) => (
                         <RevealCard
                           key={`${card.id}-${index}`}
@@ -307,8 +390,15 @@ const CardPackOpening = ({ onClose }) => {
             {/* Actions */}
             <div className="flex flex-wrap justify-center gap-3 mt-7 min-h-11">
               {!pulledCards && !isOpening && totalPacks > 0 && (
-                <button type="button" onClick={handleOpenPack} className={`${ACTION} btn-brass sheen relative px-8 text-lg`}>
-                  <PackageOpen aria-hidden="true" className="w-5 h-5" strokeWidth={2.2} />
+                // Below sm it sheds the icon and some padding: at 320 the
+                // Legendary label alone is wider than the case at text-lg.
+                <button
+                  ref={openRef}
+                  type="button"
+                  onClick={handleOpenPack}
+                  className={`${ACTION} btn-brass sheen relative px-4 text-base sm:px-8 sm:text-lg`}
+                >
+                  <PackageOpen aria-hidden="true" className="hidden min-[360px]:block w-5 h-5" strokeWidth={2.2} />
                   {`Open ${tierName ? `${tierName} ` : ''}Pack (${totalPacks})`}
                 </button>
               )}
@@ -323,6 +413,7 @@ const CardPackOpening = ({ onClose }) => {
                 <>
                   {totalPacks > 0 && (
                     <button
+                      ref={openAnotherRef}
                       type="button"
                       onClick={() => { resetView(); handleOpenPack(); }}
                       className={`${ACTION} btn-brass px-6 text-base`}
@@ -331,7 +422,7 @@ const CardPackOpening = ({ onClose }) => {
                       Open Another ({totalPacks})
                     </button>
                   )}
-                  <button type="button" onClick={resetAndClose} className={`${ACTION} btn-glass sm:min-w-[7rem] px-6 text-base`}>
+                  <button ref={doneRef} type="button" onClick={resetAndClose} className={`${ACTION} btn-glass sm:min-w-[7rem] px-6 text-base`}>
                     Done
                   </button>
                 </>
@@ -438,16 +529,6 @@ const CardPackOpening = ({ onClose }) => {
   );
 };
 
-// The icon carries the meaning visually; the sr-only noun carries it for a
-// screen reader. (aria-label on a role-less div is prohibited in ARIA 1.2.)
-const Balance = ({ icon: Icon, tone, noun, children }) => (
-  <div className="panel-glass rounded-xl h-10 pl-2.5 pr-3 flex items-center gap-1.5">
-    <Icon aria-hidden="true" className={`w-4 h-4 ${tone}`} strokeWidth={2.4} />
-    <span className={`font-display font-extrabold text-[15px] tabular-nums ${tone}`}>{children}</span>
-    <span className="sr-only">{noun}</span>
-  </div>
-);
-
 const Rate = ({ rarity, tone, children }) => (
   <span className={`inline-flex items-center gap-1.5 ${tone}`}>
     <span aria-hidden="true" className="w-2 h-2 rounded-full" style={{ background: RARITY_METAL[rarity] }} />
@@ -455,50 +536,15 @@ const Rate = ({ rarity, tone, children }) => (
   </span>
 );
 
-// The pack on the table, at full size.
-const HeroPack = ({ look, nextPackType }) => (
-  <div
-    className="relative w-48 h-64 sm:w-52 sm:h-72 rounded-2xl shadow-[0_30px_50px_-22px_rgba(0,0,0,0.95)]"
-    style={{ border: '3px solid transparent', background: `${look.face} padding-box, ${look.metal} border-box` }}
-  >
-    <div className="absolute inset-0 rounded-[13px] overflow-hidden">
-      <div className={`absolute inset-x-0 top-0 h-4 ${CRIMP} shadow-[0_2px_4px_rgba(0,0,0,0.35)]`} />
-      <div className={`absolute inset-x-0 bottom-0 h-4 ${CRIMP} shadow-[0_-2px_4px_rgba(0,0,0,0.35)]`} />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_25%_12%,rgba(255,255,255,0.2),transparent_60%)]" />
-      <div className={`absolute inset-0 pointer-events-none ${look.foil}`} />
-    </div>
-    <div className="relative h-full flex flex-col items-center justify-center px-4 text-center">
-      <div className="w-20 h-20 rounded-full p-[3px] shadow-[0_8px_18px_-8px_rgba(0,0,0,0.9)]" style={{ background: look.metal }}>
-        <div className="grid place-items-center w-full h-full rounded-full bg-night-950/75">
-          <look.Icon aria-hidden="true" className={`w-9 h-9 ${look.tone}`} strokeWidth={1.75} />
-        </div>
-      </div>
-      <div className="mt-4 text-white font-display font-extrabold text-2xl leading-tight [text-shadow:0_2px_6px_rgba(0,0,0,0.6)]">
-        {nextPackType === 'legendary' ? 'Legendary Pack' : nextPackType === 'premium' ? 'Premium Pack' : 'Terrible Teddies'}
-      </div>
-      <div className={`mt-1 label-caps ${look.tagTone}`}>
-        {nextPackType === 'legendary' ? 'GUARANTEED LEGENDARY!' : nextPackType === 'premium' ? 'GUARANTEED RARE+' : 'CARD PACK'}
-      </div>
-      <div className="text-white/80 text-xs mt-2">{nextPackType === 'legendary' ? '10 Cards Inside' : '5 Cards Inside'}</div>
-      <div className="mt-4 flex gap-1.5">
-        {RARITY_ORDER.map((rarity) => (
-          <div
-            key={rarity}
-            className="w-2.5 h-2.5 rounded-full ring-1 ring-black/40"
-            style={{ background: RARITY_METAL[rarity] }}
-            title={rarity}
-          />
-        ))}
-      </div>
-    </div>
-  </div>
-);
-
 // One card of the reveal. It is dealt onto the table face down, then turns
 // over when its turn comes: a real two-faced flip (each face hides its back),
 // so the front is never seen mirrored. The face is only mounted once revealed,
 // so nothing about the pull is in the DOM before the player sees it. Everything
 // here is a one-shot animation on transform/opacity.
+//
+// The back stays mounted under the face for the flip, so it is aria-hidden:
+// backface-visibility hides it from the eye only, and its 🧸 prefixed every
+// revealed card with "teddy bear" for a screen reader.
 const RevealCard = ({ card, index, revealed }) => {
   const r = RARITY[card.rarity];
   const rank = RARITY_ORDER.indexOf(card.rarity);
@@ -520,6 +566,7 @@ const RevealCard = ({ card, index, revealed }) => {
             className={`absolute -inset-3 rounded-2xl blur-xl bg-gradient-to-br ${r.gradient}`}
           />
         )}
+        {!revealed && <span className="sr-only">Face-down card</span>}
         <motion.div
           initial={false}
           animate={{ rotateY: revealed ? 0 : 180 }}
@@ -527,7 +574,7 @@ const RevealCard = ({ card, index, revealed }) => {
           style={{ transformStyle: 'preserve-3d', transformPerspective: 900 }}
           className="relative w-24 h-36"
         >
-          <div className="absolute inset-0 [backface-visibility:hidden] [-webkit-backface-visibility:hidden] [transform:rotateY(180deg)]">
+          <div aria-hidden="true" className="absolute inset-0 [backface-visibility:hidden] [-webkit-backface-visibility:hidden] [transform:rotateY(180deg)]">
             <CardBack />
           </div>
           {revealed && (
@@ -573,46 +620,13 @@ const RevealCard = ({ card, index, revealed }) => {
   );
 };
 
-// A mini pack wrapper for the shop tiles, the same look as the pack on the
-// table; bundles fan out into a stack so quantity reads at a glance.
-const FAN = {
-  1: [''],
-  2: ['-rotate-[9deg] -translate-x-2', 'rotate-[7deg] translate-x-2'],
-  3: ['-rotate-[13deg] -translate-x-3.5 translate-y-1', 'rotate-[13deg] translate-x-3.5 translate-y-1', ''],
-};
-const MiniPack = ({ look }) => (
-  <span
-    className="relative block w-10 h-[54px] rounded-[6px] overflow-hidden shadow-[0_8px_16px_-8px_rgba(0,0,0,0.95)]"
-    style={{ border: '2px solid transparent', background: `${look.face} padding-box, ${look.metal} border-box` }}
-  >
-    <span className={`absolute inset-x-0 top-0 h-[4px] ${CRIMP}`} />
-    <span className={`absolute inset-x-0 bottom-0 h-[4px] ${CRIMP}`} />
-    <span className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_30%_10%,rgba(255,255,255,0.22),transparent_60%)]" />
-    <span className="absolute inset-0 grid place-items-center">
-      <look.Icon className={`w-[18px] h-[18px] ${look.tone}`} strokeWidth={2.2} />
-    </span>
-  </span>
-);
+// The shop tiles' art: the same pack wrapper as the Shop's (PackArt), fanned
+// into a stack for a bundle; the coin bag is a brass coin.
 const ItemArt = ({ tier, quantity }) => {
   if (tier === 'coins') {
-    return (
-      <span className="w-12 h-12 rounded-full p-[2px] shadow-[0_8px_16px_-8px_rgba(0,0,0,0.95)]" style={{ background: RARITY_METAL.legendary }}>
-        <span className="grid place-items-center w-full h-full rounded-full bg-night-900">
-          <Coins className="w-6 h-6 text-brass-300" strokeWidth={2} />
-        </span>
-      </span>
-    );
+    return <Medallion icon={Coins} className="shadow-[0_8px_16px_-8px_rgba(0,0,0,0.95)]" />;
   }
-  const layers = quantity >= 10 ? 3 : quantity >= 5 ? 2 : 1;
-  return (
-    <span className="grid place-items-center">
-      {FAN[layers].map((t, i) => (
-        <span key={i} className={`col-start-1 row-start-1 ${t}`}>
-          <MiniPack look={PACK_LOOK[tier]} />
-        </span>
-      ))}
-    </span>
-  );
+  return <PackStack look={PACK_LOOK[tier]} quantity={quantity} size="sm" />;
 };
 
 const ShopItem = ({ tier, quantity = 1, name, description, price, currency, canAfford, onClick, badge }) => (
@@ -621,9 +635,9 @@ const ShopItem = ({ tier, quantity = 1, name, description, price, currency, canA
     onClick={onClick}
     disabled={!canAfford}
     className={`panel-glass sheen relative h-full rounded-xl px-2 pt-8 pb-3 flex flex-col items-center text-center
-      transition-[transform,background-color] duration-200 ${FOCUS}
+      transition-transform duration-200 ${FOCUS_OUTLINE}
       ${badge === 'BEST VALUE' ? 'trim-brass' : ''}
-      ${canAfford ? 'hover:-translate-y-0.5 hover:bg-night-700/60' : 'opacity-50 cursor-not-allowed'}`}
+      ${canAfford ? `hover:-translate-y-0.5 ${TILE_HOVER}` : 'opacity-50 cursor-not-allowed'}`}
   >
     {badge && (
       <span

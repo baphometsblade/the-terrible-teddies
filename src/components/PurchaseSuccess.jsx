@@ -4,10 +4,11 @@ import { Gem, Hourglass, CircleAlert } from 'lucide-react';
 import { useGameStore } from '../stores/gameStore';
 import { verifyPurchaseSession } from '../utils/stripe';
 import { fetchServerGemBalance } from '../utils/supabaseClient';
-import confetti from 'canvas-confetti';
 import analytics from '../utils/analytics';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
+import { celebrate } from '@/lib/celebrate';
+import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 
 // Gem bundle prices for analytics (mirrors server-side definitions)
 const BUNDLE_PRICES = {
@@ -21,11 +22,9 @@ const BUNDLE_PRICES = {
 const BALANCE_READ_ATTEMPTS = 3;
 
 // Plain <button>s rather than the shadcn Button: its bg-primary is a utility
-// and would beat the component-layer btn-brass / btn-glass materials.
-const FOCUS =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300 ' +
-  'focus-visible:ring-offset-2 focus-visible:ring-offset-night-900';
-const ACTION = `inline-flex items-center justify-center gap-2 h-11 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS}`;
+// and would beat the component-layer btn-brass / btn-glass materials. Every
+// ACTION wears one, so it takes the outline, which leaves their shadow alone.
+const ACTION = `inline-flex items-center justify-center gap-2 h-11 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS_OUTLINE}`;
 
 // The medallion and the light it sits in, per phase: brass for a completed
 // purchase, amethyst while the order is in flight, pewter for a failure.
@@ -97,7 +96,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
         setGemsGranted(purchase.gems_granted);
         setPhase('success');
 
-        confetti({
+        celebrate({
           particleCount: 200, spread: 120, origin: { y: 0.45 },
           colors: ['#9333EA', '#A855F7', '#C084FC', '#E879F9', '#fbbf24'],
         });
@@ -217,7 +216,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
             <button
               type="button"
               onClick={onDone}
-              className={`rounded-md px-1 text-plush-300 hover:text-white text-sm underline underline-offset-4 decoration-plush-400/60 ${FOCUS}`}
+              className={`rounded-md px-1 text-plush-300 hover:text-white text-sm underline underline-offset-4 decoration-plush-400/60 ${FOCUS_RING}`}
             >
               Taking too long? Close and check back later
             </button>

@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Store, Package, Gem, Star, Coins, Crown, X, Timer, Sparkles, ShieldCheck } from 'lucide-react';
+import { Store, Package, Gem, Star, Coins, X, Timer, Sparkles, ShieldCheck } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, SHOP_ITEMS } from '../stores/gameStore';
-import confetti from 'canvas-confetti';
 import analytics from '../utils/analytics';
 import { redirectToStripeCheckout } from '../utils/stripe';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useDialog } from '@/hooks/useDialog';
 import { pressable } from '@/lib/a11y';
 import { RARITY_METAL, RARITY_ORDER } from '@/lib/rarity';
+import { celebrate } from '@/lib/celebrate';
+import { FOCUS_OUTLINE } from '@/lib/focus';
+import { Medallion, BalanceChip } from '@/components/ui/game-chrome';
+import { PACK_LOOK, PackStack } from './PackArt';
 
 const GEM_BUNDLES = [
   { id: 'gems_small', gems: 50, price: 0.99, bonus: 0, popular: false },
@@ -22,74 +25,15 @@ const GEM_BUNDLES = [
 // Shared shape of every focusable control here. Plain <button>s rather than
 // the shadcn Button: its bg-primary is a utility and would beat the
 // component-layer btn-brass / btn-glass materials.
-const FOCUS =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300 ' +
-  'focus-visible:ring-offset-2 focus-visible:ring-offset-night-900';
 const ACTION =
-  `inline-flex items-center justify-center gap-2 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS} ` +
+  `inline-flex items-center justify-center gap-2 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS_OUTLINE} ` +
   'disabled:opacity-50 disabled:cursor-not-allowed';
 
-// The three pack wrappers, one per tier, so a pack looks the same in the Shop
-// as it does on the Card Packs table: a metal frame from the rarity ladder over
-// a tinted face. Premium wears amethyst (it guarantees rare or better), the
-// Legendary pack wears brass, and the standard pack is pewter.
-const PACK_LOOK = {
-  regular: {
-    metal: RARITY_METAL.common,
-    face: 'linear-gradient(165deg, #4b2a72 0%, #2b1845 55%, #170d25 100%)',
-    Icon: Package,
-    tone: 'text-brass-300',
-  },
-  premium: {
-    metal: RARITY_METAL.epic,
-    face: 'linear-gradient(165deg, #6d28d9 0%, #3b0f6b 55%, #1a0b30 100%)',
-    Icon: Gem,
-    tone: 'text-fuchsia-200',
-  },
-  legendary: {
-    metal: RARITY_METAL.legendary,
-    face: 'linear-gradient(165deg, #92400e 0%, #7c2d12 45%, #3b1508 100%)',
-    Icon: Crown,
-    tone: 'text-brass-200',
-  },
-};
+// panel-glass paints a gradient IMAGE, so a hover background-color sits under
+// it and never shows. The hover state is a lighter image instead.
+const TILE_HOVER = 'hover:[background-image:linear-gradient(180deg,rgba(59,45,84,0.85),rgba(32,23,47,0.92))]';
 
-// The crimped seal along the top and bottom of a foil pack.
-const CRIMP = 'bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.2)_0_1px,rgba(0,0,0,0.25)_1px_3px)]';
-
-const MiniPack = ({ look, className }) => (
-  <span
-    className={`relative block rounded-[7px] overflow-hidden shadow-[0_8px_16px_-8px_rgba(0,0,0,0.95)] ${className}`}
-    style={{ border: '2px solid transparent', background: `${look.face} padding-box, ${look.metal} border-box` }}
-  >
-    <span className={`absolute inset-x-0 top-0 h-[5px] ${CRIMP}`} />
-    <span className={`absolute inset-x-0 bottom-0 h-[5px] ${CRIMP}`} />
-    <span className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_30%_10%,rgba(255,255,255,0.22),transparent_60%)]" />
-    <span className="absolute inset-0 grid place-items-center">
-      <look.Icon className={`w-[45%] h-[45%] ${look.tone}`} strokeWidth={2.2} />
-    </span>
-  </span>
-);
-
-// A bundle of 5 or 10 packs is drawn as a fanned stack, so quantity reads at a
-// glance without leaning on the copy. Back to front: left, right, centre.
-const FAN = {
-  1: [''],
-  2: ['-rotate-[9deg] -translate-x-2.5', 'rotate-[7deg] translate-x-2.5'],
-  3: ['-rotate-[13deg] -translate-x-4 translate-y-1', 'rotate-[13deg] translate-x-4 translate-y-1', ''],
-};
-const PackStack = ({ look, quantity, size }) => {
-  const layers = quantity >= 10 ? 3 : quantity >= 5 ? 2 : 1;
-  return (
-    <span className="grid place-items-center" aria-hidden="true">
-      {FAN[layers].map((t, i) => (
-        <span key={i} className={`col-start-1 row-start-1 ${t}`}>
-          <MiniPack look={look} className={size} />
-        </span>
-      ))}
-    </span>
-  );
-};
+const CHECKOUT_STATUS = 'Opening secure checkout…';
 
 // In-game prices sit in a glass pill; real-money prices (the Buy Gems tab) are
 // brass, because those are the purchases.
@@ -107,16 +51,6 @@ const PricePill = ({ currency, price, className = '' }) => {
   );
 };
 
-// The icon carries the meaning visually; the sr-only noun carries it for a
-// screen reader. (aria-label on a role-less div is prohibited in ARIA 1.2.)
-const Balance = ({ icon: Icon, value, tone, noun }) => (
-  <div className="panel-glass rounded-xl h-10 pl-2.5 pr-3 flex items-center gap-1.5">
-    <Icon aria-hidden="true" className={`w-4 h-4 ${tone}`} strokeWidth={2.4} />
-    <span className={`font-display font-extrabold text-[15px] tabular-nums ${tone}`}>{value}</span>
-    <span className="sr-only">{noun}</span>
-  </div>
-);
-
 const SectionHeading = ({ children }) => (
   <div className="flex items-center gap-3 mb-3">
     <h3 className="label-caps text-plush-300 shrink-0">{children}</h3>
@@ -132,8 +66,13 @@ const SectionHeading = ({ children }) => (
 //
 // A pack tile is a native button: it is always actionable (an unaffordable
 // pack still answers with a "Not enough coins" toast), so nothing here needs
-// the role to come and go.
+// the role to come and go. Its name is pinned by the e2e suite, so what the
+// tier is sold on (the guarantee) reaches a screen reader as its description.
+//
+// The price sits under the copy on a phone rather than beside it: beside it, a
+// 320px screen left the name a 52px column ("10 / Card / Packs").
 const PackCard = ({ item, onBuy }) => {
+  const descId = useId();
   const tier = item.type === 'pack' ? 'regular' : item.type;
   const look = PACK_LOOK[tier];
   const feature = tier !== 'regular';
@@ -142,8 +81,9 @@ const PackCard = ({ item, onBuy }) => {
       type="button"
       onClick={onBuy}
       aria-label={`Buy ${item.name} for ${item.price} ${item.currency}`}
-      className={`panel-glass sheen relative w-full h-full rounded-2xl text-left transition-[transform,background-color] duration-200
-        hover:-translate-y-0.5 hover:bg-night-700/60 ${FOCUS}
+      aria-describedby={descId}
+      className={`panel-glass sheen relative w-full h-full rounded-2xl text-left transition-transform duration-200
+        hover:-translate-y-0.5 ${TILE_HOVER} ${FOCUS_OUTLINE}
         ${tier === 'legendary' ? 'trim-brass' : ''} ${tier === 'premium' ? 'border-purple-300/25' : ''}
         ${feature
           ? 'flex items-center gap-4 p-4 sm:p-5'
@@ -153,20 +93,20 @@ const PackCard = ({ item, onBuy }) => {
       {feature && (
         <span
           aria-hidden="true"
-          className={`absolute inset-0 pointer-events-none ${tier === 'legendary'
-            ? 'bg-[radial-gradient(ellipse_55%_90%_at_12%_50%,rgba(251,191,36,0.2),transparent_70%)]'
-            : 'bg-[radial-gradient(ellipse_55%_90%_at_12%_50%,rgba(192,132,252,0.18),transparent_70%)]'}`}
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: `radial-gradient(ellipse 55% 90% at 12% 50%, ${look.light}, transparent 70%)` }}
         />
       )}
       <span className={`relative shrink-0 grid place-items-center ${feature ? 'w-20 h-24' : 'w-[72px] h-16 sm:w-28 sm:h-24'}`}>
-        <PackStack look={look} quantity={item.quantity} size={feature ? 'w-14 h-[76px]' : 'w-10 h-[54px] sm:w-14 sm:h-[76px]'} />
+        <PackStack look={look} quantity={item.quantity} size={feature ? 'md' : 'smToMd'} />
       </span>
       <span className={`relative flex-1 min-w-0 flex flex-col gap-0.5 ${feature ? '' : 'sm:items-center'}`}>
         <span className={`font-display font-extrabold leading-tight text-white ${feature ? 'text-xl' : 'text-base sm:text-lg'}`}>{item.name}</span>
-        <span className="text-xs leading-snug text-plush-300">{item.description}</span>
-        {feature && <PricePill currency={item.currency} price={item.price} className="mt-2.5 self-start" />}
+        <span id={descId} className="text-xs leading-snug text-plush-300">{item.description}</span>
+        <span className={feature ? 'mt-2.5' : 'mt-2 sm:mt-auto sm:pt-2.5'}>
+          <PricePill currency={item.currency} price={item.price} />
+        </span>
       </span>
-      {!feature && <PricePill currency={item.currency} price={item.price} className="relative" />}
     </button>
   );
 };
@@ -178,45 +118,61 @@ const PackCard = ({ item, onBuy }) => {
 // starting the tile stops being a control at all (no role, no tab stop, no
 // name), which is what the e2e suite asserts — a disabled button would still be
 // announced as a purchase the buyer cannot make.
-const GemBundle = ({ bundle, tier, processing, onBuy }) => (
-  <div
-    {...pressable(onBuy, `Buy ${bundle.gems} gems for $${bundle.price.toFixed(2)}`, !processing)}
-    // Every tile leaves room for the BEST VALUE pill from md up, so the five
-    // medallions line up across the row; on a phone the best-value tile has a
-    // row of its own and the others need not.
-    className={`panel-glass sheen relative h-full rounded-2xl px-3 pb-4 flex flex-col items-center text-center cursor-pointer
-      transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-night-700/60 ${FOCUS}
-      ${bundle.popular ? 'trim-brass col-span-2 md:col-span-1 pt-10' : 'pt-6 md:pt-10'}`}
-  >
-    {bundle.popular && (
-      <>
-        <span aria-hidden="true" className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_55%_at_50%_0%,rgba(251,191,36,0.22),transparent_70%)]" />
-        <span className="absolute top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-brass-300 text-night-950 px-2 py-[3px] label-caps text-[10px] leading-none whitespace-nowrap shadow-[0_4px_10px_-4px_rgba(217,119,6,0.9)]">
-          BEST VALUE
-        </span>
-      </>
-    )}
-    <span
-      aria-hidden="true"
-      className="relative w-14 h-14 rounded-full p-[2px] shadow-[0_6px_14px_-6px_rgba(0,0,0,0.9)]"
-      style={{ background: RARITY_METAL[RARITY_ORDER[tier]] }}
+//
+// The name ("Buy 3000 gems for $49.99") is pinned by the e2e suite, and a
+// button's name makes its text presentational: BEST VALUE, the bonus and the
+// total were never spoken, so the ladder sounded linear. They are its
+// description instead.
+const GemBundle = ({ bundle, tier, processing, onBuy }) => {
+  const id = useId();
+  const described = [
+    bundle.popular && `${id}-best`,
+    bundle.bonus > 0 && `${id}-bonus`,
+    bundle.bonus > 0 && `${id}-total`,
+  ].filter(Boolean).join(' ');
+  return (
+    <div
+      {...pressable(onBuy, `Buy ${bundle.gems} gems for $${bundle.price.toFixed(2)}`, !processing)}
+      aria-describedby={!processing && described ? described : undefined}
+      // Every tile leaves room for the BEST VALUE pill from md up, so the five
+      // medallions line up across the row; on a phone the best-value tile has a
+      // row of its own and the others need not.
+      className={`panel-glass sheen relative h-full rounded-2xl px-3 pb-4 flex flex-col items-center text-center cursor-pointer
+        transition-transform duration-200 hover:-translate-y-0.5 ${TILE_HOVER} ${FOCUS_OUTLINE}
+        ${bundle.popular ? 'trim-brass col-span-2 md:col-span-1 pt-10' : 'pt-6 md:pt-10'}`}
     >
-      <span className="grid place-items-center w-full h-full rounded-full bg-night-900 bg-[radial-gradient(circle_at_50%_35%,rgba(232,121,249,0.25),transparent_65%)]">
-        <Gem className="w-6 h-6 text-fuchsia-300" strokeWidth={2} />
+      {bundle.popular && (
+        <>
+          <span aria-hidden="true" className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_55%_at_50%_0%,rgba(251,191,36,0.22),transparent_70%)]" />
+          <span
+            id={`${id}-best`}
+            className="absolute top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-brass-300 text-night-950 px-2 py-[3px] label-caps text-[10px] leading-none whitespace-nowrap shadow-[0_4px_10px_-4px_rgba(217,119,6,0.9)]"
+          >
+            BEST VALUE
+          </span>
+        </>
+      )}
+      <Medallion
+        icon={Gem}
+        size="md"
+        metal={RARITY_METAL[RARITY_ORDER[tier]]}
+        iconClassName="text-fuchsia-300"
+        discClassName="bg-[radial-gradient(circle_at_50%_35%,rgba(232,121,249,0.25),transparent_65%)]"
+        className="shadow-[0_6px_14px_-6px_rgba(0,0,0,0.9)]"
+      />
+      <span className="relative mt-3 font-display text-3xl font-extrabold leading-none text-white tabular-nums">
+        {bundle.gems.toLocaleString()}
       </span>
-    </span>
-    <span className="relative mt-3 font-display text-3xl font-extrabold leading-none text-white tabular-nums">
-      {bundle.gems.toLocaleString()}
-    </span>
-    {bundle.bonus > 0 && <span className="relative mt-2 text-emerald-300 text-xs font-bold tracking-wide">+{bundle.bonus} BONUS</span>}
-    {bundle.bonus > 0 && <span className="relative text-plush-300 text-[11px] mt-0.5">{bundle.gems + bundle.bonus} total</span>}
-    <span className="relative mt-auto pt-4">
-      <span className="btn-brass inline-flex items-center h-9 px-5 rounded-full font-display font-extrabold text-base tabular-nums">
-        ${bundle.price.toFixed(2)}
+      {bundle.bonus > 0 && <span id={`${id}-bonus`} className="relative mt-2 text-emerald-300 text-xs font-bold tracking-wide">+{bundle.bonus} BONUS</span>}
+      {bundle.bonus > 0 && <span id={`${id}-total`} className="relative text-plush-300 text-[11px] mt-0.5">{bundle.gems + bundle.bonus} total</span>}
+      <span className="relative mt-auto pt-4">
+        <span className="btn-brass inline-flex items-center h-9 px-5 rounded-full font-display font-extrabold text-base tabular-nums">
+          ${bundle.price.toFixed(2)}
+        </span>
       </span>
-    </span>
-  </div>
-);
+    </div>
+  );
+};
 
 const TABS = [
   { id: 'packs', label: 'Card Packs', icon: Package },
@@ -252,6 +208,12 @@ const Shop = ({ onClose }) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('packs');
   const [processing, setProcessing] = useState(false);
+  // Read by the Escape handler, which must see the current value.
+  const processingRef = useRef(false);
+  processingRef.current = processing;
+  // The control that started a checkout, so focus can go back to it if the
+  // checkout fails or the buyer comes Back from Stripe.
+  const checkoutTriggerRef = useRef(null);
 
   // handleGemPurchase sets `processing` and then hands the tab to Stripe via a
   // cross-document navigation, so the only setProcessing(false) — in the catch
@@ -266,7 +228,34 @@ const Shop = ({ onClose }) => {
     window.addEventListener('pageshow', onPageShow);
     return () => window.removeEventListener('pageshow', onPageShow);
   }, []);
-  const dialogRef = useDialog(onClose);
+  // Not while a checkout is starting: closing the shop would not stop it, and
+  // the buyer who pressed Escape to back out was sent to Stripe a moment later.
+  const dialogRef = useDialog(() => { if (!processingRef.current) onClose(); });
+
+  // While checkout starts, everything behind the overlay is inert (no pointer,
+  // no keyboard, nothing for a screen reader), so focus — whose control has
+  // just gone inert under it — is held on the dialog itself; when it ends it
+  // goes back to the control that started it.
+  const wasProcessing = useRef(false);
+  useEffect(() => {
+    const root = dialogRef.current;
+    if (processing) {
+      wasProcessing.current = true;
+      root?.focus({ preventScroll: true });
+      return;
+    }
+    if (!wasProcessing.current) return;
+    wasProcessing.current = false;
+    const trigger = checkoutTriggerRef.current;
+    if (trigger?.isConnected && root?.contains(trigger)) trigger.focus({ preventScroll: true });
+  }, [processing, dialogRef]);
+
+  // The dialog is the only thing that can hold focus mid-checkout; Tab has
+  // nowhere to go, and would otherwise walk out of the dialog past the inert
+  // panel.
+  const onDialogKeyDown = (e) => {
+    if (processingRef.current && e.key === 'Tab') e.preventDefault();
+  };
 
   useEffect(() => {
     analytics.trackShopView(activeTab);
@@ -285,7 +274,7 @@ const Shop = ({ onClose }) => {
         currency: item.currency,
       });
       toast({ title: "Purchase Successful!", description: result.message });
-      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      celebrate({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
     } else {
       toast({ title: "Purchase Failed", description: result.message, variant: "destructive" });
     }
@@ -301,6 +290,7 @@ const Shop = ({ onClose }) => {
       return;
     }
 
+    checkoutTriggerRef.current = document.activeElement;
     setProcessing(true);
     try {
       analytics.trackBeginCheckout({ bundleId: bundle.id, gems: bundle.gems, price: bundle.price });
@@ -326,15 +316,27 @@ const Shop = ({ onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-label="Shop"
-      // Scrolls, with the panel centred by my-auto rather than items-center: a
-      // centred flex item taller than its box overflows at both ends.
-      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center p-3 sm:p-6 overflow-y-auto"
+      // Focusable only while it holds focus for a starting checkout.
+      tabIndex={processing ? -1 : undefined}
+      onKeyDown={onDialogKeyDown}
+      // Scrolls. From md the panel is centred by my-auto rather than
+      // items-center (a centred flex item taller than its box overflows at
+      // both ends); below md it is pinned to the top, because there the tab
+      // panels differ in height and a centred panel jumped ~145px under the
+      // finger on every tab switch.
+      // While checkout starts it does not scroll either: there is nothing
+      // behind the overlay to scroll to.
+      className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center p-3 sm:p-6 outline-none ${
+        processing ? 'overflow-hidden' : 'overflow-y-auto'
+      }`}
     >
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="relative my-auto w-full max-w-4xl rounded-2xl dialog-panel overflow-hidden"
+        // React 18 has no boolean `inert`; the empty string sets the attribute.
+        inert={processing ? '' : undefined}
+        className="relative md:my-auto w-full max-w-4xl rounded-2xl dialog-panel overflow-hidden"
       >
         {/* Amber light over the counter. */}
         <div aria-hidden="true" className="absolute inset-x-0 top-0 h-40 pointer-events-none bg-[radial-gradient(ellipse_55%_100%_at_50%_0%,rgba(251,191,36,0.12),transparent_70%)]" />
@@ -343,31 +345,30 @@ const Shop = ({ onClose }) => {
             title and the close control, so nothing is pushed off the edge. */}
         <div className="relative flex flex-wrap items-center gap-3 px-4 sm:px-6 pt-4 sm:pt-5 pb-4">
           <div className="flex items-center gap-3 min-w-0 mr-auto">
-            <div aria-hidden="true" className="w-11 h-11 shrink-0 rounded-full p-[2px]" style={{ background: RARITY_METAL.legendary }}>
-              <div className="grid place-items-center w-full h-full rounded-full bg-night-900">
-                <Store className="w-5 h-5 text-brass-300" strokeWidth={2} />
-              </div>
-            </div>
+            <Medallion icon={Store} />
             <h2 className="font-display text-3xl font-extrabold leading-none text-brass-gradient">Shop</h2>
           </div>
           <div className="order-last w-full sm:order-none sm:w-auto flex flex-wrap items-center gap-2">
-            <Balance icon={Coins} value={coins.toLocaleString()} tone="text-brass-300" noun="coins" />
-            <Balance icon={Gem} value={gems.toLocaleString()} tone="text-fuchsia-300" noun="gems" />
-            <Balance icon={Package} value={cardPacks.toLocaleString()} tone="text-sky-300" noun="card packs" />
+            <BalanceChip icon={Coins} value={coins.toLocaleString()} tone="text-brass-300" noun="coins" />
+            <BalanceChip icon={Gem} value={gems.toLocaleString()} tone="text-fuchsia-300" noun="gems" />
+            <BalanceChip icon={Package} value={cardPacks.toLocaleString()} tone="text-sky-300" noun="card packs" />
           </div>
           <button
             type="button"
             onClick={onClose}
-            className={`btn-glass grid place-items-center w-10 h-10 shrink-0 rounded-xl ${FOCUS}`}
+            className={`btn-glass grid place-items-center w-10 h-10 shrink-0 rounded-xl ${FOCUS_OUTLINE}`}
             aria-label="Close shop"
           >
             <X aria-hidden="true" className="w-5 h-5" strokeWidth={2.4} />
           </button>
         </div>
 
-        {/* Tabs: a segmented control recessed into the panel. */}
+        {/* Tabs: a segmented control recessed into the panel. Below sm each
+            key stacks its icon over its label, top-aligned: at 320 "Special
+            Offers" takes two lines, and centred columns put its icon higher
+            than its neighbours'. */}
         <div className="relative px-4 sm:px-6">
-          <div className="flex gap-1 rounded-xl p-1 bg-night-950/70 border border-white/5 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)]">
+          <div className="seg-well flex gap-1">
             {TABS.map(tab => {
               const active = activeTab === tab.id;
               return (
@@ -382,10 +383,9 @@ const Shop = ({ onClose }) => {
                   // claiming the tab role would also require tablist/tabpanel
                   // wiring and arrow-key navigation that is not implemented here.
                   aria-pressed={active}
-                  className={`flex-1 min-w-0 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 rounded-lg px-1 py-2 sm:py-2.5
-                    font-display font-bold text-[13px] sm:text-[15px] leading-tight transition-colors
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300
-                    ${active ? 'btn-glass border-brass-300/40 text-brass-200' : 'border border-transparent text-plush-300 hover:text-white'}`}
+                  className={`flex-1 min-w-0 flex flex-col sm:flex-row items-center justify-start sm:justify-center gap-1 sm:gap-2 rounded-lg px-1 py-2 sm:py-2.5
+                    font-display font-bold text-[13px] sm:text-[15px] leading-tight ${FOCUS_OUTLINE}
+                    ${active ? 'seg-on' : 'seg-off'}`}
                 >
                   <tab.icon aria-hidden="true" className={`w-4 h-4 shrink-0 ${active ? 'text-brass-300' : ''}`} strokeWidth={2.2} />
                   <span>{tab.label}</span>
@@ -485,11 +485,7 @@ const Shop = ({ onClose }) => {
                   <div className="panel-glass relative overflow-hidden rounded-2xl p-4 sm:p-5 flex flex-col">
                     <div aria-hidden="true" className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_60%_90%_at_0%_0%,rgba(192,132,252,0.16),transparent_70%)]" />
                     <div className="relative flex items-start gap-3">
-                      <span aria-hidden="true" className="w-11 h-11 shrink-0 rounded-full p-[2px]" style={{ background: RARITY_METAL.epic }}>
-                        <span className="grid place-items-center w-full h-full rounded-full bg-night-900">
-                          <Gem className="w-5 h-5 text-fuchsia-300" strokeWidth={2} />
-                        </span>
-                      </span>
+                      <Medallion icon={Gem} metal={RARITY_METAL.epic} iconClassName="text-fuchsia-300" />
                       <div className="min-w-0">
                         <h4 className="font-display text-lg font-extrabold leading-tight text-white">Mega Gem Pack</h4>
                         <p className="mt-0.5 text-plush-300 text-sm">A one-time gem boost — credited instantly.</p>
@@ -518,11 +514,7 @@ const Shop = ({ onClose }) => {
                         : 'bg-[radial-gradient(ellipse_60%_90%_at_0%_0%,rgba(52,211,153,0.1),transparent_70%)]'}`}
                     />
                     <div className="relative flex items-start gap-3">
-                      <span aria-hidden="true" className="w-11 h-11 shrink-0 rounded-full p-[2px]" style={{ background: RARITY_METAL.uncommon }}>
-                        <span className="grid place-items-center w-full h-full rounded-full bg-night-900">
-                          <Coins className="w-5 h-5 text-emerald-300" strokeWidth={2} />
-                        </span>
-                      </span>
+                      <Medallion icon={Coins} metal={RARITY_METAL.uncommon} iconClassName="text-emerald-300" />
                       <div className="min-w-0">
                         <h4 className="font-display text-lg font-extrabold leading-tight text-white">Coin Doubler</h4>
                         <p className="mt-0.5 text-plush-300 text-sm">
@@ -563,17 +555,23 @@ const Shop = ({ onClose }) => {
         </div>
       </motion.div>
 
+      {/* Announced, so always mounted: a live region inserted already holding
+          its text is not read by many screen readers. Outside the inert panel,
+          and the overlay below is its picture (aria-hidden, so it is not read
+          twice). */}
+      <p role="status" className="sr-only">{processing ? CHECKOUT_STATUS : ''}</p>
+
       {processing && (
         // The spin is CSS (compositor-only) and stops when motion is off.
-        <div className="fixed inset-0 z-[60] dialog-scrim grid place-items-center p-4" role="status">
+        <div aria-hidden="true" className="fixed inset-0 z-[60] dialog-scrim grid place-items-center p-4">
           <div className="dialog-panel rounded-2xl px-8 py-6 flex flex-col items-center gap-4">
-            <div className="relative w-20 h-20" aria-hidden="true">
+            <div className="relative w-20 h-20">
               <div className="absolute inset-0 rounded-full border-[3px] border-fuchsia-300/15 border-t-fuchsia-300 motion-safe:animate-spin [[data-motion=off]_&]:animate-none" />
               <div className="absolute inset-2 grid place-items-center rounded-full bg-night-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                 <Gem className="w-7 h-7 text-fuchsia-300" strokeWidth={2} />
               </div>
             </div>
-            <p className="label-caps text-plush-200">Opening secure checkout…</p>
+            <p className="label-caps text-plush-200">{CHECKOUT_STATUS}</p>
           </div>
         </div>
       )}
