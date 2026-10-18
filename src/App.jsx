@@ -303,18 +303,20 @@ function App() {
         );
       case 'deck':
         return (
-          <div className="min-h-screen bg-gradient-to-b from-night-800 via-night-900 to-night-950 p-4 md:p-8">
+          <div className="relative min-h-screen bar-backdrop p-4 md:p-8">
+            <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
             <BackButton onClick={() => navigateTo('menu')} />
-            <div className="pt-12">
+            <div className="relative pt-12">
               <DeckBuilder />
             </div>
           </div>
         );
       case 'collection':
         return (
-          <div className="min-h-screen bg-gradient-to-b from-night-800 via-night-900 to-night-950 p-4 md:p-8">
+          <div className="relative min-h-screen bar-backdrop p-4 md:p-8">
+            <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
             <BackButton onClick={() => navigateTo('menu')} />
-            <div className="pt-12">
+            <div className="relative pt-12">
               <TeddyCollection />
             </div>
           </div>
