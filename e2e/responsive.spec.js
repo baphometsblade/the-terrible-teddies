@@ -51,6 +51,58 @@ test('battle board does not scroll sideways on a phone', async ({ page }) => {
   await expectNoHorizontalOverflow(page, 'battle board');
 });
 
+// The battle board is a fixed-height column, so on a short phone the risk is
+// vertical: the card rows used to be scaled by viewport-height breakpoints, and
+// on real phone viewports — shorter than the device, once the browser's
+// toolbars take their share — the player's row spilled out of the table onto
+// the turn controls, painting over End Turn and taking its taps. These are the
+// sizes a page actually gets on an iPhone SE, an iPhone 15 and a small Android
+// with toolbars showing. Every row must stay inside the felt, and End Turn
+// must be the thing under its own centre.
+for (const viewport of [
+  { width: 375, height: 553 },
+  { width: 393, height: 659 },
+  { width: 360, height: 640 },
+]) {
+  test.describe(`battle board at ${viewport.width}x${viewport.height}`, () => {
+    test.use({ viewport });
+
+    test('card rows stay on the table and the turn controls take their own taps', async ({ page }) => {
+      // Cheap creatures, so the first play is affordable and lands on the field.
+      await page.addInitScript(() => {
+        const raw = localStorage.getItem('terrible-teddies-storage');
+        const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+        stored.state.currentDeck = [1, 2, 3, 4, 5, 6];
+        localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+      });
+      await page.reload();
+      await page.getByRole('button', { name: 'Battle', exact: true }).click();
+      const endTurn = page.getByRole('button', { name: 'End Turn' });
+      await expect(endTurn).toBeVisible(SLOW);
+      await page.getByRole('button', { name: /^Play / }).first().click();
+      await expect(page.getByText('Warming Up')).toHaveCount(2, SLOW); // a card on each side
+      await page.waitForTimeout(600); // entrance animations
+
+      const spill = await page.evaluate(() => {
+        const felt = document.querySelector('.felt-table').getBoundingClientRect();
+        return [...document.querySelector('.felt-table').children]
+          .filter((el) => getComputedStyle(el).position === 'static')
+          .map((el) => el.getBoundingClientRect())
+          .map((r) => Math.max(0, felt.top - r.top, r.bottom - felt.bottom))
+          .map(Math.round);
+      });
+      expect(Math.max(...spill), `rows spill past the felt by ${spill.join('/')}px`).toBeLessThanOrEqual(1);
+
+      const box = await endTurn.boundingBox();
+      const hit = await page.evaluate(({ x, y }) => {
+        const el = document.elementFromPoint(x, y);
+        return el?.closest('button')?.textContent?.trim() ?? el?.tagName;
+      }, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+      expect(hit, 'whatever sits on End Turn takes its taps').toBe('End Turn');
+    });
+  });
+}
+
 // Measuring the DOCUMENT is not enough for dialogs: the panels have
 // overflow-hidden / overflow-y-auto, so an over-wide row inside is silently
 // CLIPPED — it never pushes the document, and a document-level check passes no

@@ -184,8 +184,8 @@
    drifting teddies, and a blur over moving content is recomputed every frame —
    continuous GPU work on an idle screen, paid hardest by the weakest phones.
    At this fill opacity the blur was invisible anyway: a pixel diff of the menu
-   with and without it shows no change inside any panel. The one blur kept is
-   on .dialog-scrim, a single layer where it shows. */
+   with and without it shows no change inside any panel. (.dialog-scrim drops
+   its blur for the same reason; see there.) */
 .panel-glass {
   background: linear-gradient(180deg, rgba(47, 35, 68, 0.78), rgba(26, 18, 38, 0.88));
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -238,8 +238,11 @@
 .btn-glass:active { transform: translateY(1px); }
 
 /* Pool-table felt: a lit centre falling off to dark edges, under the same grain,
-   with a deep inner shadow so the cloth reads as set into the table. */
+   with a deep inner shadow so the cloth reads as set into the table. Isolated,
+   so the print on the cloth (.felt-print, z-index -1) can sit under the cards
+   rather than over them. */
 .felt-table {
+  isolation: isolate;
   background-color: #163423;
   background-image:
     radial-gradient(ellipse 65% 70% at 50% 45%, rgba(52, 140, 92, 0.55), transparent 75%),
@@ -248,14 +251,15 @@
 }
 
 /* Dialogs. Every overlay used its own `bg-black/90` and its own panel
-   gradient; these give them one shell. The scrim dims and slightly blurs the
-   room behind; the panel is the glass material made near-opaque (a dialog
-   carries dense text, so less of the room shows through) with a brass hairline
-   along its top edge. */
+   gradient; these give them one shell. The scrim dims the room behind; the
+   panel is the glass material made near-opaque (a dialog carries dense text,
+   so less of the room shows through) with a brass hairline along its top edge.
+   The scrim has no backdrop-filter: what sits behind a dialog keeps moving —
+   the menu's drifting teddies, the foil on rare cards — and a full-screen blur
+   over moving content is recomputed every frame for as long as the dialog is
+   open. A darker fill does the separating instead. */
 .dialog-scrim {
-  background: rgba(10, 6, 16, 0.8);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  background: rgba(10, 6, 16, 0.86);
 }
 .dialog-panel {
   background:
@@ -311,28 +315,35 @@
   border: 2px solid rgba(253, 230, 138, 0.09);
   box-shadow: 0 0 0 10px rgba(253, 230, 138, 0.025);
   pointer-events: none;
+  z-index: -1;
 }
 
-/* The board is a fixed-height screen, so on short viewports (a laptop at
-   720px, a small phone) the card rows and hand are scaled to fit rather than
-   clipped. zoom, not transform, because it scales layout too: the rows take
-   the space they appear to take. */
+/* The board is a fixed-height screen. The card rows on the table are fitted
+   to the felt by GameBoard (measured, see fitField); the hand is outside the
+   felt and steps down by viewport height instead. zoom, not transform,
+   because it scales layout too: the hand takes the space it appears to. */
 @media (max-height: 760px) {
   .board-zoom { zoom: 0.85; }
 }
 @media (max-height: 680px) {
   .board-zoom { zoom: 0.72; }
 }
+@media (max-height: 600px) {
+  .board-zoom { zoom: 0.6; }
+}
 
-/* Battle notifications sit on the table's centre line, where nothing is
-   tapped: the momentum meter and turn plaque, which a short-lived callout can
-   cover. In the default corner they covered the turn controls on desktop and
-   Chuck's health on phones. GameBoard sets html[data-screen="battle"] while a
-   game is in play. 37% is where the centre line falls with the board's rails,
-   hand and controls stacked around it. They pop in place rather than sliding
-   from an edge they no longer touch. */
+/* Battle notifications. GameBoard sets html[data-screen="battle"] while a game
+   is in play; in the default corner toasts covered the turn controls on
+   desktop and Chuck's health on phones.
+
+   Phones: on the table's centre line, where nothing is tapped — the momentum
+   meter and turn plaque, which a short-lived callout can cover. GameBoard
+   measures where that line is (--battle-centre-y); 37% is the fallback.
+   Opaque, because they sit over text that would otherwise read through them,
+   and they pop in place rather than sliding from an edge they no longer touch
+   — except a swipe, which still carries the toast off the side. */
 [data-screen="battle"] .toast-viewport {
-  top: 37%;
+  top: var(--battle-centre-y, 37%);
   bottom: auto;
   left: 50%;
   right: auto;
@@ -340,29 +351,67 @@
   max-width: min(24rem, calc(100vw - 1rem));
   padding: 0.5rem;
 }
-/* Wide screens have a battle log beside the table, and a battle toast IS the
-   newest log entry, so dock it over the top of the log instead and leave the
-   centre line (and the targeting prompt on it) clear. 4.75rem is the top rail
-   plus the gap above the log; 14rem and 1.5rem are the log column's width and
-   the board's side padding at lg. */
-@media (min-width: 1024px) {
+/* From md up there is a battle log beside the table, and a battle toast IS
+   the newest log entry, so it docks over the top of the log and leaves the
+   centre line (and the targeting prompt on it) clear. The offsets are the top
+   rail plus the gap above the log, the log column's width (w-56), and the
+   board's side padding (sm:px-4, lg:px-6). */
+@media (min-width: 768px) {
   [data-screen="battle"] .toast-viewport {
-    top: 4.75rem;
+    top: calc(4.75rem + env(safe-area-inset-top));
     left: auto;
-    right: 1.5rem;
+    right: 1rem;
     transform: none;
     width: 14rem;
     max-width: 14rem;
     padding: 0;
   }
 }
+@media (min-width: 1024px) {
+  [data-screen="battle"] .toast-viewport { right: 1.5rem; }
+}
 [data-screen="battle"] .toast-viewport > li {
   padding: 0.625rem 2rem 0.625rem 1rem;
+  background: linear-gradient(180deg, #2f2344 0%, #1a1226 100%);
   --tw-enter-translate-x: 0;
   --tw-enter-translate-y: 0;
   --tw-enter-scale: 0.9;
   --tw-exit-translate-x: 0;
   --tw-exit-scale: 0.95;
+  --tw-exit-opacity: 0;
+}
+[data-screen="battle"] .toast-viewport > li[data-swipe="end"] {
+  --tw-exit-translate-x: 100%;
+  --tw-exit-scale: 1;
+}
+/* On phones the centre-line toast is a little taller than the line and can
+   overlap the top strip of the player's cards; a callout must never take a tap
+   meant for a card, so there it ignores the pointer (it still times out, and
+   F8 still reaches it from the keyboard). */
+@media (max-width: 767.98px) {
+  [data-screen="battle"] .toast-viewport > li { pointer-events: none; }
+}
+
+/* Landscape phones get a "turn your phone upright" card over the board (see
+   GameBoard): two card rows, a hand and two rails do not fit in ~360px of
+   height, and below that the board overlaps itself. Touch screens only — a
+   short desktop window still gets the fitted board. Under App's "← Menu"
+   (z-40) so the player can still leave, and under the result dialog. */
+.rotate-hint { display: none; }
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .rotate-hint {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    background: #120c1c;
+  }
 }
 
 /* Small-caps label used for section headings and metadata lines. */
@@ -426,9 +475,12 @@
 
 /* Both kinds of light movement honour the player's Animations switch (which
    MotionPreference mirrors onto <html data-motion>) as well as the OS-level
-   reduced-motion preference. */
+   reduced-motion preference — and so does Tailwind's animate-pulse, which the
+   board uses for its "ready" glows (those use motion-safe: for the OS side). */
 [data-motion="off"] .foil::after,
 [data-motion="off"] .sheen::after { animation: none; transition: none; transform: translateX(-120%); }
+[data-motion="off"] .animate-pulse,
+[data-motion="off"] .motion-safe\:animate-pulse { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .foil::after { animation: none; transform: translateX(-120%); }
   .sheen::after { transition: none; }

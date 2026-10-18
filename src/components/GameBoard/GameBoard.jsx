@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Coins, Crosshair, Flag, Ghost, Heart, HeartCrack, ScrollText, Shield, Star, Trophy, Volume2, VolumeX, Zap,
+  Coins, Crosshair, Flag, Ghost, Heart, HeartCrack, ScrollText, Shield, Smartphone, Star, Trophy, Volume2, VolumeX, Zap,
 } from 'lucide-react';
 import TeddyCard, { CardBack } from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
@@ -41,7 +41,7 @@ const OPPONENT_RING = 'linear-gradient(145deg, #fecaca 0%, #b91c1c 40%, #f87171 
 // is added per button. Plain <button>s rather than the shadcn Button, whose
 // bg-primary is a utility and would beat a component-layer material.
 const ACTION =
-  'inline-flex items-center justify-center gap-1.5 h-10 px-4 lg:w-full rounded-xl font-display font-bold ' +
+  'inline-flex items-center justify-center gap-1.5 h-10 px-4 md:w-full rounded-xl font-display font-bold ' +
   'text-sm sm:text-base whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 ' +
   'focus-visible:ring-brass-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950';
 
@@ -79,8 +79,9 @@ const HealthMeter = ({ hp, max, fill, label }) => (
 );
 
 // Ten segments rather than a bar, so "two more hits to Rally" is countable at a
-// glance. The ring glows (CSS pulse, compositor-only) once it is full.
-const MomentumMeter = ({ value }) => {
+// glance. The ring glows (CSS pulse, compositor-only) once it is full, unless
+// `glow` is off — at game over, so nothing animates under the result dialog.
+const MomentumMeter = ({ value, glow = true }) => {
   const full = value >= MOMENTUM_MAX;
   return (
     <div
@@ -105,9 +106,9 @@ const MomentumMeter = ({ value }) => {
           />
         ))}
       </div>
-      {full && (
+      {full && glow && (
         <span
-          className="absolute -inset-1.5 rounded-lg ring-1 ring-brass-300/70 shadow-[0_0_14px_rgba(251,191,36,0.5)] animate-pulse pointer-events-none"
+          className="absolute -inset-1.5 rounded-lg ring-1 ring-brass-300/70 shadow-[0_0_14px_rgba(251,191,36,0.5)] motion-safe:animate-pulse pointer-events-none"
           aria-hidden="true"
         />
       )}
@@ -115,15 +116,24 @@ const MomentumMeter = ({ value }) => {
   );
 };
 
-// "Warming Up" / "Exhausted" under a creature. In the flow rather than
-// absolute, so a row keeps one height whatever states it shows. The e2e suite
-// counts these words exactly, so each state renders them here and nowhere else.
+// A field row's footprint at zoom 1, which the board scales to fit the felt:
+// a card (h-36) plus its status slot (mt-1.5 + 18px), and per card a w-24
+// slot with the sm gap between them.
+const FIELD_ROW_HEIGHT = 144 + 6 + 18;
+const FIELD_SLOT = 96;
+const FIELD_GAP = 12;
+
+// The space under a creature for "Warming Up" / "Exhausted", reserved whether
+// or not a chip shows, so a row keeps one height whatever states it shows.
+// The e2e suite counts those words exactly, so each state renders them in a
+// StatusChip and nowhere else.
+const StatusSlot = ({ children }) => (
+  <div className="mt-1.5 flex h-[18px] justify-center">{children}</div>
+);
 const StatusChip = ({ children }) => (
-  <div className="mt-1.5 flex justify-center">
-    <span className="rounded-full bg-night-950/85 ring-1 ring-white/10 px-2 py-0.5 text-[10px] font-semibold text-plush-200 whitespace-nowrap">
-      {children}
-    </span>
-  </div>
+  <span className="rounded-full bg-night-950/85 ring-1 ring-white/10 px-2 py-0.5 text-[10px] leading-[14px] font-semibold text-plush-200 whitespace-nowrap">
+    {children}
+  </span>
 );
 
 const StealthBand = () => (
@@ -170,7 +180,10 @@ const GameOverDialog = ({ label, onEscape, children }) => {
       aria-label={label}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="absolute inset-0 z-50 dialog-scrim flex items-center justify-center p-4"
+      // Scrolls, with the panel centred by my-auto rather than items-center:
+      // a centred flex item taller than its box overflows at both ends, and on
+      // a landscape phone that put Play Again and Menu out of reach.
+      className="absolute inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-4"
     >
       {children}
     </motion.div>
@@ -409,22 +422,32 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     }, 3200);
   }, [safeTimeout]);
 
-  // Battle callouts are short-lived: the battle log keeps the record, and one
-  // left up for the default five seconds sits on the table's centre line
-  // through the next play.
+  // Battle callouts stay up as long as they take to read, not Radix's flat five
+  // seconds: a toast parked on the table's centre line for 5 s sits through
+  // the next play, while the rule explanations ("Still finding the floor —
+  // …") run to twenty words and are not written to the battle log, so cutting
+  // every toast to one short duration lost them. About 55 ms a character plus
+  // a second to notice, between 2.6 s and 7 s.
   const { toast: notify, dismiss: dismissToasts } = useToast();
-  const toast = useCallback((t) => notify({ duration: 2600, ...t }), [notify]);
+  const toast = useCallback((t) => {
+    const chars = `${t.title ?? ''} ${t.description ?? ''}`.length;
+    return notify({ duration: Math.min(7000, Math.max(2600, 1000 + 55 * chars)), ...t });
+  }, [notify]);
 
-  // While a battle is in play, notifications move to the table's centre line
-  // (see index.css). In their usual corner they covered the turn controls on
-  // desktop and Chuck's health on phones. Not once the game is over: the result
-  // dialog owns the centre then.
+  // While a battle is in play, notifications move off the turn controls (see
+  // index.css): in their usual corner they covered the controls on desktop
+  // and Chuck's health on phones. At game over any open toast is dismissed
+  // rather than left to jump back to that corner over the result dialog,
+  // which says everything anyway.
   useEffect(() => {
-    if (gameOver) return undefined;
+    if (gameOver) {
+      dismissToasts();
+      return undefined;
+    }
     const root = document.documentElement;
     root.dataset.screen = 'battle';
     return () => { delete root.dataset.screen; };
-  }, [gameOver]);
+  }, [gameOver, dismissToasts]);
 
   // Play sound helper
   const playSound = useCallback((soundName) => {
@@ -762,6 +785,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // allows a direct hit when only traps or stealthed cards remain.
     setSelectedCard(card);
     setTargetingMode(true);
+    // On narrow screens a toast sits on the centre line, exactly where the
+    // "Pick a victim" prompt appears.
+    dismissToasts();
   };
 
   // Attack a target
@@ -1159,34 +1185,70 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const directTargets = targetingMode && getValidTargets(playerField, opponentField).length === 0;
   const latestLog = battleLog.length > 0 ? battleLog[battleLog.length - 1].message : '';
 
+  // Fit the two card rows to the table. The board is a fixed-height column
+  // (rails, table, controls, hand), and the height the table actually gets
+  // depends on the real viewport — a phone's browser toolbars, the control row
+  // wrapping, a short window — which fixed viewport-height breakpoints could
+  // not see: on short phones the player's row spilled out of the felt onto
+  // the turn controls and took their taps. So measure the felt and scale the
+  // rows to what fits (CSS zoom, so the layout scales with them), on resize
+  // only. Rows reserve a status chip's height whether or not one is showing,
+  // so a "Warming Up" appearing never rescales the board.
+  const feltRef = useRef(null);
+  const centreRef = useRef(null);
+  const [fieldZoom, setFieldZoom] = useState(1);
+  const rowSlots = Math.max(1, playerField.length, opponentField.length + (directTargets ? 1 : 0));
+  const rowSlotsRef = useRef(rowSlots);
+  rowSlotsRef.current = rowSlots;
+  const fitField = useCallback(() => {
+    const felt = feltRef.current;
+    const centre = centreRef.current;
+    if (!felt || !centre) return;
+    const cs = getComputedStyle(felt);
+    const px = (v) => parseFloat(v) || 0;
+    const forRows = felt.clientHeight - px(cs.paddingTop) - px(cs.paddingBottom)
+      - centre.offsetHeight - 2 * px(cs.rowGap);
+    const width = felt.clientWidth - px(cs.paddingLeft) - px(cs.paddingRight);
+    const n = rowSlotsRef.current;
+    const fit = Math.min(1, forRows / (2 * FIELD_ROW_HEIGHT), width / (n * FIELD_SLOT + (n - 1) * FIELD_GAP));
+    setFieldZoom(Math.max(0.45, Math.floor(fit * 100) / 100));
+    // Where the centre line really is, for the narrow-screen toast placement
+    // in index.css (toasts are fixed, so viewport coordinates are right).
+    const r = centre.getBoundingClientRect();
+    document.documentElement.style.setProperty('--battle-centre-y', `${Math.round(r.top + r.height / 2)}px`);
+  }, []);
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => fitField());
+    if (feltRef.current) observer.observe(feltRef.current);
+    if (centreRef.current) observer.observe(centreRef.current);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--battle-centre-y');
+    };
+  }, [fitField]);
+  useEffect(() => { fitField(); }, [rowSlots, fitField]);
+
   return (
-    <div className="relative w-full h-[100dvh] bar-backdrop overflow-hidden">
+    // Exactly the viewport's height on touch screens. With a mouse it never
+    // goes below 640px and the page scrolls instead: zooming the browser in
+    // shrinks the CSS viewport, and a board fitted to it would answer by
+    // making the cards smaller — the opposite of what zooming in asked for.
+    // (The height must stay definite either way; the felt's fit is measured
+    // from it.)
+    <div className="relative w-full h-[100dvh] [@media(pointer:fine)]:h-[max(100dvh,40rem)] bar-backdrop overflow-hidden">
       <div className="absolute inset-0 grain pointer-events-none" aria-hidden="true" />
 
-      {/* Ability callout — names the rule a card just brought to the table, on
-          the centre line where battle toasts sit (it replaces the toast for
-          that play). Centred by a plain wrapper: Framer Motion writes an inline
-          transform for y/scale, which silently replaced the -translate-x-1/2
-          this used to carry, so the callout hung off to the right. */}
-      <AnimatePresence>
-        {showAbilityPopup && (
-          <div
-            key={`${showAbilityPopup.name}-${showAbilityPopup.ability}`}
-            className="absolute top-[37%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-max max-w-[calc(100vw-2rem)] pointer-events-none"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: -16, scale: 0.85 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="dialog-panel rounded-xl px-5 py-3 text-center"
-            >
-              <div className="label-caps text-brass-300">{showAbilityPopup.ability}</div>
-              <div className="font-display text-lg font-extrabold text-white">{showAbilityPopup.name}</div>
-              <div className="text-sm text-plush-200">{getAbilityDescription(showAbilityPopup.ability)}</div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Landscape phones: the board needs more height than a sideways phone
+          has (two card rows, a hand and two rails in ~360px), and below that
+          it overlaps itself — Chuck's cards across the turn controls. CSS
+          decides when this shows (index.css, .rotate-hint). The board stays in
+          the accessibility tree underneath, so assistive tech can still play. */}
+      <div className="rotate-hint" aria-hidden="true">
+        <Smartphone className="h-10 w-10 text-brass-300" strokeWidth={1.75} />
+        <p className="font-display text-xl font-extrabold text-white">Turn your phone upright</p>
+        <p className="text-sm text-plush-200 max-w-xs">The table needs more height than a sideways phone has.</p>
+      </div>
 
       {/* Game Over Overlay */}
       <AnimatePresence>
@@ -1198,7 +1260,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             <motion.div
               initial={{ scale: 0.85, y: 30 }}
               animate={{ scale: 1, y: 0 }}
-              className={`relative rounded-2xl px-6 py-7 sm:px-8 text-center max-w-md w-full overflow-hidden dialog-panel ${won ? 'trim-brass' : ''}`}
+              className={`relative my-auto rounded-2xl px-6 py-7 sm:px-8 text-center max-w-md w-full overflow-hidden dialog-panel ${won ? 'trim-brass' : ''}`}
             >
               {/* The light the medallion sits in: amber for a win, a cold
                   wash for a loss. */}
@@ -1301,59 +1363,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         )}
       </AnimatePresence>
 
-      {/* Chuck's trash talk — decorative speech bubble; the battle log is the
-          accessible record, so this is hidden from assistive tech. */}
-      <AnimatePresence>
-        {oppQuip && (
-          <motion.div
-            key={oppQuip.id}
-            aria-hidden="true"
-            initial={{ opacity: 0, y: -8, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-            className="absolute top-[4.25rem] sm:top-[4.75rem] left-3 sm:left-6 z-30 max-w-[190px] sm:max-w-[230px] pointer-events-none"
-          >
-            <div className="relative bg-plush-100 text-night-900 text-sm font-semibold rounded-2xl rounded-tl-sm px-3 py-2 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.8)] ring-1 ring-red-300/70">
-              <span className="mr-1">🧸</span>
-              {oppQuip.text}
-              <div className="absolute -top-2 left-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-b-8 border-b-plush-100" />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* The player's emote bubble (Teddy Emote cosmetic) — same decorative
-          treatment as Chuck's; the battle log carries the accessible record. */}
-      <AnimatePresence>
-        {playerQuip && (
-          <motion.div
-            key={playerQuip.id}
-            aria-hidden="true"
-            initial={{ opacity: 0, y: 8, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-            className="absolute bottom-[16.5rem] left-3 sm:left-6 z-30 max-w-[190px] sm:max-w-[230px] pointer-events-none"
-          >
-            {/* brass-200, not brass-100: the palette starts at 200, so
-                bg-brass-100 generated no CSS at all. The bubble was transparent
-                and its near-black text sat on the near-black battlefield — the
-                same rgb(26,18,38) behind it as in it, a 1:1 contrast ratio,
-                with the tail missing too. src/tailwindShades.test.js now
-                fails on any class naming a shade the palette lacks. */}
-            <div className="relative bg-brass-200 text-night-900 text-sm font-semibold rounded-2xl rounded-bl-sm px-3 py-2 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.8)] ring-1 ring-brass-400/70">
-              <span className="mr-1">🎭</span>
-              {playerQuip.text}
-              <div className="absolute -bottom-2 left-3 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-brass-200" />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="relative z-10 flex h-full flex-col">
-        {/* Opponent's rail. pl-28 leaves room for App's "← Menu" control. */}
-        <header className="hud-opponent shrink-0 h-14 sm:h-16 flex items-center justify-between gap-2 pl-28 pr-3 sm:pr-5">
+        {/* Opponent's rail. pl-28 leaves room for App's "← Menu" control; the
+            safe-area padding keeps it out from under a notch when the game is
+            installed full-screen (the viewport is viewport-fit=cover). */}
+        <div className="hud-opponent shrink-0 h-[calc(3.5rem+env(safe-area-inset-top))] sm:h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center justify-between gap-2 pl-28 pr-3 sm:pr-5">
           <div className="flex items-center gap-2.5 min-w-0">
             <Avatar ring={OPPONENT_RING} />
             <div className="min-w-0">
@@ -1375,14 +1389,39 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             fill="[&>div]:bg-gradient-to-r [&>div]:from-red-600 [&>div]:to-rose-400"
             label={`${OPPONENT_NAME} health: ${opponentHealth} of ${opponentMaxHealth}`}
           />
-        </header>
+        </div>
 
-        {/* The table, and beside it on wide screens the log and the controls. */}
-        <div className="relative flex-1 min-h-0 flex flex-col lg:flex-row gap-2 lg:gap-4 px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3">
-          <div className="table-rail flex-1 min-h-0">
-            <div className="felt-table felt-print stitched relative h-full rounded-[15px] grid grid-rows-[1fr_auto_1fr] gap-1 px-2 py-3 sm:p-4">
+        {/* The table, and beside it from md up the log and the controls. */}
+        <div className="relative flex-1 min-h-0 flex flex-col md:flex-row gap-2 md:gap-4 px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3">
+          <div className="table-rail flex-1 min-h-0 min-w-0">
+            <div
+              ref={feltRef}
+              className="felt-table felt-print stitched relative h-full rounded-[15px] grid grid-rows-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-3 px-2 py-3 sm:p-4"
+            >
+              {/* Chuck's trash talk — decorative speech bubble in the felt's
+                  corner on his side; the battle log is the accessible record,
+                  so this is hidden from assistive tech. */}
+              <AnimatePresence>
+                {oppQuip && (
+                  <motion.div
+                    key={oppQuip.id}
+                    aria-hidden="true"
+                    initial={{ opacity: 0, y: -8, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+                    className="absolute top-2 left-2 sm:top-3 sm:left-3 z-20 max-w-[150px] sm:max-w-[220px] pointer-events-none"
+                  >
+                    <div className="relative bg-plush-100 text-night-900 text-xs sm:text-sm font-semibold rounded-2xl rounded-tl-sm px-3 py-2 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.8)] ring-1 ring-red-300/70">
+                      <span className="mr-1">🧸</span>
+                      {oppQuip.text}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Chuck's half */}
-              <div className="board-zoom self-center flex justify-center items-start gap-2 sm:gap-3">
+              <div className="self-center flex justify-center items-start gap-2 sm:gap-3" style={{ zoom: fieldZoom }}>
                 {opponentField.map((card) => {
                   const validTargets = getValidTargets(playerField, opponentField);
                   const isValidTarget = validTargets.find(t => t.instanceId === card.instanceId);
@@ -1392,12 +1431,16 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                     <motion.div
                       key={card.instanceId}
                       initial={{ y: -40, opacity: 0 }}
-                      animate={{ y: 0, opacity: card.stealthActive ? 0.5 : 1 }}
+                      animate={{ y: 0, opacity: 1 }}
                       className={`relative ${hittable ? 'cursor-crosshair' : ''}`}
                       {...pressable(() => attackTarget(card), `Attack ${card.name}`, targetingMode)}
                     >
                       <div className={`relative rounded-[10px] transition-shadow ${hittable ? 'ring-2 ring-red-400 shadow-[0_0_22px_4px_rgba(248,113,113,0.55)]' : ''}`}>
-                        <TeddyCard teddy={card} />
+                        {/* Only the card dims for stealth; the band and tags
+                            stay at full strength so they keep their contrast. */}
+                        <div className={card.stealthActive ? 'opacity-50' : ''}>
+                          <TeddyCard teddy={card} />
+                        </div>
                         {card.stealthActive && <StealthBand />}
                         {card.ability === 'taunt' && !card.stealthActive && <TauntTag tone="opponent" />}
                         {hittable && (
@@ -1409,7 +1452,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                       {/* Tells the player which of Chuck's teddies can actually swing
                           at them next turn — without it, summoning sickness is only
                           legible on their own half of the table. */}
-                      {card.summoningSick && <StatusChip>Warming Up</StatusChip>}
+                      <StatusSlot>{card.summoningSick && <StatusChip>Warming Up</StatusChip>}</StatusSlot>
                     </motion.div>
                   );
                 })}
@@ -1427,11 +1470,12 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                 )}
               </div>
 
-              {/* The centre line: momentum, the turn plaque, and on screens
-                  without the log panel, the latest event. */}
-              <div className="relative flex flex-col items-center gap-1.5">
+              {/* The centre line: momentum, the turn plaque, and a second line
+                  that is always reserved — the targeting prompt, or below md
+                  the latest event — so neither appearing moves the rows. */}
+              <div ref={centreRef} className="relative flex flex-col items-center gap-1.5">
                 <div className="flex w-full items-center gap-2 sm:gap-3">
-                  <MomentumMeter value={playerMomentum} />
+                  <MomentumMeter value={playerMomentum} glow={!gameOver} />
                   <span className="h-px flex-1 bg-gradient-to-r from-transparent to-brass-300/45" aria-hidden="true" />
                   <div
                     className={`shrink-0 rounded-lg px-3 sm:px-4 py-1 font-display font-extrabold text-sm sm:text-base whitespace-nowrap shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_6px_14px_-6px_rgba(0,0,0,0.8)] ${playerTurn ? 'text-night-950' : 'text-white'}`}
@@ -1439,56 +1483,70 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                   >
                     Turn {turnCount}
                     <span className="mx-1.5 opacity-60" aria-hidden="true">·</span>
-                    {playerTurn ? `${phase.charAt(0).toUpperCase() + phase.slice(1)} Phase` : `${OPPONENT_NAME}'s turn`}
+                    {playerTurn
+                      ? <>{phase.charAt(0).toUpperCase() + phase.slice(1)}<span className="hidden min-[360px]:inline"> Phase</span></>
+                      : `${OPPONENT_NAME}'s turn`}
                   </div>
                   <span className="h-px flex-1 bg-gradient-to-l from-transparent to-brass-300/45" aria-hidden="true" />
-                  <span className="hidden sm:block w-32 shrink-0" aria-hidden="true" />
+                  <span className="hidden lg:block w-32 shrink-0" aria-hidden="true" />
                 </div>
 
-                {targetingMode ? (
-                  <div className="flex items-center gap-1.5 rounded-full bg-red-950/85 ring-1 ring-red-400/60 px-3 py-1 text-xs font-bold text-red-100 animate-pulse">
-                    <Crosshair className="h-3.5 w-3.5" aria-hidden="true" />
-                    Pick a victim for {selectedCard?.name}!
-                  </div>
-                ) : latestLog && (
-                  /* Latest-event ticker for screens without the log panel.
+                <div className="flex min-h-[1.5rem] max-w-full items-center justify-center">
+                  {targetingMode ? (
+                    <div className="relative flex items-center gap-1.5 rounded-full bg-red-950/90 px-3 py-1 text-xs font-bold text-red-100">
+                      {/* The ring pulses, not the text, so the prompt keeps its
+                          contrast at every point of the pulse. */}
+                      <span className="absolute inset-0 rounded-full ring-1 ring-red-400/70 motion-safe:animate-pulse" aria-hidden="true" />
+                      <Crosshair className="h-3.5 w-3.5" aria-hidden="true" />
+                      Pick a victim for {selectedCard?.name}!
+                    </div>
+                  ) : latestLog && (
+                    /* Latest-event ticker for screens without the log panel.
 
-                     Purely visual: aria-hidden, because the sr-only region below
-                     is the single announcer. This element used to BE the
-                     announcer, carrying the only aria-live on the board — with
-                     md:hidden on it. A live region inside a display:none subtree
-                     is out of the accessibility tree, so on any viewport >= 768px
-                     nothing was ever announced: a screen-reader player pressed
-                     End Turn and was told nothing about Chuck's plays, their
-                     creature dying, the damage they took, or that it was their
-                     turn again. */
-                  <div
-                    aria-hidden="true"
-                    className="lg:hidden max-w-full truncate rounded-full bg-night-950/80 ring-1 ring-white/5 px-3 py-1 text-xs text-plush-200 pointer-events-none"
-                  >
-                    {latestLog}
-                  </div>
-                )}
+                       Purely visual: aria-hidden, because the sr-only log below
+                       is the single announcer. This element used to BE the
+                       announcer, carrying the only aria-live on the board —
+                       with md:hidden on it. A live region inside a display:none
+                       subtree is out of the accessibility tree, so on any
+                       viewport >= 768px nothing was ever announced: a
+                       screen-reader player pressed End Turn and was told
+                       nothing about Chuck's plays, their creature dying, the
+                       damage they took, or that it was their turn again. */
+                    <div
+                      aria-hidden="true"
+                      className="md:hidden max-w-full truncate rounded-full bg-night-950/80 ring-1 ring-white/5 px-3 py-1 text-xs text-plush-200 pointer-events-none"
+                    >
+                      {latestLog}
+                    </div>
+                  )}
+                </div>
 
-                {/* The board's one announcer, present at every viewport. Visually
-                    hidden rather than display:none, so it is always in the
-                    accessibility tree; sighted players read the ticker above or
-                    the log panel. */}
-                <div aria-live="polite" className="sr-only">
-                  {latestLog}
+                {/* The board's one announcer, present at every viewport and
+                    visually hidden rather than display:none, so it is always in
+                    the accessibility tree. A log of the recent entries, each
+                    its own node, rather than one line of text: Chuck's attack
+                    wave writes several entries in one render ("X UNSTUFFED Y",
+                    then the face hit), and a single text node jumped straight
+                    to the last of them, so a screen-reader player was never
+                    told their creature had died. Each added node is announced. */}
+                <div role="log" aria-live="polite" className="sr-only">
+                  {battleLog.slice(-8).map((entry) => (
+                    <div key={entry.id}>{entry.message}</div>
+                  ))}
                 </div>
               </div>
 
               {/* The player's half */}
-              <div className="board-zoom self-center flex justify-center items-start gap-2 sm:gap-3">
+              <div className="self-center flex justify-center items-start gap-2 sm:gap-3" style={{ zoom: fieldZoom }}>
                 {playerField.map((card) => {
                   const selected = selectedCard?.instanceId === card.instanceId;
                   const ready = playerTurn && phase === 'battle' && canAttack(card);
+                  const resting = card.type === 'action' && !canAttack(card);
                   return (
                     <motion.div
                       key={card.instanceId}
                       whileHover={{ y: -5 }}
-                      className={`relative ${card.type === 'action' && !canAttack(card) ? 'opacity-60' : 'cursor-pointer'}`}
+                      className={`relative ${resting ? '' : 'cursor-pointer'}`}
                       /* Always delegate to selectCardForAttack rather than
                          short-circuiting here: it owns every rejection message
                          (trap / exhausted / summoning-sick), so a player who taps an
@@ -1499,35 +1557,91 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                         ? 'ring-2 ring-brass-300 shadow-[0_0_24px_4px_rgba(251,191,36,0.55)]'
                         : ready ? 'shadow-[0_0_18px_2px_rgba(52,211,153,0.5)]' : ''}`}
                       >
-                        <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
+                        <div className={resting ? 'opacity-60' : ''}>
+                          <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
+                        </div>
                         {card.stealthActive && <StealthBand />}
                         {card.ability === 'taunt' && !card.stealthActive && <TauntTag tone="player" />}
                       </div>
-                      {card.hasAttacked && <StatusChip>Exhausted</StatusChip>}
-                      {card.summoningSick && !card.hasAttacked && <StatusChip>Warming Up</StatusChip>}
+                      <StatusSlot>
+                        {card.hasAttacked && <StatusChip>Exhausted</StatusChip>}
+                        {card.summoningSick && !card.hasAttacked && <StatusChip>Warming Up</StatusChip>}
+                      </StatusSlot>
                     </motion.div>
                   );
                 })}
               </div>
+
+              {/* The player's emote bubble (Teddy Emote cosmetic), in the
+                  felt's corner on their side — same decorative treatment as
+                  Chuck's; the battle log carries the accessible record. */}
+              <AnimatePresence>
+                {playerQuip && (
+                  <motion.div
+                    key={playerQuip.id}
+                    aria-hidden="true"
+                    initial={{ opacity: 0, y: 8, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 22 }}
+                    className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-20 max-w-[150px] sm:max-w-[220px] pointer-events-none"
+                  >
+                    {/* brass-200, not brass-100: the palette starts at 200, so
+                        bg-brass-100 generated no CSS at all. The bubble was
+                        transparent and its near-black text sat on the
+                        near-black battlefield — a 1:1 contrast ratio.
+                        src/tailwindShades.test.js now fails on any class
+                        naming a shade the palette lacks. */}
+                    <div className="relative bg-brass-200 text-night-900 text-xs sm:text-sm font-semibold rounded-2xl rounded-bl-sm px-3 py-2 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.8)] ring-1 ring-brass-400/70">
+                      <span className="mr-1">🎭</span>
+                      {playerQuip.text}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Ability callout — names the rule a card just brought to the
+                  table. Inside the felt so it centres on the table, not the
+                  window (they differ by the log column at md+). Centred by a
+                  plain wrapper: Framer Motion writes an inline transform for
+                  y/scale, which silently replaced the -translate-x-1/2 this
+                  used to carry, so the callout hung off to the right. */}
+              <AnimatePresence>
+                {showAbilityPopup && (
+                  <div
+                    key={`${showAbilityPopup.name}-${showAbilityPopup.ability}`}
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 w-max max-w-[calc(100%-1rem)] pointer-events-none"
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, y: -16, scale: 0.85 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="dialog-panel rounded-xl px-5 py-3 text-center"
+                    >
+                      <div className="label-caps text-brass-300">{showAbilityPopup.ability}</div>
+                      <div className="font-display text-lg font-extrabold text-white">{showAbilityPopup.name}</div>
+                      <div className="text-sm text-plush-200">{getAbilityDescription(showAbilityPopup.ability)}</div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
-          {/* Beside the table on wide screens; a row under it otherwise. */}
-          <aside className="shrink-0 flex flex-col gap-3 lg:w-56 lg:pb-1">
-            {/* Battle log — a panel on wide screens; narrower ones get the ticker
-                on the centre line instead, since a panel there would cover cards.
+          {/* Beside the table from md up; rows under it on phones. */}
+          <div className="shrink-0 flex flex-col gap-2 md:gap-3 md:w-56 md:pb-1">
+            {/* Battle log — a panel from md up; phones get the ticker on the
+                centre line instead, since a panel there would cover cards.
                 tabIndex + role/aria-label make the scrolling panel keyboard-
-                reachable (axe: scrollable-region-focusable). It has no
-                aria-live of its own; the sr-only region on the table is the one
-                announcer, on every viewport. Newest first, so the entry that
-                just happened is the one in view. */}
+                reachable (axe: scrollable-region-focusable), and the region
+                itself is the scroller, which axe requires. It has no aria-live
+                of its own; the sr-only log on the table is the one announcer.
+                Newest first, so the entry that just happened is in view. */}
             <div
               role="region"
               aria-label="Battle log"
               tabIndex={0}
-              // The region itself is the scroller: axe requires the scrolling
-              // element to be the focusable one, not a child of it.
-              className="hidden lg:block flex-1 min-h-0 overflow-y-auto panel-glass rounded-xl p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+              className="hidden md:block flex-1 min-h-0 overflow-y-auto panel-glass rounded-xl p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
             >
               <div className="flex items-center gap-1.5 mb-2 text-brass-300">
                 <ScrollText className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1543,29 +1657,37 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               ))}
             </div>
 
-            {/* Game controls. flex-wrap matters on phones: with both Battle
-                Pass emotes owned AND a full momentum gauge, emotes + Rally + the
-                turn buttons exceed 390px, and without wrapping the spill is
-                clipped at both ends — the first emote and Concede's right edge
-                become untappable. Wrapping drops the overflow onto a second row. */}
-            <div className="flex flex-row flex-wrap justify-center gap-2 lg:flex-col">
-              {/* Battle Pass emote cosmetics — only rendered once unlocked. Usable on
-                  either turn (heckling Chuck mid-swing is the point). */}
-              {!gameOver && emotes.length > 0 && (
-                <div className="flex flex-row justify-center gap-2">
-                  {emotes.map((emote) => (
-                    <button
-                      type="button"
-                      key={emote.name}
-                      onClick={() => sendEmote(emote)}
-                      aria-label={emote.name}
-                      title={emote.name}
-                      className="btn-glass flex-none grid place-items-center h-10 w-10 rounded-xl text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
-                    >
-                      {emote.icon}
-                    </button>
-                  ))}
-                </div>
+            {/* Battle Pass emote cosmetics — only rendered once unlocked, on a
+                line of their own so the turn controls below never wrap around
+                them. Usable on either turn (heckling Chuck mid-swing is the
+                point). */}
+            {!gameOver && emotes.length > 0 && (
+              <div className="flex flex-row justify-center gap-2">
+                {emotes.map((emote) => (
+                  <button
+                    type="button"
+                    key={emote.name}
+                    onClick={() => sendEmote(emote)}
+                    aria-label={emote.name}
+                    title={emote.name}
+                    className="btn-glass flex-none grid place-items-center h-10 w-10 rounded-xl text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
+                  >
+                    {emote.icon}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Game controls. The line keeps its height on Chuck's turn, when
+                the buttons are gone: below md the table's height depends on
+                it, and an empty line made the whole table grow and shrink at
+                every turn boundary. Concede is icon-only on phones so that
+                Rally + Battle + End Turn + Concede fit one line at 360px. */}
+            <div className="flex min-h-10 flex-row flex-wrap items-center justify-center gap-2 md:flex-col md:items-stretch">
+              {!gameOver && !playerTurn && (
+                <span className="text-xs italic text-plush-300" aria-hidden="true">
+                  {OPPONENT_NAME} is making his move…
+                </span>
               )}
               {targetingMode && (
                 <button type="button" className={`${ACTION} btn-glass`} onClick={cancelTargeting}>
@@ -1574,7 +1696,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               )}
               {!gameOver && playerMomentum >= MOMENTUM_MAX && playerTurn && (
                 <button type="button" className={`${ACTION} btn-brass foil relative`} onClick={rally}>
-                  ⚡ Rally!
+                  {/* Above the foil band (::after), which would otherwise
+                      sweep across the label and wash it out. */}
+                  <span className="relative z-10">⚡ Rally!</span>
                 </button>
               )}
               {!gameOver && phase === 'main' && playerTurn && (
@@ -1594,49 +1718,58 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               {!gameOver && playerTurn && (
                 <button
                   type="button"
-                  className={`${ACTION} btn-glass !text-plush-300 hover:!text-white text-xs lg:mt-1`}
+                  title="Concede"
+                  className={`${ACTION} btn-glass !px-3 sm:!px-4 text-plush-300 hover:text-white text-xs md:mt-1`}
                   onClick={concedeGame}
                 >
                   <Flag className="h-3.5 w-3.5" aria-hidden="true" />
-                  Concede
+                  <span className="sr-only sm:not-sr-only">Concede</span>
                 </button>
               )}
             </div>
-          </aside>
+          </div>
         </div>
 
-        {/* Player's hand — caps width and scrolls horizontally so a full hand
-            stays reachable on phones instead of overflowing off-screen. The top
-            padding is the room a hovered card lifts into; overflow-y is hidden
-            so the lift never summons a vertical scrollbar. */}
-        <div className="board-zoom shrink-0 flex justify-start md:justify-center gap-2 max-w-full overflow-x-auto overflow-y-hidden px-4 pt-10 pb-3">
-          <AnimatePresence>
-            {playerHand.map((card, index) => {
-              const mid = (playerHand.length - 1) / 2;
-              const affordable = playerEnergy >= effectiveCost(card, playerField);
-              const playable = playerTurn && phase === 'main';
-              return (
-                <motion.div
-                  key={card.instanceId}
-                  initial={{ y: 50, opacity: 0 }}
-                  animate={{ y: Math.abs(index - mid) * 3, opacity: 1, rotate: (index - mid) * 3 }}
-                  exit={{ y: 50, opacity: 0 }}
-                  whileHover={{ y: -20, scale: 1.08, zIndex: 10 }}
-                  style={{ transformOrigin: 'bottom center' }}
-                  className={`shrink-0 rounded-[10px] cursor-pointer ${!affordable
-                    ? 'opacity-50 saturate-50'
-                    : playable ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
-                  {...pressable(() => playCard(card), `Play ${card.name}`, playable)}
-                >
-                  <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+        {/* Player's hand — scrolls horizontally so a full hand stays reachable
+            on phones. The cards sit in a w-max mx-auto strip rather than using
+            justify-center on the scroller: centred overflow spills to both
+            sides and the left side cannot be scrolled to, which hid the first
+            cards of a big hand. The padding is the room a hovered card lifts
+            into and the fan's outer corners swing into; overflow-y is hidden so
+            the lift never summons a vertical scrollbar. */}
+        <div className="board-zoom shrink-0 max-w-full overflow-x-auto overflow-y-hidden px-6 pt-11 pb-6">
+          <div className="mx-auto flex w-max gap-2">
+            <AnimatePresence>
+              {playerHand.map((card, index) => {
+                const mid = (playerHand.length - 1) / 2;
+                // Tighter fan for big hands, so the outer cards' corners
+                // stay inside the row.
+                const step = playerHand.length > 6 ? 2 : 3;
+                const affordable = playerEnergy >= effectiveCost(card, playerField);
+                const playable = playerTurn && phase === 'main';
+                return (
+                  <motion.div
+                    key={card.instanceId}
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: Math.abs(index - mid) * step, opacity: 1, rotate: (index - mid) * step }}
+                    exit={{ y: 50, opacity: 0 }}
+                    whileHover={{ y: -20, scale: 1.08, zIndex: 10 }}
+                    style={{ transformOrigin: 'bottom center' }}
+                    className={`shrink-0 rounded-[10px] cursor-pointer ${!affordable
+                      ? 'opacity-50 saturate-50'
+                      : playable ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
+                    {...pressable(() => playCard(card), `Play ${card.name}`, playable)}
+                  >
+                    <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} />
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Player's rail */}
-        <footer className="hud-player shrink-0 h-14 sm:h-16 flex items-center justify-between gap-2 px-3 sm:px-5">
+        <div className="hud-player shrink-0 h-[calc(3.5rem+env(safe-area-inset-bottom))] sm:h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] flex items-center justify-between gap-2 px-3 sm:px-5">
           <div className="flex items-center gap-2.5 min-w-0">
             <Avatar ring={RARITY_METAL.legendary} />
             <div className="min-w-0">
@@ -1652,16 +1785,16 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-3 sm:gap-5">
+          <div className="flex items-center gap-2 sm:gap-5">
             <span
               role="img"
               aria-label={storeSoundEnabled ? 'Sound on' : 'Sound off'}
               title={storeSoundEnabled ? 'Sound on' : 'Sound off'}
-              className="hidden sm:grid h-8 w-8 place-items-center rounded-full bg-black/30 ring-1 ring-white/10 text-plush-300"
+              className="grid h-7 w-7 sm:h-8 sm:w-8 place-items-center rounded-full bg-black/30 ring-1 ring-white/10 text-plush-300"
             >
               {storeSoundEnabled
-                ? <Volume2 className="h-4 w-4" aria-hidden="true" />
-                : <VolumeX className="h-4 w-4" aria-hidden="true" />}
+                ? <Volume2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+                : <VolumeX className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />}
             </span>
             <div className="flex items-center gap-1.5">
               <span
@@ -1681,7 +1814,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               label={`Your health: ${playerHealth} of 30`}
             />
           </div>
-        </footer>
+        </div>
       </div>
     </div>
   );

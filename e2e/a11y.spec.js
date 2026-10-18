@@ -191,6 +191,26 @@ test('the battle board has a live region that survives the desktop viewport', as
   ).not.toBe('none');
 });
 
+// The announcer used to be one line of text holding the newest entry. Chuck's
+// turn writes several entries in a single render — his opener, each play, each
+// hit, a kill and then the face damage — so the text jumped straight to the
+// last of them and a screen-reader player was never told, for one, that their
+// creature had died. It is now a log of separate entries, each announced as it
+// is added. Pinned by structure: after a full Chuck turn the region must hold
+// more than one entry (the single-text version held none).
+test('the board announcer keeps every entry of a batch, not just the last', async ({ page }) => {
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  const endTurn = page.getByRole('button', { name: 'End Turn' });
+  await expect(endTurn).toBeVisible(SLOW);
+  await endTurn.click();
+  await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+  await expect(endTurn).toBeVisible(SLOW);
+
+  const log = page.locator('[role="log"][aria-live="polite"]');
+  await expect(log).toHaveCount(1);
+  await expect.poll(() => log.locator(':scope > *').count(), SLOW).toBeGreaterThan(1);
+});
+
 test('cards only advertise themselves as buttons when they can actually be used', async ({ page }) => {
   // Force a deck of cheap action cards (as e2e/smoke.spec.js does) so the
   // first play is affordable on 3 energy and lands a creature on the field —

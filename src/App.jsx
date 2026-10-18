@@ -11,7 +11,6 @@ import DialogErrorBoundary from './components/DialogErrorBoundary';
 // Static, not lazy: this IS the boot path, so a chunk for it would be a
 // round-trip in front of the screen whose entire job is covering a round-trip.
 import BootScreen from './components/BootScreen';
-import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore } from './stores/gameStore';
 import { fetchServerGemBalance, ensurePlayerProfile, isSupabaseConfigured } from './utils/supabaseClient';
@@ -51,13 +50,17 @@ const DialogLoader = () => (
 // fresh component type on every render, so any toast (which re-renders App)
 // remounted the "← Menu" control mid-screen, replaying its mount and dropping
 // keyboard focus. Takes its navigate handler as a prop.
+// A plain button on the glass material (the shadcn Button's bg-primary is a
+// utility and would beat it). Offset by the safe area so it clears a notch
+// when the game is installed full-screen, matching the battle board's rail.
 const BackButton = ({ onClick }) => (
-  <Button
-    className="absolute top-4 left-4 z-40 bg-night-700 hover:bg-night-600 border border-plush-700/60 text-plush-100"
+  <button
+    type="button"
+    className="btn-glass absolute top-[calc(1rem+env(safe-area-inset-top))] left-4 z-40 inline-flex h-10 items-center rounded-xl px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950"
     onClick={onClick}
   >
     ← Menu
-  </Button>
+  </button>
 );
 
 function App() {
