@@ -1,51 +1,122 @@
-import { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import TeddyCard from './TeddyCard';
-import { useToast } from "@/components/ui/use-toast";
+import { useState, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Bomb, Check, Eraser, FolderOpen, PawPrint, Save, Sparkles, Trash2, X, Zap } from 'lucide-react';
+import TeddyCard, { ArtOrEmoji } from './TeddyCard';
+import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder } from '@/lib/cosmetics';
 
-import { RARITY } from '@/lib/rarity';
+import { RARITY, RARITY_METAL } from '@/lib/rarity';
 
 const DECK_SIZE = 10;
 const MAX_COPIES = 2;
 
+const FOCUS_RING =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300 ' +
+  'focus-visible:ring-offset-2 focus-visible:ring-offset-night-900';
+
+// Shape of every full-size button here; the material (btn-brass / btn-glass)
+// is added per button. Plain <button>s, not the shadcn Button: its bg-primary
+// is a utility and would beat a component-layer material.
+const ACTION =
+  'inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 font-display text-base font-bold ' +
+  `whitespace-nowrap ${FOCUS_RING}`;
+
+// Segmented type filter — the same recessed well and raised glass key as the
+// Collection's filters. The selected segment restates .btn-glass's shadow
+// because a shadow utility replaces the material's rather than adding to it.
+const SEG =
+  'inline-flex h-8 items-center justify-center rounded-lg px-3 text-[13px] font-semibold whitespace-nowrap ' +
+  'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300';
+const SEG_ON =
+  'btn-glass text-brass-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-2px_0_rgba(251,191,36,0.55),0_4px_10px_-6px_rgba(0,0,0,0.8)]';
+const SEG_OFF = 'border border-transparent text-plush-300 hover:bg-white/[0.04] hover:text-white';
+
+// A small recessed well for counts and rows inside the deck panel.
+const WELL = 'bg-night-950/45 ring-1 ring-inset ring-white/[0.06]';
+
+const TYPE_TILES = [
+  { type: 'action', label: 'Action', Icon: PawPrint, tone: 'text-amber-300' },
+  { type: 'trap', label: 'Trap', Icon: Bomb, tone: 'text-purple-300' },
+  { type: 'special', label: 'Special', Icon: Sparkles, tone: 'text-cyan-300' },
+];
+
+// The brass coin a card's cost is struck on — TeddyCard's, at list size.
+const CostCoin = ({ cost }) => (
+  <span
+    className="grid h-6 w-6 shrink-0 place-items-center rounded-full font-display text-xs font-extrabold leading-none text-night-950 tabular-nums ring-1 ring-night-950/80 shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
+    style={{ background: 'radial-gradient(circle at 50% 30%, #fffbeb, #fbbf24 55%, #b45309)' }}
+  >
+    {cost}
+  </span>
+);
+
 // Save-Deck modal. Hosts its own useDialog (the hook must mount with the
 // overlay) for dialog semantics, Escape, and a focus trap — otherwise the deck
 // tiles behind it stay tab-reachable. The hook focuses the first control (the
-// name input), so no manual autoFocus is needed. Mirrors GameBoard's
-// GameOverDialog / TeddyCollection's CardDetailDialog.
+// name input), so no manual autoFocus is needed — which is also why the
+// header's Close button comes LAST in the markup and is positioned into the
+// corner: first in the DOM, it would take the focus the name field needs.
+// Mirrors GameBoard's GameOverDialog / TeddyCollection's CardDetailDialog.
 const SaveDeckDialog = ({ deckName, setDeckName, onSave, onClose }) => {
   const ref = useDialog(onClose);
+  const inputId = useId();
   return (
     <motion.div
       ref={ref}
       role="dialog"
       aria-modal="true"
       aria-label="Save deck"
-      initial={{ scale: 0.9 }}
-      animate={{ scale: 1 }}
-      exit={{ scale: 0.9 }}
-      className="bg-night-700 border border-plush-700/60 rounded-xl p-6 max-w-sm w-full"
+      initial={{ scale: 0.94, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.96, opacity: 0 }}
+      className="dialog-panel relative my-auto w-full max-w-sm rounded-2xl p-5 sm:p-6"
       onClick={(e) => e.stopPropagation()}
     >
-      <h3 className="text-white text-xl font-bold mb-4">Save Deck</h3>
+      <div className="flex min-h-10 items-center gap-3 pr-12">
+        <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brass-400/15 ring-1 ring-brass-300/40">
+          <Save className="h-5 w-5 text-brass-300" strokeWidth={2} />
+        </span>
+        <h3 className="font-display text-xl font-extrabold leading-tight text-white">Save Deck</h3>
+      </div>
+
+      <div className="mb-2 mt-5 flex items-baseline justify-between gap-3">
+        <label htmlFor={inputId} className="label-caps text-plush-300">Deck name</label>
+        <span aria-hidden="true" className="text-xs tabular-nums text-plush-300">{deckName.length}/20</span>
+      </div>
       <input
+        id={inputId}
         type="text"
         value={deckName}
         onChange={(e) => setDeckName(e.target.value)}
         placeholder="Enter deck name..."
         aria-label="Deck name"
-        className="w-full bg-white/10 border border-white/20 text-white px-4 py-2 rounded-lg mb-4"
+        className="h-11 w-full rounded-xl bg-night-950/60 px-4 text-plush-100 ring-1 ring-inset ring-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] placeholder:text-plush-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
         maxLength={20}
       />
-      <div className="flex gap-2">
-        <Button onClick={onSave} disabled={!deckName.trim()} className="flex-1 bg-emerald-700 hover:bg-emerald-800">Save</Button>
-        <Button onClick={onClose} variant="outline" className="flex-1 text-white border-white/30">Cancel</Button>
+
+      <div className="mt-5 flex gap-2">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={!deckName.trim()}
+          className={`${ACTION} btn-brass flex-1 disabled:cursor-not-allowed disabled:opacity-50 disabled:filter-none`}
+        >
+          Save
+        </button>
+        <button type="button" onClick={onClose} className={`${ACTION} btn-glass flex-1`}>Cancel</button>
       </div>
+
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        className={`btn-glass absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-xl sm:right-6 sm:top-6 ${FOCUS_RING}`}
+      >
+        <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
+      </button>
     </motion.div>
   );
 };
@@ -95,7 +166,7 @@ const DeckBuilder = () => {
 
   // Dismiss the Save-As dialog AND clear the typed name. Leaving deckName
   // populated after a cancel was the bug: handleSaveDeck is shared with the
-  // green "Set as Current Deck" button, and it took the named-save branch
+  // "Set as Current Deck" button, and it took the named-save branch
   // whenever deckName was non-empty — so cancelling the dialog with a name
   // typed, then clicking "Set as Current Deck", silently saved/overwrote a
   // named deck the player never confirmed.
@@ -113,7 +184,7 @@ const DeckBuilder = () => {
     setCurrentDeck(cardIds);
 
     // Only save a *named* deck when the request came from the Save-As dialog.
-    // The green "Set as Current Deck" button calls this too, and must never
+    // The "Set as Current Deck" button calls this too, and must never
     // perform a named save just because a stale name lingers in state.
     if (showSaveDialog && deckName.trim()) {
       saveDeck(deckName.trim(), cardIds);
@@ -150,105 +221,157 @@ const DeckBuilder = () => {
     epic: deck.filter(c => c.rarity === 'epic').length,
     legendary: deck.filter(c => c.rarity === 'legendary').length,
   };
+  const deckFull = deck.length === DECK_SIZE;
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-brass-300 to-brass-500 bg-clip-text text-transparent mb-6 text-center">Deck Builder</h1>
+      <div className="mb-6 text-center">
+        <h1 className="font-display text-4xl font-extrabold leading-none tracking-tight text-brass-gradient md:text-5xl">Deck Builder</h1>
+        <p className="label-caps mt-3 text-plush-300">Assemble your goon squad</p>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
         <div className="lg:col-span-2">
-          <div className="bg-night-800/60 border border-plush-700/40 rounded-xl p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">Your Cards ({ownedCardObjects.length})</h2>
-            </div>
+          <section className="panel-glass rounded-2xl p-4 sm:p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="font-display text-xl font-extrabold leading-tight text-white">
+                Your Cards <span className="font-bold text-plush-300">({ownedCardObjects.length})</span>
+              </h2>
 
-            <div className="flex gap-2 mb-4 flex-wrap">
-              {['all', 'action', 'trap', 'special'].map(type => (
-                <button
-                  key={type}
-                  onClick={() => setFilter(type)}
-                  className={`px-3 py-1 rounded text-sm font-semibold transition-all ${
-                    filter === type ? 'bg-brass-400 text-night-950' : 'bg-white/10 text-plush-300 hover:bg-white/20'
-                  }`}
-                >
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[500px] overflow-y-auto justify-items-center">
-              {filteredCards.map((card) => {
-                const copiesInDeck = deck.filter(c => c.id === card.id).length;
-                const isMaxed = copiesInDeck >= MAX_COPIES;
-                return (
-                  <motion.div
-                    key={card.id}
-                    whileHover={{ scale: isMaxed ? 1 : 1.05 }}
-                    whileTap={{ scale: isMaxed ? 1 : 0.95 }}
-                    className={`relative cursor-pointer ${isMaxed ? 'opacity-50' : ''}`}
-                    {...pressable(addToDeck.bind(null, card), `Add ${card.name} to deck`, !isMaxed)}
+              <div
+                role="group"
+                aria-label="Filter by type"
+                className="grid w-full grid-cols-4 gap-1 rounded-xl bg-night-950/55 p-1 ring-1 ring-inset ring-white/[0.07] shadow-[inset_0_1px_3px_rgba(0,0,0,0.45)] sm:inline-flex sm:w-auto"
+              >
+                {['all', 'action', 'trap', 'special'].map(type => (
+                  <button
+                    type="button"
+                    key={type}
+                    onClick={() => setFilter(type)}
+                    aria-pressed={filter === type}
+                    className={`${SEG} ${filter === type ? SEG_ON : SEG_OFF}`}
                   >
-                    <div className={`absolute inset-0 rounded-lg blur-md -z-10 opacity-30 bg-gradient-to-r ${RARITY[card.rarity].gradient}`} />
-                    <TeddyCard teddy={card} isDisabled={isMaxed} cosmeticBorder={cosmeticBorder} />
-                    {copiesInDeck > 0 && (
-                      <div className="absolute -top-2 -right-2 bg-brass-400 text-night-950 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold z-10">
-                        {copiesInDeck}
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Padded inside the scroller so a card's hover lift and focus
+                ring are not clipped by its edge. Fixed card-width tracks, as
+                in the Collection: centred on a phone, spread to the panel's
+                edges from sm up so the grid lines up with the heading. */}
+            <div className="-mx-2 max-h-[500px] overflow-y-auto px-2 pb-2 pt-2 [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin]">
+              <div className="grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-3 sm:justify-between sm:gap-x-4">
+                {filteredCards.map((card) => {
+                  const copiesInDeck = deck.filter(c => c.id === card.id).length;
+                  const isMaxed = copiesInDeck >= MAX_COPIES;
+                  return (
+                    <div key={card.id} className="flex flex-col items-center">
+                      <div
+                        className={`relative rounded-[10px] ${isMaxed ? '' : 'cursor-pointer'} ${FOCUS_RING}`}
+                        {...pressable(addToDeck.bind(null, card), `Add ${card.name} to deck`, !isMaxed)}
+                      >
+                        <TeddyCard teddy={card} isDisabled={isMaxed} cosmeticBorder={cosmeticBorder} />
                       </div>
-                    )}
-                  </motion.div>
-                );
-              })}
+                      {/* Copies in the deck, one lit segment per copy — under
+                          the card, where it can never cover the cost coin. */}
+                      <div className="mt-2 flex h-3 items-center gap-1">
+                        {Array.from({ length: MAX_COPIES }, (_, i) => (
+                          <span
+                            key={i}
+                            aria-hidden="true"
+                            className={`h-1.5 w-5 rounded-full transition-colors ${i < copiesInDeck
+                              ? 'bg-gradient-to-r from-brass-200 to-brass-400 shadow-[0_0_6px_rgba(251,191,36,0.55)]'
+                              : 'bg-white/10'}`}
+                          />
+                        ))}
+                        {copiesInDeck > 0 && (
+                          <span className="sr-only">{copiesInDeck} of {MAX_COPIES} copies in deck</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {filteredCards.length === 0 && (
-              <div className="text-center text-white/50 py-8">No cards available. Open packs!</div>
+              <div className="py-8 text-center text-plush-300">No cards available. Open packs!</div>
             )}
-          </div>
+          </section>
         </div>
 
         <div className="lg:col-span-1">
-          <div className="bg-night-800/60 border border-plush-700/40 rounded-xl p-4 sticky top-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">Deck ({deck.length}/{DECK_SIZE})</h2>
-              <Button variant="outline" size="sm" onClick={clearDeck} className="text-red-400 border-red-400 hover:bg-red-400/20">
+          <section className="panel-glass rounded-2xl p-4 sm:p-5 lg:sticky lg:top-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-display text-xl font-extrabold leading-tight text-white">
+                Deck <span className={`font-bold tabular-nums ${deckFull ? 'text-brass-300' : 'text-plush-300'}`}>({deck.length}/{DECK_SIZE})</span>
+              </h2>
+              <button
+                type="button"
+                onClick={clearDeck}
+                className={`btn-glass inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-red-300 ${FOCUS_RING}`}
+              >
+                <Eraser aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
                 Clear
-              </Button>
+              </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mb-4 text-center text-sm">
-              <div className="bg-amber-500/30 rounded p-2">
-                <div className="text-amber-300 font-bold">{typeCount.action}</div>
-                <div className="text-white/70 text-xs">Action</div>
-              </div>
-              <div className="bg-purple-500/30 rounded p-2">
-                <div className="text-purple-300 font-bold">{typeCount.trap}</div>
-                <div className="text-white/70 text-xs">Trap</div>
-              </div>
-              <div className="bg-cyan-500/30 rounded p-2">
-                <div className="text-cyan-300 font-bold">{typeCount.special}</div>
-                <div className="text-white/70 text-xs">Special</div>
-              </div>
+            {/* One segment per slot, lit as the deck fills. */}
+            <div aria-hidden="true" className="mt-3 grid grid-cols-10 gap-1">
+              {Array.from({ length: DECK_SIZE }, (_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full transition-colors ${i < deck.length
+                    ? 'bg-gradient-to-r from-brass-200 to-brass-400 shadow-[0_0_6px_rgba(251,191,36,0.45)]'
+                    : 'bg-white/10'}`}
+                />
+              ))}
             </div>
 
-            <div className="flex justify-center gap-1 mb-4">
-              {Object.entries(rarityCount).map(([rarity, count]) =>
-                count > 0 ? (
-                  <div
-                    key={rarity}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-r ${RARITY[rarity].gradient}`}
-                    title={rarity}
-                  >
-                    {count}
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+              {TYPE_TILES.map(({ type, label, Icon, tone }) => (
+                <div key={type} className={`rounded-xl px-2 py-2.5 ${WELL}`}>
+                  <div className={`flex items-center justify-center gap-1.5 font-display text-xl font-extrabold leading-none tabular-nums ${tone}`}>
+                    <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
+                    {typeCount[type]}
                   </div>
-                ) : null
-              )}
+                  <div className="label-caps mt-1.5 text-[10px] text-plush-300">{label}</div>
+                </div>
+              ))}
             </div>
 
-            <div className="text-white/70 text-sm mb-4">
-              Avg Cost: <span className="text-brass-300 font-bold">{avgCost} ⚡</span>
+            {/* Rarity mix and average cost: a second row of the same tiles, on
+                the same columns. Each tier is a dot of its frame metal and a
+                count (the name is there for a screen reader and on hover), so
+                even a five-tier deck fits its tile on one line. */}
+            <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+              <div className={`col-span-2 rounded-xl px-2 py-2.5 ${WELL}`}>
+                <div className="flex min-h-5 flex-wrap items-center justify-center gap-x-2.5 gap-y-1">
+                  {Object.entries(rarityCount).map(([rarity, count]) =>
+                    count > 0 ? (
+                      <span key={rarity} title={rarity} className="inline-flex items-center gap-1">
+                        <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full ring-1 ring-black/40" style={{ background: RARITY_METAL[rarity] }} />
+                        <span className="font-display text-base font-extrabold leading-none text-white tabular-nums">{count}</span>
+                        <span className="sr-only">{rarity}</span>
+                      </span>
+                    ) : null
+                  )}
+                  {deck.length === 0 && <span aria-hidden="true" className="font-display font-extrabold leading-none text-plush-300">–</span>}
+                </div>
+                <div className="label-caps mt-1.5 text-[10px] text-plush-300">Rarity</div>
+              </div>
+              <div className={`rounded-xl px-2 py-2.5 ${WELL}`}>
+                <div className="flex items-center justify-center gap-1 font-display text-xl font-extrabold leading-none text-brass-300 tabular-nums">
+                  <Zap aria-hidden="true" className="h-4 w-4" fill="currentColor" strokeWidth={1.5} />
+                  {avgCost}
+                </div>
+                <div className="label-caps mt-1.5 text-[10px] text-plush-300">Avg Cost</div>
+              </div>
             </div>
 
-            <div className="space-y-1 max-h-64 overflow-y-auto mb-4">
+            <div className="-mx-1 mb-4 mt-4 max-h-64 space-y-1.5 overflow-y-auto overflow-x-hidden px-1 [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin]">
               <AnimatePresence>
                 {deck.map((card) => (
                   <motion.div
@@ -256,59 +379,86 @@ const DeckBuilder = () => {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className={`flex items-center justify-between rounded-lg p-2 bg-night-700/60 border-l-4 ${RARITY[card.rarity].border} border-y border-r border-white/10`}
+                    className={`relative flex items-center gap-2.5 overflow-hidden rounded-xl py-1.5 pl-3 pr-1.5 ${WELL}`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-brass-300 font-bold w-5">{card.cost}</span>
-                      <span className="text-white text-sm truncate max-w-[120px]">{card.name}</span>
-                    </div>
-                    <button onClick={() => removeFromDeck(card)} className="text-red-400 hover:text-red-300 text-lg px-1" aria-label={`Remove ${card.name} from deck`}>×</button>
+                    {/* The card's tier, as a sliver of its frame metal. */}
+                    <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px]" style={{ background: RARITY_METAL[card.rarity] }} />
+                    <CostCoin cost={card.cost} />
+                    <span
+                      aria-hidden="true"
+                      className={`relative grid h-9 w-7 shrink-0 place-items-center overflow-hidden rounded-[5px] bg-gradient-to-b ring-1 ring-white/10 ${RARITY[card.rarity].bg}`}
+                    >
+                      <ArtOrEmoji teddy={card} emojiClassName="text-sm" imgClassName="absolute inset-0 h-full w-full object-cover" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-plush-100">{card.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeFromDeck(card)}
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
+                      aria-label={`Remove ${card.name} from deck`}
+                    >
+                      <X aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
+                    </button>
                   </motion.div>
                 ))}
               </AnimatePresence>
 
               {deck.length === 0 && (
-                <div className="text-white/50 text-center py-6">Click cards to add</div>
+                <div className="rounded-xl border border-dashed border-white/10 py-6 text-center text-sm text-plush-300">Click cards to add</div>
               )}
             </div>
 
             <div className="space-y-2">
-              <Button
+              {/* The screen's one brass button. Short of a full deck it stays
+                  a readable, recessed slot saying how many cards are missing. */}
+              <button
+                type="button"
                 onClick={handleSaveDeck}
-                disabled={deck.length !== DECK_SIZE}
-                // Button's default variant text-primary-foreground renders near-white;
-                // bg-emerald-600 only measured 3.6:1 against it (fails AA). emerald-700
-                // clears 4.5:1 (5.24:1 measured).
-                className={`w-full ${deck.length === DECK_SIZE ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-plush-700 cursor-not-allowed'}`}
+                disabled={!deckFull}
+                className={`${ACTION} w-full ${deckFull ? 'btn-brass' : `cursor-not-allowed text-plush-300 ${WELL}`}`}
               >
-                {deck.length === DECK_SIZE ? 'Set as Current Deck' : `Need ${DECK_SIZE - deck.length} more`}
-              </Button>
-              <Button
+                {deckFull && <Check aria-hidden="true" className="h-5 w-5" strokeWidth={2.6} />}
+                {deckFull ? 'Set as Current Deck' : `Need ${DECK_SIZE - deck.length} more`}
+              </button>
+              <button
+                type="button"
                 onClick={() => setShowSaveDialog(true)}
-                disabled={deck.length !== DECK_SIZE}
-                variant="outline"
-                className="w-full text-white border-white/30"
+                disabled={!deckFull}
+                className={`${ACTION} btn-glass w-full disabled:cursor-not-allowed disabled:opacity-50`}
               >
+                <Save aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
                 Save As...
-              </Button>
+              </button>
             </div>
 
             {savedDecks.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-white font-semibold mb-2">Saved Decks</h3>
-                <div className="space-y-2">
+              <div className="mt-5 border-t border-white/[0.06] pt-4">
+                <h3 className="label-caps mb-2 text-plush-300">Saved Decks</h3>
+                <ul className="space-y-1.5">
                   {savedDecks.map((savedDeck) => (
-                    <div key={savedDeck.name} className="flex items-center justify-between bg-white/5 rounded p-2">
-                      <button onClick={() => loadSavedDeck(savedDeck)} className="text-white/80 hover:text-white text-sm flex-1 text-left">
-                        📁 {savedDeck.name}
+                    <li key={savedDeck.name} className={`flex items-center gap-1 rounded-xl p-1 ${WELL}`}>
+                      <button
+                        type="button"
+                        onClick={() => loadSavedDeck(savedDeck)}
+                        className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 text-left text-sm font-semibold text-plush-100 transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
+                      >
+                        <FolderOpen aria-hidden="true" className="h-4 w-4 shrink-0 text-brass-300" strokeWidth={2.2} />
+                        <span className="truncate">{savedDeck.name}</span>
                       </button>
-                      <button onClick={() => deleteDeck(savedDeck.name)} aria-label={`Delete deck ${savedDeck.name}`} className="text-red-400 hover:text-red-300 text-sm px-2">🗑️</button>
-                    </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteDeck(savedDeck.name)}
+                        aria-label={`Delete deck ${savedDeck.name}`}
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
+                      >
+                        <Trash2 aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
+                      </button>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
-          </div>
+          </section>
         </div>
       </div>
 
@@ -318,7 +468,7 @@ const DeckBuilder = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-4"
             onClick={closeSaveDialog}
           >
             <SaveDeckDialog
