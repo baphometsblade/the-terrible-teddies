@@ -9,7 +9,8 @@ import { useGameStore } from '../stores/gameStore';
 import { getDailyChallenges, getWeeklyChallenges, challengeProgress } from '../stores/challenges';
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
-import { RARITY_METAL } from '@/lib/rarity';
+import { FOCUS_OUTLINE } from '@/lib/focus';
+import { Medallion } from '@/components/ui/game-chrome';
 
 const getTimeUntilReset = (isWeekly = false) => {
   const now = new Date();
@@ -34,13 +35,9 @@ const getTimeUntilReset = (isWeekly = false) => {
 };
 
 // Plain <button>s throughout, not the shadcn Button: its bg-primary is a
-// utility and would beat the btn-brass / btn-glass materials.
-//
-// Focus is drawn as an outline, not a ring: a Tailwind ring is a box-shadow,
-// and it would replace the material's own (btn-brass's lit lip, btn-glass's
-// rim and depth).
-const FOCUS =
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
+// utility and would beat the btn-brass / btn-glass materials. Every button
+// takes FOCUS_OUTLINE. An unselected tab has no material for a ring to
+// flatten, but it takes the outline too so the two tabs focus alike.
 
 // What each reward type looks like. lucide icons rather than emoji: emoji are
 // a different drawing on every platform. The noun is for screen readers.
@@ -145,7 +142,7 @@ const ChallengeCard = ({ challenge, progress, isClaimed, onClaim }) => {
             <button
               type="button"
               onClick={onClaim}
-              className={`btn-brass h-8 rounded-lg px-4 font-display text-sm font-bold ${FOCUS}`}
+              className={`btn-brass h-8 rounded-lg px-4 font-display text-sm font-bold ${FOCUS_OUTLINE}`}
             >
               Claim
             </button>
@@ -170,13 +167,18 @@ const ChallengeCard = ({ challenge, progress, isClaimed, onClaim }) => {
 // A segmented control recessed into the panel, the same as the Shop's tabs.
 // aria-pressed rather than role=tab: these are plain buttons, and the tab role
 // would also need tablist/tabpanel wiring and arrow-key handling.
+//
+// Not the shared .seg-well / .seg-on / .seg-off: this is the Shop's tab look
+// (a bordered, darker well; the selected key brass-edged, with no lip), and
+// moving to the shared one changes how the tabs look, not just where the
+// classes come from.
 const TabButton = ({ active, onClick, icon: Icon, label, done, total }) => (
   <button
     type="button"
     onClick={onClick}
     aria-pressed={active}
     className={`flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 py-2.5 font-display text-[15px] font-bold leading-tight
-      transition-colors ${FOCUS}
+      transition-colors ${FOCUS_OUTLINE}
       ${active ? 'btn-glass border-brass-300/40 text-brass-200' : 'border border-transparent text-plush-300 hover:text-white'}`}
   >
     <Icon aria-hidden="true" className={`hidden h-4 w-4 shrink-0 min-[360px]:block ${active ? 'text-brass-300' : ''}`} strokeWidth={2.2} />
@@ -305,18 +307,14 @@ const Challenges = ({ onClose }) => {
 
         {/* Header */}
         <div className="relative flex items-center gap-3 px-4 pt-4 pb-4 sm:px-6 sm:pt-5">
-          <div aria-hidden="true" className="h-11 w-11 shrink-0 rounded-full p-[2px]" style={{ background: RARITY_METAL.legendary }}>
-            <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
-              <Target className="h-5 w-5 text-brass-300" strokeWidth={2} />
-            </div>
-          </div>
+          <Medallion icon={Target} />
           <h2 className="min-w-0 flex-1 whitespace-nowrap font-display text-3xl font-extrabold leading-none text-brass-gradient">
             Challenges
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className={`btn-glass grid h-10 w-10 shrink-0 place-items-center rounded-xl ${FOCUS}`}
+            className={`btn-glass grid h-10 w-10 shrink-0 place-items-center rounded-xl ${FOCUS_OUTLINE}`}
             aria-label="Close challenges"
           >
             <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
@@ -432,7 +430,7 @@ const Challenges = ({ onClose }) => {
                   type="button"
                   onClick={() => claimBonus(activeTab)}
                   disabled={!BONUS[activeTab].allDone}
-                  className={`relative inline-flex h-12 items-center justify-center gap-2 rounded-xl font-display font-bold ${FOCUS} ${
+                  className={`relative inline-flex h-12 items-center justify-center gap-2 rounded-xl font-display font-bold ${FOCUS_OUTLINE} ${
                     BONUS[activeTab].allDone
                       ? 'btn-brass px-4'
                       : 'btn-glass w-12 cursor-not-allowed text-plush-400 opacity-60'

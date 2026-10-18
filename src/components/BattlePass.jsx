@@ -8,15 +8,15 @@ import { getCurrentSeason } from '../utils/season';
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
+import { FOCUS_OUTLINE } from '@/lib/focus';
+import { Medallion } from '@/components/ui/game-chrome';
 
 // Plain <button>s throughout, not the shadcn Button: its bg-primary is a
 // utility and would beat the btn-brass / btn-glass materials.
 //
-// Focus is drawn as an outline, not a ring: a Tailwind ring is a box-shadow,
-// and it would replace the material's own — btn-brass's lit lip, btn-glass's
-// rim, the warm glow round a claimable tile.
-const FOCUS =
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
+// Every control here takes FOCUS_OUTLINE, not a ring: each carries a material
+// or, on a claimable tile, a warm glow, and a ring (a box-shadow) would
+// replace it.
 
 // The edge of a tile you can claim right now: polished brass, whatever the
 // reward's rarity, so "this one is yours" reads before anything else does.
@@ -122,7 +122,7 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
       onClick={onClaim}
       aria-label={`Claim tier ${tier} ${track} reward`}
       className={`sheen relative block w-full rounded-xl p-px ${TILE_H} cursor-pointer transition-transform duration-150 hover:-translate-y-0.5
-        shadow-[0_0_20px_-4px_rgba(251,191,36,0.6)] ${FOCUS}`}
+        shadow-[0_0_20px_-4px_rgba(251,191,36,0.6)] ${FOCUS_OUTLINE}`}
     >
       {body}
     </button>
@@ -183,15 +183,12 @@ const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(ellipse_60%_80%_at_50%_0%,rgba(251,191,36,0.24),transparent_70%)]"
       />
-      <div
-        aria-hidden="true"
-        className="relative mx-auto mb-3 h-16 w-16 rounded-full p-[3px]"
-        style={{ background: RARITY_METAL.legendary }}
-      >
-        <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
-          <Crown className="h-7 w-7 text-brass-300" strokeWidth={1.75} />
-        </div>
-      </div>
+      {/* flex: block-level, so mx-auto centres it on a line of its own
+          (Medallion is inline-block). The icon is passed as children only to
+          keep its lighter 1.75 stroke. */}
+      <Medallion size="lg" className="mx-auto mb-3 flex">
+        <Crown className="h-7 w-7 text-brass-300" strokeWidth={1.75} />
+      </Medallion>
       <h3 className="relative font-display text-2xl sm:text-3xl font-extrabold leading-tight text-brass-gradient">
         Unlock Premium Pass
       </h3>
@@ -225,7 +222,7 @@ const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }
           type="button"
           onClick={onPurchase}
           disabled={gems < price}
-          className={`h-11 flex-1 rounded-xl font-display font-bold ${FOCUS} ${
+          className={`h-11 flex-1 rounded-xl font-display font-bold ${FOCUS_OUTLINE} ${
             gems < price ? 'btn-glass cursor-not-allowed text-plush-400 opacity-70' : 'btn-brass'}`}
         >
           Purchase
@@ -233,7 +230,7 @@ const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }
         <button
           type="button"
           onClick={onClose}
-          className={`btn-glass h-11 flex-1 rounded-xl font-display font-bold ${FOCUS}`}
+          className={`btn-glass h-11 flex-1 rounded-xl font-display font-bold ${FOCUS_OUTLINE}`}
         >
           Cancel
         </button>
@@ -422,6 +419,8 @@ const BattlePass = ({ onClose }) => {
           <div className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1
             lg:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] lg:gap-y-1.5 lg:gap-x-5"
           >
+            {/* Hand-built rather than a <Medallion>: it steps from 48px to
+                56px at lg, and 48px is not one of Medallion's sizes. */}
             <div
               aria-hidden="true"
               className="col-start-1 row-span-3 row-start-1 h-12 w-12 shrink-0 rounded-full p-[2px] shadow-[0_6px_16px_-6px_rgba(0,0,0,0.8)] lg:row-span-2 lg:row-start-1 lg:h-14 lg:w-14"
@@ -466,7 +465,7 @@ const BattlePass = ({ onClose }) => {
                   type="button"
                   onClick={() => setShowPurchaseConfirm(true)}
                   className={`btn-brass sheen relative inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl pl-3.5 pr-1.5
-                    font-display font-bold sm:w-auto ${FOCUS}`}
+                    font-display font-bold sm:w-auto ${FOCUS_OUTLINE}`}
                 >
                   <Crown aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
                   <span>Unlock Premium</span>
@@ -489,7 +488,7 @@ const BattlePass = ({ onClose }) => {
               type="button"
               onClick={onClose}
               className={`btn-glass col-start-3 row-start-1 grid h-10 w-10 shrink-0 place-items-center self-start rounded-xl
-                lg:col-start-5 lg:row-span-2 lg:row-start-1 lg:self-center ${FOCUS}`}
+                lg:col-start-5 lg:row-span-2 lg:row-start-1 lg:self-center ${FOCUS_OUTLINE}`}
               aria-label="Close battle pass"
             >
               <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
@@ -500,15 +499,9 @@ const BattlePass = ({ onClose }) => {
         {/* Season progress */}
         <div className="px-4 pt-5 sm:px-6">
           <div className="panel-glass flex items-center gap-4 rounded-2xl p-3.5 sm:gap-5 sm:p-4">
-            <div
-              aria-hidden="true"
-              className="h-14 w-14 shrink-0 rounded-full p-[2px]"
-              style={{ background: RARITY_METAL.legendary }}
-            >
-              <div className="grid h-full w-full place-items-center rounded-full bg-night-900 font-display text-2xl font-extrabold tabular-nums text-brass-200">
-                {currentTier}
-              </div>
-            </div>
+            <Medallion size="md" discClassName="font-display text-2xl font-extrabold tabular-nums text-brass-200">
+              {currentTier}
+            </Medallion>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
                 <span className="font-display text-lg font-bold leading-tight text-white">Tier {currentTier} → {currentTier + 1}</span>

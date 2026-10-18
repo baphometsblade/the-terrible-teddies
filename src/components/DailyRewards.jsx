@@ -4,13 +4,8 @@ import { Gift, Coins, Gem, Package, GalleryVerticalEnd, Check, Flame, Sparkles, 
 import { useGameStore, DAILY_REWARDS } from '../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
-import { RARITY_METAL } from '@/lib/rarity';
-
-// Focus is drawn as an outline, not a ring: a Tailwind ring is a box-shadow,
-// and it would replace the material's own (btn-brass's lit lip, btn-glass's
-// rim and depth).
-const FOCUS =
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
+import { FOCUS_OUTLINE } from '@/lib/focus';
+import { Medallion } from '@/components/ui/game-chrome';
 
 // The four things a day can hand out, in display order. lucide icons rather
 // than emoji (a different drawing on every platform); the noun is for screen
@@ -132,15 +127,12 @@ const DailyRewards = ({ onClose }) => {
         />
 
         <div className="relative px-5 pt-7 text-center sm:px-6">
-          <div
-            aria-hidden="true"
-            className="mx-auto h-16 w-16 rounded-full p-[3px]"
-            style={{ background: RARITY_METAL.legendary }}
-          >
-            <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
-              <Gift className="h-7 w-7 text-brass-300" strokeWidth={1.75} />
-            </div>
-          </div>
+          {/* flex: block-level, so mx-auto centres it on a line of its own
+              (Medallion is inline-block). The icon is passed as children only
+              to keep its lighter 1.75 stroke. */}
+          <Medallion size="lg" className="mx-auto flex">
+            <Gift className="h-7 w-7 text-brass-300" strokeWidth={1.75} />
+          </Medallion>
           <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight text-brass-gradient sm:text-4xl">
             Daily Rewards
           </h2>
@@ -232,7 +224,7 @@ const DailyRewards = ({ onClose }) => {
           <button
             type="button"
             onClick={onClose}
-            className={`btn-brass h-12 w-full rounded-xl font-display text-lg font-bold ${FOCUS}`}
+            className={`btn-brass h-12 w-full rounded-xl font-display text-lg font-bold ${FOCUS_OUTLINE}`}
           >
             Continue
           </button>
@@ -245,7 +237,7 @@ const DailyRewards = ({ onClose }) => {
         <button
           type="button"
           onClick={onClose}
-          className={`btn-glass absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-xl sm:right-4 sm:top-4 ${FOCUS}`}
+          className={`btn-glass absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-xl sm:right-4 sm:top-4 ${FOCUS_OUTLINE}`}
           aria-label="Close daily rewards"
         >
           <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
