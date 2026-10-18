@@ -5,6 +5,8 @@ import { useGameStore } from '../stores/gameStore';
 import { supabase } from '../lib/supabase';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
+import { FOCUS_OUTLINE } from '@/lib/focus';
+import { Medallion } from '@/components/ui/game-chrome';
 
 // Calculate trophies based on player stats
 const calculateTrophies = (wins, level, bestStreak) => {
@@ -15,21 +17,6 @@ const calculateTrophies = (wins, level, bestStreak) => {
 const calculateLevel = (experience) => {
   return Math.floor((experience || 0) / 100) + 1;
 };
-
-// Focus on anything wearing a material (btn-glass, btn-brass) is an outline,
-// not a ring: a Tailwind ring is a box-shadow, and it would replace the
-// material's own rim light and depth.
-const FOCUS_OUTLINE =
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
-
-// The scope bar: the same recessed well and raised glass key as the
-// Collection's filters. The selected key restates .btn-glass's shadow because a
-// shadow utility replaces the material's rather than adding to it.
-const SEG_GROUP =
-  'flex gap-1 rounded-xl bg-night-950/55 p-1 ring-1 ring-inset ring-white/[0.07] shadow-[inset_0_1px_3px_rgba(0,0,0,0.45)]';
-const SEG_ON =
-  'btn-glass text-brass-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-2px_0_rgba(251,191,36,0.55),0_4px_10px_-6px_rgba(0,0,0,0.8)]';
-const SEG_OFF = 'border border-transparent text-plush-300 hover:bg-white/[0.04] hover:text-white';
 
 // The podium's three metals: gold is the game's brass (the legendary frame),
 // silver the pewter of a common one, and bronze in the same light-dark-light
@@ -291,11 +278,7 @@ const Leaderboard = ({ onClose }) => {
 
         {/* Header */}
         <div className="relative flex items-center gap-3 px-4 pb-4 pt-4 sm:px-6 sm:pt-5">
-          <div aria-hidden="true" className="h-11 w-11 shrink-0 rounded-full p-[2px]" style={{ background: RARITY_METAL.legendary }}>
-            <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
-              <Trophy className="h-5 w-5 text-brass-300" strokeWidth={2} />
-            </div>
-          </div>
+          <Medallion icon={Trophy} />
           <h2 className="min-w-0 flex-1 font-display text-2xl font-extrabold leading-none text-brass-gradient sm:text-3xl">
             Leaderboard
           </h2>
@@ -326,7 +309,9 @@ const Leaderboard = ({ onClose }) => {
               Advertising a payout with no code behind it is the same defect as
               the Friends tab above, only more expensive for the player, who
               grinds for it. Restore it with the payout, not before. */}
-          <div className={SEG_GROUP}>
+          {/* The scope bar: the segmented control's recessed well and raised
+              glass key (.seg-well / .seg-on / .seg-off). */}
+          <div className="seg-well flex gap-1">
             {[
               { id: 'global', label: 'Global', icon: Globe },
             ].map(tab => (
@@ -335,8 +320,8 @@ const Leaderboard = ({ onClose }) => {
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 aria-pressed={activeTab === tab.id}
-                className={`inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass-300 ${
-                  activeTab === tab.id ? SEG_ON : SEG_OFF
+                className={`inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 text-[13px] font-semibold transition-colors ${FOCUS_OUTLINE} ${
+                  activeTab === tab.id ? 'seg-on' : 'seg-off'
                 }`}
               >
                 <tab.icon aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
@@ -416,11 +401,11 @@ const Leaderboard = ({ onClose }) => {
 
                 {!loading && !error && leaderboardData.length === 0 && (
                   <StatePanel>
-                    <div aria-hidden="true" className="mb-4 h-14 w-14 rounded-full p-[2px]" style={{ background: RARITY_METAL.common }}>
-                      <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
-                        <Trophy className="h-6 w-6 text-plush-300" strokeWidth={1.8} />
-                      </div>
-                    </div>
+                    {/* The icon is passed as a child to keep its lighter
+                        1.8 stroke. */}
+                    <Medallion metal={RARITY_METAL.common} size="md" className="mb-4">
+                      <Trophy className="h-6 w-6 text-plush-300" strokeWidth={1.8} />
+                    </Medallion>
                     <p className="text-plush-200">No players yet. Be the first!</p>
                   </StatePanel>
                 )}

@@ -8,13 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { useGameStore } from '../stores/gameStore';
 import { supabase } from '../utils/supabaseClient';
 import { useDialog } from '@/hooks/useDialog';
-import { RARITY_METAL } from '@/lib/rarity';
-
-// Focus on anything wearing a material (btn-glass, btn-brass) is an outline,
-// not a ring: a Tailwind ring is a box-shadow, and it would replace the
-// material's own rim light and depth.
-const FOCUS_OUTLINE =
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
+import { FOCUS_OUTLINE } from '@/lib/focus';
+import { Medallion } from '@/components/ui/game-chrome';
 
 // Shape of every full-width action here. Plain <button>s, not the shadcn
 // Button: its bg-primary is a utility and would beat a component-layer
@@ -29,16 +24,6 @@ const ACTION = `flex h-11 w-full items-center justify-center gap-2 rounded-xl fo
 const SWITCH =
   'border-white/15 data-[state=checked]:border-brass-300/60 data-[state=checked]:bg-brass-400 ' +
   'data-[state=unchecked]:bg-night-950 focus-visible:ring-brass-300 focus-visible:ring-offset-night-800';
-
-// The difficulty switch: the Collection's recessed well with the chosen
-// segment raised out of it as a glass key with a lit brass lip. The selected
-// key restates .btn-glass's shadow because a shadow utility replaces the
-// material's rather than adding to it.
-const SEG_GROUP =
-  'grid grid-cols-3 gap-1 rounded-xl bg-night-950/55 p-1 ring-1 ring-inset ring-white/[0.07] shadow-[inset_0_1px_3px_rgba(0,0,0,0.45)]';
-const SEG_ON =
-  'btn-glass shadow-[inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-2px_0_rgba(251,191,36,0.55),0_4px_10px_-6px_rgba(0,0,0,0.8)]';
-const SEG_OFF = 'border border-transparent hover:bg-white/[0.04]';
 
 const SectionHeading = ({ children, tone = 'text-plush-300' }) => (
   <h3 className={`label-caps mb-2.5 ${tone}`}>{children}</h3>
@@ -77,9 +62,11 @@ const SettingRow = ({ icon: Icon, label, description, children }) => (
 // `difficulty`/`setDifficulty` were closed over when this lived inside the
 // component; hoisting means they arrive as props instead.
 //
-// One key of the difficulty switch. Selected, the label and icon are brass on
-// the glass key (brass-200 9.4:1, the description plush-200 7.3:1); the others
-// are plush-200 / plush-300 on the recessed well, both above 7:1.
+// One key of the difficulty switch (.seg-on / .seg-off in the .seg-well).
+// Selected, the label and icon are brass on the glass key (brass-200 9.4:1,
+// the description plush-200 7.3:1); the others are plush-200 / plush-300 on
+// the recessed well, both above 7:1. Each line sets its own colour, so the
+// key's own text colour never shows.
 const DifficultyButton = ({ value, label, description, icon: Icon, difficulty, setDifficulty }) => {
   const selected = difficulty === value;
   return (
@@ -87,8 +74,8 @@ const DifficultyButton = ({ value, label, description, icon: Icon, difficulty, s
       type="button"
       onClick={() => setDifficulty(value)}
       aria-pressed={selected}
-      className={`flex min-w-0 flex-col items-center gap-1 rounded-lg px-1.5 py-2.5 text-center transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass-300 ${
-        selected ? SEG_ON : SEG_OFF
+      className={`flex min-w-0 flex-col items-center gap-1 rounded-lg px-1.5 py-2.5 text-center transition-colors ${FOCUS_OUTLINE} ${
+        selected ? 'seg-on' : 'seg-off'
       }`}
     >
       <Icon aria-hidden="true" className={`h-5 w-5 ${selected ? 'text-brass-300' : 'text-plush-300'}`} strokeWidth={2.2} />
@@ -172,11 +159,7 @@ const Settings = ({ onClose }) => {
         />
 
         <div className="relative flex items-center gap-3 border-b border-white/[0.06] px-4 pb-4 pt-4 sm:px-6 sm:pt-5">
-          <div aria-hidden="true" className="h-11 w-11 shrink-0 rounded-full p-[2px]" style={{ background: RARITY_METAL.legendary }}>
-            <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
-              <SettingsIcon className="h-5 w-5 text-brass-300" strokeWidth={2} />
-            </div>
-          </div>
+          <Medallion icon={SettingsIcon} />
           <h2 className="min-w-0 flex-1 font-display text-2xl font-extrabold leading-none text-brass-gradient sm:text-3xl">
             Settings
           </h2>
@@ -218,7 +201,7 @@ const Settings = ({ onClose }) => {
             <SectionHeading>AI Difficulty</SectionHeading>
             {/* One recessed well, the chosen key raised out of it. Each key is
                 still its own aria-pressed button. */}
-            <div className={SEG_GROUP}>
+            <div className="seg-well grid grid-cols-3 gap-1">
               <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="easy" label="Easy" description="Relaxed" icon={Smile} />
               <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="normal" label="Normal" description="Balanced" icon={Meh} />
               <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="hard" label="Hard" description="Challenge" icon={Angry} />

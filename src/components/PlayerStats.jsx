@@ -9,22 +9,8 @@ import { useGameStore, ACHIEVEMENTS, ALL_CARDS } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
 import { setPlayerUsername } from '../utils/supabaseClient';
 import { RARITY_METAL } from '@/lib/rarity';
-
-// Focus on anything wearing a material (btn-glass, btn-brass) is an outline,
-// not a ring: a Tailwind ring is a box-shadow, and it would replace the
-// material's own rim light and depth.
-const FOCUS_OUTLINE =
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
-
-// The tab switch: the Collection's recessed well with the selected segment
-// raised out of it as a glass key with a lit brass lip. The selected key
-// restates .btn-glass's shadow because a shadow utility replaces the
-// material's rather than adding to it.
-const SEG_GROUP =
-  'grid grid-cols-2 gap-1 rounded-xl bg-night-950/55 p-1 ring-1 ring-inset ring-white/[0.07] shadow-[inset_0_1px_3px_rgba(0,0,0,0.45)]';
-const SEG_ON =
-  'btn-glass text-brass-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-2px_0_rgba(251,191,36,0.55),0_4px_10px_-6px_rgba(0,0,0,0.8)]';
-const SEG_OFF = 'border border-transparent text-plush-300 hover:bg-white/[0.04] hover:text-white';
+import { FOCUS_OUTLINE } from '@/lib/focus';
+import { BalanceChip } from '@/components/ui/game-chrome';
 
 // The avatar ring the menu's player chip wears.
 const AVATAR_RING = 'linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24)';
@@ -63,17 +49,6 @@ const Section = ({ title, children }) => (
     </div>
     {children}
   </section>
-);
-
-// The icon carries the meaning visually; the sr-only noun carries it for a
-// screen reader (aria-label on a role-less div is prohibited in ARIA 1.2).
-// The same chip the Shop and the menu use.
-const Balance = ({ icon: Icon, value, tone, noun }) => (
-  <div className="panel-glass flex h-10 items-center gap-1.5 rounded-xl pl-2.5 pr-3">
-    <Icon aria-hidden="true" className={`h-4 w-4 ${tone}`} strokeWidth={2.4} />
-    <span className={`font-display text-[15px] font-extrabold tabular-nums ${tone}`}>{value}</span>
-    <span className="sr-only">{noun}</span>
-  </div>
 );
 
 const PlayerStats = ({ onClose }) => {
@@ -232,8 +207,8 @@ const PlayerStats = ({ onClose }) => {
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-2 md:shrink-0">
-              <Balance icon={Coins} value={coins.toLocaleString()} tone="text-brass-300" noun="coins" />
-              <Balance icon={Gem} value={gems.toLocaleString()} tone="text-fuchsia-300" noun="gems" />
+              <BalanceChip icon={Coins} value={coins.toLocaleString()} tone="text-brass-300" noun="coins" />
+              <BalanceChip icon={Gem} value={gems.toLocaleString()} tone="text-fuchsia-300" noun="gems" />
             </div>
           </div>
 
@@ -252,9 +227,10 @@ const PlayerStats = ({ onClose }) => {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs: the segmented control's recessed well, the selected tab
+            raised out of it as a glass key with a lit brass lip. */}
         <div className="relative px-4 pb-4 sm:px-6">
-          <div className={SEG_GROUP}>
+          <div className="seg-well grid grid-cols-2 gap-1">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
@@ -265,8 +241,8 @@ const PlayerStats = ({ onClose }) => {
                 // (2/16)" is wider than its half of the switch, so the count
                 // drops under the label instead of running out of the
                 // segment. The icons join from sm up, where there is room.
-                className={`flex min-h-9 min-w-0 flex-wrap items-center justify-center gap-x-1.5 gap-y-0 rounded-lg px-2 py-1.5 text-[13px] font-semibold leading-tight transition-colors sm:gap-x-2 sm:text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brass-300 ${
-                  activeTab === tab.id ? SEG_ON : SEG_OFF
+                className={`flex min-h-9 min-w-0 flex-wrap items-center justify-center gap-x-1.5 gap-y-0 rounded-lg px-2 py-1.5 text-[13px] font-semibold leading-tight transition-colors sm:gap-x-2 sm:text-sm ${FOCUS_OUTLINE} ${
+                  activeTab === tab.id ? 'seg-on' : 'seg-off'
                 }`}
               >
                 <tab.icon aria-hidden="true" className="hidden h-4 w-4 shrink-0 sm:block" strokeWidth={2.2} />

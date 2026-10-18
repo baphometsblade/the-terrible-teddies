@@ -8,6 +8,7 @@ import TeddyCard from './TeddyCard';
 import { ALL_CARDS } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
+import { FOCUS_OUTLINE } from '@/lib/focus';
 
 // Presentation only — every `content` string is the copy as written, and
 // Tutorial.test.js reads it from this file.
@@ -86,12 +87,6 @@ const parseLine = (line) => {
 const exampleCards = ['Shit-Talk Sally', 'Honey Trap', 'Emergency Fluff Job']
   .map((name) => ALL_CARDS.find((c) => c.name === name))
   .filter(Boolean);
-
-// Focus on anything wearing a material (btn-glass, btn-brass) is an outline,
-// not a ring: a Tailwind ring is a box-shadow, and it would replace the
-// material's own rim light and depth.
-const FOCUS_OUTLINE =
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
 
 // Plain <button>s, not the shadcn Button: its bg-primary is a utility and
 // would beat the component-layer btn-brass / btn-glass materials.
