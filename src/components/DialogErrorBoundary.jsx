@@ -1,5 +1,7 @@
 import React from 'react';
+import { WifiOff } from 'lucide-react';
 import analytics from '../utils/analytics';
+import { RARITY_METAL } from '@/lib/rarity';
 
 // Scoped error boundary for the lazy-loaded dialog chunks.
 //
@@ -50,12 +52,14 @@ class DialogErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
+        // Scrolls, with the card centred by my-auto rather than items-center:
+        // a centred flex item taller than its box overflows at both ends.
         <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center p-4 overflow-y-auto"
           onClick={this.props.onDismiss}
         >
           <div
-            className="bg-night-800 border border-white/20 rounded-2xl p-6 max-w-sm w-full text-center"
+            className="relative my-auto w-full max-w-sm overflow-hidden rounded-2xl dialog-panel px-6 pt-7 pb-6 text-center motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-300 [[data-motion=off]_&]:animate-none"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={this.onKeyDown}
             role="alertdialog"
@@ -63,15 +67,27 @@ class DialogErrorBoundary extends React.Component {
             aria-label="That screen failed to load"
             aria-describedby="dialog-load-failure-detail"
           >
-            <div className="text-5xl mb-3" aria-hidden="true">🧸📡</div>
-            <h2 className="text-xl font-bold text-white mb-2">Couldn&apos;t open that</h2>
-            <p id="dialog-load-failure-detail" className="text-white/70 text-sm mb-4">
+            {/* A cold wash for the medallion: something went wrong, but
+                nothing is lost. */}
+            <div aria-hidden="true" className="absolute inset-x-0 top-0 h-40 pointer-events-none bg-[radial-gradient(ellipse_60%_80%_at_50%_0%,rgba(129,140,248,0.16),transparent_70%)]" />
+            <div
+              className="relative mx-auto mb-4 h-16 w-16 rounded-full p-[3px] shadow-[0_10px_24px_-10px_rgba(0,0,0,0.9)]"
+              style={{ background: RARITY_METAL.common }}
+              aria-hidden="true"
+            >
+              <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
+                <WifiOff className="h-7 w-7 text-plush-200" strokeWidth={1.9} />
+              </div>
+            </div>
+            <h2 className="relative font-display text-2xl font-extrabold leading-tight text-plush-100 mb-2">Couldn&apos;t open that</h2>
+            <p id="dialog-load-failure-detail" className="relative text-plush-200 text-sm leading-relaxed mb-6">
               That screen failed to load — usually a network hiccup. Your game is fine; give it another try.
             </p>
             <button
+              type="button"
               ref={this.focusOnMount}
               onClick={this.props.onDismiss}
-              className="w-full bg-brass-500 hover:bg-brass-400 text-night-950 font-bold py-2 rounded-lg transition-colors"
+              className="btn-brass relative w-full h-11 rounded-xl font-display text-base font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300"
             >
               OK
             </button>
