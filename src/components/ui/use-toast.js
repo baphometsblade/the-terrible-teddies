@@ -124,6 +124,15 @@ function toast({
   }
 }
 
+// One function for every caller and every render. The template this file
+// came from returned a fresh arrow here on each render, so a component that
+// listed `dismiss` in an effect's dependencies re-ran that effect on every
+// render of its own — and the battle board's did, dismissing each toast the
+// moment it appeared and achievement unlocks under the result dialog.
+function dismissToast(toastId) {
+  dispatch({ type: "DISMISS_TOAST", toastId })
+}
+
 function useToast() {
   const [state, setState] = React.useState(memoryState)
 
@@ -140,7 +149,7 @@ function useToast() {
   return {
     ...state,
     toast,
-    dismiss: (toastId) => dispatch({ type: "DISMISS_TOAST", toastId }),
+    dismiss: dismissToast,
   };
 }
 
