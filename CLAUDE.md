@@ -252,7 +252,22 @@ overlay for a full screen, `.panel-glass` for tiles and panels,
 primary action and `.btn-glass` for the rest, `.felt-table` / `.table-rail` /
 `.hud-opponent` / `.hud-player` for the board, plus `.trim-brass`, `.foil` /
 `.foil-epic`, `.sheen`, `.label-caps` and `.text-brass-gradient`. Card frames
-come from `RARITY_METAL` (`src/lib/rarity.js`). Rules that are easy to break:
+come from `RARITY_METAL` (`src/lib/rarity.js`).
+
+The chrome every dialog repeats is shared too — use it rather than a local
+copy (the first round of screen redesigns each copied it, and the copies
+drifted): `FOCUS_OUTLINE` / `FOCUS_RING` (`src/lib/focus.js`; outline on
+anything carrying a material, ring only on plain elements), `<Medallion>` and
+`<BalanceChip>` (`src/components/ui/game-chrome.jsx`; Medallion is
+aria-hidden, so a count drawn on it needs sr-only text), the segmented control
+`.seg-well` / `.seg-on` / `.seg-off`, the pack art in
+`src/components/PackArt.jsx`, and TeddyCard's `dimmed` (greys the art only,
+for unowned cards). Confetti goes through `celebrate()` (`src/lib/celebrate.js`),
+which honours the Animations switch and reduced motion; canvas-confetti draws
+from JavaScript, so neither MotionConfig nor the CSS rules reach it, and
+`celebrate.test.js` fails if anything else imports it.
+
+Rules that are easy to break:
 
 - **They live in `@layer components`**, so a utility can refine a material.
   Outside the layer they land after Tailwind's utilities and win — a
