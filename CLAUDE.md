@@ -303,6 +303,21 @@ height (`.board-zoom`). With a mouse the board keeps at least 640px and
 scrolls past that, so zooming the browser in does not shrink the cards;
 landscape phones get a "turn your phone upright" card (`.rotate-hint`).
 
+**Combat feedback** (floating numbers, hit shake and flash, the attacker's
+lunge, the crumple on death, the face-hit vignette, the turn banner) is driven
+by short-lived events from `pushFx` and drawn by the cards and meters
+themselves (`FieldSlot`, `HealthMeter`), which read them through `FxContext`.
+Context rather than props on purpose: a creature that dies stays on screen for
+its exit, rendered by AnimatePresence from props frozen *before* the killing
+blow, and only a context still reaches it. An earlier version drew numbers at
+each card's captured screen position instead; that went stale whenever a row
+re-centred, and in WebKit builds whose client rects ignore CSS `zoom` it put
+numbers on the wrong card. No game state waits on any effect; the battle log
+stays the accessible record, every effect is aria-hidden, and all of it stops
+with the Animations switch and reduced motion. The field rows'
+`AnimatePresence` is keyed by `gameId`, so Play Again does not play the last
+game's cards out as if they had died.
+
 While a game is in play GameBoard sets `html[data-screen="battle"]`, which
 moves toasts off the controls: onto the measured centre line on phones
 (`--battle-centre-y`), over the top of the battle log from md up. The board's
