@@ -446,6 +446,53 @@
 }
 .seg-off:hover { background-color: rgba(255, 255, 255, 0.04); color: #ffffff; }
 
+/* Combat feedback on the battle board (GameBoard's fx events). All of it is
+   decoration over information the battle log already carries, all of it is
+   transform/opacity, and all of it stops with the Animations switch or
+   reduced motion (see the rules after the layer). */
+
+/* A floating number: rises and fades off the card or the health it names.
+   --fx-i stacks several numbers on one target. */
+.fx-float {
+  pointer-events: none;
+  white-space: nowrap;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.85), 0 0 14px rgba(0, 0, 0, 0.7);
+  transform: translate(-50%, calc(-50% - var(--fx-i, 0) * 26px));
+  animation: fx-float 1100ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.fx-drift-down .fx-float { animation-name: fx-float-down; }
+
+/* The card that took a hit shakes, under a red flash. */
+.fx-hit { animation: fx-shake 380ms ease-out; }
+.fx-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  border-radius: 10px;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, rgba(254, 202, 202, 0.75), rgba(220, 38, 38, 0.45) 60%, rgba(127, 29, 29, 0.2));
+  opacity: 0;
+  animation: fx-flash 450ms ease-out;
+}
+
+/* The attacker lunges toward the other side and back. */
+.fx-strike-up { animation: fx-strike-up 360ms cubic-bezier(0.3, 0.7, 0.4, 1); }
+.fx-strike-down { animation: fx-strike-down 360ms cubic-bezier(0.3, 0.7, 0.4, 1); }
+
+/* A hit to the player's face: the screen's edges redden for a moment. */
+.fx-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  box-shadow: inset 0 0 110px 24px rgba(220, 38, 38, 0.55);
+  opacity: 0;
+  animation: fx-flash 620ms ease-out;
+}
+
+/* The turn banner: in, hold, out. */
+.fx-banner { animation: fx-banner 1300ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
 /* Small-caps label used for section headings and metadata lines. */
 .label-caps {
   text-transform: uppercase;
@@ -499,6 +546,71 @@
 .sheen:focus-visible::after { transform: translateX(120%); }
 
 } /* end @layer components */
+
+@keyframes fx-float {
+  0% { opacity: 0; transform: translate(-50%, calc(-50% - var(--fx-i, 0) * 26px + 10px)) scale(0.6); }
+  14% { opacity: 1; transform: translate(-50%, calc(-50% - var(--fx-i, 0) * 26px)) scale(1.18); }
+  28% { transform: translate(-50%, calc(-50% - var(--fx-i, 0) * 26px)) scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - var(--fx-i, 0) * 26px - 42px)) scale(1); }
+}
+@keyframes fx-float-down {
+  0% { opacity: 0; transform: translate(-50%, calc(var(--fx-i, 0) * 26px - 10px)) scale(0.6); }
+  14% { opacity: 1; transform: translate(-50%, calc(var(--fx-i, 0) * 26px)) scale(1.18); }
+  28% { transform: translate(-50%, calc(var(--fx-i, 0) * 26px)) scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, calc(var(--fx-i, 0) * 26px + 34px)) scale(1); }
+}
+@keyframes fx-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px) rotate(-1.5deg); }
+  40% { transform: translateX(6px) rotate(1.5deg); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+@keyframes fx-flash {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes fx-strike-up {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-26px) scale(1.06); }
+}
+@keyframes fx-strike-down {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(26px) scale(1.06); }
+}
+@keyframes fx-banner {
+  0% { opacity: 0; transform: scale(0.82); }
+  16% { opacity: 1; transform: scale(1.05); }
+  26% { transform: scale(1); }
+  78% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.03); }
+}
+@keyframes fx-fade {
+  0% { opacity: 0; }
+  12%, 75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Motion off (the in-game switch): nothing moves. The numbers and the banner
+   still appear — they are information, read in place — and go when their
+   event ends; the shakes, strikes, flashes and the vignette are pure motion
+   and simply do not happen. Reduced motion (the OS): the same, except the
+   numbers and banner fade rather than snap. */
+[data-motion="off"] .fx-float,
+[data-motion="off"] .fx-banner { animation: none; }
+[data-motion="off"] .fx-hit,
+[data-motion="off"] .fx-strike-up,
+[data-motion="off"] .fx-strike-down,
+[data-motion="off"] .fx-flash,
+[data-motion="off"] .fx-vignette { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .fx-float, .fx-banner { animation: fx-fade 1100ms linear forwards; }
+  .fx-drift-down .fx-float { animation-name: fx-fade; }
+  .fx-hit, .fx-strike-up, .fx-strike-down, .fx-flash, .fx-vignette { animation: none; }
+}
 
 @keyframes foil-sweep {
   0%, 55% { transform: translateX(-60%); }
