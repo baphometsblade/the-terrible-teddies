@@ -456,17 +456,32 @@
 .fx-float {
   pointer-events: none;
   white-space: nowrap;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.85), 0 0 14px rgba(0, 0, 0, 0.7);
+  /* A solid dark edge that is part of the glyph (paint-order puts it under
+     the fill), so the number holds its contrast over any card art and over
+     the red hit flash. The shadow only softens it. */
+  -webkit-text-stroke: 4px #120c1c;
+  paint-order: stroke fill;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
   transform: translate(-50%, calc(-50% - var(--fx-i, 0) * 26px));
   animation: fx-float 1100ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
-.fx-drift-down .fx-float { animation-name: fx-float-down; }
+/* Chuck's face numbers: his rail is the top edge of the screen, so they pop
+   in place beside his meter, stacking leftward, instead of rising. */
+.fx-in-place .fx-float {
+  transform: translate(calc(-50% - var(--fx-i, 0) * 46px), -50%);
+  animation-name: fx-pop;
+}
 
-/* The card that took a hit shakes, under a red flash. */
+/* The card that took a hit shakes, under a red flash over the card. Two names
+   for one shake, so a second hit inside the effect's life replays it. */
 .fx-hit { animation: fx-shake 380ms ease-out; }
+.fx-hit-alt { animation: fx-shake-alt 380ms ease-out; }
 .fx-flash {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 6rem;
+  height: 9rem;
   z-index: 25;
   border-radius: 10px;
   pointer-events: none;
@@ -479,11 +494,12 @@
 .fx-strike-up { animation: fx-strike-up 360ms cubic-bezier(0.3, 0.7, 0.4, 1); }
 .fx-strike-down { animation: fx-strike-down 360ms cubic-bezier(0.3, 0.7, 0.4, 1); }
 
-/* A hit to the player's face: the screen's edges redden for a moment. */
+/* A hit to the player's face: the screen's edges redden for a moment. Under
+   the rotate-phone card (z-30) and the result dialog. */
 .fx-vignette {
   position: fixed;
   inset: 0;
-  z-index: 45;
+  z-index: 25;
   pointer-events: none;
   box-shadow: inset 0 0 110px 24px rgba(220, 38, 38, 0.55);
   opacity: 0;
@@ -492,6 +508,12 @@
 
 /* The turn banner: in, hold, out. */
 .fx-banner { animation: fx-banner 1300ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+/* A card on its way out (FieldSlot's data-exiting) was drawn with its last
+   state, which may include the valid-target ring and crosshair, or the
+   selected/ready glow: it is not any of those any more. */
+[data-exiting] [data-target-ring] { box-shadow: none !important; }
+[data-exiting] [data-target-mark] { display: none; }
 
 /* Small-caps label used for section headings and metadata lines. */
 .label-caps {
@@ -554,14 +576,21 @@
   70% { opacity: 1; }
   100% { opacity: 0; transform: translate(-50%, calc(-50% - var(--fx-i, 0) * 26px - 42px)) scale(1); }
 }
-@keyframes fx-float-down {
-  0% { opacity: 0; transform: translate(-50%, calc(var(--fx-i, 0) * 26px - 10px)) scale(0.6); }
-  14% { opacity: 1; transform: translate(-50%, calc(var(--fx-i, 0) * 26px)) scale(1.18); }
-  28% { transform: translate(-50%, calc(var(--fx-i, 0) * 26px)) scale(1); }
-  70% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, calc(var(--fx-i, 0) * 26px + 34px)) scale(1); }
+@keyframes fx-pop {
+  0% { opacity: 0; transform: translate(calc(-50% - var(--fx-i, 0) * 46px), -50%) scale(0.6); }
+  14% { opacity: 1; transform: translate(calc(-50% - var(--fx-i, 0) * 46px), -50%) scale(1.25); }
+  28% { transform: translate(calc(-50% - var(--fx-i, 0) * 46px), -50%) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% - var(--fx-i, 0) * 46px), -50%) scale(1); }
 }
 @keyframes fx-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px) rotate(-1.5deg); }
+  40% { transform: translateX(6px) rotate(1.5deg); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+@keyframes fx-shake-alt {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-6px) rotate(-1.5deg); }
   40% { transform: translateX(6px) rotate(1.5deg); }
@@ -602,14 +631,20 @@
 [data-motion="off"] .fx-float,
 [data-motion="off"] .fx-banner { animation: none; }
 [data-motion="off"] .fx-hit,
+[data-motion="off"] .fx-hit-alt,
 [data-motion="off"] .fx-strike-up,
 [data-motion="off"] .fx-strike-down,
 [data-motion="off"] .fx-flash,
 [data-motion="off"] .fx-vignette { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .fx-float, .fx-banner { animation: fx-fade 1100ms linear forwards; }
-  .fx-drift-down .fx-float { animation-name: fx-fade; }
-  .fx-hit, .fx-strike-up, .fx-strike-down, .fx-flash, .fx-vignette { animation: none; }
+  .fx-float, .fx-banner, .fx-in-place .fx-float { animation: fx-fade 1100ms linear forwards; }
+  .fx-hit, .fx-hit-alt, .fx-strike-up, .fx-strike-down, .fx-flash, .fx-vignette { animation: none; }
+}
+/* Where a number rests when it does not move: your face numbers clear of your
+   meter (their animated rise starts from the meter's edge and leaves it). */
+[data-motion="off"] .fx-above .fx-float { transform: translate(-50%, calc(-100% - var(--fx-i, 0) * 26px)); }
+@media (prefers-reduced-motion: reduce) {
+  .fx-above .fx-float { transform: translate(-50%, calc(-100% - var(--fx-i, 0) * 26px)); }
 }
 
 @keyframes foil-sweep {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 import {
   Coins, Crosshair, Flag, Ghost, Heart, HeartCrack, ScrollText, Shield, Smartphone, Star, Trophy, Volume2, VolumeX, Zap,
 } from 'lucide-react';
@@ -6,7 +6,7 @@ import TeddyCard, { CardBack } from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
 import { RARITY_METAL } from '@/lib/rarity';
 import { useToast } from "@/components/ui/use-toast";
-import { motion, AnimatePresence, useIsPresent } from 'framer-motion';
+import { motion, AnimatePresence, useIsPresent, useReducedMotionConfig } from 'framer-motion';
 import { playSound as playSoundEffect } from '@/utils/sounds';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
@@ -58,11 +58,29 @@ const Avatar = ({ ring }) => (
 // How long a combat effect (a floating number, a shake, a flash) lives.
 const FX_MS = 1150;
 
-// How a creature leaves the table: it crumples and drops away toward its own
-// side. Framer Motion (it owns these cards' transforms), so MotionConfig's
-// reduced motion turns it into a plain fade.
-const CRUMPLE_PLAYER = { opacity: 0, scale: 0.6, rotate: 8, y: 24, filter: 'grayscale(1) brightness(0.6)', transition: { duration: 0.45, ease: [0.4, 0, 0.6, 1] } };
-const CRUMPLE_CHUCK = { opacity: 0, scale: 0.6, rotate: -8, y: -24, filter: 'grayscale(1) brightness(0.6)', transition: { duration: 0.45, ease: [0.4, 0, 0.6, 1] } };
+// The board's live combat events (see pushFx), for the cards and meters that
+// draw them. Context rather than props on purpose: a card that has just died
+// is still on screen for its exit, rendered by AnimatePresence from the
+// element it had BEFORE it died — props frozen without the killing blow — but
+// a context value still reaches it, so the dying card can draw its own hit.
+const FxContext = createContext([]);
+
+// How a creature leaves the table: a flash, then it crumples and drops away
+// toward its own side. The slot is held (invisible) for the rest of FX_MS, so
+// its number finishes over the spot where it died instead of over whichever
+// neighbour slides into it. With reduced motion — the OS setting, or the
+// Animations switch through MotionConfig — it only fades, still holding the
+// slot.
+const exitFor = (side, reduced) => (reduced
+  ? { opacity: [1, 0, 0], transition: { duration: FX_MS / 1000, times: [0, 0.3, 1] } }
+  : {
+      opacity: [1, 1, 0, 0],
+      scale: [1, 1, 0.6, 0.6],
+      rotate: [0, 0, side === 'player' ? 8 : -8, side === 'player' ? 8 : -8],
+      y: [0, 0, side === 'player' ? 24 : -24, side === 'player' ? 24 : -24],
+      filter: ['grayscale(0) brightness(1)', 'grayscale(0) brightness(1)', 'grayscale(1) brightness(0.6)', 'grayscale(1) brightness(0.6)'],
+      transition: { duration: FX_MS / 1000, times: [0, 0.12, 0.5, 1], ease: 'easeIn' },
+    });
 
 // A floating number: "−3" over a struck card, "+5" over a healed face. Pure
 // decoration — the battle log is the accessible record of every hit — and the
@@ -73,61 +91,96 @@ const FX_TONE = {
   heal: 'text-emerald-300',
   buff: 'text-brass-200',
 };
-const FloatNumber = ({ fx, style, className = '' }) => (
+const FloatNumber = ({ fx, className = '' }) => (
   <span
     className={`fx-float font-display text-[26px] font-extrabold leading-none tabular-nums ${FX_TONE[fx.tone] ?? FX_TONE.damage} ${className}`}
-    style={{ '--fx-i': fx.stack ?? 0, ...style }}
+    style={{ '--fx-i': fx.stack ?? 0 }}
   >
     {fx.text}
   </span>
 );
 
-const HealthMeter = ({ hp, max, fill, label, fx = [], drift = 'up' }) => (
-  // fx: this side's face events. A hit shakes the meter and floats the
-  // number off it, toward the table (down from Chuck's rail, up from yours).
-  <div className={`relative flex flex-col items-end gap-1 ${fx.some((e) => e.tone === 'damage') ? 'fx-hit' : ''}`}>
-    {fx.length > 0 && (
-      <span aria-hidden="true" className={`pointer-events-none absolute right-6 z-30 ${drift === 'down' ? 'top-full mt-1 fx-drift-down' : 'bottom-full mb-1'}`}>
-        {fx.map((e, i) => (
-          <FloatNumber key={e.id} fx={{ ...e, stack: i }} className="absolute right-0" />
-        ))}
-      </span>
-    )}
-    <div className="flex items-center gap-1.5 leading-none">
-      <Heart className="h-3.5 w-3.5 text-red-400" fill="currentColor" aria-hidden="true" />
-      {/* key-remount replays the pop on every HP change, so each hit reads. */}
-      <motion.span
-        key={hp}
-        initial={{ scale: 1.6, color: '#fca5a5' }}
-        animate={{ scale: 1, color: '#ece6f2' }}
-        transition={{ type: 'spring', stiffness: 400, damping: 14 }}
-        className="inline-block font-display text-lg sm:text-xl font-extrabold tabular-nums whitespace-nowrap"
-      >
-        {hp}/{max}
-      </motion.span>
-    </div>
-    <Progress
-      value={(hp / max) * 100}
-      className={`h-2 w-20 sm:w-36 bg-black/45 ring-1 ring-white/10 ${fill}`}
-      aria-label={label}
-    />
-  </div>
-);
+// The newest hit in a list of events, and a class that restarts the shake for
+// each new one: re-adding the same class name does not replay a CSS animation,
+// so two hits inside FX_MS alternate between two identical keyframe names.
+const latestHit = (events) => events.reduce((last, e) => (e.hit && (!last || e.id > last.id) ? e : last), null);
+const shakeClass = (hit) => (hit ? (hit.id % 2 ? 'fx-hit' : 'fx-hit-alt') : '');
 
-// A creature on the table. AnimatePresence keeps a card that has just left
-// the field (killed, or a trap that sprang) on screen for its crumple-away
-// exit; for those few hundred milliseconds it must stop being a control, or a
-// tap could act on a card the game has already removed. useIsPresent is false
-// while it exits.
-// It also drops the valid-target marker it was last drawn with: an exiting
-// card renders with its final props, and a creature killed while targeted
-// would otherwise go on advertising itself as something to hit.
-const FieldSlot = ({ press, className = '', children, ...motionProps }) => {
+const HealthMeter = ({ hp, max, fill, label, side }) => {
+  // This side's face events. A hit shakes the meter; the number floats off it
+  // — up from your rail, and in place to the left of Chuck's (his rail is the
+  // top edge of the screen, and drifting down would put it under the toast
+  // dock). The numbers sit OUTSIDE the shaking element: a transform makes a
+  // stacking context, which would trap them under the table for the shake.
+  const events = useContext(FxContext).filter((e) => e.face === side);
+  const hit = latestHit(events);
+  const numbers = events.filter((e) => e.text);
+  return (
+    <div className="relative">
+      {numbers.length > 0 && (
+        <span
+          aria-hidden="true"
+          className={`pointer-events-none absolute z-30 ${side === 'opponent' ? 'right-full top-1/2 mr-4 fx-in-place' : 'bottom-full right-8 mb-1 fx-above'}`}
+        >
+          {numbers.map((e) => <FloatNumber key={e.id} fx={e} className="absolute" />)}
+        </span>
+      )}
+      <div className={`flex flex-col items-end gap-1 ${shakeClass(hit)}`}>
+        <div className="flex items-center gap-1.5 leading-none">
+          <Heart className="h-3.5 w-3.5 text-red-400" fill="currentColor" aria-hidden="true" />
+          {/* key-remount replays the pop on every HP change, so each hit reads. */}
+          <motion.span
+            key={hp}
+            initial={{ scale: 1.6, color: '#fca5a5' }}
+            animate={{ scale: 1, color: '#ece6f2' }}
+            transition={{ type: 'spring', stiffness: 400, damping: 14 }}
+            className="inline-block font-display text-lg sm:text-xl font-extrabold tabular-nums whitespace-nowrap"
+          >
+            {hp}/{max}
+          </motion.span>
+        </div>
+        <Progress
+          value={(hp / max) * 100}
+          className={`h-2 w-20 sm:w-36 bg-black/45 ring-1 ring-white/10 ${fill}`}
+          aria-label={label}
+        />
+      </div>
+    </div>
+  );
+};
+
+// A creature on the table, and everything combat draws on it: its numbers,
+// its shake and red flash when hit, its lunge when it attacks, and — when it
+// dies — the crumple. AnimatePresence keeps a dead card on screen through
+// its exit, rendered from its last props; while it exits (useIsPresent false)
+// it is out of the tab order and the accessibility tree, takes no taps, and
+// stops showing the target ring and crosshair it may have been drawn with
+// (data-exiting; index.css). Its effects come from FxContext, which still
+// reaches it, so the killing blow shows on the card that took it.
+const FieldSlot = ({ cardId, side, press, className = '', children, ...motionProps }) => {
   const present = useIsPresent();
+  const reduced = useReducedMotionConfig();
+  const events = useContext(FxContext).filter((e) => e.card === cardId);
+  const hit = latestHit(events);
+  const strike = events.some((e) => e.strike);
+  const numbers = events.filter((e) => e.text);
   const cls = present ? className : `${className.replace('cursor-crosshair', '')} pointer-events-none`;
   return (
-    <motion.div {...motionProps} className={cls} {...(present ? press : {})}>
-      {children}
+    <motion.div
+      {...motionProps}
+      exit={exitFor(side, reduced)}
+      className={cls}
+      {...(present ? press : { inert: '', 'aria-hidden': true, 'data-exiting': '' })}
+    >
+      <div className={`relative ${shakeClass(hit)} ${strike ? (side === 'player' ? 'fx-strike-up' : 'fx-strike-down') : ''}`}>
+        {children}
+        {hit && <span key={hit.id} className="fx-flash" aria-hidden="true" />}
+      </div>
+      {numbers.length > 0 && (
+        <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-[3.75rem] z-30">
+          {numbers.map((e) => <FloatNumber key={e.id} fx={e} className="absolute" />)}
+        </span>
+      )}
     </motion.div>
   );
 };
@@ -478,44 +531,38 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
   // Combat feedback. Each event is a short-lived record of something that
   // just happened on the table — an attacker striking, a card taking a hit or
-  // dying, a face hit or a heal — that the render turns into a strike, a shake
-  // and flash, a crumple, a floating number. Decorative: the battle log (and
-  // its live region) is the accessible record of the same events.
+  // dying, a face hit, a heal or a buff — that the cards and meters turn into
+  // a lunge, a shake and flash, a crumple, a floating number (FieldSlot and
+  // HealthMeter, through FxContext). Decorative: the battle log and its live
+  // region are the accessible record of the same events, and no game state
+  // waits on any of it.
   //
-  // A card event captures where the card is ON SCREEN at the moment it fires,
-  // and its number is drawn in a layer over the felt rather than inside the
-  // card. That is what lets a kill show its number: a creature that dies
-  // leaves the field in the same update that records the hit, so a number
-  // drawn inside the card would never render, while the card itself stays in
-  // place for its exit animation (AnimatePresence), right under the number.
-  // No game state waits on any of this.
+  // Each number is given its stack position when it is pushed, from the
+  // numbers already live on the same card or face: several in one wave stack
+  // instead of overlapping, and a live one never jumps when an older one goes.
   const feltRef = useRef(null);
   const centreRef = useRef(null);
-  const cardEls = useRef(new Map());
-  const cardRef = useCallback((id) => (el) => {
-    if (el) cardEls.current.set(id, el);
-    else cardEls.current.delete(id);
-  }, []);
   const [fx, setFx] = useState([]);
   const fxIdRef = useRef(0);
   const pushFx = useCallback((events) => {
     if (!events.length) return;
-    const felt = feltRef.current?.getBoundingClientRect();
-    const perCard = new Map();
-    const stamped = events.map((e) => {
-      let pos = null;
-      const el = e.card ? cardEls.current.get(e.card) : null;
-      if (el && felt) {
-        const r = el.getBoundingClientRect();
-        pos = { x: r.left - felt.left + r.width / 2, y: r.top - felt.top + r.height * 0.42 };
+    const withIds = events.map((e) => ({ ...e, id: ++fxIdRef.current }));
+    setFx((prev) => {
+      const next = new Map();
+      for (const e of prev) {
+        if (!e.text) continue;
+        const key = e.card ?? `face:${e.face}`;
+        next.set(key, Math.max(next.get(key) ?? 0, e.stack + 1));
       }
-      // Several numbers on one card in one wave stack rather than overlap.
-      const stack = e.text && e.card ? (perCard.get(e.card) ?? 0) : 0;
-      if (e.text && e.card) perCard.set(e.card, stack + 1);
-      return { ...e, id: ++fxIdRef.current, pos, stack };
+      return [...prev, ...withIds.map((e) => {
+        if (!e.text) return { ...e, stack: 0 };
+        const key = e.card ?? `face:${e.face}`;
+        const stack = next.get(key) ?? 0;
+        next.set(key, stack + 1);
+        return { ...e, stack };
+      })];
     });
-    setFx((prev) => [...prev, ...stamped]);
-    const ids = new Set(stamped.map((e) => e.id));
+    const ids = new Set(withIds.map((e) => e.id));
     safeTimeout(() => setFx((prev) => prev.filter((e) => !ids.has(e.id))), FX_MS);
   }, [safeTimeout]);
 
@@ -561,6 +608,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   useEffect(() => {
     if (gameOver) {
       dismissToasts();
+      // Game over cancels every tracked timer, these effects' removal among
+      // them, so they would otherwise stay drawn under the result dialog.
+      setFx([]);
       return undefined;
     }
     const root = document.documentElement;
@@ -873,7 +923,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         break;
       }
       case 'buff':
-        pushFx(playerField.map((c) => ({ card: c.instanceId, tone: 'buff', text: `+${card.amount}` })));
+        // Creatures only: a trap's attack is never shown or used.
+        pushFx(playerField.filter((c) => c.type === 'action').map((c) => ({ card: c.instanceId, tone: 'buff', text: `+${card.amount}` })));
         setPlayerField(prev => prev.map(c => ({ ...c, attack: c.attack + card.amount })));
         addToBattleLog(`Your whole squad is FIRED UP — +${card.amount} attack across the board!`);
         toast({ title: 'Juiced!', description: `Everybody +${card.amount} attack. Totally natural. Don't test them.` });
@@ -948,10 +999,13 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     const { survivor, overkill, dmg } = resolveCreatureHit(attacker, target, playerField);
     playSound('attack');
     battleStatsRef.current.damageDealt += dmg;
+    // On a kill the card shows what it actually lost, and any trample shows
+    // on the face: the two add up to the hit, rather than the hit twice over.
+    const taken = survivor ? dmg : dmg - overkill;
     pushFx([
-      { card: attacker.instanceId, strike: 'up' },
-      { card: target.instanceId, hit: true, tone: 'damage', text: `−${dmg}` },
-      ...(!survivor && overkill > 0 ? [{ face: 'opponent', tone: 'damage', text: `−${overkill}` }] : []),
+      { card: attacker.instanceId, strike: true },
+      ...(taken > 0 ? [{ card: target.instanceId, hit: true, tone: 'damage', text: `−${taken}` }] : []),
+      ...(!survivor && overkill > 0 ? [{ face: 'opponent', hit: true, tone: 'damage', text: `−${overkill}` }] : []),
     ]);
 
     if (survivor) {
@@ -1003,8 +1057,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     if (trap) {
       const trapDamage = trap.amount || 3;
       pushFx([
-        { card: selectedCard.instanceId, strike: 'up' },
-        { face: 'player', tone: 'damage', text: `−${trapDamage}` },
+        { card: selectedCard.instanceId, strike: true },
+        ...(trapDamage > 0 ? [{ face: 'player', hit: true, tone: 'damage', text: `−${trapDamage}` }] : []),
       ]);
       setPlayerHealth(prev => Math.max(0, prev - trapDamage));
       battleStatsRef.current.damageTaken += trapDamage;
@@ -1022,8 +1076,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       const faceDamage = effectiveAttack(attacker, playerField);
       playSound('attack');
       pushFx([
-        { card: attacker.instanceId, strike: 'up' },
-        { face: 'opponent', tone: 'damage', text: `−${faceDamage}` },
+        { card: attacker.instanceId, strike: true },
+        ...(faceDamage > 0 ? [{ face: 'opponent', hit: true, tone: 'damage', text: `−${faceDamage}` }] : []),
       ]);
       setOpponentHealth(prev => Math.max(0, prev - faceDamage));
       battleStatsRef.current.damageDealt += faceDamage;
@@ -1068,7 +1122,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // creatures under the HP model). Usable any time on the player's turn.
   const rally = () => {
     if (currentTurn !== 'player' || gameOver || playerMomentum < MOMENTUM_MAX) return;
-    pushFx(playerField.map((c) => ({ card: c.instanceId, tone: 'buff', text: '+1' })));
+    // Creatures only, as rallyField: traps are untouched.
+    pushFx(playerField.filter((c) => c.type === 'action').map((c) => ({ card: c.instanceId, tone: 'buff', text: '+1' })));
     setPlayerField(prev => rallyField(prev));
     setPlayerMomentum(0);
     playSound('heal');
@@ -1160,11 +1215,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           // same as the player's attackTarget.
           const { survivor, overkill, dmg } = resolveCreatureHit(card, target, auraField);
           playSound('attack');
-          waveFx.push(
-            { card: card.instanceId, strike: 'down' },
-            { card: target.instanceId, hit: true, tone: 'damage', text: `−${dmg}` },
-          );
-          if (!survivor && overkill > 0) waveFx.push({ face: 'player', tone: 'damage', text: `−${overkill}` });
+          const taken = survivor ? dmg : dmg - overkill;
+          waveFx.push({ card: card.instanceId, strike: true });
+          if (taken > 0) waveFx.push({ card: target.instanceId, hit: true, tone: 'damage', text: `−${taken}` });
+          if (!survivor && overkill > 0) waveFx.push({ face: 'player', hit: true, tone: 'damage', text: `−${overkill}` });
           if (survivor) {
             livePlayerField = livePlayerField.map(c => c.instanceId === target.instanceId ? survivor : c);
             if (target.ability === 'fury') {
@@ -1188,10 +1242,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         if (trap) {
           const trapDamage = trap.amount || 3;
           trapDamageToOpponent += trapDamage;
-          waveFx.push(
-            { card: card.instanceId, strike: 'down' },
-            { face: 'opponent', tone: 'damage', text: `−${trapDamage}` },
-          );
+          waveFx.push({ card: card.instanceId, strike: true });
+          if (trapDamage > 0) waveFx.push({ face: 'opponent', hit: true, tone: 'damage', text: `−${trapDamage}` });
           livePlayerField = livePlayerField.filter(c => c.instanceId !== trap.instanceId);
           playSound('trap');
           logs.push(`Your ${trap.name} sprang! ${OPPONENT_NAME} ate ${trapDamage} damage. Delicious.`);
@@ -1202,10 +1254,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           const oppFaceDamage = effectiveAttack(card, auraField);
           faceDamage += oppFaceDamage;
           playSound('attack');
-          waveFx.push(
-            { card: card.instanceId, strike: 'down' },
-            { face: 'player', tone: 'damage', text: `−${oppFaceDamage}` },
-          );
+          waveFx.push({ card: card.instanceId, strike: true });
+          if (oppFaceDamage > 0) waveFx.push({ face: 'player', hit: true, tone: 'damage', text: `−${oppFaceDamage}` });
           logs.push(`${card.name} socked you right in the face for ${oppFaceDamage}!`);
         }
       });
@@ -1339,19 +1389,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const playerTurn = currentTurn === 'player';
   const directTargets = targetingMode && getValidTargets(playerField, opponentField).length === 0;
   const latestLog = battleLog.length > 0 ? battleLog[battleLog.length - 1].message : '';
-  // What the combat feedback says about one card right now.
-  const fxFor = (id) => {
-    let hit = null;
-    let strike = null;
-    for (const e of fx) {
-      if (e.card !== id) continue;
-      if (e.hit) hit = e;
-      if (e.strike) strike = e.strike;
-    }
-    return { hit, strike };
-  };
-  const faceFx = (side) => fx.filter((e) => e.face === side);
-  const lastPlayerHit = [...fx].reverse().find((e) => e.face === 'player' && e.tone === 'damage');
+  const lastPlayerHit = latestHit(fx.filter((e) => e.face === 'player'));
 
   // Fit the two card rows to the table. The board is a fixed-height column
   // (rails, table, controls, hand), and the height the table actually gets
@@ -1403,6 +1441,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // (The height must stay definite either way; the felt's fit is measured
     // from it.)
     <div className="relative w-full h-[100dvh] [@media(pointer:fine)]:h-[max(100dvh,40rem)] bar-backdrop overflow-hidden">
+      <FxContext.Provider value={fx}>
       <div className="absolute inset-0 grain pointer-events-none" aria-hidden="true" />
       {/* A hit to your face reddens the edges of the screen for a moment. */}
       {lastPlayerHit && <div key={lastPlayerHit.id} className="fx-vignette" aria-hidden="true" />}
@@ -1554,8 +1593,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
           <HealthMeter
             hp={opponentHealth}
             max={opponentMaxHealth}
-            fx={faceFx('opponent')}
-            drift="down"
+            side="opponent"
             fill="[&>div]:bg-gradient-to-r [&>div]:from-red-600 [&>div]:to-rose-400"
             label={`${OPPONENT_NAME} health: ${opponentHealth} of ${opponentMaxHealth}`}
           />
@@ -1592,27 +1630,28 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
               {/* Chuck's half */}
               <div className="self-center flex justify-center items-start gap-2 sm:gap-3" style={{ zoom: fieldZoom }}>
-                <AnimatePresence>
+                {/* Keyed by game: Play Again remounts the row, rather than
+                    playing the last game's cards out as if they had died. */}
+                <AnimatePresence key={gameId}>
                 {opponentField.map((card) => {
                   const validTargets = getValidTargets(playerField, opponentField);
                   const isValidTarget = validTargets.find(t => t.instanceId === card.instanceId);
                   const hittable = targetingMode && isValidTarget;
-                  const cfx = fxFor(card.instanceId);
 
                   return (
                     <FieldSlot
                       key={card.instanceId}
+                      cardId={card.instanceId}
+                      side="opponent"
                       initial={{ y: -40, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      exit={CRUMPLE_CHUCK}
                       className={`relative ${hittable ? 'cursor-crosshair' : ''}`}
                       press={pressable(() => attackTarget(card), `Attack ${card.name}`, targetingMode)}
                     >
                       <div
-                        ref={cardRef(card.instanceId)}
-                        className={`relative rounded-[10px] transition-shadow ${hittable ? 'ring-2 ring-red-400 shadow-[0_0_22px_4px_rgba(248,113,113,0.55)]' : ''} ${cfx.hit ? 'fx-hit' : ''} ${cfx.strike === 'down' ? 'fx-strike-down' : ''}`}
+                        data-target-ring={hittable ? '' : undefined}
+                        className={`relative rounded-[10px] transition-shadow ${hittable ? 'ring-2 ring-red-400 shadow-[0_0_22px_4px_rgba(248,113,113,0.55)]' : ''}`}
                       >
-                        {cfx.hit && <span key={cfx.hit.id} className="fx-flash" aria-hidden="true" />}
                         {/* Only the card dims for stealth; the band and tags
                             stay at full strength so they keep their contrast. */}
                         <div className={card.stealthActive ? 'opacity-50' : ''}>
@@ -1621,7 +1660,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                         {card.stealthActive && <StealthBand />}
                         {card.ability === 'taunt' && !card.stealthActive && <TauntTag tone="opponent" />}
                         {hittable && (
-                          <span className="absolute -top-2.5 -right-2.5 z-20 grid h-7 w-7 place-items-center rounded-full bg-red-600 ring-2 ring-red-200 shadow-lg" aria-hidden="true">
+                          <span data-target-mark="" className="absolute -top-2.5 -right-2.5 z-20 grid h-7 w-7 place-items-center rounded-full bg-red-600 ring-2 ring-red-200 shadow-lg" aria-hidden="true">
                             <Crosshair className="h-4 w-4 text-white" />
                           </span>
                         )}
@@ -1663,7 +1702,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                     <span className="mx-1.5 opacity-60" aria-hidden="true">·</span>
                     {playerTurn
                       ? <>{phase.charAt(0).toUpperCase() + phase.slice(1)}<span className="hidden min-[360px]:inline"> Phase</span></>
-                      : `${OPPONENT_NAME}'s turn`}
+                      : <>{OPPONENT_NAME}<span className="hidden min-[360px]:inline">&apos;s turn</span></>}
                   </div>
                   <span className="h-px flex-1 bg-gradient-to-l from-transparent to-brass-300/45" aria-hidden="true" />
                   <span className="hidden lg:block w-32 shrink-0" aria-hidden="true" />
@@ -1716,18 +1755,18 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
               {/* The player's half */}
               <div className="self-center flex justify-center items-start gap-2 sm:gap-3" style={{ zoom: fieldZoom }}>
-                <AnimatePresence>
+                <AnimatePresence key={gameId}>
                 {playerField.map((card) => {
                   const selected = selectedCard?.instanceId === card.instanceId;
                   const ready = playerTurn && phase === 'battle' && canAttack(card);
                   const resting = card.type === 'action' && !canAttack(card);
-                  const cfx = fxFor(card.instanceId);
                   return (
                     <FieldSlot
                       key={card.instanceId}
+                      cardId={card.instanceId}
+                      side="player"
                       initial={{ y: 30, opacity: 0, scale: 0.88 }}
                       animate={{ y: 0, opacity: 1, scale: 1 }}
-                      exit={CRUMPLE_PLAYER}
                       transition={{ type: 'spring', stiffness: 380, damping: 26 }}
                       whileHover={{ y: -5 }}
                       className={`relative ${resting ? '' : 'cursor-pointer'}`}
@@ -1738,12 +1777,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                       press={pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`, playerTurn && phase === 'battle')}
                     >
                       <div
-                        ref={cardRef(card.instanceId)}
+                        data-target-ring={selected || ready ? '' : undefined}
                         className={`relative rounded-[10px] transition-shadow ${selected
                           ? 'ring-2 ring-brass-300 shadow-[0_0_24px_4px_rgba(251,191,36,0.55)]'
-                          : ready ? 'shadow-[0_0_18px_2px_rgba(52,211,153,0.5)]' : ''} ${cfx.hit ? 'fx-hit' : ''} ${cfx.strike === 'up' ? 'fx-strike-up' : ''}`}
+                          : ready ? 'shadow-[0_0_18px_2px_rgba(52,211,153,0.5)]' : ''}`}
                       >
-                        {cfx.hit && <span key={cfx.hit.id} className="fx-flash" aria-hidden="true" />}
                         <div className={resting ? 'opacity-60' : ''}>
                           <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} />
                         </div>
@@ -1759,17 +1797,6 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                 })}
                 </AnimatePresence>
               </div>
-
-              {/* Numbers over the table: drawn here, at the position each card
-                  had when its event fired, so a kill shows its number over the
-                  card as it crumples away (see pushFx). */}
-              {fx.some((e) => e.pos && e.text) && (
-                <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-30">
-                  {fx.filter((e) => e.pos && e.text).map((e) => (
-                    <FloatNumber key={e.id} fx={e} className="absolute" style={{ left: e.pos.x, top: e.pos.y }} />
-                  ))}
-                </div>
-              )}
 
               {/* The turn banner (see its effect). Over the centre line, which
                   is empty of controls at a turn boundary. */}
@@ -2026,13 +2053,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
             <HealthMeter
               hp={playerHealth}
               max={30}
-              fx={faceFx('player')}
+              side="player"
               fill="[&>div]:bg-gradient-to-r [&>div]:from-emerald-600 [&>div]:to-emerald-300"
               label={`Your health: ${playerHealth} of 30`}
             />
           </div>
         </div>
       </div>
+      </FxContext.Provider>
     </div>
   );
 };
