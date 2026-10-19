@@ -104,6 +104,18 @@ const DailyRewards = ({ onClose }) => {
     return () => clearTimeout(t);
   }, [checkDailyLogin]);
 
+  // The summary below sits in a live region, which announces content that
+  // arrives in it — but only once the region itself is in the accessibility
+  // tree. Opened from the header button (a click), React mounts the dialog and
+  // runs the effect above in one task, so the region would first appear
+  // already full, and say nothing. Holding its content back a frame means it
+  // is always there, empty, first.
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setLive(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <div
       ref={dialogRef}
@@ -170,52 +182,59 @@ const DailyRewards = ({ onClose }) => {
             })}
           </div>
 
-          <AnimatePresence>
-            {reward && !claimed && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-5 rounded-xl bg-black/25 px-4 py-5 text-center ring-1 ring-white/5"
-              >
-                {/* Sized down on narrow phones so it stays one line inside
-                    the box at 320px; wrapped, it left the sparkle stranded
-                    beside a two-line block. */}
-                <h3 className="inline-flex items-center gap-2 whitespace-nowrap font-display text-base font-extrabold text-white min-[360px]:text-lg sm:text-xl">
-                  <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0 text-brass-300 sm:h-5 sm:w-5" strokeWidth={2.2} />
-                  Today&apos;s Reward Claimed!
-                </h3>
-                <div className="mt-4 flex flex-wrap justify-center gap-3">
-                  {PRIZES.filter((p) => reward[p.key] > 0).map(({ key, Icon, tone, noun }, i) => (
-                    <motion.div
-                      key={key}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.3 + i * 0.15 }}
-                      className="panel-glass flex items-center gap-2 rounded-xl px-4 py-2.5"
-                    >
-                      <Icon aria-hidden="true" className={`h-5 w-5 ${tone}`} strokeWidth={2.2} />
-                      <span className="font-display text-lg font-extrabold tabular-nums text-white">+{reward[key]}</span>
-                      <span className="sr-only"> {noun}</span>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
+          {/* A polite live region, mounted empty with the dialog and filled a
+              moment later (see `live` above). Before it, a screen reader heard
+              "Daily Rewards, dialog" and "Continue, button" — focus lands on
+              Continue before the reward exists — and never what had just been
+              granted. */}
+          <div role="status">
+            <AnimatePresence>
+              {live && reward && !claimed && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-5 rounded-xl bg-black/25 px-4 py-5 text-center ring-1 ring-white/5"
+                >
+                  {/* Sized down on narrow phones so it stays one line inside
+                      the box at 320px; wrapped, it left the sparkle stranded
+                      beside a two-line block. */}
+                  <h3 className="inline-flex items-center gap-2 whitespace-nowrap font-display text-base font-extrabold text-white min-[360px]:text-lg sm:text-xl">
+                    <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0 text-brass-300 sm:h-5 sm:w-5" strokeWidth={2.2} />
+                    Today&apos;s Reward Claimed!
+                  </h3>
+                  <div className="mt-4 flex flex-wrap justify-center gap-3">
+                    {PRIZES.filter((p) => reward[p.key] > 0).map(({ key, Icon, tone, noun }, i) => (
+                      <motion.div
+                        key={key}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.3 + i * 0.15 }}
+                        className="panel-glass flex items-center gap-2 rounded-xl px-4 py-2.5"
+                      >
+                        <Icon aria-hidden="true" className={`h-5 w-5 ${tone}`} strokeWidth={2.2} />
+                        <span className="font-display text-lg font-extrabold tabular-nums text-white">+{reward[key]}</span>
+                        <span className="sr-only"> {noun}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
 
-            {claimed && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mt-5 rounded-xl bg-black/25 px-4 py-6 text-center ring-1 ring-white/5"
-              >
-                <div aria-hidden="true" className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-400/10 ring-1 ring-emerald-300/30">
-                  <Check className="h-6 w-6 text-emerald-300" strokeWidth={2.6} />
-                </div>
-                <h3 className="mt-3 font-display text-xl font-extrabold text-white">Already Claimed Today!</h3>
-                <p className="mt-1 text-plush-300">Come back tomorrow!</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              {live && claimed && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mt-5 rounded-xl bg-black/25 px-4 py-6 text-center ring-1 ring-white/5"
+                >
+                  <div aria-hidden="true" className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-400/10 ring-1 ring-emerald-300/30">
+                    <Check className="h-6 w-6 text-emerald-300" strokeWidth={2.6} />
+                  </div>
+                  <h3 className="mt-3 font-display text-xl font-extrabold text-white">Already Claimed Today!</h3>
+                  <p className="mt-1 text-plush-300">Come back tomorrow!</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* A plain button: the shadcn Button's bg-primary is a utility and

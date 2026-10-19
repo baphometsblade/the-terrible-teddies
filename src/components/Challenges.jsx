@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Target, X, Clock, Check, Gift, Gem, Coins, Package, Star, CalendarDays, CalendarRange,
+  Target, X, Clock, Check, Gift, Gem, Coins, Package, Star, Crown, CalendarDays, CalendarRange,
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
@@ -41,12 +41,17 @@ const getTimeUntilReset = (isWeekly = false) => {
 
 // What each reward type looks like. lucide icons rather than emoji: emoji are
 // a different drawing on every platform. The noun is for screen readers.
+//
+// A legendary pack is a pack wearing a crown (the mark legendary carries
+// across the game), not just a pack in another colour: the weekly set often
+// puts the two side by side, and sky against brass is all a colour-blind
+// player, or anyone who has not learned the code, would have had to go on.
 const REWARD_LOOK = {
   coins: { Icon: Coins, tone: 'text-brass-300', noun: 'coins' },
   gems: { Icon: Gem, tone: 'text-fuchsia-300', noun: 'gems' },
   xp: { Icon: Star, tone: 'text-brass-300', noun: 'XP' },
   pack: { Icon: Package, tone: 'text-sky-300', noun: 'card packs' },
-  legendaryPack: { Icon: Package, tone: 'text-brass-300', noun: 'legendary packs' },
+  legendaryPack: { Icon: Package, Mark: Crown, tone: 'text-brass-300', noun: 'legendary packs' },
 };
 const OTHER_REWARD = { Icon: Gift, tone: 'text-emerald-300' };
 
@@ -56,7 +61,10 @@ const RewardChip = ({ type, amount, className = '' }) => {
     <span className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg bg-night-950/60 px-2 font-display text-sm font-bold
       tabular-nums text-white ring-1 ring-inset ring-white/10 ${className}`}
     >
-      <look.Icon aria-hidden="true" className={`h-4 w-4 ${look.tone}`} strokeWidth={2.2} />
+      <span aria-hidden="true" className="inline-flex items-center gap-0.5">
+        {look.Mark && <look.Mark className={`h-3.5 w-3.5 ${look.tone}`} strokeWidth={2.4} />}
+        <look.Icon className={`h-4 w-4 ${look.tone}`} strokeWidth={2.2} />
+      </span>
       {amount}
       <span className="sr-only"> {look.noun}</span>
     </span>
@@ -77,10 +85,22 @@ const RewardChip = ({ type, amount, className = '' }) => {
 // under both, so a long name has the most room it can get on a phone. The bar
 // row sits under the text from sm up and spans the whole card below that,
 // where indenting it past the icon left a bar barely wider than its label.
+//
+// Claiming unmounts the Claim button, and focus went with it to <body>; the
+// next Tab then sent useDialog back to the dialog's first control. So when the
+// button had focus, the "Claimed" that replaces it takes it (tabIndex -1,
+// never a tab stop), and Tab carries on from there to the next card.
 const ChallengeCard = ({ challenge, progress, isClaimed, onClaim }) => {
   const isComplete = progress >= challenge.target;
   const progressPercent = Math.min((progress / challenge.target) * 100, 100);
   const isReady = isComplete && !isClaimed;
+  const claimedRef = useRef(null);
+  const refocus = useRef(false);
+  useLayoutEffect(() => {
+    if (!refocus.current) return;
+    refocus.current = false;
+    if (isClaimed) claimedRef.current?.focus({ preventScroll: true });
+  });
 
   return (
     <motion.div
@@ -141,14 +161,21 @@ const ChallengeCard = ({ challenge, progress, isClaimed, onClaim }) => {
           {isReady && (
             <button
               type="button"
-              onClick={onClaim}
+              onClick={(e) => {
+                refocus.current = e.currentTarget === document.activeElement;
+                onClaim();
+              }}
               className={`btn-brass h-8 rounded-lg px-4 font-display text-sm font-bold ${FOCUS_OUTLINE}`}
             >
               Claim
             </button>
           )}
           {isClaimed && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-plush-300">
+            <span
+              ref={claimedRef}
+              tabIndex={-1}
+              className={`inline-flex items-center gap-1 rounded text-xs font-semibold text-plush-300 ${FOCUS_OUTLINE}`}
+            >
               <Check aria-hidden="true" className="h-3.5 w-3.5 text-emerald-300" strokeWidth={3} />
               Claimed
             </span>
@@ -204,6 +231,17 @@ const Challenges = ({ onClose }) => {
   const [dailyResetTime, setDailyResetTime] = useState(getTimeUntilReset(false));
   const [weeklyResetTime, setWeeklyResetTime] = useState(getTimeUntilReset(true));
   const dialogRef = useDialog(onClose);
+  // The bonus's Claim is swapped for a "Claimed" badge the same way a card's
+  // is, and its focus is kept the same way (see ChallengeCard).
+  // The ref is only attached while the badge is drawn, so a claim that did
+  // not land leaves nothing to focus.
+  const bonusClaimedRef = useRef(null);
+  const bonusRefocus = useRef(false);
+  useLayoutEffect(() => {
+    if (!bonusRefocus.current) return;
+    bonusRefocus.current = false;
+    bonusClaimedRef.current?.focus({ preventScroll: true });
+  });
 
   // The visible set rotates deterministically by calendar date (see
   // src/stores/challenges.js) — same 4 all day/week, different set on the
@@ -292,12 +330,23 @@ const Challenges = ({ onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-label="Challenges"
-      className="fixed inset-0 z-50 dialog-scrim flex items-center justify-center p-3 sm:p-6"
+      // Two frames, by viewport height. Normally the panel is capped to the
+      // screen and only the list scrolls, so the tabs and the bonus stay put.
+      // But that chrome is ~280px that cannot shrink, and on a short screen
+      // (a landscape phone, a laptop at 200% zoom) it left the list a slit of
+      // 13-70px — less than half a card — and at 400% zoom the bonus Claim
+      // fell off the bottom of the panel. Below 500px tall the cap comes off,
+      // the list stops scrolling on its own and the whole dialog scrolls in
+      // the scrim instead. Either way the panel is centred by my-auto, not
+      // items-center: a centred flex item taller than its box overflows at
+      // both ends, out of reach.
+      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-3 sm:p-6"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl dialog-panel"
+        className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl dialog-panel
+          sm:max-h-[calc(100dvh-3rem)] [@media(max-height:500px)]:!max-h-none"
       >
         {/* Amber light over the header, the same as the Shop's. */}
         <div
@@ -360,7 +409,8 @@ const Challenges = ({ onClose }) => {
           role="region"
           aria-label={`${activeTab === 'daily' ? 'Daily' : 'Weekly'} challenges`}
           tabIndex={0}
-          className="relative flex-1 overflow-y-auto px-4 pt-2 pb-4 sm:px-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300"
+          className="relative flex-1 overflow-y-auto px-4 pt-2 pb-4 sm:px-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300
+            [@media(max-height:500px)]:flex-none [@media(max-height:500px)]:overflow-visible"
         >
           <AnimatePresence mode="wait">
             {activeTab === 'daily' && (
@@ -409,7 +459,11 @@ const Challenges = ({ onClose }) => {
               </div>
             </div>
             {(claimedChallenges ?? []).includes(BONUS[activeTab].key) ? (
-              <div className="inline-flex h-12 shrink-0 items-center gap-1.5 rounded-xl bg-black/25 px-3 ring-1 ring-inset ring-white/10">
+              <div
+                ref={bonusClaimedRef}
+                tabIndex={-1}
+                className={`inline-flex h-12 shrink-0 items-center gap-1.5 rounded-xl bg-black/25 px-3 ring-1 ring-inset ring-white/10 ${FOCUS_OUTLINE}`}
+              >
                 <Check aria-hidden="true" className="h-5 w-5 text-emerald-300" strokeWidth={2.6} />
                 <span className="text-xs font-semibold text-plush-300">
                   Claimed<span className="sr-only"> bonus</span>
@@ -428,7 +482,10 @@ const Challenges = ({ onClose }) => {
                     the tab's count already says how far there is to go. */}
                 <button
                   type="button"
-                  onClick={() => claimBonus(activeTab)}
+                  onClick={(e) => {
+                    bonusRefocus.current = e.currentTarget === document.activeElement;
+                    claimBonus(activeTab);
+                  }}
                   disabled={!BONUS[activeTab].allDone}
                   className={`relative inline-flex h-12 items-center justify-center gap-2 rounded-xl font-display font-bold ${FOCUS_OUTLINE} ${
                     BONUS[activeTab].allDone

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Crown, Lock, Check, Clock, Gem, X, Sparkles, Swords } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
@@ -29,6 +29,19 @@ const WELL = 'bg-[#140e1d]';
 // Shared by the tiles and the spine's row labels so the two stay aligned.
 const TILE_H = 'h-[7.75rem]';
 
+// A reward in words, for screen readers: the tile draws it as an emoji, an
+// amount and a rarity, none of which says "coins" or "card" on its own.
+const describeReward = (reward) => {
+  const n = reward.amount;
+  switch (reward.type) {
+    case 'coins': return `${n} coins`;
+    case 'gems': return `${n} gems`;
+    case 'pack': return `${n} card pack${n === 1 ? '' : 's'}`;
+    case 'card': return `${reward.name}, ${reward.rarity} card`;
+    default: return reward.name ?? `${n ?? ''} ${reward.type}`.trim();
+  }
+};
+
 // Hoisted to module scope for a stable component identity. Declared inside
 // BattlePass it got a fresh type every render, so claiming a reward (or any
 // toast) remounted all 30 tiles and replayed their entrance. The parent now
@@ -40,7 +53,23 @@ const TILE_H = 'h-[7.75rem]';
 // when activated — a screen-reader player tabbing the pass heard fifty offers
 // and could act on none. Every other tile is ordinary content, and says in
 // text what state it is in rather than with an overlay over its name.
+//
+// Claiming swaps the button for a plain tile, which takes the focused element
+// out of the document: focus fell to <body>, and the next Tab sent useDialog
+// back to the dialog's first control, three or four stops from the rail, once
+// per claim. So a tile claimed while its button had focus takes focus itself
+// (tabIndex -1, never a tab stop) and says "Claimed", and the next Tab goes on
+// from there to the next tile. preventScroll: it is the same spot, and the
+// rail must not move under the player.
 const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, onClaim }) => {
+  const tileRef = useRef(null);
+  const refocus = useRef(false);
+  useLayoutEffect(() => {
+    if (!refocus.current) return;
+    refocus.current = false;
+    if (!canClaim) tileRef.current?.focus({ preventScroll: true });
+  });
+
   const label = reward.type === 'card' || reward.type === 'exclusive'
     ? reward.name
     : `${reward.amount ? '+' + reward.amount : ''}`;
@@ -72,17 +101,19 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
         style={metal ? { background: metal } : undefined}
       />
       <span className={`relative flex h-full flex-col items-center rounded-[11px] px-1.5 pt-3 pb-2 ${fill}`}>
-        {!canClaim && <span className="sr-only">Tier {tier} {track} reward:</span>}
-        <span className={`grid h-8 place-items-center text-[28px] leading-none ${quiet ? 'opacity-45 grayscale' : ''}`}>
+        {/* The reward in words, then the drawing aria-hidden: the emoji alone
+            read as "coin +100" or "joker Peeping Pete". */}
+        {!canClaim && <span className="sr-only">Tier {tier} {track} reward: {describeReward(reward)}.</span>}
+        <span aria-hidden="true" className={`grid h-8 place-items-center text-[28px] leading-none ${quiet ? 'opacity-45 grayscale' : ''}`}>
           {reward.icon}
         </span>
-        <span className="mt-2 flex h-7 w-full items-center justify-center">
+        <span aria-hidden="true" className="mt-2 flex h-7 w-full items-center justify-center">
           <span className={`line-clamp-2 break-words text-center font-display text-[11px] font-bold leading-[0.875rem] sm:text-[12px] ${quiet ? 'text-plush-300' : 'text-white'}`}>
             {label}
           </span>
         </span>
         {reward.rarity && (
-          <span className={`label-caps text-[8px] leading-3 ${RARITY[reward.rarity].text}`}>
+          <span aria-hidden="true" className={`label-caps text-[8px] leading-3 ${RARITY[reward.rarity].text}`}>
             {reward.rarity}
           </span>
         )}
@@ -102,10 +133,12 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
               <span className="sr-only">Locked</span>
             </>
           )}
+          {/* "Premium" is all the tile has room for; a screen reader also
+              hears that it is the pass this tier is waiting on. */}
           {state === 'needs-premium' && (
             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brass-300">
               <Crown aria-hidden="true" className="h-3 w-3" strokeWidth={2.5} />
-              Premium
+              Premium<span className="sr-only"> Pass required</span>
             </span>
           )}
         </span>
@@ -114,13 +147,27 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
   );
 
   if (!canClaim) {
-    return <div className={`relative block w-full rounded-xl p-px ${TILE_H}`}>{body}</div>;
+    return (
+      <div
+        ref={tileRef}
+        tabIndex={isClaimed ? -1 : undefined}
+        className={`relative block w-full rounded-xl p-px ${TILE_H} ${isClaimed ? FOCUS_OUTLINE : ''}`}
+      >
+        {body}
+      </div>
+    );
   }
+  // The name opens with the action, as before, and then says what it hands
+  // out: a button's label replaces everything drawn inside it, so "Claim tier
+  // 4 premium reward" alone never said that tier 4 is Chainsmoke Chad.
   return (
     <button
       type="button"
-      onClick={onClaim}
-      aria-label={`Claim tier ${tier} ${track} reward`}
+      onClick={(e) => {
+        refocus.current = e.currentTarget === document.activeElement;
+        onClaim();
+      }}
+      aria-label={`Claim tier ${tier} ${track} reward: ${describeReward(reward)}`}
       className={`sheen relative block w-full rounded-xl p-px ${TILE_H} cursor-pointer transition-transform duration-150 hover:-translate-y-0.5
         shadow-[0_0_20px_-4px_rgba(251,191,36,0.6)] ${FOCUS_OUTLINE}`}
     >
@@ -167,6 +214,15 @@ const PREMIUM_PASS_PRICE = 500; // gems
 // the overlay before reaching Purchase/Cancel. Matches SaveDeckDialog / CardDetailDialog.
 const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }) => {
   const ref = useDialog(onClose);
+  // Opens on Cancel, not Purchase. useDialog focuses the first control, and
+  // that is Purchase: an Enter held down on "Unlock Premium" auto-repeats into
+  // the confirm and spends the gems before the price has been seen. Declared
+  // after useDialog, so its effect runs second — useDialog has already noted
+  // the Unlock button as the place to hand focus back to.
+  const cancelRef = useRef(null);
+  useEffect(() => {
+    cancelRef.current?.focus();
+  }, []);
   return (
     <motion.div
       ref={ref}
@@ -228,6 +284,7 @@ const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }
           Purchase
         </button>
         <button
+          ref={cancelRef}
           type="button"
           onClick={onClose}
           className={`btn-glass h-11 flex-1 rounded-xl font-display font-bold ${FOCUS_OUTLINE}`}
@@ -248,6 +305,12 @@ const BattlePass = ({ onClose }) => {
   const { toast } = useToast();
   const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
   const scrollRef = useRef(null);
+  const trackRef = useRef(null);
+  // Buying the pass swaps the Unlock button for the "Premium Active" badge, so
+  // the confirm's close has nothing to hand focus back to and it fell to
+  // <body>. Once the confirm has finished leaving, the badge takes it instead.
+  const premiumBadgeRef = useRef(null);
+  const focusPremiumBadge = useRef(false);
   // Escape targets the innermost layer: dismiss the nested purchase-confirm
   // overlay first, and only close the whole pass when no overlay is open.
   // (useDialog reads the callback through a ref, so this closure stays live.)
@@ -279,11 +342,45 @@ const BattlePass = ({ onClose }) => {
       const first = rail.querySelector('[data-ready-tier]') ?? current;
       const spine = rail.querySelector('[data-rail-spine]')?.offsetWidth ?? 0;
       const col = current.offsetWidth;
+      // The scroll that puts the next tier's right edge on the rail's.
       const wanted = current.offsetLeft + 2 * col - rail.clientWidth;
-      // Whole columns only, so no tile is left half-hidden under the spine.
-      rail.scrollLeft = Math.max(0, Math.floor(Math.min(wanted, first.offsetLeft - spine) / col) * col);
+      // Whole columns only, so no tile is left half-hidden under the spine —
+      // rounded UP: rounding down stops short of `wanted`, and what it cuts is
+      // the next tier, on the right (22px of it at 412px wide). The cap needs
+      // no rounding: a column's offsetLeft less the spine is already a whole
+      // number of columns.
+      const target = Math.min(Math.ceil(Math.max(0, wanted) / col) * col, first.offsetLeft - spine);
+      rail.scrollLeft = Math.max(0, target);
     });
     return () => cancelAnimationFrame(frame);
+  }, []);
+
+  // The far end of the rail obeys the same whole-columns rule. The browser
+  // stops a scroll at scrollWidth − clientWidth, and unless that happens to be
+  // a whole number of columns the last stop leaves a sliver of a tier beside
+  // the spine (22px of tier 23 at 320px). So the track's right padding takes
+  // up the remainder. Laid out before paint (the open-scroll above reads the
+  // range a frame later), and again whenever the rail changes width.
+  useLayoutEffect(() => {
+    const rail = scrollRef.current;
+    const track = trackRef.current;
+    if (!rail || !track) return undefined;
+    const fit = () => {
+      const col = track.querySelector('[data-tier-column]')?.offsetWidth;
+      if (!col) return;
+      const spine = track.querySelector('[data-rail-spine]')?.offsetWidth ?? 0;
+      const content = spine + BATTLE_PASS_REWARDS.length * col;
+      // 0 to col−1px. Zero is fine: the last column's own px-1 still keeps its
+      // tile off the rail's edge, and topping it up to "at least a hair" put a
+      // whole blank column at the end of the rail at 390px.
+      const pad = (((rail.clientWidth - content) % col) + col) % col;
+      track.style.paddingRight = `${pad}px`;
+    };
+    fit();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(fit);
+    observer.observe(rail);
+    return () => observer.disconnect();
   }, []);
 
   const hasPremium = hasBattlePassPremium;
@@ -305,6 +402,9 @@ const BattlePass = ({ onClose }) => {
     // One store-side step, so a double-click can't pay twice for one pass (see
     // purchaseBattlePassPremium).
     const outcome = purchaseBattlePassPremium(PREMIUM_PASS_PRICE);
+    if (outcome === 'purchased' || outcome === 'already-owned') {
+      focusPremiumBadge.current = true;
+    }
     if (outcome === 'purchased') {
       setShowPurchaseConfirm(false);
       celebrate({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#fbbf24', '#f59e0b', '#fde68a'] });
@@ -459,6 +559,22 @@ const BattlePass = ({ onClose }) => {
               </div>
             </div>
 
+            {/* Close comes before the premium button in the DOM, wherever the
+                grid draws the two: useDialog focuses the first control on open,
+                and that must be the way out, not a 500-gem purchase that two
+                stray Enters (or one held one) would walk straight through. It
+                also makes Tab run top to bottom below lg, where Close sits on
+                the first row and the button on the fourth. */}
+            <button
+              type="button"
+              onClick={onClose}
+              className={`btn-glass col-start-3 row-start-1 grid h-10 w-10 shrink-0 place-items-center self-start rounded-xl
+                lg:col-start-5 lg:row-span-2 lg:row-start-1 lg:self-center ${FOCUS_OUTLINE}`}
+              aria-label="Close battle pass"
+            >
+              <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
+            </button>
+
             <div className="col-span-3 col-start-1 row-start-4 mt-3 sm:col-span-2 sm:col-start-2 lg:col-span-1 lg:col-start-4 lg:row-span-2 lg:row-start-1 lg:mt-0">
               {!hasPremium && (
                 <button
@@ -477,22 +593,16 @@ const BattlePass = ({ onClose }) => {
                 </button>
               )}
               {hasPremium && (
-                <div className="trim-brass relative flex h-11 items-center justify-center gap-2 rounded-xl bg-brass-400/10 px-4 font-display font-bold text-brass-200 sm:inline-flex">
+                <div
+                  ref={premiumBadgeRef}
+                  tabIndex={-1}
+                  className={`trim-brass relative flex h-11 items-center justify-center gap-2 rounded-xl bg-brass-400/10 px-4 font-display font-bold text-brass-200 sm:inline-flex ${FOCUS_OUTLINE}`}
+                >
                   <Crown aria-hidden="true" className="h-4 w-4 text-brass-300" strokeWidth={2.4} />
                   Premium Active
                 </div>
               )}
             </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className={`btn-glass col-start-3 row-start-1 grid h-10 w-10 shrink-0 place-items-center self-start rounded-xl
-                lg:col-start-5 lg:row-span-2 lg:row-start-1 lg:self-center ${FOCUS_OUTLINE}`}
-              aria-label="Close battle pass"
-            >
-              <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
-            </button>
           </div>
         </div>
 
@@ -503,14 +613,28 @@ const BattlePass = ({ onClose }) => {
               {currentTier}
             </Medallion>
             <div className="min-w-0 flex-1">
+              {/* Past the last tier there is no next one: it used to read
+                  "Tier 25 → 26 · 0 XP to next tier", naming a tier that does
+                  not exist. */}
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                <span className="font-display text-lg font-bold leading-tight text-white">Tier {currentTier} → {currentTier + 1}</span>
-                <span className="text-sm font-semibold tabular-nums text-brass-200">{xpToNext} XP to next tier</span>
+                {nextTier ? (
+                  <>
+                    <span className="font-display text-lg font-bold leading-tight text-white">Tier {currentTier} → {currentTier + 1}</span>
+                    <span className="text-sm font-semibold tabular-nums text-brass-200">{xpToNext} XP to next tier</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-display text-lg font-bold leading-tight text-white">Tier {currentTier}</span>
+                    <span className="text-sm font-semibold text-brass-200">Max tier reached</span>
+                  </>
+                )}
               </div>
               <Progress
                 value={xpProgress}
                 className="mt-2 h-2.5 bg-black/45 ring-1 ring-white/10 [&>div]:bg-gradient-to-r [&>div]:from-brass-300 [&>div]:to-brass-500"
-                aria-label={`Battle pass progress: tier ${currentTier}, ${xpToNext} XP to tier ${currentTier + 1}`}
+                aria-label={nextTier
+                  ? `Battle pass progress: tier ${currentTier}, ${xpToNext} XP to tier ${currentTier + 1}`
+                  : `Battle pass progress: tier ${currentTier}, max tier reached`}
               />
               <div className="mt-1.5 text-xs font-semibold tabular-nums text-plush-300">
                 Total: {battlePassXP} XP
@@ -540,8 +664,10 @@ const BattlePass = ({ onClose }) => {
               [scrollbar-color:rgba(251,191,36,0.35)_transparent] [scrollbar-width:thin]
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300`}
           >
-            {/* relative: the columns' offsetLeft is measured from this track. */}
-            <div className="relative flex min-w-max pr-2">
+            {/* relative: the columns' offsetLeft is measured from this track.
+                Its right padding is set from the rail's width (see the layout
+                effect above); pr-2 is only the value before that runs. */}
+            <div ref={trackRef} className="relative flex min-w-max pr-2">
               {/* The spine: which row is which, pinned while the tiers scroll
                   under it. Decorative — each tile names its own track. */}
               <div
@@ -571,6 +697,7 @@ const BattlePass = ({ onClose }) => {
                 return (
                   <div
                     key={reward.tier}
+                    data-tier-column
                     data-current-tier={isCurrent || undefined}
                     data-ready-tier={ready || undefined}
                     className="relative w-[6.25rem] shrink-0 snap-start px-1 pt-3 pb-3 sm:w-[6.75rem]"
@@ -651,7 +778,13 @@ const BattlePass = ({ onClose }) => {
       </motion.div>
 
       {/* Purchase Confirmation */}
-      <AnimatePresence>
+      <AnimatePresence
+        onExitComplete={() => {
+          if (!focusPremiumBadge.current) return;
+          focusPremiumBadge.current = false;
+          premiumBadgeRef.current?.focus({ preventScroll: true });
+        }}
+      >
         {showPurchaseConfirm && (
           <motion.div
             initial={{ opacity: 0 }}
