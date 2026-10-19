@@ -2,6 +2,7 @@ import React from 'react';
 import { WifiOff } from 'lucide-react';
 import analytics from '../utils/analytics';
 import { RARITY_METAL } from '@/lib/rarity';
+import { FOCUS_OUTLINE } from '@/lib/focus';
 
 // Scoped error boundary for the lazy-loaded dialog chunks.
 //
@@ -24,9 +25,43 @@ class DialogErrorBoundary extends React.Component {
     // rendered without focus, this one could appear silently, leaving a
     // keyboard player on whatever button opened the screen that failed.
     // A stable callback ref (not an inline arrow) so it fires on mount only,
-    // rather than re-grabbing focus on every re-render.
-    this.focusOnMount = (el) => { if (el) el.focus(); };
-    this.onKeyDown = (e) => { if (e.key === 'Escape') this.props.onDismiss?.(); };
+    // rather than re-grabbing focus on every re-render. It also owns the two
+    // document listeners below, which live exactly as long as the button.
+    this.focusOnMount = (el) => {
+      if (el) {
+        this.okButton = el;
+        el.focus();
+        document.addEventListener('keydown', this.onKeyDown);
+        document.addEventListener('focusin', this.onFocusIn);
+      } else {
+        this.okButton = null;
+        document.removeEventListener('keydown', this.onKeyDown);
+        document.removeEventListener('focusin', this.onFocusIn);
+      }
+    };
+    // aria-modal promises the screen behind is out of reach, but nothing made
+    // it so: Shift+Tab from OK landed on the menu under the scrim, invisible
+    // and still operable. OK is the notice's only control, so Tab and
+    // Shift+Tab both land on it, wherever focus was. On the document rather
+    // than the card (as useDialog does), because focus can be outside the
+    // card while it shows.
+    this.onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        this.props.onDismiss?.();
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        this.okButton?.focus();
+      }
+    };
+    // Focus can also be moved behind the scrim without a key: a dialog open in
+    // this boundary is unmounted by the failure, and useDialog's cleanup hands
+    // focus back to whatever opened it. That cleanup is a passive effect, so
+    // it runs after the ref above has focused OK and would win. Anything that
+    // focuses outside the card while the notice shows is sent back to OK.
+    this.onFocusIn = (e) => {
+      const card = this.okButton?.closest('[role="alertdialog"]');
+      if (card && !card.contains(e.target)) this.okButton.focus();
+    };
   }
 
   static getDerivedStateFromError() {
@@ -59,9 +94,11 @@ class DialogErrorBoundary extends React.Component {
           onClick={this.props.onDismiss}
         >
           <div
-            className="relative my-auto w-full max-w-sm overflow-hidden rounded-2xl dialog-panel px-6 pt-7 pb-6 text-center motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-300 [[data-motion=off]_&]:animate-none"
+            className="relative my-auto w-full max-w-sm overflow-hidden rounded-2xl dialog-panel px-6 pt-7 pb-6 text-center outline-none motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-300 [[data-motion=off]_&]:animate-none"
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={this.onKeyDown}
+            // A click on the card's text focuses the card rather than <body>,
+            // so focus stays inside the notice. Never a Tab stop.
+            tabIndex={-1}
             role="alertdialog"
             aria-modal="true"
             aria-label="That screen failed to load"
@@ -87,7 +124,7 @@ class DialogErrorBoundary extends React.Component {
               type="button"
               ref={this.focusOnMount}
               onClick={this.props.onDismiss}
-              className="btn-brass relative w-full h-11 rounded-xl font-display text-base font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300"
+              className={`btn-brass relative w-full h-11 rounded-xl font-display text-base font-bold ${FOCUS_OUTLINE}`}
             >
               OK
             </button>

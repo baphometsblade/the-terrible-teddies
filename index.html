@@ -34,13 +34,24 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
-      /* The loader painted before the app's JS arrives. Restyled to match the
-         BootScreen it cross-fades into (the bar backdrop, a brass-ringed bear
-         with a turning arc, brass lettering), so first paint does not flash a
-         different look. CSS only: the inline script below swaps in an error
-         state built from these same class names, and changing the script
-         would change its CSP hash (see csp.test.js). The app's fonts are not
-         loaded yet, so the lettering uses the system's rounded face. */
+      /* The loader painted before the app's JS arrives. It fades out over
+         BootScreen once React renders, so for half a second both are on
+         screen: it draws the same medallion and wordmark at the same size and
+         in the same place (and the same reserved band under them, which is
+         what centres both columns on the same point), or the bear jumps.
+         Every size below mirrors one in BootScreen.jsx, in rem like Tailwind's,
+         under the same media queries: change one, change the other.
+
+         Everything is set explicitly (box-sizing, line-heights, fonts),
+         because the app's CSS reset can arrive mid-load (in development it
+         is injected by the JS) and the loader must not shift when it does.
+         The wordmark names the app's display face, which is used once the
+         app's stylesheet declares it, and falls back to the system rounded
+         face before that.
+
+         CSS and markup only: the inline script below swaps in an error card
+         built from these class names, and changing the script would change
+         its CSP hash (see csp.test.js). */
       #initial-loader {
         position: fixed;
         inset: 0;
@@ -60,50 +71,143 @@
         opacity: 0;
         pointer-events: none;
       }
+      /* The body font the app's reset sets, so the caps line and the emoji
+         resolve to the same faces BootScreen's do. */
       .loader-content {
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
-        padding: 0 24px;
+        padding: 0 1rem;
         color: #ece6f2;
-        font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        line-height: 1.5;
       }
+      .loader-content *,
+      .loader-content *::before,
+      .loader-content *::after {
+        box-sizing: border-box;
+      }
+      /* The 6rem disc in its 8rem medallion box (the margin makes up the
+         box): a 3px brass ring around a night fill, the bear at 3rem. */
       .loader-teddy {
         position: relative;
         display: grid;
         place-items: center;
-        width: 88px;
-        height: 88px;
+        width: 6rem;
+        height: 6rem;
+        margin: 1rem 0;
+        padding: 3px;
         border-radius: 50%;
-        font-size: 40px;
+        font-size: 3rem;
         line-height: 1;
-        border: 3px solid transparent;
         background:
-          linear-gradient(#1a1226, #1a1226) padding-box,
-          linear-gradient(145deg, #fef3c7 0%, #b45309 30%, #fde68a 55%, #78350f 80%, #fbbf24 100%) border-box;
-        box-shadow: 0 0 48px rgba(245, 158, 11, 0.22);
+          linear-gradient(#1a1226, #1a1226) content-box,
+          linear-gradient(145deg, #fef3c7 0%, #b45309 30%, #fde68a 55%, #78350f 80%, #fbbf24 100%) padding-box;
+        box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.9);
       }
+      /* Lamplight breathing behind it: 2.5rem past the medallion box. */
+      .loader-teddy::before {
+        content: "";
+        position: absolute;
+        inset: -3.5rem;
+        z-index: -1;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(251, 191, 36, 0.2), transparent);
+        animation: loader-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      /* The arc, on the edge of the medallion box. */
       .loader-teddy::after {
         content: "";
         position: absolute;
-        inset: -13px;
+        inset: -1rem;
         border-radius: 50%;
         border: 2px solid rgba(255, 255, 255, 0.07);
         border-top-color: #fbbf24;
+        border-right-color: rgba(251, 191, 36, 0.4);
         animation: loader-spin 1.6s linear infinite;
       }
       @keyframes loader-spin {
         to { transform: rotate(360deg); }
       }
-      /* The failure card the script swaps in has the reload button: the arc
-         stops there, since a turning arc says "still loading" and it isn't. */
-      .loader-content:has(#loader-reload) .loader-teddy::after { display: none; }
+      @keyframes loader-pulse {
+        50% { opacity: 0.5; }
+      }
+      /* "Loading" in small caps over the wordmark, as one heading. */
+      .loader-wordmark {
+        margin-top: 1.75rem;
+      }
+      .loader-caps {
+        display: block;
+        font-size: 0.6875rem;
+        line-height: 1.5;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #b6a8ca;
+      }
+      .loader-brand {
+        display: block;
+        margin-top: 0.5rem;
+        font-family: "Baloo 2", ui-rounded, system-ui, -apple-system, sans-serif;
+        font-size: 1.875rem;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        white-space: nowrap;
+        background-image: linear-gradient(180deg, #fef3c7 0%, #fbbf24 48%, #d97706 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 2px 0 rgba(124, 45, 18, 0.6)) drop-shadow(0 8px 18px rgba(0, 0, 0, 0.55));
+      }
+      /* BootScreen's three dots, drawn rather than written: the same glyphs,
+         so the two wordmarks are the same width, but not in the text, so a
+         test that finds BootScreen by "Loading Terrible Teddies..." never
+         finds this one too (or instead, before React has rendered). */
+      .loader-brand::after {
+        content: "...";
+      }
+      /* Where BootScreen keeps its hint and Reload: empty here, but it is
+         what puts the medallion at the same height on both screens. */
+      .loader-reserve {
+        margin-top: 2rem;
+        height: 9rem;
+      }
+      @media (min-width: 375px) {
+        .loader-brand { font-size: 2.25rem; }
+      }
+      @media (min-width: 640px) and (min-height: 501px) {
+        .loader-brand { font-size: 3rem; }
+      }
+      /* A phone held sideways: everything steps down, as on BootScreen. */
+      @media (max-height: 500px) {
+        .loader-teddy { width: 4.5rem; height: 4.5rem; margin: 0.75rem 0; font-size: 2.25rem; }
+        .loader-teddy::before { inset: -3.25rem; }
+        .loader-teddy::after { inset: -0.75rem; }
+        .loader-wordmark { margin-top: 1rem; }
+        .loader-reserve { margin-top: 1.25rem; }
+      }
+      /* ...and wide enough that BootScreen sets Reload beside its hint, not
+         under it, so its band is one panel tall. */
+      @media (max-height: 500px) and (min-width: 480px) {
+        .loader-reserve { height: 4.5rem; }
+      }
+      /* The failure card the script swaps in: the arc stops and the light
+         stills, since moving light says "still loading" and it isn't. It is
+         the only state whose medallion has three siblings after it (title,
+         subtitle, button; the loading markup has two), which holds in every
+         browser, where :has() does not (Firefox before 121, Safari before
+         15.4). */
+      .loader-content > .loader-teddy:nth-last-child(4)::after { display: none; }
+      .loader-content > .loader-teddy:nth-last-child(4)::before { animation: none; }
       /* Sized to one line at phone widths (a gradient clipped to text that
          wraps stretches over both lines: one pale, one dark). */
       .loader-title {
-        margin-top: 28px;
+        margin-top: 1.75rem;
+        font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
         font-size: clamp(20px, 6vw, 30px);
+        line-height: 1.25;
         white-space: nowrap;
         font-weight: 800;
         letter-spacing: -0.01em;
@@ -113,7 +217,9 @@
         -webkit-text-fill-color: transparent;
       }
       .loader-subtitle {
+        font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
         font-size: 14px;
+        line-height: 1.5;
         color: #b6a8ca;
         margin-top: 8px;
       }
@@ -122,7 +228,9 @@
         padding: 10px 24px;
         border-radius: 12px;
         border: none;
-        font: inherit;
+        font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 1rem;
+        line-height: 1.5;
         font-weight: 800;
         color: #120c1c;
         background: linear-gradient(180deg, #fde68a 0%, #fbbf24 42%, #d97706 100%);
@@ -137,16 +245,28 @@
         outline-offset: 2px;
       }
       @media (prefers-reduced-motion: reduce) {
+        .loader-teddy::before,
         .loader-teddy::after { animation: none; }
       }
+      /* The in-game Animations switch, which React mirrors onto <html> on its
+         first render: BootScreen's arc and light hold still under it, so the
+         loader's stop too, or a turning arc fades out over a still one. */
+      [data-motion="off"] .loader-teddy::before,
+      [data-motion="off"] .loader-teddy::after { animation: none; }
     </style>
   </head>
   <body>
     <div id="initial-loader">
-      <div class="loader-content">
-        <div class="loader-teddy">🧸</div>
-        <div class="loader-title">Terrible Teddies</div>
-        <div class="loader-subtitle">Loading your collection...</div>
+      <!-- A live region: the script below replaces this element's contents
+           with the "Couldn't load the game" card, and a screen reader is told
+           only because the swap lands inside a region it is watching. -->
+      <div class="loader-content" role="status" aria-live="polite">
+        <div class="loader-teddy" aria-hidden="true">🧸</div>
+        <div class="loader-wordmark">
+          <span class="loader-caps">Loading</span>
+          <span class="loader-brand">Terrible Teddies</span>
+        </div>
+        <div class="loader-reserve" aria-hidden="true"></div>
       </div>
     </div>
     <div id="root"></div>

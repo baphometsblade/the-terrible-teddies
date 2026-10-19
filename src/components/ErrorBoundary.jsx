@@ -2,12 +2,11 @@ import React from 'react';
 import { HeartCrack, RotateCcw, RotateCw, Trash2, ChevronRight } from 'lucide-react';
 import analytics from '../utils/analytics';
 import { RARITY_METAL } from '@/lib/rarity';
+import { FOCUS_OUTLINE } from '@/lib/focus';
 
 // Plain <button>s on the materials. Focus is an outline: a Tailwind ring is a
 // box-shadow, and on btn-brass / btn-glass it would replace the material's own
 // rim light and depth.
-const FOCUS_OUTLINE =
-  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
 const ACTION =
   `w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl px-6 font-display text-base font-bold ${FOCUS_OUTLINE}`;
 
@@ -35,6 +34,19 @@ class ErrorBoundary extends React.Component {
     // console no one is watching.
     analytics.trackError(error, 'react-error-boundary', true);
   }
+
+  // A crash replaces the whole tree, so whatever had focus is destroyed and
+  // focus falls to <body>: a screen-reader user was told nothing. Focus moves
+  // to the heading instead, so "Oh no!" is announced, with the message under
+  // it as the heading's description, and Try Again is the next Tab. The
+  // heading rather than Try Again so the announcement says what happened, not
+  // just what to press, and so a repeat of the Enter that crashed it cannot
+  // press a button straight away. A stable callback ref (a class field, not an
+  // inline arrow), so it fires when the crash screen mounts, not on every
+  // re-render.
+  focusOnMount = (el) => {
+    if (el) el.focus();
+  };
 
   handleReset = () => {
     this.setState({ hasError: false, error: null, errorInfo: null });
@@ -77,8 +89,17 @@ class ErrorBoundary extends React.Component {
                   <HeartCrack className="h-9 w-9 text-plush-200" strokeWidth={1.75} />
                 </div>
               </div>
-              <h1 className="font-display text-4xl font-extrabold leading-tight text-plush-100 mb-2">Oh no!</h1>
-              <p className="text-plush-200 leading-relaxed">
+              {/* tabIndex -1: focusable from script only, never a Tab stop.
+                  No outline, since it is a heading, not a control. */}
+              <h1
+                ref={this.focusOnMount}
+                tabIndex={-1}
+                aria-describedby="crash-screen-detail"
+                className="font-display text-4xl font-extrabold leading-tight text-plush-100 mb-2 focus:outline-none"
+              >
+                Oh no!
+              </h1>
+              <p id="crash-screen-detail" className="text-plush-200 leading-relaxed">
                 Something went wrong with the teddies. Don&apos;t worry — your progress is safe.
               </p>
             </div>
