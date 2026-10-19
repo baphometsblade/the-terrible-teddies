@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings as SettingsIcon, X, Volume2, Sparkles, Smile, Meh, Angry,
@@ -96,6 +96,25 @@ const Settings = ({ onClose }) => {
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState('');
+  const resetButtonRef = useRef(null);
+  const refocusReset = useRef(false);
+
+  // Arming and cancelling each swap the focused button for something else,
+  // and focus fell to <body> both ways — the next Tab then restarted at the
+  // top of the dialog. Arming focuses the RESET field (autoFocus, below);
+  // cancelling hands focus back to the button that armed it.
+  useEffect(() => {
+    if (!showResetConfirm && refocusReset.current) {
+      refocusReset.current = false;
+      resetButtonRef.current?.focus();
+    }
+  }, [showResetConfirm]);
+
+  const cancelReset = () => {
+    refocusReset.current = true;
+    setShowResetConfirm(false);
+    setResetConfirmText('');
+  };
 
   const [signingOut, setSigningOut] = useState(false);
 
@@ -230,6 +249,7 @@ const Settings = ({ onClose }) => {
               // A plain button (no material), so its focus may be a ring —
               // in red, the zone's own colour.
               <button
+                ref={resetButtonRef}
                 type="button"
                 onClick={() => setShowResetConfirm(true)}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-950/40 font-display font-bold text-red-200 ring-1 ring-inset ring-red-400/40 transition-colors hover:bg-red-900/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
@@ -249,6 +269,7 @@ const Settings = ({ onClose }) => {
                   onChange={(e) => setResetConfirmText(e.target.value)}
                   placeholder="Type RESET"
                   aria-label="Type RESET to confirm deleting all progress"
+                  autoFocus
                   className="mb-3 h-11 w-full rounded-xl bg-night-950/80 px-3 font-semibold tracking-[0.12em] text-white ring-1 ring-inset ring-red-400/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] placeholder:font-normal placeholder:tracking-normal placeholder:text-plush-300 focus:outline-none focus:ring-2 focus:ring-red-300"
                 />
                 <div className="flex gap-2">
@@ -264,7 +285,7 @@ const Settings = ({ onClose }) => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setShowResetConfirm(false); setResetConfirmText(''); }}
+                    onClick={cancelReset}
                     className={`${ACTION} btn-glass flex-1`}
                   >
                     Cancel

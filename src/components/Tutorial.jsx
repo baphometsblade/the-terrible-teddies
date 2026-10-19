@@ -127,10 +127,13 @@ const Tutorial = ({ onClose, onStartGame }) => {
   const bodyRef = useRef(null);
 
   // Each step starts at its top: the body is a scroller, and without this a
-  // long step read to the bottom left the next one opening half-way down.
+  // long step read to the bottom left the next one opening half-way down. On
+  // a short screen the scrim is what scrolls (see the panel), so it goes back
+  // to the top too.
   useEffect(() => {
     if (bodyRef.current) bodyRef.current.scrollTop = 0;
-  }, [currentStep]);
+    if (dialogRef.current) dialogRef.current.scrollTop = 0;
+  }, [currentStep, dialogRef]);
 
   const nextStep = () => {
     if (currentStep < TUTORIAL_STEPS.length - 1) {
@@ -165,7 +168,17 @@ const Tutorial = ({ onClose, onStartGame }) => {
         // A fixed frame: the header, the progress bar and the Previous/Next
         // row stay put and only the step itself scrolls, so the controls are
         // always in reach on a phone.
-        className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl dialog-panel sm:max-h-[calc(100dvh-3rem)]"
+        //
+        // Except on a short screen (500px or less: a landscape phone, a laptop
+        // at 200% zoom). There that frame is 180px of a 340px panel, and the
+        // medallion and title filled the rest, so every step opened showing
+        // not one line of itself. Below 500px the panel takes its natural
+        // height and the scrim scrolls the whole step; the header and the
+        // progress bar scroll away with it, the Previous/Next row sticks to
+        // the bottom of the screen (overflow-clip, not -hidden: a hidden
+        // overflow is a scroll container, and the row would stick to the
+        // panel instead), and the step's own header tightens.
+        className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl dialog-panel sm:max-h-[calc(100dvh-3rem)] [@media(max-height:500px)]:max-h-none [@media(max-height:500px)]:overflow-clip"
       >
         {/* The light the step's medallion sits in. */}
         <div
@@ -174,7 +187,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
         />
 
         {/* Header */}
-        <div className="relative flex items-center gap-3 px-4 pb-2 pt-4 sm:px-6 sm:pt-5">
+        <div className="relative flex items-center gap-3 px-4 pb-2 pt-4 sm:px-6 sm:pt-5 [@media(max-height:500px)]:pb-1 [@media(max-height:500px)]:pt-3">
           <h2 className="min-w-0 flex-1 font-display text-xl font-extrabold leading-tight text-white">How to Play</h2>
           <button
             type="button"
@@ -188,8 +201,16 @@ const Tutorial = ({ onClose, onStartGame }) => {
 
         {/* Progress: one segment per step. Each is a 24px-tall button around a
             thin bar, so the target is bigger than it looks. Plain elements,
-            so their focus may be a ring. */}
-        <div className="relative flex gap-1.5 px-4 pb-3 sm:px-6">
+            so their focus may be a ring.
+
+            Each state has a shape as well as a colour, and every bar clears
+            3:1 against the panel even under the lamp (#473640, the panel top
+            with the light's full 0.12): a step still to come is an empty
+            plush-400 capsule (3.6:1), a step done is filled brass-500 (3.5:1),
+            and the current one is the brightest and stands taller than both.
+            The future steps were white/15 (1.6:1), all but invisible, and the
+            current one differed from those done by brightness alone. */}
+        <div className="relative flex gap-1.5 px-4 pb-3 sm:px-6 [@media(max-height:500px)]:pb-2">
           {TUTORIAL_STEPS.map((_, index) => (
             <button
               key={index}
@@ -206,12 +227,12 @@ const Tutorial = ({ onClose, onStartGame }) => {
             >
               <span
                 aria-hidden="true"
-                className={`h-1.5 w-full rounded-full transition-colors ${
+                className={`w-full rounded-full transition-colors ${
                   index === currentStep
-                    ? 'bg-gradient-to-r from-brass-200 to-brass-400 shadow-[0_0_10px_rgba(251,191,36,0.65)]'
+                    ? 'h-2.5 bg-gradient-to-r from-brass-200 to-brass-400 shadow-[0_0_10px_rgba(251,191,36,0.65)]'
                     : index < currentStep
-                    ? 'bg-brass-400/60'
-                    : 'bg-white/15 group-hover:bg-white/30'
+                    ? 'h-1.5 bg-brass-500'
+                    : 'h-1.5 ring-1 ring-inset ring-plush-400 group-hover:bg-plush-400/40'
                 }`}
               />
             </button>
@@ -235,11 +256,12 @@ const Tutorial = ({ onClose, onStartGame }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="px-4 pb-6 pt-3 sm:px-10"
+              className="px-4 pb-6 pt-3 sm:px-10 [@media(max-height:500px)]:pt-1"
             >
+              {/* Decoration, so it is the first thing a short screen gives up. */}
               <div
                 aria-hidden="true"
-                className="mx-auto mb-3 h-14 w-14 rounded-full p-[3px] shadow-[0_0_30px_rgba(251,191,36,0.28),0_12px_24px_-10px_rgba(0,0,0,0.85)] sm:h-16 sm:w-16"
+                className="mx-auto mb-3 h-14 w-14 rounded-full p-[3px] shadow-[0_0_30px_rgba(251,191,36,0.28),0_12px_24px_-10px_rgba(0,0,0,0.85)] sm:h-16 sm:w-16 [@media(max-height:500px)]:hidden"
                 style={{ background: RARITY_METAL.legendary }}
               >
                 <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
@@ -250,7 +272,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
               </div>
 
               {/* plush-200, not -300: it sits in the medallion's light. */}
-              <div className="label-caps mb-1.5 text-center text-plush-200">
+              <div className="label-caps mb-1.5 text-center text-plush-200 [@media(max-height:500px)]:mb-1">
                 Step {currentStep + 1} of {TUTORIAL_STEPS.length}
               </div>
               {/* The gradient is on an inline span cloned per line box, so a
@@ -259,7 +281,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
                   left the top line pale and the bottom one dark. */}
               <h3
                 id="tutorial-step-title"
-                className="mb-5 text-center font-display text-[22px] font-extrabold leading-tight min-[360px]:text-2xl sm:text-3xl"
+                className="mb-5 text-center font-display text-[22px] font-extrabold leading-tight min-[360px]:text-2xl sm:text-3xl [@media(max-height:500px)]:mb-3 [@media(max-height:500px)]:text-2xl"
               >
                 <span className="text-brass-gradient [-webkit-box-decoration-break:clone] [box-decoration-break:clone]">{step.title}</span>
               </h3>
@@ -302,8 +324,14 @@ const Tutorial = ({ onClose, onStartGame }) => {
 
         {/* Navigation. Glass back, brass forward. Below 360px Previous keeps
             its name for a screen reader but shows only its chevron, so the
-            brass button can take the row. */}
-        <div className="relative flex items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-4 sm:px-6">
+            brass button can take the row. On a short screen it sticks to the
+            bottom of the screen over the scrolling step, on the panel's own
+            bottom colour (night-900), so it is opaque there and seamless at
+            the panel's foot. A sticky box keeps clear of its scroller's
+            padding, so the offset is minus the scrim's (p-3 / sm:p-6): at 0
+            the row stopped 12-24px short of the edge, with the step scrolling
+            past beneath it. */}
+        <div className="relative flex items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-4 sm:px-6 [@media(max-height:500px)]:sticky [@media(max-height:500px)]:-bottom-3 sm:[@media(max-height:500px)]:-bottom-6 [@media(max-height:500px)]:z-10 [@media(max-height:500px)]:bg-night-900 [@media(max-height:500px)]:py-2.5 [@media(max-height:500px)]:shadow-[0_-16px_24px_-16px_rgba(0,0,0,0.9)]">
           <button
             type="button"
             onClick={prevStep}

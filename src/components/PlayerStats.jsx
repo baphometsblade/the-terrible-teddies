@@ -64,6 +64,19 @@ const PlayerStats = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState('stats');
   const dialogRef = useDialog(onClose);
   const bodyRef = useRef(null);
+  const editButtonRef = useRef(null);
+  const refocusEdit = useRef(false);
+
+  // Saving swaps the rename field back for the name and its pencil, so the
+  // control that had focus is gone and focus fell to <body>; the next Tab
+  // then restarted at the top of the dialog. Hand it to the pencil instead,
+  // the control that opened the field.
+  useEffect(() => {
+    if (!editingName && refocusEdit.current) {
+      refocusEdit.current = false;
+      editButtonRef.current?.focus();
+    }
+  }, [editingName]);
 
   // Each tab opens at its top: both share one scroller, so without this the
   // achievements list opened wherever the statistics had been scrolled to.
@@ -80,6 +93,7 @@ const PlayerStats = ({ onClose }) => {
 
   const handleSaveName = async () => {
     const trimmed = newName.trim();
+    refocusEdit.current = true;
     if (!trimmed) { setEditingName(false); return; }
 
     // Apply locally first so the rename still feels instant.
@@ -118,14 +132,22 @@ const PlayerStats = ({ onClose }) => {
       aria-label="Player stats"
       // The scrim scrolls and the panel centres with my-auto (not
       // items-center: a centred flex item taller than its box overflows at
-      // both ends). Inside the panel only the tab content scrolls.
+      // both ends).
       className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-3 sm:p-6"
     >
+      {/* Capped to the viewport, with the profile and the tabs pinned and only
+          the tab content scrolling, only where the screen is tall enough to
+          spare that. The pinned chrome is about 300px when the profile
+          stacks, so on a short screen — a landscape phone, or a laptop at
+          200% zoom (about 640x400) — a capped panel left the stats a window of
+          0-60px, and the rest could not be scrolled into view at all. Below
+          600px the panel takes its natural height instead and the scrim
+          scrolls the whole of it. */}
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl dialog-panel sm:max-h-[calc(100dvh-3rem)]"
+        className="relative my-auto flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl dialog-panel [@media(min-height:600px)]:max-h-[calc(100dvh-1.5rem)] sm:[@media(min-height:600px)]:max-h-[calc(100dvh-3rem)]"
       >
         {/* Lamplight over the profile. */}
         <div
@@ -162,7 +184,14 @@ const PlayerStats = ({ onClose }) => {
                     className="h-10 min-w-0 flex-1 rounded-xl bg-night-950/70 px-3 font-display text-lg font-bold text-white ring-1 ring-inset ring-white/15 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 focus:ring-brass-300"
                     maxLength={20}
                     autoFocus
-                    onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                    // preventDefault, because saving hands focus to the pencil
+                    // before this key's keypress is dispatched — and a keypress
+                    // Enter on a button clicks it, reopening the field.
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      handleSaveName();
+                    }}
                   />
                   <button
                     type="button"
@@ -178,6 +207,7 @@ const PlayerStats = ({ onClose }) => {
                       twenty-character name on one line beside its pencil. */}
                   <h2 className="min-w-0 break-words font-display text-xl font-extrabold leading-tight text-white min-[360px]:text-2xl">{playerName}</h2>
                   <button
+                    ref={editButtonRef}
                     type="button"
                     onClick={() => setEditingName(true)}
                     aria-label="Edit player name"
@@ -255,7 +285,8 @@ const PlayerStats = ({ onClose }) => {
 
         {/* Focusable, because neither tab's content holds a control: without a
             tab stop a keyboard user could not scroll it. A plain element, so
-            its focus may be an (inset) ring. */}
+            its focus may be an (inset) ring. On a short screen the panel is
+            not capped, so this never overflows and the scrim scrolls instead. */}
         <div
           ref={bodyRef}
           role="region"

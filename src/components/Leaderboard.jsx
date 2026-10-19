@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Crown, Flame, Globe, X, TriangleAlert, RotateCcw } from 'lucide-react';
 import { useGameStore } from '../stores/gameStore';
@@ -186,6 +186,7 @@ const Leaderboard = ({ onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const dialogRef = useDialog(onClose);
+  const listRef = useRef(null);
 
   const playerTrophies = calculateTrophies(totalWins, level, bestWinStreak);
 
@@ -237,6 +238,17 @@ const Leaderboard = ({ onClose }) => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
 
+  // Retry lives in the error panel, which unmounts the moment loading starts,
+  // so the control the player just pressed vanishes under them. Left alone,
+  // focus fell to <body> and the next Tab restarted at the top of the dialog.
+  // It goes to the list's region instead: it outlasts every state, it holds
+  // the announcements below, and a failed retry's new Retry button is the
+  // next stop after it.
+  const retry = () => {
+    listRef.current?.focus({ preventScroll: true });
+    fetchLeaderboard();
+  };
+
   // Calculate player's rank based on real leaderboard data
   // null until a fetch has actually returned rows. The rank is derived from
   // leaderboardData, which starts [] and STAYS [] when the fetch fails — so an
@@ -261,14 +273,21 @@ const Leaderboard = ({ onClose }) => {
       aria-label="Leaderboard"
       // The scrim scrolls and the panel centres with my-auto (not
       // items-center: a centred flex item taller than its box overflows at
-      // both ends). Inside the panel only the list scrolls.
+      // both ends).
       className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-3 sm:p-6"
     >
+      {/* Capped to the viewport, with the header, the scope bar and Your
+          Ranking pinned and only the list scrolling, only where the screen is
+          tall enough to spare that: the pinned chrome is about 236px. On a
+          short screen — a landscape phone, a laptop at 200% zoom — a capped
+          panel left the podium a window of about 40-100px, and none at all at
+          400%. Below 600px the panel takes its natural height instead, so Your
+          Ranking scrolls with the list and the scrim scrolls the whole of it. */}
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl dialog-panel sm:max-h-[calc(100dvh-3rem)]"
+        className="relative my-auto flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl dialog-panel [@media(min-height:600px)]:max-h-[calc(100dvh-1.5rem)] sm:[@media(min-height:600px)]:max-h-[calc(100dvh-3rem)]"
       >
         {/* Amber light over the bar, pooled behind the title. */}
         <div
@@ -334,8 +353,8 @@ const Leaderboard = ({ onClose }) => {
           </span>
         </div>
 
-        {/* Your Position — pinned above the list, so it stays in view while
-            the top fifty scroll beneath it. */}
+        {/* Your Position — pinned above the list (on a tall enough screen),
+            so it stays in view while the top fifty scroll beneath it. */}
         <div className="relative px-4 pb-4 sm:px-6">
           <h3 className="label-caps mb-2 text-brass-300">Your Ranking</h3>
           <LeaderboardRow
@@ -355,6 +374,7 @@ const Leaderboard = ({ onClose }) => {
             tab stop a keyboard user could not scroll the list at all. A plain
             element, so its focus may be an (inset) ring. */}
         <div
+          ref={listRef}
           role="region"
           aria-labelledby="leaderboard-top-players"
           tabIndex={0}
@@ -369,44 +389,62 @@ const Leaderboard = ({ onClose }) => {
                   <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
                 </div>
 
-                {loading && (
-                  <StatePanel>
-                    {/* A CSS spin on the compositor; it stops with the
-                        Animations switch and with reduced motion. */}
-                    <div className="relative mb-4 h-14 w-14" aria-hidden="true">
-                      <div className="absolute inset-0 rounded-full border-2 border-white/10 border-t-brass-300 motion-safe:animate-spin" />
-                      <div className="absolute inset-0 grid place-items-center text-2xl">🧸</div>
-                    </div>
-                    <p className="text-plush-200">Loading leaderboard...</p>
-                  </StatePanel>
-                )}
+                {/* The board's state, spoken. One status region that stays
+                    mounted through loading, empty and loaded, so each change
+                    is announced: the panels used to swap in and out silently,
+                    and a screen-reader player on Close never heard that the
+                    list had loaded, had failed, or had a Retry to offer. The
+                    failure is an alert of its own, outside it, so it is
+                    announced once rather than by both. */}
+                <div role="status">
+                  {loading && (
+                    <StatePanel>
+                      {/* A CSS spin on the compositor; it stops with the
+                          Animations switch and with reduced motion. */}
+                      <div className="relative mb-4 h-14 w-14" aria-hidden="true">
+                        <div className="absolute inset-0 rounded-full border-2 border-white/10 border-t-brass-300 motion-safe:animate-spin" />
+                        <div className="absolute inset-0 grid place-items-center text-2xl">🧸</div>
+                      </div>
+                      <p className="text-plush-200">Loading leaderboard...</p>
+                    </StatePanel>
+                  )}
+
+                  {!loading && !error && leaderboardData.length === 0 && (
+                    <StatePanel>
+                      {/* The icon is passed as a child to keep its lighter
+                          1.8 stroke. */}
+                      <Medallion metal={RARITY_METAL.common} size="md" className="mb-4">
+                        <Trophy className="h-6 w-6 text-plush-300" strokeWidth={1.8} />
+                      </Medallion>
+                      <p className="text-plush-200">No players yet. Be the first!</p>
+                    </StatePanel>
+                  )}
+
+                  {!loading && !error && leaderboardData.length > 0 && (
+                    <span className="sr-only">
+                      {leaderboardData.length} {leaderboardData.length === 1 ? 'player' : 'players'} ranked.
+                    </span>
+                  )}
+                </div>
 
                 {error && (
                   <StatePanel tone="error">
                     <div className="mb-4 grid h-14 w-14 place-items-center rounded-full bg-red-500/10 ring-1 ring-inset ring-red-400/40" aria-hidden="true">
                       <TriangleAlert className="h-6 w-6 text-red-300" strokeWidth={2} />
                     </div>
-                    <p className="font-display text-lg font-bold leading-tight text-red-300">Error loading leaderboard</p>
-                    <p className="mt-1.5 max-w-sm break-words text-sm text-plush-300">{error}</p>
+                    {/* The message alone is the alert; Retry follows it. */}
+                    <div role="alert" className="flex flex-col items-center">
+                      <p className="font-display text-lg font-bold leading-tight text-red-300">Error loading leaderboard</p>
+                      <p className="mt-1.5 max-w-sm break-words text-sm text-plush-300">{error}</p>
+                    </div>
                     <button
                       type="button"
-                      onClick={fetchLeaderboard}
+                      onClick={retry}
                       className={`btn-brass mt-5 inline-flex h-11 items-center gap-2 rounded-xl px-5 font-display font-bold ${FOCUS_OUTLINE}`}
                     >
                       <RotateCcw aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
                       Retry
                     </button>
-                  </StatePanel>
-                )}
-
-                {!loading && !error && leaderboardData.length === 0 && (
-                  <StatePanel>
-                    {/* The icon is passed as a child to keep its lighter
-                        1.8 stroke. */}
-                    <Medallion metal={RARITY_METAL.common} size="md" className="mb-4">
-                      <Trophy className="h-6 w-6 text-plush-300" strokeWidth={1.8} />
-                    </Medallion>
-                    <p className="text-plush-200">No players yet. Be the first!</p>
                   </StatePanel>
                 )}
 
