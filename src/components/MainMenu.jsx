@@ -288,20 +288,25 @@ const MainMenu = ({
             {/* Hovered on a wrapper that holds still, lifted inside it: when the
                 lift moved the hover target itself, a pointer resting on its
                 bottom edge fell off it, it dropped back under the pointer, and
-                the button shook. The press is the brass's own :active. */}
+                the button shook. The lift is a plain wrapper of its own, and
+                the brass inside it is never animated, because the press is
+                the brass's own :active translate and Framer's inline
+                transform on the same element replaced it: the button did
+                not move when pressed. */}
             <motion.div whileHover="lift">
-              <motion.div
-                {...pressable(onStartGame, 'Battle')}
-                data-dest="game"
-                variants={LIFT_2}
-                className="btn-brass sheen relative cursor-pointer rounded-2xl pl-6 pr-5 py-4 flex items-center gap-4 min-w-[260px] [transition-property:filter,box-shadow] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brass-200"
-              >
-                <Swords aria-hidden="true" className="w-9 h-9 shrink-0" strokeWidth={2.2} />
-                <div className="flex-1 text-left">
-                  <div className="font-display font-extrabold text-3xl leading-none">Battle</div>
-                  <div className="text-sm font-semibold mt-1 text-night-950/75">Go make Chuck cry</div>
+              <motion.div variants={LIFT_2} className="rounded-2xl">
+                <div
+                  {...pressable(onStartGame, 'Battle')}
+                  data-dest="game"
+                  className="btn-brass sheen relative cursor-pointer rounded-2xl pl-6 pr-5 py-4 flex items-center gap-4 min-w-[260px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brass-200"
+                >
+                  <Swords aria-hidden="true" className="w-9 h-9 shrink-0" strokeWidth={2.2} />
+                  <div className="flex-1 text-left">
+                    <div className="font-display font-extrabold text-3xl leading-none">Battle</div>
+                    <div className="text-sm font-semibold mt-1 text-night-950/75">Go make Chuck cry</div>
+                  </div>
+                  <ChevronRight aria-hidden="true" className="w-6 h-6 shrink-0" strokeWidth={2.6} />
                 </div>
-                <ChevronRight aria-hidden="true" className="w-6 h-6 shrink-0" strokeWidth={2.6} />
               </motion.div>
             </motion.div>
             {currentWinStreak > 0 && (

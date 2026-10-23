@@ -39,6 +39,29 @@ test.describe('the main menu', () => {
     }
   });
 
+  // The press is the brass's own :active translate. When the hover lift sat
+  // on the same element, Framer's inline transform replaced it, and with a
+  // mouse the Battle button did not move at all when pressed.
+  test('pressing Battle sinks it, under the hover lift', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.reload();
+    const battle = page.getByRole('button', { name: 'Battle', exact: true });
+    await expect(battle).toBeVisible(SLOW);
+    await page.waitForTimeout(1200); // the entrance
+    const rest = await battle.boundingBox();
+    await page.mouse.move(rest.x + rest.width / 2, rest.y + rest.height / 2);
+    await page.waitForTimeout(600); // the lift
+    const lifted = await battle.boundingBox();
+    expect(lifted.y, 'not lifted on hover').toBeLessThan(rest.y);
+    await page.mouse.down();
+    await page.waitForTimeout(400); // the press's transition
+    const pressed = await battle.boundingBox();
+    expect(pressed.y - lifted.y, 'the press does not move it').toBeGreaterThanOrEqual(0.9);
+    // Off the button before letting go, so the press does not start a battle.
+    await page.mouse.move(0, 0);
+    await page.mouse.up();
+  });
+
   test.describe('at 320px', () => {
     test.use({ viewport: { width: 320, height: 640 } });
 
@@ -468,7 +491,10 @@ test.describe('announcements', () => {
 
   // Drawn as the result panel draws a level-up: the level on a medallion and
   // a coin icon, not ⭐ and 🪙.
+  // At 320 too, where "Level-up bonus: +200" wraps: the coin goes with the
+  // amount, not off to the toast's far edge on its own.
   test('a level-up is drawn with the medallion and the coin, not emoji', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
     await bootToMainMenu(page);
     await seedSave(page, { level: 1, xp: 95 });
     await page.reload();
@@ -483,6 +509,22 @@ test.describe('announcements', () => {
     await expect(toast).not.toContainText('🪙');
     await expect(toast.locator('[aria-hidden="true"]').first()).toHaveText('2');
     await expect(toast.locator('svg')).not.toHaveCount(0);
+    const gap = await toast.locator('.toast-description svg').evaluate((coin) => {
+      // The amount's last character, wherever the line broke.
+      const walker = document.createTreeWalker(coin.closest('.toast-description'), NodeFilter.SHOW_TEXT);
+      let amount = null;
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.textContent.includes('+200')) amount = n;
+      const range = document.createRange();
+      const end = amount.textContent.indexOf('+200') + 4;
+      range.setStart(amount, end - 1);
+      range.setEnd(amount, end);
+      const a = range.getBoundingClientRect();
+      const c = coin.getBoundingClientRect();
+      return { across: c.left - a.right, sameLine: c.top < a.bottom && c.bottom > a.top };
+    });
+    expect(gap.sameLine, 'the coin is on the amount\'s line').toBe(true);
+    expect(gap.across, 'the coin sits beside the amount').toBeLessThan(6);
+    expect(gap.across).toBeGreaterThanOrEqual(0);
   });
 
   // "No charge was made — your gems are still waiting in the shop." took
