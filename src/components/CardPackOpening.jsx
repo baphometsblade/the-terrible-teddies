@@ -515,7 +515,7 @@ const CardPackOpening = ({ onClose }) => {
             role="group"
             aria-label="Pack table"
             onKeyDown={onStageKeyDown}
-            className={`relative isolate rounded-2xl border border-white/5 bg-night-950/55 shadow-[inset_0_2px_24px_rgba(0,0,0,0.65)] px-3 max-[359px]:px-2 py-6 sm:p-8 outline-none ${
+            className={`game-surface relative isolate rounded-2xl border border-white/5 bg-night-950/55 shadow-[inset_0_2px_24px_rgba(0,0,0,0.65)] px-3 max-[359px]:px-2 py-6 sm:p-8 outline-none ${
               tearing ? 'overflow-hidden' : ''
             }`}
           >

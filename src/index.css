@@ -70,6 +70,13 @@
   * {
     @apply border-border;
   }
+  /* No double-tap zoom anywhere: on iOS a quick double tap — attacker, then
+     target; End Turn twice — zoomed the page instead of landing both taps.
+     Pinch-zoom is kept. touch-action is intersected down the ancestor chain,
+     so the root's value reaches every element. */
+  html {
+    touch-action: manipulation;
+  }
   body {
     @apply bg-night-900 text-plush-100;
   }
@@ -328,6 +335,21 @@
   box-shadow: 0 0 0 10px rgba(253, 230, 138, 0.025);
   pointer-events: none;
   z-index: -1;
+}
+
+/* A surface played with the fingers — the battle board, the pack reveal.
+   Holding a card down selected its name and, on iOS, opened the Save Image /
+   Copy callout; game surfaces do neither. Anything typed into stays
+   selectable. Uses no pseudo-element, so it shares an element with .grain or
+   any other material. */
+.game-surface {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.game-surface :is(input, textarea, [contenteditable]) {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* The board is a fixed-height screen. The card rows on the table are fitted

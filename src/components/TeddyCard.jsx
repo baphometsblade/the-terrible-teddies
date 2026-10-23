@@ -100,6 +100,11 @@ const getTeddyEmoji = (teddy) => {
 // `loading` is lazy by default, for the long grids; a card that is shown the
 // moment it mounts (a pack reveal's face) passes 'eager'. Decoding is async
 // either way, so a large image never holds up the frame that shows it.
+//
+// The <img> takes no pointer events: it is alt="" decoration and the card
+// around it owns the tap. Hit-testable, a long-press landed on the image and
+// opened the phone's Save Image / Copy callout instead of reaching the card
+// (draggable={false} only stops a desktop drag).
 export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = '', variant = 'thumb', sizes = '144px', loading = 'lazy' }) => {
   // Track which card id failed at which stage (not a boolean): a reused
   // component instance re-rendered with a different teddy must retry that
@@ -131,7 +136,7 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
         loading={loading}
         decoding="async"
         draggable={false}
-        className={imgClassName}
+        className={`pointer-events-none ${imgClassName}`}
         onError={() => setFailed({ id: teddy.id, stage: 'responsive' })}
       />
     );
@@ -146,7 +151,7 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
       loading={loading}
       decoding="async"
       draggable={false}
-      className={imgClassName}
+      className={`pointer-events-none ${imgClassName}`}
       onError={() => setFailed({ id: teddy.id, stage: useFull ? 'full' : 'thumb' })}
     />
   );
@@ -195,12 +200,13 @@ const rulesFor = (teddy) => {
 // the highlight stays in the top band above them. The first version lit the
 // upper half, right through the digits, over faces that started at red-400 and
 // sky-400 — 2.8:1 and 2.1:1 — on every creature in the game.
-const StatBadge = ({ value, title, tone, className }) => (
+const StatBadge = ({ value, title, tone, className, board = false }) => (
   <div
     title={title}
-    className={`absolute bottom-[3px] z-10 w-[22px] h-[22px] rounded-full grid place-items-center
-      text-white text-[11px] font-display font-extrabold leading-none tabular-nums
-      ring-[1.5px] ring-night-950 shadow-[0_2px_4px_rgba(0,0,0,0.6)] ${className}`}
+    className={`absolute bottom-[3px] z-10 rounded-full grid place-items-center
+      text-white font-display font-extrabold leading-none tabular-nums
+      ring-[1.5px] ring-night-950 shadow-[0_2px_4px_rgba(0,0,0,0.6)]
+      ${board ? 'w-[28px] h-[28px] text-[14px]' : 'w-[22px] h-[22px] text-[11px]'} ${className}`}
     style={{
       background: `radial-gradient(ellipse 70% 32% at 50% 0%, rgba(255,255,255,0.4), transparent 100%), ${tone}`,
       textShadow: '0 1px 1px rgba(0,0,0,0.6)',
@@ -214,6 +220,64 @@ const ATTACK_TONE = 'linear-gradient(180deg, #dc2626, #7f1d1d)';
 const HP_TONE = 'linear-gradient(180deg, #0369a1, #0c4a6e)';
 const WOUNDED_TONE = 'linear-gradient(180deg, #b91c1c, #450a0a)';
 
+// A cost an effect has lowered (Swarm, with another creature already down):
+// the same coin struck in green, as Hearthstone marks a discounted cost.
+const COIN_DISCOUNT = 'radial-gradient(circle at 50% 30%, #ecfdf5, #34d399 55%, #047857)';
+
+// Taunt on the table, in the colours of the side it guards: the player's
+// brass, Chuck's crimson (the board's own metals).
+const TAUNT_TONE = {
+  player: {
+    edge: '#fbbf24',
+    glow: 'rgba(251, 191, 36, 0.42)',
+    plate: 'linear-gradient(180deg, #fde68a 0%, #fbbf24 45%, #b45309 100%)',
+    icon: 'text-night-950',
+  },
+  opponent: {
+    edge: '#ef4444',
+    glow: 'rgba(239, 68, 68, 0.45)',
+    plate: 'linear-gradient(180deg, #f87171 0%, #dc2626 50%, #7f1d1d 100%)',
+    icon: 'text-white',
+  },
+};
+
+// A board card's ability, as an icon between its stat badges. The name is
+// sr-only, so a screen reader still hears "Taunt" where the hand card prints
+// it. Taunt's is a metal plate in its side's colours, part of the frame drawn
+// around the card (see TeddyCard): the rule that decides where every attack
+// goes has to read from across the table.
+const AbilityChip = ({ rules, taunt }) => (
+  <div
+    className={`absolute bottom-[5px] left-1/2 -translate-x-1/2 z-10 grid place-items-center rounded-full
+      shadow-[0_2px_4px_rgba(0,0,0,0.6)] ${taunt
+      ? `h-[24px] w-[24px] ring-[1.5px] ring-night-950 ${taunt.icon}`
+      : 'h-[20px] w-[20px] bg-night-950/90 ring-1 ring-brass-300/50 text-brass-300'}`}
+    style={taunt ? { background: taunt.plate } : undefined}
+    title={rules.label}
+  >
+    <rules.Icon aria-hidden="true" className={taunt ? 'h-[14px] w-[14px]' : 'h-[12px] w-[12px]'} strokeWidth={2.5} fill={taunt ? 'currentColor' : 'none'} />
+    <span className="sr-only">{rules.label}</span>
+  </div>
+);
+
+// Rarity at hand size: a small cut gem in the tier's own metal, between the
+// stat badges — the genre's convention (Hearthstone's gem), and legible at any
+// zoom, which the word was not. It used to be the word in 6px small caps,
+// tracked 0.12em, which at 1x rounded apart into "COMM ON" and "E PIC"; at a
+// legible 8px, untracked, "Uncommon" is 43px wide and the gap between the
+// badges is 42. The name is sr-only, so a screen reader still hears it.
+const RarityGem = ({ rarity }) => (
+  <>
+    <span
+      aria-hidden="true"
+      data-rarity-gem={rarity}
+      className="inline-block h-[8px] w-[8px] rotate-45 rounded-[1.5px] ring-1 ring-night-950/80 shadow-[0_1px_2px_rgba(0,0,0,0.7)]"
+      style={{ background: RARITY_METAL[rarity] }}
+    />
+    <span className="sr-only">{rarity}</span>
+  </>
+);
+
 /**
  * The card at hand size (96×144), built around its art.
  *
@@ -225,6 +289,19 @@ const WOUNDED_TONE = 'linear-gradient(180deg, #b91c1c, #450a0a)';
  * name, the rules line and the stats, and a metallic frame per rarity drawn
  * as a gradient border. Epic and legendary carry a slow foil sweep
  * (index.css .foil), which honours the Animations switch.
+ *
+ * `variant="board"` is the same card on the battle table, where the rows are
+ * scaled to fit the felt — to 0.6 and below on a small phone — and the hand
+ * layout's small print fell apart: a 6px rarity line at 3.5px, 11px stats at
+ * 6.5px. On the table the cost has been paid and means nothing, and the
+ * frame's metal already says the rarity, so both go; the stats grow to 28px
+ * badges with 14px numerals; the ability is an icon between them; and Taunt
+ * is a frame treatment rather than a label over the name. `side` picks
+ * Taunt's colours and `tauntActive` whether it is in force (a stealthed card
+ * is not targetable at all, so its Taunt guards nothing).
+ *
+ * No text under 8px is letter-spaced, at any size: tracked 6px small caps
+ * render as "COMM ON" and "E PIC" at 1x, the spacing rounding to whole pixels.
  */
 // `lift` turns off the card's own hover lift, for wrappers that lift the card
 // themselves and draw rings around it (the battle board): two lifts stacked,
@@ -234,10 +311,15 @@ const WOUNDED_TONE = 'linear-gradient(180deg, #b91c1c, #450a0a)';
 // `dimmed` greys the art only — for a card the player does not own yet. The
 // collection used to filter the whole card, which took the name, cost and
 // stats below AA along with the picture.
+// `costDelta` is what an effect does to the printed cost right now (Swarm's
+// -1): the coin shows the cost the player would actually pay, in green when
+// it is lower than printed.
 const TeddyCard = ({
   teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null,
   lift = true, artVariant = 'thumb', artLoading = 'lazy', dimmed = false,
+  variant = 'hand', costDelta = 0, side = 'player', tauntActive,
 }) => {
+  const board = variant === 'board';
   // Use rarity style if available, otherwise fall back to type style
   const rarityStyle = teddy.rarity ? RARITY[teddy.rarity] : null;
   const typeStyle = TYPE_STYLES[teddy.type] || TYPE_STYLES.action;
@@ -251,6 +333,15 @@ const TeddyCard = ({
   const wounded = teddy.currentHp !== undefined && teddy.currentHp < teddy.defense;
   const rules = rulesFor(teddy);
   const foil = teddy.rarity === 'legendary' ? 'foil' : teddy.rarity === 'epic' ? 'foil foil-epic' : '';
+  const cost = teddy.cost !== undefined ? teddy.cost + costDelta : undefined;
+  const discounted = costDelta < 0;
+  const taunt = board && (tauntActive ?? teddy.ability === 'taunt')
+    ? TAUNT_TONE[side] || TAUNT_TONE.player
+    : null;
+  // On the table a creature's ability is the chip between its stats; a trap
+  // keeps its rules line, since what it springs for is the whole card.
+  const abilityChip = board && isAction && rules;
+  const typeLabel = teddy.type ? teddy.type.charAt(0).toUpperCase() + teddy.type.slice(1) : '';
 
   return (
     // whileHover only — no whileTap. Framer Motion makes any element with a
@@ -267,6 +358,8 @@ const TeddyCard = ({
     >
       <div
         data-cosmetic={cosmeticBorder || undefined}
+        data-variant={board ? 'board' : undefined}
+        data-taunt={taunt ? side : undefined}
         className={`
           w-24 h-36 rounded-[10px] cursor-pointer relative overflow-hidden transition-transform duration-100
           ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.97]'}
@@ -297,17 +390,32 @@ const TeddyCard = ({
         {/* Foil sweep (epic+) — above the art, below the text. */}
         {foil && !dimmed && <div className={`absolute inset-0 rounded-[8px] pointer-events-none ${foil}`} />}
 
+        {/* Taunt's frame: a band of its side's metal just inside the rarity
+            frame, lit inward, so a guarded card reads as walled in. Inside
+            the card rather than a ring around it, because the board draws its
+            own rings there (the valid-target red, the selection brass) and a
+            second ring in the same place would hide them. */}
+        {taunt && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 z-[5] rounded-[8px] pointer-events-none"
+            style={{ boxShadow: `inset 0 0 0 2px ${taunt.edge}, inset 0 0 14px 2px ${taunt.glow}` }}
+          />
+        )}
+
         {/* Scrims: a shallow one under the name, a deeper one under the rules
             and stats, so the text stays legible over any art. */}
         <div className="absolute inset-x-0 top-0 h-9 bg-gradient-to-b from-black/80 via-black/45 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-[62px] bg-gradient-to-t from-black/95 via-black/70 to-transparent pointer-events-none" />
+        <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent pointer-events-none ${board ? 'h-[50px]' : 'h-[62px]'}`} />
 
         {/* Name: up to two lines, which the top scrim covers. On one line 38
             of the 64 names were cut to an ellipsis, and the only way to read
-            the rest was a hover tooltip that touch screens never show. */}
-        <div className="absolute top-[3px] left-[5px] right-[22px] z-10">
+            the rest was a hover tooltip that touch screens never show. On the
+            board it runs further right — there is no coin there — and stops
+            short of the corner the target crosshair sits on. */}
+        <div className={`absolute top-[3px] left-[5px] z-10 ${board ? 'right-[16px]' : 'right-[22px]'}`}>
           <span
-            className="block font-display font-extrabold text-[9px] leading-[1.1] text-white line-clamp-2 break-words"
+            className={`block font-display font-extrabold leading-[1.1] text-white line-clamp-2 break-words ${board ? 'text-[10px]' : 'text-[9px]'}`}
             style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}
             title={teddy.name}
           >
@@ -315,51 +423,59 @@ const TeddyCard = ({
           </span>
         </div>
 
-        {/* Cost: a brass coin. */}
-        {teddy.cost !== undefined && (
-          <BrassCoin size="card" className="absolute top-[2px] right-[2px] z-10">
-            {teddy.cost}
+        {/* Cost: a brass coin, green when an effect has lowered it. Not on
+            the table, where it has been paid. */}
+        {!board && cost !== undefined && (
+          <BrassCoin
+            size="card"
+            className="absolute top-[2px] right-[2px] z-10"
+            data-cost=""
+            data-discounted={discounted ? '' : undefined}
+            {...(discounted ? { style: { background: COIN_DISCOUNT }, title: `Discounted from ${teddy.cost}` } : {})}
+          >
+            {cost}
           </BrassCoin>
         )}
 
-        {/* Rules line */}
-        {rules && (
+        {/* Rules line (hand size, and a trap on the table) */}
+        {rules && !abilityChip && (
           <div
-            className="absolute inset-x-[4px] bottom-[34px] z-10 flex items-center justify-center gap-[3px] text-[8px] font-bold leading-none text-plush-100"
+            className={`absolute inset-x-[4px] z-10 flex items-center justify-center gap-[3px] font-bold leading-none text-plush-100 ${board ? 'bottom-[20px] text-[10px]' : 'bottom-[34px] text-[8px]'}`}
             style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}
             title={teddy.ability && teddy.ability !== 'none' ? teddy.ability : undefined}
           >
-            <rules.Icon aria-hidden="true" className="w-[9px] h-[9px] shrink-0 text-brass-300" strokeWidth={2.5} />
+            <rules.Icon aria-hidden="true" className={`shrink-0 text-brass-300 ${board ? 'w-[11px] h-[11px]' : 'w-[9px] h-[9px]'}`} strokeWidth={2.5} />
             <span className="truncate">{rules.label}</span>
           </div>
         )}
+        {abilityChip && <AbilityChip rules={rules} taunt={taunt} />}
 
-        {/* Type · rarity, one line. On a creature the stat badges flank it and
-            leave ~42px, and the type is already implied — only creatures carry
-            stats — so it shows the rarity alone. Traps and specials have the
-            full width and show both. In the display face on purpose: it is
-            the bundled font, so the width is the same on every platform, and
-            in a system sans (the Linux default, for one) UNCOMMON and
-            LEGENDARY ran under the badges. */}
-        <div className={`absolute bottom-[10px] z-10 text-center leading-none whitespace-nowrap font-display ${isAction ? 'inset-x-[25px]' : 'inset-x-[4px]'}`}>
-          {!isAction && (
-            <span className="text-[6px] uppercase tracking-[0.12em] font-bold text-plush-300">{teddy.type}</span>
-          )}
-          {!isAction && teddy.rarity && <span className="text-[6px] text-plush-400 mx-[3px]">·</span>}
-          {teddy.rarity ? (
-            // Tighter on creatures: the badges leave ~46px, and at 0.12em
-            // UNCOMMON and LEGENDARY ran under the HP badge.
-            <span className={`text-[6px] uppercase font-bold ${isAction ? 'tracking-[0.04em]' : 'tracking-[0.12em]'} ${style.text}`}>{teddy.rarity}</span>
-          ) : isAction && (
-            <span className="text-[6px] uppercase tracking-[0.12em] font-bold text-plush-300">{teddy.type}</span>
-          )}
-        </div>
+        {/* Type and rarity, one line, at hand size. On a creature the stat
+            badges flank it and the type is already implied — only creatures
+            carry stats — so it is the rarity gem alone. Traps and specials
+            print their type beside the gem, at 8px and untracked, in the
+            display face on purpose: it is the bundled font, so the width is
+            the same on every platform. On the table there is no rarity at all
+            (the frame's metal says it); a trap keeps its type, the one thing
+            that says it is not a creature. */}
+        {board ? (
+          !isAction && (
+            <div className="absolute inset-x-[4px] bottom-[6px] z-10 text-center leading-none whitespace-nowrap font-display text-[9px] font-bold text-plush-300">
+              {typeLabel}
+            </div>
+          )
+        ) : (
+          <div className={`absolute bottom-[10px] z-10 flex items-center justify-center gap-[5px] leading-none whitespace-nowrap font-display text-[8px] font-bold ${isAction ? 'inset-x-[25px]' : 'inset-x-[4px]'}`}>
+            {(!isAction || !teddy.rarity) && <span className="text-plush-300">{typeLabel}</span>}
+            {teddy.rarity && <RarityGem rarity={teddy.rarity} />}
+          </div>
+        )}
 
         {/* Stats (creatures only): attack bottom-left, HP bottom-right. */}
         {isAction && (
           <>
-            <StatBadge value={teddy.attack} title="Attack" tone={ATTACK_TONE} className="left-[3px]" />
-            <StatBadge value={hp} title="HP" tone={wounded ? WOUNDED_TONE : HP_TONE} className="right-[3px]" />
+            <StatBadge board={board} value={teddy.attack} title="Attack" tone={ATTACK_TONE} className="left-[3px]" />
+            <StatBadge board={board} value={hp} title="HP" tone={wounded ? WOUNDED_TONE : HP_TONE} className="right-[3px]" />
           </>
         )}
       </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext, forwardRef, useImperativeHandle } from 'react';
 import {
-  Coins, Crosshair, Flag, Ghost, Hand, Heart, HeartCrack, Layers, ScrollText, Shield, Smartphone, Star, Trophy, Volume2, VolumeX, Zap,
+  Coins, Crosshair, Flag, Ghost, Hand, Heart, HeartCrack, Layers, ScrollText, Smartphone, Star, Trophy, Volume2, VolumeX, Zap,
 } from 'lucide-react';
 import TeddyCard, { CardBack } from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
@@ -244,40 +244,108 @@ const MomentumMeter = ({ value, glow = true }) => {
 };
 
 // A field row's footprint at zoom 1, which the board scales to fit the felt:
-// a card (h-36) plus its status slot (mt-1.5 + 18px), and per card a w-24
-// slot with the sm gap between them.
-const FIELD_ROW_HEIGHT = 144 + 6 + 18;
+// a card (h-36), and per card a w-24 slot with the sm gap between them. The
+// row used to reserve 24px more under every card for its status chip, which
+// on a 320x640 phone held the rows at 0.59 — names at 5.3px.
+const FIELD_ROW_HEIGHT = 144;
 const FIELD_SLOT = 96;
 const FIELD_GAP = 12;
 
-// The space under a creature for "Warming Up" / "Exhausted", reserved whether
-// or not a chip shows, so a row keeps one height whatever states it shows.
-// The e2e suite counts those words exactly, so each state renders them in a
-// StatusChip and nowhere else.
-const StatusSlot = ({ children }) => (
-  <div className="mt-1.5 flex h-[18px] justify-center">{children}</div>
-);
-const StatusChip = ({ children }) => (
-  <span className="rounded-full bg-night-950/85 ring-1 ring-white/10 px-2 py-0.5 text-[10px] leading-[14px] font-semibold text-plush-200 whitespace-nowrap">
+// The hand at zoom 1: a w-24 card, and the gap-2 after it. A hand wider than
+// the screen overlaps its cards (see fitHand) rather than scrolling, down to a
+// visible strip of HAND_MIN_STRIP — never under 44 screen pixels to tap, and
+// never under 52 layout pixels, where the next card would start covering this
+// one's centre (which is where a click, Playwright's included, lands).
+const HAND_CARD = 96;
+const HAND_STEP = HAND_CARD + 8;
+const HAND_MIN_STRIP = 52;
+const TOUCH_TARGET = 44;
+
+// The hand's fan: each card turns this many degrees (and drops this many
+// pixels) per place from the middle — tighter for a big hand, so the outer
+// corners stay inside the row.
+const fanStep = (count) => (count > 6 ? 2 : 3);
+// How far the outermost card's top corner swings past its own edge, at the
+// 1.08 hover lift: the room the strip keeps at each end so the fan never
+// makes it scroll.
+const fanOverhang = (count) => {
+  const turn = (((count - 1) / 2) * fanStep(count) * Math.PI) / 180;
+  const half = HAND_CARD / 2;
+  return Math.ceil((144 * Math.sin(turn) + half * Math.cos(turn) - half) * 1.08) + 1;
+};
+
+// How long a mouse rests on a card before its enlarged preview opens, and how
+// long a finger holds a table card for the same. The hover delay keeps the
+// preview from flashing up under every card the pointer crosses on its way
+// to a play.
+const PREVIEW_HOVER_MS = 350;
+const LONG_PRESS_MS = 450;
+
+/**
+ * A card at full size, for reading it. Board cards are scaled to fit the felt
+ * (to 0.64 on a 320px phone) and hand cards overlap, so neither can always be
+ * read where it lies. Opened by hovering a card with a mouse, focusing it from
+ * the keyboard, holding a table card down, or the first tap on a hand card on
+ * a touch screen. Drawn at the hand layout (cost, rarity, rules line) with the
+ * ability's rules text beneath it.
+ *
+ * Decorative — aria-hidden and transparent to the pointer — because what it
+ * shows is already the card's own content and the battle log's, and the
+ * card's accessible name stays the control's. `place` is 'right' where the
+ * felt has room beside its rows, else 'centre'.
+ */
+const CardPreview = ({ card, place, zoom, costDelta = 0, cosmeticBorder = null }) => {
+  const rules = card.ability && card.ability !== 'none' ? abilityRules(card.ability) : '';
+  const placement = place === 'right' ? 'right-3 sm:right-5' : 'inset-x-0 justify-center';
+  return (
+    <div
+      aria-hidden="true"
+      data-card-preview={place}
+      className={`pointer-events-none absolute inset-y-0 z-40 flex items-center ${placement}`}
+    >
+      <div className="flex w-48 flex-col items-center gap-2">
+        <div className="rounded-[10px] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.9)]" style={{ zoom }}>
+          <TeddyCard teddy={card} lift={false} cosmeticBorder={cosmeticBorder} costDelta={costDelta} artVariant="responsive" artLoading="eager" />
+        </div>
+        {rules && (
+          <div className="w-full rounded-lg bg-night-950/95 px-3 py-2 text-center ring-1 ring-white/10 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.8)]">
+            <div className="label-caps text-brass-300">{card.ability}</div>
+            <div className="mt-0.5 text-xs leading-snug text-plush-100">{rules}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// What a raised hand card says it will do on a second tap (touch screens,
+// where the first tap only raises it). Not a control: the card is.
+const RaisedHint = ({ children }) => (
+  <span
+    aria-hidden="true"
+    className="pointer-events-none absolute -top-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-night-950/95 px-2 py-0.5 text-[10px] font-bold leading-[14px] text-brass-200 ring-1 ring-brass-300/60 shadow-[0_4px_10px_-2px_rgba(0,0,0,0.8)]"
+  >
     {children}
   </span>
 );
 
-const StealthBand = () => (
-  <div className="absolute inset-x-0 top-[22px] z-10 flex items-center justify-center gap-1 bg-purple-700/90 py-0.5 text-[9px] font-bold tracking-[0.12em] text-white">
-    <Ghost className="h-2.5 w-2.5" aria-hidden="true" />
-    STEALTH
+// "Warming Up" / "Exhausted", across the lower part of the card, above its
+// stats — over the art rather than in a slot reserved below it. Outside the
+// card's own dimming, so it keeps its contrast on a resting card. The e2e
+// suite counts those words exactly, so each state renders them in a
+// StatusChip and nowhere else.
+const StatusChip = ({ children }) => (
+  <div className="pointer-events-none absolute inset-x-0 bottom-[37px] z-10 flex justify-center">
+    <span className="rounded-full bg-night-950/90 ring-1 ring-white/15 px-2 py-0.5 text-[10px] leading-[14px] font-semibold text-plush-100 whitespace-nowrap shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
+      {children}
+    </span>
   </div>
 );
 
-const TauntTag = ({ tone }) => (
-  <div
-    className={`absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-[0.12em] shadow-[0_3px_8px_-2px_rgba(0,0,0,0.8)] ${tone === 'opponent'
-      ? 'bg-red-700 text-white'
-      : 'bg-brass-300 text-night-950'}`}
-  >
-    <Shield className="h-2.5 w-2.5" aria-hidden="true" />
-    TAUNT
+const StealthBand = () => (
+  <div className="absolute inset-x-0 top-[27px] z-10 flex items-center justify-center gap-1 bg-purple-700/90 py-0.5 text-[9px] font-bold tracking-[0.12em] text-white">
+    <Ghost className="h-2.5 w-2.5" aria-hidden="true" />
+    STEALTH
   </div>
 );
 
@@ -1522,9 +1590,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // not see: on short phones the player's row spilled out of the felt onto
   // the turn controls and took their taps. So measure the felt and scale the
   // rows to what fits (CSS zoom, so the layout scales with them), on resize
-  // only. Rows reserve a status chip's height whether or not one is showing,
-  // so a "Warming Up" appearing never rescales the board.
+  // only. A creature's status chip sits over the card, so a "Warming Up"
+  // appearing never rescales the board.
+  //
+  // The same measurement sizes the card preview (as large as the felt allows,
+  // up to twice hand size) and says whether it fits beside the rows, where it
+  // covers none of them, or has to sit over the middle of the table.
   const [fieldZoom, setFieldZoom] = useState(1);
+  const [previewLayout, setPreviewLayout] = useState({ zoom: 2, side: false });
   const rowSlots = Math.max(1, playerField.length, opponentField.length + (directTargets ? 1 : 0));
   const rowSlotsRef = useRef(rowSlots);
   rowSlotsRef.current = rowSlots;
@@ -1534,12 +1607,19 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     if (!felt || !centre) return;
     const cs = getComputedStyle(felt);
     const px = (v) => parseFloat(v) || 0;
-    const forRows = felt.clientHeight - px(cs.paddingTop) - px(cs.paddingBottom)
-      - centre.offsetHeight - 2 * px(cs.rowGap);
+    const inner = felt.clientHeight - px(cs.paddingTop) - px(cs.paddingBottom);
+    const forRows = inner - centre.offsetHeight - 2 * px(cs.rowGap);
     const width = felt.clientWidth - px(cs.paddingLeft) - px(cs.paddingRight);
     const n = rowSlotsRef.current;
-    const fit = Math.min(1, forRows / (2 * FIELD_ROW_HEIGHT), width / (n * FIELD_SLOT + (n - 1) * FIELD_GAP));
-    setFieldZoom(Math.max(0.45, Math.floor(fit * 100) / 100));
+    const rowWidth = n * FIELD_SLOT + (n - 1) * FIELD_GAP;
+    const fit = Math.min(1, forRows / (2 * FIELD_ROW_HEIGHT), width / rowWidth);
+    const zoom = Math.max(0.45, Math.floor(fit * 100) / 100);
+    setFieldZoom(zoom);
+    // The preview leaves ~80px under the card for its rules caption.
+    const previewZoom = Math.max(1.25, Math.min(2, Math.floor(((inner - 80) / 144) * 100) / 100));
+    const previewWidth = Math.max(96 * previewZoom, 192);
+    const side = (width - rowWidth * zoom) / 2 >= previewWidth + 24;
+    setPreviewLayout((p) => (p.zoom === previewZoom && p.side === side ? p : { zoom: previewZoom, side }));
     // Where the centre line really is, for the narrow-screen toast placement
     // in index.css (toasts are fixed, so viewport coordinates are right).
     const r = centre.getBoundingClientRect();
@@ -1557,6 +1637,188 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   }, [fitField]);
   useEffect(() => { fitField(); }, [rowSlots, fitField]);
 
+  // Fit the hand to the screen the way the rows are fitted to the felt. At
+  // full spacing an opening hand of six is 616px wide: on a 390px phone the
+  // fourth card was cut at the edge and the fifth and sixth were off screen,
+  // with nothing to say the strip scrolled — and the card just drawn, which
+  // joins at the end, was the one you could not see. Now the cards overlap
+  // just enough to fit, as every mobile card game's hand does, each keeping
+  // a visible strip; only past HAND_MIN_STRIP (a big hand on a 320px phone)
+  // does the strip scroll, with its edges faded to say so. Measured in the
+  // strip's own zoomed units (the hand steps down with .board-zoom), so a
+  // strip's on-screen width is checked against TOUCH_TARGET through the zoom.
+  const handScrollerRef = useRef(null);
+  const [handFit, setHandFit] = useState({ step: HAND_STEP, overflow: false });
+  const handCountRef = useRef(playerHand.length);
+  handCountRef.current = playerHand.length;
+  const fitHand = useCallback(() => {
+    const el = handScrollerRef.current;
+    // Not laid out yet (or not at all, as in jsdom): nothing to fit.
+    if (!el || !el.clientWidth) return;
+    const cs = getComputedStyle(el);
+    const px = (v) => parseFloat(v) || 0;
+    const scale = parseFloat(cs.zoom) || 1;
+    const n = handCountRef.current;
+    const edge = Math.max(px(cs.paddingLeft), fanOverhang(n));
+    const available = el.clientWidth - 2 * edge;
+    const minStrip = Math.max(HAND_MIN_STRIP, Math.ceil(TOUCH_TARGET / scale));
+    let step = HAND_STEP;
+    if (n > 1 && HAND_CARD + (n - 1) * HAND_STEP > available) {
+      step = Math.max(minStrip, Math.floor((available - HAND_CARD) / (n - 1)));
+    }
+    const overflow = n > 1 && HAND_CARD + (n - 1) * step > available + 0.5;
+    setHandFit((f) => (f.step === step && f.overflow === overflow ? f : { step, overflow }));
+  }, []);
+  useEffect(() => {
+    const el = handScrollerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => fitHand());
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fitHand]);
+  useEffect(() => { fitHand(); }, [playerHand.length, fitHand]);
+  // A drawn card joins the end of the hand. When the strip still has to
+  // scroll, bring it into view rather than leave the news off screen.
+  const prevHandCountRef = useRef(playerHand.length);
+  const reducedMotion = useReducedMotionConfig();
+  useEffect(() => {
+    const grew = playerHand.length > prevHandCountRef.current;
+    prevHandCountRef.current = playerHand.length;
+    const el = handScrollerRef.current;
+    if (!grew || !handFit.overflow || !el) return;
+    el.scrollTo?.({ left: el.scrollWidth, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }, [playerHand.length, handFit.overflow, reducedMotion]);
+  const handOverlap = HAND_STEP - handFit.step;
+
+  // Reading a card: the enlarged preview (CardPreview). `preview` is the card
+  // a mouse rests on, the keyboard has focused, or a finger holds down on the
+  // table: { id, from: 'hand' | 'player' | 'opponent' }.
+  // `raisedId` is the hand card a first tap raised on a touch screen — there
+  // the first tap inspects and the second plays, because overlapped cards
+  // hide their cost coins and a tap that played at once left no way to read
+  // a card before committing it. A mouse click, Enter and Space still play at
+  // once, and the control's name is still "Play <name>".
+  const [preview, setPreview] = useState(null);
+  const [raisedId, setRaisedId] = useState(null);
+  const previewTimerRef = useRef(null);
+  const lastPointerRef = useRef('mouse');
+  const longPressRef = useRef({ timer: null, fired: false, x: 0, y: 0 });
+  useEffect(() => () => {
+    clearTimeout(previewTimerRef.current);
+    clearTimeout(longPressRef.current.timer);
+  }, []);
+  const showPreview = useCallback((p, delay = 0) => {
+    clearTimeout(previewTimerRef.current);
+    if (delay) previewTimerRef.current = setTimeout(() => setPreview(p), delay);
+    else setPreview(p);
+  }, []);
+  const hidePreview = useCallback((id) => {
+    clearTimeout(previewTimerRef.current);
+    setPreview((cur) => (cur && (id == null || cur.id === id) ? null : cur));
+  }, []);
+  // Any tap outside the raised card lowers it (a tap on another hand card
+  // then raises that one).
+  useEffect(() => {
+    if (!raisedId) return undefined;
+    const onDown = (e) => {
+      if (e.target instanceof Element && e.target.closest(`[data-hand-id="${raisedId}"]`)) return;
+      setRaisedId(null);
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    return () => document.removeEventListener('pointerdown', onDown, true);
+  }, [raisedId]);
+  useEffect(() => {
+    if (gameOver) {
+      setRaisedId(null);
+      setPreview(null);
+    }
+  }, [gameOver]);
+
+  // The pointer and focus handlers that open a card's preview. `longPress`
+  // (table cards) opens it while a finger holds the card down, and swallows
+  // the click that ends the hold, so reading Chuck's card mid-targeting does
+  // not also attack it.
+  const inspectHandlers = (p, { longPress = false } = {}) => {
+    const endHold = () => {
+      const lp = longPressRef.current;
+      clearTimeout(lp.timer);
+      lp.timer = null;
+      if (lp.fired) hidePreview(p.id);
+    };
+    return {
+      onPointerDown: (e) => {
+        lastPointerRef.current = e.pointerType;
+        const lp = longPressRef.current;
+        lp.fired = false;
+        if (!longPress || e.pointerType !== 'touch') return;
+        clearTimeout(lp.timer);
+        lp.x = e.clientX;
+        lp.y = e.clientY;
+        lp.timer = setTimeout(() => {
+          lp.timer = null;
+          lp.fired = true;
+          showPreview(p);
+        }, LONG_PRESS_MS);
+      },
+      onPointerMove: longPress ? (e) => {
+        const lp = longPressRef.current;
+        if (lp.timer && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) {
+          clearTimeout(lp.timer);
+          lp.timer = null;
+        }
+      } : undefined,
+      onPointerUp: longPress ? endHold : undefined,
+      onPointerCancel: longPress ? endHold : undefined,
+      onClickCapture: longPress ? (e) => {
+        if (!longPressRef.current.fired) return;
+        longPressRef.current.fired = false;
+        e.stopPropagation();
+        e.preventDefault();
+      } : undefined,
+      // A held finger opens the phone's own menu (Android's contextmenu) on
+      // top of the preview otherwise.
+      onContextMenu: (e) => { if (lastPointerRef.current === 'touch') e.preventDefault(); },
+      onPointerEnter: (e) => { if (e.pointerType === 'mouse') showPreview(p, PREVIEW_HOVER_MS); },
+      onPointerLeave: (e) => { if (e.pointerType === 'mouse') hidePreview(p.id); },
+      // Keyboard focus only: a click focuses a card too, and the preview
+      // would then outstay the mouse.
+      onFocus: (e) => {
+        let keyboard = false;
+        try { keyboard = e.target === e.currentTarget && e.target.matches(':focus-visible'); } catch { /* old engine */ }
+        if (keyboard) showPreview(p);
+      },
+      onBlur: () => hidePreview(p.id),
+    };
+  };
+
+  // A hand card's press. With a finger, the first tap raises the card (and
+  // opens its preview) and only a tap on the raised card plays it.
+  const pressHandCard = (card, playable) => (e) => {
+    const touch = e?.type === 'click' && lastPointerRef.current === 'touch';
+    if (touch && raisedId !== card.instanceId) {
+      hidePreview();
+      setRaisedId(card.instanceId);
+      return;
+    }
+    setRaisedId(null);
+    if (playable) playCard(card);
+  };
+
+  // The card the preview shows, looked up live, so a card that has just been
+  // played or has died takes its preview with it.
+  const raisedInHand = raisedId != null && playerHand.some((c) => c.instanceId === raisedId);
+  const previewTarget = raisedInHand
+    ? { id: raisedId, from: 'hand' }
+    : preview;
+  const previewPool = { hand: playerHand, player: playerField, opponent: opponentField };
+  const previewCard = previewTarget
+    ? previewPool[previewTarget.from]?.find((c) => c.instanceId === previewTarget.id) ?? null
+    : null;
+  // Beside the rows on the right where the felt has the room (fitField), so
+  // it covers no card; the felt's left corners are where the speech bubbles
+  // sit. Over the middle of the table otherwise.
+  const previewPlace = previewLayout.side ? 'right' : 'centre';
+
   return (
     // Exactly the viewport's height on touch screens. With a mouse it never
     // goes below 640px and the page scrolls instead: zooming the browser in
@@ -1564,7 +1826,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // making the cards smaller — the opposite of what zooming in asked for.
     // (The height must stay definite either way; the felt's fit is measured
     // from it.)
-    <div className="relative w-full h-[100dvh] [@media(pointer:fine)]:h-[max(100dvh,40rem)] bar-backdrop overflow-hidden">
+    <div className="game-surface relative w-full h-[100dvh] [@media(pointer:fine)]:h-[max(100dvh,40rem)] bar-backdrop overflow-hidden">
       <FxContext.Provider value={fx}>
       <div className="absolute inset-0 grain pointer-events-none" aria-hidden="true" />
       {/* A hit to your face reddens the edges of the screen for a moment. */}
@@ -1811,6 +2073,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       data-field="opponent"
                       className={`relative rounded-[10px] ${FOCUS_OUTLINE} ${hittable ? 'cursor-crosshair' : ''}`}
                       press={pressable(() => attackTarget(card), `Attack ${card.name}`, targetingMode)}
+                      {...inspectHandlers({ id: card.instanceId, from: 'opponent' }, { longPress: true })}
                     >
                       <div
                         data-target-ring={hittable ? '' : undefined}
@@ -1819,20 +2082,20 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                         {/* Only the card dims for stealth; the band and tags
                             stay at full strength so they keep their contrast. */}
                         <div className={card.stealthActive ? 'opacity-50' : ''}>
-                          <TeddyCard teddy={card} lift={false} />
+                          <TeddyCard teddy={card} lift={false} variant="board" side="opponent" tauntActive={card.ability === 'taunt' && !card.stealthActive} />
                         </div>
                         {card.stealthActive && <StealthBand />}
-                        {card.ability === 'taunt' && !card.stealthActive && <TauntTag tone="opponent" />}
+                        {/* Tells the player which of Chuck's teddies can
+                            actually swing at them next turn — without it,
+                            summoning sickness is only legible on their own
+                            half of the table. */}
+                        {card.summoningSick && <StatusChip>Warming Up</StatusChip>}
                         {hittable && (
                           <span data-target-mark="" className="absolute -top-2.5 -right-2.5 z-20 grid h-7 w-7 place-items-center rounded-full bg-red-600 ring-2 ring-red-200 shadow-lg" aria-hidden="true">
                             <Crosshair className="h-4 w-4 text-white" />
                           </span>
                         )}
                       </div>
-                      {/* Tells the player which of Chuck's teddies can actually swing
-                          at them next turn — without it, summoning sickness is only
-                          legible on their own half of the table. */}
-                      <StatusSlot>{card.summoningSick && <StatusChip>Warming Up</StatusChip>}</StatusSlot>
                     </FieldSlot>
                   );
                 })}
@@ -1973,6 +2236,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                         ? pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`)
                         : (playerMove ? { onClick: () => selectCardForAttack(card) } : {})}
                       data-field="player"
+                      {...inspectHandlers({ id: card.instanceId, from: 'player' }, { longPress: true })}
                     >
                       <div
                         data-target-ring={selected || ready ? '' : undefined}
@@ -1981,15 +2245,12 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                           : ready ? 'shadow-[0_0_18px_2px_rgba(52,211,153,0.5)]' : ''}`}
                       >
                         <div className={resting ? 'opacity-60' : ''}>
-                          <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} />
+                          <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} variant="board" side="player" tauntActive={card.ability === 'taunt' && !card.stealthActive} />
                         </div>
                         {card.stealthActive && <StealthBand />}
-                        {card.ability === 'taunt' && !card.stealthActive && <TauntTag tone="player" />}
-                      </div>
-                      <StatusSlot>
                         {card.hasAttacked && <StatusChip>Exhausted</StatusChip>}
                         {card.summoningSick && !card.hasAttacked && <StatusChip>Warming Up</StatusChip>}
-                      </StatusSlot>
+                      </div>
                     </FieldSlot>
                   );
                 })}
@@ -2068,6 +2329,17 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   </div>
                 )}
               </AnimatePresence>
+
+              {/* The card being read, at full size (see CardPreview). */}
+              {previewCard && !gameOver && (
+                <CardPreview
+                  card={previewCard}
+                  place={previewPlace}
+                  zoom={previewLayout.zoom}
+                  costDelta={previewTarget.from === 'hand' ? effectiveCost(previewCard, playerField) - previewCard.cost : 0}
+                  cosmeticBorder={previewTarget.from === 'opponent' ? null : cosmeticBorder}
+                />
+              )}
             </div>
           </div>
 
@@ -2186,31 +2458,47 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
           </div>
         </div>
 
-        {/* Player's hand — scrolls horizontally so a full hand stays reachable
-            on phones. The cards sit in a w-max mx-auto strip rather than using
-            justify-center on the scroller: centred overflow spills to both
-            sides and the left side cannot be scrolled to, which hid the first
-            cards of a big hand. The padding is the room a hovered card lifts
-            into and the fan's outer corners swing into; overflow-y is hidden so
-            the lift never summons a vertical scrollbar. */}
-        <div className="board-zoom shrink-0 max-w-full overflow-x-auto overflow-y-hidden px-6 pt-11 pb-6">
+        {/* Player's hand. The cards overlap to fit the screen (see fitHand),
+            and the strip only scrolls once they cannot overlap any further,
+            with its edges faded then to say there is more. The cards sit in a
+            w-max mx-auto strip rather than using justify-center on the
+            scroller: centred overflow spills to both sides and the left side
+            cannot be scrolled to, which hid the first cards of a big hand.
+            The padding is the room a hovered or raised card lifts into and
+            the fan's outer corners swing into; overflow-y is hidden so the
+            lift never summons a vertical scrollbar. Later cards lie over
+            earlier ones (zIndex), so every card keeps its left strip — and
+            its name — in view. */}
+        <div
+          ref={handScrollerRef}
+          data-hand-overflow={handFit.overflow ? '' : undefined}
+          className={`board-zoom shrink-0 max-w-full overflow-x-auto overflow-y-hidden px-3 sm:px-6 pt-11 pb-6 ${handFit.overflow
+            ? '[mask-image:linear-gradient(90deg,transparent,#000_16px,#000_calc(100%-16px),transparent)]'
+            : ''}`}
+        >
           <div className="mx-auto flex w-max gap-2">
             <AnimatePresence>
               {playerHand.map((card, index) => {
                 const mid = (playerHand.length - 1) / 2;
-                // Tighter fan for big hands, so the outer cards' corners
-                // stay inside the row.
-                const step = playerHand.length > 6 ? 2 : 3;
-                const affordable = playerEnergy >= effectiveCost(card, playerField);
+                const step = fanStep(playerHand.length);
+                // One figure for the coin, the dimming and playCard's own
+                // check (Swarm's discount), so the three always agree.
+                const cost = effectiveCost(card, playerField);
+                const affordable = playerEnergy >= cost;
                 const playable = playerMove;
                 // The glow marks a card worth playing now; a legal play that
                 // would do nothing (a heal at full HP) stays bright but unlit.
                 const lit = playable && isUsefulPlay(card, moveState);
+                const raised = raisedId === card.instanceId;
                 return (
                   <HandSlot
                     key={card.instanceId}
+                    data-hand-id={card.instanceId}
+                    data-raised={raised ? '' : undefined}
                     initial={{ y: 50, opacity: 0 }}
-                    animate={{ y: Math.abs(index - mid) * step, opacity: 1, rotate: (index - mid) * step }}
+                    animate={raised
+                      ? { y: -24, scale: 1.08, opacity: 1, rotate: 0, zIndex: 20 }
+                      : { y: Math.abs(index - mid) * step, scale: 1, opacity: 1, rotate: (index - mid) * step, zIndex: index }}
                     exit={{ y: 50, opacity: 0 }}
                     whileHover={{ y: -20, scale: 1.08, zIndex: 10 }}
                     // The same lift for the keyboard (Framer Motion's focus
@@ -2218,13 +2506,21 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                     // and a brass outline rather than the browser's default
                     // ring, which read as a stray line on the dark board.
                     whileFocus={{ y: -20, scale: 1.08, zIndex: 10 }}
-                    style={{ transformOrigin: 'bottom center' }}
-                    className={`shrink-0 rounded-[10px] ${FOCUS_OUTLINE} ${playable ? 'cursor-pointer' : ''} ${!affordable
+                    // The overlap is a margin, not a transform: Framer Motion
+                    // owns this element's transform (the fan and the lift).
+                    style={{ transformOrigin: 'bottom center', marginLeft: index ? -handOverlap : 0 }}
+                    className={`relative shrink-0 rounded-[10px] ${FOCUS_OUTLINE} ${playable ? 'cursor-pointer' : ''} ${!affordable
                       ? 'opacity-50 saturate-50'
                       : lit ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
-                    press={pressable(() => playCard(card), `Play ${card.name}`, playable)}
+                    {...inspectHandlers({ id: card.instanceId, from: 'hand' })}
+                    press={playable
+                      ? pressable(pressHandCard(card, true), `Play ${card.name}`)
+                      : { onClick: pressHandCard(card, false) }}
                   >
-                    <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} />
+                    <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} costDelta={cost - card.cost} />
+                    {raised && playable && (
+                      <RaisedHint>{affordable ? 'Tap again to play' : `Needs ${cost} energy`}</RaisedHint>
+                    )}
                   </HandSlot>
                 );
               })}
