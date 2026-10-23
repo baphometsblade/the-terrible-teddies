@@ -236,6 +236,20 @@ test('battle pass premium confirm has no WCAG 2.1 A/AA violations', async ({ pag
   await expectNoViolations(page, 'battle pass premium confirm');
 });
 
+// The stub serves an empty board, so the audit above only ever saw the empty
+// state. A full one has the podium, fifty rows and a "50+" rank to check.
+test('leaderboard with a full board has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  const rows = Array.from({ length: 50 }, (_, i) => ({
+    username: i === 0 ? 'GrizzlyAdamsFamily' : `Rival${i + 1}`,
+    wins: 200 - i * 3, losses: 10, experience: 4000 - i * 50, best_win_streak: i < 4 ? 9 - i : 2,
+  }));
+  await page.route('**/rest/v1/leaderboard**', (route) => route.fulfill({ json: rows }));
+  await page.getByRole('button', { name: 'Rankings', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Leaderboard' });
+  await expect(dialog.getByText('Outside the top 50')).toBeAttached(SLOW);
+  await expectNoViolations(page, 'leaderboard, full board');
+});
+
 // Daily Rewards auto-opens on the first launch of each day, so for most
 // players it is the first dialog they ever see — and it was the one dialog
 // this suite never audited (the session seed marks today as already visited,

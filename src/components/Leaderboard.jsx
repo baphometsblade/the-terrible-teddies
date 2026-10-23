@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Fragment, useState, useEffect, useCallback, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Trophy, Crown, Flame, Globe, X, TriangleAlert, RotateCcw } from 'lucide-react';
 import { useGameStore } from '../stores/gameStore';
 import { supabase } from '../lib/supabase';
@@ -17,6 +17,36 @@ const calculateTrophies = (wins, level, bestStreak) => {
 const calculateLevel = (experience) => {
   return Math.floor((experience || 0) / 100) + 1;
 };
+
+// How many rows the board asks for. The view behind it is ordered by wins and
+// re-ranked here by trophies, so these are not "the top 50" in trophies, and
+// a player below every one of them could be anywhere past 50th.
+export const BOARD_SIZE = 50;
+
+/**
+ * The player's place on the board in hand: a number where the rows support
+ * one, and "50+" where they cannot. Counting the rows with more trophies and
+ * adding one is only a rank while the player lands among those rows; below a
+ * full board's last row it printed #51 for everyone, whatever their real
+ * position (the board stops at 50, so it can never say more). A server-side
+ * rank is what would turn "50+" into a number.
+ */
+export const placeOnBoard = (rows, trophies) => {
+  const above = rows.filter((p) => p.trophies > trophies).length;
+  return rows.length >= BOARD_SIZE && above === rows.length ? `${BOARD_SIZE}+` : above + 1;
+};
+
+/**
+ * A handle split where it could wrap: between the words of a run-together
+ * name (GrizzlyAdamsFamily, QABear) and after a separator (Player_ab12).
+ * The podium column is under 100px on a phone, and break-words alone broke
+ * "GrizzlyAdamsF / amily" at whatever letter met the edge. Real <wbr>s
+ * rather than zero-width spaces, which would ride along into copied text.
+ */
+export const nameBreaks = (name) => name.split(/(?<=[a-z])(?=[A-Z0-9])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[_.-])/);
+const BreakableName = ({ name }) => nameBreaks(name).map((part, i) => (
+  <Fragment key={i}>{i > 0 && <wbr />}{part}</Fragment>
+));
 
 // The podium's three metals: gold is the game's brass (the legendary frame),
 // silver the pewter of a common one, and bronze in the same light-dark-light
@@ -101,9 +131,10 @@ const PodiumPlace = ({ player }) => {
           </div>
         </div>
         {/* Up to three lines: a twenty-character name in a 320px podium
-            column needs them. */}
+            column needs them. It wraps between its words where it has any
+            (BreakableName); break-words is only for one unbroken run. */}
         <div className="mt-2 line-clamp-3 w-full break-words font-display text-[13px] font-bold leading-tight text-white min-[360px]:text-sm sm:text-base">
-          {player.name}
+          <BreakableName name={player.name} />
         </div>
         <Trophies value={player.trophies} className={`mt-1 text-sm ${p.tone}`} />
         {/* Stacked on a phone, where a podium column is under 100px wide. */}
@@ -142,8 +173,12 @@ const LeaderboardRow = ({ player, isPlayer = false }) => (
         ? 'bg-brass-400/15 text-brass-200 ring-1 ring-inset ring-brass-300/40'
         : 'bg-white/5 text-plush-200 ring-1 ring-inset ring-white/10'}`}
     >
-      {/* No rank until the board has loaded: a bare dash, not "#—". */}
-      {typeof player.rank === 'number' ? `#${player.rank}` : player.rank}
+      {/* No rank until the board has loaded: a bare dash, not "#—". Past
+          the board, "50+" (see placeOnBoard), said in full for a screen
+          reader. */}
+      {typeof player.rank === 'number' ? `#${player.rank}` : player.rank === `${BOARD_SIZE}+` ? (
+        <span><span aria-hidden="true">{player.rank}</span><span className="sr-only">Outside the top {BOARD_SIZE}</span></span>
+      ) : player.rank}
     </div>
 
     <div className="min-w-0 flex-1">
@@ -180,8 +215,7 @@ const StatePanel = ({ tone = 'neutral', children }) => (
 );
 
 const Leaderboard = ({ onClose }) => {
-  const { playerName, level, totalWins, currentWinStreak, bestWinStreak } = useGameStore();
-  const [activeTab, setActiveTab] = useState('global');
+  const { playerName, level, totalWins, bestWinStreak } = useGameStore();
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -201,7 +235,7 @@ const Leaderboard = ({ onClose }) => {
         const { data, error: fetchError } = await supabase
           .from('leaderboard')
           .select('username, wins, losses, experience, best_win_streak')
-          .limit(50);
+          .limit(BOARD_SIZE);
 
         if (fetchError) throw fetchError;
 
@@ -257,9 +291,7 @@ const Leaderboard = ({ onClose }) => {
   // list beneath it was showing a network error. The list was gated on
   // loading/error; this was not.
   const rankKnown = !loading && !error && leaderboardData.length > 0;
-  const playerRank = rankKnown
-    ? leaderboardData.filter(p => p.trophies > playerTrophies).length + 1
-    : null;
+  const playerRank = rankKnown ? placeOnBoard(leaderboardData, playerTrophies) : null;
 
   // The top three stand on the podium; everyone else is a row beneath it.
   const podium = leaderboardData.slice(0, 3);
@@ -298,9 +330,21 @@ const Leaderboard = ({ onClose }) => {
         {/* Header */}
         <div className="relative flex items-center gap-3 px-4 pb-4 pt-4 sm:px-6 sm:pt-5">
           <Medallion icon={Trophy} />
-          <h2 className="min-w-0 flex-1 font-display text-2xl font-extrabold leading-none text-brass-gradient sm:text-3xl">
-            Leaderboard
-          </h2>
+          {/* Which board this is, as a caption: there is one scope, so it is
+              a fact about the board, not a choice. It used to be a segmented
+              control holding a single always-pressed "Global" key (a tab
+              stop that did nothing) beside an "All Time" pill styled like a
+              filter. Bring the control back when a second scope exists. */}
+          <div className="min-w-0 flex-1">
+            <h2 className="font-display text-2xl font-extrabold leading-none text-brass-gradient sm:text-3xl">
+              Leaderboard
+            </h2>
+            {/* One line: at 320 the globe gives way, or "All time" wrapped. */}
+            <p className="label-caps mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-plush-300">
+              <Globe aria-hidden="true" className="h-3.5 w-3.5 shrink-0 max-[359px]:hidden" strokeWidth={2.2} />
+              Global · All time
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -311,48 +355,21 @@ const Leaderboard = ({ onClose }) => {
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="relative flex items-center justify-between gap-3 px-4 pb-4 sm:px-6">
-          {/* No 'Friends' tab: it rendered a "Coming Soon!" panel with a
-              disabled "Connect Social Account" button, promising social login
-              that has no implementation behind it. A tab that costs a click and
-              delivers nothing is worse than no tab — restore it alongside the
-              real friendships/RLS work, not before. */}
-          {/* No 'Rewards' tab either, and for the same reason. It rendered a
-              "Season End Rewards" table promising 500 gems / 5,000 coins / 10
-              packs for finishing first, down to 25/250/1 for the top 100, next
-              to a live countdown of days left in the season. RANK_REWARDS was
-              referenced by exactly one thing: the map that drew it. No grant
-              exists anywhere — not in the store, not in a migration, not in
-              either edge function — so the season ends and nobody is ever paid.
-              Advertising a payout with no code behind it is the same defect as
-              the Friends tab above, only more expensive for the player, who
-              grinds for it. Restore it with the payout, not before. */}
-          {/* The scope bar: the segmented control's recessed well and raised
-              glass key (.seg-well / .seg-on / .seg-off). */}
-          <div className="seg-well flex gap-1">
-            {[
-              { id: 'global', label: 'Global', icon: Globe },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                aria-pressed={activeTab === tab.id}
-                className={`inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 text-[13px] font-semibold transition-colors ${FOCUS_OUTLINE} ${
-                  activeTab === tab.id ? 'seg-on' : 'seg-off'
-                }`}
-              >
-                <tab.icon aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          <span className="label-caps whitespace-nowrap rounded-full bg-white/5 px-3 py-1.5 text-plush-200 ring-1 ring-inset ring-white/10">
-            All Time
-          </span>
-        </div>
-
+        {/* No 'Friends' tab: it rendered a "Coming Soon!" panel with a
+            disabled "Connect Social Account" button, promising social login
+            that has no implementation behind it. A tab that costs a click and
+            delivers nothing is worse than no tab — restore it alongside the
+            real friendships/RLS work, not before. */}
+        {/* No 'Rewards' tab either, and for the same reason. It rendered a
+            "Season End Rewards" table promising 500 gems / 5,000 coins / 10
+            packs for finishing first, down to 25/250/1 for the top 100, next
+            to a live countdown of days left in the season. RANK_REWARDS was
+            referenced by exactly one thing: the map that drew it. No grant
+            exists anywhere — not in the store, not in a migration, not in
+            either edge function — so the season ends and nobody is ever paid.
+            Advertising a payout with no code behind it is the same defect as
+            the Friends tab above, only more expensive for the player, who
+            grinds for it. Restore it with the payout, not before. */}
         {/* Your Position — pinned above the list (on a tall enough screen),
             so it stays in view while the top fifty scroll beneath it. */}
         <div className="relative px-4 pb-4 sm:px-6">
@@ -363,7 +380,10 @@ const Leaderboard = ({ onClose }) => {
               name: playerName,
               level: level,
               wins: totalWins,
-              streak: currentWinStreak,
+              // The best streak, as every other row shows (best_win_streak)
+              // and as the trophies are counted from. The current one made
+              // this row disagree with the board about the same player.
+              streak: bestWinStreak,
               trophies: playerTrophies,
             }}
             isPlayer={true}
@@ -380,9 +400,7 @@ const Leaderboard = ({ onClose }) => {
           tabIndex={0}
           className="relative min-h-0 flex-1 overflow-y-auto border-t border-white/[0.06] px-4 pb-5 pt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300/70 sm:px-6"
         >
-          <AnimatePresence mode="wait">
-            {activeTab === 'global' && (
-              <motion.div key="global" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 {/* Top Players */}
                 <div className="mb-3 flex items-center gap-3">
                   <h3 id="leaderboard-top-players" className="label-caps shrink-0 text-plush-300">Top Players</h3>
@@ -472,9 +490,6 @@ const Leaderboard = ({ onClose }) => {
                   </ol>
                 )}
               </motion.div>
-            )}
-
-          </AnimatePresence>
         </div>
       </motion.div>
     </div>
