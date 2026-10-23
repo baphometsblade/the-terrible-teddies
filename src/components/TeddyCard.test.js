@@ -57,6 +57,24 @@ describe('TeddyCard on the battle table (variant="board")', () => {
     expect(render({ teddy: sally }).querySelector('[data-taunt]')).toBeNull();
   });
 
+  // A Warming Up or Exhausted Taunt creature still forces Chuck's attacks,
+  // and the board faded the whole card (its frame included) to 60%.
+  it('dims only the art of a resting card, so its Taunt frame and stats keep their strength', () => {
+    const sally = byName('Shit-Talk Sally');
+    const card = render({ teddy: sally, variant: 'board', resting: true });
+    const art = card.querySelector('[data-art]');
+    expect(art.hasAttribute('data-resting')).toBe(true);
+    expect(art.getAttribute('class')).toMatch(/brightness-\[0\.6\]/);
+    const frame = card.querySelector('[data-taunt]');
+    const stats = [...card.querySelectorAll('[title="Attack"], [title="HP"]')];
+    for (const el of [frame, ...frame.querySelectorAll('*')]) {
+      if (art.contains(el)) continue; // the art layer itself is the one dimmed
+      expect(el.getAttribute('class') ?? '', 'a dimmed layer over the frame').not.toMatch(/opacity-|brightness-|saturate-/);
+    }
+    for (const b of stats) expect(art.contains(b)).toBe(false);
+    expect(render({ teddy: sally, variant: 'board' }).querySelector('[data-art]').hasAttribute('data-resting')).toBe(false);
+  });
+
   it('keeps a trap\'s rules and type on the table, since that is the whole card', () => {
     const trap = byName('Honey Trap');
     const board = render({ teddy: trap, variant: 'board' });

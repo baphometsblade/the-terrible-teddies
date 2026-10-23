@@ -314,10 +314,15 @@ const RarityGem = ({ rarity }) => (
 // `costDelta` is what an effect does to the printed cost right now (Swarm's
 // -1): the coin shows the cost the player would actually pay, in green when
 // it is lower than printed.
+// `resting` is a creature on the table that cannot attack this turn (Warming
+// Up, Exhausted): its art dims, less than `dimmed` does, and nothing else
+// does. The board used to fade the whole card, which took the Taunt frame
+// down with it, and a resting Taunt creature still decides where every one
+// of Chuck's attacks goes.
 const TeddyCard = ({
   teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null,
   lift = true, artVariant = 'thumb', artLoading = 'lazy', dimmed = false,
-  variant = 'hand', costDelta = 0, side = 'player', tauntActive,
+  variant = 'hand', costDelta = 0, side = 'player', tauntActive, resting = false,
 }) => {
   const board = variant === 'board';
   // Use rarity style if available, otherwise fall back to type style
@@ -377,7 +382,13 @@ const TeddyCard = ({
       >
         {/* Full-bleed art. The emoji fallback sits on the tier's own face
             gradient so a card without art still reads as its rarity. */}
-        <div className={`absolute inset-0 rounded-[8px] overflow-hidden grid place-items-center bg-gradient-to-b ${style.bg} ${dimmed ? 'saturate-[0.3] brightness-[0.55]' : ''}`}>
+        <div
+          data-art=""
+          data-resting={resting && !dimmed ? '' : undefined}
+          className={`absolute inset-0 rounded-[8px] overflow-hidden grid place-items-center bg-gradient-to-b ${style.bg} ${dimmed
+            ? 'saturate-[0.3] brightness-[0.55]'
+            : resting ? 'saturate-[0.6] brightness-[0.6]' : ''}`}
+        >
           <ArtOrEmoji
             teddy={teddy}
             variant={artVariant}
@@ -388,7 +399,7 @@ const TeddyCard = ({
         </div>
 
         {/* Foil sweep (epic+) — above the art, below the text. */}
-        {foil && !dimmed && <div className={`absolute inset-0 rounded-[8px] pointer-events-none ${foil}`} />}
+        {foil && !dimmed && !resting && <div className={`absolute inset-0 rounded-[8px] pointer-events-none ${foil}`} />}
 
         {/* Taunt's frame: a band of its side's metal just inside the rarity
             frame, lit inward, so a guarded card reads as walled in. Inside

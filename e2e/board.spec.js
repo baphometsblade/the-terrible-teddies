@@ -287,6 +287,15 @@ test('a table card drops its cost and rarity, wears Taunt as a frame, and carrie
   expect(chip.y + chip.height).toBeLessThanOrEqual(card.y + card.height);
   const slot = await sally.boundingBox();
   expect(Math.abs(slot.height - card.height), 'the row reserves room below the card again').toBeLessThanOrEqual(1);
+
+  // Warming Up and still a Taunt, which still decides where Chuck attacks:
+  // the art dims, the frame does not (the board used to fade the whole card).
+  await expect(sally.locator('[data-art]')).toHaveAttribute('data-resting', '');
+  await expect.poll(() => sally.locator('[data-taunt]').evaluate((el) => {
+    let opacity = 1;
+    for (let a = el; a; a = a.parentElement) opacity *= parseFloat(getComputedStyle(a).opacity);
+    return opacity;
+  }), { message: 'the Taunt frame is faded with the resting card' }).toBe(1);
 });
 
 // Letter-spaced text that renders under 8px splits apart at 1x ("COMM ON",

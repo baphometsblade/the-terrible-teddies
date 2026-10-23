@@ -2445,9 +2445,17 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                           ? 'ring-2 ring-brass-300 shadow-[0_0_24px_4px_rgba(251,191,36,0.55)]'
                           : ready ? 'shadow-[0_0_18px_2px_rgba(52,211,153,0.5)]' : ''}`}
                       >
-                        <div className={resting ? 'opacity-60' : ''}>
-                          <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} variant="board" side="player" tauntActive={card.ability === 'taunt' && !card.stealthActive} />
-                        </div>
+                        {/* Resting dims the art alone: the Taunt frame, the
+                            name and the stats keep their strength. */}
+                        <TeddyCard
+                          teddy={card}
+                          cosmeticBorder={cosmeticBorder}
+                          lift={false}
+                          variant="board"
+                          side="player"
+                          resting={resting}
+                          tauntActive={card.ability === 'taunt' && !card.stealthActive}
+                        />
                         {card.stealthActive && <StealthBand />}
                         {card.hasAttacked && <StatusChip>Exhausted</StatusChip>}
                         {card.summoningSick && !card.hasAttacked && <StatusChip>Warming Up</StatusChip>}
