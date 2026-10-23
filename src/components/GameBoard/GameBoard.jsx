@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext, forwardRef, useImperativeHandle } from 'react';
 import {
-  Coins, Crosshair, Flag, Ghost, Heart, HeartCrack, ScrollText, Shield, Smartphone, Star, Trophy, Volume2, VolumeX, Zap,
+  Coins, Crosshair, Flag, Ghost, Hand, Heart, HeartCrack, Layers, ScrollText, Shield, Smartphone, Star, Trophy, Volume2, VolumeX, Zap,
 } from 'lucide-react';
 import TeddyCard, { CardBack } from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
@@ -21,7 +21,7 @@ import { bestOwnedBorder, ownedEmotes } from '@/lib/cosmetics';
 import { abilityRules } from '@/lib/abilities';
 import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
 import LeaveBattleDialog from './LeaveBattleDialog';
-import { FOCUS_OUTLINE } from '@/lib/focus';
+import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 
 // Stamp a creature's starting durability when it enters the field. `defense` is
 // the HP pool in the creature-HP combat model; `currentHp` tracks the remaining
@@ -318,6 +318,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     currentDeck,
     difficulty: aiDifficulty,
     soundEnabled: storeSoundEnabled,
+    setSoundEnabled,
     currentWinStreak,
     recordBattleResult,
     playerName,
@@ -2171,7 +2172,25 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
             <Avatar ring={RARITY_METAL.legendary} />
             <div className="min-w-0">
               <div className="font-display font-extrabold text-white leading-tight truncate max-w-[7rem] sm:max-w-none">{playerName}</div>
-              <div className="text-emerald-200/80 text-[11px] whitespace-nowrap">Deck: {playerDeck.length} | Hand: {playerHand.length}</div>
+              {/* Words from sm up; below it an icon and a number each, since
+                  "Deck: 4 | Hand: 5" did not fit a 320px rail and ran under
+                  the sound button. The words a screen reader hears follow
+                  what is shown. */}
+              <div data-rail-counts="" className="flex items-center gap-2 overflow-hidden whitespace-nowrap text-[11px] text-emerald-200/80">
+                <span className="inline-flex items-center gap-0.5">
+                  <span className="hidden sm:inline">Deck: </span>
+                  <Layers className="h-3 w-3 sm:hidden" aria-hidden="true" />
+                  {playerDeck.length}
+                  <span className="sr-only sm:hidden"> in deck</span>
+                </span>
+                <span className="hidden sm:inline" aria-hidden="true">|</span>
+                <span className="inline-flex items-center gap-0.5">
+                  <span className="hidden sm:inline">Hand: </span>
+                  <Hand className="h-3 w-3 sm:hidden" aria-hidden="true" />
+                  {playerHand.length}
+                  <span className="sr-only sm:hidden"> in hand</span>
+                </span>
+              </div>
             </div>
             {/* Player's draw pile */}
             {playerDeck.length > 0 && (
@@ -2183,16 +2202,27 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
             )}
           </div>
           <div className="flex items-center gap-2 sm:gap-5">
-            <span
-              role="img"
-              aria-label={storeSoundEnabled ? 'Sound on' : 'Sound off'}
-              title={storeSoundEnabled ? 'Sound on' : 'Sound off'}
-              className="grid h-7 w-7 sm:h-8 sm:w-8 place-items-center rounded-full bg-black/30 ring-1 ring-white/10 text-plush-300"
+            {/* The sound switch, here because the only other one is in
+                Settings, and getting there means leaving the battle. It
+                used to be a picture of a speaker that looked like this
+                button and did nothing. 44px to tap around a 28-32px chip:
+                the negative margin spends the extra on the gaps either side
+                (gap-2), so the rail's layout does not move. No material on
+                the button itself, so FOCUS_RING. */}
+            <button
+              type="button"
+              onClick={() => setSoundEnabled(!storeSoundEnabled)}
+              aria-pressed={storeSoundEnabled}
+              aria-label="Sound effects"
+              title={storeSoundEnabled ? 'Mute sound effects' : 'Turn sound effects on'}
+              className={`group -mx-2 grid h-11 w-11 shrink-0 place-items-center rounded-full ${FOCUS_RING}`}
             >
-              {storeSoundEnabled
-                ? <Volume2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
-                : <VolumeX className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />}
-            </span>
+              <span className="grid h-7 w-7 sm:h-8 sm:w-8 place-items-center rounded-full bg-black/30 ring-1 ring-white/10 text-plush-300 transition-colors group-hover:text-white group-hover:ring-brass-300/40">
+                {storeSoundEnabled
+                  ? <Volume2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+                  : <VolumeX className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />}
+              </span>
+            </button>
             <div className="flex items-center gap-1.5">
               <span
                 className="grid h-7 w-7 place-items-center rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_3px_8px_-3px_rgba(0,0,0,0.8)]"
@@ -2210,10 +2240,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
             </div>
             <HealthMeter
               hp={playerHealth}
-              max={30}
+              max={PLAYER_MAX_HEALTH}
               side="player"
               fill="[&>div]:bg-gradient-to-r [&>div]:from-emerald-600 [&>div]:to-emerald-300"
-              label={`Your health: ${playerHealth} of 30`}
+              label={`Your health: ${playerHealth} of ${PLAYER_MAX_HEALTH}`}
             />
           </div>
         </div>

@@ -805,6 +805,54 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 
   });
 }
 
+test('the speaker on the player rail is a real sound toggle', async ({ page }) => {
+  // It was a role="img" drawn exactly like a button that did nothing, and the
+  // only working switch was in Settings, which means leaving (and losing) the
+  // battle.
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  const stored = () => page.evaluate(() =>
+    JSON.parse(localStorage.getItem('terrible-teddies-storage')).state.soundEnabled);
+
+  const sound = page.getByRole('button', { name: 'Sound effects' });
+  await expect(sound).toHaveAttribute('aria-pressed', 'true');
+  const box = await sound.boundingBox();
+  expect(Math.min(box.width, box.height), 'sound toggle hit area').toBeGreaterThanOrEqual(44);
+
+  await sound.click();
+  await expect(sound).toHaveAttribute('aria-pressed', 'false');
+  expect(await stored()).toBe(false);
+
+  // Keyboard too.
+  await sound.focus();
+  await page.keyboard.press('Space');
+  await expect(sound).toHaveAttribute('aria-pressed', 'true');
+  expect(await stored()).toBe(true);
+});
+
+test('at 320px the player rail fits: nothing runs under the sound toggle', async ({ page }) => {
+  // "Deck: 4 | Hand: 5" was nowrap in a column with no room for it, and at
+  // 320px it ran under the speaker, cutting off the hand count.
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  const rail = await page.evaluate(() => {
+    const counts = document.querySelector('[data-rail-counts]');
+    const sound = document.querySelector('button[aria-label="Sound effects"]');
+    return {
+      countsRight: counts.getBoundingClientRect().right,
+      soundLeft: sound.getBoundingClientRect().left,
+      clipped: counts.scrollWidth > counts.clientWidth,
+    };
+  });
+  expect(rail.countsRight, 'the counts run under the sound toggle').toBeLessThanOrEqual(rail.soundLeft);
+  expect(rail.clipped, 'the counts are cut off').toBe(false);
+  // The counts still say what they count, to a screen reader.
+  await expect(page.locator('[data-rail-counts]')).toContainText(/in deck/);
+  await expect(page.locator('[data-rail-counts]')).toContainText(/in hand/);
+});
+
 test('the battle log opens with one intro, on a first game and on Play Again', async ({ page }) => {
   // The deal ran twice under React StrictMode (the dev server, which this
   // suite runs against by default) and appended its intro each time, so the
