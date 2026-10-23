@@ -122,6 +122,20 @@ export const DAILY_REWARDS = [
   { day: 7, coins: 300, gems: 25, cards: 0, packs: 2 },
 ];
 
+/**
+ * The day of the seven a daily claim made at `now` pays, and the streak it
+ * records: one more than the last if that claim was yesterday, else a fresh
+ * start at day 1. checkDailyLogin pays from this, and Daily Rewards lights
+ * the same tile as Today before the player taps Claim, so the two cannot
+ * disagree about which reward is waiting.
+ */
+export const dailyClaimDay = ({ lastLoginDate = null, consecutiveLogins = 0 }, now = new Date()) => {
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const streak = lastLoginDate === yesterday.toDateString() ? consecutiveLogins + 1 : 1;
+  return { day: ((streak - 1) % DAILY_REWARDS.length) + 1, streak };
+};
+
 // Both storefronts (the Shop and the Card Packs table) render from this one
 // table: `description` on the Shop's tiles, `short` on the compact Card Packs
 // tiles. shopCopy.test.js checks the claims in both against the prices.
@@ -895,14 +909,12 @@ export const useGameStore = create(
 
       checkDailyLogin: () => {
         const state = get();
-        const today = new Date().toDateString();
+        const now = new Date();
+        const today = now.toDateString();
         if (state.lastLoginDate === today) return null;
 
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const wasYesterday = state.lastLoginDate === yesterday.toDateString();
-        const newConsecutive = wasYesterday ? state.consecutiveLogins + 1 : 1;
-        const dayIndex = (newConsecutive - 1) % 7;
+        const { day, streak: newConsecutive } = dailyClaimDay(state, now);
+        const dayIndex = day - 1;
         const reward = DAILY_REWARDS[dayIndex];
 
         set({
@@ -921,6 +933,10 @@ export const useGameStore = create(
         // received none of them.
         let grantedCards = 0;
         let substituteCoins = 0;
+        // Which cards, not only how many: the panel shows them. It used to
+        // get a count, so a day that handed over a rare said "+1" and never
+        // which card it was.
+        let cardIds = [];
         if (reward.cards > 0) {
           const availableCards = ALL_CARDS.filter(c => !state.ownedCards.includes(c.id));
           const randomCards = shuffleDeck(availableCards)
@@ -928,6 +944,7 @@ export const useGameStore = create(
             .map(c => c.id);
           if (randomCards.length > 0) get().addCards(randomCards);
           grantedCards = randomCards.length;
+          cardIds = randomCards;
           // Collection complete (or nearly): honor the promised cards as coins
           // so the daily reward is never silently empty.
           const shortfall = reward.cards - grantedCards;
@@ -941,6 +958,7 @@ export const useGameStore = create(
         return {
           ...reward,
           cards: grantedCards,
+          cardIds,
           coins: reward.coins + substituteCoins,
           substitutedCards: reward.cards - grantedCards,
           day: dayIndex + 1,

@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import { useGameStore, ALL_CARDS, SHOP_ITEMS, PACK_ODDS, PACK_SLOTS, rollRarity } from './gameStore';
+import { useGameStore, ALL_CARDS, SHOP_ITEMS, PACK_ODDS, PACK_SLOTS, rollRarity, DAILY_REWARDS, dailyClaimDay } from './gameStore';
 
 const get = () => useGameStore.getState();
 const STORAGE_KEY = 'terrible-teddies-storage';
@@ -786,6 +786,67 @@ describe('checkDailyLogin', () => {
     // Coins get the 300 day-7 reward plus the 'daily_7' achievement bonus that a
     // 7-day streak also unlocks, so assert the reward landed as a lower bound.
     expect(get().coins).toBeGreaterThanOrEqual(300);
+  });
+
+  it('says which cards it granted, so the panel can show them', () => {
+    // It returned a count only, so Daily Rewards drew "+1" for a rare and
+    // never said which card had joined the collection.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-04T08:00:00Z'));
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const owned = ALL_CARDS.slice(0, 10).map((c) => c.id);
+    useGameStore.setState({
+      ownedCards: owned,
+      lastLoginDate: yesterday.toDateString(),
+      consecutiveLogins: 5, // -> day 6, which grants 3 cards
+    });
+    const reward = get().checkDailyLogin();
+    expect(reward.day).toBe(6);
+    expect(reward.cardIds).toHaveLength(DAILY_REWARDS[5].cards);
+    expect(reward.cardIds).toHaveLength(reward.cards);
+    for (const id of reward.cardIds) {
+      expect(owned).not.toContain(id); // new to the player
+      expect(get().ownedCards).toContain(id); // and now theirs
+    }
+  });
+
+  it('names no cards on a day that grants none, or when none are left to draw', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-04T08:00:00Z'));
+    useGameStore.setState({ lastLoginDate: null, consecutiveLogins: 0 });
+    expect(get().checkDailyLogin().cardIds).toEqual([]); // day 1: coins only
+
+    vi.setSystemTime(new Date('2026-06-05T08:00:00Z'));
+    useGameStore.setState({ ownedCards: ALL_CARDS.map((c) => c.id) });
+    const full = get().checkDailyLogin(); // day 2 promises a card
+    expect(full.day).toBe(2);
+    expect(full.cardIds).toEqual([]);
+  });
+});
+
+describe('dailyClaimDay', () => {
+  // Daily Rewards lights "Today" from this before the tap, and checkDailyLogin
+  // pays from it on the tap: each case is checked against the real claim.
+  const claimDayMatches = (state, now) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    const predicted = dailyClaimDay(state, now);
+    useGameStore.setState(state);
+    const reward = get().checkDailyLogin();
+    expect(reward.day).toBe(predicted.day);
+    expect(get().consecutiveLogins).toBe(predicted.streak);
+    return predicted;
+  };
+
+  it('starts at day 1 for a first claim or a lapsed streak', () => {
+    expect(claimDayMatches({ lastLoginDate: null, consecutiveLogins: 0 }, new Date(2026, 5, 10, 9)).day).toBe(1);
+    expect(claimDayMatches({ lastLoginDate: new Date(2026, 5, 7).toDateString(), consecutiveLogins: 4 }, new Date(2026, 5, 10, 9)).day).toBe(1);
+  });
+
+  it('carries a streak from yesterday, and wraps after day 7', () => {
+    expect(claimDayMatches({ lastLoginDate: new Date(2026, 5, 9).toDateString(), consecutiveLogins: 2 }, new Date(2026, 5, 10, 9)).day).toBe(3);
+    expect(claimDayMatches({ lastLoginDate: new Date(2026, 5, 9).toDateString(), consecutiveLogins: 7 }, new Date(2026, 5, 10, 9))).toEqual({ day: 1, streak: 8 });
   });
 });
 

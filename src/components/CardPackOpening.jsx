@@ -945,7 +945,7 @@ const TEASE = {
 // `settled` is a card put back on the table after the reveal (the other wave
 // of a ten-card pack, or the whole pack with Animations off): no deal, no
 // burst of light, just the card.
-const RevealCard = ({ card, index, order, revealed, charging, ready, settled, onTurn, cardRef }) => {
+export const RevealCard = ({ card, index, order, revealed, charging, ready, settled, onTurn, cardRef }) => {
   const r = RARITY[card.rarity];
   const rank = RARITY_ORDER.indexOf(card.rarity);
   const tease = !revealed && rank >= RARE ? TEASE[card.rarity] : null;

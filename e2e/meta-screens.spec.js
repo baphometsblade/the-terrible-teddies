@@ -63,6 +63,66 @@ const controlsUnder = async (dialog, box) => {
   return hits;
 };
 
+test.describe('daily rewards', () => {
+  // The reward is collected by a tap. It used to be granted the moment the
+  // panel mounted, so there was nothing to press, and the card it drew was
+  // never shown. A player who closes without claiming keeps the reward, and
+  // the menu keeps saying so.
+  test('waits for Claim, shows the card it drew, and reopens on the countdown', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await bootToMainMenu(page);
+    const yesterday = await page.evaluate(() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toDateString(); });
+    await page.addInitScript((y) => {
+      const stored = JSON.parse(localStorage.getItem('terrible-teddies-storage'));
+      // Yesterday's claim on record: today is day 2, a card day.
+      Object.assign(stored.state, { lastLoginDate: y, consecutiveLogins: 1, ownedCards: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] });
+      localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+    }, yesterday);
+    await page.reload();
+
+    // First launch of the day: the panel opens itself, and waits.
+    const dialog = page.getByRole('dialog', { name: 'Daily Rewards' });
+    await expect(dialog).toBeVisible(SLOW);
+    await expect(dialog.getByRole('button', { name: 'Claim', exact: true })).toBeFocused();
+    await expect(dialog.locator('[data-day="2"]')).toHaveAttribute('data-look', 'today');
+    const coins = async () => page.evaluate(() => JSON.parse(localStorage.getItem('terrible-teddies-storage')).state.coins);
+    const before = await coins();
+
+    // Closed unclaimed: nothing granted, and the menu still offers it.
+    await dialog.getByRole('button', { name: 'Close daily rewards' }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(await coins()).toBe(before);
+    const menuButton = page.getByRole('button', { name: 'Daily rewards — a reward is ready to claim' });
+    await expect(menuButton).toBeVisible();
+
+    await menuButton.click();
+    await dialog.getByRole('button', { name: 'Claim', exact: true }).click();
+    await expect(dialog.locator('[data-day="2"]')).toHaveAttribute('data-look', 'stamped');
+    await expect(dialog.locator('[data-stamp]')).toBeVisible();
+    await expect(dialog.getByRole('status')).toContainText(/^Day 2 claimed: 75 coins and 1 card\. New card: .+ \((Common|Uncommon|Rare|Epic|Legendary)\)\.$/);
+    // The card it drew is on the table, and it is one the player did not own.
+    const card = dialog.locator('[data-granted-card]');
+    await expect(card).toHaveCount(1);
+    expect(Number(await card.getAttribute('data-granted-card'))).toBeGreaterThan(10);
+    await expect(card.locator('[data-reveal-card="up"]')).toBeVisible(SLOW);
+    expect(await coins()).toBe(before + 75);
+
+    const go = dialog.getByRole('button', { name: 'Continue' });
+    await expect(go).toBeFocused();
+    await expect(go).toBeInViewport();
+    await go.click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Daily rewards', exact: true })).toBeVisible();
+
+    // Reopened: today stamped, tomorrow marked, and when the next one comes.
+    await page.getByRole('button', { name: 'Daily rewards', exact: true }).click();
+    await expect(dialog.locator('[data-day="2"]')).toHaveAttribute('data-look', 'stamped');
+    await expect(dialog.locator('[data-day="3"]')).toHaveAttribute('data-look', 'tomorrow');
+    await expect(dialog).toContainText(/Next reward in \d+h \d+m/);
+    await expect(dialog.getByRole('button', { name: 'Claim', exact: true })).toHaveCount(0);
+  });
+});
+
 test.describe('challenge claims', () => {
   // A claim pays out on the card (a rising "+100" and the words in the
   // dialog's status region) instead of in a toast, which landed on the

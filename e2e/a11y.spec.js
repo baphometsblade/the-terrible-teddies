@@ -260,6 +260,26 @@ test('daily rewards dialog has no WCAG 2.1 A/AA violations', async ({ page }) =>
   await expectNoViolations(page, 'daily rewards dialog');
 });
 
+// The seed above has today already claimed, so that audit sees the reopened
+// panel. The claim itself has two more states: waiting for the tap, and the
+// payout with the card it drew.
+test('daily rewards before and after the claim have no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.addInitScript(() => {
+    const stored = JSON.parse(localStorage.getItem('terrible-teddies-storage'));
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    Object.assign(stored.state, { lastLoginDate: y.toDateString(), consecutiveLogins: 1 });
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+  const dialog = page.getByRole('dialog', { name: 'Daily Rewards' });
+  await expect(dialog.getByRole('button', { name: 'Claim', exact: true })).toBeVisible(SLOW);
+  await expectNoViolations(page, 'daily rewards, ready to claim');
+  await dialog.getByRole('button', { name: 'Claim', exact: true }).click();
+  await expect(dialog.locator('[data-reveal-card="up"]')).toBeVisible(SLOW);
+  await expectNoViolations(page, 'daily rewards, claimed');
+});
+
 test('player stats dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
   // Opened from the avatar chip in the menu header, not a menu tile.
   await page.getByLabel('View player stats').click();
