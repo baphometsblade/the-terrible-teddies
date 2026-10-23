@@ -608,6 +608,21 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 .sheen:hover::after,
 .sheen:focus-visible::after { transform: translateX(120%); }
 
+/* Pack reveal: the faint light a face-down rare-or-better card sits in, so
+   the table teases what is coming before it turns. A breathing opacity on a
+   plain gradient (no blur: a pulsing blur is redrawn every frame), brighter
+   and quicker in the held beat before an epic or legendary turns. Both stop
+   with the Animations switch and reduced motion (see after the layer), and
+   rest at a steady glow. */
+.reveal-tease {
+  opacity: 0.4;
+  animation: reveal-tease 1.8s ease-in-out infinite;
+}
+.reveal-tease[data-charged] {
+  opacity: 0.9;
+  animation: reveal-tease-charged 0.45s ease-in-out infinite;
+}
+
 } /* end @layer components */
 
 @keyframes fx-float {
@@ -699,6 +714,19 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 @keyframes foil-sweep {
   0%, 55% { transform: translateX(-60%); }
   85%, 100% { transform: translateX(60%); }
+}
+
+@keyframes reveal-tease {
+  0%, 100% { opacity: 0.28; }
+  50% { opacity: 0.6; }
+}
+@keyframes reveal-tease-charged {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+[data-motion="off"] .reveal-tease { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal-tease { animation: none; }
 }
 
 /* Both kinds of light movement honour the player's Animations switch (which
