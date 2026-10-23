@@ -514,7 +514,7 @@ const TeddyCollection = () => {
           tracks spread to the panel's edges, so the first and last columns
           line up with it and the gap only grows by a fraction of a card.
           From md up .card-zoom draws the whole grid larger, tracks and all. */}
-      <div onFocus={keepCardClear} className={`card-zoom grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-4 sm:justify-between sm:gap-x-4 sm:gap-y-5 ${visibleCount > 0 ? 'mb-8' : ''}`}>
+      <div onFocus={keepCardClear} className={`game-surface card-zoom grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-4 sm:justify-between sm:gap-x-4 sm:gap-y-5 ${visibleCount > 0 ? 'mb-8' : ''}`}>
         {/* Every tile stays mounted; a filter change toggles `hidden` on the
             ones that don't match.
 

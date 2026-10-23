@@ -4,6 +4,16 @@ import { supabase } from '../utils/supabaseClient';
 import { useToast } from "@/components/ui/use-toast";
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { ALL_CARDS } from '../stores/gameStore';
+import CardFan from './CardFan';
+
+// The key art beside the form from lg up: three of the set's best-dressed,
+// fanned as the main menu fans a player's own (the legendary in the centre).
+// Resolved by name, so ids and the shipped art stay canonical.
+const KEY_ART = ['Mama Mauls', 'The Godfluffer', 'Duke of Dumpsterfire']
+  .map((name) => ALL_CARDS.find((c) => c.name === name))
+  .filter(Boolean);
 
 // A field recessed into the panel. Plain <input>s rather than the shadcn Input,
 // whose ring-offset-background and bg-background are a light theme's. The
@@ -36,6 +46,11 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [loadingAction, setLoadingAction] = useState(null); // 'signin' | 'signup' | null
   const { toast } = useToast();
+  // Only where there is room beside the form: the fan and the form side by
+  // side need about 800px. On a phone the form already runs most of the
+  // screen's height, and art above it would push Sign In below the fold.
+  // Not rendered at all where it does not show, so its images are not fetched.
+  const wide = useMediaQuery('(min-width: 1024px)');
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -81,8 +96,18 @@ const Auth = () => {
       <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
 
       {/* main, so the title block below is a plain header inside it rather
-          than a lone banner landmark with the form outside every landmark. */}
-      <main className="relative w-full max-w-md">
+          than a lone banner landmark with the form outside every landmark.
+          From lg it is two columns: the card fan, spanning both rows, beside
+          the title over the form. */}
+      <main className="relative w-full max-w-md lg:max-w-none lg:w-auto lg:grid lg:grid-cols-[270px_28rem] lg:items-center lg:gap-x-20">
+        {wide && (
+          <CardFan
+            cards={KEY_ART}
+            className="row-span-2 w-[270px] h-[236px]"
+            cardClassName="scale-[1.5]"
+            artLoading="eager"
+          />
+        )}
         {/* Title card: the brass medallion the boot screen turns around, so
             loading and signing in read as the same place. */}
         <header className="flex flex-col items-center text-center mb-8">

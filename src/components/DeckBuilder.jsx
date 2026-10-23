@@ -439,7 +439,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                 scrolls instead; the deck stays reachable beside it from lg
                 (a sticky panel) and below it on smaller screens (the bar). */}
             <div className="pt-1">
-              <div onFocus={keepCardClear} className="card-zoom grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-3 sm:justify-between sm:gap-x-4">
+              <div onFocus={keepCardClear} className="game-surface card-zoom grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-3 sm:justify-between sm:gap-x-4">
                 {filteredCards.map((card) => {
                   const copiesInDeck = deck.filter(c => c.id === card.id).length;
                   const isMaxed = copiesInDeck >= MAX_COPIES;

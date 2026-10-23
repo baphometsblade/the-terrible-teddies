@@ -8,10 +8,12 @@ import { Progress } from "@/components/ui/progress";
 import { getDailyChallenges, getWeeklyChallenges, countClaimable } from '../stores/challenges';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
+import { FOCUS_OUTLINE } from '@/lib/focus';
+import { MENU_PAD } from '@/lib/safeArea';
 import { RARITY_ORDER } from '@/lib/rarity';
 import { bestOwnedBorder } from '@/lib/cosmetics';
 import { countReadyRewards, passOf } from '@/lib/battlePass';
-import TeddyCard from './TeddyCard';
+import CardFan from './CardFan';
 
 // Scatter/timing for the drifting background teddies. Hoisted to module scope
 // and made deterministic: these were Math.random() calls inside the render
@@ -23,46 +25,40 @@ const DRIFTERS = Array.from({ length: 12 }, (_, i) => ({
   delay: `${((i * 1.7) % 5).toFixed(2)}s`,
 }));
 
-// The three cards fanned behind the Battle button: the player's own, rarest
-// first, so the hero shows what they actually have and improves as their
-// collection does. Fan geometry is fixed per slot (left, centre, right).
-const FAN = [
-  { rotate: -12, x: -58, y: 10, z: 1 },
-  { rotate: 0, x: 0, y: 0, z: 3 },
-  { rotate: 12, x: 58, y: 10, z: 2 },
-];
-
 // Small icon button for the header. lucide icons, not emoji: emoji render
 // differently on every platform and read as stickers next to the card art.
 //
-// Focus is drawn as an outline, not a ring: a Tailwind ring is a box-shadow,
-// and it would replace the material's own (its rim light and depth). And the
-// transition leaves transform out — Framer Motion owns the transform here, and
-// a CSS transition on it retargets every animation frame and damps the press.
-const FOCUS_OUTLINE = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-300';
-
+// 44px at every size, the smallest comfortable touch target; below sm it was
+// 40. Focus is the shared FOCUS_OUTLINE, not a ring: a Tailwind ring is a
+// box-shadow, and it would replace the material's own (its rim light and
+// depth). The press is the materials' own :active (index.css), not Framer
+// Motion's whileTap, which this codebase does not use (see CLAUDE.md).
 const HeaderButton = ({ icon: Icon, label, onClick, glow = false, children }) => (
-  <motion.button
+  <button
     type="button"
     onClick={onClick}
     aria-label={label}
-    whileTap={{ scale: 0.94 }}
-    className={`relative grid place-items-center w-10 h-10 sm:w-11 sm:h-11 rounded-xl [transition-property:background,border-color,filter] ${FOCUS_OUTLINE} ${glow ? 'btn-brass' : 'btn-glass'}`}
+    className={`relative grid place-items-center w-11 h-11 rounded-xl ${FOCUS_OUTLINE} ${glow ? 'btn-brass' : 'btn-glass'}`}
   >
     <Icon aria-hidden="true" className={`w-5 h-5 ${glow ? 'text-night-950' : 'text-plush-200'}`} strokeWidth={2.2} />
     {children}
-  </motion.button>
+  </button>
 );
 
 // The icon carries the meaning visually; the sr-only noun carries it for a
 // screen reader. (aria-label on a role-less div is prohibited in ARIA 1.2.)
+// As tall as the header buttons beside it, so the row stays one line of chips.
 const Currency = ({ icon: Icon, value, tone, noun }) => (
-  <div className="panel-glass rounded-xl h-10 sm:h-11 pl-2 pr-2.5 sm:pl-2.5 sm:pr-3.5 flex items-center gap-1.5 sm:gap-2">
+  <div className="panel-glass rounded-xl h-11 pl-2 pr-2.5 sm:pl-2.5 sm:pr-3.5 flex items-center gap-1.5 sm:gap-2">
     <Icon aria-hidden="true" className={`w-4 h-4 sm:w-[18px] sm:h-[18px] ${tone}`} strokeWidth={2.4} />
     <span className={`font-display font-extrabold text-[14px] sm:text-[15px] tabular-nums ${tone}`}>{value}</span>
     <span className="sr-only">{noun}</span>
   </div>
 );
+
+// The hover lift, as a variant the hovered wrapper hands down (see the tiles).
+const LIFT_2 = { lift: { y: -2 } };
+const LIFT_3 = { lift: { y: -3 } };
 
 const MainMenu = ({
   onStartGame,
@@ -169,7 +165,7 @@ const MainMenu = ({
   ];
 
   return (
-    <div className="relative min-h-screen bar-backdrop flex flex-col px-4 md:px-8 pt-4 md:pt-6 pb-5 overflow-x-hidden overflow-y-auto">
+    <div className={`game-surface relative min-h-screen bar-backdrop flex flex-col ${MENU_PAD} overflow-x-hidden overflow-y-auto`}>
       {/* Animated background — CSS-driven, and skipped entirely when the
           player has turned Animations off. See the .teddy-drift note in
           index.css for why this is not Framer Motion. */}
@@ -222,11 +218,12 @@ const MainMenu = ({
         <motion.div
           initial={{ x: 24, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          // A touch smaller below sm, so the row fits one line from 360px with
-          // a five-digit balance; and it wraps below that rather than running
-          // off the edge, as it did — taking Settings with it, hidden, not
-          // scrollable, behind the root's overflow-x-hidden.
-          className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2"
+          // Tighter below sm, so the row of 44px controls fits one line from
+          // 360px with a five-digit balance (and at 320 with a starting one);
+          // and it wraps below that rather than running off the edge, as it
+          // did — taking Settings with it, hidden, not scrollable, behind the
+          // root's overflow-x-hidden.
+          className="flex flex-wrap items-center justify-end gap-1 sm:gap-2"
         >
           <HeaderButton
             icon={Gift}
@@ -270,37 +267,14 @@ const MainMenu = ({
         {/* On short screens (a phone with its browser toolbars, a landscape
             phone) the fan shrinks, so the Battle button stays above the fold. */}
         <div className="mt-6 md:mt-8 flex flex-col md:flex-row items-center gap-8 md:gap-14 [@media(max-height:700px)]:mt-3 [@media(max-height:700px)]:gap-4">
-          {/* The fan. Decorative — the cards repeat what the Collection shows. */}
-          {fanned.length > 0 && (
-            <div className="relative w-[230px] h-[200px] md:w-[270px] md:h-[236px] [@media(max-height:700px)]:!h-[156px] pointer-events-none select-none" aria-hidden="true">
-              <div className="absolute left-1/2 top-1/2 w-56 h-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brass-400/20 blur-3xl" />
-              {fanned.map((card, i) => {
-                const f = fanned.length === 3 ? FAN[i] : FAN[1];
-                return (
-                  // Centring is plain CSS on the wrapper; the motion layer
-                  // animates only numeric offsets. (Framer Motion cannot
-                  // interpolate '-50%' into a calc() string.)
-                  <div
-                    key={card.id}
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                    style={{ zIndex: f.z }}
-                  >
-                    <motion.div
-                      initial={{ opacity: 0, y: 40, rotate: 0, x: 0 }}
-                      animate={{ opacity: 1, y: f.y, rotate: f.rotate, x: f.x }}
-                      transition={{ delay: 0.15 + i * 0.08, type: 'spring', stiffness: 160, damping: 20 }}
-                    >
-                      <div className="scale-[1.3] md:scale-[1.5] [@media(max-height:700px)]:!scale-100 origin-center drop-shadow-[0_18px_24px_rgba(0,0,0,0.6)]">
-                        {/* Drawn at up to 1.5x hand size, so it takes the
-                            full art where the screen's density calls for it. */}
-                        <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} artVariant="responsive" />
-                      </div>
-                    </motion.div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {/* The fan: the player's own three rarest cards, so the hero shows
+              what they actually have and improves as their collection does. */}
+          <CardFan
+            cards={fanned}
+            cosmeticBorder={cosmeticBorder}
+            className="w-[230px] h-[200px] md:w-[270px] md:h-[236px] [@media(max-height:700px)]:!h-[156px]"
+            cardClassName="scale-[1.3] md:scale-[1.5] [@media(max-height:700px)]:!scale-100"
+          />
 
           {/* Battle: the primary action, and the only brass button on screen. */}
           <motion.div
@@ -311,18 +285,24 @@ const MainMenu = ({
             // button on phones.
             className="relative z-10 flex flex-col items-center md:items-start gap-3"
           >
-            <motion.div
-              {...pressable(onStartGame, 'Battle')}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              className="btn-brass sheen relative cursor-pointer rounded-2xl pl-6 pr-5 py-4 flex items-center gap-4 min-w-[260px] [transition-property:filter,box-shadow] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brass-200"
-            >
-              <Swords aria-hidden="true" className="w-9 h-9 shrink-0" strokeWidth={2.2} />
-              <div className="flex-1 text-left">
-                <div className="font-display font-extrabold text-3xl leading-none">Battle</div>
-                <div className="text-sm font-semibold mt-1 text-night-950/75">Go make Chuck cry</div>
-              </div>
-              <ChevronRight aria-hidden="true" className="w-6 h-6 shrink-0" strokeWidth={2.6} />
+            {/* Hovered on a wrapper that holds still, lifted inside it: when the
+                lift moved the hover target itself, a pointer resting on its
+                bottom edge fell off it, it dropped back under the pointer, and
+                the button shook. The press is the brass's own :active. */}
+            <motion.div whileHover="lift">
+              <motion.div
+                {...pressable(onStartGame, 'Battle')}
+                data-dest="game"
+                variants={LIFT_2}
+                className="btn-brass sheen relative cursor-pointer rounded-2xl pl-6 pr-5 py-4 flex items-center gap-4 min-w-[260px] [transition-property:filter,box-shadow] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brass-200"
+              >
+                <Swords aria-hidden="true" className="w-9 h-9 shrink-0" strokeWidth={2.2} />
+                <div className="flex-1 text-left">
+                  <div className="font-display font-extrabold text-3xl leading-none">Battle</div>
+                  <div className="text-sm font-semibold mt-1 text-night-950/75">Go make Chuck cry</div>
+                </div>
+                <ChevronRight aria-hidden="true" className="w-6 h-6 shrink-0" strokeWidth={2.6} />
+              </motion.div>
             </motion.div>
             {currentWinStreak > 0 && (
               <div className="flex items-center gap-1.5 text-orange-300 text-sm font-semibold">
@@ -345,13 +325,21 @@ const MainMenu = ({
               initial={{ y: 14, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.35 + index * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              whileHover={{ y: -3 }}
+              // The cell is what is hovered, and the tile inside it is what
+              // lifts. Lifting the hovered element itself made a pointer on
+              // its bottom 3px fall off it, so it dropped back under the
+              // pointer and was hovered again, every frame: the tile shook.
+              whileHover="lift"
               // Seven tiles: the last spans two columns wherever the grid has
               // 2 or 4 of them, so no row ends in an empty cell.
               className={index === destinations.length - 1 ? 'col-span-2 lg:col-span-1' : ''}
             >
-              <div
+              <motion.div
                 {...pressable(d.action, d.title)}
+                // App hands the focus back here on the way back from the
+                // screen this tile opened.
+                data-dest={d.id}
+                variants={LIFT_3}
                 // The name stays the bare title (the e2e suite and players'
                 // muscle memory use it); the badge is read as its description.
                 aria-describedby={d.badge ? `menu-badge-${d.id}` : undefined}
@@ -372,7 +360,7 @@ const MainMenu = ({
                   </div>
                 )}
                 <div className="text-[11px] leading-snug text-plush-300 hidden md:block">{d.description}</div>
-              </div>
+              </motion.div>
             </motion.div>
           ))}
         </div>
