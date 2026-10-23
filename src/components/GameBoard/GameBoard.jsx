@@ -2143,6 +2143,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       onFocus={onBoardFocus}
     >
       <FxContext.Provider value={fx}>
+      {/* The screen's heading, for a screen reader and for App, which puts
+          the focus here when the battle opens (the tile that opened it is
+          gone by then). The table says it visually. */}
+      <h1 className="sr-only">Battle against {OPPONENT_NAME}</h1>
       <div className="absolute inset-0 grain pointer-events-none" aria-hidden="true" />
       {/* A hit to your face reddens the edges of the screen for a moment. */}
       {lastPlayerHit && <div key={lastPlayerHit.id} className="fx-vignette" aria-hidden="true" />}

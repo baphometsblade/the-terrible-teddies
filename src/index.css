@@ -80,6 +80,13 @@
   body {
     @apply bg-night-900 text-plush-100;
   }
+  /* A screen's heading takes the focus when the screen opens (App, via
+     src/lib/screenFocus.js), so a keyboard player starts there rather than
+     at the top of the page. It is a landing point, not a control, so it
+     draws no focus ring. */
+  h1[tabindex="-1"]:focus {
+    outline: none;
+  }
 }
 
 @layer utilities {

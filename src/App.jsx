@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import Auth from './components/Auth';
 import MainMenu from './components/MainMenu';
@@ -17,6 +17,7 @@ import { useRehydrateOnFocus } from './hooks/useRehydrateOnFocus';
 import { FOCUS_OUTLINE } from './lib/focus';
 import { SCREEN_PAD } from './lib/safeArea';
 import { holdBack } from './lib/historyGuard';
+import { focusWhenReady } from './lib/screenFocus';
 
 // GameBoard is lazy for the same reason the dialogs are: it is only reachable
 // after tapping Battle, but a static import put it — and its dependency tail,
@@ -56,6 +57,17 @@ const DialogLoader = () => (
   </div>
 );
 
+// Each screen's name in the tab and the task switcher. The menu is the game's
+// own name; signed out (and while booting) the page keeps index.html's
+// fuller title, which is also what a search result shows.
+const BASE_TITLE = typeof document !== 'undefined' ? document.title : '';
+const SCREEN_TITLES = {
+  menu: 'Terrible Teddies',
+  game: 'Battle · Terrible Teddies',
+  collection: 'Card Collection · Terrible Teddies',
+  deck: 'Deck Builder · Terrible Teddies',
+};
+
 // How long a level-up toast waits before it shows (see the drain in App).
 const LEVEL_UP_TOAST_DELAY_MS = 1200;
 
@@ -85,7 +97,13 @@ function App() {
   // before the player can act on a stale snapshot. See the hook for why focus
   // rather than the storage event.
   useRehydrateOnFocus();
-  const [currentScreen, setCurrentScreen] = useState('menu');
+  // The screen, and the one it was reached from (where the focus goes back
+  // to). One state, so the two can never disagree.
+  const [nav, setNav] = useState({ screen: 'menu', from: null });
+  const currentScreen = nav.screen;
+  const navigateTo = useCallback((screen) => {
+    setNav((n) => (n.screen === screen ? n : { screen, from: n.screen }));
+  }, []);
   // The Deck Builder's and the battle board's leave guards (each one's
   // requestLeave): "← Menu" and the system's Back go through them.
   const deckBuilderRef = useRef(null);
@@ -104,9 +122,36 @@ function App() {
     const guard = { game: gameBoardRef, deck: deckBuilderRef }[currentScreen];
     return holdBack(() => {
       if (guard?.current) guard.current.requestLeave();
-      else setCurrentScreen('menu');
+      else navigateTo('menu');
     });
+  }, [signedIn, currentScreen, navigateTo]);
+
+  useEffect(() => {
+    document.title = signedIn ? SCREEN_TITLES[currentScreen] ?? SCREEN_TITLES.menu : BASE_TITLE;
   }, [signedIn, currentScreen]);
+
+  // The pre-JS loader (index.html) fades out over whatever React draws first.
+  // Over BootScreen that is a matched cross-fade: the same medallion and
+  // wordmark in the same place. But a session that restores at once takes
+  // the app straight past BootScreen, and the loader's wordmark and medallion
+  // then ghosted over the menu's cards for the half-second fade. Once past
+  // BootScreen they go at once (index.html's .to-app), and only the backdrop,
+  // which matches the screens', fades. A no-op once the loader has gone.
+  useEffect(() => {
+    if (!loading || !isSupabaseConfigured) {
+      document.getElementById('initial-loader')?.classList.add('to-app');
+    }
+  }, [loading]);
+
+  // The focus follows the player between screens: onto the new screen's
+  // heading, and back on the menu onto the tile (or the Battle button) they
+  // left it by. Only when it has been lost on the way (see screenFocus.js).
+  useEffect(() => {
+    if (!signedIn || !nav.from) return undefined;
+    return focusWhenReady(nav.screen === 'menu'
+      ? `[data-screen-root="menu"] [data-dest="${nav.from}"]`
+      : `[data-screen-root="${nav.screen}"] h1`);
+  }, [signedIn, nav]);
 
   const [showTutorial, setShowTutorial] = useState(false);
   const [showCardPacks, setShowCardPacks] = useState(false);
@@ -333,11 +378,11 @@ function App() {
     if (!session) return;
     const action = new URLSearchParams(window.location.search).get('action');
     if (!action) return;
-    if (action === 'battle') setCurrentScreen('game');
+    if (action === 'battle') navigateTo('game');
     else if (action === 'shop') openShop();
     else if (action === 'rewards') setShowDailyRewards(true);
     window.history.replaceState({}, '', window.location.pathname);
-  }, [session]);
+  }, [session, navigateTo]);
 
   // Daily Rewards opens by itself once per player per day in a tab, claimed or
   // not. The reward waits for a tap now, so closing the panel unclaimed leaves
@@ -392,8 +437,6 @@ function App() {
   if (loading) {
     return <BootScreen />;
   }
-
-  const navigateTo = (screen) => setCurrentScreen(screen);
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -491,6 +534,8 @@ function App() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentScreen}
+                // What the focus hand-off above looks for.
+                data-screen-root={currentScreen}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}

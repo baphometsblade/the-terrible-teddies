@@ -258,3 +258,96 @@ test.describe('the system Back', () => {
     await expect.poll(() => page.url()).toBe('about:blank');
   });
 });
+
+// Screen changes said nothing to the tab, the task switcher or a screen
+// reader: the title never changed, and the focus fell to <body> as the
+// control that changed the screen unmounted with it.
+test.describe('between screens', () => {
+  test.beforeEach(async ({ page }) => {
+    await bootToMainMenu(page);
+  });
+
+  test('each screen names itself in the tab', async ({ page }) => {
+    await expect(page).toHaveTitle('Terrible Teddies');
+    await page.getByRole('button', { name: 'Collection', exact: true }).click();
+    await expect(page).toHaveTitle('Card Collection · Terrible Teddies');
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await expect(page).toHaveTitle('Terrible Teddies');
+    await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+    await expect(page).toHaveTitle('Deck Builder · Terrible Teddies');
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await page.getByRole('button', { name: 'Battle', exact: true }).click();
+    await expect(page).toHaveTitle('Battle · Terrible Teddies');
+  });
+
+  for (const [tile, heading] of [['Collection', 'Card Collection'], ['Deck Builder', 'Deck Builder']]) {
+    test(`from the keyboard, ${tile} opens on its heading and returns to its tile`, async ({ page }) => {
+      const button = page.getByRole('button', { name: tile, exact: true });
+      await button.focus();
+      await page.keyboard.press('Enter');
+      await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeFocused(SLOW);
+      // The next Tab goes on from the top of the screen, starting with its
+      // way back.
+      await page.getByRole('button', { name: '← Menu' }).focus();
+      await page.keyboard.press('Enter');
+      await expect(button).toBeFocused(SLOW);
+    });
+  }
+
+  test('a battle opens on its heading, and the menu hands the focus back to Battle', async ({ page }) => {
+    const battle = page.getByRole('button', { name: 'Battle', exact: true });
+    await battle.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('heading', { name: 'Battle against Chuck', level: 1 })).toBeFocused(SLOW);
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await page.getByRole('dialog', { name: 'Leave this battle?' })
+      .getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    await expect(battle).toBeFocused(SLOW);
+  });
+});
+
+// The pre-JS loader in index.html fades out over whatever React draws
+// first. Over BootScreen that is a matched cross-fade; past it (a session
+// that restores at once) the loader's medallion and wordmark ghosted over
+// the menu's cards, so App clears them at once with .to-app.
+test.describe('the loader hand-off', () => {
+  // Every class the loader is given, in order, from before React runs.
+  const recordLoaderClasses = (page) => page.addInitScript(() => {
+    window.__loaderClasses = [];
+    const watch = () => {
+      const loader = document.getElementById('initial-loader');
+      if (!loader) return false;
+      new MutationObserver(() => window.__loaderClasses.push(loader.className))
+        .observe(loader, { attributes: true, attributeFilter: ['class'] });
+      return true;
+    };
+    if (!watch()) {
+      const wait = new MutationObserver(() => { if (watch()) wait.disconnect(); });
+      wait.observe(document, { childList: true, subtree: true });
+    }
+  });
+
+  test('past BootScreen, the loader keeps only its backdrop for the fade', async ({ page }) => {
+    await recordLoaderClasses(page);
+    await bootToMainMenu(page);
+    await expect.poll(() => page.evaluate(() => window.__loaderClasses.join(' '))).toContain('to-app');
+  });
+
+  test('over BootScreen, the loader cross-fades whole', async ({ page }) => {
+    await recordLoaderClasses(page);
+    // An expired token and no network: BootScreen stays up, retrying.
+    await page.route('**testproject.supabase.co/**', (r) => r.abort('connectionrefused'));
+    await page.route('https://*.posthog.com/**', (r) => r.abort());
+    await page.addInitScript(([key, value]) => localStorage.setItem(key, JSON.stringify(value)), [
+      'sb-testproject-auth-token',
+      { access_token: 'x', refresh_token: 'y', expires_at: Math.floor(Date.now() / 1000) - 3600, user: { id: 'u' } },
+    ]);
+    await page.goto('/');
+    await expect(page.getByText('Loading Terrible Teddies...')).toBeVisible(SLOW);
+    await expect.poll(() => page.evaluate(() => document.getElementById('initial-loader'))).toBeNull();
+    const seen = await page.evaluate(() => window.__loaderClasses);
+    expect(seen.join(' ')).toContain('fade-out');
+    expect(seen.join(' ')).not.toContain('to-app');
+  });
+});

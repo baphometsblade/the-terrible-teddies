@@ -71,6 +71,16 @@
         opacity: 0;
         pointer-events: none;
       }
+      /* Set by App once it has gone past BootScreen (a session restored at
+         once, or none): the menu or sign-in screen is not the loader's
+         layout, so the medallion and wordmark leave at once rather than
+         ghosting over it for the fade, and only the backdrop cross-fades.
+         Over BootScreen, which draws the same content beneath, it is never
+         set. */
+      #initial-loader.to-app .loader-content {
+        opacity: 0;
+        transition: opacity 120ms;
+      }
       /* The body font the app's reset sets, so the caps line and the emoji
          resolve to the same faces BootScreen's do. */
       .loader-content {
