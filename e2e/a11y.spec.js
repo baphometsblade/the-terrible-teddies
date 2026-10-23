@@ -167,6 +167,46 @@ test('deck builder Save-deck dialog has no WCAG 2.1 A/AA violations', async ({ p
   await expectNoViolations(page, 'save-deck dialog');
 });
 
+// The question "← Menu" asks when the deck has edits that are not the battle
+// deck yet, with the "Unsaved changes" line showing behind it.
+test('deck builder leave-without-saving dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible(SLOW);
+  await page.getByRole('button', { name: /^Remove .+ from deck$/ }).first().click();
+  await page.getByRole('button', { name: '← Menu' }).click();
+  await expect(page.getByRole('dialog', { name: 'Leave without saving?' })).toBeVisible(SLOW);
+  await expectNoViolations(page, 'leave-without-saving dialog');
+});
+
+// The card screens lay out differently on a phone: the collection's tier dots
+// and scrolling filter row, and the Deck Builder's bar, exist only there.
+test.describe('card screens on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('collection has no WCAG 2.1 A/AA violations', async ({ page }) => {
+    await page.getByRole('button', { name: 'Collection', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Card Collection' })).toBeVisible(SLOW);
+    await expectNoViolations(page, 'collection (phone)');
+  });
+
+  test('card-detail dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
+    await page.getByRole('button', { name: 'Collection', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Card Collection' })).toBeVisible(SLOW);
+    await page.getByRole('button', { name: /^View / }).first().click();
+    await expect(page.getByRole('dialog', { name: /details$/ })).toBeVisible(SLOW);
+    await expectNoViolations(page, 'card-detail dialog (phone)');
+  });
+
+  test('deck builder has no WCAG 2.1 A/AA violations', async ({ page }) => {
+    await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible(SLOW);
+    // With an edit, so the bar's unsaved mark and the panel's line are audited.
+    await page.getByRole('button', { name: /^Remove .+ from deck$/ }).first().click();
+    await expect(page.locator('[data-deck-bar]')).toBeVisible();
+    await expectNoViolations(page, 'deck builder (phone)');
+  });
+});
+
 // The remaining dialogs are all reached the same way and only need their
 // trigger + accessible dialog name, so they share one table-driven test
 // rather than five near-identical copies.

@@ -82,6 +82,8 @@ function App() {
   // rather than the storage event.
   useRehydrateOnFocus();
   const [currentScreen, setCurrentScreen] = useState('menu');
+  // The Deck Builder's leave guard (its requestLeave), for "← Menu".
+  const deckBuilderRef = useRef(null);
 
   const [showTutorial, setShowTutorial] = useState(false);
   const [showCardPacks, setShowCardPacks] = useState(false);
@@ -346,11 +348,17 @@ function App() {
         return (
           <div className="relative min-h-screen bar-backdrop p-4 md:p-8">
             <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
-            <BackButton onClick={() => navigateTo('menu')} />
+            {/* The builder guards its own way out: with edits that are not
+                the battle deck yet it asks before they are dropped. Until its
+                chunk has loaded (or if it failed to) there is nothing to
+                lose, and the button just leaves. */}
+            <BackButton
+              onClick={() => (deckBuilderRef.current ? deckBuilderRef.current.requestLeave() : navigateTo('menu'))}
+            />
             <div className="relative pt-12">
               <DialogErrorBoundary resetKey={currentScreen} onDismiss={() => navigateTo('menu')}>
                 <Suspense fallback={<DialogLoader />}>
-                  <DeckBuilder />
+                  <DeckBuilder ref={deckBuilderRef} onBackToMenu={() => navigateTo('menu')} />
                 </Suspense>
               </DialogErrorBoundary>
             </div>

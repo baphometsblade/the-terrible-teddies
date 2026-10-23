@@ -660,6 +660,33 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   animation: reveal-tease-charged 0.45s ease-in-out infinite;
 }
 
+/* Deck Builder: the slot the card just added has filled glows once, so an add
+   shows on the deck bar where the eye already is, not only as a pip under the
+   card. A one-shot opacity fade of a halo on ::after (its only claimant: the
+   slot carries no other material), which simply does not play with the
+   Animations switch off or reduced motion (rules after the layer). */
+.deck-slot-new::after {
+  content: "";
+  position: absolute;
+  inset: -3px -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 10px 3px rgba(253, 230, 138, 0.9);
+  opacity: 0;
+  animation: deck-slot-new 800ms ease-out;
+}
+
+/* Toasts on the Deck Builder (DeckBuilder sets html[data-screen="deck"]).
+   From sm the default toast corner is bottom-right, and below lg that is
+   where the deck bar's Set as Current Deck sits; a "Deck Full!" toast landed
+   on it at the moment the player reached for it. Lifted clear of the bar. On
+   a phone toasts are at the top, and from lg there is no bar. */
+@media (min-width: 640px) and (max-width: 1023.98px) {
+  [data-screen="deck"] .toast-viewport {
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+}
+
 } /* end @layer components */
 
 @keyframes fx-float {
@@ -764,6 +791,16 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 [data-motion="off"] .reveal-tease { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .reveal-tease { animation: none; }
+}
+
+@keyframes deck-slot-new {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; }
+}
+[data-motion="off"] .deck-slot-new::after { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .deck-slot-new::after { animation: none; }
 }
 
 /* Both kinds of light movement honour the player's Animations switch (which

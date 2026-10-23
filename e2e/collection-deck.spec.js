@@ -241,3 +241,235 @@ test.describe('card detail', () => {
     await expect.poll(() => img.evaluate((el) => el.complete && el.naturalWidth > 0)).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Deck Builder
+// ---------------------------------------------------------------------------
+
+async function openDeckBuilder(page) {
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible(SLOW);
+  await expect(page.getByRole('button', { name: /^Add .+ to deck$/ }).first()).toBeVisible(SLOW);
+}
+
+const storedDeck = (page) => page.evaluate(() =>
+  JSON.parse(localStorage.getItem('terrible-teddies-storage')).state.currentDeck);
+
+const deckCount = (page) => page.locator('[data-deck-panel] h2');
+
+// The pool tiles that can still take a copy.
+const addable = (page) => page.getByRole('button', { name: /^Add .+ to deck$/ });
+
+// Removes the deck's first card through its row's X.
+async function removeFirstCard(page) {
+  await page.locator('[data-deck-panel]').getByRole('button', { name: /^Remove .+ from deck$/ }).first().click();
+}
+
+// Whether any element under `selector` scrolls on its own (a nested scroller).
+const innerScrollers = (page, selector) => page.locator(selector).evaluate((root) =>
+  [root, ...root.querySelectorAll('*')].filter((el) => {
+    const oy = getComputedStyle(el).overflowY;
+    return (oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1;
+  }).length);
+
+test.describe('deck builder on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('scrolls the pool with the page and keeps the deck bar on screen', async ({ page }) => {
+    await reseed(page, { ownedCards: ids(40) });
+    await openDeckBuilder(page);
+    // The pool used to be a 500px box scrolling inside the page; the deck
+    // list another one inside the deck panel.
+    expect(await innerScrollers(page, '[data-deck-panel]')).toBe(0);
+    const poolScrollers = await page.locator('section').first().evaluate((root) =>
+      [...root.querySelectorAll('*')].filter((el) => ['auto', 'scroll'].includes(getComputedStyle(el).overflowY)).length);
+    expect(poolScrollers).toBe(0);
+
+    const bar = page.locator('[data-deck-bar]');
+    await expect(bar).toBeVisible();
+    await expect(bar).toContainText('10/10');
+    // On the screen from the start, and still there halfway down the pool.
+    for (const y of [0, 1200]) {
+      await page.evaluate((to) => window.scrollTo(0, to), y);
+      await expect.poll(async () => {
+        const b = await bar.boundingBox();
+        return b.y >= 0 && b.y + b.height <= 844;
+      }, { message: `deck bar off screen at scrollY ${y}` }).toBe(true);
+    }
+  });
+
+  test('the bar takes the player to the full deck list', async ({ page }) => {
+    await openDeckBuilder(page);
+    await page.locator('[data-deck-bar]').getByRole('button', { name: /^View deck/ }).click();
+    const panel = page.locator('[data-deck-panel]');
+    await expect.poll(async () => Math.round((await panel.boundingBox()).y)).toBeLessThanOrEqual(20);
+    // Keyboard and screen-reader users carry on from the deck, not the pool.
+    await expect(panel.locator('h2')).toBeFocused();
+  });
+
+  test('an added card lights its slot on the bar, once, and only with motion on', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await openDeckBuilder(page);
+    await removeFirstCard(page);
+    const bar = page.locator('[data-deck-bar]');
+    await expect(bar).toContainText('9/10');
+    await addable(page).first().click();
+    await expect(bar).toContainText('10/10');
+    const slot = bar.locator('[data-slot-new]');
+    await expect(slot).toHaveCount(1);
+    // It is the tenth slot: the one the add filled.
+    expect(await slot.evaluate((el) => [...el.parentElement.children].indexOf(el))).toBe(9);
+    const glowing = () => page.evaluate(() =>
+      document.getAnimations().filter((a) => a.animationName === 'deck-slot-new').length);
+    await expect.poll(glowing).toBeGreaterThan(0);
+
+    // Reduced motion: the slot is still lit, but nothing plays.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await removeFirstCard(page);
+    await addable(page).first().click();
+    await expect(bar).toContainText('10/10');
+    expect(await glowing()).toBe(0);
+
+    // And the in-game Animations switch (mirrored onto <html data-motion>).
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => { document.documentElement.dataset.motion = 'off'; });
+    await removeFirstCard(page);
+    await addable(page).first().click();
+    await expect(bar).toContainText('10/10');
+    expect(await glowing()).toBe(0);
+  });
+
+  test("the bar's Set as Current Deck sets the battle deck", async ({ page }) => {
+    await openDeckBuilder(page);
+    const before = await storedDeck(page);
+    await removeFirstCard(page);
+    await addable(page).last().click();
+    const bar = page.locator('[data-deck-bar]');
+    await bar.getByRole('button', { name: 'Set as Current Deck' }).click();
+    await expect.poll(() => storedDeck(page)).not.toEqual(before);
+    await expect(page.locator('[data-unsaved]')).toHaveCount(0);
+  });
+});
+
+test.describe('deck builder toasts between sm and lg', () => {
+  test.use({ viewport: { width: 768, height: 1024 } });
+
+  test('sit clear of the deck bar', async ({ page }) => {
+    await openDeckBuilder(page);
+    // The seeded deck is full, so an add raises "Deck Full!".
+    await addable(page).first().click();
+    const toast = page.locator('.toast-viewport > li').first();
+    await expect(toast).toBeVisible(SLOW);
+    const t = await toast.boundingBox();
+    const b = await page.locator('[data-deck-bar]').boundingBox();
+    expect(t.y + t.height, 'toast covers the deck bar').toBeLessThanOrEqual(b.y);
+  });
+});
+
+test.describe('deck builder on a desktop', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('has no deck bar, so each deck control exists once', async ({ page }) => {
+    await openDeckBuilder(page);
+    await expect(page.locator('[data-deck-bar]')).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Set as Current Deck' })).toHaveCount(1);
+  });
+
+  test('keeps the whole deck panel on screen while a long pool scrolls past it', async ({ page }) => {
+    const deck = [1, 2, 3, 4, 5, 6, 30, 40, 41, 42];
+    await reseed(page, {
+      ownedCards: ids(40),
+      savedDecks: ['Starter', 'Aggro', 'Control', 'Traps', 'Memes'].map((name) => ({ name, cards: deck })),
+    });
+    await openDeckBuilder(page);
+    // The pool no longer has a scroller of its own, so the page is long; a
+    // sidebar taller than the window kept its foot out of sight until the end.
+    await page.evaluate(() => window.scrollTo(0, 900));
+    const panel = page.locator('[data-deck-panel]');
+    // Stuck (lg:top-4), or already being carried up by the end of the row.
+    await expect.poll(async () => Math.round((await panel.boundingBox()).y)).toBeLessThanOrEqual(16);
+    const p = await panel.boundingBox();
+    expect(p.y + p.height, 'deck panel runs off the bottom of the screen').toBeLessThanOrEqual(800);
+    const set = await page.getByRole('button', { name: 'Set as Current Deck' }).boundingBox();
+    expect(set.y + set.height).toBeLessThanOrEqual(800);
+  });
+});
+
+test.describe('unsaved deck edits', () => {
+  test('are marked, and "← Menu" asks before dropping them', async ({ page }) => {
+    await openDeckBuilder(page);
+    const before = await storedDeck(page);
+    await expect(page.locator('[data-unsaved]')).toHaveCount(0);
+    await removeFirstCard(page);
+    await expect(page.locator('[data-unsaved]')).toHaveText(/Unsaved changes/i);
+
+    await page.getByRole('button', { name: '← Menu' }).click();
+    const ask = page.getByRole('dialog', { name: 'Leave without saving?' });
+    await expect(ask).toBeVisible(SLOW);
+    // The safe answer takes the focus, and Escape means it too.
+    await expect(ask.getByRole('button', { name: 'Keep editing' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(ask).toHaveCount(0, SLOW);
+    await expect(deckCount(page)).toContainText('9/10');
+
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await ask.getByRole('button', { name: 'Discard changes' }).click();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    expect(await storedDeck(page)).toEqual(before);
+  });
+
+  test('"← Menu" with nothing changed just leaves', async ({ page }) => {
+    await openDeckBuilder(page);
+    // A card taken out and put back is not a change (order does not count):
+    // the deck's first row and the pool's first tile are both card 1.
+    const first = page.locator('[data-deck-panel]').getByRole('button', { name: /^Remove .+ from deck$/ }).first();
+    const name = (await first.getAttribute('aria-label')).replace(/^Remove (.+) from deck$/, '$1');
+    await first.click();
+    await expect(page.locator('[data-unsaved]')).toHaveCount(1);
+    await page.getByRole('button', { name: `Add ${name} to deck` }).click();
+    await expect(page.locator('[data-unsaved]')).toHaveCount(0);
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
+  test('are cleared by setting the deck', async ({ page }) => {
+    await openDeckBuilder(page);
+    await removeFirstCard(page);
+    await addable(page).last().click();
+    await expect(page.locator('[data-unsaved]')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Set as Current Deck' }).click();
+    await expect(page.locator('[data-unsaved]')).toHaveCount(0);
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+  });
+
+  test('survive the window losing and regaining focus', async ({ page }) => {
+    await openDeckBuilder(page);
+    await removeFirstCard(page);
+    await expect(deckCount(page)).toContainText('9/10');
+    // Coming back to the window re-reads the save (useRehydrateOnFocus),
+    // which used to reset the editor to the stored deck.
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.waitForTimeout(300);
+    await expect(deckCount(page)).toContainText('9/10');
+    await expect(page.locator('[data-unsaved]')).toHaveCount(1);
+  });
+
+  test('loading a saved deck says it is not the battle deck until it is set', async ({ page }) => {
+    await reseed(page, {
+      savedDecks: [
+        { name: 'Traps', cards: [30, 30, 40, 40, 41, 41, 42, 42, 1, 1] },
+        { name: 'Starter', cards: [42, 41, 40, 30, 6, 5, 4, 3, 2, 1] },
+      ],
+    });
+    await openDeckBuilder(page);
+    await page.getByRole('button', { name: 'Traps', exact: true }).click();
+    await expect(page.locator('.toast-viewport')).toContainText("isn't your battle deck yet");
+    await expect(page.locator('[data-unsaved]')).toHaveCount(1);
+    // The battle deck, in another order: already set, and nothing unsaved.
+    await page.getByRole('button', { name: 'Starter', exact: true }).click();
+    await expect(page.locator('.toast-viewport')).toContainText("already your battle deck");
+    await expect(page.locator('[data-unsaved]')).toHaveCount(0);
+  });
+});
