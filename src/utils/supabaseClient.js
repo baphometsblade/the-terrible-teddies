@@ -124,6 +124,68 @@ export const syncPlayerLevel = async (level, xp, userId = null) => {
   return true;
 };
 
+// ---------------------------------------------------------------------------
+// Cloud saves (supabase/migrations/20261023000000_cloud_saves_and_rank.sql).
+// These hand back supabase-js's own { data, error, status } untouched:
+// src/lib/cloudSave.js decides what a 404, a 413 or a dropped connection
+// means, and is tested on exactly these shapes.
+// ---------------------------------------------------------------------------
+
+// A request that never answers would hold the cloud save's queue forever.
+const RPC_TIMEOUT_MS = 15_000;
+
+const callRpc = async (fn, args = {}) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
+  try {
+    const { data, error, status } = await supabase.rpc(fn, args).abortSignal(controller.signal);
+    return { data, error, status };
+  } catch (err) {
+    // supabase-js resolves network failures as an error with status 0; this
+    // catches anything that throws instead, and is told apart the same way.
+    return { data: null, error: { message: String(err?.message || err), code: '' }, status: 0 };
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+export const getPlayerSave = () => callRpc('get_player_save');
+
+export const putPlayerSave = (save, baseRev) =>
+  callRpc('put_player_save', { p_save: save, p_base_rev: baseRev });
+
+// The same write as a keepalive fetch, for when the page is going away (the
+// tab hidden, or pagehide): the browser completes a keepalive request after
+// the page has gone, and supabase-js's fetch does not ask for one. It takes
+// the access token in hand because a page that is unloading has no time to
+// await a session read. Browsers cap keepalive bodies at 64 KiB, so a larger
+// save goes as an ordinary request, which may not finish.
+const REST_URL = `${String(supabaseUrl || 'https://placeholder.supabase.co').replace(/\/+$/, '')}/rest/v1`;
+const KEEPALIVE_MAX_BYTES = 60_000;
+
+export const putPlayerSaveKeepalive = async (save, baseRev, accessToken) => {
+  const body = JSON.stringify({ p_save: save, p_base_rev: baseRev });
+  try {
+    const res = await fetch(`${REST_URL}/rpc/put_player_save`, {
+      method: 'POST',
+      keepalive: body.length <= KEEPALIVE_MAX_BYTES,
+      headers: {
+        apikey: supabaseAnonKey || 'placeholder-anon-key',
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body,
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok) {
+      return { data: null, error: { message: json?.message || res.statusText, code: json?.code || '' }, status: res.status };
+    }
+    return { data: json, error: null, status: res.status };
+  } catch (err) {
+    return { data: null, error: { message: String(err?.message || err), code: '' }, status: 0 };
+  }
+};
+
 export const fetchPlayerProfile = async (userId = null) => {
   const uid = await resolveUserId(userId);
   if (!uid) return null;

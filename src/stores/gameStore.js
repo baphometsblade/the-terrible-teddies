@@ -189,7 +189,9 @@ export const rollRarity = (table, roll = Math.random() * table.reduce((n, [, w])
   return table[table.length - 1][0];
 };
 
-const getXPForLevel = (level) => Math.floor(100 * Math.pow(1.5, level - 1));
+// The XP a level takes. Exported for the cloud save's progress measure, which
+// counts lifetime XP (src/lib/cloudSave.js).
+export const getXPForLevel = (level) => Math.floor(100 * Math.pow(1.5, level - 1));
 
 // Ids for queued level-up announcements. Module-wide and never reset, so an id
 // is unique for the whole session, across progress resets and account swaps.
@@ -299,7 +301,26 @@ const initialState = {
   // Which season the pass progress belongs to; null until first stamped.
   // When the rolling season advances past this, syncSeason() resets the pass.
   seasonKey: null,
+  // Cloud save bookkeeping (src/lib/cloudSave.js): the server rev this save
+  // was last in step with (0: never), the fingerprint of the save as it was
+  // then (null: never), and when (epoch ms). A save whose own fingerprint
+  // differs from cloudSyncedHash has changes the server has not got. Kept in
+  // the save itself rather than beside it, so that whatever replaces the save
+  // (bindToUser's wipe, an adopted server save) replaces these with it: a
+  // wiped save that kept the last account's rev would look in step with that
+  // account's server save, and overwrite it.
+  cloudRev: 0,
+  cloudSyncedHash: null,
+  cloudSyncedAt: null,
 };
+
+/**
+ * Every field a save holds, in initialState's order. The cloud save is built
+ * from this list (minus the device's own settings and the bookkeeping above),
+ * so a field added to initialState travels with the save without anyone
+ * having to remember to add it.
+ */
+export const SAVE_FIELDS = Object.keys(initialState);
 
 /** What a fresh save starts with, for the reset confirmation to compare against. */
 export const STARTING_GEMS = initialState.gems;
@@ -357,6 +378,64 @@ export const keptThroughReset = (state, now = new Date()) => {
       },
     } : {}),
   };
+};
+
+/**
+ * A save from anywhere (an earlier release's localStorage, or the server's
+ * copy of this account's save) as a complete, well-formed one: fields added
+ * later filled in, nested shapes repaired, corrupt numbers coerced. Without
+ * this a returning player's stale save can crash on reads like
+ * claimedBattlePassRewards.premium.includes(...) or surface NaN balances.
+ * persist's migrate runs it on an old localStorage save; the cloud save runs
+ * it on every server save before it replaces the local one.
+ */
+export const normalizeSave = (persisted) => {
+  const s = { ...initialState, ...(persisted || {}) };
+
+  s.claimedBattlePassRewards = {
+    free: persisted?.claimedBattlePassRewards?.free ?? [],
+    premium: persisted?.claimedBattlePassRewards?.premium ?? [],
+  };
+  s.unlockedCosmetics = Array.isArray(persisted?.unlockedCosmetics) ? persisted.unlockedCosmetics : [];
+  // Booster expiry is a nullable timestamp, so it can't join the
+  // numeric-coercion sweep below (that would rewrite every inactive null).
+  // Anything that isn't a finite number means "no booster running".
+  s.coinDoublerExpiresAt = Number.isFinite(persisted?.coinDoublerExpiresAt)
+    ? persisted.coinDoublerExpiresAt
+    : null;
+  s.claimedChallenges = Array.isArray(persisted?.claimedChallenges) ? persisted.claimedChallenges : [];
+  // Pre-rollover saves have no season stamp — null means "stamp without
+  // resetting" on the first syncSeason(), grandfathering their progress.
+  s.seasonKey = typeof persisted?.seasonKey === 'string' ? persisted.seasonKey : null;
+  s.ownedCards = Array.isArray(persisted?.ownedCards) && persisted.ownedCards.length
+    ? persisted.ownedCards : [...initialState.ownedCards];
+  s.currentDeck = Array.isArray(persisted?.currentDeck) ? persisted.currentDeck : [...initialState.currentDeck];
+  s.savedDecks = Array.isArray(persisted?.savedDecks) ? persisted.savedDecks : [];
+  s.completedAchievements = Array.isArray(persisted?.completedAchievements) ? persisted.completedAchievements : [];
+
+  // seasonXP was added in v3 — for players whose persisted state predates
+  // it, seed from cumulative level progress so the Battle Pass doesn't
+  // reset to tier 0. Test the *raw* persisted value: the merged `s` has
+  // already picked up the initialState default of 0.
+  const persistedSeason = persisted?.seasonXP;
+  if (typeof persistedSeason !== 'number' || Number.isNaN(persistedSeason)) {
+    const baseLevel = Number(persisted?.level) || 1;
+    let seeded = Number(persisted?.xp) || 0;
+    for (let lvl = 1; lvl < baseLevel; lvl++) seeded += getXPForLevel(lvl);
+    s.seasonXP = seeded;
+  }
+
+  for (const k of ['coins', 'gems', 'xp', 'level', 'cardPacks', 'premiumPacks',
+    'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'weekStreak', 'weekBestStreak', 'weekNewCards',
+    'consecutiveLogins', 'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak',
+    'lastSyncedServerGems', 'cloudRev']) {
+    if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];
+  }
+  // The sync bookkeeping is nullable like the booster's expiry: anything
+  // malformed means "never in step", which at worst sends the save again.
+  s.cloudSyncedHash = typeof persisted?.cloudSyncedHash === 'string' ? persisted.cloudSyncedHash : null;
+  s.cloudSyncedAt = Number.isFinite(persisted?.cloudSyncedAt) ? persisted.cloudSyncedAt : null;
+  return s;
 };
 
 export const useGameStore = create(
@@ -1193,6 +1272,14 @@ export const useGameStore = create(
         // next different sign-in take the wiping branch that zeroes the mark.
         ownerUserId: get().ownerUserId,
         lastSyncedServerGems: get().lastSyncedServerGems,
+        // And the cloud save's bookkeeping, so the reset reaches the account
+        // as an ordinary change from the rev this device was in step with.
+        // Zeroed, the reset save would read as one this device never synced,
+        // and holding no progress, the next login would take the account's
+        // pre-reset save back without a word (src/lib/cloudSave.js, rule 5).
+        cloudRev: get().cloudRev,
+        cloudSyncedHash: get().cloudSyncedHash,
+        cloudSyncedAt: get().cloudSyncedAt,
         pendingAchievements: [],
         pendingLevelUps: [],
         pendingSeasonDeliveries: [],
@@ -1206,54 +1293,8 @@ export const useGameStore = create(
         const { pendingAchievements, pendingLevelUps, pendingSeasonDeliveries, ...rest } = state;
         return rest;
       },
-      // Normalize state persisted by any earlier release: fill in fields added
-      // later, repair nested shapes, and coerce corrupt numerics. Without this a
-      // returning player's stale localStorage can crash on reads like
-      // claimedBattlePassRewards.premium.includes(...) or surface NaN balances.
-      migrate: (persisted) => {
-        const s = { ...initialState, ...(persisted || {}) };
-
-        s.claimedBattlePassRewards = {
-          free: persisted?.claimedBattlePassRewards?.free ?? [],
-          premium: persisted?.claimedBattlePassRewards?.premium ?? [],
-        };
-        s.unlockedCosmetics = Array.isArray(persisted?.unlockedCosmetics) ? persisted.unlockedCosmetics : [];
-        // Booster expiry is a nullable timestamp, so it can't join the
-        // numeric-coercion sweep below (that would rewrite every inactive null).
-        // Anything that isn't a finite number means "no booster running".
-        s.coinDoublerExpiresAt = Number.isFinite(persisted?.coinDoublerExpiresAt)
-          ? persisted.coinDoublerExpiresAt
-          : null;
-        s.claimedChallenges = Array.isArray(persisted?.claimedChallenges) ? persisted.claimedChallenges : [];
-        // Pre-rollover saves have no season stamp — null means "stamp without
-        // resetting" on the first syncSeason(), grandfathering their progress.
-        s.seasonKey = typeof persisted?.seasonKey === 'string' ? persisted.seasonKey : null;
-        s.ownedCards = Array.isArray(persisted?.ownedCards) && persisted.ownedCards.length
-          ? persisted.ownedCards : [...initialState.ownedCards];
-        s.currentDeck = Array.isArray(persisted?.currentDeck) ? persisted.currentDeck : [...initialState.currentDeck];
-        s.savedDecks = Array.isArray(persisted?.savedDecks) ? persisted.savedDecks : [];
-        s.completedAchievements = Array.isArray(persisted?.completedAchievements) ? persisted.completedAchievements : [];
-
-        // seasonXP was added in v3 — for players whose persisted state predates
-        // it, seed from cumulative level progress so the Battle Pass doesn't
-        // reset to tier 0. Test the *raw* persisted value: the merged `s` has
-        // already picked up the initialState default of 0.
-        const persistedSeason = persisted?.seasonXP;
-        if (typeof persistedSeason !== 'number' || Number.isNaN(persistedSeason)) {
-          const baseLevel = Number(persisted?.level) || 1;
-          let seeded = Number(persisted?.xp) || 0;
-          for (let lvl = 1; lvl < baseLevel; lvl++) seeded += getXPForLevel(lvl);
-          s.seasonXP = seeded;
-        }
-
-        for (const k of ['coins', 'gems', 'xp', 'level', 'cardPacks', 'premiumPacks',
-          'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'weekStreak', 'weekBestStreak', 'weekNewCards',
-          'consecutiveLogins', 'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak',
-          'lastSyncedServerGems']) {
-          if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];
-        }
-        return s;
-      },
+      // Normalize state persisted by any earlier release (normalizeSave).
+      migrate: (persisted) => normalizeSave(persisted),
     }
   )
 );
