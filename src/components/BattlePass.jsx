@@ -352,34 +352,14 @@ const PurchaseConfirmDialog = ({
       />
       {/* flex: block-level, so mx-auto centres it on a line of its own
           (Medallion is inline-block). The icon is passed as children only to
-          keep its lighter 1.75 stroke. */}
-      <Medallion size="lg" className="mx-auto mb-3 flex">
+          keep its lighter 1.75 stroke. Shed on a short screen, where the
+          confirm already scrolls. */}
+      <Medallion size="lg" className="mx-auto mb-3 flex [@media(max-height:700px)]:hidden">
         <Crown className="h-7 w-7 text-brass-300" strokeWidth={1.75} />
       </Medallion>
       <h3 className="relative font-display text-2xl sm:text-3xl font-extrabold leading-tight text-brass-gradient">
         Unlock Premium Pass
       </h3>
-
-      {/* The term, before what it buys: one season, and what happens at its end. */}
-      <div data-pass-term="" className="relative mt-4 text-sm leading-snug text-plush-200">
-        <p>
-          Premium lasts for <span className="font-semibold text-white">{season.name}</span>, which ends{' '}
-          <span className="whitespace-nowrap font-semibold text-white">{formatSeasonEnd(season.endDate)}</span>{' '}
-          ({plural(season.daysLeft, 'day')} from now).
-        </p>
-        <p className="mt-1.5 text-xs text-plush-300">
-          Then XP, tiers and Premium reset. Tiers you reached but did not claim are delivered to you, and
-          cards and cosmetics stay yours.
-        </p>
-        {/* What is left to earn, in wins (what a win pays, from BATTLE_XP).
-            Rose in the season's last days, when that is the thing to know
-            before paying. */}
-        {xpLeft > 0 && (
-          <p data-pass-pace="" className={`mt-1.5 text-xs ${ending ? 'font-semibold text-rose-300' : 'text-plush-300'}`}>
-            {`${ending ? `Only ${plural(season.daysLeft, 'day')} left: t` : 'T'}ier ${last.tier} is ${xpLeft.toLocaleString()} XP away, about ${plural(Math.ceil(xpLeft / BATTLE_XP.win), 'win')}.`}
-          </p>
-        )}
-      </div>
 
       <div className="relative mt-4 rounded-xl bg-black/25 p-4 text-left ring-1 ring-white/5">
         <div className="label-caps mb-3 text-plush-300">On every premium tier you reach:</div>
@@ -398,6 +378,30 @@ const PurchaseConfirmDialog = ({
             {`${listOf(borders)} card frames and ${plural(emotes.length, 'emote')}, yours to keep`}
           </Includes>
         </ul>
+      </div>
+
+      {/* The term, beside the price it is paid at: one season, and what
+          happens at its end. Here rather than above the list so that on a
+          short phone, where the confirm scrolls and opens at its buttons,
+          the term is on screen with them. */}
+      <div data-pass-term="" className="relative mt-4 text-sm leading-snug text-plush-200">
+        <p>
+          Premium lasts for <span className="font-semibold text-white">{season.name}</span>, which ends{' '}
+          <span className="whitespace-nowrap font-semibold text-white">{formatSeasonEnd(season.endDate)}</span>{' '}
+          ({plural(season.daysLeft, 'day')} from now).
+        </p>
+        <p className="mt-1.5 text-xs text-plush-300">
+          Then XP, tiers and Premium reset. Tiers you reached but did not claim are delivered to you, and
+          cards and cosmetics stay yours.
+        </p>
+        {/* What is left to earn, in wins (what a win pays, from BATTLE_XP).
+            Rose in the season's last days, when that is the thing to know
+            before paying. */}
+        {xpLeft > 0 && (
+          <p data-pass-pace="" className={`mt-1.5 text-xs ${ending ? 'font-semibold text-rose-300' : 'text-plush-300'}`}>
+            {`${ending ? `Only ${plural(season.daysLeft, 'day')} left: t` : 'T'}ier ${last.tier} is ${xpLeft.toLocaleString()} XP away, about ${plural(Math.ceil(xpLeft / BATTLE_XP.win), 'win')}.`}
+          </p>
+        )}
       </div>
 
       <div className="relative mt-5">
