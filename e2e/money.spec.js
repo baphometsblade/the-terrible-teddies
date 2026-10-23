@@ -46,6 +46,8 @@ test('Reset All Progress says what it keeps, in numbers, and keeps it', async ({
   const deleted = dialog.getByRole('region', { name: 'Deleted' });
   await expect(deleted).toContainText('Level 7');
   await expect(deleted).toContainText('2,345 coins');
+  // The armed confirmation is a state no other spec audits.
+  await expectNoAxeViolations(page, 'reset confirmation');
 
   await dialog.getByRole('textbox', { name: 'Type RESET to confirm the reset' }).fill('RESET');
   await dialog.getByRole('button', { name: 'Confirm Reset' }).click();
@@ -77,6 +79,7 @@ test('an account that has its Starter Gem Pack sees it as claimed, with nothing 
   await expect(shop.getByText('Claimed', { exact: true })).toBeVisible(SLOW);
   await expect(shop.getByText("One per account, and you've had yours.")).toBeVisible();
   await expect(shop.getByRole('button', { name: 'Buy Now' })).toHaveCount(0);
+  await expectNoAxeViolations(page, 'claimed Starter offer');
   // Scoped to this player and to the one-per-account bundle.
   expect(decodeURIComponent(read)).toContain('user_id=eq.11111111-1111-4111-8111-111111111111');
   expect(decodeURIComponent(read)).toContain('bundle_id=in.(');
