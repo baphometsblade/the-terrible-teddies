@@ -34,7 +34,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "How a Turn Works",
-    content: "1. Draw — take a card. It's probably a bad one. Play it anyway.\n2. Main — throw teddies and traps on the table\n3. Battle — the fun part\n4. End — Chuck's turn to embarrass himself",
+    content: "1. Draw — take a card. It's probably a bad one. Play it anyway.\n2. Your move — throw teddies and traps on the table and send ready teddies swinging, in any order\n3. End Turn — Chuck's turn to embarrass himself",
     icon: RefreshCw,
     list: true,
   },
