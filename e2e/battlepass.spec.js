@@ -109,6 +109,38 @@ test.describe('at 320x640', () => {
   });
 });
 
+test.describe('at 1024x800', () => {
+  test.use({ viewport: { width: 1024, height: 800 } });
+  // From lg the header is one row, and the wallet's width grows with the
+  // balances. A gradient title squeezed narrower than its text draws the rest
+  // transparent ("Battle Pas" at 48,210 coins), and a row wider than the panel
+  // clips the close button. Neither may happen at any balance.
+  test('the title stays whole and the close button inside the panel, however rich the player', async ({ page }) => {
+    for (const [coins, gems] of [[12345, 560], [48210, 1320], [250000, 9999], [1234567, 99999]]) {
+      await seed(page, { coins, gems });
+      const pass = await openPass(page);
+      await expect(pass.getByText(coins.toLocaleString('en-US'), { exact: true })).toBeVisible();
+      // Each comparison is between two boxes inside the panel, which scale
+      // together, so it holds mid-way through the panel's entrance too.
+      const m = await pass.evaluate((dialog) => {
+        const h = dialog.querySelector('h2');
+        const range = document.createRange();
+        range.selectNodeContents(h);
+        const close = dialog.querySelector('[aria-label="Close battle pass"]').getBoundingClientRect();
+        const box = dialog.querySelector('.dialog-panel').getBoundingClientRect();
+        return {
+          text: range.getBoundingClientRect().width, title: h.getBoundingClientRect().width,
+          closeRight: close.right, panelRight: box.right,
+        };
+      });
+      expect(m.text, `title at ${coins} coins / ${gems} gems`).toBeLessThanOrEqual(m.title + 0.5);
+      expect(m.closeRight, `close at ${coins} coins / ${gems} gems`).toBeLessThanOrEqual(m.panelRight);
+      await pass.getByRole('button', { name: 'Close battle pass' }).click();
+      await expect(pass).toHaveCount(0, SLOW);
+    }
+  });
+});
+
 test('the empty Card Packs table routes to gems and to a reached Battle Pass tier', async ({ page }) => {
   await seed(page, {
     cardPacks: 0, premiumPacks: 0, legendaryPacks: 0, coins: 0, gems: 0,

@@ -665,9 +665,16 @@ const BattlePass = ({ onClose, onGetGems }) => {
               sized down at 320px so it does not have to. The season name is
               never truncated either (it used to be, at 320px). Nothing in this
               row may be wider than the panel: its overflow-hidden would clip
-              the close button off the right edge and leave no way out. */}
+              the close button off the right edge and leave no way out.
+
+              So from lg the title's column never shrinks below the title (a
+              gradient title squeezed narrower than its text draws the overflow
+              transparent: at 1024 with 48,210 coins it read "Battle Pas"), and
+              the wallet is what gives instead: its chips stack, the column
+              narrows to the wider one. The countdown and the button do not
+              wrap, so the grid has nowhere else to take the space from. */}
           <div className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1
-            lg:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto_auto] lg:gap-y-1.5 lg:gap-x-4"
+            lg:grid-cols-[auto_minmax(min-content,1fr)_auto_auto_auto_auto] lg:gap-y-1.5 lg:gap-x-4"
           >
             <Medallion
               size="smToLg"
@@ -688,7 +695,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
             {/* Phones: one quiet line under the season name. From md up: a
                 small-caps label over the count, beside the button. */}
             <div className="col-span-2 col-start-2 row-start-3 flex items-center gap-1.5
-              lg:col-span-1 lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:gap-2.5"
+              lg:col-span-1 lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:gap-2.5 lg:whitespace-nowrap"
             >
               <Clock aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-brass-300 lg:h-4 lg:w-4" strokeWidth={2.2} />
               <div className="flex flex-wrap items-baseline gap-x-1 leading-tight lg:block">
@@ -725,9 +732,9 @@ const BattlePass = ({ onClose, onGetGems }) => {
               <WalletChips
                 coins={coins}
                 gems={gems}
-                className="flex-nowrap lg:col-start-4 lg:row-span-2 lg:row-start-1"
+                className="flex-nowrap lg:col-start-4 lg:row-span-2 lg:row-start-1 lg:flex-wrap lg:justify-end"
               />
-              <div className="w-full sm:w-auto lg:col-start-5 lg:row-span-2 lg:row-start-1">
+              <div className="w-full sm:w-auto lg:col-start-5 lg:row-span-2 lg:row-start-1 lg:whitespace-nowrap">
                 {!hasPremium && (
                   <button
                     type="button"
