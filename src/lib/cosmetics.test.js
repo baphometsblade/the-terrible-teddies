@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { BATTLE_PASS_REWARDS } from '@/components/BattlePass';
-import { bestOwnedBorder, ownedEmotes, RENDERABLE_COSMETICS } from './cosmetics';
+import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
+import { bestOwnedBorder, ownedEmotes, RENDERABLE_COSMETICS, COSMETIC_FRAMES, frameFor } from './cosmetics';
 
 describe('cosmetic entitlement rendering', () => {
   it('picks the highest-ranked owned border and ignores unknowns', () => {
@@ -10,6 +10,18 @@ describe('cosmetic entitlement rendering', () => {
     expect(bestOwnedBorder(['Gold Border', 'Diamond Border'])).toBe('diamond');
     expect(bestOwnedBorder(['Diamond Border'])).toBe('diamond');
     expect(bestOwnedBorder(['Something Else'])).toBeNull();
+  });
+
+  // The card frame and the Battle Pass tile that sells a border both draw
+  // from COSMETIC_FRAMES, so every border must have one.
+  it('has a frame to draw for every border it ranks', () => {
+    const borders = RENDERABLE_COSMETICS.filter((name) => bestOwnedBorder([name]));
+    expect(borders.length).toBeGreaterThan(0);
+    for (const name of borders) {
+      expect(frameFor(name), name).toMatchObject({ metal: expect.stringContaining('gradient'), glow: expect.any(String) });
+      expect(COSMETIC_FRAMES[bestOwnedBorder([name])]).toBe(frameFor(name));
+    }
+    expect(frameFor('Teddy Emote')).toBeNull();
   });
 
   it('lists only the emotes the player owns', () => {

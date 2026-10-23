@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 import { BrassCoin } from '@/components/ui/coin';
+import { COSMETIC_FRAMES } from '@/lib/cosmetics';
 
 // Dark-face fallbacks for cards without a rarity (typed opponent cards).
 const TYPE_STYLES = {
@@ -19,20 +20,9 @@ const TYPE_METAL = {
   special: RARITY_METAL.rare,
 };
 
-// Battle Pass border cosmetics (see src/lib/cosmetics.js). They replace the
-// rarity's metal with their own and add a glow; the rarity stays readable
-// from the type line. The frame is a gradient border now, so these are
-// gradients plus a glow rather than Tailwind border colours.
-const COSMETIC_FRAMES = {
-  gold: {
-    metal: 'linear-gradient(145deg, #fffbeb 0%, #f59e0b 30%, #fef3c7 50%, #b45309 75%, #fde68a 100%)',
-    glow: '0 0 12px rgba(251, 191, 36, 0.55)',
-  },
-  diamond: {
-    metal: 'linear-gradient(145deg, #ffffff 0%, #67e8f9 30%, #ecfeff 50%, #0891b2 75%, #a5f3fc 100%)',
-    glow: '0 0 12px rgba(103, 232, 249, 0.6)',
-  },
-};
+// Battle Pass border cosmetics replace the rarity's metal with their own and
+// add a glow (COSMETIC_FRAMES, in src/lib/cosmetics.js); the rarity stays
+// readable from the type line.
 
 // One icon set for every ability and effect. These were emoji, which every
 // platform draws differently and which looked like stickers next to the

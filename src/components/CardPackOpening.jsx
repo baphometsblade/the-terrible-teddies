@@ -14,7 +14,7 @@ import { PackOddsGuide } from './PackOdds';
 import { RARITY, RARITY_ORDER } from '@/lib/rarity';
 import { revealOrder, waveRanges, tableLayout } from '@/lib/packReveal';
 import { nextCoinPack, nextPassPack, nextDailyPack } from '@/lib/packSources';
-import { BATTLE_PASS_REWARDS } from './BattlePass';
+import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 
 // Plain <button>s rather than the shadcn Button: its bg-primary is a utility
 // and would beat the component-layer btn-brass / btn-glass materials.

@@ -5,7 +5,7 @@ import { createElement, act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MotionGlobalConfig } from 'framer-motion';
 import { ALL_CARDS, SHOP_ITEMS, PACK_SLOTS, PACK_ODDS, useGameStore } from '@/stores/gameStore';
-import { BATTLE_PASS_REWARDS } from './BattlePass';
+import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 import { bestValuePackId } from './StoreTile';
 import { describePackOdds, PackOddsDialog, TIER_NAME } from './PackOdds';
 import CardPackOpening from './CardPackOpening';
@@ -87,7 +87,9 @@ const shopTabText = async (tab) => {
 
 describe('shop copy matches the economy it is selling', () => {
   it('does not claim card exclusivity the pack pool does not enforce', () => {
-    const battlePassSrc = read('src/components/BattlePass.jsx');
+    // The dialog's copy, and the reward table's own module (which the dialog
+    // reads its tiers from), so a claim moved into either is still checked.
+    const battlePassSrc = read('src/components/BattlePass.jsx') + read('src/lib/battlePass.js');
 
     // Cards the pass hands out, and the pool openCardPack draws from.
     const passCardIds = BATTLE_PASS_REWARDS

@@ -59,9 +59,11 @@ export const PACK_LOOK = {
 export const CRIMP = 'bg-[repeating-linear-gradient(90deg,rgba(255,255,255,0.2)_0_1px,rgba(0,0,0,0.25)_1px_3px)]';
 
 // A mini pack's whole geometry is in em, so one drawing serves every size and
-// `size` is nothing but a font-size: 10px draws a 40x54 pack, 14px a 56x76 one.
-// A responsive size is then just a responsive font-size.
+// `size` is nothing but a font-size: 10px draws a 40x54 pack, 14px a 56x76 one,
+// 6px a 24x32 one (a Battle Pass tile's art slot). A responsive size is then
+// just a responsive font-size.
 const MINI_SIZE = {
+  xs: 'text-[6px]',
   sm: 'text-[10px]',
   md: 'text-[14px]',
   smToMd: 'text-[10px] sm:text-[14px]',

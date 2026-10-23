@@ -1,15 +1,21 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Crown, Lock, Check, Clock, Gem, X, Sparkles, Swords } from 'lucide-react';
+import { Trophy, Crown, Lock, Check, Clock, Gem, X, Sparkles, Swords, Coins, Drama, PartyPopper } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
-import { useGameStore } from '../stores/gameStore';
+import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { getCurrentSeason } from '../utils/season';
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { Medallion } from '@/components/ui/game-chrome';
+import { ArtOrEmoji } from './TeddyCard';
+import { PACK_LOOK, PackStack } from './PackArt';
+import { frameFor, EMOTES } from '@/lib/cosmetics';
+import {
+  BATTLE_PASS_REWARDS, PREMIUM_PASS_PRICE, currentTier as tierFor, countReadyRewards,
+} from '@/lib/battlePass';
 
 // Plain <button>s throughout, not the shadcn Button: its bg-primary is a
 // utility and would beat the btn-brass / btn-glass materials.
@@ -29,7 +35,7 @@ const WELL = 'bg-[#140e1d]';
 // Shared by the tiles and the spine's row labels so the two stay aligned.
 const TILE_H = 'h-[7.75rem]';
 
-// A reward in words, for screen readers: the tile draws it as an emoji, an
+// A reward in words, for screen readers: the tile draws it as a picture, an
 // amount and a rarity, none of which says "coins" or "card" on its own.
 const describeReward = (reward) => {
   const n = reward.amount;
@@ -39,6 +45,60 @@ const describeReward = (reward) => {
     case 'pack': return `${n} card pack${n === 1 ? '' : 's'}`;
     case 'card': return `${reward.name}, ${reward.rarity} card`;
     default: return reward.name ?? `${n ?? ''} ${reward.type}`.trim();
+  }
+};
+
+// What a reward looks like, drawn in the tile's 32px slot rather than as a
+// platform emoji (which read as stickers next to the card art, and drew every
+// card reward as the same playing-card glyph): coins and gems on a medallion,
+// packs as the packs the Shop sells, a card as a small frame of its rarity's
+// metal around its own art, a border as a swatch of the metal it puts on
+// your cards, an emote on a medallion of its own.
+const EMOTE_ICON = { quip: Drama, confetti: PartyPopper };
+const CARDS_BY_ID = new Map(ALL_CARDS.map((c) => [c.id, c]));
+// The face under a mini frame's art, as a padding-box layer.
+const FACE = 'linear-gradient(#1a1226, #1a1226) padding-box';
+
+const RewardArt = ({ reward }) => {
+  switch (reward.type) {
+    case 'coins':
+      return <Medallion size="xs" icon={Coins} />;
+    case 'gems':
+      return <Medallion size="xs" icon={Gem} metal={RARITY_METAL.epic} iconClassName="text-fuchsia-300" />;
+    case 'pack':
+      return <PackStack look={PACK_LOOK.regular} quantity={reward.amount} size="xs" />;
+    case 'card': {
+      const card = CARDS_BY_ID.get(reward.cardId) ?? { id: reward.cardId, rarity: reward.rarity };
+      return (
+        <span
+          data-reward-art="card"
+          className="relative block h-8 w-[23px] overflow-hidden rounded-[4px] shadow-[0_4px_8px_-4px_rgba(0,0,0,0.9)]"
+          style={{ border: '1.5px solid transparent', background: `${FACE}, ${RARITY_METAL[reward.rarity]} border-box` }}
+        >
+          <span className="absolute inset-0 grid place-items-center overflow-hidden rounded-[2.5px]">
+            <ArtOrEmoji teddy={card} emojiClassName="text-sm leading-none" imgClassName="absolute inset-0 h-full w-full object-cover" />
+          </span>
+        </span>
+      );
+    }
+    case 'exclusive': {
+      const frame = frameFor(reward.name);
+      if (frame) {
+        // A card-shaped window in the border's own metal: what it frames
+        // your cards in.
+        return (
+          <span
+            data-reward-art="border"
+            className="block h-8 w-[23px] rounded-[4px]"
+            style={{ border: '3px solid transparent', background: `${FACE}, ${frame.metal} border-box`, boxShadow: frame.glow }}
+          />
+        );
+      }
+      const effect = EMOTES.find((e) => e.name === reward.name)?.effect;
+      return <Medallion size="xs" icon={EMOTE_ICON[effect] ?? Sparkles} />;
+    }
+    default:
+      return null;
   }
 };
 
@@ -101,11 +161,12 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
         style={metal ? { background: metal } : undefined}
       />
       <span className={`relative flex h-full flex-col items-center rounded-[11px] px-1.5 pt-3 pb-2 ${fill}`}>
-        {/* The reward in words, then the drawing aria-hidden: the emoji alone
-            read as "coin +100" or "joker Peeping Pete". */}
+        {/* The reward in words, then the drawing aria-hidden. A locked or
+            claimed tile dims the drawing only (TeddyCard's dimmed treatment),
+            so its words stay readable. */}
         {!canClaim && <span className="sr-only">Tier {tier} {track} reward: {describeReward(reward)}.</span>}
-        <span aria-hidden="true" className={`grid h-8 place-items-center text-[28px] leading-none ${quiet ? 'opacity-45 grayscale' : ''}`}>
-          {reward.icon}
+        <span aria-hidden="true" className={`grid h-8 place-items-center ${quiet ? 'saturate-[0.3] brightness-[0.55]' : ''}`}>
+          <RewardArt reward={reward} />
         </span>
         <span aria-hidden="true" className="mt-2 flex h-7 w-full items-center justify-center">
           <span className={`line-clamp-2 break-words text-center font-display text-[11px] font-bold leading-[0.875rem] sm:text-[12px] ${quiet ? 'text-plush-300' : 'text-white'}`}>
@@ -176,35 +237,6 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
   );
 };
 
-export const BATTLE_PASS_REWARDS = [
-  { tier: 1, xpRequired: 0, free: { type: 'coins', amount: 100, icon: '🪙' }, premium: { type: 'card', cardId: 7, name: 'Peeping Pete', icon: '🃏', rarity: 'uncommon' } },
-  { tier: 2, xpRequired: 100, free: { type: 'pack', amount: 1, icon: '📦' }, premium: { type: 'coins', amount: 500, icon: '🪙' } },
-  { tier: 3, xpRequired: 250, free: { type: 'coins', amount: 150, icon: '🪙' }, premium: { type: 'gems', amount: 25, icon: '💎' } },
-  { tier: 4, xpRequired: 450, free: { type: 'gems', amount: 10, icon: '💎' }, premium: { type: 'card', cardId: 62, name: 'Chainsmoke Chad', icon: '🃏', rarity: 'rare' } },
-  { tier: 5, xpRequired: 700, free: { type: 'pack', amount: 1, icon: '📦' }, premium: { type: 'exclusive', name: 'Gold Border', icon: '✨' } },
-  { tier: 6, xpRequired: 1000, free: { type: 'coins', amount: 200, icon: '🪙' }, premium: { type: 'pack', amount: 3, icon: '📦' } },
-  { tier: 7, xpRequired: 1350, free: { type: 'gems', amount: 15, icon: '💎' }, premium: { type: 'card', cardId: 66, name: 'Mama Mauls', icon: '🃏', rarity: 'epic' } },
-  { tier: 8, xpRequired: 1750, free: { type: 'pack', amount: 2, icon: '📦' }, premium: { type: 'gems', amount: 50, icon: '💎' } },
-  { tier: 9, xpRequired: 2200, free: { type: 'coins', amount: 300, icon: '🪙' }, premium: { type: 'exclusive', name: 'Teddy Emote', icon: '🎭' } },
-  { tier: 10, xpRequired: 2700, free: { type: 'pack', amount: 2, icon: '📦' }, premium: { type: 'card', cardId: 69, name: "Big Spoon, Last Warning", icon: '👑', rarity: 'legendary' } },
-  { tier: 11, xpRequired: 3250, free: { type: 'coins', amount: 350, icon: '🪙' }, premium: { type: 'gems', amount: 60, icon: '💎' } },
-  { tier: 12, xpRequired: 3850, free: { type: 'pack', amount: 2, icon: '📦' }, premium: { type: 'pack', amount: 3, icon: '📦' } },
-  { tier: 13, xpRequired: 4500, free: { type: 'gems', amount: 20, icon: '💎' }, premium: { type: 'card', cardId: 65, name: "The Debt Collector", icon: '🃏', rarity: 'rare' } },
-  { tier: 14, xpRequired: 5200, free: { type: 'coins', amount: 400, icon: '🪙' }, premium: { type: 'gems', amount: 70, icon: '💎' } },
-  { tier: 15, xpRequired: 5950, free: { type: 'pack', amount: 3, icon: '📦' }, premium: { type: 'exclusive', name: 'Diamond Border', icon: '💠' } },
-  { tier: 16, xpRequired: 6750, free: { type: 'gems', amount: 25, icon: '💎' }, premium: { type: 'card', cardId: 68, name: "Duke of Dumpsterfire", icon: '🃏', rarity: 'epic' } },
-  { tier: 17, xpRequired: 7600, free: { type: 'coins', amount: 450, icon: '🪙' }, premium: { type: 'coins', amount: 800, icon: '🪙' } },
-  { tier: 18, xpRequired: 8500, free: { type: 'pack', amount: 3, icon: '📦' }, premium: { type: 'pack', amount: 4, icon: '📦' } },
-  { tier: 19, xpRequired: 9450, free: { type: 'gems', amount: 30, icon: '💎' }, premium: { type: 'card', cardId: 19, name: "The Seam Reaper", icon: '🃏', rarity: 'epic' } },
-  { tier: 20, xpRequired: 10450, free: { type: 'coins', amount: 500, icon: '🪙' }, premium: { type: 'gems', amount: 90, icon: '💎' } },
-  { tier: 21, xpRequired: 11500, free: { type: 'pack', amount: 4, icon: '📦' }, premium: { type: 'exclusive', name: 'Confetti Cannon Emote', icon: '🎉' } },
-  { tier: 22, xpRequired: 12600, free: { type: 'gems', amount: 35, icon: '💎' }, premium: { type: 'card', cardId: 20, name: "The Godfluffer", icon: '👑', rarity: 'legendary' } },
-  { tier: 23, xpRequired: 13750, free: { type: 'coins', amount: 550, icon: '🪙' }, premium: { type: 'coins', amount: 1000, icon: '🪙' } },
-  { tier: 24, xpRequired: 14950, free: { type: 'pack', amount: 4, icon: '📦' }, premium: { type: 'pack', amount: 5, icon: '📦' } },
-  { tier: 25, xpRequired: 16200, free: { type: 'pack', amount: 5, icon: '📦' }, premium: { type: 'card', cardId: 21, name: "Fluffpocalypse Now", icon: '👑', rarity: 'legendary' } },
-];
-
-const PREMIUM_PASS_PRICE = 500; // gems
 
 // The Unlock-Premium confirmation is a modal over the Battle Pass dialog, so it
 // hosts its own useDialog: it pushes onto the dialog stack (so it owns Escape and
@@ -387,9 +419,7 @@ const BattlePass = ({ onClose }) => {
   const claimedRewards = claimedBattlePassRewards;
 
   const battlePassXP = seasonXP;
-  const currentTier = BATTLE_PASS_REWARDS.reduce((tier, reward) => {
-    return battlePassXP >= reward.xpRequired ? reward.tier : tier;
-  }, 0);
+  const currentTier = tierFor(battlePassXP);
 
   const nextTier = BATTLE_PASS_REWARDS.find(r => r.xpRequired > battlePassXP);
   const xpToNext = nextTier ? nextTier.xpRequired - battlePassXP : 0;
@@ -469,13 +499,10 @@ const BattlePass = ({ onClose }) => {
     }
   };
 
-  // How many tiles are waiting to be claimed — the same test each tile's
-  // canClaim uses below, so the count and the brass tiles always agree.
-  const readyCount = BATTLE_PASS_REWARDS.reduce((n, r) => (
-    r.tier > currentTier ? n
-      : n + (claimedRewards.free.includes(r.tier) ? 0 : 1)
-        + (hasPremium && !claimedRewards.premium.includes(r.tier) ? 1 : 0)
-  ), 0);
+  // How many tiles are waiting to be claimed: the helper the menu tile badges
+  // with too, and the same test each tile's canClaim uses below, so the
+  // count, the menu and the brass tiles always agree.
+  const readyCount = countReadyRewards({ seasonXP: battlePassXP, claimed: claimedRewards, hasPremium });
   const lastTier = BATTLE_PASS_REWARDS[BATTLE_PASS_REWARDS.length - 1].tier;
 
   return (
@@ -519,17 +546,11 @@ const BattlePass = ({ onClose }) => {
           <div className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1
             lg:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] lg:gap-y-1.5 lg:gap-x-5"
           >
-            {/* Hand-built rather than a <Medallion>: it steps from 48px to
-                56px at lg, and 48px is not one of Medallion's sizes. */}
-            <div
-              aria-hidden="true"
-              className="col-start-1 row-span-3 row-start-1 h-12 w-12 shrink-0 rounded-full p-[2px] shadow-[0_6px_16px_-6px_rgba(0,0,0,0.8)] lg:row-span-2 lg:row-start-1 lg:h-14 lg:w-14"
-              style={{ background: RARITY_METAL.legendary }}
-            >
-              <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
-                <Trophy className="h-6 w-6 text-brass-300 lg:h-7 lg:w-7" strokeWidth={1.75} />
-              </div>
-            </div>
+            <Medallion
+              size="smToLg"
+              icon={Trophy}
+              className="col-start-1 row-span-3 row-start-1 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.8)] lg:row-span-2 lg:row-start-1"
+            />
 
             <h2 className="col-start-2 row-start-1 whitespace-nowrap font-display text-[1.75rem] font-extrabold leading-none text-brass-gradient
               min-[360px]:text-3xl lg:self-end lg:text-4xl"

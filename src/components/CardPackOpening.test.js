@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createElement, act } from 'react';
 import { createRoot } from 'react-dom/client';
 import CardPackOpening from './CardPackOpening';
-import { BATTLE_PASS_REWARDS } from './BattlePass';
+import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 import { useGameStore, SHOP_ITEMS, DAILY_REWARDS } from '@/stores/gameStore';
 import { getCurrentSeason } from '@/utils/season';
 

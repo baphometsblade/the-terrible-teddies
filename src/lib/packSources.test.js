@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { nextCoinPack, nextPassPack, nextDailyPack } from './packSources';
 import { SHOP_ITEMS, DAILY_REWARDS } from '@/stores/gameStore';
-import { BATTLE_PASS_REWARDS } from '@/components/BattlePass';
+import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 
 describe('nextCoinPack', () => {
   it('measures the gap to the cheapest coin pack in SHOP_ITEMS', () => {
