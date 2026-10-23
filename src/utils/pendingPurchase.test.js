@@ -21,7 +21,7 @@ vi.mock('../integrations/supabase/supabase', () => ({
 const {
   verifyPurchaseSession, rememberPendingPurchase, pendingPurchase, forgetPendingPurchase,
   watchPurchaseOnScreen, purchaseOnScreen, PENDING_PURCHASE_TTL_MS,
-} = await import('./stripe');
+} = await import('./pendingPurchase');
 
 beforeEach(() => {
   sessionStorage.clear();

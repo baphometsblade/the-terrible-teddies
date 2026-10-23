@@ -7,7 +7,7 @@ vi.mock('../utils/supabaseClient', () => ({
   supabase: { auth: { getSession: async () => ({ data: { session: net.uid ? { user: { id: net.uid } } : null } }) } },
   fetchServerGemBalance: async (uid) => { net.balanceCalls.push(uid); return net.balance; },
 }));
-vi.mock('../utils/stripe', async (importOriginal) => ({
+vi.mock('../utils/pendingPurchase', async (importOriginal) => ({
   ...(await importOriginal()),
   verifyPurchaseSession: async () => { net.verifyCalls += 1; return net.row; },
 }));
@@ -15,7 +15,7 @@ const toast = vi.fn();
 vi.mock('@/components/ui/use-toast', () => ({ toast: (...a) => toast(...a), useToast: () => ({ toast }) }));
 
 const { settlePendingPurchase } = await import('./settlePendingPurchase');
-const { rememberPendingPurchase, pendingPurchase, watchPurchaseOnScreen } = await import('../utils/stripe');
+const { rememberPendingPurchase, pendingPurchase, watchPurchaseOnScreen } = await import('../utils/pendingPurchase');
 const { useGameStore } = await import('../stores/gameStore');
 const get = () => useGameStore.getState();
 

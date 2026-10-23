@@ -4,7 +4,7 @@ import { Gem, Hourglass, CircleAlert, Undo2, ShieldAlert, Mail } from 'lucide-re
 import { useGameStore } from '../stores/gameStore';
 import {
   verifyPurchaseSession, rememberPendingPurchase, forgetPendingPurchase, watchPurchaseOnScreen,
-} from '../utils/stripe';
+} from '../utils/pendingPurchase';
 import { SUPPORT_EMAIL, supportMailto } from '@/lib/support';
 import { fetchServerGemBalance } from '../utils/supabaseClient';
 import analytics from '../utils/analytics';

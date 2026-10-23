@@ -1,7 +1,7 @@
 import { supabase, fetchServerGemBalance } from '../utils/supabaseClient';
 import {
   verifyPurchaseSession, pendingPurchase, forgetPendingPurchase, purchaseOnScreen,
-} from '../utils/stripe';
+} from '../utils/pendingPurchase';
 import { useGameStore } from '../stores/gameStore';
 import { toast } from '@/components/ui/use-toast';
 

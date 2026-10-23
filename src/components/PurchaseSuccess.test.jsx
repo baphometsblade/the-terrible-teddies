@@ -5,7 +5,7 @@ import { MotionGlobalConfig } from 'framer-motion';
 
 // The purchases row, as each check reads it (null: Stripe has not confirmed).
 const net = { row: null, checks: 0 };
-vi.mock('../utils/stripe', async (importOriginal) => ({
+vi.mock('../utils/pendingPurchase', async (importOriginal) => ({
   ...(await importOriginal()),
   verifyPurchaseSession: async () => { net.checks += 1; return net.row; },
 }));
@@ -23,7 +23,7 @@ vi.mock('@/lib/support', async (importOriginal) => {
 });
 
 const { default: PurchaseSuccess, pendingPollDelay } = await import('./PurchaseSuccess');
-const { pendingPurchase } = await import('../utils/stripe');
+const { pendingPurchase } = await import('../utils/pendingPurchase');
 const { useGameStore } = await import('@/stores/gameStore');
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
