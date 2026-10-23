@@ -5,7 +5,7 @@ import {
   Heart, Layers, Bomb, Swords, Sparkles,
 } from 'lucide-react';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
-import { BrassCoin } from '@/components/ui/game-chrome';
+import { BrassCoin } from '@/components/ui/coin';
 
 // Dark-face fallbacks for cards without a rarity (typed opponent cards).
 const TYPE_STYLES = {
