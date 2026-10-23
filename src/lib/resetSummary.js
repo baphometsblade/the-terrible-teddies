@@ -15,17 +15,19 @@ const count = (n, one, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? o
 export function describeReset(state, now = new Date()) {
   const kept = keptThroughReset(state, now);
 
-  const deletes = [
-    { label: `Level ${state.level.toLocaleString()}`, after: state.level > 1 ? 'back to Level 1' : undefined },
-    {
-      label: state.savedDecks.length
-        ? `${count(state.ownedCards.length, 'card')} and ${count(state.savedDecks.length, 'saved deck')}`
-        : count(state.ownedCards.length, 'card'),
-      after: `back to the ${FRESH_START.cards} starters`,
-    },
-    { label: count(state.coins, 'coin'), after: `back to ${FRESH_START.coins.toLocaleString()}` },
-  ];
-  if (state.cardPacks > 0) {
+  // Only what the reset changes: "500 coins, back to 500" says nothing.
+  const deletes = [];
+  if (state.level > 1) deletes.push({ label: `Level ${state.level.toLocaleString()}`, after: 'back to Level 1' });
+  const starters = new Set(FRESH_START.cardIds);
+  const cardsChange = state.ownedCards.length !== starters.size || state.ownedCards.some((id) => !starters.has(id));
+  if (cardsChange) {
+    deletes.push({ label: count(state.ownedCards.length, 'card'), after: `back to the ${FRESH_START.cardIds.length} starters` });
+  }
+  if (state.savedDecks.length) deletes.push({ label: count(state.savedDecks.length, 'saved deck') });
+  if (state.coins !== FRESH_START.coins) {
+    deletes.push({ label: count(state.coins, 'coin'), after: `back to ${FRESH_START.coins.toLocaleString()}` });
+  }
+  if (state.cardPacks !== FRESH_START.cardPacks) {
     deletes.push({ label: count(state.cardPacks, 'card pack'), after: `back to ${FRESH_START.cardPacks}` });
   }
   if (state.seasonXP > 0) deletes.push({ label: `${state.seasonXP.toLocaleString()} Battle Pass XP` });

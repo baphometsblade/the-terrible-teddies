@@ -306,7 +306,7 @@ export const STARTING_GEMS = initialState.gems;
 export const FRESH_START = {
   gems: initialState.gems,
   coins: initialState.coins,
-  cards: initialState.ownedCards.length,
+  cardIds: [...initialState.ownedCards],
   cardPacks: initialState.cardPacks,
 };
 

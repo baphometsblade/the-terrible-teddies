@@ -38,12 +38,21 @@ describe('the reset confirmation', () => {
     const labels = describeReset(get(), NOW).deletes.map((d) => [d.label, d.after]);
     expect(labels).toEqual([
       ['Level 7', 'back to Level 1'],
-      ['48 cards and 3 saved decks', `back to the ${FRESH_START.cards} starters`],
+      ['48 cards', `back to the ${FRESH_START.cardIds.length} starters`],
+      ['3 saved decks', undefined],
       ['2,345 coins', `back to ${FRESH_START.coins}`],
       ['4 card packs', `back to ${FRESH_START.cardPacks}`],
       ['3,250 Battle Pass XP', undefined],
       ['Stats, achievements, login streak and challenge progress', undefined],
       ['Your name, sound, animation and difficulty settings', 'back to defaults'],
+    ]);
+  });
+
+  it('lists only what the reset changes', () => {
+    // A fresh save: nothing of its own to lose but the stats and settings.
+    expect(describeReset(get(), NOW).deletes.map((d) => d.label)).toEqual([
+      'Stats, achievements, login streak and challenge progress',
+      'Your name, sound, animation and difficulty settings',
     ]);
   });
 

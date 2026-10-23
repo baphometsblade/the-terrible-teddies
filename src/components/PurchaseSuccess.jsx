@@ -77,16 +77,18 @@ const PaymentReference = ({ sessionId, phase }) => {
       {/* select-all: one tap selects the whole id, for copying. */}
       <p className="mt-1 select-all break-all font-mono text-[13px] leading-snug text-white">{sessionId}</p>
       {mailto ? (
-        <p className="mt-2 text-sm text-plush-200">
-          Questions about this payment?{' '}
+        <>
+          <p className="mt-2 text-sm text-plush-200">Questions about this payment?</p>
+          {/* Its own line, the icon on the first line of the text, so a
+              long address wraps under itself rather than under the icon. */}
           <a
             href={mailto}
-            className={`inline-flex items-center gap-1 rounded-sm font-semibold text-brass-200 underline underline-offset-4 decoration-brass-300/60 hover:text-white ${FOCUS_RING}`}
+            className={`mt-1 flex w-fit max-w-full items-start gap-1.5 rounded-sm text-sm font-semibold text-brass-200 underline underline-offset-4 decoration-brass-300/60 hover:text-white ${FOCUS_RING}`}
           >
-            <Mail aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
-            Email {SUPPORT_EMAIL}
+            <Mail aria-hidden="true" className="mt-[3px] h-3.5 w-3.5 shrink-0" strokeWidth={2.4} />
+            <span className="min-w-0 [overflow-wrap:anywhere]">Email {SUPPORT_EMAIL}</span>
           </a>
-        </p>
+        </>
       ) : (
         <p className="mt-2 text-sm text-plush-200">Keep this reference: it identifies this payment if you need help with it.</p>
       )}
@@ -368,7 +370,8 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
           <div className="relative">
             {/* Never "payment received" before Stripe says so: no row yet
                 means Stripe has not confirmed the payment to us. */}
-            <h2 className="font-display text-3xl font-extrabold leading-tight text-white mb-2">
+            {/* A size down on a phone: at 3xl the heading alone took three lines at 320. */}
+            <h2 className="font-display text-2xl sm:text-3xl font-extrabold leading-tight text-white mb-2">
               {stalled ? 'Still Waiting for Stripe' : 'Waiting for Payment Confirmation'}
             </h2>
             {stalled ? (
