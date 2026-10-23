@@ -85,18 +85,24 @@ export const SupabaseProvider = ({ children }) => {
     // player in (set a password) or it could not. initialize() hands back the
     // same result the client's own start-up produced.
     if (LANDING?.kind === 'recovery') {
-      supabase.auth.initialize().then(({ error } = {}) => {
-        if (!mounted) return;
-        setRecovery((r) => {
-          if (r?.stage !== 'checking') return r;
-          if (!error) return { stage: 'set-password' };
-          const reason = recoveryLinkFailure(error);
+      // initialize() is documented never to reject; if it ever did, the
+      // panel would wait on "Checking" for good, so a rejection reads as a
+      // link that could not be checked.
+      supabase.auth.initialize()
+        .catch(() => ({ error: { name: 'AuthRetryableFetchError' } }))
+        .then(({ error } = {}) => {
+          if (!mounted) return;
+          const reason = error ? recoveryLinkFailure(error) : null;
           // A dead token has no use in the address; one that could not be
           // checked stays, so a reload can try it again.
-          if (reason === 'invalid') window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
-          return { stage: 'link-error', reason };
+          if (reason === 'invalid') {
+            window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+          }
+          setRecovery((r) => {
+            if (r?.stage !== 'checking') return r;
+            return reason ? { stage: 'link-error', reason } : { stage: 'set-password' };
+          });
         });
-      });
     }
     // supabase-js leaves a refused link's error in the address.
     if (LANDING?.kind === 'link-error') {

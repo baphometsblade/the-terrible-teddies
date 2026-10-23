@@ -211,6 +211,31 @@ test.describe('landing from a reset link', () => {
   });
 });
 
+test.describe('a reset link that cannot be used', () => {
+  // Supabase refuses the token (too old, revoked): nothing to set a password
+  // with, and nothing worth keeping in the address.
+  test('says so when Supabase refuses its token, and drops the token from the address', async ({ page }) => {
+    await stubBackend(page, {
+      user: (route) => route.fulfill({ status: 401, headers: GOTRUE_2024, json: { code: 'bad_jwt', msg: 'invalid JWT' } }),
+    });
+    await page.goto(`/${recoveryHash()}`);
+    await expect(page.getByRole('heading', { name: 'This Link Can’t Be Used' })).toBeVisible(SLOW);
+    expect(new URL(page.url()).hash).toBe('');
+    await expect(page.getByRole('button', { name: 'Send a new link' })).toBeFocused();
+  });
+
+  // The server could not be reached: the link has not been used, so it stays
+  // in the address and a reload tries it again.
+  test('keeps a link it could not check, to try again', async ({ page }) => {
+    await stubBackend(page, { user: (route) => route.abort('internetdisconnected') });
+    await page.goto(`/${recoveryHash()}`);
+    await expect(page.getByRole('heading', { name: 'Couldn’t Check Your Link' })).toBeVisible(SLOW);
+    expect(new URL(page.url()).hash).toContain('type=recovery');
+    await expect(page.getByRole('button', { name: 'Try the link again' })).toBeFocused();
+    await expectNoAxeViolations(page, 'link could not be checked');
+  });
+});
+
 test.describe('an expired link', () => {
   test('says so, takes the error out of the address, and offers a new link', async ({ page }) => {
     const auth = await stubBackend(page);
