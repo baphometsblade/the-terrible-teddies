@@ -18,6 +18,7 @@ import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../util
 import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder, ownedEmotes } from '@/lib/cosmetics';
+import { abilityRules } from '@/lib/abilities';
 
 // Cap the hand so unbounded draw (per-turn + draw specials) can't overflow the
 // fixed-width hand layout into an unclickable, off-screen stack.
@@ -306,15 +307,7 @@ const GameOverDialog = ({ label, onEscape, children }) => {
  * at which point trample overkill spills to the owner's face. Both sides
  * resolve identically via resolveCreatureHit.
  *
- * Card Abilities:
- * - taunt: Forces enemies to attack this card first
- * - piercing: Cuts through shield (deals full damage)
- * - shield: Takes 50% less damage (halved, floored)
- * - stealth: Can't be targeted for one turn after played
- * - protect: Other cards can't be targeted while this is on field
- * - fury: Gains +1 attack each time it survives a hit, capped at +3 total
- * - swarm: Costs 1 less energy (min 1) once you control another creature
- * - royal: Aura — other creatures you control get +1 attack while it's on the field
+ * Card abilities and their rules text: src/lib/abilities.js.
  */
 const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // Get store data
@@ -1370,21 +1363,6 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     setGameId(prev => prev + 1);
   };
 
-  // Get ability description
-  const getAbilityDescription = (ability) => {
-    const descriptions = {
-      taunt: "Forces enemies to attack this card first",
-      piercing: "Cuts through Shield (defense here is HP, and piercing does not skip it)",
-      shield: "Takes 50% less damage",
-      stealth: "Can't be targeted for one turn",
-      protect: "Other cards can't be targeted",
-      fury: "Gains +1 attack when damaged (up to +3)",
-      swarm: "Costs 1 less energy (min 1) if you already control another creature",
-      royal: "Other creatures you control get +1 attack while this is on the field",
-    };
-    return descriptions[ability] || "";
-  };
-
   const won = winner === 'player';
   const playerTurn = currentTurn === 'player';
   const directTargets = targetingMode && getValidTargets(playerField, opponentField).length === 0;
@@ -1863,7 +1841,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                     >
                       <div className="label-caps text-brass-300">{showAbilityPopup.ability}</div>
                       <div className="font-display text-lg font-extrabold text-white">{showAbilityPopup.name}</div>
-                      <div className="text-sm text-plush-200">{getAbilityDescription(showAbilityPopup.ability)}</div>
+                      <div className="text-sm text-plush-200">{abilityRules(showAbilityPopup.ability)}</div>
                     </motion.div>
                   </div>
                 )}
