@@ -1,20 +1,23 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Crown, Lock, Check, Clock, Gem, X, Sparkles, Swords, Coins, Drama, PartyPopper } from 'lucide-react';
+import {
+  Trophy, Crown, Lock, Check, Clock, Gem, X, Sparkles, Swords, Coins, Drama, PartyPopper, Hourglass,
+} from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
-import { useGameStore, ALL_CARDS } from '../stores/gameStore';
-import { getCurrentSeason } from '../utils/season';
+import { useGameStore, ALL_CARDS, BATTLE_XP, coinsForDuplicate } from '../stores/gameStore';
+import { getDailyChallenges, getWeeklyChallenges } from '../stores/challenges';
+import { getCurrentSeason, formatSeasonEnd, SEASON_ENDING_DAYS } from '../utils/season';
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
-import { Medallion } from '@/components/ui/game-chrome';
+import { Medallion, WalletChips } from '@/components/ui/game-chrome';
 import { ArtOrEmoji } from './TeddyCard';
 import { PACK_LOOK, PackStack } from './PackArt';
 import { frameFor, EMOTES } from '@/lib/cosmetics';
 import {
-  BATTLE_PASS_REWARDS, PREMIUM_PASS_PRICE, currentTier as tierFor, countReadyRewards,
+  BATTLE_PASS_REWARDS, PREMIUM_PASS_PRICE, currentTier as tierFor, countReadyRewards, premiumTotals, listOf,
 } from '@/lib/battlePass';
 
 // Plain <button>s throughout, not the shadcn Button: its bg-primary is a
@@ -37,15 +40,22 @@ const TILE_H = 'h-[7.75rem]';
 
 // A reward in words, for screen readers: the tile draws it as a picture, an
 // amount and a rarity, none of which says "coins" or "card" on its own.
-const describeReward = (reward) => {
+// `owned` is set for a card or cosmetic the player already has (see ownedNote).
+const describeReward = (reward, owned = null) => {
   const n = reward.amount;
-  switch (reward.type) {
-    case 'coins': return `${n} coins`;
-    case 'gems': return `${n} gems`;
-    case 'pack': return `${n} card pack${n === 1 ? '' : 's'}`;
-    case 'card': return `${reward.name}, ${reward.rarity} card`;
-    default: return reward.name ?? `${n ?? ''} ${reward.type}`.trim();
-  }
+  const what = (() => {
+    switch (reward.type) {
+      case 'coins': return `${n} coins`;
+      case 'gems': return `${n} gems`;
+      case 'pack': return `${n} card pack${n === 1 ? '' : 's'}`;
+      case 'card': return `${reward.name}, ${reward.rarity} card`;
+      default: return reward.name ?? `${n ?? ''} ${reward.type}`.trim();
+    }
+  })();
+  if (!owned) return what;
+  return owned.coins
+    ? `${what}. You already own it: claiming pays ${owned.coins} coins instead`
+    : `${what}. You already own it`;
 };
 
 // What a reward looks like, drawn in the tile's 32px slot rather than as a
@@ -121,7 +131,11 @@ const RewardArt = ({ reward }) => {
 // (tabIndex -1, never a tab stop) and says "Claimed", and the next Tab goes on
 // from there to the next tile. preventScroll: it is the same spot, and the
 // rail must not move under the player.
-const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, onClaim }) => {
+//
+// `owned` ({ coins } or null) marks a card or cosmetic the player already has,
+// before it is claimed: a card pays its duplicate coins instead, a cosmetic
+// nothing more. The tile says so, so claiming it holds no surprise.
+const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, owned = null, onClaim }) => {
   const tileRef = useRef(null);
   const refocus = useRef(false);
   useLayoutEffect(() => {
@@ -138,6 +152,8 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
     : !isUnlocked ? 'locked'
     : 'needs-premium';
   const quiet = state === 'claimed' || state === 'locked';
+  // Once claimed it is owned whichever way it went; "Owned" is for before.
+  const showOwned = !!owned && !isClaimed;
   const metal = state === 'claim' ? BRASS_EDGE : reward.rarity ? RARITY_METAL[reward.rarity] : null;
   const track = isPremium ? 'premium' : 'free';
 
@@ -164,7 +180,7 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
         {/* The reward in words, then the drawing aria-hidden. A locked or
             claimed tile dims the drawing only (TeddyCard's dimmed treatment),
             so its words stay readable. */}
-        {!canClaim && <span className="sr-only">Tier {tier} {track} reward: {describeReward(reward)}.</span>}
+        {!canClaim && <span className="sr-only">Tier {tier} {track} reward: {describeReward(reward, showOwned ? owned : null)}.</span>}
         <span aria-hidden="true" className={`grid h-8 place-items-center ${quiet ? 'saturate-[0.3] brightness-[0.55]' : ''}`}>
           <RewardArt reward={reward} />
         </span>
@@ -173,7 +189,22 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
             {label}
           </span>
         </span>
-        {reward.rarity && (
+        {/* Under the name: "Owned" (and what claiming it pays instead) for
+            something the player already has, else a card's rarity. The
+            frame's metal still says the rarity of an owned card. */}
+        {showOwned ? (
+          <span aria-hidden="true" data-owned="" className="inline-flex h-3 items-center gap-0.5 text-[9px] font-bold leading-3 text-emerald-300">
+            <Check className="h-2.5 w-2.5" strokeWidth={3} />
+            Owned
+            {owned.coins > 0 && (
+              <>
+                <span className="text-plush-300">·</span>
+                <span className="text-brass-200">+{owned.coins}</span>
+                <Coins className="h-2.5 w-2.5 text-brass-300" strokeWidth={2.6} />
+              </>
+            )}
+          </span>
+        ) : reward.rarity && (
           <span aria-hidden="true" className={`label-caps text-[8px] leading-3 ${RARITY[reward.rarity].text}`}>
             {reward.rarity}
           </span>
@@ -228,7 +259,7 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
         refocus.current = e.currentTarget === document.activeElement;
         onClaim();
       }}
-      aria-label={`Claim tier ${tier} ${track} reward: ${describeReward(reward)}`}
+      aria-label={`Claim tier ${tier} ${track} reward: ${describeReward(reward, showOwned ? owned : null)}`}
       className={`sheen relative block w-full rounded-xl p-px ${TILE_H} cursor-pointer transition-transform duration-150 hover:-translate-y-0.5
         shadow-[0_0_20px_-4px_rgba(251,191,36,0.6)] ${FOCUS_OUTLINE}`}
     >
@@ -238,13 +269,48 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
 };
 
 
+// What a battle and today's challenges pay in season XP, from the figures
+// that pay it: BATTLE_XP (recordBattleResult) and the challenges on today's
+// and this week's boards whose reward is XP and that are not yet claimed. The
+// footer used to say "Win battles and complete daily challenges to earn XP!",
+// and on most days none of the challenges on the board paid any.
+const xpSources = (claimedChallenges = []) => {
+  const challenges = [
+    ...getDailyChallenges().map((c) => ({ ...c, when: 'Today' })),
+    ...getWeeklyChallenges().map((c) => ({ ...c, when: 'This week' })),
+  ].filter((c) => c.reward?.type === 'xp' && !claimedChallenges.includes(c.id));
+  return {
+    battles: `Win or lose, every battle earns XP: +${BATTLE_XP.win} for a win, +${BATTLE_XP.loss} for a loss.`,
+    challenges: challenges.map((c) => `${c.when}'s challenge “${c.name}” pays +${c.reward.amount} XP.`),
+  };
+};
+
+const plural = (n, one, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+
+// One line of the confirm's list, with a quieter second line under it.
+const Includes = ({ children, note }) => (
+  <li className="flex items-start gap-2.5">
+    <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brass-300" strokeWidth={2.5} />
+    <span>
+      {children}
+      {note && <span className="mt-0.5 block text-xs text-plush-300">{note}</span>}
+    </span>
+  </li>
+);
+
 // The Unlock-Premium confirmation is a modal over the Battle Pass dialog, so it
 // hosts its own useDialog: it pushes onto the dialog stack (so it owns Escape and
 // its own focus trap), moves focus into itself, and carries role=dialog/aria-modal.
 // Without it, the outer BattlePass trap treated the 50-tile reward track and the
 // confirm buttons as one flat focus set — Tab walked the whole background behind
 // the overlay before reaching Purchase/Cancel. Matches SaveDeckDialog / CardDetailDialog.
-const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }) => {
+//
+// Everything it promises is read from the reward table and the player's own
+// save, and it states the term: it sold "3 guaranteed legendary cards" (which
+// turn into coins if already owned) and never said the pass lasts one season.
+const PurchaseConfirmDialog = ({
+  gems, price, season, seasonXP, ownedCards, unlockedCosmetics, onPurchase, onGetGems, onClose,
+}) => {
   const ref = useDialog(onClose);
   // Opens on Cancel, not Purchase. useDialog focuses the first control, and
   // that is Purchase: an Enter held down on "Unlock Premium" auto-repeats into
@@ -255,6 +321,19 @@ const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }
   useEffect(() => {
     cancelRef.current?.focus();
   }, []);
+
+  const totals = premiumTotals();
+  const legendaries = totals.cards.filter((c) => c.rarity === 'legendary').length;
+  const ownedPassCards = totals.cards.filter((c) => ownedCards.includes(c.cardId));
+  const ownedPassCoins = ownedPassCards.reduce((n, c) => n + coinsForDuplicate(c.cardId), 0);
+  const emotes = totals.exclusives.filter((name) => !frameFor(name));
+  const borders = totals.exclusives.filter((name) => frameFor(name));
+  const ownedExclusives = totals.exclusives.filter((name) => unlockedCosmetics.includes(name));
+  const last = BATTLE_PASS_REWARDS[BATTLE_PASS_REWARDS.length - 1];
+  const xpLeft = Math.max(0, last.xpRequired - seasonXP);
+  const ending = season.daysLeft <= SEASON_ENDING_DAYS;
+  const short = gems < price;
+
   return (
     <motion.div
       ref={ref}
@@ -264,7 +343,7 @@ const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }
       initial={{ scale: 0.9 }}
       animate={{ scale: 1 }}
       exit={{ scale: 0.9 }}
-      className="relative my-auto w-full max-w-md overflow-hidden rounded-2xl dialog-panel trim-brass px-6 pt-7 pb-6 text-center"
+      className="relative my-auto w-full max-w-md overflow-hidden rounded-2xl dialog-panel trim-brass px-5 pt-7 pb-6 text-center sm:px-6"
       onClick={e => e.stopPropagation()}
     >
       <div
@@ -281,14 +360,43 @@ const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }
         Unlock Premium Pass
       </h3>
 
-      <div className="relative mt-5 rounded-xl bg-black/25 p-4 text-left ring-1 ring-white/5">
-        <div className="label-caps mb-3 text-plush-300">Premium Pass includes:</div>
-        <ul className="space-y-2 text-sm text-plush-100">
-          <li className="flex items-start gap-2.5"><Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brass-300" strokeWidth={2.5} />3 guaranteed legendary cards</li>
-          <li className="flex items-start gap-2.5"><Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brass-300" strokeWidth={2.5} />Premium cosmetic rewards</li>
-          <li className="flex items-start gap-2.5"><Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brass-300" strokeWidth={2.5} />Bonus gems and coins</li>
-          <li className="flex items-start gap-2.5"><Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brass-300" strokeWidth={2.5} />Special card borders &amp; emotes</li>
-          <li className="flex items-start gap-2.5"><Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brass-300" strokeWidth={2.5} />All {rewardCount} premium tier rewards</li>
+      {/* The term, before what it buys: one season, and what happens at its end. */}
+      <div data-pass-term="" className="relative mt-4 text-sm leading-snug text-plush-200">
+        <p>
+          Premium lasts for <span className="font-semibold text-white">{season.name}</span>, which ends{' '}
+          <span className="whitespace-nowrap font-semibold text-white">{formatSeasonEnd(season.endDate)}</span>{' '}
+          ({plural(season.daysLeft, 'day')} from now).
+        </p>
+        <p className="mt-1.5 text-xs text-plush-300">
+          Then XP, tiers and Premium reset. Tiers you reached but did not claim are delivered to you, and
+          cards and cosmetics stay yours.
+        </p>
+        {/* What is left to earn, in wins (what a win pays, from BATTLE_XP).
+            Rose in the season's last days, when that is the thing to know
+            before paying. */}
+        {xpLeft > 0 && (
+          <p data-pass-pace="" className={`mt-1.5 text-xs ${ending ? 'font-semibold text-rose-300' : 'text-plush-300'}`}>
+            {`${ending ? `Only ${plural(season.daysLeft, 'day')} left: t` : 'T'}ier ${last.tier} is ${xpLeft.toLocaleString()} XP away, about ${plural(Math.ceil(xpLeft / BATTLE_XP.win), 'win')}.`}
+          </p>
+        )}
+      </div>
+
+      <div className="relative mt-4 rounded-xl bg-black/25 p-4 text-left ring-1 ring-white/5">
+        <div className="label-caps mb-3 text-plush-300">On every premium tier you reach:</div>
+        <ul className="space-y-2.5 text-sm text-plush-100">
+          <Includes
+            note={ownedPassCards.length > 0
+              ? `You own ${listOf(ownedPassCards.map((c) => c.name))} already: ${ownedPassCards.length === 1 ? 'it pays' : 'those pay'} ${ownedPassCoins.toLocaleString()} coins instead.`
+              : 'Any you already own pay their duplicate coins instead.'}
+          >
+            {`${plural(totals.cards.length, 'card')}, ${legendaries} of them legendary`}
+          </Includes>
+          <Includes>
+            {`+${totals.gems.toLocaleString()} gems, +${totals.coins.toLocaleString()} coins and ${plural(totals.packs, 'card pack')}`}
+          </Includes>
+          <Includes note={ownedExclusives.length > 0 ? `You already have ${listOf(ownedExclusives)}.` : null}>
+            {`${listOf(borders)} card frames and ${plural(emotes.length, 'emote')}, yours to keep`}
+          </Includes>
         </ul>
       </div>
 
@@ -299,22 +407,35 @@ const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }
           {price}
           <span className="sr-only"> gems</span>
         </div>
-        <div className={`mt-2 text-sm ${gems < price ? 'text-rose-300' : 'text-plush-300'}`}>You have: {gems} gems</div>
+        <div className={`mt-2 text-sm ${short ? 'text-rose-300' : 'text-plush-300'}`}>
+          {short ? `You have ${gems} gems: ${price - gems} short.` : `You have ${gems} gems.`}
+        </div>
       </div>
 
-      {/* Brass only while it can be bought. A short balance gets a dimmed
-          glass key rather than see-through brass, which read as a muddy brown
-          button that still looked like the thing to press. */}
+      {/* Brass for the way forward: Purchase while it can be bought, and a
+          route to gems while it cannot (it used to be a disabled Purchase,
+          with nowhere to go but Cancel). */}
       <div className="relative mt-6 flex gap-3">
-        <button
-          type="button"
-          onClick={onPurchase}
-          disabled={gems < price}
-          className={`h-11 flex-1 rounded-xl font-display font-bold ${FOCUS_OUTLINE} ${
-            gems < price ? 'btn-glass cursor-not-allowed text-plush-400 opacity-70' : 'btn-brass'}`}
-        >
-          Purchase
-        </button>
+        {short && onGetGems ? (
+          <button
+            type="button"
+            onClick={onGetGems}
+            className={`btn-brass inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl font-display font-bold ${FOCUS_OUTLINE}`}
+          >
+            <Gem aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
+            Get gems
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onPurchase}
+            disabled={short}
+            className={`h-11 flex-1 rounded-xl font-display font-bold ${FOCUS_OUTLINE} ${
+              short ? 'btn-glass cursor-not-allowed text-plush-400 opacity-70' : 'btn-brass'}`}
+          >
+            Purchase
+          </button>
+        )}
         <button
           ref={cancelRef}
           type="button"
@@ -328,11 +449,12 @@ const PurchaseConfirmDialog = ({ gems, price, rewardCount, onPurchase, onClose }
   );
 };
 
-const BattlePass = ({ onClose }) => {
+// `onGetGems` (from App) closes the pass and opens the Shop on its gems tab.
+const BattlePass = ({ onClose, onGetGems }) => {
   const {
-    gems, addCoins, addGems, addCardPack, addCard, unlockCosmetic, seasonXP,
+    coins, gems, seasonXP, ownedCards, unlockedCosmetics, claimedChallenges,
     hasBattlePassPremium, purchaseBattlePassPremium,
-    claimedBattlePassRewards, claimBattlePassReward, syncSeason,
+    claimedBattlePassRewards, claimBattlePassTier, syncSeason,
   } = useGameStore();
   const { toast } = useToast();
   const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
@@ -438,7 +560,7 @@ const BattlePass = ({ onClose }) => {
     if (outcome === 'purchased') {
       setShowPurchaseConfirm(false);
       celebrate({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#fbbf24', '#f59e0b', '#fde68a'] });
-      toast({ title: "Premium Pass Unlocked!", description: "You now have access to all premium rewards!" });
+      toast({ title: "Premium Pass Unlocked!", description: `Premium rewards on every tier you reach, until ${formatSeasonEnd(season.endDate)}.` });
     } else if (outcome === 'already-owned') {
       setShowPurchaseConfirm(false);
     } else {
@@ -446,57 +568,38 @@ const BattlePass = ({ onClose }) => {
     }
   };
 
+  // Claimed in the store, which checks eligibility itself and says what it
+  // really handed over; the toast is worded from that receipt.
   const claimReward = (tier, isPremium) => {
-    const reward = BATTLE_PASS_REWARDS.find(r => r.tier === tier);
-    if (!reward) return;
-
-    const rewardData = isPremium ? reward.premium : reward.free;
-
-    if (tier > currentTier) {
-      toast({ title: "Tier Not Reached", description: "Keep playing to unlock this tier!", variant: "destructive" });
+    const out = claimBattlePassTier(tier, isPremium ? 'premium' : 'free');
+    if (!out.ok) {
+      const why = {
+        'not-reached': ['Tier Not Reached', 'Keep playing to unlock this tier!'],
+        'needs-premium': ['Premium Required', 'Unlock the Premium Pass to claim this reward!'],
+        'already-claimed': ['Already Claimed', "You've already claimed this reward."],
+      }[out.reason];
+      if (why) toast({ title: why[0], description: why[1], variant: 'destructive' });
       return;
     }
-
-    if (isPremium && !hasPremium) {
-      toast({ title: "Premium Required", description: "Unlock the Premium Pass to claim this reward!", variant: "destructive" });
+    if (out.alreadyOwned) {
+      // A card already owned paid its duplicate coins; a cosmetic already
+      // owned is not granted twice. No confetti for either.
+      toast({
+        title: 'Already owned',
+        description: out.card ? `${out.card.name} → +${out.coins} coins` : `You already have ${out.cosmetic}.`,
+      });
       return;
     }
-
-    // Claim first — claimBattlePassReward atomically records the tier and
-    // returns false if it was already claimed, so a double-click can't grant
-    // the reward twice.
-    if (!claimBattlePassReward(tier, isPremium, reward.xpRequired)) {
-      toast({ title: "Already Claimed", description: "You've already claimed this reward.", variant: "destructive" });
+    if (out.card || out.cosmetic) {
+      celebrate({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      toast(out.card
+        ? { title: 'Card Unlocked!', description: `You got ${out.card.name}!` }
+        : { title: 'Exclusive Unlocked!', description: `You got ${out.cosmetic}! It stays yours after the season.` });
       return;
     }
-
-    switch (rewardData.type) {
-      case 'coins':
-        addCoins(rewardData.amount);
-        toast({ title: "Coins Claimed!", description: `+${rewardData.amount} coins` });
-        break;
-      case 'gems':
-        addGems(rewardData.amount);
-        toast({ title: "Gems Claimed!", description: `+${rewardData.amount} gems` });
-        break;
-      case 'pack':
-        addCardPack(rewardData.amount);
-        toast({ title: "Packs Claimed!", description: `+${rewardData.amount} card pack(s)` });
-        break;
-      case 'card':
-        addCard(rewardData.cardId);
-        celebrate({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-        toast({ title: "Card Unlocked!", description: `You got ${rewardData.name}!` });
-        break;
-      case 'exclusive':
-        // Record the cosmetic as owned so the claim is a real grant, not a
-        // no-op. No UI renders borders/emotes yet, but the entitlement now
-        // persists (and survives a season reset by being cleared with the pass).
-        unlockCosmetic(rewardData.name);
-        celebrate({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-        toast({ title: "Exclusive Unlocked!", description: `You got ${rewardData.name}!` });
-        break;
-    }
+    if (out.coins) toast({ title: 'Coins Claimed!', description: `+${out.coins} coins` });
+    else if (out.gems) toast({ title: 'Gems Claimed!', description: `+${out.gems} gems` });
+    else if (out.packs) toast({ title: 'Packs Claimed!', description: `+${plural(out.packs, 'card pack')}` });
   };
 
   // How many tiles are waiting to be claimed: the helper the menu tile badges
@@ -504,6 +607,19 @@ const BattlePass = ({ onClose }) => {
   // count, the menu and the brass tiles always agree.
   const readyCount = countReadyRewards({ seasonXP: battlePassXP, claimed: claimedRewards, hasPremium });
   const lastTier = BATTLE_PASS_REWARDS[BATTLE_PASS_REWARDS.length - 1].tier;
+  // In the season's last days the rail says how many rewards are unclaimed and
+  // when the season stops: claiming then is the player's call (what is left
+  // is delivered at the end either way, so it says that too, rather than
+  // pretend it is lost).
+  const ending = season.daysLeft <= SEASON_ENDING_DAYS && readyCount > 0;
+  // What a reward already owned pays instead, for the tile to say before the
+  // claim: a card its duplicate coins, a cosmetic nothing more.
+  const ownedOf = (reward) => {
+    if (reward.type === 'card' && ownedCards.includes(reward.cardId)) return { coins: coinsForDuplicate(reward.cardId) };
+    if (reward.type === 'exclusive' && unlockedCosmetics.includes(reward.name)) return { coins: 0 };
+    return null;
+  };
+  const xp = xpSources(claimedChallenges);
 
   return (
     <div
@@ -532,10 +648,13 @@ const BattlePass = ({ onClose }) => {
 
               Below lg: the medallion beside three short lines (title, season,
               countdown) with the close control at the top right, and the
-              premium button on a row underneath (full width on a phone, under the
-              text from sm). From lg up, one row: title block, countdown, button,
-              close — below that the five do not fit side by side, and the
-              gradient title is what gets squeezed out of its column.
+              wallet and the premium button on a row underneath (the button
+              full width on a phone, beside the wallet from sm). From lg up,
+              one row: title block, countdown, wallet, button, close — below
+              that the six do not fit side by side, and the gradient title is
+              what gets squeezed out of its column. The wallet is the Shop's
+              and Card Packs': this dialog sells a 500-gem pass, and the
+              balance it is paid from first appeared in the confirm.
 
               The title never wraps: a brass gradient stretched over two lines
               of a wrapped heading is drawn as one tall gradient, and it is
@@ -544,7 +663,7 @@ const BattlePass = ({ onClose }) => {
               row may be wider than the panel: its overflow-hidden would clip
               the close button off the right edge and leave no way out. */}
           <div className="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1
-            lg:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] lg:gap-y-1.5 lg:gap-x-5"
+            lg:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto_auto] lg:gap-y-1.5 lg:gap-x-4"
           >
             <Medallion
               size="smToLg"
@@ -590,39 +709,48 @@ const BattlePass = ({ onClose }) => {
               type="button"
               onClick={onClose}
               className={`btn-glass col-start-3 row-start-1 grid h-10 w-10 shrink-0 place-items-center self-start rounded-xl
-                lg:col-start-5 lg:row-span-2 lg:row-start-1 lg:self-center ${FOCUS_OUTLINE}`}
+                lg:col-start-6 lg:row-span-2 lg:row-start-1 lg:self-center ${FOCUS_OUTLINE}`}
               aria-label="Close battle pass"
             >
               <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
             </button>
 
-            <div className="col-span-3 col-start-1 row-start-4 mt-3 sm:col-span-2 sm:col-start-2 lg:col-span-1 lg:col-start-4 lg:row-span-2 lg:row-start-1 lg:mt-0">
-              {!hasPremium && (
-                <button
-                  type="button"
-                  onClick={() => setShowPurchaseConfirm(true)}
-                  className={`btn-brass sheen relative inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl pl-3.5 pr-1.5
-                    font-display font-bold sm:w-auto ${FOCUS_OUTLINE}`}
-                >
-                  <Crown aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
-                  <span>Unlock Premium</span>
-                  <span className="inline-flex h-8 items-center gap-1 rounded-lg bg-night-950 px-2 text-sm text-brass-200 tabular-nums">
-                    <Gem aria-hidden="true" className="h-3.5 w-3.5 text-fuchsia-300" strokeWidth={2.4} />
-                    {PREMIUM_PASS_PRICE}
-                    <span className="sr-only"> gems</span>
-                  </span>
-                </button>
-              )}
-              {hasPremium && (
-                <div
-                  ref={premiumBadgeRef}
-                  tabIndex={-1}
-                  className={`trim-brass relative flex h-11 items-center justify-center gap-2 rounded-xl bg-brass-400/10 px-4 font-display font-bold text-brass-200 sm:inline-flex ${FOCUS_OUTLINE}`}
-                >
-                  <Crown aria-hidden="true" className="h-4 w-4 text-brass-300" strokeWidth={2.4} />
-                  Premium Active
-                </div>
-              )}
+            {/* One wrapping row below lg; from lg, display: contents hands the
+                wallet and the button a grid column each. */}
+            <div className="col-span-3 col-start-1 row-start-4 mt-3 flex flex-wrap items-center gap-2 sm:col-span-2 sm:col-start-2 lg:contents">
+              <WalletChips
+                coins={coins}
+                gems={gems}
+                className="flex-nowrap lg:col-start-4 lg:row-span-2 lg:row-start-1"
+              />
+              <div className="w-full sm:w-auto lg:col-start-5 lg:row-span-2 lg:row-start-1">
+                {!hasPremium && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPurchaseConfirm(true)}
+                    className={`btn-brass sheen relative inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl pl-3.5 pr-1.5
+                      font-display font-bold sm:w-auto ${FOCUS_OUTLINE}`}
+                  >
+                    <Crown aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
+                    <span>Unlock Premium</span>
+                    <span className="inline-flex h-8 items-center gap-1 rounded-lg bg-night-950 px-2 text-sm text-brass-200 tabular-nums">
+                      <Gem aria-hidden="true" className="h-3.5 w-3.5 text-fuchsia-300" strokeWidth={2.4} />
+                      {PREMIUM_PASS_PRICE}
+                      <span className="sr-only"> gems</span>
+                    </span>
+                  </button>
+                )}
+                {hasPremium && (
+                  <div
+                    ref={premiumBadgeRef}
+                    tabIndex={-1}
+                    className={`trim-brass relative flex h-11 items-center justify-center gap-2 rounded-xl bg-brass-400/10 px-4 font-display font-bold text-brass-200 sm:inline-flex ${FOCUS_OUTLINE}`}
+                  >
+                    <Crown aria-hidden="true" className="h-4 w-4 text-brass-300" strokeWidth={2.4} />
+                    Premium Active
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -674,6 +802,15 @@ const BattlePass = ({ onClose }) => {
               </span>
             )}
           </div>
+          {ending && (
+            <p data-season-ending="" className="-mt-1 mb-2.5 flex items-start gap-1.5 text-xs leading-snug text-brass-200">
+              <Hourglass aria-hidden="true" className="mt-px h-3.5 w-3.5 shrink-0 text-brass-300" strokeWidth={2.4} />
+              <span>
+                <span className="font-bold text-white">{`${readyCount} unclaimed — claim before ${formatSeasonEnd(season.endDate)}.`}</span>
+                {' '}Anything still unclaimed then is delivered to you when the season ends.
+              </span>
+            </p>
+          )}
           {/* A region with a tab stop of its own, so the rail can be scrolled
               from the keyboard even when no tile on it is claimable. */}
           <div
@@ -766,6 +903,7 @@ const BattlePass = ({ onClose }) => {
                         isUnlocked={reward.tier <= currentTier}
                         isClaimed={claimedRewards.premium.includes(reward.tier)}
                         canClaim={reward.tier <= currentTier && !claimedRewards.premium.includes(reward.tier) && hasPremium}
+                        owned={ownedOf(reward.premium)}
                         onClaim={() => claimReward(reward.tier, true)}
                       />
                     </div>
@@ -779,6 +917,7 @@ const BattlePass = ({ onClose }) => {
                         isUnlocked={reward.tier <= currentTier}
                         isClaimed={claimedRewards.free.includes(reward.tier)}
                         canClaim={reward.tier <= currentTier && !claimedRewards.free.includes(reward.tier)}
+                        owned={ownedOf(reward.free)}
                         onClaim={() => claimReward(reward.tier, false)}
                       />
                     </div>
@@ -790,10 +929,11 @@ const BattlePass = ({ onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="mt-5 flex items-center justify-center gap-2 border-t border-white/5 bg-black/20 px-4 py-3.5 text-center">
-          <Swords aria-hidden="true" className="h-4 w-4 shrink-0 text-brass-300" strokeWidth={2.2} />
+        <div data-xp-sources="" className="mt-5 flex items-start justify-center gap-2 border-t border-white/5 bg-black/20 px-4 py-3.5 text-left sm:items-center sm:text-center">
+          <Swords aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brass-300 sm:mt-0" strokeWidth={2.2} />
           <p className="text-sm text-plush-200">
-            Win battles and complete daily challenges to earn XP!
+            {xp.battles}
+            {xp.challenges.map((line) => <span key={line}>{' '}{line}</span>)}
           </p>
         </div>
       </motion.div>
@@ -817,8 +957,12 @@ const BattlePass = ({ onClose }) => {
             <PurchaseConfirmDialog
               gems={gems}
               price={PREMIUM_PASS_PRICE}
-              rewardCount={BATTLE_PASS_REWARDS.length}
+              season={season}
+              seasonXP={battlePassXP}
+              ownedCards={ownedCards}
+              unlockedCosmetics={unlockedCosmetics}
               onPurchase={handlePurchasePremium}
+              onGetGems={onGetGems}
               onClose={() => setShowPurchaseConfirm(false)}
             />
           </motion.div>
