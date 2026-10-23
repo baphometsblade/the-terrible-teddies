@@ -167,3 +167,31 @@ test.describe('challenge claims', () => {
     });
   }
 });
+
+test.describe('player stats', () => {
+  // "Achievements (0/16)" wrapped to two lines at 390 (and below), so its tab
+  // stood taller than Statistics and off-centre. Each tab is one line now,
+  // the count in the pill Challenges' tabs use.
+  for (const width of [320, 390]) {
+    test(`each tab is one line, the same height as the other, at ${width}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await bootToMainMenu(page);
+      await page.getByLabel('View player stats').click();
+      const dialog = page.getByRole('dialog', { name: 'Player stats' });
+      await expect(dialog).toBeVisible(SLOW);
+      const achievements = dialog.getByRole('button', { name: /^Achievements\s*\(0 of \d+ unlocked\)$/ });
+      await expect(achievements).toBeVisible();
+      const tabs = await dialog.locator('[data-tab]').evaluateAll((els) => els.map((b) => {
+        const lines = new Set([...b.children]
+          .filter((c) => c.getBoundingClientRect().width > 1)
+          .map((c) => { const r = c.getBoundingClientRect(); return Math.round(r.top + r.height / 2); }));
+        return { height: Math.round(b.getBoundingClientRect().height), lines: lines.size, overflows: b.scrollWidth > b.clientWidth };
+      }));
+      expect(tabs).toHaveLength(2);
+      expect(tabs.map((t) => t.lines), 'a tab wrapped onto a second line').toEqual([1, 1]);
+      expect(tabs[0].height).toBe(tabs[1].height);
+      expect(tabs.some((t) => t.overflows), 'a tab runs out of its segment').toBe(false);
+      await expect(achievements.locator('[data-count]')).toHaveCSS('border-radius', /px/);
+    });
+  }
+});

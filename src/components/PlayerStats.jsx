@@ -121,7 +121,7 @@ const PlayerStats = ({ onClose }) => {
 
   const TABS = [
     { id: 'stats', icon: BarChart3, label: 'Statistics' },
-    { id: 'achievements', icon: Trophy, label: 'Achievements', count: `(${completedAchievements.length}/${ACHIEVEMENTS.length})` },
+    { id: 'achievements', icon: Trophy, label: 'Achievements', done: completedAchievements.length, total: ACHIEVEMENTS.length },
   ];
 
   return (
@@ -260,26 +260,46 @@ const PlayerStats = ({ onClose }) => {
         {/* Tabs: the segmented control's recessed well, the selected tab
             raised out of it as a glass key with a lit brass lip. */}
         <div className="relative px-4 pb-4 sm:px-6">
-          <div className="seg-well grid grid-cols-2 gap-1">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                aria-pressed={activeTab === tab.id}
-                // Wraps rather than overflows: below 360px "Achievements
-                // (2/16)" is wider than its half of the switch, so the count
-                // drops under the label instead of running out of the
-                // segment. The icons join from sm up, where there is room.
-                className={`flex min-h-9 min-w-0 flex-wrap items-center justify-center gap-x-1.5 gap-y-0 rounded-lg px-2 py-1.5 text-[13px] font-semibold leading-tight transition-colors sm:gap-x-2 sm:text-sm ${FOCUS_OUTLINE} ${
-                  activeTab === tab.id ? 'seg-on' : 'seg-off'
-                }`}
-              >
-                <tab.icon aria-hidden="true" className="hidden h-4 w-4 shrink-0 sm:block" strokeWidth={2.2} />
-                <span>{tab.label}</span>
-                {tab.count && <span className="tabular-nums text-plush-300">{tab.count}</span>}
-              </button>
-            ))}
+          {/* Equal halves where they fit, and never narrower than the tab's
+              one line (flex-1 with min-w-fit): at 320 "Achievements" and its
+              count need more than half the switch, so that segment takes it
+              from "Statistics", which needs less. The count used to wrap
+              under the label in parentheses (at 390 as well as below 360),
+              which made the tab taller than its neighbour and off-centre. It
+              is the pill Challenges' tabs use now. The icons join from sm
+              up, where there is room. */}
+          <div className="seg-well flex gap-1">
+            {TABS.map((tab) => {
+              const on = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  aria-pressed={on}
+                  data-tab={tab.id}
+                  className={`flex min-h-9 min-w-fit flex-1 items-center justify-center gap-x-1 whitespace-nowrap rounded-lg px-1.5 py-1.5 text-[13px] font-semibold leading-tight transition-colors sm:gap-x-2 sm:px-2 sm:text-sm ${FOCUS_OUTLINE} ${
+                    on ? 'seg-on' : 'seg-off'
+                  }`}
+                >
+                  <tab.icon aria-hidden="true" className="hidden h-4 w-4 shrink-0 sm:block" strokeWidth={2.2} />
+                  <span>{tab.label}</span>
+                  {tab.total !== undefined && (
+                    <>
+                      <span
+                        aria-hidden="true"
+                        data-count=""
+                        className={`rounded-full px-2 py-0.5 text-[11px] leading-tight tabular-nums ${
+                          on ? 'bg-brass-400/15 text-brass-200' : 'bg-white/5 text-plush-300'}`}
+                      >
+                        {tab.done}/{tab.total}
+                      </span>
+                      <span className="sr-only"> ({tab.done} of {tab.total} unlocked)</span>
+                    </>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
