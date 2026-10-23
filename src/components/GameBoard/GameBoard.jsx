@@ -186,6 +186,25 @@ const FieldSlot = ({ cardId, side, press, className = '', children, ...motionPro
   );
 };
 
+// A card in the hand. A played card animates out, and AnimatePresence keeps
+// it on screen meanwhile with the props it last had — its click handler
+// included, which still saw it in the hand — so a second tap during the exit
+// played the same card again: energy spent twice, and two copies on the table
+// sharing one id. While it leaves it takes no taps, no focus and no place in
+// the accessibility tree, as a dying FieldSlot does.
+const HandSlot = ({ press, className = '', children, ...motionProps }) => {
+  const present = useIsPresent();
+  return (
+    <motion.div
+      {...motionProps}
+      className={present ? className : `${className} pointer-events-none`}
+      {...(present ? press : { inert: '', 'aria-hidden': true })}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
 // Ten segments rather than a bar, so "two more hits to Rally" is countable at a
 // glance. The ring glows (CSS pulse, compositor-only) once it is full, unless
 // `glow` is off — at game over, so nothing animates under the result dialog.
@@ -377,7 +396,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const [turnCount, setTurnCount] = useState(1);
 
   // Player state
-  const [playerHealth, setPlayerHealth] = useState(30);
+  const [playerHealth, setPlayerHealth] = useState(PLAYER_MAX_HEALTH);
   const [playerEnergy, setPlayerEnergy] = useState(energyForTurn(1));
   const [playerMomentum, setPlayerMomentum] = useState(0);
   const [playerHand, setPlayerHand] = useState([]);
@@ -872,9 +891,15 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // taunt > protect > all precedence — see battleUtils.test.js). Imported at
   // the top; both call sites here pass (attackerField, defenderField) as before.
 
+  // The hand as last rendered, for playCard's own check below: a handler can
+  // outlive the render it was made in (see HandSlot).
+  const handRef = useRef(playerHand);
+  handRef.current = playerHand;
+
   // Play a card from hand
   const playCard = (card) => {
     if (currentTurn !== 'player' || phase !== 'main' || gameOver) return;
+    if (!handRef.current.some((c) => c.instanceId === card.instanceId)) return;
 
     // A 'swarm' card is 1 energy cheaper (min 1) once another creature is
     // already on the field — see effectiveCost. Use this for both the
@@ -891,11 +916,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       return;
     }
 
-    // Playing a card is a change of plan: it drops an attacker the player had
-    // picked but not yet sent, so the targeting prompt never outlives it.
-    // Only a play that happens does — a refused one (above, or a full field
-    // below) leaves the selection alone.
-    // Handle special cards
+    // Special cards. Playing any card is a change of plan, so it drops an
+    // attacker the player had picked but not yet sent (cancelTargeting here
+    // and below); a refused play (above, or a full field below) leaves the
+    // selection alone.
     if (card.type === 'special') {
       cancelTargeting();
       applySpecialEffect(card);
@@ -912,7 +936,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       // Nothing removes a teddy by hand, so the copy cannot say "remove one".
       toast({
         title: "Field is full!",
-        description: `Three teddies is the limit. One has to go down before ${card.name} can join.`,
+        description: `${MAX_FIELD_SIZE} teddies is the limit. One has to go down before ${card.name} can join.`,
         variant: "destructive",
       });
       return;
@@ -1014,9 +1038,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     }
   };
 
-  // Select a card for attacking
-  // Any point in the player's turn: there is no separate battle phase, so
-  // cards can be played before and after attacking, in any order.
+  // Pick an attacker. At any point in the player's turn: there is no separate
+  // battle phase, so cards can be played before and after attacking.
   const selectCardForAttack = (card) => {
     if (currentTurn !== 'player' || phase !== 'main' || gameOver) return;
     if (card.type === 'trap') {
@@ -1413,7 +1436,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setTurnCount(1);
 
     // Reset player state
-    setPlayerHealth(30);
+    setPlayerHealth(PLAYER_MAX_HEALTH);
     setPlayerEnergy(energyForTurn(1));
     setPlayerMomentum(0);
     setPlayerHand([]);
@@ -2153,7 +2176,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 // would do nothing (a heal at full HP) stays bright but unlit.
                 const lit = playable && isUsefulPlay(card, moveState);
                 return (
-                  <motion.div
+                  <HandSlot
                     key={card.instanceId}
                     initial={{ y: 50, opacity: 0 }}
                     animate={{ y: Math.abs(index - mid) * step, opacity: 1, rotate: (index - mid) * step }}
@@ -2168,10 +2191,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                     className={`shrink-0 rounded-[10px] ${FOCUS_OUTLINE} ${playable ? 'cursor-pointer' : ''} ${!affordable
                       ? 'opacity-50 saturate-50'
                       : lit ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
-                    {...pressable(() => playCard(card), `Play ${card.name}`, playable)}
+                    press={pressable(() => playCard(card), `Play ${card.name}`, playable)}
                   >
                     <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} />
-                  </motion.div>
+                  </HandSlot>
                 );
               })}
             </AnimatePresence>

@@ -702,6 +702,24 @@ const seedDeck = (page, ids) => page.addInitScript((deck) => {
 const overlaps = (a, b) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
+test('a double-tapped hand card is played once', async ({ page }) => {
+  // A played card animates out of the hand, and AnimatePresence keeps it on
+  // screen with its last props — including a click handler that still saw it
+  // in the hand. A second tap during that exit played the same card again:
+  // energy spent twice, and two copies on the table sharing one id (so
+  // picking one as an attacker lit both).
+  await page.emulateMedia({ reducedMotion: 'no-preference' }); // the full exit
+  await seedDeck(page, [4, 4, 4, 4, 4, 4]); // Bar-Fight Barry: costs 1
+  await page.reload();
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  await page.getByRole('button', { name: /^Play / }).first().dblclick();
+  await page.waitForTimeout(800);
+  await expect(page.locator('[data-field="player"]')).toHaveCount(1);
+  await expect(page.locator('[data-energy]')).toHaveText('2/3');
+});
+
 test('playing a plain card raises no toast: the card landing is the news', async ({ page }) => {
   // Every plain play used to toast "Card Played — X enters the battlefield!",
   // repeating both the card arriving on the table and the log line, on top of
