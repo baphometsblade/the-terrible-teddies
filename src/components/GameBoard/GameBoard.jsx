@@ -445,29 +445,34 @@ const XpBar = ({ progress }) => {
 
 // The level-up beat on the result panel: the new level on a brass medallion,
 // and the coins the level-up paid — credited all along, and never shown
-// anywhere until now.
-const LevelUpRow = ({ level, bonusCoins }) => (
-  <motion.div
-    data-level-up=""
-    initial={{ opacity: 0, scale: 0.85 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ delay: REWARD_BEATS.levelUp, type: 'spring', stiffness: 320, damping: 18 }}
-    className="mt-3 flex items-center justify-center gap-3"
-  >
-    <Medallion size="sm">
-      <span className="font-display text-lg font-extrabold leading-none text-brass-200">{level}</span>
-    </Medallion>
-    <div className="text-left">
-      <div className="label-caps text-brass-300">Level up</div>
-      <div className="font-display text-xl font-extrabold leading-tight text-white">Level {level}</div>
-    </div>
-    <div className="panel-glass flex items-center gap-1.5 rounded-xl px-3 py-2">
-      <Coins className="h-4 w-4 text-brass-300" aria-hidden="true" />
-      <span className="font-display text-base font-extrabold tabular-nums text-white">+{bonusCoins.toLocaleString()}</span>
-      <span className="sr-only">bonus coins</span>
-    </div>
-  </motion.div>
-);
+// anywhere until now. With reduced motion it is simply there: Framer Motion's
+// reduced motion stops transforms but still runs an opacity fade, delay and
+// all, which held the row invisible for 1.6s.
+const LevelUpRow = ({ level, bonusCoins }) => {
+  const reduced = useReducedMotionConfig();
+  return (
+    <motion.div
+      data-level-up=""
+      initial={reduced ? false : { opacity: 0, scale: 0.85 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: REWARD_BEATS.levelUp, type: 'spring', stiffness: 320, damping: 18 }}
+      className="mt-3 flex items-center justify-center gap-3"
+    >
+      <Medallion size="sm">
+        <span className="font-display text-lg font-extrabold leading-none text-brass-200">{level}</span>
+      </Medallion>
+      <div className="text-left">
+        <div className="label-caps text-brass-300">Level up</div>
+        <div className="font-display text-xl font-extrabold leading-tight text-white">Level {level}</div>
+      </div>
+      <div className="panel-glass flex items-center gap-1.5 rounded-xl px-3 py-2">
+        <Coins className="h-4 w-4 text-brass-300" aria-hidden="true" />
+        <span className="font-display text-base font-extrabold tabular-nums text-white">+{bonusCoins.toLocaleString()}</span>
+        <span className="sr-only">bonus coins</span>
+      </div>
+    </motion.div>
+  );
+};
 
 // The result panel's figures, from what recordBattleResult reported (or
 // nothing yet): the battle's XP and coins, addXP's account of the level, and
@@ -2138,7 +2143,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 {battleRewards.tierAfter > battleRewards.tierBefore && (
                   <motion.p
                     data-pass-tier=""
-                    initial={{ opacity: 0 }}
+                    initial={reducedMotion ? false : { opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: REWARD_BEATS.levelUp + 0.3 }}
                     className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brass-200"
@@ -2152,7 +2157,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               {/* Upsell nudge — only shown when player is low on resources */}
               {(cardPacks === 0 || gems < 50) && (onOpenShop || onBackToMenu) && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={reducedMotion ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.8 }}
                   className="relative mb-5 rounded-xl bg-black/25 ring-1 ring-white/5 p-3"

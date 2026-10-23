@@ -452,17 +452,28 @@ test.describe('XP and level-ups', () => {
 
   // The count-up and the bar honour reduced motion and the Animations switch:
   // the final figures at once. With motion allowed they count from zero.
+  // The level-up row and the Battle Pass line too: Framer Motion's reduced
+  // motion still ran their delayed opacity fades, so both sat invisible for
+  // 1.6-1.9s after the panel opened.
   test('the rewards count up with motion, and show their final figures at once without it', async ({ page }) => {
     await bootToMainMenu(page);
     const xpFigure = (panel) => panel.locator('[data-count-up]').first();
+    const levelsUpAtOnce = async (panel) => {
+      await expect(panel.locator('[data-level-up]')).toHaveCSS('opacity', '1', { timeout: 400 });
+      await expect(panel.locator('[data-pass-tier]')).toHaveCSS('opacity', '1', { timeout: 400 });
+    };
+    const aboutToLevel = { level: 1, xp: 95, seasonXP: 90, seasonKey: getCurrentSeason().key };
 
     // The suite runs with reduced motion (playwright.config).
+    await seed(page, aboutToLevel);
+    await page.reload();
     await toBattle(page);
     await page.getByRole('button', { name: 'Concede' }).click();
     await page.getByRole('button', { name: 'Concede — counts as a loss' }).click();
     let panel = page.getByRole('dialog', { name: 'Defeat' });
     await expect(panel).toBeVisible(SLOW);
     expect(await xpFigure(panel).textContent()).toBe('20');
+    await levelsUpAtOnce(panel);
 
     // Motion allowed: it starts below its figure and gets there.
     await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -476,7 +487,7 @@ test.describe('XP and level-ups', () => {
     await expect(xpFigure(panel)).toHaveText('20', SLOW);
 
     // The Animations switch off, with the OS allowing motion: at once again.
-    await seed(page, { animationsEnabled: false });
+    await seed(page, { animationsEnabled: false, ...aboutToLevel });
     await page.reload();
     await toBattle(page);
     await page.getByRole('button', { name: 'Concede' }).click();
@@ -484,5 +495,6 @@ test.describe('XP and level-ups', () => {
     panel = page.getByRole('dialog', { name: 'Defeat' });
     await expect(panel).toBeVisible(SLOW);
     expect(await xpFigure(panel).textContent()).toBe('20');
+    await levelsUpAtOnce(panel);
   });
 });
