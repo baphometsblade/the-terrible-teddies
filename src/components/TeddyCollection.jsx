@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, SearchX, X, Zap } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
@@ -18,23 +18,24 @@ const RARITY_ORDER = [...RARITY_ORDER_ASC].reverse();
 
 // Segmented filter controls (.seg-well / .seg-on / .seg-off): a recessed well
 // with the selected segment raised out of it as a glass key with a lit brass
-// lip. Below sm each control is a full-width grid, so the rows line up and
-// wrap into tidy columns rather than running off a phone; from sm up they
-// shrink to their content and sit side by side. The raised key carries a
-// material shadow, so its focus is an outline (a ring would replace the
-// shadow); an unselected segment has none to lose and keeps the ring.
+// lip. Each shrinks to its content: on a phone the groups share one row that
+// scrolls sideways, and from sm up they wrap and centre. The raised key
+// carries a material shadow, so its focus is an outline (a ring would replace
+// the shadow); an unselected segment has none to lose and keeps the ring.
 const SEG =
-  'inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold ' +
+  'inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold ' +
   'whitespace-nowrap transition-colors';
 const seg = (on) => `${SEG} ${on ? `seg-on ${FOCUS_OUTLINE}` : `seg-off ${FOCUS_RING}`}`;
 
-// A filter group: a small caption (sm and up — on a phone the segments explain
-// themselves and the height is better spent on cards) that also names the
-// group for a screen reader, which still reads it while it is display:none.
-const FilterGroup = ({ id, label, className, children }) => (
-  <div className="flex w-full flex-col items-center gap-1.5 sm:w-auto">
-    <span id={id} className="label-caps hidden text-[10px] text-plush-300 sm:block">{label}</span>
-    <div role="group" aria-labelledby={id} className={`seg-well w-full gap-1 sm:w-auto ${className}`}>
+// A filter group: a small caption beside its keys, which also names the group
+// for a screen reader. Beside rather than above, so each row of the strip is
+// one key high; and it is shown on phones too, where the row has two "All"
+// keys and the caption is what tells them apart. From xl the three groups fit
+// one line only with the captions above them, so there they go above.
+const FilterGroup = ({ id, label, className = '', children }) => (
+  <div className="flex shrink-0 snap-start items-center gap-2 xl:flex-col xl:gap-1.5">
+    <span id={id} className="label-caps text-[10px] text-plush-300">{label}</span>
+    <div role="group" aria-labelledby={id} className={`seg-well flex gap-1 ${className}`}>
       {children}
     </div>
   </div>
@@ -167,6 +168,28 @@ const TeddyCollection = () => {
   const [showOwned, setShowOwned] = useState(true);
   const artVariant = gridArtVariant(useMediaQuery(CARD_ZOOM_QUERY));
 
+  // The filter strip sticks over the top of the page, so a card the keyboard
+  // focuses must scroll into view below it, not under it (shift-tabbing up the
+  // grid put the focused card behind the strip). scroll-padding on the page
+  // does that for every scroll-into-view; the strip changes height as it
+  // wraps, so it is measured rather than guessed.
+  const filtersRef = useRef(null);
+  useEffect(() => {
+    const strip = filtersRef.current;
+    const root = document.documentElement;
+    if (!strip) return undefined;
+    const apply = () => {
+      root.style.scrollPaddingTop = `calc(${strip.offsetHeight + 8}px + env(safe-area-inset-top))`;
+    };
+    apply();
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(apply) : null;
+    observer?.observe(strip);
+    return () => {
+      observer?.disconnect();
+      root.style.scrollPaddingTop = '';
+    };
+  }, []);
+
   const allCardsWithOwnership = ALL_CARDS.map(card => ({
     ...card,
     owned: ownedCards.includes(card.id),
@@ -205,19 +228,22 @@ const TeddyCollection = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="mb-6 text-center">
+      <div className="mb-4 text-center sm:mb-6">
         <h1 className="font-display text-4xl font-extrabold leading-none tracking-tight text-brass-gradient md:text-5xl">Card Collection</h1>
         <p className="label-caps mt-3 text-plush-300">Your emotional support army</p>
       </div>
 
-      {/* The album's cover sheet: how far along the set is, by tier, and the
-          filters for what to look at. */}
-      <div className="panel-glass mb-7 rounded-2xl p-4 sm:p-5">
+      {/* The album's cover sheet: how far along the set is, and by tier. On a
+          phone it used to hold the filters too, three rows of them under a
+          row of medallions, and at 320x640 it ran to the bottom of the screen
+          so the collection opened on no card at all. Below sm the tiers are
+          one line of dots and the filters one scrolling row (below). */}
+      <div className="panel-glass mb-3 rounded-2xl p-4 sm:mb-4 sm:p-5">
         {/* From md the tally and the medallions share a row. Between md and
             lg the tally is narrower and the gaps tighter, or the medallion
             strip got 52px columns at 768: narrower than the 56px medallions,
             with UNCOMMON's caption running into COMMON's. */}
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:gap-6 lg:gap-8">
+        <div className="flex flex-col gap-3 sm:gap-5 md:flex-row md:items-center md:gap-6 lg:gap-8">
           <div className="md:w-56 md:shrink-0 lg:w-72">
             <div className="flex items-end justify-between gap-4">
               <div>
@@ -240,13 +266,28 @@ const TeddyCollection = () => {
 
           <div aria-hidden="true" className="hidden w-px self-stretch bg-white/[0.06] md:block" />
 
-          {/* One medallion per tier, rimmed in that tier's card metal. The
-              medallion is decorative (aria-hidden), so the count is restated
-              for a screen reader beside the caption. The captions are in the
-              display face, as on the card itself: it is bundled, so the width
-              is the same everywhere, and in the system sans UNCOMMON ran into
-              COMMON at 320. */}
-          <ul className="grid flex-1 grid-cols-5 gap-2 sm:gap-3">
+          {/* Phones: each tier as its metal dot and a count, on one line. The
+              dot is the same one the rarity filter keys carry just below,
+              where each is named; the name is here for a screen reader. */}
+          <ul data-tier-tally="" className="flex items-center justify-between gap-1 sm:hidden">
+            {rarityStats.map(({ rarity, total, owned }) => (
+              <li key={rarity} className="flex items-center gap-1">
+                <RarityDot rarity={rarity} className="h-2.5 w-2.5" />
+                <span aria-hidden="true" className="font-display text-[13px] font-extrabold leading-none text-white tabular-nums">
+                  {owned}<span className="text-plush-300">/{total}</span>
+                </span>
+                <span className="sr-only">{rarity}: {owned} of {total}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* From sm: one medallion per tier, rimmed in that tier's card
+              metal. The medallion is decorative (aria-hidden), so the count
+              is restated for a screen reader beside the caption. The captions
+              are in the display face, as on the card itself: it is bundled,
+              so the width is the same everywhere, and in the system sans
+              UNCOMMON ran into COMMON at 320. */}
+          <ul className="hidden flex-1 grid-cols-5 gap-2 sm:grid sm:gap-3">
             {rarityStats.map(({ rarity, total, owned }) => (
               <li key={rarity} className="flex min-w-0 flex-col items-center gap-1.5">
                 <Medallion
@@ -264,11 +305,23 @@ const TeddyCollection = () => {
             ))}
           </ul>
         </div>
+      </div>
 
-        <div aria-hidden="true" className="my-4 h-px bg-white/[0.06] sm:my-5" />
-
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-3 sm:gap-y-4">
-          <FilterGroup id="collection-filter-show" label="Show" className="grid grid-cols-2 sm:inline-flex">
+      {/* The filters, on a strip that sticks to the top of the screen, so
+          they are in reach from anywhere in a 64-card album instead of only
+          from its top. Opaque (dialog-panel), because cards scroll under it
+          and there is no blur to separate them (see .dialog-scrim). On a
+          phone the three groups are one row that scrolls sideways; from sm
+          they wrap and centre. The right-hand fade below sm says there is
+          more of the row, and the padding behind it lets the last key scroll
+          clear of the fade. */}
+      <div
+        ref={filtersRef}
+        data-collection-filters=""
+        className="dialog-panel sticky top-[env(safe-area-inset-top)] z-20 mb-4 rounded-2xl px-2 py-2 sm:mb-6 sm:px-4 sm:py-3"
+      >
+        <div className="flex snap-x snap-proximity gap-4 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin] sm:flex-wrap sm:justify-center sm:gap-x-6 sm:gap-y-2 sm:overflow-visible sm:pr-0 sm:[mask-image:none]">
+          <FilterGroup id="collection-filter-show" label="Show">
             <button
               type="button"
               onClick={() => setShowOwned(true)}
@@ -287,7 +340,7 @@ const TeddyCollection = () => {
             </button>
           </FilterGroup>
 
-          <FilterGroup id="collection-filter-type" label="Type" className="grid grid-cols-4 sm:inline-flex">
+          <FilterGroup id="collection-filter-type" label="Type">
             {['all', 'action', 'trap', 'special'].map(type => (
               <button
                 type="button"
@@ -301,13 +354,11 @@ const TeddyCollection = () => {
             ))}
           </FilterGroup>
 
-          {/* Six segments never fit one phone line (the row once pushed the
-              whole document 52px sideways at 390px): a 3x2 grid below sm,
-              a wrapping row above. Under 390 a third of the well can be
-              narrower than "Uncommon" and its dot (at 360 in a wide system
-              sans, by 5px), which poked out of the raised key, so there it
-              is a 2x3 grid. */}
-          <FilterGroup id="collection-filter-rarity" label="Rarity" className="grid grid-cols-2 min-[390px]:grid-cols-3 sm:inline-flex sm:flex-wrap sm:justify-center">
+          {/* Six segments never fit one phone line, and a row that does not
+              fit once pushed the whole document 52px sideways at 390px. Here
+              it scrolls inside its strip on a phone, and from sm the well
+              itself may wrap. */}
+          <FilterGroup id="collection-filter-rarity" label="Rarity" className="sm:flex-wrap sm:justify-center">
             {['all', ...RARITY_ORDER].map(rarity => (
               <button
                 type="button"
