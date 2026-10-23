@@ -565,8 +565,10 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
   await expect(page.getByRole('button', { name: /^Select .+ to attack$/ })).toHaveCount(0);
 
   // Tapping it anyway explains the rule instead of doing nothing...
+  // (Scoped to the toast list: Radix also writes each toast into a hidden
+  // live-region announcement, so a bare text match can find it twice.)
   await page.locator('[data-field="player"]').first().click();
-  await expect(page.getByText('Still finding the floor')).toBeVisible(SLOW);
+  await expect(page.locator('.toast-viewport').getByText('Still finding the floor')).toBeVisible(SLOW);
   // ...and never opens targeting. The crosshair affordance renders only while
   // targeting is open, so its absence is what proves the selection was refused.
   //
