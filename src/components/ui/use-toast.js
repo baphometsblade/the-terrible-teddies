@@ -17,9 +17,15 @@ const TOAST_REMOVE_DELAY = 1000000
 // time, and one that feedback interrupts goes back to the front of the line
 // to be shown again in full.
 //
-// The pause between one leaving and the next arriving, so the last one's
-// exit is seen rather than overwritten.
+// The pause before an announcement comes on: after the last one leaves, so
+// its exit is seen rather than overwritten, and after it is raised, so that
+// whatever raised it lands first (a claim's receipt, the result dialog).
 const QUEUE_GAP_MS = 400
+
+// How long the line holds after the spot is cleared (a dismissal without an
+// id). The battle board clears it for its turn banner (up 1.3 s), the leave
+// question and the result dialog's entrance; the line picks up after that.
+const CLEAR_HOLD_MS = 1500
 
 let count = 0
 
@@ -127,14 +133,21 @@ function dispatch(action) {
 
 const showing = () => memoryState.toasts.find((t) => t.open)
 
-// Brings on the next announcement once nothing is showing.
-function showNext() {
+// Brings on the next announcement once nothing is showing, after `delay`.
+// A pending hand-over is left alone, so a hold is never cut short.
+function showNext(delay = QUEUE_GAP_MS) {
   if (nextTimer || showing() || waiting.length === 0) return
   nextTimer = setTimeout(() => {
     nextTimer = null
     if (showing() || waiting.length === 0) return
     dispatch({ type: "ADD_TOAST", toast: waiting.shift() })
-  }, QUEUE_GAP_MS)
+  }, delay)
+}
+
+// An announcement cut short goes back to the front of the line, to be shown
+// again whole.
+function requeueIfCut(cut) {
+  if (cut?.queued) waiting.unshift({ ...cut, open: true })
 }
 
 function toast({
@@ -163,18 +176,12 @@ function toast({
   if (entry.duration === undefined) delete entry.duration
 
   if (queue) {
+    // A beat from now if the spot is free; otherwise after what is showing.
     waiting.push(entry)
-    // Straight on if the spot is free; otherwise after what is showing.
-    if (!showing() && !nextTimer) {
-      dispatch({ type: "ADD_TOAST", toast: waiting.shift() })
-    } else {
-      showNext()
-    }
+    showNext()
   } else {
-    // Feedback takes the spot now. An announcement it interrupts is not
-    // lost: it goes back to the front of the line, to be shown again whole.
-    const cut = showing()
-    if (cut?.queued) waiting.unshift({ ...cut, open: true })
+    // Feedback takes the spot now. An announcement it interrupts is not lost.
+    requeueIfCut(showing())
     dispatch({ type: "ADD_TOAST", toast: entry })
   }
 
@@ -193,18 +200,22 @@ function toast({
 //
 // With an id it closes that toast (or takes it out of the line, if it has
 // not been shown yet), and the next one waiting comes on. Without one it
-// clears everything, waiting announcements included: the battle board calls
-// it so that nothing at all sits on a turn banner, the leave question or the
-// result, and an announcement queued behind a callout would otherwise land
-// there a moment later.
+// clears the spot: whatever is showing closes, and the line holds for
+// CLEAR_HOLD_MS. The battle board does this at every turn boundary, as it
+// asks whether to leave and at game over. It does not empty the line: it
+// once did, and that discarded every achievement a battle earned, because
+// they are raised in the same moment as the game-over clear (sometimes just
+// before it). An announcement the clear cuts short comes back whole.
 function dismissToast(toastId) {
   if (toastId === undefined) {
-    waiting = []
+    requeueIfCut(showing())
     clearTimeout(nextTimer)
     nextTimer = null
-  } else {
-    waiting = waiting.filter((t) => t.id !== toastId)
+    dispatch({ type: "DISMISS_TOAST", toastId })
+    showNext(CLEAR_HOLD_MS)
+    return
   }
+  waiting = waiting.filter((t) => t.id !== toastId)
   dispatch({ type: "DISMISS_TOAST", toastId })
   showNext()
 }

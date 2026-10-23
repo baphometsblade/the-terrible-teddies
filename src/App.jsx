@@ -73,12 +73,11 @@ const SCREEN_TITLES = {
 // The three drains below raise announcements (use-toast's `queue: true`):
 // they arrive in bursts, and each used to replace the last, so all but one
 // were cut short. Queued, they show one after another, each for its reading
-// time. Raised a tick late, so a battle's own game-over dismissal (it clears
-// every toast as the result dialog opens) has run before the battle's
-// achievements arrive.
+// time. A battle's achievements arrive in the same moment as the board's
+// game-over clear, in either order; the line survives that clear and picks
+// up over the result dialog (use-toast's dismissToast).
 const announceAll = (toast, items) => {
-  if (items.length === 0) return;
-  setTimeout(() => items.forEach((t) => toast({ queue: true, ...t })), 0);
+  items.forEach((t) => toast({ queue: true, ...t }));
 };
 
 // Hoisted to module scope for a stable identity. Declared inside App it was a

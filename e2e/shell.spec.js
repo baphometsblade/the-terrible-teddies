@@ -382,6 +382,90 @@ test.describe('announcements', () => {
     await expect(toasts.filter({ hasText: 'First news' })).toHaveCount(0);
   });
 
+  // A battle's achievements are raised in the same moment as the board's
+  // game-over clear (it closes any callout as the result dialog opens), in
+  // either order. That clear used to empty the line, so not one of them was
+  // ever seen. This save is one battle, one point of damage and one of
+  // healing short of three achievements, all earned by conceding.
+  const ACHIEVEMENTS = ['Dedicated Player', 'Damage Dealer', 'Medic Bear'];
+  const threeShort = { totalBattles: 99, totalDamageDealt: 1000, totalHealingDone: 500, completedAchievements: [] };
+  // Each toast as it comes and goes: its text, when, and the dialog it sat on.
+  const watchToasts = (page) => page.addInitScript(() => {
+    window.__toastLog = [];
+    const live = new Map();
+    const dialogName = () => {
+      const d = document.querySelector('[role="dialog"], [role="alertdialog"]');
+      if (!d) return null;
+      const labelledBy = document.getElementById(d.getAttribute('aria-labelledby'));
+      return d.getAttribute('aria-label') ?? labelledBy?.textContent ?? null;
+    };
+    new MutationObserver(() => {
+      const now = performance.now();
+      const open = new Set([...document.querySelectorAll('.toast-viewport > li')].filter((li) => li.dataset.state === 'open'));
+      for (const li of open) {
+        if (live.has(li)) continue;
+        const entry = { text: li.textContent, shownAt: now, goneAt: null, over: dialogName() };
+        live.set(li, entry);
+        window.__toastLog.push(entry);
+      }
+      for (const [li, entry] of live) {
+        if (open.has(li)) continue;
+        entry.goneAt = now;
+        live.delete(li);
+      }
+    }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] });
+  });
+  const achievementLog = (page) => page.evaluate(() => window.__toastLog.filter((t) => t.text.includes('Achievement Unlocked!')));
+  const concede = async (page) => {
+    await page.getByRole('button', { name: 'Battle', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    await page.getByRole('button', { name: 'Concede', exact: true }).click();
+    await page.getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    await expect(page.getByRole('dialog', { name: 'Defeat' })).toBeVisible(SLOW);
+  };
+
+  test('earned in a battle are each shown in full over the result', async ({ page }) => {
+    test.setTimeout(60_000);
+    await bootToMainMenu(page);
+    await seedSave(page, threeShort);
+    await watchToasts(page);
+    await page.reload();
+    await concede(page);
+    await expect.poll(async () => (await achievementLog(page)).filter((t) => t.goneAt).length, { timeout: 30_000 }).toBe(3);
+    const log = await achievementLog(page);
+    expect(log.map((t) => ACHIEVEMENTS.find((name) => t.text.includes(name)))).toEqual(ACHIEVEMENTS);
+    log.forEach((t, i) => {
+      expect(t.over, `${ACHIEVEMENTS[i]} is shown over the result`).toBe('Defeat');
+      // Its reading time is at least 4 s: it was not cut short.
+      expect(t.goneAt - t.shownAt, `${ACHIEVEMENTS[i]} is cut short`).toBeGreaterThan(3500);
+      if (i > 0) expect(t.shownAt, 'two at once').toBeGreaterThanOrEqual(log[i - 1].goneAt);
+    });
+  });
+
+  // Play Again while the first is up: the new game's turn banner clears the
+  // spot. The one it cut short comes back whole once the banner has gone,
+  // and the other two follow.
+  test('earned in a battle survive Play Again pressed during the first', async ({ page }) => {
+    test.setTimeout(60_000);
+    await bootToMainMenu(page);
+    await seedSave(page, threeShort);
+    await watchToasts(page);
+    await page.reload();
+    await concede(page);
+    const first = page.locator('.toast-viewport > li').filter({ hasText: ACHIEVEMENTS[0] });
+    await expect(first).toBeVisible(SLOW);
+    await page.getByRole('button', { name: 'Play Again' }).click();
+    const playAgainAt = await page.evaluate(() => performance.now());
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    await expect.poll(async () => (await achievementLog(page)).filter((t) => t.goneAt).length, { timeout: 30_000 }).toBe(4);
+    const log = await achievementLog(page);
+    const names = log.map((t) => ACHIEVEMENTS.find((name) => t.text.includes(name)));
+    expect(names).toEqual([ACHIEVEMENTS[0], ...ACHIEVEMENTS]);
+    // Shown again only after the turn banner (1.3 s) has had the table.
+    expect(log[1].shownAt - playAgainAt).toBeGreaterThan(1300);
+    for (const t of log.slice(1)) expect(t.goneAt - t.shownAt, `${t.text} is cut short`).toBeGreaterThan(3500);
+  });
+
   // Drawn as the result panel draws a level-up: the level on a medallion and
   // a coin icon, not ⭐ and 🪙.
   test('a level-up is drawn with the medallion and the coin, not emoji', async ({ page }) => {
