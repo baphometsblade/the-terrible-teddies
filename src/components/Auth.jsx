@@ -1,12 +1,24 @@
-import { useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Mail, LockKeyhole, LogIn, UserPlus, LoaderCircle } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
 import { useToast } from "@/components/ui/use-toast";
 import { RARITY_METAL } from '@/lib/rarity';
-import { FOCUS_OUTLINE } from '@/lib/focus';
+import { FOCUS_RING } from '@/lib/focus';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useAuthIntent } from '@/integrations/supabase/auth';
+import { PASSWORD_MIN_LENGTH } from '@/lib/authLanding';
 import { ALL_CARDS } from '../stores/gameStore';
 import CardFan from './CardFan';
+import DialogErrorBoundary from './DialogErrorBoundary';
+import { AuthField, AUTH_ACTION, busyLook } from './AuthField';
+
+// The reset form is a chunk of its own: this screen is on everyone's first
+// paint, and few visitors ever open it. Fetched as the pointer or the focus
+// reaches "Forgot password?", so it is usually there before the tap.
+const loadForgotPassword = () => import('./ForgotPassword');
+const ForgotPassword = lazy(loadForgotPassword);
+// A prefetch that fails says nothing: the tap's own load reports it.
+const prefetchForgotPassword = () => { loadForgotPassword().catch(() => {}); };
 
 // The key art beside the form from lg up: three of the set's best-dressed,
 // fanned as the main menu fans a player's own (the legendary in the centre).
@@ -15,37 +27,29 @@ const KEY_ART = ['Mama Mauls', 'The Godfluffer', 'Duke of Dumpsterfire']
   .map((name) => ALL_CARDS.find((c) => c.name === name))
   .filter(Boolean);
 
-// A field recessed into the panel. Plain <input>s rather than the shadcn Input,
-// whose ring-offset-background and bg-background are a light theme's. The
-// autofill rules stop Chrome painting a saved email pale blue on a dark form:
-// its autofill background-color cannot be overridden, only covered by an inset
-// shadow — and an inset shadow covers only the padding box, so bg-clip-padding
-// keeps that fill from painting under the translucent border too, where it
-// showed as a pale ring around every autofilled field.
-//
-// Focus is FOCUS_OUTLINE on everything here. On the two buttons a ring (a
-// box-shadow) would replace the materials' own rim light and depth; the fields
-// follow suit, so the form keeps one focus language.
-const FIELD =
-  'block w-full h-12 rounded-xl pl-11 pr-4 text-base text-plush-100 placeholder:text-plush-300 caret-brass-300 ' +
-  'bg-night-950/70 bg-clip-padding border border-white/10 hover:border-white/20 focus-visible:border-brass-300/60 transition-colors ' +
-  'autofill:shadow-[inset_0_0_0_1000px_#1b1328] autofill:[-webkit-text-fill-color:#ece6f2] ' +
-  FOCUS_OUTLINE;
-
-const ACTION =
-  `inline-flex w-full items-center justify-center gap-2 h-12 rounded-xl px-4 font-display text-base font-bold whitespace-nowrap ${FOCUS_OUTLINE}`;
-
-// While a request runs both buttons are disabled, but only the idle one dims:
-// the one doing the work stays lit, with its spinner, so it reads as busy
-// rather than broken.
-const busyLook = (loadingAction, which) =>
-  loadingAction === which ? 'disabled:cursor-wait' : 'disabled:opacity-60 disabled:cursor-not-allowed';
+// The fields, the two actions and their busy look are shared with the reset
+// form and the set-new-password panel (AuthField.jsx), which says why each
+// is drawn the way it is.
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loadingAction, setLoadingAction] = useState(null); // 'signin' | 'signup' | null
   const { toast } = useToast();
+  // 'signin' (sign in or sign up) or 'forgot' (ask for a reset link). An
+  // expired reset link's "Send a new link" opens it on 'forgot'.
+  const [authIntent, clearAuthIntent] = useAuthIntent();
+  const [mode, setMode] = useState(() => (authIntent === 'forgot' ? 'forgot' : 'signin'));
+  useEffect(() => { if (authIntent) clearAuthIntent(); }, [authIntent, clearAuthIntent]);
+  // Back from the reset form, focus returns to the control that opened it.
+  const forgotRef = useRef(null);
+  const returning = useRef(false);
+  useEffect(() => {
+    if (mode === 'signin' && returning.current) {
+      returning.current = false;
+      forgotRef.current?.focus();
+    }
+  }, [mode]);
   // Only where there is room beside the form: the fan and the form side by
   // side need about 800px. On a phone the form already runs most of the
   // screen's height, and art above it would push Sign In below the fold.
@@ -141,43 +145,66 @@ const Auth = () => {
           {/* Lamplight over the counter. */}
           <div aria-hidden="true" className="absolute inset-x-0 top-0 h-32 pointer-events-none bg-[radial-gradient(ellipse_60%_100%_at_50%_0%,rgba(251,191,36,0.1),transparent_70%)]" />
 
+          {mode === 'forgot' ? (
+            <DialogErrorBoundary resetKey={mode} onDismiss={() => setMode('signin')}>
+              <Suspense fallback={<p role="status" className="relative py-16 text-center label-caps text-plush-300">Loading</p>}>
+                <ForgotPassword
+                  email={email}
+                  onEmailChange={setEmail}
+                  onBack={() => { returning.current = true; setMode('signin'); }}
+                />
+              </Suspense>
+            </DialogErrorBoundary>
+          ) : (
           <form onSubmit={handleSignIn} className="relative">
-            <label htmlFor="auth-email" className="block label-caps text-plush-300 mb-2">Email</label>
-            <div className="relative mb-5">
-              <Mail aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-plush-300" strokeWidth={2} />
-              <input
-                id="auth-email"
-                type="email"
-                autoComplete="email"
-                aria-label="Email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={FIELD}
-                required
-              />
-            </div>
+            <AuthField
+              id="auth-email"
+              label="Email"
+              icon={Mail}
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
 
-            <label htmlFor="auth-password" className="block label-caps text-plush-300 mb-2">Password</label>
-            <div className="relative">
-              <LockKeyhole aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-plush-300" strokeWidth={2} />
-              <input
-                id="auth-password"
-                type="password"
-                autoComplete="current-password"
-                aria-label="Password"
-                aria-describedby="auth-password-rule"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={FIELD}
-                minLength={6}
-                required
-              />
-            </div>
+            <AuthField
+              id="auth-password"
+              label="Password"
+              icon={LockKeyhole}
+              className=""
+              type="password"
+              autoComplete="current-password"
+              aria-describedby="auth-password-rule"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={PASSWORD_MIN_LENGTH}
+              required
+            />
             {/* The rule under the field rather than as its placeholder, which
                 vanished at the first keystroke, and tied to it, so a screen
-                reader hears it with the field. */}
-            <p id="auth-password-rule" className="mt-2 mb-6 text-xs text-plush-300">At least 6 characters</p>
+                reader hears it with the field. "Forgot password?" shares its
+                line, so the form is no taller for it. A plain text button,
+                so FOCUS_RING; it keeps the typed email for the reset form. */}
+            {/* Each on one line; below about 330px the two no longer fit
+                side by side, and the link wraps under the rule, still at
+                the right edge (ml-auto). */}
+            <div className="mt-2 mb-6 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <p id="auth-password-rule" className="whitespace-nowrap text-xs text-plush-300">At least {PASSWORD_MIN_LENGTH} characters</p>
+              <button
+                ref={forgotRef}
+                type="button"
+                onPointerEnter={prefetchForgotPassword}
+                onFocus={prefetchForgotPassword}
+                onClick={() => setMode('forgot')}
+                // The padding, cancelled by the negative margin, makes a
+                // finger-sized target of a line of small text.
+                className={`ml-auto -mx-1 -my-1.5 px-1 py-1.5 whitespace-nowrap rounded-sm text-xs font-semibold text-brass-200 underline underline-offset-4 decoration-brass-300/50 hover:text-white ${FOCUS_RING}`}
+              >
+                Forgot password?
+              </button>
+            </div>
 
             {/* Side by side from 360px; stacked below that, where two
                 buttons would leave "Signing in…" no room. Sign In is the one
@@ -186,7 +213,7 @@ const Auth = () => {
               <button
                 type="submit"
                 disabled={!!loadingAction}
-                className={`btn-brass ${ACTION} ${busyLook(loadingAction, 'signin')}`}
+                className={`btn-brass ${AUTH_ACTION} ${busyLook(loadingAction, 'signin')}`}
               >
                 {loadingAction === 'signin'
                   ? <LoaderCircle aria-hidden="true" className="h-[18px] w-[18px] motion-safe:animate-spin" strokeWidth={2.4} />
@@ -197,7 +224,7 @@ const Auth = () => {
                 type="button"
                 onClick={handleSignUp}
                 disabled={!!loadingAction}
-                className={`btn-glass ${ACTION} ${busyLook(loadingAction, 'signup')}`}
+                className={`btn-glass ${AUTH_ACTION} ${busyLook(loadingAction, 'signup')}`}
               >
                 {loadingAction === 'signup'
                   ? <LoaderCircle aria-hidden="true" className="h-[18px] w-[18px] text-brass-300 motion-safe:animate-spin" strokeWidth={2.4} />
@@ -206,12 +233,16 @@ const Auth = () => {
               </button>
             </div>
           </form>
+          )}
           {/* Where progress is kept, worded to be true before sign-in can
               know which: the account keeps it once the server has cloud
-              saves (src/lib/cloudSave.js), and Settings says which it is. */}
-          <p className="relative mt-5 text-center text-xs leading-relaxed text-plush-300">
-            Your progress saves on this device, and to your account too when the server supports it. Settings shows which.
-          </p>
+              saves (src/lib/cloudSave.js), and Settings says which it is.
+              With the sign-in form only — the reset form has its own copy. */}
+          {mode !== 'forgot' && (
+            <p className="relative mt-5 text-center text-xs leading-relaxed text-plush-300">
+              Your progress saves on this device, and to your account too when the server supports it. Settings shows which.
+            </p>
+          )}
         </div>
       </main>
     </div>

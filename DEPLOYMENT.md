@@ -136,6 +136,43 @@ Dashboard → Edge Functions → Secrets (or `npx supabase secrets set KEY=value
 | `ALLOWED_ORIGIN` | your production domain, e.g. `https://terribleteddies.app` |
 | `DENO_ENV` | `production` |
 
+`SUPABASE_SERVICE_ROLE_KEY` is used by `create-checkout-session` as well as the
+webhook: it records each account's open Starter Gem Pack checkout. Hosted edge
+functions are given it by default.
+
+### Auth: Site URL, redirect URLs and email (password reset)
+
+"Forgot password?" on the sign-in screen asks Supabase to email a reset link
+that comes back to the site the player asked from (`redirectTo` is the page's
+own origin). Supabase only sends a player back to an address on its
+allow-list; a link for any other address lands on the Site URL instead, and a
+site that is on neither never sees the link work. Dashboard → Authentication →
+URL Configuration:
+
+1. **Site URL**: the production origin, e.g. `https://terribleteddies.app`
+   (no path). Sign-up confirmation links use it too.
+2. **Redirect URLs**: add every origin the game is served from, each with
+   `/**` so the exact page does not matter: the production origin
+   (`https://terribleteddies.app/**`), any preview or staging domain (Vercel
+   previews: `https://*-<your-team>.vercel.app/**`), and
+   `http://localhost:8080/**` for `npm run dev`.
+3. **Email template** (Authentication's email templates, "Reset Password"):
+   keep the default `{{ .ConfirmationURL }}` link. It returns with the session in the
+   URL's fragment, which is what the app reads (supabase-js's default,
+   implicit flow); a template built on `{{ .TokenHash }}` needs code this app
+   does not have.
+4. **SMTP** (Authentication's SMTP settings): set up your own sender
+   before launch. Supabase's built-in one is for trying things out and sends
+   only a few emails an hour for the whole project, so most players' reset
+   (and sign-up) emails would never go out.
+
+The game's side of it: the reset form tells the player the same thing whether
+or not the address has an account, and waits a minute before it offers to
+send again (Supabase's default per-address interval). The link opens a "Set a
+New Password" screen; an expired or already-used link says so and offers a new
+one. To smoke-test: ask for a reset on the live site, open the email's link,
+set a new password, sign out, and sign in with it.
+
 ---
 
 ## 2. Stripe
