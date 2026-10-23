@@ -95,7 +95,11 @@ const getTeddyEmoji = (teddy) => {
 // giving up on the emoji, so a missing/stale thumbs/ entry never regresses
 // a card that does have full art. A failed responsive image drops to that
 // same chain.
-export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = '', variant = 'thumb', sizes = '144px' }) => {
+//
+// `loading` is lazy by default, for the long grids; a card that is shown the
+// moment it mounts (a pack reveal's face) passes 'eager'. Decoding is async
+// either way, so a large image never holds up the frame that shows it.
+export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = '', variant = 'thumb', sizes = '144px', loading = 'lazy' }) => {
   // Track which card id failed at which stage (not a boolean): a reused
   // component instance re-rendered with a different teddy must retry that
   // card's art instead of inheriting the previous card's failure, and a
@@ -123,7 +127,8 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
         srcSet={`${thumb} 192w, ${full} 768w`}
         sizes={sizes}
         alt=""
-        loading="lazy"
+        loading={loading}
+        decoding="async"
         draggable={false}
         className={imgClassName}
         onError={() => setFailed({ id: teddy.id, stage: 'responsive' })}
@@ -137,7 +142,8 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
     <img
       src={src}
       alt=""
-      loading="lazy"
+      loading={loading}
+      decoding="async"
       draggable={false}
       className={imgClassName}
       onError={() => setFailed({ id: teddy.id, stage: useFull ? 'full' : 'thumb' })}
@@ -222,13 +228,14 @@ const WOUNDED_TONE = 'linear-gradient(180deg, #b91c1c, #450a0a)';
 // `lift` turns off the card's own hover lift, for wrappers that lift the card
 // themselves and draw rings around it (the battle board): two lifts stacked,
 // and the inner one moved the card out of the ring drawn around it.
-// `artVariant` is ArtOrEmoji's variant, for cards drawn larger than hand size.
+// `artVariant` is ArtOrEmoji's variant, for cards drawn larger than hand size,
+// and `artLoading` its loading hint.
 // `dimmed` greys the art only — for a card the player does not own yet. The
 // collection used to filter the whole card, which took the name, cost and
 // stats below AA along with the picture.
 const TeddyCard = ({
   teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null,
-  lift = true, artVariant = 'thumb', dimmed = false,
+  lift = true, artVariant = 'thumb', artLoading = 'lazy', dimmed = false,
 }) => {
   // Use rarity style if available, otherwise fall back to type style
   const rarityStyle = teddy.rarity ? RARITY[teddy.rarity] : null;
@@ -280,6 +287,7 @@ const TeddyCard = ({
           <ArtOrEmoji
             teddy={teddy}
             variant={artVariant}
+            loading={artLoading}
             emojiClassName="text-[34px] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] -mt-2"
             imgClassName="absolute inset-0 w-full h-full object-cover"
           />
