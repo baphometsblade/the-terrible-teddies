@@ -1,6 +1,7 @@
 // The paths where real money meets the save: what Reset All Progress keeps,
 // the one-per-account Starter offer, and the purchase-return screen while a
 // payment is still unconfirmed, refunded, or confirms late.
+import AxeBuilder from '@axe-core/playwright';
 import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
 import { getCurrentSeason } from '../src/utils/season.js';
 
@@ -105,4 +106,112 @@ test("the checkout's one-per-account refusal marks the offer claimed instead of 
   await expect(claimed).toBeVisible();
   await expect(claimed).toBeFocused();
   await expect(shop.getByRole('button', { name: 'Buy Now' })).toHaveCount(0);
+});
+
+// --- Coming back from Stripe before the payment is confirmed ---------------
+
+const ROW = { gems_granted: 500, bundle_id: 'gems_large' };
+
+// The purchases row as the verification read sees it, switchable mid-test.
+// Counts the reads, so a test can tell the checks stopped. maybeSingle()
+// unwraps a one-element array; an empty one is "no row yet".
+async function stubPurchase(page, initial) {
+  const state = { row: initial, reads: 0, balance: null };
+  await page.route(/\/rest\/v1\/purchases/, (route) => {
+    state.reads += 1;
+    return route.fulfill({ json: state.row ? [state.row] : [] });
+  });
+  await page.route(/\/rest\/v1\/user_gems/, (route) =>
+    route.fulfill({ json: state.balance === null ? [] : [{ gems: state.balance }] }));
+  return state;
+}
+
+// Run the page's own clock forward until `locator` shows, a step at a time,
+// so each check's request can answer before the next timer is due.
+async function runClockUntil(page, locator, step = 2_000) {
+  await expect(async () => {
+    await page.clock.runFor(step);
+    await expect(locator).toBeVisible({ timeout: 100 });
+  }).toPass({ timeout: 60_000, intervals: [0] });
+}
+
+async function returnFromCheckout(page, sessionId) {
+  await page.goto(`/?purchase=success&session_id=${sessionId}`);
+  const dialog = page.getByRole('dialog', { name: 'Purchase status' });
+  await expect(dialog).toBeVisible(SLOW);
+  // Installed now, so the boot ran on real time; every check from here on
+  // is on the page's fake clock.
+  await page.clock.install();
+  return dialog;
+}
+
+async function expectNoAxeViolations(page, label) {
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(' | ')}`), label).toEqual([]);
+}
+
+test('an unconfirmed payment: honest copy, the reference to keep, ten minutes of checks, then it says so', async ({ page }) => {
+  const stub = await stubPurchase(page, null);
+  const dialog = await returnFromCheckout(page, 'cs_test_unconfirmed');
+
+  const waiting = dialog.getByRole('heading', { name: 'Waiting for Payment Confirmation' });
+  await runClockUntil(page, waiting);
+  // Never "received" before Stripe says so, and no contact that leads nowhere.
+  await expect(dialog).not.toContainText(/received|within a minute|contact support/i);
+  await expect(dialog.getByText('cs_test_unconfirmed')).toBeVisible();
+  await expect(dialog.getByText(/Keep this reference/)).toBeVisible();
+  // This build has no VITE_SUPPORT_EMAIL: so no email link either.
+  await expect(dialog.locator('a[href^="mailto:"]')).toHaveCount(0);
+  await expectNoAxeViolations(page, 'pending purchase');
+
+  const stalled = dialog.getByRole('heading', { name: 'Still Waiting for Stripe' });
+  await runClockUntil(page, stalled, 30_000);
+  await expect(dialog).toContainText('Nothing is lost');
+  await expectNoAxeViolations(page, 'stalled purchase');
+
+  // Then it really has stopped: ten more minutes, not one more read.
+  const reads = stub.reads;
+  expect(reads).toBeLessThanOrEqual(12 + 27);
+  for (let i = 0; i < 20; i++) await page.clock.runFor(30_000);
+  expect(stub.reads).toBe(reads);
+
+  // Check now still works, and lands the gems once Stripe has confirmed.
+  stub.row = { ...ROW, status: 'completed' };
+  stub.balance = 500;
+  await dialog.getByRole('button', { name: 'Check now' }).click();
+  await expect(dialog.getByText('Purchase Complete!')).toBeVisible(SLOW);
+});
+
+test('a refunded payment says no gems were added, and does not wait for any', async ({ page }) => {
+  await stubPurchase(page, { ...ROW, status: 'refunded' });
+  const dialog = await returnFromCheckout(page, 'cs_test_refunded');
+  await expect(dialog.getByRole('heading', { name: 'Payment Refunded' })).toBeVisible(SLOW);
+  await expect(dialog).toContainText("its gems aren't on your account");
+  await expect(dialog.getByRole('button', { name: 'Check now' })).toHaveCount(0);
+  await expect(dialog.getByText('cs_test_refunded')).toBeVisible();
+  await expectNoAxeViolations(page, 'refunded purchase');
+});
+
+test('gems from a payment that confirms after the screen is closed land on the next return to the tab', async ({ page }) => {
+  const stub = await stubPurchase(page, null);
+  const dialog = await returnFromCheckout(page, 'cs_test_late');
+  await runClockUntil(page, dialog.getByRole('heading', { name: 'Waiting for Payment Confirmation' }));
+  await dialog.getByRole('button', { name: 'Return to Game' }).click();
+  await expect(dialog).toHaveCount(0, SLOW);
+  const gemsBefore = (await saved(page)).gems;
+
+  // The webhook lands while the player is in the menu.
+  stub.row = { ...ROW, status: 'completed' };
+  stub.balance = 500;
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+
+  await expect(page.getByText('Payment confirmed').first()).toBeVisible(SLOW);
+  await expect.poll(async () => (await saved(page)).gems).toBe(gemsBefore + 500);
+
+  // Settled: the next return reads nothing.
+  const reads = stub.reads;
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await page.clock.runFor(1_000);
+  expect(stub.reads).toBe(reads);
 });

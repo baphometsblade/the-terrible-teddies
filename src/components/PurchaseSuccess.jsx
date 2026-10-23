@@ -192,9 +192,15 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
     }
   }, [sessionId, reconcileServerGems]);
 
+  // Once per payment. StrictMode runs this effect twice, and each run started
+  // its own 12-attempt verification loop that nothing cancels (the loop lives
+  // in verifyPurchaseSession), so a slow webhook cost 24 reads, not 12.
+  const verifyStartedFor = useRef(null);
   useEffect(() => {
+    if (verifyStartedFor.current === sessionId) return;
+    verifyStartedFor.current = sessionId;
     verify();
-  }, [verify]);
+  }, [verify, sessionId]);
 
   // If the webhook is still catching up ('pending'), keep re-checking in the
   // background, on pendingPollDelay's slowing schedule, so gems appear by
