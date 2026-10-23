@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext, forwardRef, useImperativeHandle } from 'react';
 import {
-  Coins, Crosshair, Flag, Ghost, Hand, Heart, HeartCrack, Layers, ScrollText, Smartphone, Star, Trophy, Volume2, VolumeX, Zap,
+  Coins, Crosshair, Crown, Flag, Ghost, Hand, Heart, HeartCrack, Layers, ScrollText, Smartphone, Star, Trophy, Volume2, VolumeX, Zap,
 } from 'lucide-react';
 import TeddyCard, { CardBack } from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
@@ -21,6 +21,8 @@ import { bestOwnedBorder, ownedEmotes } from '@/lib/cosmetics';
 import { abilityRules } from '@/lib/abilities';
 import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, canRally, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
 import LeaveBattleDialog from './LeaveBattleDialog';
+import { battlePassTier } from './battlePassTiers';
+import { Medallion } from '@/components/ui/game-chrome';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 
 // Stamp a creature's starting durability when it enters the field. `defense` is
@@ -262,9 +264,9 @@ const HAND_MIN_STRIP = 52;
 const TOUCH_TARGET = 44;
 
 // The hand's fan: each card turns this many degrees (and drops this many
-// pixels) per place from the middle — tighter for a big hand, so the outer
-// corners stay inside the row.
-const fanStep = (count) => (count > 6 ? 2 : 3);
+// pixels) per place from the middle — tighter from six cards, so the outer
+// corners stay inside the row and leave the overlap room to fit a phone.
+const fanStep = (count) => (count > 5 ? 2 : 3);
 // How far the outermost card's top corner swings past its own edge, at the
 // 1.08 hover lift: the room the strip keeps at each end so the fan never
 // makes it scroll.
@@ -361,6 +363,123 @@ function syncLevelToServer() {
     .catch(err => console.error('Level sync failed:', err));
 }
 
+// A reward figure that counts up from zero as the result panel opens. With
+// reduced motion — the OS setting, or the Animations switch through
+// MotionConfig — it shows the figure at once. Visual only: the caller puts
+// the final figure in sr-only text, so a screen reader never hears a count.
+const CountUp = ({ value, delay = 0, duration = 700 }) => {
+  const reduced = useReducedMotionConfig();
+  const [shown, setShown] = useState(reduced ? value : 0);
+  useEffect(() => {
+    if (reduced) {
+      setShown(value);
+      return undefined;
+    }
+    let frame = 0;
+    let start = null;
+    const tick = (now) => {
+      start ??= now;
+      const t = Math.min(1, (now - start) / duration);
+      setShown(Math.round(value * (1 - (1 - t) ** 3)));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    const timer = setTimeout(() => { frame = requestAnimationFrame(tick); }, delay);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(frame);
+    };
+  }, [value, delay, duration, reduced]);
+  return <span aria-hidden="true" data-count-up="">{shown.toLocaleString()}</span>;
+};
+
+// When the result panel's beats land, in seconds: the chips pop, the XP bar
+// fills, then the level-up (if any) arrives as the bar tops out.
+const REWARD_BEATS = { xp: 0.3, coins: 0.5, bar: 0.7, levelUp: 1.6 };
+
+/**
+ * The XP bar under the result's reward chips: the level's progress from where
+ * the battle started to where it ended. On a level-up it fills to the end,
+ * empties and fills again into the new level. The fill is a transform
+ * (scaleX from its left edge), which Framer Motion owns and the compositor
+ * runs, never a width; with reduced motion it simply shows where it ended.
+ */
+const XpBar = ({ progress }) => {
+  const { xpBefore, xpNeededBefore, xpAfter, xpNeededAfter, levelAfter, levelsGained } = progress;
+  const from = Math.min(1, xpBefore / xpNeededBefore);
+  const to = Math.min(1, xpAfter / xpNeededAfter);
+  const levelled = levelsGained > 0;
+  return (
+    <div className="mx-auto mt-3 max-w-[16rem]">
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={xpNeededAfter}
+        aria-valuenow={xpAfter}
+        aria-label={`Level ${levelAfter}: ${xpAfter} of ${xpNeededAfter} XP`}
+        className="panel-glass h-2.5 overflow-hidden rounded-full"
+      >
+        <motion.div
+          data-xp-fill=""
+          className="h-full rounded-full bg-gradient-to-r from-brass-500 to-brass-300 shadow-[0_0_8px_rgba(251,191,36,0.6)]"
+          style={{ originX: 0 }}
+          initial={{ scaleX: from }}
+          animate={{ scaleX: levelled ? [from, 1, 0, to] : to }}
+          transition={{
+            delay: REWARD_BEATS.bar,
+            duration: levelled ? 1.3 : 0.8,
+            ease: 'easeOut',
+            ...(levelled ? { times: [0, 0.6, 0.61, 1] } : {}),
+          }}
+        />
+      </div>
+      <div aria-hidden="true" className="mt-1 flex justify-between text-[11px] font-semibold tabular-nums text-plush-300">
+        <span>Lv {levelAfter}</span>
+        <span>{xpAfter.toLocaleString()} / {xpNeededAfter.toLocaleString()} XP</span>
+      </div>
+    </div>
+  );
+};
+
+// The level-up beat on the result panel: the new level on a brass medallion,
+// and the coins the level-up paid — credited all along, and never shown
+// anywhere until now.
+const LevelUpRow = ({ level, bonusCoins }) => (
+  <motion.div
+    data-level-up=""
+    initial={{ opacity: 0, scale: 0.85 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ delay: REWARD_BEATS.levelUp, type: 'spring', stiffness: 320, damping: 18 }}
+    className="mt-3 flex items-center justify-center gap-3"
+  >
+    <Medallion size="sm">
+      <span className="font-display text-lg font-extrabold leading-none text-brass-200">{level}</span>
+    </Medallion>
+    <div className="text-left">
+      <div className="label-caps text-brass-300">Level up</div>
+      <div className="font-display text-xl font-extrabold leading-tight text-white">Level {level}</div>
+    </div>
+    <div className="panel-glass flex items-center gap-1.5 rounded-xl px-3 py-2">
+      <Coins className="h-4 w-4 text-brass-300" aria-hidden="true" />
+      <span className="font-display text-base font-extrabold tabular-nums text-white">+{bonusCoins.toLocaleString()}</span>
+      <span className="sr-only">bonus coins</span>
+    </div>
+  </motion.div>
+);
+
+// The result panel's figures, from what recordBattleResult reported (or
+// nothing yet): the battle's XP and coins, addXP's account of the level, and
+// the Battle Pass tier either side of the XP.
+const rewardsFrom = (result) => {
+  const progress = result?.progress ?? null;
+  return {
+    xp: result?.xpGain ?? 0,
+    coins: result?.coinsGain ?? 0,
+    progress,
+    tierBefore: progress ? battlePassTier(progress.seasonXPBefore) : 0,
+    tierAfter: progress ? battlePassTier(progress.seasonXPAfter) : 0,
+  };
+};
+
 // The game-over overlay mounts conditionally, so it hosts its own useDialog
 // (the hook must live in a component that mounts with the overlay). Gives the
 // end screen dialog semantics + focus containment, so keyboard users can't
@@ -441,6 +560,24 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     timeoutsRef.current.length = 0;
   }, []);
 
+  // A battle that levelled the player up: the result panel announces it
+  // (LevelUpRow), so it comes off the store's queue — App would otherwise
+  // toast it too once the player is back on the menu — and confetti marks
+  // the beat the bar tops out. celebrate() honours the Animations switch and
+  // reduced motion. A battle abandoned through "← Menu" never gets here, and
+  // App's toast is then its only announcement.
+  const showLevelUp = useCallback((progress) => {
+    if (!progress?.levelsGained) return;
+    useGameStore.getState().dismissLevelUp(progress.levelUpId);
+    safeTimeout(() => celebrate({
+      particleCount: 90,
+      spread: 70,
+      startVelocity: 35,
+      origin: { y: 0.55 },
+      colors: ['#fde68a', '#fbbf24', '#f59e0b', '#ffffff'],
+    }), REWARD_BEATS.levelUp * 1000);
+  }, [safeTimeout]);
+
   useEffect(() => {
     // Capture the array reference so the cleanup clears the same list we push
     // into (it's mutated in place, never reassigned), satisfying the rule that
@@ -489,7 +626,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
   const [showAbilityPopup, setShowAbilityPopup] = useState(null);
-  const [battleRewards, setBattleRewards] = useState({ xp: 0, coins: 0 });
+  const [battleRewards, setBattleRewards] = useState(() => rewardsFrom(null));
 
   // Add to battle log. Ids must be unique — several entries are appended in
   // the same millisecond during the opponent's turn, so Date.now() collides
@@ -580,7 +717,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       setPlayerQuip(null);
       setEndQuip(pickQuip('oppWins'));
       if (abandonRewardsRef.current) {
-        setBattleRewards({ xp: abandonRewardsRef.current.xpGain, coins: abandonRewardsRef.current.coinsGain });
+        setBattleRewards(rewardsFrom(abandonRewardsRef.current));
+        showLevelUp(abandonRewardsRef.current.progress);
       }
       setWinner('opponent');
       setGameOver(true);
@@ -598,8 +736,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       window.removeEventListener('pageshow', onPageShow);
       recordAbandonment();
     };
-    // clearAllTimeouts is a stable [] useCallback, so this still runs once.
-  }, [clearAllTimeouts]);
+    // clearAllTimeouts and showLevelUp are stable useCallbacks (their own
+    // dependencies never change), so this still runs once.
+  }, [clearAllTimeouts, showLevelUp]);
 
   // Giving up a live battle asks first (LeaveBattleDialog). `leaveMode` is
   // which control asked — 'leave' ("← Menu") or 'concede' — or null.
@@ -874,7 +1013,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       playSound('victory');
 
       // Record victory — store handles XP and coin rewards
-      const { xpGain, coinsGain } = recordBattleResult(
+      const result = recordBattleResult(
         true,
         battleStatsRef.current.damageDealt,
         battleStatsRef.current.healingDone,
@@ -882,7 +1021,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
         battleStatsRef.current.cardsPlayed,
         battleStatsRef.current.damageTaken
       );
-      setBattleRewards({ xp: xpGain, coins: coinsGain });
+      const { coinsGain } = result;
+      setBattleRewards(rewardsFrom(result));
+      showLevelUp(result.progress);
 
       // Sync to server (fire and forget - don't block UI)
       syncBattleResult(true, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain, useGameStore.getState().ownerUserId)
@@ -912,14 +1053,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       playSound('defeat');
 
       // Record defeat — store now handles consolation coins internally
-      const { xpGain, coinsGain } = recordBattleResult(
+      const result = recordBattleResult(
         false,
         battleStatsRef.current.damageDealt,
         battleStatsRef.current.healingDone,
         playerHealth,
         battleStatsRef.current.cardsPlayed
       );
-      setBattleRewards({ xp: xpGain, coins: coinsGain });
+      const { coinsGain } = result;
+      setBattleRewards(rewardsFrom(result));
+      showLevelUp(result.progress);
 
       // Sync to server (fire and forget - don't block UI)
       syncBattleResult(false, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain, useGameStore.getState().ownerUserId)
@@ -927,7 +1070,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       // Keep the server level/xp current even on a loss (a loss still grants XP).
       syncLevelToServer();
     }
-  }, [playerHealth, opponentHealth, gameOver, playSound, recordBattleResult, aiDifficulty, clearAllTimeouts]);
+  }, [playerHealth, opponentHealth, gameOver, playSound, recordBattleResult, aiDifficulty, clearAllTimeouts, showLevelUp]);
 
   // Chuck starts sweating when he's nearly unstuffed — once per game.
   useEffect(() => {
@@ -1545,7 +1688,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setGameOver(false);
     setWinner(null);
     setShowAbilityPopup(null);
-    setBattleRewards({ xp: 0, coins: 0 });
+    setBattleRewards(rewardsFrom(null));
 
     // Reset both mouths
     setOppQuip(null);
@@ -1701,7 +1844,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const [preview, setPreview] = useState(null);
   const [raisedId, setRaisedId] = useState(null);
   const previewTimerRef = useRef(null);
-  const lastPointerRef = useRef('mouse');
+  // The last press: its pointer type, the card it landed on, and when.
+  const lastPointerRef = useRef({ type: 'mouse', id: null, at: 0 });
   const longPressRef = useRef({ timer: null, fired: false, x: 0, y: 0 });
   useEffect(() => () => {
     clearTimeout(previewTimerRef.current);
@@ -1747,7 +1891,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     };
     return {
       onPointerDown: (e) => {
-        lastPointerRef.current = e.pointerType;
+        lastPointerRef.current = { type: e.pointerType, id: p.id, at: e.timeStamp };
         const lp = longPressRef.current;
         lp.fired = false;
         if (!longPress || e.pointerType !== 'touch') return;
@@ -1777,7 +1921,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       } : undefined,
       // A held finger opens the phone's own menu (Android's contextmenu) on
       // top of the preview otherwise.
-      onContextMenu: (e) => { if (lastPointerRef.current === 'touch') e.preventDefault(); },
+      onContextMenu: (e) => { if (lastPointerRef.current.type === 'touch') e.preventDefault(); },
       onPointerEnter: (e) => { if (e.pointerType === 'mouse') showPreview(p, PREVIEW_HOVER_MS); },
       onPointerLeave: (e) => { if (e.pointerType === 'mouse') hidePreview(p.id); },
       // Keyboard focus only: a click focuses a card too, and the preview
@@ -1792,9 +1936,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   };
 
   // A hand card's press. With a finger, the first tap raises the card (and
-  // opens its preview) and only a tap on the raised card plays it.
+  // opens its preview) and only a tap on the raised card plays it. A click
+  // counts as a tap only when a finger came down on this same card just
+  // before it: a screen reader's activation is a click with no press behind
+  // it, and must play at once, as Enter does — its user cannot see the
+  // raise, and would hear nothing happen.
   const pressHandCard = (card, playable) => (e) => {
-    const touch = e?.type === 'click' && lastPointerRef.current === 'touch';
+    const last = lastPointerRef.current;
+    const touch = e?.type === 'click' && last.type === 'touch' && last.id === card.instanceId
+      && e.timeStamp - last.at < 1000;
+    lastPointerRef.current = { type: 'mouse', id: null, at: 0 };
     if (touch && raisedId !== card.instanceId) {
       hidePreview();
       setRaisedId(card.instanceId);
@@ -1923,34 +2074,55 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 </p>
               )}
 
-              {/* Rewards */}
+              {/* Rewards: what the battle paid, then the level's progress, a
+                  level-up and its bonus coins when there is one, and a Battle
+                  Pass tier the XP opened. It used to be the two chips alone,
+                  while a level-up paid 100 x the new level in coins without a
+                  word. */}
               <div className="relative mb-5">
                 <div className="label-caps text-plush-300 mb-2">Battle Rewards</div>
                 <div className="flex justify-center gap-3">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ delay: 0.3 }}
+                    transition={{ delay: REWARD_BEATS.xp }}
                     className="panel-glass rounded-xl px-4 py-2.5 flex items-center gap-2"
                   >
                     <Star className="h-5 w-5 text-brass-300" fill="currentColor" aria-hidden="true" />
                     <span className="font-display text-lg font-extrabold text-white tabular-nums">
-                      +{battleRewards.xp} XP
+                      +<CountUp value={battleRewards.xp} delay={REWARD_BEATS.xp * 1000} /><span aria-hidden="true"> XP</span>
+                      <span className="sr-only">{battleRewards.xp} XP</span>
                     </span>
                   </motion.div>
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ delay: 0.5 }}
+                    transition={{ delay: REWARD_BEATS.coins }}
                     className="panel-glass rounded-xl px-4 py-2.5 flex items-center gap-2"
                   >
                     <Coins className="h-5 w-5 text-brass-300" aria-hidden="true" />
                     <span className="font-display text-lg font-extrabold text-white tabular-nums">
-                      +{battleRewards.coins}
+                      +<CountUp value={battleRewards.coins} delay={REWARD_BEATS.coins * 1000} />
                     </span>
-                    <span className="sr-only">coins</span>
+                    <span className="sr-only">{battleRewards.coins} coins</span>
                   </motion.div>
                 </div>
+                {battleRewards.progress && <XpBar progress={battleRewards.progress} />}
+                {battleRewards.progress?.levelsGained > 0 && (
+                  <LevelUpRow level={battleRewards.progress.levelAfter} bonusCoins={battleRewards.progress.bonusCoins} />
+                )}
+                {battleRewards.tierAfter > battleRewards.tierBefore && (
+                  <motion.p
+                    data-pass-tier=""
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: REWARD_BEATS.levelUp + 0.3 }}
+                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brass-200"
+                  >
+                    <Crown className="h-4 w-4 text-brass-300" aria-hidden="true" />
+                    Battle Pass tier {battleRewards.tierAfter} unlocked
+                  </motion.p>
+                )}
               </div>
 
               {/* Upsell nudge — only shown when player is low on resources */}

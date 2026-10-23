@@ -98,11 +98,14 @@ for (const viewport of [
 // the turn controls, painting over End Turn and taking its taps. These are the
 // sizes a page actually gets on an iPhone SE, an iPhone 15 and a small Android
 // with toolbars showing. Every row must stay inside the felt, and End Turn
-// must be the thing under its own centre.
+// must be the thing under its own centre. 320x640 is the narrowest phone the
+// board is drawn for, where the rows are scaled the most (and where the row's
+// status slot used to hold them at 0.59).
 for (const viewport of [
   { width: 375, height: 553 },
   { width: 393, height: 659 },
   { width: 360, height: 640 },
+  { width: 320, height: 640 },
 ]) {
   test.describe(`battle board at ${viewport.width}x${viewport.height}`, () => {
     test.use({ viewport });
