@@ -617,11 +617,9 @@ const BattlePass = ({ onClose, onGetGems }) => {
     else if (out.packs) toast({ title: 'Packs Claimed!', description: `+${plural(out.packs, 'card pack')}` });
   };
 
-  // How many tiles are waiting to be claimed: the helper the menu tile badges
-  // with too, and the same test each tile's canClaim uses below, so the
-  // count, the menu and the brass tiles always agree.
-  // One reading of the pass for the badge, the tiles and the confirm, through
-  // the same predicate the store's claim checks.
+  // One reading of the pass for the "N ready" count (the helper the menu tile
+  // badges with too), each tile's canClaim below and the confirm, all through
+  // the predicate the store's claim checks, so none of them can disagree.
   const pass = { seasonXP: battlePassXP, claimed: claimedRewards, hasPremium };
   const readyCount = countReadyRewards(pass);
   const lastTier = BATTLE_PASS_REWARDS[BATTLE_PASS_REWARDS.length - 1].tier;
