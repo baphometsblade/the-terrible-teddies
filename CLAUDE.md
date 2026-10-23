@@ -169,8 +169,13 @@ Gem bundles are defined server-side in the edge function (prices cannot be tampe
 ### Battle System
 
 `src/components/GameBoard/GameBoard.jsx` handles the full battle loop:
-- Phases: draw → main → battle → end
-- Card abilities: taunt, piercing, shield, stealth, protect, fury
+- Phases: draw → main → end. There is no separate battle phase: as in
+  Hearthstone, the player's turn is one phase in which they play cards and
+  attack with ready creatures in any order. End Turn is the one turn control,
+  glass while a move is left and brass once none is (`hasMoveLeft` in
+  `GameBoard/turn.js`, which also owns `energyForTurn`)
+- Card abilities: taunt, piercing, shield, stealth, protect, fury, swarm,
+  royal; their rules text lives in `src/lib/abilities.js`
 - `battleStatsRef` accumulates damage/healing/cardsPlayed per game for challenge tracking
 - On game end, calls `recordBattleResult(won, damageDealt, healingDone, finalHP, cardsPlayed)`
 

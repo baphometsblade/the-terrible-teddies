@@ -19,18 +19,14 @@ import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder, ownedEmotes } from '@/lib/cosmetics';
 import { abilityRules } from '@/lib/abilities';
-
-// Cap the hand so unbounded draw (per-turn + draw specials) can't overflow the
-// fixed-width hand layout into an unclickable, off-screen stack.
-const MAX_HAND_SIZE = 10;
+import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
 
 // Stamp a creature's starting durability when it enters the field. `defense` is
 // the HP pool in the creature-HP combat model; `currentHp` tracks the remaining
 // pool as it takes hits (see resolveCreatureHit).
 const withHp = (card) => ({ ...card, currentHp: card.defense });
 
-// A full momentum gauge unlocks the Rally payoff.
-const MOMENTUM_MAX = 10;
+const PLAYER_MAX_HEALTH = 30;
 
 // Board metals. Brass is the player's (and the plaque on their turn); crimson
 // is Chuck's.
@@ -362,13 +358,16 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   // False until the deck-init effect has dealt the opening hand, so the draw
   // phase never runs against the pre-initialization empty deck.
   const [deckReady, setDeckReady] = useState(false);
+  // 'draw' for the moment the turn's card arrives, 'main' for the rest of
+  // the player's turn (play cards and attack, in any order), 'end' once it
+  // has been handed to Chuck.
   const [phase, setPhase] = useState('draw');
   const [currentTurn, setCurrentTurn] = useState('player');
   const [turnCount, setTurnCount] = useState(1);
 
   // Player state
   const [playerHealth, setPlayerHealth] = useState(30);
-  const [playerEnergy, setPlayerEnergy] = useState(3);
+  const [playerEnergy, setPlayerEnergy] = useState(energyForTurn(1));
   const [playerMomentum, setPlayerMomentum] = useState(0);
   const [playerHand, setPlayerHand] = useState([]);
   const [playerField, setPlayerField] = useState([]);
@@ -813,7 +812,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
   // Play a card from hand
   const playCard = (card) => {
-    if (currentTurn !== 'player' || phase !== 'main') return;
+    if (currentTurn !== 'player' || phase !== 'main' || gameOver) return;
 
     // A 'swarm' card is 1 energy cheaper (min 1) once another creature is
     // already on the field — see effectiveCost. Use this for both the
@@ -830,19 +829,24 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       return;
     }
 
+    // Playing a card is a change of plan: it drops an attacker the player had
+    // picked but not yet sent, so the targeting prompt never outlives it.
+    // Only a play that happens does — a refused one (above, or a full field
+    // below) leaves the selection alone.
     // Handle special cards
     if (card.type === 'special') {
+      cancelTargeting();
       applySpecialEffect(card);
       setPlayerEnergy(prev => prev - cost);
       setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
-      setPlayerMomentum(prev => Math.min(10, prev + 1));
+      setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 1));
       battleStatsRef.current.cardsPlayed += 1;
       playSound('cardPlay');
       return;
     }
 
     // Handle action/trap cards
-    if (playerField.length >= 3) {
+    if (playerField.length >= MAX_FIELD_SIZE) {
       toast({
         title: "Field is full!",
         description: "Remove a teddy before playing another",
@@ -860,10 +864,11 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       ...(card.ability === 'stealth' ? { stealthActive: true } : {}),
     };
 
+    cancelTargeting();
     setPlayerField(prev => [...prev, cardToPlay]);
     setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
     setPlayerEnergy(prev => prev - cost);
-    setPlayerMomentum(prev => Math.min(10, prev + 1));
+    setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 1));
     battleStatsRef.current.cardsPlayed += 1;
     playSound('cardPlay');
 
@@ -891,8 +896,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         // Healing caps at 30, so playing a +10 heal at 28 HP restores 2 — but
         // the full 10 was being counted toward the 'Medic Bear' achievement and
         // the daily healing challenge, letting both be farmed at full HP.
-        const healed = Math.min(30, playerHealth + card.amount) - playerHealth;
-        setPlayerHealth(prev => Math.min(30, prev + card.amount));
+        const healed = Math.min(PLAYER_MAX_HEALTH, playerHealth + card.amount) - playerHealth;
+        setPlayerHealth(prev => Math.min(PLAYER_MAX_HEALTH, prev + card.amount));
         battleStatsRef.current.healingDone += healed;
         if (healed > 0) pushFx([{ face: 'player', tone: 'heal', text: `+${healed}` }]);
         playSound('heal');
@@ -928,8 +933,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   };
 
   // Select a card for attacking
+  // Any point in the player's turn: there is no separate battle phase, so
+  // cards can be played before and after attacking, in any order.
   const selectCardForAttack = (card) => {
-    if (currentTurn !== 'player' || phase !== 'battle') return;
+    if (currentTurn !== 'player' || phase !== 'main' || gameOver) return;
     if (card.type === 'trap') {
       toast({ title: "Traps can't attack", description: `${card.name} springs automatically when an enemy strikes it.`, variant: "destructive" });
       return;
@@ -1023,7 +1030,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       c.instanceId === selectedCard.instanceId ? { ...c, hasAttacked: true } : c
     ));
 
-    setPlayerMomentum(prev => Math.min(10, prev + 2));
+    setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 2));
     setSelectedCard(null);
     setTargetingMode(false);
   };
@@ -1083,16 +1090,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       c.instanceId === selectedCard.instanceId ? { ...c, hasAttacked: true } : c
     ));
 
-    setPlayerMomentum(prev => Math.min(10, prev + 3));
+    setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 3));
     setSelectedCard(null);
     setTargetingMode(false);
-  };
-
-  // Move to battle phase
-  const goToBattlePhase = () => {
-    if (phase !== 'main') return;
-    setPhase('battle');
-    addToBattleLog("Battle phase. Gloves off, paws up.");
   };
 
   // End turn
@@ -1147,7 +1147,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     const energyBudget = OPPONENT_ENERGY_BY_DIFFICULTY[aiDifficulty] ?? OPPONENT_ENERGY_BY_DIFFICULTY.normal;
     // Pass activeOpponentField so a 'swarm' card in the opponent's hand is
     // budgeted at its discounted cost under the same rule the player follows.
-    const { plays, remainingDeck } = chooseOpponentPlays(opponentDeck, opponentField.length, energyBudget, 3, activeOpponentField);
+    const { plays, remainingDeck } = chooseOpponentPlays(opponentDeck, opponentField.length, energyBudget, MAX_FIELD_SIZE, activeOpponentField);
     // Creatures the opponent plays THIS turn. They can't attack (summoning-sick),
     // but a 'royal' among them must still project its aura to the opponent's
     // other attackers this turn — mirroring the player, whose just-played royal
@@ -1278,7 +1278,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         setTurnCount(prev => prev + 1);
         // turnCount is still the pre-increment value in this closure — use +1
         // so energy tracks the turn the player is about to take.
-        setPlayerEnergy(Math.min(10, 3 + Math.floor((turnCount + 1) / 2)));
+        setPlayerEnergy(energyForTurn(turnCount + 1));
         setPhase('draw');
         addToBattleLog("Your turn. Get him.");
       }, 500);
@@ -1323,7 +1323,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
     // Reset player state
     setPlayerHealth(30);
-    setPlayerEnergy(3);
+    setPlayerEnergy(energyForTurn(1));
     setPlayerMomentum(0);
     setPlayerHand([]);
     setPlayerField([]);
@@ -1365,6 +1365,15 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
   const won = winner === 'player';
   const playerTurn = currentTurn === 'player';
+  // The player's turn proper: their card has arrived, and they can play cards
+  // and attack with ready creatures in any order until they end it.
+  const playerMove = playerTurn && phase === 'main' && !gameOver;
+  const moveState = {
+    hand: playerHand, field: playerField, energy: playerEnergy, health: playerHealth,
+    maxHealth: PLAYER_MAX_HEALTH, deckSize: playerDeck.length, momentum: playerMomentum,
+  };
+  // Nothing left worth doing this turn: End Turn becomes the primary action.
+  const outOfMoves = playerMove && !hasMoveLeft(moveState);
   const directTargets = targetingMode && getValidTargets(playerField, opponentField).length === 0;
   const latestLog = battleLog.length > 0 ? battleLog[battleLog.length - 1].message : '';
   const lastPlayerHit = latestHit(fx.filter((e) => e.face === 'player'));
@@ -1623,6 +1632,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                       side="opponent"
                       initial={{ y: -40, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
+                      data-field="opponent"
                       className={`relative ${hittable ? 'cursor-crosshair' : ''}`}
                       press={pressable(() => attackTarget(card), `Attack ${card.name}`, targetingMode)}
                     >
@@ -1679,7 +1689,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                     Turn {turnCount}
                     <span className="mx-1.5 opacity-60" aria-hidden="true">·</span>
                     {playerTurn
-                      ? <>{phase.charAt(0).toUpperCase() + phase.slice(1)}<span className="hidden min-[360px]:inline"> Phase</span></>
+                      ? <>Your<span className="hidden min-[360px]:inline"> move</span></>
                       : <>{OPPONENT_NAME}<span className="hidden min-[360px]:inline">&apos;s turn</span></>}
                   </div>
                   <span className="h-px flex-1 bg-gradient-to-l from-transparent to-brass-300/45" aria-hidden="true" />
@@ -1736,7 +1746,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                 <AnimatePresence key={gameId}>
                 {playerField.map((card) => {
                   const selected = selectedCard?.instanceId === card.instanceId;
-                  const ready = playerTurn && phase === 'battle' && canAttack(card);
+                  // A ready creature is an attacker the player can pick at
+                  // any point in their turn; nothing else on their side is.
+                  const ready = playerMove && canAttack(card);
                   const resting = card.type === 'action' && !canAttack(card);
                   return (
                     <FieldSlot
@@ -1746,13 +1758,19 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                       initial={{ y: 30, opacity: 0, scale: 0.88 }}
                       animate={{ y: 0, opacity: 1, scale: 1 }}
                       transition={{ type: 'spring', stiffness: 380, damping: 26 }}
-                      whileHover={{ y: -5 }}
-                      className={`relative ${resting ? '' : 'cursor-pointer'}`}
-                      /* Always delegate to selectCardForAttack rather than
-                         short-circuiting here: it owns every rejection message
-                         (trap / exhausted / summoning-sick), so a player who taps an
-                         unavailable creature is told why instead of getting silence. */
-                      press={pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`, playerTurn && phase === 'battle')}
+                      whileHover={ready ? { y: -5 } : undefined}
+                      className={`relative ${ready ? 'cursor-pointer' : ''}`}
+                      /* Only a ready creature is a button: a warming-up or
+                         spent one, or a trap, would be a "Select … to attack"
+                         that cannot attack, and its chip ("Warming Up",
+                         "Exhausted") already says why. A tap on one still
+                         reaches selectCardForAttack, which owns the rejection
+                         messages, so a pointer player who tries is told the
+                         rule rather than met with silence. */
+                      press={ready
+                        ? pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`)
+                        : (playerMove ? { onClick: () => selectCardForAttack(card) } : {})}
+                      data-field="player"
                     >
                       <div
                         data-target-ring={selected || ready ? '' : undefined}
@@ -1922,15 +1940,14 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                   <span className="relative z-10">⚡ Rally!</span>
                 </button>
               )}
-              {!gameOver && phase === 'main' && playerTurn && (
-                <button type="button" className={`${ACTION} btn-brass`} onClick={goToBattlePhase}>
-                  ⚔️ Battle
-                </button>
-              )}
-              {!gameOver && (phase === 'main' || phase === 'battle') && playerTurn && (
+              {/* The one turn control. Glass while the player still has a
+                  move (a ready attacker, a card worth playing, a Rally),
+                  brass once they have none, like Hearthstone's End Turn. */}
+              {playerMove && (
                 <button
                   type="button"
-                  className={`${ACTION} ${phase === 'battle' ? 'btn-brass' : 'btn-glass'}`}
+                  className={`${ACTION} ${outOfMoves ? 'btn-brass end-turn-ready' : 'btn-glass'}`}
+                  data-out-of-moves={outOfMoves ? '' : undefined}
                   onClick={endTurn}
                 >
                   End Turn
@@ -1967,7 +1984,10 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                 // stay inside the row.
                 const step = playerHand.length > 6 ? 2 : 3;
                 const affordable = playerEnergy >= effectiveCost(card, playerField);
-                const playable = playerTurn && phase === 'main';
+                const playable = playerMove;
+                // The glow marks a card worth playing now; a legal play that
+                // would do nothing (a heal at full HP) stays bright but unlit.
+                const lit = playable && isUsefulPlay(card, moveState);
                 return (
                   <motion.div
                     key={card.instanceId}
@@ -1976,9 +1996,9 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
                     exit={{ y: 50, opacity: 0 }}
                     whileHover={{ y: -20, scale: 1.08, zIndex: 10 }}
                     style={{ transformOrigin: 'bottom center' }}
-                    className={`shrink-0 rounded-[10px] cursor-pointer ${!affordable
+                    className={`shrink-0 rounded-[10px] ${playable ? 'cursor-pointer' : ''} ${!affordable
                       ? 'opacity-50 saturate-50'
-                      : playable ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
+                      : lit ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
                     {...pressable(() => playCard(card), `Play ${card.name}`, playable)}
                   >
                     <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} />
@@ -2025,8 +2045,12 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
               >
                 <Zap className="h-4 w-4 text-night-950" fill="currentColor" />
               </span>
-              <span className="font-display text-xl font-extrabold text-white tabular-nums">{playerEnergy}</span>
-              <span className="sr-only">energy</span>
+              {/* Current over the turn's maximum, as Hearthstone's crystals
+                  read: "2/4" says both what is left and what the turn gave. */}
+              <span className="font-display text-xl font-extrabold text-white tabular-nums" aria-hidden="true" data-energy="">
+                {playerEnergy}<span className="text-sm font-bold text-plush-300">/{energyForTurn(turnCount)}</span>
+              </span>
+              <span className="sr-only">{playerEnergy} of {energyForTurn(turnCount)} energy</span>
             </div>
             <HealthMeter
               hp={playerHealth}

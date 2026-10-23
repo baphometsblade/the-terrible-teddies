@@ -262,22 +262,25 @@ test('cards only advertise themselves as buttons when they can actually be used'
   const selectable = page.getByRole('button', { name: /to attack$/ });
   const attackable = page.getByRole('button', { name: /^Attack .+/ });
 
-  // Main phase, player's turn: the hand is playable. This is also the control
-  // case — without it a change that made nothing focusable would pass here
-  // vacuously.
+  // The player's turn: the hand is playable. This is also the control case —
+  // without it a change that made nothing focusable would pass here
+  // vacuously. Nothing is on the player's side yet, and an enemy card is a
+  // target only once an attacker has been chosen, so neither may claim to be
+  // a button.
   await expect.poll(() => playable.count(), { timeout: 15_000 }).toBeGreaterThan(0);
-  // A creature can only be picked as an attacker in the battle phase, and an
-  // enemy card only once an attacker has been chosen — so neither may claim to
-  // be a button yet, however many cards are on the table.
   await expect(selectable).toHaveCount(0);
   await expect(attackable).toHaveCount(0);
 
   await playable.first().click();
 
-  await page.getByRole('button', { name: '⚔️ Battle' }).click();
-  await expect.poll(() => selectable.count(), { timeout: 15_000 }).toBeGreaterThan(0);
-  // ...and the hand stops advertising itself the moment the main phase ends.
-  await expect(playable).toHaveCount(0);
+  // The turn is one phase, so the hand stays live after a play. The creature
+  // just played is warming up and cannot attack, so it must not claim to be
+  // an attacker. (This step used to press a "⚔️ Battle" phase button, after
+  // which the hand went dead and every creature became selectable; merging
+  // the phases removed both halves of that.)
+  await expect(page.getByText('Warming Up')).toHaveCount(2);
+  await expect.poll(() => playable.count(), { timeout: 15_000 }).toBeGreaterThan(0);
+  await expect(selectable).toHaveCount(0);
   await expect(attackable).toHaveCount(0);
 
   // On the opponent's turn nothing of the player's is actionable.
@@ -287,4 +290,14 @@ test('cards only advertise themselves as buttons when they can actually be used'
       timeout: 15_000,
     })
     .toBe(0);
+
+  // Back on the player's turn the ready creature and the hand are live at the
+  // same time, with no phase switch in between.
+  await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+  await expect.poll(() => selectable.count(), { timeout: 15_000 }).toBeGreaterThan(0);
+  await expect.poll(() => playable.count(), { timeout: 15_000 }).toBeGreaterThan(0);
+  await expect(attackable).toHaveCount(0);
+  // Choosing an attacker is what makes Chuck's cards targets.
+  await selectable.first().click();
+  await expect.poll(() => attackable.count(), { timeout: 15_000 }).toBeGreaterThan(0);
 });

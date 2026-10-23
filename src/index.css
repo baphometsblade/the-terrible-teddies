@@ -395,6 +395,24 @@
   [data-screen="battle"] .toast-viewport > li { pointer-events: none; }
 }
 
+/* End Turn once the player has no move left (GameBoard's outOfMoves): brass,
+   with a slow breath of brass light around it, so "you're done" reads at a
+   glance. The halo is ::after (the only claimant on that button; .btn-brass
+   uses no pseudo-element) and animates opacity only; with the Animations
+   switch off or reduced motion it stays lit and still (rules after the
+   layer). */
+.end-turn-ready { position: relative; }
+.end-turn-ready::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 1rem;
+  pointer-events: none;
+  box-shadow: 0 0 18px 3px rgba(251, 191, 36, 0.6);
+  opacity: 0.35;
+  animation: end-turn-glow 1.8s ease-in-out infinite;
+}
+
 /* Landscape phones get a "turn your phone upright" card over the board (see
    GameBoard): two card rows, a hand and two rails do not fit in ~360px of
    height, and below that the board overlaps itself. Touch screens only — a
@@ -621,6 +639,14 @@
   0% { opacity: 0; }
   12%, 75% { opacity: 1; }
   100% { opacity: 0; }
+}
+@keyframes end-turn-glow {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+[data-motion="off"] .end-turn-ready::after { animation: none; opacity: 0.75; }
+@media (prefers-reduced-motion: reduce) {
+  .end-turn-ready::after { animation: none; opacity: 0.75; }
 }
 
 /* Motion off (the in-game switch): nothing moves. The numbers and the banner

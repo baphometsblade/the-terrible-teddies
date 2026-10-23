@@ -480,17 +480,20 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
   await page.getByRole('button', { name: /^Play / }).first().click();
   await expect(page.getByText('Warming Up')).toHaveCount(2); // Chuck's opener + the new arrival
 
-  // The creature is on the field, but choosing an attacker is a battle-phase
-  // action, so it must not offer itself as one yet — a card that does is a
-  // button that does nothing (see the phantom-button guard in a11y.spec.js).
+  // The player's turn is one phase (cards and attacks in any order), so a
+  // creature is offered as an attacker the moment it can attack, and a
+  // warming-up one is not offered at all: a "Select … to attack" button that
+  // cannot attack does nothing (see the phantom-button guard in a11y.spec.js).
+  // Before the phases were merged this point was reached by pressing a
+  // "⚔️ Battle" button, which no longer exists.
+  await expect(page.getByRole('button', { name: /Battle/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^Select .+ to attack$/ })).toHaveCount(0);
 
-  await page.getByRole('button', { name: '⚔️ Battle' }).click();
-  const attacker = page.getByRole('button', { name: /^Select .+ to attack$/ }).first();
-  await expect(attacker).toBeVisible(SLOW);
-  await attacker.click();
-  // The crosshair affordance renders only while targeting is open, so its
-  // absence is what proves the selection was refused.
+  // Tapping it anyway explains the rule instead of doing nothing...
+  await page.locator('[data-field="player"]').first().click();
+  await expect(page.getByText('Still finding the floor')).toBeVisible(SLOW);
+  // ...and never opens targeting. The crosshair affordance renders only while
+  // targeting is open, so its absence is what proves the selection was refused.
   //
   // Weaker assertions that look right but are not: "Warming Up is visible"
   // passes on Chuck's opener even with player sickness deleted, and "Exhausted
@@ -499,13 +502,15 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
   // passing with the whole rule removed.
   await expect(page.locator('.cursor-crosshair')).toHaveCount(0);
 
-  // Turn 2 — sickness has lifted, so the same creature can now attack. This is
-  // also the exhaustion regression: the opponent turn write-back must not
-  // restore the flags it was stamped with on turn 1.
+  // Turn 2 — sickness has lifted, so the same creature can now attack, with no
+  // phase switch in between. This is also the exhaustion regression: the
+  // opponent turn write-back must not restore the flags it was stamped with on
+  // turn 1.
   await endTurn.click();
   await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
   await expect(page.getByText('Warming Up')).toHaveCount(0);
-  await page.getByRole('button', { name: '⚔️ Battle' }).click();
+  const attacker = page.getByRole('button', { name: /^Select .+ to attack$/ }).first();
+  await expect(attacker).toBeVisible(SLOW);
   await attacker.click();
   // Click whatever the board marks as hittable — a valid creature target, or
   // the direct-attack zone when only traps/stealth remain. Taking the first
@@ -526,6 +531,61 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
 
   expect(pageErrors, `Unexpected page errors: ${pageErrors.map((e) => e.message).join('; ')}`)
     .toHaveLength(0);
+});
+
+test('End Turn takes the lead once no move is left, and energy reads current/max', async ({ page }) => {
+  // One phase per turn: with a separate battle phase, a brass "⚔️ Battle" was
+  // the primary button even on turn 1 with nothing on the table, and pressing
+  // it locked the hand for the rest of the turn. Now End Turn is the only turn
+  // control: glass while there is still something to do, brass once there is
+  // nothing (Hearthstone's "no moves left").
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.currentDeck = [1, 2, 3, 4, 5, 6]; // creatures costing 1-2
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  const endTurn = page.getByRole('button', { name: 'End Turn' });
+  await expect(endTurn).toBeVisible(SLOW);
+
+  // Turn 1: three energy of three, and cheap cards to spend it on.
+  const energy = page.locator('[data-energy]');
+  await expect(energy).toHaveText('3/3');
+  await expect(page.getByText('3 of 3 energy')).toHaveCount(1);
+  await expect(endTurn).toHaveClass(/btn-glass/);
+  await expect(endTurn).not.toHaveAttribute('data-out-of-moves');
+
+  // Spend it. Each play leaves the hand live (no phase switch), and once the
+  // energy cannot buy anything more, End Turn turns brass.
+  const affordable = page.locator('[aria-label^="Play "]:not(.opacity-50)');
+  for (let i = 0; i < 4 && (await endTurn.getAttribute('data-out-of-moves')) === null; i += 1) {
+    await affordable.first().click();
+    await page.waitForTimeout(200);
+  }
+  await expect(endTurn).toHaveAttribute('data-out-of-moves', '');
+  await expect(endTurn).toHaveClass(/btn-brass/);
+  await expect(energy).not.toHaveText('3/3');
+  await expect(energy).toHaveText(/^[01]\/3$/);
+
+  // Turn 2: the energy refills to the new maximum, the creatures are ready,
+  // so there are moves again and End Turn steps back.
+  await endTurn.click();
+  await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+  await expect(endTurn).toBeVisible(SLOW);
+  await expect(energy).toHaveText('4/4');
+  await expect(endTurn).toHaveClass(/btn-glass/);
+
+  // Picking an attacker and then playing a card drops the attacker: the
+  // targeting prompt must not outlive a change of plan.
+  const attacker = page.getByRole('button', { name: /^Select .+ to attack$/ }).first();
+  await expect(attacker).toBeVisible(SLOW);
+  await attacker.click();
+  await expect(page.getByText(/Pick a victim/)).toBeVisible();
+  await affordable.first().click();
+  await expect(page.getByText(/Pick a victim/)).toHaveCount(0);
+  await expect(page.locator('.cursor-crosshair')).toHaveCount(0);
 });
 
 test('concede shows the defeat dialog and Play Again deals a fresh game', async ({ page }) => {
@@ -759,10 +819,12 @@ test('a mid-battle rehydrate refreshes the wallet without disturbing the game', 
     window.dispatchEvent(new Event('focus'));
   });
 
-  // The board survives: the creature is still there and the turn still ends here.
+  // The board survives: the creature is still there, the turn still ends
+  // here, and the hand is still live. (This step used to check the old
+  // "⚔️ Battle" phase button, which merging the phases removed.)
   await expect(page.getByText('Warming Up')).toHaveCount(2);
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '⚔️ Battle' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Play / }).first()).toBeVisible();
 
   // ...and the refreshed wallet carried through. Leaving mid-battle records an
   // abandonment, which CREDITS a few coins, so the total lands just above the
