@@ -30,7 +30,9 @@ const text = () => host.textContent.replace(/\s+/g, ' ');
 
 beforeEach(() => {
   localStorage.clear();
-  useGameStore.getState().resetProgress();
+  // A clean store, not resetProgress: a reset keeps gems, packs, the pass and
+  // the claim ledgers, which would leak from one test into the next.
+  useGameStore.setState(useGameStore.getInitialState(), true);
   useGameStore.setState({
     cardPacks: 0, premiumPacks: 0, legendaryPacks: 0, gems: 0,
     // A save stamped with this season: the panel rolls an older one over.

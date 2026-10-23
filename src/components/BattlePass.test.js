@@ -35,7 +35,9 @@ const confirm = () => document.querySelector('[role="dialog"][aria-label="Unlock
 
 beforeEach(() => {
   localStorage.clear();
-  get().resetProgress();
+  // A clean store, not resetProgress: a reset keeps gems, packs, the pass and
+  // the claim ledgers, which would leak from one test into the next.
+  useGameStore.setState(useGameStore.getInitialState(), true);
   toast.mockClear();
   useGameStore.setState({
     seasonKey: getCurrentSeason().key, seasonXP: 0, claimedBattlePassRewards: { free: [], premium: [] },

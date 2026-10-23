@@ -28,7 +28,9 @@ const passChip = (host) => [...host.querySelectorAll('span')].find((el) => /^\d+
 
 beforeEach(() => {
   localStorage.clear();
-  useGameStore.getState().resetProgress();
+  // A clean store, not resetProgress: a reset keeps gems, packs, the pass and
+  // the claim ledgers, which would leak from one test into the next.
+  useGameStore.setState(useGameStore.getInitialState(), true);
   useGameStore.setState({
     seasonKey: getCurrentSeason().key, seasonXP: 0, claimedBattlePassRewards: { free: [], premium: [] },
     hasBattlePassPremium: false, animationsEnabled: false, lastLoginDate: new Date().toDateString(),

@@ -14,7 +14,9 @@ const get = () => useGameStore.getState();
 
 beforeEach(() => {
   localStorage.clear();
-  get().resetProgress();
+  // A clean store, not resetProgress: a reset keeps gems, packs, the pass and
+  // the claim ledgers, which would leak from one test into the next.
+  useGameStore.setState(useGameStore.getInitialState(), true);
 });
 
 afterEach(() => {

@@ -31,7 +31,9 @@ const yourRank = () => host.querySelector('h3 + div [class*="rounded-full"]');
 
 beforeEach(() => {
   localStorage.clear();
-  useGameStore.getState().resetProgress();
+  // A clean store, not resetProgress: a reset keeps gems, packs, the pass and
+  // the claim ledgers, which would leak from one test into the next.
+  useGameStore.setState(useGameStore.getInitialState(), true);
   useGameStore.setState({ playerName: 'QA Bear', level: 1, totalWins: 0, currentWinStreak: 0, bestWinStreak: 0 });
   host = document.createElement('div');
   document.body.appendChild(host);

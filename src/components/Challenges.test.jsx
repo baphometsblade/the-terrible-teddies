@@ -35,7 +35,9 @@ describe('claiming a challenge', () => {
   let root;
   beforeEach(() => {
     localStorage.clear();
-    useGameStore.getState().resetProgress();
+    // A clean store, not resetProgress: a reset keeps gems, packs, the pass and
+    // the claim ledgers, which would leak from one test into the next.
+    useGameStore.setState(useGameStore.getInitialState(), true);
     useGameStore.setState({
       todayWins: 10, todayBattles: 10, todayDamageDealt: 500, todayCardsPlayed: 50,
       dailyStatsDate: new Date().toDateString(), claimedChallenges: [],
