@@ -56,6 +56,35 @@ const tileFor = (html, item) => html.match(new RegExp(
 ))?.[0] ?? null;
 const SOLD_AS_TILES = ['pack', 'premium', 'legendary', 'coins'];
 
+// One tab of the Shop, rendered, as text (and its links).
+// The tab panels swap through AnimatePresence mode="wait", so the new tab
+// mounts only once the old one has animated out: skip animations, wait a
+// tick, and check the tab really opened so no assertion passes vacuously.
+const TAB_MARK = { 'Card Packs': 'Standard packs', 'Buy Gems': 'Get More Gems', 'Special Offers': 'Coin Doubler' };
+const shopTabText = async (tab) => {
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  MotionGlobalConfig.skipAnimations = true;
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  try {
+    act(() => root.render(createElement(Shop, { onClose() {} })));
+    const key = [...host.querySelectorAll('button')].find((b) => b.textContent.trim() === tab);
+    await act(async () => {
+      key.click();
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    const text = host.textContent.replace(/\s+/g, ' ');
+    expect(text, `the ${tab} tab did not open`).toContain(TAB_MARK[tab]);
+    const hrefs = [...host.querySelectorAll('a[href]')].map((a) => a.getAttribute('href'));
+    return { text, hrefs };
+  } finally {
+    act(() => root.unmount());
+    host.remove();
+    MotionGlobalConfig.skipAnimations = false;
+  }
+};
+
 describe('shop copy matches the economy it is selling', () => {
   it('does not claim card exclusivity the pack pool does not enforce', () => {
     const battlePassSrc = read('src/components/BattlePass.jsx');
@@ -195,12 +224,63 @@ describe('the posted pack odds are the rolled odds', () => {
     }
   });
 
+  // Rewritten: it used to match JSX text between > and < only, so a literal
+  // in an expression — {`Rare 75%`}, {'75% rare'}, the style these files
+  // write their copy in — passed. Now every string and template literal is
+  // scanned too (gradients are the only CSS here that carries a %), and the
+  // screens themselves are rendered under retuned odds below.
+  const ODDS_FILES = [
+    'src/components/CardPackOpening.jsx', 'src/components/Shop.jsx',
+    'src/components/PackOdds.jsx', 'src/components/StoreTile.jsx',
+  ];
+  const PCT = /\b\d+(\.\d+)?%/;
+  const handWritten = (src) => {
+    const code = stripComments(src);
+    const jsxText = code.match(/>[^<>{}]*\b\d+(\.\d+)?%[^<>{}]*</g) || [];
+    const literals = (code.match(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g) || [])
+      .filter((lit) => PCT.test(lit) && !/gradient/.test(lit));
+    return [...jsxText, ...literals];
+  };
+
   it('no screen writes an odds percentage by hand', () => {
-    for (const file of ['src/components/CardPackOpening.jsx', 'src/components/Shop.jsx', 'src/components/PackOdds.jsx']) {
-      // JSX text only (between > and <): gradients in class strings carry % too.
-      const literal = stripComments(read(file)).match(/>[^<>{}]*\b\d+(\.\d+)?%[^<>{}]*</g);
-      expect(literal, `${file} hardcodes a percentage: ${literal}`).toBeNull();
+    for (const file of ODDS_FILES) {
+      const found = handWritten(read(file));
+      expect(found, `${file} hardcodes a percentage: ${found.join(' | ')}`).toEqual([]);
     }
+  });
+
+  it('the scan catches a percentage in JSX text, a string or a template', () => {
+    const base = read('src/components/PackOdds.jsx');
+    for (const planted of ['<span>Rare 75%</span>', "<span>{'75% rare'}</span>", '<span>{`Rare ${75}% · 75%`}</span>']) {
+      expect(handWritten(`${base}\nconst X = () => (${planted});\n`), planted).not.toEqual([]);
+    }
+  });
+
+  // Every percentage either storefront or the odds dialog puts on screen,
+  // with PACK_ODDS retuned to numbers nothing else uses: each must be one of
+  // them (a discount, "N% off", is held to the price table above). Rendered
+  // text, so class names and styles cannot be mistaken for odds.
+  it('every percentage on screen comes from PACK_ODDS', async () => {
+    retune('standard', [['legendary', 3], ['epic', 7], ['rare', 19], ['uncommon', 29], ['common', 42]]);
+    retune('premiumFirst', [['legendary', 11], ['epic', 23], ['rare', 66]]);
+    retune('legendaryFirst', [['legendary', 97], ['epic', 3]]);
+    // To one decimal, as posted (29 / 100 * 100 is 28.999999999999996 in floats).
+    const allowed = new Set(Object.values(PACK_ODDS).flatMap((t) => {
+      const total = t.reduce((n, [, w]) => n + w, 0);
+      return t.map(([, w]) => `${Number(((w * 100) / total).toFixed(1))}%`);
+    }));
+    const screens = {
+      'Card Packs': textOf(renderCardPacks()),
+      'odds dialog': textOf(renderOddsDialog()),
+    };
+    for (const tab of ['Card Packs', 'Buy Gems', 'Special Offers']) screens[`Shop: ${tab}`] = (await shopTabText(tab)).text;
+    for (const [screen, text] of Object.entries(screens)) {
+      const shown = [...text.matchAll(/(\d+(?:\.\d+)?%)(?! off)/g)].map((m) => m[1]);
+      expect(shown.filter((p) => !allowed.has(p)), `${screen} shows odds that are not PACK_ODDS'`).toEqual([]);
+    }
+    // The dialog and the guide did post the retuned odds (not vacuous).
+    expect(screens['odds dialog']).toContain('Legendary 97%');
+    expect(screens['Card Packs']).toContain('Common 42%');
   });
 });
 
@@ -211,33 +291,6 @@ describe('the posted pack odds are the rolled odds', () => {
 // confirms, while PurchaseSuccess polls). Each check reads the behaviour it is
 // held to, so the copy has to move if the payment flow does.
 describe('the real-money copy says what the payment flow does', () => {
-  // The tab panels swap through AnimatePresence mode="wait", so the new tab
-  // mounts only once the old one has animated out: skip animations, wait a
-  // tick, and check the tab really opened so no assertion passes vacuously.
-  const TAB_MARK = { 'Card Packs': 'Standard packs', 'Buy Gems': 'Get More Gems', 'Special Offers': 'Coin Doubler' };
-  const shopTabText = async (tab) => {
-    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-    MotionGlobalConfig.skipAnimations = true;
-    const host = document.createElement('div');
-    document.body.appendChild(host);
-    const root = createRoot(host);
-    try {
-      act(() => root.render(createElement(Shop, { onClose() {} })));
-      const key = [...host.querySelectorAll('button')].find((b) => b.textContent.trim() === tab);
-      await act(async () => {
-        key.click();
-        await new Promise((r) => setTimeout(r, 50));
-      });
-      const text = host.textContent.replace(/\s+/g, ' ');
-      expect(text, `the ${tab} tab did not open`).toContain(TAB_MARK[tab]);
-      const hrefs = [...host.querySelectorAll('a[href]')].map((a) => a.getAttribute('href'));
-      return { text, hrefs };
-    } finally {
-      act(() => root.unmount());
-      host.remove();
-      MotionGlobalConfig.skipAnimations = false;
-    }
-  };
   const refund = routeEvent({
     type: 'charge.refunded',
     data: { object: { amount_refunded: 499, amount_captured: 499, payment_intent: 'pi_test' } },
