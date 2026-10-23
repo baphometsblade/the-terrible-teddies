@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { ALL_CARDS, SHOP_ITEMS, PACK_SLOTS, PACK_ODDS, useGameStore } from '@/stores/gameStore';
 import { BATTLE_PASS_REWARDS } from './BattlePass';
 import { bestValuePackId } from './StoreTile';
+import { describePackOdds, PackOddsDialog, TIER_NAME } from './PackOdds';
 import CardPackOpening from './CardPackOpening';
 import Shop from './Shop';
 
@@ -44,6 +45,7 @@ const renderHtml = (Component) => {
   return html;
 };
 const renderCardPacks = () => renderHtml(CardPackOpening);
+const textOf = (html) => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ');
 const renderShop = () => renderHtml(Shop);
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // The rendered tile for one item, found by its accessible name.
@@ -114,23 +116,89 @@ describe('shop copy matches the economy it is selling', () => {
     }
   });
 
-  it('scopes the posted drop rates, which do not apply to guaranteed slots', () => {
-    const packSrc = read('src/components/CardPackOpening.jsx');
+  // Rewritten when the odds moved into PACK_ODDS. It used to check only that
+  // the standard table's heading carried a qualifier; now every tier's odds
+  // are posted, so it pins that each guaranteed first card is posted too.
+  it('posts the first-card odds of every tier that has its own', () => {
+    const guaranteed = Object.entries(PACK_SLOTS).filter(([, s]) => s.first !== 'standard');
+    expect(guaranteed.length, 'expected a tier whose first card rolls on better odds').toBeGreaterThan(0);
+    const guide = textOf(renderCardPacks());
+    for (const [tier] of guaranteed) {
+      const line = describePackOdds(tier).lines[0];
+      expect(line.label).toBe('First card');
+      for (const { rarity, pct } of line.rows) {
+        expect(guide, `Card Packs omits ${tier}'s first-card ${rarity} ${pct}`).toContain(`${TIER_NAME[tier]} · first card`);
+        expect(guide).toContain(`${rarity.charAt(0).toUpperCase()}${rarity.slice(1)} ${pct}`);
+      }
+    }
+  });
+});
 
-    // Some tier's first card rolls on its own table, so an unqualified rate
-    // table is misleading. (Read from PACK_SLOTS now that the roll does; this
-    // used to regex the hand-written guarantee branches it replaced.)
-    const hasGuaranteedSlot = Object.values(PACK_SLOTS).some((s) => s.first !== 'standard');
-    expect(hasGuaranteedSlot, 'expected a tier whose first card rolls on better odds').toBe(true);
+// Premium and Legendary packs are sold for gems, which are bought with real
+// money: paid random packs, whose odds must be shown before purchase (Apple
+// 3.1.1, Google Play) and must be the odds the roll uses. They used to be
+// string literals beside the roll, and the first-card tables were never shown.
+describe('the posted pack odds are the rolled odds', () => {
+  const restore = [];
+  const retune = (key, table) => {
+    restore.push([key, PACK_ODDS[key]]);
+    PACK_ODDS[key] = table;
+  };
+  afterEach(() => {
+    while (restore.length) {
+      const [key, table] = restore.pop();
+      PACK_ODDS[key] = table;
+    }
+  });
+  const pctOf = (table) => {
+    const total = table.reduce((n, [, w]) => n + w, 0);
+    return Object.fromEntries(table.map(([r, w]) => [r, `${(w / total) * 100}%`]));
+  };
+  const renderOddsDialog = () => renderHtml(PackOddsDialog);
 
-    const heading = packSrc.match(/>Drop Rates([^<]*)</);
-    expect(heading, 'Drop Rates heading not found').toBeTruthy();
-    expect(
-      heading[1].trim().length,
-      'The Drop Rates panel is unqualified, but openCardPack gives Premium and ' +
-        'Legendary packs a first card on different odds. Scope the heading ' +
-        '(e.g. "— per card, standard packs") so the paid tiers are not understated.'
-    ).toBeGreaterThan(0);
+  it('describes every tier from PACK_ODDS and PACK_SLOTS', () => {
+    for (const tier of Object.keys(PACK_SLOTS)) {
+      const d = describePackOdds(tier);
+      expect(d.size).toBe(PACK_SLOTS[tier].size);
+      const first = pctOf(PACK_ODDS[PACK_SLOTS[tier].first]);
+      expect(Object.fromEntries(d.lines[0].rows.map((r) => [r.rarity, r.pct]))).toEqual(first);
+    }
+  });
+
+  it('the Card Packs guide and the Shop odds dialog render those numbers', () => {
+    const guide = textOf(renderCardPacks());
+    const dialog = textOf(renderOddsDialog());
+    for (const [key, table] of Object.entries(PACK_ODDS)) {
+      for (const [rarity, pct] of Object.entries(pctOf(table))) {
+        const chip = `${rarity.charAt(0).toUpperCase()}${rarity.slice(1)} ${pct}`;
+        expect(guide, `guide is missing ${key} ${chip}`).toContain(chip);
+        expect(dialog, `odds dialog is missing ${key} ${chip}`).toContain(chip);
+      }
+    }
+    // The dialog names every tier and its size.
+    for (const [tier, s] of Object.entries(PACK_SLOTS)) {
+      expect(dialog).toContain(`${TIER_NAME[tier]}${s.size} cards`);
+    }
+  });
+
+  it('retuning PACK_ODDS changes what both screens post', () => {
+    retune('standard', [['legendary', 2], ['epic', 8], ['rare', 20], ['uncommon', 30], ['common', 40]]);
+    retune('premiumFirst', [['legendary', 10], ['epic', 30], ['rare', 60]]);
+    for (const html of [renderCardPacks(), renderOddsDialog()]) {
+      const text = textOf(html);
+      for (const chip of ['Common 40%', 'Legendary 2%', 'Epic 8%', 'Rare 60%', 'Epic 30%', 'Legendary 10%']) {
+        expect(text, `${chip} did not follow the retune`).toContain(chip);
+      }
+      expect(text).not.toContain('Common 49%');
+    }
+  });
+
+  it('no screen writes an odds percentage by hand', () => {
+    for (const file of ['src/components/CardPackOpening.jsx', 'src/components/Shop.jsx', 'src/components/PackOdds.jsx']) {
+      // JSX text only (between > and <): gradients in class strings carry % too.
+      const literal = stripComments(read(file)).match(/>[^<>{}]*\b\d+(\.\d+)?%[^<>{}]*</g);
+      expect(literal, `${file} hardcodes a percentage: ${literal}`).toBeNull();
+    }
   });
 });
 

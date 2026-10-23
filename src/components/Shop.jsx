@@ -1,6 +1,6 @@
 import { useState, useEffect, useId, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Store, Package, Gem, Star, Coins, X, Timer, Sparkles, ShieldCheck } from 'lucide-react';
+import { Store, Package, Gem, Star, Coins, X, Timer, Sparkles, ShieldCheck, Percent } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, SHOP_ITEMS } from '../stores/gameStore';
 import analytics from '../utils/analytics';
@@ -9,9 +9,10 @@ import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useDialog } from '@/hooks/useDialog';
 import { pressable } from '@/lib/a11y';
 import { RARITY_METAL, RARITY_ORDER } from '@/lib/rarity';
-import { FOCUS_OUTLINE } from '@/lib/focus';
+import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 import { Medallion, SectionHeading, WalletChips } from '@/components/ui/game-chrome';
 import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
+import { PackOddsDialog } from './PackOdds';
 
 const GEM_BUNDLES = [
   { id: 'gems_small', gems: 50, price: 0.99, bonus: 0, popular: false },
@@ -126,6 +127,7 @@ const Shop = ({ onClose }) => {
   const { session } = useSupabaseAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('packs');
+  const [showOdds, setShowOdds] = useState(false);
   const [processing, setProcessing] = useState(false);
   // Read by the Escape handler, which must see the current value.
   const processingRef = useRef(false);
@@ -321,7 +323,22 @@ const Shop = ({ onClose }) => {
                   ))}
                 </div>
                 <div className="mt-6">
-                  <SectionHeading>Guaranteed packs</SectionHeading>
+                  {/* The odds, before purchase: two of these tiers are sold
+                      for gems, which are bought with real money. */}
+                  <SectionHeading
+                    action={(
+                      <button
+                        type="button"
+                        onClick={() => setShowOdds(true)}
+                        className={`inline-flex items-center gap-1 -my-2 px-1.5 py-2 rounded-md text-xs font-semibold text-brass-200 hover:text-white ${FOCUS_RING}`}
+                      >
+                        <Percent aria-hidden="true" className="w-3.5 h-3.5" strokeWidth={2.4} />
+                        View odds
+                      </button>
+                    )}
+                  >
+                    Guaranteed packs
+                  </SectionHeading>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {gemPacks.map(item => (
                       <StoreTile key={item.id} item={item} onBuy={handleBuyItem} />
@@ -485,6 +502,8 @@ const Shop = ({ onClose }) => {
           and the overlay below is its picture (aria-hidden, so it is not read
           twice). */}
       <p role="status" className="sr-only">{processing ? CHECKOUT_STATUS : ''}</p>
+
+      {showOdds && <PackOddsDialog onClose={() => setShowOdds(false)} />}
 
       {processing && (
         // The spin is CSS (compositor-only) and stops when motion is off.

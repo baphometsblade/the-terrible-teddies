@@ -9,8 +9,9 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 import { Medallion, SectionHeading, WalletChips } from '@/components/ui/game-chrome';
 import { PACK_LOOK, HeroPack } from './PackArt';
 import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
+import { PackOddsGuide } from './PackOdds';
 
-import { RARITY, RARITY_ORDER, RARITY_METAL } from '@/lib/rarity';
+import { RARITY, RARITY_ORDER } from '@/lib/rarity';
 
 // Plain <button>s rather than the shadcn Button: its bg-primary is a utility
 // and would beat the component-layer btn-brass / btn-glass materials.
@@ -440,38 +441,16 @@ const CardPackOpening = ({ onClose }) => {
             </div>
           )}
 
-          {/* Rarity guide.
-              Scoped on purpose: these are the odds for an ordinary card slot
-              only. A Premium pack's first card rolls 75% rare / 20% epic / 5%
-              legendary, and a Legendary pack's first card is legendary
-              outright — that IS the guarantee those tiers are sold on. Posting
-              the base table unqualified, right beside the gem-priced tiles,
-              understated exactly what the player was paying for. */}
-          <div className="mt-6 text-center">
-            <div className="label-caps tracking-[0.1em] sm:tracking-[0.16em] text-plush-300 mb-2">Drop Rates — per card, standard packs</div>
-            <div className="flex justify-center flex-wrap gap-x-4 gap-y-1.5 text-xs font-semibold">
-              <Rate rarity="common" tone="text-stone-300">Common 49%</Rate>
-              <Rate rarity="uncommon" tone="text-emerald-300">Uncommon 30%</Rate>
-              <Rate rarity="rare" tone="text-sky-300">Rare 15%</Rate>
-              <Rate rarity="epic" tone="text-purple-300">Epic 5%</Rate>
-              <Rate rarity="legendary" tone="text-brass-300">Legendary 1%</Rate>
-            </div>
-            <div className="text-plush-400 text-[11px] mt-2">
-              Premium and Legendary packs roll their first card on better odds.
-            </div>
+          {/* The odds, rendered from PACK_ODDS — every tier, since two are
+              sold for gems. */}
+          <div className="mt-6">
+            <PackOddsGuide />
           </div>
         </div>
       </div>
     </div>
   );
 };
-
-const Rate = ({ rarity, tone, children }) => (
-  <span className={`inline-flex items-center gap-1.5 ${tone}`}>
-    <span aria-hidden="true" className="w-2 h-2 rounded-full" style={{ background: RARITY_METAL[rarity] }} />
-    {children}
-  </span>
-);
 
 // One card of the reveal. It is dealt onto the table face down, then turns
 // over when its turn comes: a real two-faced flip (each face hides its back),

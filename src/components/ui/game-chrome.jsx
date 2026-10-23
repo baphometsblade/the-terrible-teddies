@@ -108,11 +108,15 @@ export const WalletChips = ({ coins, gems, packs, className = '', children }) =>
   </div>
 );
 
-/** A section's small-caps label with a hairline fading off to its right. */
-export const SectionHeading = ({ children, as: Tag = 'h3', id, className = 'mb-3' }) => (
+/**
+ * A section's small-caps label with a hairline fading off to its right.
+ * `action` (a small control) sits at the end of the line.
+ */
+export const SectionHeading = ({ children, as: Tag = 'h3', id, className = 'mb-3', action = null }) => (
   <div className={`flex items-center gap-3 ${className}`}>
     <Tag id={id} className="label-caps text-plush-300 shrink-0">{children}</Tag>
     <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
+    {action}
   </div>
 );
 
