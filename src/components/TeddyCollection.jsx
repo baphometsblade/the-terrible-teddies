@@ -14,6 +14,7 @@ import { CARD_ZOOM_QUERY, gridArtVariant } from '@/lib/cardZoom';
 import { abilityRules } from '@/lib/abilities';
 import { effectLabel, effectRules } from '@/lib/effects';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { CLEARANCE, isKeyboardFocus, revealBetween } from '@/lib/keepClear';
 
 // Collection sorts and lists rarest-first.
 const RARITY_ORDER = [...RARITY_ORDER_ASC].reverse();
@@ -33,11 +34,14 @@ const seg = (on) => `${SEG} ${on ? `seg-on ${FOCUS_OUTLINE}` : `seg-off ${FOCUS_
 // for a screen reader. Beside rather than above, so each row of the strip is
 // one key high; and it is shown on phones too, where the row has two "All"
 // keys and the caption is what tells them apart. From xl the three groups fit
-// one line only with the captions above them, so there they go above.
+// one line only with the captions above them, so there they go above. On a
+// phone a group keeps its width (the row scrolls); from sm it may shrink to
+// the strip, so a well too wide for it wraps inside it instead of running
+// past the strip's edges (the six rarity keys did, from 640 to 649px).
 const FilterGroup = ({ id, label, className = '', children }) => (
-  <div className="flex shrink-0 snap-start items-center gap-2 xl:flex-col xl:gap-1.5">
-    <span id={id} className="label-caps text-[10px] text-plush-300">{label}</span>
-    <div role="group" aria-labelledby={id} className={`seg-well flex gap-1 ${className}`}>
+  <div className="flex shrink-0 items-center gap-2 sm:min-w-0 sm:max-w-full sm:shrink xl:flex-col xl:gap-1.5">
+    <span id={id} className="label-caps shrink-0 text-[10px] text-plush-300">{label}</span>
+    <div role="group" aria-labelledby={id} className={`seg-well flex gap-1 sm:min-w-0 ${className}`}>
       {children}
     </div>
   </div>
@@ -153,7 +157,11 @@ const CardDetailDialog = ({ cards, index, onIndex, onClose }) => {
       initial={{ scale: 0.92, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.95, opacity: 0 }}
-      className="dialog-panel relative my-auto w-full max-w-lg overflow-hidden rounded-2xl"
+      // Focusable by script and click only (never a tab stop), so a click on
+      // the description or the stats keeps the focus in the panel, where the
+      // arrow keys are heard; it used to fall to <body>, and paging stopped.
+      tabIndex={-1}
+      className="dialog-panel relative my-auto w-full max-w-lg overflow-hidden rounded-2xl outline-none"
       onClick={(e) => e.stopPropagation()}
       onKeyDown={onKeyDown}
     >
@@ -291,26 +299,24 @@ const TeddyCollection = () => {
   const artVariant = gridArtVariant(useMediaQuery(CARD_ZOOM_QUERY));
 
   // The filter strip sticks over the top of the page, so a card the keyboard
-  // focuses must scroll into view below it, not under it (shift-tabbing up the
-  // grid put the focused card behind the strip). scroll-padding on the page
-  // does that for every scroll-into-view; the strip changes height as it
-  // wraps, so it is measured rather than guessed.
+  // focuses must come to rest below it, not under it (shift-tabbing up the
+  // grid put the focused card behind the strip). See src/lib/keepClear.js for
+  // why this is a focus handler rather than scroll-padding on the page.
   const filtersRef = useRef(null);
-  useEffect(() => {
+  const keepCardClear = (e) => {
     const strip = filtersRef.current;
-    const root = document.documentElement;
-    if (!strip) return undefined;
-    const apply = () => {
-      root.style.scrollPaddingTop = `calc(${strip.offsetHeight + 8}px + env(safe-area-inset-top))`;
-    };
-    apply();
-    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(apply) : null;
-    observer?.observe(strip);
-    return () => {
-      observer?.disconnect();
-      root.style.scrollPaddingTop = '';
-    };
-  }, []);
+    if (!strip || !isKeyboardFocus(e.target)) return;
+    revealBetween(e.target.getBoundingClientRect(), strip.getBoundingClientRect().bottom + CLEARANCE, window.innerHeight);
+  };
+
+  // A key the keyboard reaches in the phone's sideways-scrolling filter row
+  // is scrolled fully into the row, clear of its right-hand fade (the row's
+  // scroll-px-6). Keyboard focus only (:focus-visible): a tap on a half-shown
+  // key that scrolled the row between press and release would land on its
+  // neighbour, or on nothing.
+  const revealFilterKey = (e) => {
+    if (isKeyboardFocus(e.target)) e.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  };
 
   const allCardsWithOwnership = ALL_CARDS.map(card => ({
     ...card,
@@ -446,7 +452,7 @@ const TeddyCollection = () => {
         data-collection-filters=""
         className="dialog-panel sticky top-[env(safe-area-inset-top)] z-20 mb-4 rounded-2xl px-2 py-2 sm:mb-6 sm:px-4 sm:py-3"
       >
-        <div className="flex snap-x snap-proximity gap-4 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin] sm:flex-wrap sm:justify-center sm:gap-x-6 sm:gap-y-2 sm:overflow-visible sm:pr-0 sm:[mask-image:none]">
+        <div onFocus={revealFilterKey} className="flex scroll-px-6 gap-4 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin] sm:flex-wrap sm:justify-center sm:gap-x-6 sm:gap-y-2 sm:overflow-visible sm:pr-0 sm:[mask-image:none]">
           <FilterGroup id="collection-filter-show" label="Show">
             <button
               type="button"
@@ -483,7 +489,7 @@ const TeddyCollection = () => {
           {/* Six segments never fit one phone line, and a row that does not
               fit once pushed the whole document 52px sideways at 390px. Here
               it scrolls inside its strip on a phone, and from sm the well
-              itself may wrap. */}
+              wraps when the strip is narrower than it (see FilterGroup). */}
           <FilterGroup id="collection-filter-rarity" label="Rarity" className="sm:flex-wrap sm:justify-center">
             {['all', ...RARITY_ORDER].map(rarity => (
               <button
@@ -507,7 +513,7 @@ const TeddyCollection = () => {
           tracks spread to the panel's edges, so the first and last columns
           line up with it and the gap only grows by a fraction of a card.
           From md up .card-zoom draws the whole grid larger, tracks and all. */}
-      <div className={`card-zoom grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-4 sm:justify-between sm:gap-x-4 sm:gap-y-5 ${visibleCount > 0 ? 'mb-8' : ''}`}>
+      <div onFocus={keepCardClear} className={`card-zoom grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-4 sm:justify-between sm:gap-x-4 sm:gap-y-5 ${visibleCount > 0 ? 'mb-8' : ''}`}>
         {/* Every tile stays mounted; a filter change toggles `hidden` on the
             ones that don't match.
 

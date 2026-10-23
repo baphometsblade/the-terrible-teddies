@@ -57,17 +57,35 @@ for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }
       const tops = await keys.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
       expect(new Set(tops).size, `filter keys on ${new Set(tops).size} rows`).toBe(1);
 
-      // Tab from the first key to the last: each one takes the focus in turn,
-      // and the row scrolls the focused key into the strip.
-      const box = await strip.boundingBox();
+      // Tab from the first key to the last and back: each one takes the focus
+      // in turn, and the row scrolls it wholly into view, clear of the fade
+      // over the row's right-hand end. Every key, not just the last: snapping
+      // the row to its groups once left keys such as Special and Epic mostly
+      // off the strip with the focus on them.
+      const row = strip.locator('> div');
+      const offRow = async () => row.evaluate((el, fade) => {
+        const r = el.getBoundingClientRect();
+        const k = document.activeElement.getBoundingClientRect();
+        return k.left < r.left - 0.5 || k.right > r.right - fade + 0.5 ? document.activeElement.textContent : null;
+      }, 24);
       await keys.first().focus();
-      for (let i = 1; i < count; i++) await page.keyboard.press('Tab');
+      const missed = [];
+      for (let i = 1; i < count; i++) {
+        await page.keyboard.press('Tab');
+        await expect(keys.nth(i)).toBeFocused();
+        const off = await offRow();
+        if (off) missed.push(off);
+      }
+      for (let i = count - 2; i >= 0; i--) {
+        await page.keyboard.press('Shift+Tab');
+        await expect(keys.nth(i)).toBeFocused();
+        const off = await offRow();
+        if (off) missed.push(off);
+      }
+      expect(missed, 'focused filter keys not wholly shown in the row').toEqual([]);
       const last = keys.nth(count - 1);
-      await expect(last).toBeFocused();
       await expect(last).toHaveText(/common/i);
-      const lastBox = await last.boundingBox();
-      expect(lastBox.x).toBeGreaterThanOrEqual(box.x - 1);
-      expect(lastBox.x + lastBox.width).toBeLessThanOrEqual(box.x + box.width + 1);
+      await last.focus();
       await page.keyboard.press('Enter');
       await expect(last).toHaveAttribute('aria-pressed', 'true');
     });
@@ -91,6 +109,21 @@ test.describe('collection filters on a long album', () => {
     expect(hit).toMatch(/^Missing/);
   });
 
+  test('tabbing into the stuck strip leaves the album where it is', async ({ page }) => {
+    await reseed(page, { ownedCards: ids(40) });
+    await openCollection(page);
+    await page.evaluate(() => window.scrollTo(0, 900));
+    const at = await page.evaluate(() => window.scrollY);
+    expect(at).toBeGreaterThan(300);
+    const keys = page.locator('[data-collection-filters]').getByRole('button');
+    // Scroll-padding on the page, to keep focused cards below the strip, once
+    // applied to the strip's own keys too: tabbing into them scrolled the
+    // album back to its top.
+    await keys.first().focus();
+    for (let i = 1; i < await keys.count(); i++) await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => window.scrollY)).toBe(at);
+  });
+
   test('a card focused from the keyboard scrolls into view below the strip, not under it', async ({ page }) => {
     await reseed(page, { ownedCards: ids(40) });
     await openCollection(page);
@@ -107,6 +140,25 @@ test.describe('collection filters on a long album', () => {
       const s = await strip.boundingBox();
       return t.y - (s.y + s.height);
     }, { message: 'focused card is (partly) under the filter strip' }).toBeGreaterThanOrEqual(0);
+  });
+});
+
+test.describe('collection filters at the narrowest tablet width', () => {
+  test.use({ viewport: { width: 640, height: 900 } });
+
+  test('stay inside their strip', async ({ page }) => {
+    await openCollection(page);
+    const strip = page.locator('[data-collection-filters]');
+    const s = await strip.boundingBox();
+    // From sm the groups wrap instead of scrolling; the six rarity keys were
+    // wider than the strip from 640 to 649px and ran out past both its edges.
+    const groups = await strip.locator('> div > div').evaluateAll((els) =>
+      els.map((el) => { const r = el.getBoundingClientRect(); return [r.left, r.right]; }));
+    expect(groups.length).toBe(3);
+    for (const [left, right] of groups) {
+      expect(left).toBeGreaterThanOrEqual(s.x);
+      expect(right).toBeLessThanOrEqual(s.x + s.width);
+    }
   });
 });
 
@@ -218,6 +270,12 @@ test.describe('card detail', () => {
     await expect(heading).toHaveText(names[0]);
     await d.getByRole('button', { name: 'Previous card' }).click();
     await expect(heading).toHaveText(names[names.length - 1]);
+
+    // Still heard after a click on the card's text, which is not a control:
+    // the focus used to drop to <body> there, out of the panel's hearing.
+    await d.locator('dl').click();
+    await page.keyboard.press('ArrowRight');
+    await expect(heading).toHaveText(names[0]);
   });
 
   test('shows the cached thumbnail at once and sharpens to the full art when it arrives', async ({ page }) => {
@@ -298,6 +356,34 @@ test.describe('deck builder on a phone', () => {
     }
   });
 
+  test('a pool card focused from the keyboard is never under the bar', async ({ page }) => {
+    await reseed(page, { ownedCards: ids(40) });
+    await openDeckBuilder(page);
+    const tiles = addable(page);
+    const n = await tiles.count();
+    await tiles.first().focus();
+    const under = [];
+    for (let i = 1; i < n; i++) {
+      await page.keyboard.press('Tab');
+      await expect(tiles.nth(i)).toBeFocused();
+      // The card and its copy pips, against the bar where it is now.
+      const hit = await page.evaluate(() => {
+        const cell = document.activeElement.closest('[data-pool-cell]').getBoundingClientRect();
+        const bar = document.querySelector('[data-deck-bar]').getBoundingClientRect();
+        return cell.bottom > bar.top && cell.top < bar.bottom ? document.activeElement.getAttribute('aria-label') : null;
+      });
+      if (hit) under.push(hit);
+    }
+    expect(under, 'focused cards behind the deck bar').toEqual([]);
+
+    // The bar's own controls are not moved for: focusing them leaves the
+    // page where it is (scroll-padding on the page would have scrolled it).
+    const at = await page.evaluate(() => window.scrollY);
+    await page.keyboard.press('Tab');
+    await expect(page.locator('[data-deck-bar]').getByRole('button', { name: /^View deck/ })).toBeFocused();
+    expect(await page.evaluate(() => window.scrollY)).toBe(at);
+  });
+
   test('the bar takes the player to the full deck list', async ({ page }) => {
     await openDeckBuilder(page);
     await page.locator('[data-deck-bar]').getByRole('button', { name: /^View deck/ }).click();
@@ -337,6 +423,25 @@ test.describe('deck builder on a phone', () => {
     await addable(page).first().click();
     await expect(bar).toContainText('10/10');
     expect(await glowing()).toBe(0);
+  });
+
+  test('the slot does not glow again when the deck refills without an add', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await reseed(page, { savedDecks: [{ name: 'Traps', cards: [30, 30, 40, 40, 41, 41, 42, 42, 1, 1] }] });
+    await openDeckBuilder(page);
+    await removeFirstCard(page);
+    await addable(page).first().click();
+    const bar = page.locator('[data-deck-bar]');
+    await expect(bar.locator('[data-slot-new]')).toHaveCount(1);
+    // Down to nine, then back to ten by loading a saved deck: no card was
+    // added, so nothing may light up as if one had been.
+    await removeFirstCard(page);
+    await expect(bar).toContainText('9/10');
+    await page.getByRole('button', { name: 'Traps', exact: true }).click();
+    await expect(bar).toContainText('10/10');
+    await expect(page.locator('[data-slot-new]')).toHaveCount(0);
+    expect(await page.evaluate(() =>
+      document.getAnimations().filter((a) => a.animationName === 'deck-slot-new').length)).toBe(0);
   });
 
   test("the bar's Set as Current Deck sets the battle deck", async ({ page }) => {
@@ -466,10 +571,33 @@ test.describe('unsaved deck edits', () => {
     await openDeckBuilder(page);
     await page.getByRole('button', { name: 'Traps', exact: true }).click();
     await expect(page.locator('.toast-viewport')).toContainText("isn't your battle deck yet");
-    await expect(page.locator('[data-unsaved]')).toHaveCount(1);
-    // The battle deck, in another order: already set, and nothing unsaved.
+    // Not the battle deck, but not unsaved either: it is still on the shelf.
+    await expect(page.locator('[data-unset]')).toHaveText(/Not your battle deck yet/i);
+    await expect(page.locator('[data-unsaved]')).toHaveCount(0);
+    // The battle deck, in another order: already set, and nothing to say.
     await page.getByRole('button', { name: 'Starter', exact: true }).click();
     await expect(page.locator('.toast-viewport')).toContainText("already your battle deck");
-    await expect(page.locator('[data-unsaved]')).toHaveCount(0);
+    await expect(page.locator('[data-unsaved], [data-unset]')).toHaveCount(0);
+  });
+
+  test('"← Menu" with a saved deck loaded just leaves, since it loses nothing', async ({ page }) => {
+    await reseed(page, { savedDecks: [{ name: 'Traps', cards: [30, 30, 40, 40, 41, 41, 42, 42, 1, 1] }] });
+    await openDeckBuilder(page);
+    const before = await storedDeck(page);
+    await page.getByRole('button', { name: 'Traps', exact: true }).click();
+    await expect(page.locator('[data-unset]')).toHaveCount(1);
+    // "Leave now and they're lost" was untrue here: Traps is still saved.
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(await storedDeck(page)).toEqual(before);
+
+    // Edited after loading, it is unsaved again, and leaving asks.
+    await openDeckBuilder(page);
+    await page.getByRole('button', { name: 'Traps', exact: true }).click();
+    await removeFirstCard(page);
+    await expect(page.locator('[data-unsaved]')).toHaveText(/Unsaved changes/i);
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await expect(page.getByRole('dialog', { name: 'Leave without saving?' })).toBeVisible(SLOW);
   });
 });

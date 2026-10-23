@@ -12,6 +12,7 @@ import { bestOwnedBorder } from '@/lib/cosmetics';
 import { CARD_ZOOM_QUERY, gridArtVariant } from '@/lib/cardZoom';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { deckKey, sameDeck } from '@/lib/deck';
+import { CLEARANCE, isKeyboardFocus, revealBetween } from '@/lib/keepClear';
 
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 
@@ -67,6 +68,9 @@ const TYPE_TILES = [
 // last added card filled ({ index, n }); keyed by the add count, it remounts
 // on every add, which replays its one-shot glow (.deck-slot-new), so an add
 // shows where the eye already is instead of only as a pip under the card.
+// Anything else that changes the deck clears `pulse`: left set, the slot
+// remounted and glowed again whenever the deck refilled past it without an
+// add (a remove, then loading a saved deck).
 const DeckSlots = ({ filled, pulse, className = '' }) => (
   <span aria-hidden="true" className={`grid grid-cols-10 gap-1 ${className}`}>
     {Array.from({ length: DECK_SIZE }, (_, i) => {
@@ -84,11 +88,12 @@ const DeckSlots = ({ filled, pulse, className = '' }) => (
   </span>
 );
 
-// The question before "← Menu" drops edits that are not the battle deck yet.
-// The edits live only in this screen's state, so leaving used to discard them
-// without a word. Keep editing is first, so it takes the focus, and Escape (or
-// a tap on the scrim) means it too: the safe answer is the one a stray key
-// gives. Mirrors the board's LeaveBattleDialog.
+// The question before "← Menu" drops edits that are kept nowhere else (not
+// the battle deck, not a saved deck): they live only in this screen's state,
+// so leaving used to discard them without a word. Keep editing is first, so
+// it takes the focus, and Escape (or a tap on the scrim) means it too: the
+// safe answer is the one a stray key gives. Mirrors the board's
+// LeaveBattleDialog.
 const DiscardChangesDialog = ({ onKeepEditing, onDiscard }) => {
   const ref = useDialog(onKeepEditing);
   const titleId = useId();
@@ -192,8 +197,9 @@ const SaveDeckDialog = ({ deckName, setDeckName, onSave, onClose }) => {
 
 /**
  * The Deck Builder screen. The ref exposes `requestLeave()`, which App's
- * "← Menu" calls: with edits that are not the battle deck yet it asks first
- * (DiscardChangesDialog), otherwise it leaves through `onBackToMenu` at once.
+ * "← Menu" calls: with edits kept nowhere else (neither the battle deck nor a
+ * saved deck) it asks first (DiscardChangesDialog), otherwise it leaves
+ * through `onBackToMenu` at once.
  */
 const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
   const { ownedCards, currentDeck, setCurrentDeck, savedDecks, saveDeck, deleteDeck, unlockedCosmetics } = useGameStore();
@@ -207,13 +213,16 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
   const [deckName, setDeckName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showDiscard, setShowDiscard] = useState(false);
-  // The slot the last added card filled, and a count that replays its glow.
+  // The slot the last added card filled, and a count that replays its glow
+  // (never reused, so every add is a fresh key).
   const [pulse, setPulse] = useState(null);
+  const addCount = useRef(0);
   const { toast } = useToast();
   const copiesIdBase = useId();
   const artVariant = gridArtVariant(useMediaQuery(CARD_ZOOM_QUERY));
   const deckPanelRef = useRef(null);
   const deckHeadingRef = useRef(null);
+  const deckBarRef = useRef(null);
 
   const ownedCardObjects = ALL_CARDS.filter(card => ownedCards.includes(card.id));
 
@@ -231,15 +240,21 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
     if (key === previous) return;
     seededKey.current = key;
     setDeck((editor) => (deckKey(editor.map((c) => c.id)) === previous ? toEditorDeck(currentDeck) : editor));
+    setPulse(null);
   }, [currentDeck]);
 
   const deckIds = deck.map((c) => c.id);
-  // Edits that are not the battle deck yet: what "Unsaved changes" means and
-  // what "← Menu" asks about. Order does not count (sameDeck).
+  // The editor holds something that is not the battle deck yet. Order does
+  // not count (sameDeck).
   const dirty = !sameDeck(deckIds, currentDeck);
+  // ...and that is kept nowhere else either: not the battle deck and none of
+  // the saved decks. Only this is lost by leaving, so only this is "Unsaved
+  // changes" and makes "← Menu" ask. A saved deck loaded and not set yet is
+  // still on the shelf; warning that leaving would lose it was untrue.
+  const unsaved = dirty && !savedDecks.some((d) => sameDeck(d.cards, deckIds));
 
   const requestLeave = () => {
-    if (dirty) setShowDiscard(true);
+    if (unsaved) setShowDiscard(true);
     else onBackToMenu?.();
   };
   useImperativeHandle(ref, () => ({ requestLeave }));
@@ -268,7 +283,19 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
       return;
     }
     setDeck([...deck, { ...card, deckId: `${card.id}-${Date.now()}` }]);
-    setPulse((p) => ({ index: deck.length, n: (p?.n ?? 0) + 1 }));
+    addCount.current += 1;
+    setPulse({ index: deck.length, n: addCount.current });
+  };
+
+  // The deck bar sits over the bottom of the screen below lg, so a pool card
+  // the keyboard focuses is kept above it, its copy pips included (see
+  // src/lib/keepClear.js for why this is a focus handler).
+  const keepCardClear = (e) => {
+    if (!isKeyboardFocus(e.target)) return;
+    const cell = e.target.closest('[data-pool-cell]') ?? e.target;
+    const bar = deckBarRef.current;
+    const bottom = bar && bar.offsetHeight > 0 ? bar.getBoundingClientRect().top - CLEARANCE : window.innerHeight;
+    revealBetween(cell.getBoundingClientRect(), CLEARANCE, bottom);
   };
 
   // The deck bar's way to the full list below the pool: scroll the deck panel
@@ -281,6 +308,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
 
   const removeFromDeck = (deckCard) => {
     setDeck(deck.filter(c => c.deckId !== deckCard.deckId));
+    setPulse(null);
   };
 
   // Dismiss the Save-As dialog AND clear the typed name. Leaving deckName
@@ -320,6 +348,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
   const loadSavedDeck = (savedDeckData) => {
     const loadedDeck = toEditorDeck(savedDeckData.cards);
     setDeck(loadedDeck);
+    setPulse(null);
     const already = sameDeck(loadedDeck.map((c) => c.id), currentDeck);
     toast({
       title: `"${savedDeckData.name}" loaded`,
@@ -329,7 +358,10 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
     });
   };
 
-  const clearDeck = () => setDeck([]);
+  const clearDeck = () => {
+    setDeck([]);
+    setPulse(null);
+  };
 
   const totalCost = deck.reduce((sum, card) => sum + card.cost, 0);
   const avgCost = deck.length > 0 ? (totalCost / deck.length).toFixed(1) : 0;
@@ -406,13 +438,13 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                 scrolls instead; the deck stays reachable beside it from lg
                 (a sticky panel) and below it on smaller screens (the bar). */}
             <div className="pt-1">
-              <div className="card-zoom grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-3 sm:justify-between sm:gap-x-4">
+              <div onFocus={keepCardClear} className="card-zoom grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-3 sm:justify-between sm:gap-x-4">
                 {filteredCards.map((card) => {
                   const copiesInDeck = deck.filter(c => c.id === card.id).length;
                   const isMaxed = copiesInDeck >= MAX_COPIES;
                   const copiesId = `${copiesIdBase}-copies-${card.id}`;
                   return (
-                    <div key={card.id} className="flex flex-col items-center">
+                    <div key={card.id} data-pool-cell="" className="flex flex-col items-center">
                       {/* The copy count describes the tile, so a screen
                           reader tabbing the grid hears "Add X to deck, 1 of 2
                           copies in deck" rather than a bare "Add X to deck". */}
@@ -458,6 +490,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
               just above the deck panel when the player scrolls down to it.
               Tapping the summary takes the player to the full list. */}
           <div
+            ref={deckBarRef}
             data-deck-bar=""
             className="sticky bottom-[calc(0.5rem+env(safe-area-inset-bottom))] z-20 mt-3 lg:hidden"
           >
@@ -473,7 +506,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                   <span className={`flex items-center gap-1.5 ${deckFull ? 'text-brass-300' : 'text-white'}`}>
                     {deck.length}/{DECK_SIZE}
                     {dirty && <span aria-hidden="true" data-unsaved-dot="" className="h-1.5 w-1.5 rounded-full bg-brass-300" />}
-                    {dirty && <span className="sr-only">, unsaved changes</span>}
+                    {dirty && <span className="sr-only">{unsaved ? ', unsaved changes' : ', not your battle deck yet'}</span>}
                   </span>
                   <span className="flex items-center gap-1 text-brass-300">
                     <Zap aria-hidden="true" className="h-3.5 w-3.5" fill="currentColor" strokeWidth={1.5} />
@@ -513,13 +546,18 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
               </button>
             </div>
 
-            {/* Edits that are not the battle deck yet. A status region that is
-                always there, so a screen reader hears the line appear. */}
+            {/* What the editor holds, when it is not the battle deck: edits
+                kept nowhere else (lost on leaving), or a saved deck that has
+                not been set. A status region that is always there, so a screen
+                reader hears the line appear. */}
             <div role="status">
               {dirty && (
-                <p data-unsaved="" className="label-caps mt-2 flex items-center gap-1.5 text-[10px] text-brass-200">
+                <p
+                  {...(unsaved ? { 'data-unsaved': '' } : { 'data-unset': '' })}
+                  className="label-caps mt-2 flex items-center gap-1.5 text-[10px] text-brass-200"
+                >
                   <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-brass-300" />
-                  Unsaved changes
+                  {unsaved ? 'Unsaved changes' : 'Not your battle deck yet'}
                 </p>
               )}
             </div>
