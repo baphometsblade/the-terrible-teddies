@@ -183,6 +183,30 @@ function App() {
     });
   }, [pendingLevelUps, currentScreen, toast]);
 
+  // What a season's end delivered (syncSeason hands over every Battle Pass
+  // tier reached but not claimed, rather than dropping it as it used to). The
+  // rollover runs on whichever screen notices the new season first — the
+  // menu on launch, as a rule — so it is said here, once, deduped by id for
+  // StrictMode's second pass. A beat late, like the level-ups: the menu's
+  // own first toasts land in that beat, and a toast replaces the last one.
+  const pendingSeasonDeliveries = useGameStore((s) => s.pendingSeasonDeliveries);
+  const shownDeliveryIds = useRef(new Set());
+  useEffect(() => {
+    if (pendingSeasonDeliveries.length === 0) return;
+    const fresh = pendingSeasonDeliveries.filter((d) => !shownDeliveryIds.current.has(d.id));
+    useGameStore.setState({ pendingSeasonDeliveries: [] });
+    fresh.forEach((delivery, i) => {
+      shownDeliveryIds.current.add(delivery.id);
+      setTimeout(() => {
+        toast({
+          title: `${delivery.season} rewards delivered`,
+          description: `Unclaimed when the season ended: ${delivery.summary}.`,
+          duration: 10000,
+        });
+      }, LEVEL_UP_TOAST_DELAY_MS + i * 600);
+    });
+  }, [pendingSeasonDeliveries, toast]);
+
   // Tie analytics events to the signed-in user (or clear the identity on
   // logout) so purchases and funnels are measured per-user, not per-device.
   useEffect(() => {

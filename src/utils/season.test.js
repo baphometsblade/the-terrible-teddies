@@ -1,4 +1,4 @@
-import { SEASON_NAMES, getCurrentSeason, getSeasonDaysLeft } from './season';
+import { SEASON_NAMES, getCurrentSeason, getSeasonDaysLeft, getSeason, seasonFromKey, formatSeasonEnd } from './season';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -57,5 +57,33 @@ describe('getSeasonDaysLeft', () => {
     vi.setSystemTime(new Date('2026-07-04T12:00:00Z'));
     expect(getSeasonDaysLeft()).toBe(getCurrentSeason(new Date('2026-07-04T12:00:00Z')).daysLeft);
     expect(getSeasonDaysLeft()).toBeGreaterThan(0);
+  });
+});
+
+describe('getSeason / seasonFromKey', () => {
+  it('names and bounds any season by number, matching the current-season reading', () => {
+    const now = new Date('2026-11-02T12:00:00Z');
+    const current = getCurrentSeason(now);
+    const byNumber = getSeason(current.number);
+    expect(byNumber).toMatchObject({ number: 3, key: 'season-3', name: current.name });
+    expect(byNumber.startDate.toISOString()).toBe('2026-10-01T00:00:00.000Z');
+    expect(byNumber.endDate.toISOString()).toBe(current.endDate.toISOString());
+  });
+
+  // A save is stamped with its season's key; a rollover names the season
+  // whose rewards it delivers from that key.
+  it('reads a store key back to its season, and nothing else', () => {
+    expect(seasonFromKey('season-1').name).toBe('Season 1: Teddy Rampage');
+    expect(seasonFromKey('season-6').name).toBe(`Season 6: ${SEASON_NAMES[1]}`);
+    for (const key of [null, undefined, '', 'season-0', 'season-x', 'winter']) expect(seasonFromKey(key)).toBeNull();
+  });
+});
+
+describe('formatSeasonEnd', () => {
+  // The season ends at midnight UTC: a bare date was a day out west of it.
+  it('says the end in the player’s own clock, with the time', () => {
+    const end = getSeason(3).endDate; // 2027-01-01T00:00Z
+    expect(formatSeasonEnd(end, { locale: 'en-US', timeZone: 'America/Los_Angeles' })).toBe('Dec 31, 4:00 PM');
+    expect(formatSeasonEnd(end, { locale: 'en-US', timeZone: 'UTC' })).toBe('Jan 1, 12:00 AM');
   });
 });

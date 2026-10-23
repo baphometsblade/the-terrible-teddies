@@ -72,20 +72,36 @@ describe('the empty Card Packs table', () => {
   // A returning player's save still holds the ended season's XP and claims.
   // Read straight, the panel said a tier-8 pack was "Reached — claim it",
   // and opening the pass to claim it rolled the season and wiped it.
+  //
+  // Changed when a season's end started delivering every reached, unclaimed
+  // tier: an unclaimed pack tier now arrives as packs (the next test), so
+  // this save has claimed its whole free track and the table stays empty.
   it("reads the Battle Pass of this season, not the save's ended one", () => {
     const last = BATTLE_PASS_REWARDS[BATTLE_PASS_REWARDS.length - 1];
-    const claimedEarly = BATTLE_PASS_REWARDS.slice(0, 5).map((r) => r.tier);
     useGameStore.setState({
       coins: 0,
       seasonKey: `season-${getCurrentSeason().number - 1}`,
       seasonXP: last.xpRequired,
-      claimedBattlePassRewards: { free: claimedEarly, premium: [] },
+      claimedBattlePassRewards: { free: BATTLE_PASS_REWARDS.map((r) => r.tier), premium: [] },
     });
     render();
     expect(useGameStore.getState().seasonKey).toBe(getCurrentSeason().key);
     expect(text()).toContain(`Battle Pass tier ${firstPassPack.tier} · ${firstPassPack.free.amount} pack`);
     expect(text()).toContain(`${firstPassPack.xpRequired} XP to go`);
     expect(text()).not.toContain('claim it in the Battle Pass');
+  });
+
+  it('opens on the packs an ended season delivered, rather than calling the table empty', () => {
+    useGameStore.setState({
+      coins: 0,
+      seasonKey: `season-${getCurrentSeason().number - 1}`,
+      seasonXP: firstPassPack.xpRequired,
+      claimedBattlePassRewards: { free: [], premium: [] },
+    });
+    render();
+    expect(useGameStore.getState().cardPacks).toBe(firstPassPack.free.amount);
+    expect(text()).not.toContain('No packs to open');
+    expect(text()).toContain(`Open Pack (${firstPassPack.free.amount})`);
   });
 
   it('offers the pack when it is affordable, and buying it fills the table', () => {

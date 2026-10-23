@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { shuffleDeck } from '@/utils/deckUtils';
-import { getCurrentSeason } from '@/utils/season';
+import { getCurrentSeason, getSeason, seasonFromKey } from '@/utils/season';
+import { BATTLE_PASS_REWARDS, readyRewards, passOf, describeGrants } from '@/lib/battlePass';
 import analytics from '@/utils/analytics';
 
 export const ALL_CARDS = [
@@ -179,11 +180,19 @@ const getXPForLevel = (level) => Math.floor(100 * Math.pow(1.5, level - 1));
 // Ids for queued level-up announcements. Module-wide and never reset, so an id
 // is unique for the whole session, across progress resets and account swaps.
 let levelUpSeq = 0;
+// The same, for the season-end deliveries syncSeason queues.
+let deliverySeq = 0;
+
+// Season XP a battle pays (recordBattleResult), win or lose. Exported so the
+// Battle Pass can say how XP is earned from the figures that pay it.
+export const BATTLE_XP = { win: 50, loss: 20 };
 
 // Coins refunded when a card pull duplicates one you already own, so paid packs
 // always have value even for near-complete collections.
 const DUPLICATE_COIN_VALUE = { common: 10, uncommon: 20, rare: 40, epic: 75, legendary: 150 };
-const coinsForDuplicate = (cardId) => {
+// Exported so a reward that is a card can say, before it is claimed, what it
+// pays a player who already owns it.
+export const coinsForDuplicate = (cardId) => {
   const card = ALL_CARDS.find(c => c.id === cardId);
   return DUPLICATE_COIN_VALUE[card?.rarity] ?? 10;
 };
@@ -261,10 +270,11 @@ const initialState = {
   hasBattlePassPremium: false,
   claimedBattlePassRewards: { free: [], premium: [] },
   // Cosmetic entitlements (borders, emotes) unlocked from premium Battle Pass
-  // tiers. Persisted by name so the grant survives even though no UI renders
-  // them yet — before this, claiming an 'exclusive' tier recorded the tier as
-  // claimed but granted nothing at all, so a player who paid 500 gems for the
-  // premium pass got an empty claim.
+  // tiers, persisted by name (src/lib/cosmetics.js draws them). Before this,
+  // claiming an 'exclusive' tier recorded the tier as claimed but granted
+  // nothing at all. They are the player's to keep: a season's end resets the
+  // pass, never what it unlocked (it used to clear these too, so the borders a
+  // 500-gem pass sold vanished at the quarter).
   unlockedCosmetics: [],
   // Coin Doubler booster: epoch ms at which the 2x battle-coin multiplier
   // lapses, or null when it has never been bought. A timestamp (not a
@@ -284,6 +294,10 @@ export const useGameStore = create(
 
       // Not persisted — populated only in the current session
       pendingAchievements: [],
+
+      // Not persisted either: what a season's end delivered (see syncSeason),
+      // waiting for App to say so.
+      pendingSeasonDeliveries: [],
 
       setPlayerName: (name) => set({ playerName: name }),
 
@@ -404,7 +418,7 @@ export const useGameStore = create(
           set({ ownerUserId: userId });            // adopt a pre-existing save
           return;
         }
-        set({ ...initialState, ownerUserId: userId, pendingAchievements: [], pendingLevelUps: [] });
+        set({ ...initialState, ownerUserId: userId, pendingAchievements: [], pendingLevelUps: [], pendingSeasonDeliveries: [] });
       },
       // `forUserId` is the account the balance was READ for. When given, it
       // must still match the account the save is bound to, or the reconcile is
@@ -463,11 +477,15 @@ export const useGameStore = create(
       },
 
       // Roll the Battle Pass over when the calendar season has advanced:
-      // progress, claims, and premium are per-season.
+      // progress, claims, and premium are per-season. What it unlocked
+      // (cosmetics, cards) is not, and every tier the player reached but did
+      // not claim is delivered before the reset rather than dropped: they
+      // used to be forfeited without a word. Returns that delivery (and
+      // queues it on pendingSeasonDeliveries for App to announce), or null.
       syncSeason: () => {
         const { key } = getCurrentSeason();
         const state = get();
-        if (state.seasonKey === key) return;
+        if (state.seasonKey === key) return null;
         if (state.seasonKey === null) {
           // Un-stamped save (fresh player or pre-rollover release). Any
           // existing pass progress was earned under the ORIGINAL hardcoded
@@ -482,17 +500,41 @@ export const useGameStore = create(
             state.claimedBattlePassRewards.premium.length > 0;
           if (key === 'season-1' || !hasLegacyProgress) {
             set({ seasonKey: key });
-            return;
+            return null;
           }
           // fall through: legacy Season-1 progress in a later season → reset
         }
+        // The season this save's pass belongs to (an un-stamped legacy save's
+        // is the original Season 1), and what it still owes: every tile it
+        // could claim right now, by the same rule the dialog offers them by.
+        // One season's worth however many were skipped: the save only ever
+        // holds the pass it was last played in.
+        const ended = seasonFromKey(state.seasonKey) ?? getSeason(1);
+        const owed = readyRewards(passOf(state));
+        // Stamp the new season BEFORE handing anything over. The grants below
+        // write through other actions, and a second call (StrictMode's second
+        // effect pass, another screen mounting in the same tick) has to find
+        // the rollover done, not deliver it again.
         set({
           seasonKey: key,
           seasonXP: 0,
           claimedBattlePassRewards: { free: [], premium: [] },
-          unlockedCosmetics: [],
           hasBattlePassPremium: false,
         });
+        if (owed.length === 0) return null;
+        const receipts = owed.map(({ tier, track, reward }) => ({ tier, track, reward, ...get().grantReward(reward) }));
+        const delivery = { id: ++deliverySeq, season: ended.name, receipts, summary: describeGrants(receipts) };
+        // A delivery of nothing new (only cosmetics already owned) is not news.
+        if (delivery.summary) {
+          set((s) => ({ pendingSeasonDeliveries: [...s.pendingSeasonDeliveries, delivery] }));
+        }
+        return delivery;
+      },
+
+      // Take a delivery off the queue because the caller has announced it.
+      dismissSeasonDelivery: (id) => {
+        if (id == null) return;
+        set((s) => ({ pendingSeasonDeliveries: s.pendingSeasonDeliveries.filter((d) => d.id !== id) }));
       },
 
       // Roll the season first so a purchase right at a quarter boundary (or
@@ -540,9 +582,63 @@ export const useGameStore = create(
         return true;
       },
 
+      // Claim one Battle Pass tile and hand its reward over, in one step.
+      // Eligibility comes from the reward table and the store, never from the
+      // caller's render: the tier reached, the pass owned for the premium
+      // track, the tile not already claimed (claimBattlePassReward records
+      // it atomically, so a double tap cannot pay twice). Returns
+      // { ok: true, tier, track, reward, ...receipt } — the receipt says what
+      // was really handed over (see grantReward) — or { ok: false, reason }.
+      claimBattlePassTier: (tier, track) => {
+        const row = BATTLE_PASS_REWARDS.find((r) => r.tier === tier);
+        const reward = row?.[track];
+        if (!reward) return { ok: false, reason: 'unknown' };
+        get().syncSeason();
+        const state = get();
+        if (state.seasonXP < row.xpRequired) return { ok: false, reason: 'not-reached' };
+        if (track === 'premium' && !state.hasBattlePassPremium) return { ok: false, reason: 'needs-premium' };
+        if (!get().claimBattlePassReward(tier, track === 'premium', row.xpRequired)) {
+          return { ok: false, reason: 'already-claimed' };
+        }
+        return { ok: true, tier, track, reward, ...get().grantReward(reward) };
+      },
+
+      // Hand one Battle Pass reward over, and say what was really handed
+      // over: a card the player already owns pays its duplicate coins instead
+      // (addCards' rule), so its receipt says alreadyOwned and the coins; a
+      // cosmetic already owned is not granted twice. The claim's toast and a
+      // season's delivery are worded from this, not from the table — the
+      // pass used to toast "Card Unlocked!" for a card that had turned into
+      // coins.
+      grantReward: (reward) => {
+        switch (reward?.type) {
+          case 'coins':
+            get().addCoins(reward.amount);
+            return { coins: reward.amount };
+          case 'gems':
+            get().addGems(reward.amount);
+            return { gems: reward.amount };
+          case 'pack':
+            get().addCardPack(reward.amount);
+            return { packs: reward.amount };
+          case 'card': {
+            const card = { id: reward.cardId, name: reward.name };
+            const dupeCoins = get().addCard(reward.cardId);
+            return dupeCoins > 0 ? { card, alreadyOwned: true, coins: dupeCoins } : { card };
+          }
+          case 'exclusive': {
+            const alreadyOwned = get().unlockedCosmetics.includes(reward.name);
+            get().unlockCosmetic(reward.name);
+            return { cosmetic: reward.name, ...(alreadyOwned ? { alreadyOwned } : {}) };
+          }
+          default:
+            return {};
+        }
+      },
+
       // Record a cosmetic entitlement (idempotent). The Battle Pass 'exclusive'
       // tiers grant borders/emotes; storing the name here makes the claim a real
-      // grant rather than a no-op, and persists it for a future cosmetics UI.
+      // grant rather than a no-op.
       unlockCosmetic: (name) => {
         if (!name) return;
         const state = get();
@@ -691,7 +787,7 @@ export const useGameStore = create(
           claimedChallenges: newClaimedChallenges,
         });
 
-        const xpGain = won ? 50 : 20;
+        const xpGain = won ? BATTLE_XP.win : BATTLE_XP.loss;
         const progress = get().addXP(xpGain);
         // One grant for both outcomes — coinsThisBattle already encodes the
         // consolation amount on a loss. Granting a separate hardcoded 5 there
@@ -1017,6 +1113,7 @@ export const useGameStore = create(
         lastSyncedServerGems: get().lastSyncedServerGems,
         pendingAchievements: [],
         pendingLevelUps: [],
+        pendingSeasonDeliveries: [],
       }),
     }),
     {
@@ -1024,7 +1121,7 @@ export const useGameStore = create(
       version: 3,
       // Don't persist in-flight UI state
       partialize: (state) => {
-        const { pendingAchievements, pendingLevelUps, ...rest } = state;
+        const { pendingAchievements, pendingLevelUps, pendingSeasonDeliveries, ...rest } = state;
         return rest;
       },
       // Normalize state persisted by any earlier release: fill in fields added
