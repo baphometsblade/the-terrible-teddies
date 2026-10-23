@@ -1852,8 +1852,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const [preview, setPreview] = useState(null);
   const [raisedId, setRaisedId] = useState(null);
   const previewTimerRef = useRef(null);
-  // The last press: its pointer type, the card it landed on, and when.
-  const lastPointerRef = useRef({ type: 'mouse', id: null, at: 0 });
+  // The last press: its pointer type and the card it landed on.
+  const lastPointerRef = useRef({ type: 'mouse', id: null });
   const longPressRef = useRef({ timer: null, fired: false, x: 0, y: 0 });
   useEffect(() => () => {
     clearTimeout(previewTimerRef.current);
@@ -1886,42 +1886,54 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     }
   }, [gameOver]);
 
-  // The pointer and focus handlers that open a card's preview. `longPress`
-  // (table cards) opens it while a finger holds the card down, and swallows
-  // the click that ends the hold, so reading Chuck's card mid-targeting does
-  // not also attack it.
-  const inspectHandlers = (p, { longPress = false } = {}) => {
+  // The pointer and focus handlers that open a card's preview. `hold` is
+  // what holding a finger on the card does: 'preview' (a table card) opens
+  // the preview for as long as the finger stays, 'raise' (a hand card) raises
+  // the card, as a first tap does, and it stays raised. Either way the click
+  // that ends the hold is swallowed, so reading Chuck's card mid-targeting
+  // does not also attack it, and reading a hand card never plays it.
+  const inspectHandlers = (p, { hold = null } = {}) => {
     const endHold = () => {
       const lp = longPressRef.current;
       clearTimeout(lp.timer);
       lp.timer = null;
-      if (lp.fired) hidePreview(p.id);
+      if (lp.fired && hold === 'preview') hidePreview(p.id);
     };
     return {
       onPointerDown: (e) => {
-        lastPointerRef.current = { type: e.pointerType, id: p.id, at: e.timeStamp };
+        lastPointerRef.current = { type: e.pointerType, id: p.id };
         const lp = longPressRef.current;
         lp.fired = false;
-        if (!longPress || e.pointerType !== 'touch') return;
+        if (!hold || e.pointerType !== 'touch') return;
         clearTimeout(lp.timer);
         lp.x = e.clientX;
         lp.y = e.clientY;
         lp.timer = setTimeout(() => {
           lp.timer = null;
           lp.fired = true;
-          showPreview(p);
+          if (hold === 'raise') {
+            hidePreview();
+            setRaisedId(p.id);
+          } else {
+            showPreview(p);
+          }
         }, LONG_PRESS_MS);
       },
-      onPointerMove: longPress ? (e) => {
+      onPointerMove: hold ? (e) => {
         const lp = longPressRef.current;
         if (lp.timer && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) {
           clearTimeout(lp.timer);
           lp.timer = null;
         }
       } : undefined,
-      onPointerUp: longPress ? endHold : undefined,
-      onPointerCancel: longPress ? endHold : undefined,
-      onClickCapture: longPress ? (e) => {
+      onPointerUp: hold ? endHold : undefined,
+      // A cancelled press (the finger scrolled the hand) ends in no click, so
+      // nothing may be left saying a finger is down on this card.
+      onPointerCancel: () => {
+        if (hold) endHold();
+        lastPointerRef.current = { type: 'mouse', id: null };
+      },
+      onClickCapture: hold ? (e) => {
         if (!longPressRef.current.fired) return;
         longPressRef.current.fired = false;
         e.stopPropagation();
@@ -1945,15 +1957,19 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
 
   // A hand card's press. With a finger, the first tap raises the card (and
   // opens its preview) and only a tap on the raised card plays it. A click
-  // counts as a tap only when a finger came down on this same card just
-  // before it: a screen reader's activation is a click with no press behind
-  // it, and must play at once, as Enter does — its user cannot see the
-  // raise, and would hear nothing happen.
+  // counts as a tap only when a finger came down on this same card before
+  // it: a screen reader's activation is a click with no press behind it, and
+  // must play at once, as Enter does — its user cannot see the raise, and
+  // would hear nothing happen. Where the browser says what made the click
+  // (Chromium, Firefox and Safari 17 send it as a PointerEvent), it must also
+  // say 'touch'. There is no time limit: a slow press is still a finger, and
+  // the 1-second window this once had played a card held down to be read.
   const pressHandCard = (card, playable) => (e) => {
     const last = lastPointerRef.current;
+    lastPointerRef.current = { type: 'mouse', id: null };
+    const clickType = typeof e?.nativeEvent?.pointerType === 'string' ? e.nativeEvent.pointerType : null;
     const touch = e?.type === 'click' && last.type === 'touch' && last.id === card.instanceId
-      && e.timeStamp - last.at < 1000;
-    lastPointerRef.current = { type: 'mouse', id: null, at: 0 };
+      && (clickType === null || clickType === 'touch');
     if (touch && raisedId !== card.instanceId) {
       hidePreview();
       setRaisedId(card.instanceId);
@@ -2253,7 +2269,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       data-field="opponent"
                       className={`relative rounded-[10px] ${FOCUS_OUTLINE} ${hittable ? 'cursor-crosshair' : ''}`}
                       press={pressable(() => attackTarget(card), `Attack ${card.name}`, targetingMode)}
-                      {...inspectHandlers({ id: card.instanceId, from: 'opponent' }, { longPress: true })}
+                      {...inspectHandlers({ id: card.instanceId, from: 'opponent' }, { hold: 'preview' })}
                     >
                       <div
                         data-target-ring={hittable ? '' : undefined}
@@ -2416,7 +2432,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                         ? pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`)
                         : (playerMove ? { onClick: () => selectCardForAttack(card) } : {})}
                       data-field="player"
-                      {...inspectHandlers({ id: card.instanceId, from: 'player' }, { longPress: true })}
+                      {...inspectHandlers({ id: card.instanceId, from: 'player' }, { hold: 'preview' })}
                     >
                       <div
                         data-target-ring={selected || ready ? '' : undefined}
@@ -2692,7 +2708,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                     className={`relative shrink-0 rounded-[10px] ${FOCUS_OUTLINE} ${playable ? 'cursor-pointer' : ''} ${!affordable
                       ? 'opacity-50 saturate-50'
                       : lit ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
-                    {...inspectHandlers({ id: card.instanceId, from: 'hand' })}
+                    {...inspectHandlers({ id: card.instanceId, from: 'hand' }, { hold: 'raise' })}
                     press={playable
                       ? pressable(pressHandCard(card, true), `Play ${card.name}`)
                       : { onClick: pressHandCard(card, false) }}

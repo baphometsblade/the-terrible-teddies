@@ -91,6 +91,70 @@ test.describe('on a touch screen', () => {
     await expect(page.locator('[data-raised]')).toHaveCount(0);
   });
 
+  // Holding a card down is how a table card is read, so players do the same
+  // to a hand card. A click once counted as a tap only within a second of
+  // the finger landing: a slower press read as a screen reader's click and
+  // played the card at once — energy spent, the card committed, no undo.
+  // Real touch events through CDP, as a finger sends them.
+  test('holding a hand card down raises it, however long the hold, and never plays it', async ({ page, context }) => {
+    await bootToMainMenu(page);
+    await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4] });
+    await page.reload();
+    await toBattle(page);
+    const card = page.getByRole('button', { name: 'Play Bar-Fight Barry' }).nth(2);
+    const box = await card.boundingBox();
+    const point = { x: box.x + 20, y: box.y + box.height / 2, radiusX: 5, radiusY: 5, id: 1 };
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+    // Still held: the card is already up, with its preview.
+    await page.waitForTimeout(700);
+    await expect(card).toHaveAttribute('data-raised', '');
+    await expect(preview(page)).toBeVisible();
+    await page.waitForTimeout(500);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForTimeout(600);
+    await expect(card).toHaveAttribute('data-raised', '');
+    await expect(page.locator('[data-field="player"]')).toHaveCount(0);
+    await expect(page.locator('[data-energy]')).toHaveText('3/3');
+    // The next tap on it is the one that plays.
+    await card.tap();
+    await expect(page.locator('[data-field="player"]')).toHaveCount(1, SLOW);
+  });
+
+  // What decides "tap" is the click's own pointer type (and a finger having
+  // come down on that card), not how long ago the finger landed. A finger
+  // that drifts during a long press cancels the hold but still clicks.
+  test('a finger\'s click raises however late it lands; a click from no finger plays', async ({ page }) => {
+    await bootToMainMenu(page);
+    await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4] });
+    await page.reload();
+    await toBattle(page);
+    const card = page.getByRole('button', { name: 'Play Bar-Fight Barry' }).nth(2);
+    const box = await card.boundingBox();
+    const at = (dx = 0) => ({ pointerType: 'touch', isPrimary: true, pointerId: 9, clientX: box.x + 20 + dx, clientY: box.y + box.height / 2 });
+    const click = (pointerType) => card.evaluate((el, type) => el.dispatchEvent(new PointerEvent('click', {
+      bubbles: true, cancelable: true, pointerType: type, isPrimary: true,
+    })), pointerType);
+
+    await card.dispatchEvent('pointerdown', at());
+    await card.dispatchEvent('pointermove', at(14)); // past the hold's 10px
+    await page.waitForTimeout(1200);
+    await card.dispatchEvent('pointerup', at(14));
+    await click('touch');
+    await expect(card).toHaveAttribute('data-raised', '');
+    await expect(page.locator('[data-field="player"]')).toHaveCount(0);
+
+    // A finger lands, then a click that says it came from no pointer at all
+    // (a screen reader's activation): it plays, at once.
+    const other = page.getByRole('button', { name: 'Play Bar-Fight Barry' }).nth(0);
+    const b2 = await other.boundingBox();
+    const on = { pointerType: 'touch', isPrimary: true, pointerId: 10, clientX: b2.x + 20, clientY: b2.y + b2.height / 2 };
+    await other.dispatchEvent('pointerdown', on);
+    await other.dispatchEvent('pointerup', on);
+    await other.evaluate((el) => el.dispatchEvent(new PointerEvent('click', { bubbles: true, cancelable: true, pointerType: '' })));
+    await expect(page.locator('[data-field="player"]')).toHaveCount(1, SLOW);
+  });
+
   // Reading Chuck's card mid-turn: hold it down. The hold must not also act
   // on the card (on an attack target, that would be an attack).
   test('holding a table card down opens its preview, and letting go closes it', async ({ page }) => {
