@@ -8,6 +8,7 @@
 // The session/stub/boot plumbing lives in e2e/helpers/session.js so
 // e2e/a11y.spec.js can reuse the identical hermetic boot.
 import { getDailyChallenges } from '../src/stores/challenges.js';
+import { QUIPS } from '../src/utils/teddyTalk.js';
 import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
 
 test.beforeEach(async ({ page }) => {
@@ -838,6 +839,47 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 
     expect(placed.filter((p) => !p.endsWith('over 0 card(s)'))).toEqual([]);
   });
 }
+
+test("at 320px a quip shows whole on the centre line, and Chuck's are logged", async ({ page }) => {
+  // Below xl the last thing said goes on the centre line. It was one line
+  // there, cut at about 33 characters at 320px (42 at 390) against lines of
+  // up to 63, so most lost their punchline. And Chuck's lines were never
+  // logged, although the code said "the whole line is in the log": on a
+  // phone the end of the line was nowhere, and a screen reader (every bubble
+  // is aria-hidden) never heard one.
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  const pill = page.locator('[data-speech="opponent"]:visible');
+  await expect(pill).toHaveCount(1, SLOW);
+  const said = (await pill.textContent()).replace('🧸', '').trim();
+  expect(QUIPS.gameStart).toContain(said);
+  await expect(page.locator('[role="log"][aria-live="polite"] > *')
+    .filter({ hasText: `🧸 Chuck: "${said}"` })).toHaveCount(1);
+
+  // Every line either side can say on the table (the result screen's parting
+  // shots are not shown here), set in a copy of the pill at the pill's own
+  // maximum width: none may be clipped.
+  const lines = Object.entries(QUIPS)
+    .filter(([pool]) => pool !== 'oppWins' && pool !== 'oppLoses')
+    .flatMap(([, pool]) => pool);
+  const clipped = await pill.evaluate((el, texts) => {
+    const centre = el.parentElement.parentElement; // the pill's max-width is the centre line's
+    const probe = el.cloneNode(true);
+    Object.assign(probe.style, { position: 'absolute', left: '0', top: '0', visibility: 'hidden', transform: 'none' });
+    centre.appendChild(probe);
+    const icon = probe.firstElementChild;
+    const out = [];
+    for (const text of texts) {
+      probe.replaceChildren(icon, document.createTextNode(text));
+      if (probe.scrollHeight > probe.clientHeight + 1 || probe.scrollWidth > probe.clientWidth + 1) out.push(text);
+    }
+    probe.remove();
+    return out;
+  }, lines);
+  expect(clipped).toEqual([]);
+});
 
 test('the speaker on the player rail is a real sound toggle', async ({ page }) => {
   // It was a role="img" drawn exactly like a button that did nothing, and the

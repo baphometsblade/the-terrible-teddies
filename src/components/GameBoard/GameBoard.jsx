@@ -423,6 +423,25 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const [showAbilityPopup, setShowAbilityPopup] = useState(null);
   const [battleRewards, setBattleRewards] = useState({ xp: 0, coins: 0 });
 
+  // Add to battle log. Ids must be unique — several entries are appended in
+  // the same millisecond during the opponent's turn, so Date.now() collides
+  // and duplicate React keys corrupt the rendered list.
+  const logIdRef = useRef(0);
+  const addToBattleLog = useCallback((message) => {
+    // Capture the id now — reading the ref inside the updater would give two
+    // batched updates the same (final) value and recreate the duplicate keys.
+    logIdRef.current += 1;
+    const id = logIdRef.current;
+    setBattleLog(prev => [...prev.slice(-9), { id, message }]);
+  }, []);
+  // Replace the log outright, for the start of a game.
+  const startBattleLog = useCallback((messages) => {
+    setBattleLog(messages.map((message) => {
+      logIdRef.current += 1;
+      return { id: logIdRef.current, message };
+    }));
+  }, []);
+
   // Chuck's trash talk: a transient speech bubble ({id, text}) plus his parting
   // shot on the game-over screen. Decorative flavor — aria-hidden, the battle
   // log stays the accessible record.
@@ -567,12 +586,17 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     lastQuipRef.current = text;
     const id = ++quipIdRef.current;
     setOppQuip({ id, text, seq: ++speechSeqRef.current });
+    // Logged like the player's emotes. The bubble is gone in three seconds
+    // and, on a phone, clipped to two lines, so the log is where the whole
+    // line stays readable (from md up), and the only place a screen reader
+    // hears it: every bubble is aria-hidden.
+    addToBattleLog(`🧸 ${OPPONENT_NAME}: "${text}"`);
     // Dismiss via the tracked-timeout system so restart/concede/unmount cancel
     // it; only clear if a newer quip hasn't already replaced this one.
     safeTimeout(() => {
       setOppQuip((q) => (q && q.id === id ? null : q));
     }, 3200);
-  }, [safeTimeout]);
+  }, [safeTimeout, addToBattleLog]);
 
   // Combat feedback. Each event is a short-lived record of something that
   // just happened on the table — an attacker striking, a card taking a hit or
@@ -692,25 +716,6 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     return shuffled;
   };
 
-  // Add to battle log. Ids must be unique — several entries are appended in
-  // the same millisecond during the opponent's turn, so Date.now() collides
-  // and duplicate React keys corrupt the rendered list.
-  const logIdRef = useRef(0);
-  const addToBattleLog = useCallback((message) => {
-    // Capture the id now — reading the ref inside the updater would give two
-    // batched updates the same (final) value and recreate the duplicate keys.
-    logIdRef.current += 1;
-    const id = logIdRef.current;
-    setBattleLog(prev => [...prev.slice(-9), { id, message }]);
-  }, []);
-  // Replace the log outright, for the start of a game.
-  const startBattleLog = useCallback((messages) => {
-    setBattleLog(messages.map((message) => {
-      logIdRef.current += 1;
-      return { id: logIdRef.current, message };
-    }));
-  }, []);
-
   // Initialize decks
   useEffect(() => {
     // Build player deck from store's currentDeck (card IDs mapped to ALL_CARDS)
@@ -764,14 +769,17 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // Everything above replaces state, so this effect can run twice and end
     // the same — and in development it does: StrictMode mounts, unmounts and
     // remounts, and appending showed the intro twice, the first copy naming
-    // a crew from the throwaway deal that is not the one in play.
+    // a crew from the throwaway deal that is not the one in play. (The two
+    // lines after it append to that fresh log, so a second run still ends
+    // with one copy of each.) Chuck's opening line goes between the intro and
+    // the hand-over, in the order it is said.
     startBattleLog([
       `${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`,
-      'Your turn. Make it hurt.',
     ]);
-    setDeckReady(true);
     speak('gameStart');
-  }, [startBattleLog, currentDeck, aiDifficulty, gameId, speak]);
+    addToBattleLog('Your turn. Make it hurt.');
+    setDeckReady(true);
+  }, [startBattleLog, addToBattleLog, currentDeck, aiDifficulty, gameId, speak]);
 
   // Check for game over. Opponent death is checked first so that a simultaneous
   // lethal (both reach 0 in the same commit) counts as a win for the player who
@@ -1851,7 +1859,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   <span className="hidden lg:block w-32 shrink-0" aria-hidden="true" />
                 </div>
 
-                <div className="flex min-h-[1.5rem] max-w-full items-center justify-center">
+                {/* Two lines tall below xl, where Chuck's lines show here:
+                    they run to 63 characters, and one line at 390px holds
+                    about 42, which cut most of them before the punchline. */}
+                <div className="flex min-h-8 xl:min-h-[1.5rem] max-w-full items-center justify-center">
                   {targetingMode ? (
                     <div className="relative flex items-center gap-1.5 rounded-full bg-red-950/90 px-3 py-1 text-xs font-bold text-red-100">
                       {/* The ring pulses, not the text, so the prompt keeps its
@@ -1861,7 +1872,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       Pick a victim for {selectedCard?.name}!
                     </div>
                   ) : speech ? (
-                    /* One line, truncated; the whole line is in the log. Keyed
+                    /* Up to two lines (every line in the pools fits two at
+                       320px), and the whole line is in the log as well. Keyed
                        so each new line fades in. Framer Motion owns this
                        element's transform, so it carries no transform class. */
                     <motion.div
@@ -1871,7 +1883,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}
-                      className={`xl:hidden max-w-full truncate rounded-full px-3 py-1 text-xs font-semibold text-night-900 pointer-events-none ${speech.who === 'opponent'
+                      className={`xl:hidden max-w-full line-clamp-2 break-words rounded-2xl px-3 py-0.5 text-center text-xs leading-[14px] font-semibold text-night-900 pointer-events-none ${speech.who === 'opponent'
                         ? 'bg-plush-100 ring-1 ring-red-300/70'
                         : 'bg-brass-200 ring-1 ring-brass-400/70'}`}
                     >
