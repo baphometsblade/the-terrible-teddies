@@ -43,6 +43,10 @@ async function boot(page, { account = null, store = null, balance = null, rest =
     const req = route.request();
     const url = req.url();
     if (url.includes('/auth/v1/user')) return route.fulfill({ json: SESSION.user });
+    if (url.includes('/auth/v1/logout')) {
+      calls.push({ fn: 'logout' });
+      return route.fulfill({ status: 204, body: '' });
+    }
     if (url.includes('/auth/v1/')) return route.fulfill({ json: SESSION });
 
     const fn = url.match(/\/rest\/v1\/rpc\/([a-z_]+)/)?.[1];
@@ -148,6 +152,20 @@ test('hiding the tab sends a waiting change at once, carrying the session\'s own
   // Sent once: the wait it replaced does not send it again.
   await page.waitForTimeout(3500);
   expect(puts()).toHaveLength(1);
+});
+
+test('Sign Out sends the last change to the account before signing out', async ({ page }) => {
+  const { calls, row } = await boot(page, { account: accountSave(), store: null, balance: 500 });
+  await expect(page.getByText('Lv 7')).toBeVisible(SLOW);
+  const dialog = await openSettings(page);
+  await dialog.getByRole('button', { name: /^Hard/ }).click();
+  // Well inside the three-second wait: without Sign Out sending it, this
+  // change would never leave the device.
+  await dialog.getByRole('button', { name: 'Sign Out' }).click();
+  await expect(page.getByRole('button', { name: 'Sign Up' })).toBeVisible(SLOW);
+  const order = calls.map((c) => c.fn).filter((fn) => fn === 'put_player_save' || fn === 'logout');
+  expect(order).toEqual(['put_player_save', 'logout']);
+  expect(row().save.difficulty).toBe('hard');
 });
 
 test('when this device and the account both moved, the other save is kept and can be switched to', async ({ page }) => {

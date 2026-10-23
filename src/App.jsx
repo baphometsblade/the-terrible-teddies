@@ -16,7 +16,18 @@ import { useGameStore } from './stores/gameStore';
 import { fetchServerGemBalance, ensurePlayerProfile, isSupabaseConfigured } from './utils/supabaseClient';
 import analytics from './utils/analytics';
 import { useRehydrateOnFocus } from './hooks/useRehydrateOnFocus';
-import { bindSaveToUser, startCloudSync, stopCloudSync } from './lib/cloudSave';
+import { bindSaveToUser } from './lib/saveBinding';
+
+// The cloud save's controller (the decision, the sending, Settings' status)
+// loads with the sign-in it serves rather than on first paint, as the dialogs
+// do: it is 4 kB gzip, and its first job is a network round-trip anyway. Only
+// the bind step, which must run the moment a session appears, is static.
+// `cloudSave` is the module once loaded, so that signing out can stop it
+// synchronously: stopping through a second import() raced the sign-in's own,
+// and the stop that was asked first (at boot, before the session restored)
+// could land after the start and switch the cloud save off.
+let cloudSave = null;
+const loadCloudSave = () => import('./lib/cloudSave').then((m) => { cloudSave = m; return m; });
 import { FOCUS_OUTLINE } from './lib/focus';
 import { SCREEN_PAD } from './lib/safeArea';
 import { holdBack } from './lib/historyGuard';
@@ -331,8 +342,10 @@ function App() {
   // save at most every RECHECK_MIN_MS (src/lib/cloudSave.js).
   useEffect(() => {
     if (!session) {
-      stopCloudSync();
-      return;
+      // Not loaded means never started; a start still loading checks
+      // `current` below and gives up.
+      cloudSave?.stopCloudSync();
+      return undefined;
     }
     const uid = session.user?.id;
     // Claim the save for this account FIRST, synchronously. The persisted
@@ -363,23 +376,33 @@ function App() {
     // could be lower than the mark it brings, which reads as a refund and
     // takes gems away. onSettled runs after each decision; while the account
     // cannot be reached, no decision means no reconcile, rather than a guess.
-    startCloudSync({
-      userId: uid,
-      accessToken: session.access_token,
-      onSettled: () => {
-        // Credit any gems purchased since the save's mark (on another device,
-        // or a checkout whose success screen never loaded) without restoring
-        // gems already spent. Pass the id this balance was read FOR: if the
-        // account has changed while the request was in flight (sign out, sign
-        // in as someone else on a shared device), the store drops it rather
-        // than crediting the new player with the previous one's purchases.
-        fetchServerGemBalance(uid)
-          .then((serverBalance) => {
-            if (serverBalance !== null) reconcileServerGems(serverBalance, uid);
-          })
-          .catch((err) => console.error('Gem reconcile failed:', err));
-      },
-    });
+    const reconcile = () => {
+      // Credit any gems purchased since the save's mark (on another device,
+      // or a checkout whose success screen never loaded) without restoring
+      // gems already spent. Pass the id this balance was read FOR: if the
+      // account has changed while the request was in flight (sign out, sign
+      // in as someone else on a shared device), the store drops it rather
+      // than crediting the new player with the previous one's purchases.
+      fetchServerGemBalance(uid)
+        .then((serverBalance) => {
+          if (serverBalance !== null) reconcileServerGems(serverBalance, uid);
+        })
+        .catch((err) => console.error('Gem reconcile failed:', err));
+    };
+    // A session that has changed again (or ended) before the chunk arrived is
+    // left to the effect run that replaced it.
+    let current = true;
+    loadCloudSave()
+      .then(({ startCloudSync }) => {
+        if (current) startCloudSync({ userId: uid, accessToken: session.access_token, onSettled: reconcile });
+      })
+      .catch((err) => {
+        // No cloud save without its code: reconcile as the game did before
+        // cloud saves, rather than not at all.
+        console.error('Cloud save failed to load:', err);
+        if (current) reconcile();
+      });
+    return () => { current = false; };
   }, [session, reconcileServerGems]);
 
   // Detect Stripe Checkout return
