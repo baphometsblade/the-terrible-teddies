@@ -148,14 +148,19 @@ const CardPackOpening = ({ onClose }) => {
   const setRevealedNow = (next) => { revealedRef.current = next; setRevealed(next); };
   const setChargingNow = () => setCharging([...chargingRef.current]);
 
-  // Focus belongs to the table while a pack is revealed: on the card to turn
-  // next, the Next wave control, or the table itself. Only moved while it is
-  // already there (or lost to a control that just went away) — a player who
-  // has Tabbed to Close keeps it.
-  const focusOnTable = () => {
+  // The reveal moves focus on (to the next card to turn, the Next wave
+  // control, or the table) only when it was on the card that just turned, or
+  // is nowhere: the body, or the table, which holds it while controls come and
+  // go. Anywhere else it is where the player put it. The idle fallback turns
+  // cards on a timer, and moving focus whenever focus was anywhere on the
+  // table took Reveal all (or a card Tabbed to out of order) away from a
+  // keyboard player every 900ms.
+  const focusLost = () => {
     const active = document.activeElement;
-    return !active || active === document.body || !!stageRef.current?.contains(active);
+    return !active || active === document.body || active === stageRef.current;
   };
+  const focusFollowsTurn = (i) => focusLost()
+    || document.activeElement === cardEls.current[i]?.querySelector('button[data-turn]');
 
   // What happens next if the player does nothing: the next face-down card in
   // this wave turns, or the next wave is offered (then dealt), or the reveal
@@ -178,8 +183,9 @@ const CardPackOpening = ({ onClose }) => {
     } else if (held) {
       // A held beat is running; its flip schedules what comes after.
     } else if (waveRef.current < ranges.length - 1) {
+      // Focus goes on to Next only if the turn that finished the wave asked
+      // for it (see flip), so a player on Reveal all stays there.
       setWaveDone(true);
-      pendingFocusRef.current = true;
       idleRef.current = later(nextWave, WAVE_IDLE_MS);
     } else {
       idleRef.current = later(() => setIsOpening(false), END_MS);
@@ -206,7 +212,8 @@ const CardPackOpening = ({ onClose }) => {
     const cards = pullRef.current;
     if (!cards || revealedRef.current[i]) return;
     const card = cards[i];
-    const moveFocus = focusOnTable();
+    // Read before the turn: once it lands, this card's button is gone.
+    const moveFocus = focusFollowsTurn(i);
     chargingRef.current.delete(i);
     setChargingNow();
     setRevealedNow(revealedRef.current.map((v, k) => v || k === i));
@@ -342,13 +349,15 @@ const CardPackOpening = ({ onClose }) => {
     }, instant ? 0 : TEAR_MS);
   };
 
-  // Hand focus to whatever the reveal now asks for (see focusOnTable), once
-  // the render that put it on the page has landed.
+  // Hand focus to whatever the reveal now asks for (see focusLost), once the
+  // render that put it on the page has landed. By then the control that had
+  // it (the card that turned, Next) is gone, so focus is lost unless the
+  // player has since put it somewhere.
   useEffect(() => {
     if (!pendingFocusRef.current) return;
     pendingFocusRef.current = false;
     const stage = stageRef.current;
-    if (!stage || !focusOnTable()) return;
+    if (!stage || !focusLost()) return;
     const target = stage.querySelector('button[data-turn]:not([aria-disabled="true"])') || nextWaveRef.current || stage;
     if (target !== document.activeElement) target.focus({ preventScroll: true });
   });
@@ -365,7 +374,8 @@ const CardPackOpening = ({ onClose }) => {
     wasOpening.current = false;
     const keyboard = document.activeElement?.matches?.(':focus-visible') ?? false;
     const next = pulledCards ? (openAnotherRef.current || doneRef.current) : openRef.current;
-    next?.focus({ preventScroll: !keyboard });
+    // The same rule: a player who has Tabbed to Close keeps it.
+    if (focusLost()) next?.focus({ preventScroll: !keyboard });
     // Whoever is watching, the way on (Open Another / Done) comes into view —
     // 'nearest', so the cards just turned stay on screen.
     if (pulledCards) actionsRef.current?.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });

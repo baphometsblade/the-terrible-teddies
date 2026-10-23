@@ -143,6 +143,32 @@ test('a face-down card turns on a key, and focus walks on to the next', async ({
   await expect(page.locator('[data-reveal-card]').nth(1)).toHaveAttribute('data-reveal-card', 'up');
 });
 
+// The idle fallback turns a card every 900ms. It used to pull focus back to
+// the next face-down card whenever focus was anywhere on the table, so a
+// keyboard player could only reach Reveal all by out-typing the timer.
+test('the idle fallback leaves focus where the player put it', async ({ page }) => {
+  await seed(page, { cardPacks: 1, premiumPacks: 0, legendaryPacks: 0 });
+  const dialog = await openCardPacks(page);
+  await dialog.getByRole('button', { name: /^Open Pack/ }).click();
+  await expect(turnButton(dialog, 1)).toBeFocused(SLOW);
+
+  const revealAll = dialog.getByRole('button', { name: 'Reveal all' });
+  const isFocused = () => revealAll.evaluate((el) => el === document.activeElement);
+  for (let k = 0; k < 8 && !(await isFocused()); k++) await page.keyboard.press('Tab');
+  await expect(revealAll).toBeFocused();
+
+  // Long enough for the idle fallback to turn cards meanwhile...
+  const up = page.locator('[data-reveal-card="up"]');
+  const before = await up.count();
+  await expect.poll(() => up.count(), SLOW).toBeGreaterThan(before);
+  await page.waitForTimeout(1_000);
+  // ...without taking Reveal all away.
+  await expect(revealAll).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('[data-reveal-card="down"]')).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'Done' })).toBeFocused(SLOW);
+});
+
 test('Reveal all turns the rest at once, and both waves can be looked at after', async ({ page }) => {
   await seed(page, { cardPacks: 0, premiumPacks: 0, legendaryPacks: 1 });
   const dialog = await openCardPacks(page);
