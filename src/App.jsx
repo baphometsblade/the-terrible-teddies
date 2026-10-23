@@ -3,7 +3,9 @@ import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import Auth from './components/Auth';
 import MainMenu from './components/MainMenu';
 import { Toaster } from "@/components/ui/toaster";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast, readingTime } from "@/components/ui/use-toast";
+import { Medallion } from "@/components/ui/medallion";
+import { Coins } from "lucide-react";
 import ErrorBoundary from './components/ErrorBoundary';
 import DialogErrorBoundary from './components/DialogErrorBoundary';
 // Static, not lazy: this IS the boot path, so a chunk for it would be a
@@ -68,8 +70,16 @@ const SCREEN_TITLES = {
   deck: 'Deck Builder · Terrible Teddies',
 };
 
-// How long a level-up toast waits before it shows (see the drain in App).
-const LEVEL_UP_TOAST_DELAY_MS = 1200;
+// The three drains below raise announcements (use-toast's `queue: true`):
+// they arrive in bursts, and each used to replace the last, so all but one
+// were cut short. Queued, they show one after another, each for its reading
+// time. Raised a tick late, so a battle's own game-over dismissal (it clears
+// every toast as the result dialog opens) has run before the battle's
+// achievements arrive.
+const announceAll = (toast, items) => {
+  if (items.length === 0) return;
+  setTimeout(() => items.forEach((t) => toast({ queue: true, ...t })), 0);
+};
 
 // Hoisted to module scope for a stable identity. Declared inside App it was a
 // fresh component type on every render, so any toast (which re-renders App)
@@ -204,7 +214,7 @@ function App() {
   const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, reconcileServerGems, bindToUser } = useGameStore();
   const { toast } = useToast();
 
-  // Show achievement unlock toasts — process ALL queued achievements with staggered timing.
+  // Show achievement unlock toasts — every queued achievement, one after another.
   //
   // Dedupe by id rather than cancelling timers in the effect cleanup. Draining
   // the queue below calls setState, which re-renders and re-runs this effect;
@@ -237,16 +247,11 @@ function App() {
     const fresh = pendingAchievements.filter((a) => !shownAchievementIds.current.has(a.id));
     useGameStore.setState({ pendingAchievements: [] });
 
-    fresh.forEach((achievement, i) => {
-      shownAchievementIds.current.add(achievement.id);
-      setTimeout(() => {
-        toast({
-          title: `${achievement.icon} Achievement Unlocked!`,
-          description: `${achievement.name} — +${achievement.reward.toLocaleString()} 🪙`,
-          duration: 5000,
-        });
-      }, i * 600);
-    });
+    fresh.forEach((achievement) => shownAchievementIds.current.add(achievement.id));
+    announceAll(toast, fresh.map((achievement) => ({
+      title: `${achievement.icon} Achievement Unlocked!`,
+      description: `${achievement.name} — +${achievement.reward.toLocaleString()} 🪙`,
+    })));
   }, [pendingAchievements, toast]);
 
   // Level-ups earned away from a battle's result screen — a challenge's XP
@@ -255,48 +260,54 @@ function App() {
   // bonus coins itself, and takes the entry off the queue as it does, so the
   // player is never told twice. Deduped by id, like the achievements above,
   // so StrictMode's second effect pass (which still sees the old queue)
-  // schedules nothing. A beat late, because toasts replace one another and a
-  // challenge claim has just shown its own receipt.
+  // schedules nothing. Drawn as the result panel draws it (LevelUpRow): the
+  // level struck on a medallion and a coin icon, not ⭐ and 🪙, which render
+  // differently on every platform and read as stickers next to the UI.
   const pendingLevelUps = useGameStore((s) => s.pendingLevelUps);
   const shownLevelUpIds = useRef(new Set());
   useEffect(() => {
     if (currentScreen === 'game' || pendingLevelUps.length === 0) return;
     const fresh = pendingLevelUps.filter((l) => !shownLevelUpIds.current.has(l.id));
     useGameStore.setState({ pendingLevelUps: [] });
-    fresh.forEach((levelUp, i) => {
-      shownLevelUpIds.current.add(levelUp.id);
-      setTimeout(() => {
-        toast({
-          title: `⭐ Level ${levelUp.level}!`,
-          description: `Level-up bonus: +${levelUp.bonusCoins.toLocaleString()} 🪙`,
-          duration: 5000,
-        });
-      }, LEVEL_UP_TOAST_DELAY_MS + i * 600);
-    });
+    fresh.forEach((levelUp) => shownLevelUpIds.current.add(levelUp.id));
+    announceAll(toast, fresh.map((levelUp) => {
+      const title = `Level ${levelUp.level}!`;
+      const bonus = `+${levelUp.bonusCoins.toLocaleString()}`;
+      return {
+        title,
+        icon: (
+          <Medallion size="sm">
+            <span className="font-display text-lg font-extrabold leading-none text-brass-200">{levelUp.level}</span>
+          </Medallion>
+        ),
+        description: (
+          <span className="inline-flex items-center gap-1">
+            Level-up bonus: {bonus}
+            <Coins className="h-4 w-4 text-brass-300" aria-hidden="true" strokeWidth={2.4} />
+            <span className="sr-only">coins</span>
+          </span>
+        ),
+        duration: readingTime(title, `Level-up bonus: ${bonus} coins`),
+      };
+    }));
   }, [pendingLevelUps, currentScreen, toast]);
 
   // What a season's end delivered (syncSeason hands over every Battle Pass
   // tier reached but not claimed, rather than dropping it as it used to). The
   // rollover runs on whichever screen notices the new season first — the
   // menu on launch, as a rule — so it is said here, once, deduped by id for
-  // StrictMode's second pass. A beat late, like the level-ups: the menu's
-  // own first toasts land in that beat, and a toast replaces the last one.
+  // StrictMode's second pass.
   const pendingSeasonDeliveries = useGameStore((s) => s.pendingSeasonDeliveries);
   const shownDeliveryIds = useRef(new Set());
   useEffect(() => {
     if (pendingSeasonDeliveries.length === 0) return;
     const fresh = pendingSeasonDeliveries.filter((d) => !shownDeliveryIds.current.has(d.id));
     useGameStore.setState({ pendingSeasonDeliveries: [] });
-    fresh.forEach((delivery, i) => {
-      shownDeliveryIds.current.add(delivery.id);
-      setTimeout(() => {
-        toast({
-          title: `${delivery.season} rewards delivered`,
-          description: `Unclaimed when the season ended: ${delivery.summary}.`,
-          duration: 10000,
-        });
-      }, LEVEL_UP_TOAST_DELAY_MS + i * 600);
-    });
+    fresh.forEach((delivery) => shownDeliveryIds.current.add(delivery.id));
+    announceAll(toast, fresh.map((delivery) => ({
+      title: `${delivery.season} rewards delivered`,
+      description: `Unclaimed when the season ended: ${delivery.summary}.`,
+    })));
   }, [pendingSeasonDeliveries, toast]);
 
   // Tie analytics events to the signed-in user (or clear the identity on
@@ -364,9 +375,13 @@ function App() {
       // Clean URL without triggering a reload
       window.history.replaceState({}, '', window.location.pathname);
     } else if (purchase === 'cancelled') {
+      // Short enough for one line under its title at 320: as two it reached
+      // the first-run tutorial's step bar, which opens over the menu here.
+      // Queued, so a launch's other announcements do not cut it short.
       toast({
+        queue: true,
         title: 'Checkout cancelled',
-        description: 'No charge was made — your gems are still waiting in the shop.',
+        description: 'You weren’t charged.',
       });
       window.history.replaceState({}, '', window.location.pathname);
     }

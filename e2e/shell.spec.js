@@ -351,3 +351,117 @@ test.describe('the loader hand-off', () => {
     expect(seen.join(' ')).not.toContain('to-app');
   });
 });
+
+// Announcements — achievements, level-ups, a season's delivery — arrive in
+// bursts, and each used to replace the last, so all but one were cut short.
+test.describe('announcements', () => {
+  // Patches the save after bootToMainMenu's own seed (init scripts run in
+  // the order they were added), for the next load.
+  const seedSave = (page, patch) => page.addInitScript((p) => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const save = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    Object.assign(save.state, p);
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(save));
+  }, patch);
+
+  test('that arrive together are shown one after another, each in full', async ({ page }) => {
+    test.skip(!!process.env.E2E_PREVIEW, 'imports the toast module from /src');
+    await bootToMainMenu(page);
+    await page.evaluate(async () => {
+      const { toast } = await import('/src/components/ui/use-toast.js');
+      toast({ queue: true, title: 'First news', description: 'One.', duration: 1500 });
+      toast({ queue: true, title: 'Second news', description: 'Two.', duration: 1500 });
+    });
+    const toasts = page.locator('.toast-viewport > li');
+    await expect(toasts.filter({ hasText: 'First news' })).toBeVisible();
+    await expect(toasts.filter({ hasText: 'Second news' })).toHaveCount(0);
+    await page.waitForTimeout(1000);
+    // Still the first: the second has not cut it short.
+    await expect(toasts.filter({ hasText: 'First news' })).toBeVisible();
+    await expect(toasts.filter({ hasText: 'Second news' })).toBeVisible({ timeout: 5000 });
+    await expect(toasts.filter({ hasText: 'First news' })).toHaveCount(0);
+  });
+
+  // Drawn as the result panel draws a level-up: the level on a medallion and
+  // a coin icon, not ⭐ and 🪙.
+  test('a level-up is drawn with the medallion and the coin, not emoji', async ({ page }) => {
+    await bootToMainMenu(page);
+    await seedSave(page, { level: 1, xp: 95 });
+    await page.reload();
+    await page.getByRole('button', { name: 'Battle', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await page.getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Level 2!' });
+    await expect(toast).toBeVisible(SLOW);
+    await expect(toast).toContainText('Level-up bonus: +200');
+    await expect(toast).not.toContainText('⭐');
+    await expect(toast).not.toContainText('🪙');
+    await expect(toast.locator('[aria-hidden="true"]').first()).toHaveText('2');
+    await expect(toast.locator('svg')).not.toHaveCount(0);
+  });
+
+  // "No charge was made — your gems are still waiting in the shop." took
+  // three lines at 320 and, over the first-run tutorial (which opens on the
+  // same launch), reached its step bar.
+  test('"Checkout cancelled" fits its line at 320, clear of the tutorial', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await bootToMainMenu(page);
+    await seedSave(page, { tutorialCompleted: false });
+    await page.goto('/?purchase=cancelled');
+    const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Checkout cancelled' });
+    await expect(toast).toBeVisible(SLOW);
+    await expect(toast).toContainText('You weren’t charged.');
+    const lines = await toast.locator('.toast-description').evaluate((el) =>
+      Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight)));
+    expect(lines, 'the description wraps').toBe(1);
+    const tutorial = page.getByRole('dialog', { name: 'How to play' });
+    await expect(tutorial.getByText('Step 1 of 9')).toBeVisible(SLOW);
+    const box = await toast.boundingBox();
+    for (const control of await tutorial.locator('button, [tabindex="0"]').all()) {
+      if (!(await control.isVisible())) continue;
+      const r = await control.boundingBox();
+      const overlaps = Math.min(r.x + r.width, box.x + box.width) > Math.max(r.x, box.x)
+        && Math.min(r.y + r.height, box.y + box.height) > Math.max(r.y, box.y);
+      expect(overlaps, `the toast covers "${await control.getAttribute('aria-label') || await control.textContent()}"`).toBe(false);
+    }
+  });
+});
+
+// The empty Card Packs table names where packs come from, with a way to each.
+// Daily Rewards waits for a tap now, so on a pack day the table offers it.
+test('the empty Card Packs table opens Daily Rewards on a pack day', async ({ page }) => {
+  await bootToMainMenu(page);
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const save = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    // Claimed through day 4 yesterday: today's claim is day 5, a pack day.
+    Object.assign(save.state, {
+      cardPacks: 0, premiumPacks: 0, legendaryPacks: 0,
+      consecutiveLogins: 4, lastLoginDate: yesterday.toDateString(),
+    });
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(save));
+  });
+  await page.reload();
+  // Unclaimed today, so Daily Rewards opens by itself on launch; put it away.
+  const daily = page.getByRole('dialog', { name: 'Daily Rewards' });
+  await expect(daily).toBeVisible(SLOW);
+  await page.keyboard.press('Escape');
+  await expect(daily).toHaveCount(0, SLOW);
+
+  const tile = page.getByRole('button', { name: 'Card Packs', exact: true });
+  await tile.click();
+  const packs = page.getByRole('dialog', { name: 'Card packs' });
+  await expect(packs.getByRole('heading', { name: 'No packs to open' })).toBeVisible(SLOW);
+  await expect(packs).toContainText("Today's daily reward.");
+  await packs.getByRole('button', { name: 'Open Daily Rewards' }).click();
+  await expect(daily).toBeVisible(SLOW);
+  await expect(packs).toHaveCount(0);
+  // The reward is there to claim, and closing the panel lands back on the tile.
+  await expect(daily.getByRole('button', { name: 'Claim', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(daily).toHaveCount(0, SLOW);
+  await expect(tile).toBeFocused();
+});

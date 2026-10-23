@@ -13,10 +13,14 @@ export function Toaster() {
 
   return (
     (<ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
+      {/* `queued` is use-toast's own bookkeeping, not a prop for Radix.
+          `icon` is drawn before the text: decoration (aria-hidden), as the
+          title says what the toast is. */}
+      {toasts.map(function ({ id, title, description, action, icon, queued: _queued, ...props }) {
         return (
           (<Toast key={id} {...props}>
-            <div className="grid gap-1">
+            {icon && <span aria-hidden="true" className="shrink-0">{icon}</span>}
+            <div className="grid min-w-0 flex-1 gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
                 <ToastDescription>{description}</ToastDescription>
