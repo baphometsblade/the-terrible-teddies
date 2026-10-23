@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, createContext, useContext, lazy, Susp
 import { supabase } from '../../lib/supabase';
 import DialogErrorBoundary from '@/components/DialogErrorBoundary';
 import {
-  landingFromUrl, landedFromAuthLink, withoutAuthError, recoveryLinkFailure,
+  landingRecord, withoutAuthError, recoveryLinkFailure, signInIntent,
 } from '@/lib/authLanding';
 
 // Only a reset email's landing draws it, so it is a chunk of its own (about
@@ -20,9 +20,9 @@ const SupabaseAuthContext = createContext();
 // render that this load is a recovery means the game is never drawn for that
 // tick, and a refused link (expired, already used) is caught at all: for
 // those supabase-js raises no event, only leaves the error in the URL.
-const LANDING_HREF = typeof window !== 'undefined' ? window.location.href : '';
-const LANDING = landingFromUrl(LANDING_HREF);
-const FROM_AUTH_LINK = landedFromAuthLink(LANDING_HREF);
+// Consumed when the reset flow ends, so a remount of the provider (the crash
+// screen's Try Again) does not start it over.
+const LANDING = landingRecord(typeof window !== 'undefined' ? window.location.href : '');
 
 // The reset panel's state:
 //   null                                  the game (or the sign-in screen)
@@ -31,11 +31,12 @@ const FROM_AUTH_LINK = landedFromAuthLink(LANDING_HREF);
 //   { stage: 'link-error', reason }       'expired' (refused by Supabase),
 //                                         'invalid' or 'offline' (could not be used)
 const initialRecovery = () => {
-  if (LANDING?.kind === 'recovery') return { stage: 'checking' };
+  const landing = LANDING.landing;
+  if (landing?.kind === 'recovery') return { stage: 'checking' };
   // otp_expired is what Supabase reports for a link past its time and for
   // one already used, and it comes with access_denied.
-  if (LANDING?.kind === 'link-error') {
-    return { stage: 'link-error', reason: ['otp_expired', 'access_denied'].includes(LANDING.code) ? 'expired' : 'invalid' };
+  if (landing?.kind === 'link-error') {
+    return { stage: 'link-error', reason: ['otp_expired', 'access_denied'].includes(landing.code) ? 'expired' : 'invalid' };
   }
   return null;
 };
@@ -47,6 +48,12 @@ export const SupabaseProvider = ({ children }) => {
   // Where the sign-in screen should open: 'forgot' after an expired link's
   // "Send a new link". Read once by Auth (useAuthIntent), which clears it.
   const [authIntent, setAuthIntent] = useState(null);
+  // A session arriving first (restored late, or signed in from another tab)
+  // means Auth will not mount to read it; dropped, so it cannot open the
+  // reset form unasked at the next sign-out.
+  useEffect(() => {
+    if (authIntent && signInIntent(authIntent, !!session) === null) setAuthIntent(null);
+  }, [authIntent, session]);
 
   useEffect(() => {
     let mounted = true;
@@ -76,7 +83,7 @@ export const SupabaseProvider = ({ children }) => {
       setSession(session);
       // Only in the tab the email link opened: supabase-js relays auth events
       // to the game's other open tabs, which must stay where they are.
-      if (event === 'PASSWORD_RECOVERY' && FROM_AUTH_LINK) {
+      if (event === 'PASSWORD_RECOVERY' && LANDING.fromAuthLink) {
         // From "checking" (or, for a PKCE link, which this module cannot
         // read ahead, from nothing); never back over a later stage.
         setRecovery((r) => (r && r.stage !== 'checking' ? r : { stage: 'set-password' }));
@@ -86,7 +93,8 @@ export const SupabaseProvider = ({ children }) => {
     // A recovery link: once supabase-js has processed it, either it signed the
     // player in (set a password) or it could not. initialize() hands back the
     // same result the client's own start-up produced.
-    if (LANDING?.kind === 'recovery') {
+    const landing = LANDING.landing;
+    if (landing?.kind === 'recovery') {
       // initialize() is documented never to reject; if it ever did, the
       // panel would wait on "Checking" for good, so a rejection reads as a
       // link that could not be checked.
@@ -107,7 +115,7 @@ export const SupabaseProvider = ({ children }) => {
         });
     }
     // supabase-js leaves a refused link's error in the address.
-    if (LANDING?.kind === 'link-error') {
+    if (landing?.kind === 'link-error') {
       window.history.replaceState(window.history.state, '', withoutAuthError(window.location.href));
     }
 
@@ -125,10 +133,23 @@ export const SupabaseProvider = ({ children }) => {
   };
 
   // Leave the reset panel: for the game (signed in), or for the sign-in
-  // screen, opened on the reset form when `intent` is 'forgot'.
+  // screen, opened on the reset form when `intent` is 'forgot'. This load's
+  // landing has then done its work.
+  const signedIn = !!session;
   const endRecovery = useCallback((intent = null) => {
-    setAuthIntent(intent);
+    LANDING.consume();
+    setAuthIntent(signInIntent(intent, signedIn));
     setRecovery(null);
+  }, [signedIn]);
+  // Changed, or found dead when saving: either way the link has done all it
+  // can, so a remount from here is an ordinary visit.
+  const passwordSet = useCallback(() => {
+    LANDING.consume();
+    setRecovery({ stage: 'done' });
+  }, []);
+  const linkExpired = useCallback(() => {
+    LANDING.consume();
+    setRecovery({ stage: 'link-error', reason: 'expired' });
   }, []);
   const clearAuthIntent = useCallback(() => setAuthIntent(null), []);
 
@@ -154,9 +175,10 @@ export const SupabaseProvider = ({ children }) => {
           <Suspense fallback={null}>
             <PasswordRecovery
               recovery={recovery}
-              signedIn={!!session}
-              onPasswordSet={() => setRecovery({ stage: 'done' })}
-              onLinkExpired={() => setRecovery({ stage: 'link-error', reason: 'expired' })}
+              signedIn={signedIn}
+              restoring={loading}
+              onPasswordSet={passwordSet}
+              onLinkExpired={linkExpired}
               onDone={endRecovery}
             />
           </Suspense>

@@ -5,8 +5,9 @@ import { Medallion } from '@/components/ui/medallion';
 import { RARITY_METAL } from '@/lib/rarity';
 import { SCREEN_PAD } from '@/lib/safeArea';
 import { AuthField, AUTH_ACTION, AUTH_TEXT_BUTTON as TEXT_BUTTON } from './AuthField';
+import { HINT_AFTER_MS } from './BootScreen';
 import {
-  newPasswordProblem, NEW_PASSWORD_PROBLEM_TEXT, passwordChangeError, PASSWORD_MIN_LENGTH,
+  newPasswordProblem, NEW_PASSWORD_PROBLEM_TEXT, passwordChangeError, PASSWORD_MIN_LENGTH, linkErrorWayOn,
 } from '@/lib/passwordRecovery';
 
 const TITLE = 'Reset Password · Terrible Teddies';
@@ -24,14 +25,46 @@ const HEAD = {
 };
 
 /**
+ * In place of a link-error screen's way on while the stored session is
+ * restored: usually a moment, but for a returning player it is a network
+ * refresh, which supabase-js retries for up to about a minute when the server
+ * cannot be reached. Announced, so the wait is not silent to a screen reader.
+ */
+const RestoringNote = ({ slow }) => (
+  <div role="status" className="flex flex-col items-center gap-2 text-sm text-plush-200">
+    <p className="flex items-center justify-center gap-2">
+      <LoaderCircle aria-hidden="true" className="h-[18px] w-[18px] shrink-0 text-brass-300 motion-safe:animate-spin [[data-motion=off]_&]:animate-none" strokeWidth={2.4} />
+      Checking whether you’re still signed in on this device…
+    </p>
+    {slow && (
+      <p className="text-plush-300">
+        Still trying to reach the server. Check your connection — we’ll keep retrying.
+      </p>
+    )}
+  </div>
+);
+
+/**
  * The screen a password-reset email lands on: choose a new password (the
  * link has signed the player in to do it), or, for a link Supabase refused,
  * say so and offer a new one. It stands in for the whole game while it is up
  * (integrations/supabase/auth.jsx), on the sign-in screen's materials.
+ *
+ * `restoring` is true while supabase-js is still restoring the stored session,
+ * so `signedIn` is not yet known: a link that could not be used offers its
+ * way on (the game, or a new link) only once it is.
  */
-const PasswordRecovery = ({ recovery, signedIn, onPasswordSet, onLinkExpired, onDone }) => {
+const PasswordRecovery = ({ recovery, signedIn, restoring, onPasswordSet, onLinkExpired, onDone }) => {
   const stage = recovery.stage === 'link-error' ? recovery.reason : recovery.stage;
   const head = HEAD[stage] ?? HEAD.expired;
+  const wayOn = linkErrorWayOn({ restoring, signedIn });
+  // A restore that is slow to finish says why, as the boot screen does.
+  const [slowRestore, setSlowRestore] = useState(false);
+  useEffect(() => {
+    if (wayOn !== 'wait') return undefined;
+    const t = setTimeout(() => setSlowRestore(true), HINT_AFTER_MS);
+    return () => clearTimeout(t);
+  }, [wayOn]);
 
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -42,9 +75,11 @@ const PasswordRecovery = ({ recovery, signedIn, onPasswordSet, onLinkExpired, on
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
 
+  const panelRef = useRef(null);
   const passwordRef = useRef(null);
   const confirmationRef = useRef(null);
   const primaryRef = useRef(null);
+  const shownStage = useRef(null);
 
   // The tab says where the player is, as each of the game's screens does.
   useEffect(() => {
@@ -58,11 +93,20 @@ const PasswordRecovery = ({ recovery, signedIn, onPasswordSet, onLinkExpired, on
   }, []);
 
   // Focus follows the stage: into the first field to type a password, onto
-  // the way on once it is changed or the link has failed.
+  // the way on once it is changed or the link has failed. The way on can
+  // also arrive, or change, after the stage (the session restoring, or
+  // signing out in another tab), unmounting what had focus; it is then
+  // placed again, unless the player has moved it within the panel.
   useEffect(() => {
-    if (stage === 'set-password') passwordRef.current?.focus();
-    else if (stage !== 'checking') primaryRef.current?.focus();
-  }, [stage]);
+    const entered = shownStage.current !== stage;
+    shownStage.current = stage;
+    if (stage === 'set-password') {
+      if (entered) passwordRef.current?.focus();
+      return;
+    }
+    if (stage === 'checking') return;
+    if (entered || !panelRef.current?.contains(document.activeElement)) primaryRef.current?.focus();
+  }, [stage, wayOn]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -81,15 +125,26 @@ const PasswordRecovery = ({ recovery, signedIn, onPasswordSet, onLinkExpired, on
       ({ error } = await supabase.auth.updateUser({ password }));
     } catch (err) {
       error = err;
-    } finally {
-      savingRef.current = false;
-      setSaving(false);
     }
+    const failure = error ? passwordChangeError(error) : null;
+    if (failure?.kind === 'expired') {
+      // Supabase has said this session is gone, but supabase-js keeps it, so
+      // the panel would go on to say "you're still signed in" and offer the
+      // game rather than a new link. Dropped here first (this device only:
+      // there is nothing left on the server to sign out of). signOut removes
+      // it even when it cannot reach the server.
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch {
+        // Nothing more to do: the panel still says the link has expired.
+      }
+    }
+    savingRef.current = false;
+    setSaving(false);
     if (!error) {
       onPasswordSet();
       return;
     }
-    const failure = passwordChangeError(error);
     if (failure.kind === 'expired') {
       onLinkExpired();
       return;
@@ -108,7 +163,7 @@ const PasswordRecovery = ({ recovery, signedIn, onPasswordSet, onLinkExpired, on
     <div className={`relative min-h-screen bar-backdrop flex flex-col items-center justify-center overflow-x-hidden ${SCREEN_PAD}`}>
       <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
       <main className="relative w-full max-w-md py-6 sm:py-10">
-        <div className="relative dialog-panel rounded-2xl px-5 py-6 sm:px-8 sm:py-8 overflow-hidden">
+        <div ref={panelRef} className="relative dialog-panel rounded-2xl px-5 py-6 sm:px-8 sm:py-8 overflow-hidden">
           {/* Lamplight over the counter, as on the sign-in screen. */}
           <div aria-hidden="true" className="absolute inset-x-0 top-0 h-32 pointer-events-none bg-[radial-gradient(ellipse_60%_100%_at_50%_0%,rgba(251,191,36,0.1),transparent_70%)]" />
 
@@ -216,16 +271,16 @@ const PasswordRecovery = ({ recovery, signedIn, onPasswordSet, onLinkExpired, on
                 {stage === 'expired'
                   ? 'Email links work once, for a limited time, and this one has expired or has already been used.'
                   : 'This link isn’t valid any more.'}
-                {' '}
-                {signedIn
-                  ? 'You’re still signed in on this device.'
-                  : 'To reset your password, ask for a new link.'}
+                {wayOn === 'game' && ' You’re still signed in on this device.'}
+                {wayOn === 'sign-in' && ' To reset your password, ask for a new link.'}
               </p>
-              {signedIn ? (
+              {wayOn === 'wait' && <RestoringNote slow={slowRestore} />}
+              {wayOn === 'game' && (
                 <button ref={primaryRef} type="button" onClick={() => onDone()} className={`btn-brass ${AUTH_ACTION}`}>
                   Continue to the game
                 </button>
-              ) : (
+              )}
+              {wayOn === 'sign-in' && (
                 <>
                   <button ref={primaryRef} type="button" onClick={() => onDone('forgot')} className={`btn-brass ${AUTH_ACTION}`}>
                     Send a new link
@@ -250,11 +305,14 @@ const PasswordRecovery = ({ recovery, signedIn, onPasswordSet, onLinkExpired, on
               <button ref={primaryRef} type="button" onClick={() => window.location.reload()} className={`btn-brass ${AUTH_ACTION}`}>
                 Try the link again
               </button>
-              <div className="mt-4">
-                <button type="button" onClick={() => onDone()} className={TEXT_BUTTON}>
-                  {signedIn ? 'Continue to the game' : 'Back to sign in'}
-                </button>
-              </div>
+              {/* Where this goes depends on the session, so it waits for it. */}
+              {wayOn !== 'wait' && (
+                <div className="mt-4">
+                  <button type="button" onClick={() => onDone()} className={TEXT_BUTTON}>
+                    {wayOn === 'game' ? 'Continue to the game' : 'Back to sign in'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

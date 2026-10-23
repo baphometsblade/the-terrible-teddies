@@ -13,7 +13,7 @@ async function expectNoAxeViolations(page, label) {
 
 // Every request to the fake project, answered per test. `auth` records what
 // the reset form and the panel sent.
-async function stubBackend(page, { recover, updateUser, user } = {}) {
+async function stubBackend(page, { recover, updateUser, user, token } = {}) {
   const auth = { recover: [], updates: [] };
   await page.route(`**${REF}.supabase.co/**`, async (route) => {
     const req = route.request();
@@ -27,6 +27,7 @@ async function stubBackend(page, { recover, updateUser, user } = {}) {
       return updateUser ? updateUser(route) : route.fulfill({ json: SESSION.user });
     }
     if (url.includes('/auth/v1/user')) return user ? user(route) : route.fulfill({ json: SESSION.user });
+    if (url.includes('/auth/v1/token') && token) return token(route);
     if (url.includes('/auth/v1/')) return route.fulfill({ json: SESSION });
     if (url.includes('/rest/v1/rpc/')) return route.fulfill({ json: null });
     if (url.includes('/rest/v1/')) return route.fulfill({ json: [] });
@@ -51,6 +52,26 @@ const EXPIRED_HASH = '#error=access_denied&error_code=otp_expired&error_descript
 const GOTRUE_2024 = {
   'x-supabase-api-version': '2024-01-01',
   'access-control-expose-headers': 'x-supabase-api-version',
+};
+
+// What every returning player has in storage: a session whose access token
+// expired (they last an hour), so restoring it is a refresh round-trip.
+const staleSession = () => {
+  const past = Math.floor(Date.now() / 1000) - 7200;
+  return { ...SESSION, expires_at: past, expires_in: 3600, refresh_token: 'stale-refresh' };
+};
+const seedStoredSession = (page, session) => page.addInitScript(([key, s]) => {
+  localStorage.setItem(key, JSON.stringify(s));
+  localStorage.setItem('terrible-teddies-storage', JSON.stringify({
+    state: { tutorialCompleted: true, lastLoginDate: new Date().toDateString() }, version: 3,
+  }));
+}, [`sb-${REF}-auth-token`, session]);
+
+// A request held until the test lets it go.
+const gate = () => {
+  let open;
+  const opened = new Promise((r) => { open = r; });
+  return { opened, open: () => open() };
 };
 
 const signInScreen = async (page) => {
@@ -210,6 +231,44 @@ test.describe('landing from a reset link', () => {
     await page.getByLabel('Confirm new password').fill('honeypot-9');
     await page.getByRole('button', { name: 'Save new password' }).click();
     await expect(page.getByRole('heading', { name: 'This Link Has Expired' })).toBeVisible();
+    // Supabase said the session is gone, so the panel does not claim the
+    // player is still signed in: it offers the new link they came for, and
+    // the dead session is no longer kept on this device.
+    await expect(page.getByRole('button', { name: 'Send a new link' })).toBeFocused();
+    await expect(page.getByText(/ask for a new link/)).toBeVisible();
+    await expect(page.getByText(/still signed in/)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Continue to the game' })).toHaveCount(0);
+    expect(await page.evaluate((key) => localStorage.getItem(key), `sb-${REF}-auth-token`)).toBeNull();
+  });
+
+  // The crash screen's Try Again remounts everything under it, the auth
+  // provider included. The reset link was read once, at load; it must not
+  // bring the panel back over a game whose password has just been changed.
+  test('does not come back once the reset is done, even when the app remounts', async ({ page }) => {
+    test.skip(!!process.env.E2E_PREVIEW, 'reaches into the store module from /src');
+    await stubBackend(page);
+    await page.goto(`/${recoveryHash()}`);
+    await expect(page.getByRole('heading', { name: 'Set a New Password' })).toBeVisible(SLOW);
+    await page.getByLabel('New password', { exact: true }).fill('honeypot-9');
+    await page.getByLabel('Confirm new password').fill('honeypot-9');
+    await page.getByRole('button', { name: 'Save new password' }).click();
+    await page.getByRole('button', { name: 'Continue to the game' }).click();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+
+    // A render crash in the game, then Try Again with the cause put right.
+    await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/stores/gameStore.js');
+      useGameStore.setState({ ownedCards: null, currentDeck: null, completedAchievements: null });
+    });
+    const tryAgain = page.getByRole('button', { name: /try again/i });
+    await expect(tryAgain).toBeVisible(SLOW);
+    await page.evaluate(async () => {
+      const { useGameStore } = await import('/src/stores/gameStore.js');
+      useGameStore.setState({ ownedCards: [], currentDeck: [], completedAchievements: [] });
+    });
+    await tryAgain.click();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    await expect(page.getByRole('heading', { name: 'Set a New Password' })).toHaveCount(0);
   });
 });
 
@@ -261,6 +320,61 @@ test.describe('an expired link', () => {
     await page.reload();
     await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible(SLOW);
     await expect(page.getByRole('heading', { name: 'This Link Has Expired' })).toHaveCount(0);
+  });
+
+  // A returning player's stored session is restored with a network refresh,
+  // and until it answers nobody knows whether they are signed in. The panel
+  // used to guess "signed out" meanwhile: its copy and button then flipped
+  // under the player, focus fell to the page, and a tap on "Send a new link"
+  // in that window landed a signed-in player in the game, with the reset form
+  // left waiting to open unasked at their next sign-out.
+  test('waits for a returning player\'s session before offering a way on', async ({ page }) => {
+    const refresh = gate();
+    await stubBackend(page, {
+      token: async (route) => { await refresh.opened; return route.fulfill({ json: SESSION }); },
+    });
+    await seedStoredSession(page, staleSession());
+    await page.goto(`/${EXPIRED_HASH}`);
+    await expect(page.getByRole('heading', { name: 'This Link Has Expired' })).toBeVisible(SLOW);
+    const panel = page.locator('.dialog-panel');
+    await expect(panel.getByRole('status')).toContainText('Checking whether you’re still signed in');
+    await expect(panel.getByRole('button')).toHaveCount(0);
+    await expectNoAxeViolations(page, 'expired link, session restoring');
+    // Slow to answer: it says why, as the boot screen does.
+    await expect(panel.getByRole('status')).toContainText('Still trying to reach the server', { timeout: 10_000 });
+    await expect(panel.getByRole('button')).toHaveCount(0);
+
+    refresh.open();
+    const go = page.getByRole('button', { name: 'Continue to the game' });
+    await expect(go).toBeFocused(SLOW);
+    await expect(page.getByText(/still signed in on this device/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Send a new link' })).toHaveCount(0);
+
+    await go.click();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    // Signing out later opens the sign-in form as usual, not the reset form.
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: 'Sign Out' }).click();
+    await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible(SLOW);
+    await expect(page.getByRole('heading', { name: 'Reset your password' })).toHaveCount(0);
+  });
+
+  test('offers a new link once the restore finds the player signed out', async ({ page }) => {
+    await stubBackend(page, {
+      // The stored refresh token is no good any more.
+      token: async (route) => {
+        await new Promise((r) => setTimeout(r, 1500));
+        return route.fulfill({ status: 400, headers: GOTRUE_2024, json: { code: 'refresh_token_not_found', msg: 'Invalid Refresh Token: Refresh Token Not Found' } });
+      },
+    });
+    await seedStoredSession(page, staleSession());
+    await page.goto(`/${EXPIRED_HASH}`);
+    await expect(page.getByRole('heading', { name: 'This Link Has Expired' })).toBeVisible(SLOW);
+    const again = page.getByRole('button', { name: 'Send a new link' });
+    await expect(again).toBeFocused(SLOW);
+    await expect(page.getByRole('button', { name: 'Continue to the game' })).toHaveCount(0);
+    await again.click();
+    await expect(page.getByRole('heading', { name: 'Reset your password' })).toBeVisible(SLOW);
   });
 
   // Signed in on this device already: nothing to send, just the way on.

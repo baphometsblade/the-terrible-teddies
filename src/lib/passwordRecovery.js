@@ -49,7 +49,10 @@ const EXPIRED_CODES = new Set(['session_not_found', 'session_expired', 'bad_jwt'
 /**
  * What a failed updateUser({ password }) means for the panel.
  *
- *   expired  the reset session is gone: the link has to be asked for again
+ *   expired  the reset session is gone: the link has to be asked for again.
+ *            The panel drops that dead session and turns into the
+ *            expired-link screen, which says so in its own words, so this
+ *            kind carries no message of its own.
  *   same     Supabase refuses the account's current password
  *   weak     Supabase's own strength rules (shown in its words, which name
  *            what is missing)
@@ -61,7 +64,7 @@ const EXPIRED_CODES = new Set(['session_not_found', 'session_expired', 'bad_jwt'
 export function passwordChangeError(error) {
   const code = error?.code;
   if (error?.name === 'AuthSessionMissingError' || EXPIRED_CODES.has(code) || error?.status === 401 || error?.status === 403) {
-    return { kind: 'expired', message: 'This reset link has expired. Ask for a new one from the sign-in screen.' };
+    return { kind: 'expired', message: null };
   }
   if (code === 'same_password') {
     return { kind: 'same', message: 'That is the password this account already has. Choose a different one.' };
@@ -73,4 +76,23 @@ export function passwordChangeError(error) {
     return { kind: 'offline', message: 'Couldn\'t reach the server. Check your connection and try again.' };
   }
   return { kind: 'other', message: 'Couldn\'t change your password just now. Please try again.' };
+}
+
+/**
+ * The way on from a link that could not be used. It depends on whether this
+ * device is still signed in, which is not known until the stored session has
+ * been restored, and for a returning player that is a network refresh (their
+ * access token has expired). Offering either way before then meant the copy
+ * and the button changed under the player's finger, and a tap on "Send a new
+ * link" could land a player who was signed in all along in the game.
+ *
+ *   'wait'     still restoring: say so, offer neither
+ *   'game'     signed in: carry on
+ *   'sign-in'  signed out: ask for a new link, or go back to sign in
+ *
+ * @returns {'wait'|'game'|'sign-in'}
+ */
+export function linkErrorWayOn({ restoring, signedIn }) {
+  if (restoring) return 'wait';
+  return signedIn ? 'game' : 'sign-in';
 }

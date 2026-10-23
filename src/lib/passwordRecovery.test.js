@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   landingFromUrl, landedFromAuthLink, withoutAuthError, recoveryLinkFailure, PASSWORD_MIN_LENGTH,
+  landingRecord, signInIntent,
 } from './authLanding';
 import {
-  resetRequestOutcome, newPasswordProblem, passwordChangeError,
+  resetRequestOutcome, newPasswordProblem, passwordChangeError, linkErrorWayOn,
 } from './passwordRecovery';
 
 const ORIGIN = 'https://teddies.example';
@@ -44,6 +45,20 @@ describe('what a page load arrived with', () => {
     expect(landedFromAuthLink(`${ORIGIN}/?code=abc123`)).toBe(true);
     expect(landedFromAuthLink(`${ORIGIN}/`)).toBe(false);
     expect(landedFromAuthLink(`${ORIGIN}/?purchase=cancelled`)).toBe(false);
+  });
+
+  // The landing is read once per page load, and the provider acting on it
+  // can mount more than once (the crash screen's Try Again remounts it).
+  it('is an ordinary visit once the reset flow it started has ended', () => {
+    const record = landingRecord(RECOVERY);
+    expect(record.landing).toEqual({ kind: 'recovery' });
+    expect(record.landing).toEqual({ kind: 'recovery' });
+    expect(record.fromAuthLink).toBe(true);
+    record.consume();
+    expect(record.landing).toBeNull();
+    expect(record.fromAuthLink).toBe(false);
+    expect(landingRecord(EXPIRED).landing).toEqual({ kind: 'link-error', code: 'otp_expired' });
+    expect(landingRecord(`${ORIGIN}/`).landing).toBeNull();
   });
 
   it('drops only the error from the address, so a reload does not show it again', () => {
@@ -120,5 +135,27 @@ describe('a failed password change', () => {
     expect(recoveryLinkFailure({ name: 'AuthRetryableFetchError', status: 0 })).toBe('offline');
     expect(recoveryLinkFailure({ name: 'AuthApiError', status: 401, code: 'bad_jwt' })).toBe('invalid');
     expect(recoveryLinkFailure({ name: 'AuthImplicitGrantRedirectError' })).toBe('invalid');
+  });
+});
+
+describe('leaving a link that could not be used', () => {
+  // Whether this device is still signed in is not known until the stored
+  // session has been restored (for a returning player, a network refresh).
+  it('offers no way on until the session is known, then the right one', () => {
+    expect(linkErrorWayOn({ restoring: true, signedIn: false })).toBe('wait');
+    // A session can be reported before the restore has finished with it.
+    expect(linkErrorWayOn({ restoring: true, signedIn: true })).toBe('wait');
+    expect(linkErrorWayOn({ restoring: false, signedIn: true })).toBe('game');
+    expect(linkErrorWayOn({ restoring: false, signedIn: false })).toBe('sign-in');
+  });
+
+  // "Send a new link" opens the sign-in screen on the reset form; a player
+  // who is signed in never sees that screen, so the request must not wait
+  // for their next sign-out.
+  it('opens the sign-in screen on the reset form only for a player signed out', () => {
+    expect(signInIntent('forgot', false)).toBe('forgot');
+    expect(signInIntent('forgot', true)).toBeNull();
+    expect(signInIntent(null, false)).toBeNull();
+    expect(signInIntent(undefined, false)).toBeNull();
   });
 });

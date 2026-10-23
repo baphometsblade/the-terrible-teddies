@@ -84,3 +84,36 @@ export function withoutAuthError(href) {
 export function recoveryLinkFailure(error) {
   return error?.name === 'AuthRetryableFetchError' ? 'offline' : 'invalid';
 }
+
+/**
+ * A page load's landing, kept until the reset flow it started is over.
+ *
+ * Read from the address once, at module load (supabase-js consumes the
+ * address itself soon after), and that read outlives the provider that acts
+ * on it: the crash screen's Try Again remounts the provider, which would
+ * otherwise find the same landing and bring the reset panel back over a game
+ * whose password was changed minutes ago. consume() says the flow has ended,
+ * after which this load is an ordinary visit.
+ */
+export function landingRecord(href) {
+  const landing = landingFromUrl(href);
+  const fromAuthLink = landedFromAuthLink(href);
+  let consumed = false;
+  return {
+    /** What the load arrived with (see landingFromUrl), null once consumed. */
+    get landing() { return consumed ? null : landing; },
+    /** Whether the load came from an auth email, false once consumed. */
+    get fromAuthLink() { return !consumed && fromAuthLink; },
+    consume() { consumed = true; },
+  };
+}
+
+/**
+ * Where the sign-in screen should open next, given what was asked for: a
+ * signed-in player is not shown the sign-in screen at all, so for them there
+ * is nowhere to open, and an intent kept anyway would open the reset form
+ * unasked at their next sign-out.
+ *
+ * @returns {null|'forgot'}
+ */
+export const signInIntent = (intent, signedIn) => (signedIn ? null : intent ?? null);
