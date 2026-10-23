@@ -59,6 +59,12 @@ The old `leaderboard` view is left as it was, because the client already
 released decides its "50+" from that view's wins ordering. Once no deployed
 client reads it, it can be dropped.
 
+Supabase's security advisor will list two of these, both deliberate:
+`player_saves` as "RLS enabled, no policy" (there is meant to be no direct
+access at all), and `leaderboard_trophies` as a security-definer view, as it
+already lists `leaderboard` — definer rights are what let it rank across
+every player while exposing only the ranking columns.
+
 Before pushing, replay the whole chain against a scratch PostgreSQL 16 — the
 CI `migrations` job does the same, and it asserts the grants and the
 behaviour (own row only, compare-and-swap, the size cap, ties sharing a rank):

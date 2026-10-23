@@ -526,7 +526,8 @@ const describeLocal = (state, payload) => ({
 });
 
 // Send the store's save from `base` (default: the rev it is in step with).
-async function push(c, { base = null, conflicts = 0 } = {}) {
+// `inner`: sent by a decision, which settles once for the both of them.
+async function push(c, { base = null, conflicts = 0, inner = false } = {}) {
   if (hidden()) {
     flush('hidden');
     return 'flushed';
@@ -571,15 +572,17 @@ async function push(c, { base = null, conflicts = 0 } = {}) {
   if (res.kind === 'ok') {
     // Refused: the account's save moved on. Read it and decide again.
     if (conflicts + 1 >= MAX_CONFLICTS) return retryLater(c, 'decide');
-    return decide(c, 'conflict', conflicts + 1);
+    return decide(c, 'conflict', conflicts + 1, inner);
   }
   if (res.kind === 'unavailable') return markUnavailable(c);
   if (res.kind === 'too-large') return markUnavailable(c, 'too-large');
   return retryLater(c, 'push');
 }
 
-// Read the account's save and act on decideSync's verdict.
-async function decide(c, trigger, conflicts = 0) {
+// Read the account's save and act on decideSync's verdict. Settles (App's
+// gem reconcile) when done, unless `inner`: re-run by a refused write that a
+// decision sent, whose own settle follows.
+async function decide(c, trigger, conflicts = 0, inner = false) {
   if (!c.available) return 'unavailable';
   // Only a tab in front swaps the save, and never under a battle. The next
   // return to the tab, or the battle's result, picks this up.
@@ -610,6 +613,14 @@ async function decide(c, trigger, conflicts = 0) {
   const server = describeServer(res);
   const verdict = decideSync({ local, server, seen: seenHashes(c.uid) });
   resetRetry(c);
+  // One notice per decision, however many refusals it takes to land: the
+  // player needs to hear once that there is another save, not once a race.
+  if (!inner) c.told = false;
+  const tell = (notice) => {
+    if (c.told) return;
+    c.told = true;
+    toast({ queue: true, ...notice });
+  };
 
   let outcome;
   if (verdict.action === 'in-sync') {
@@ -621,13 +632,12 @@ async function decide(c, trigger, conflicts = 0) {
     if (verdict.backup === 'server') {
       writeBackup(c.uid, server.payload);
       setStatus({ backup: backupSummary(c.uid) });
-      toast({
-        queue: true,
+      tell({
         title: 'Two saves didn’t match',
         description: `Kept this device’s save (${summarise(localPayload)}). Your account’s other save is in Settings if you want it back.`,
       });
     }
-    outcome = await push(c, { base: verdict.baseRev, conflicts });
+    outcome = await push(c, { base: verdict.baseRev, conflicts, inner: true });
     if (c !== ctx) return 'stale';
   } else {
     if (verdict.backup === 'local') {
@@ -636,8 +646,7 @@ async function decide(c, trigger, conflicts = 0) {
     }
     adopt(c, server);
     setStatus({ phase: 'saved', savedAt: server.updatedAt ?? Date.now() });
-    toast({
-      queue: true,
+    tell({
       ...(verdict.backup === 'local'
         ? {
           title: 'Two saves didn’t match',
@@ -650,7 +659,7 @@ async function decide(c, trigger, conflicts = 0) {
     });
     outcome = 'adopted';
   }
-  settle(c, outcome);
+  if (!inner) settle(c, outcome);
   return outcome;
 }
 
@@ -798,6 +807,7 @@ export function startCloudSync({ userId, accessToken = null, onSettled = null })
     flushing: null,
     flushedHash: null,
     decisionQueued: null,
+    told: false,
     detach: null,
   };
   ctx = c;

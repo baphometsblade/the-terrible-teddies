@@ -9,6 +9,7 @@ const server = {
   mode: 'ok',        // 'ok' | 'missing' | 'offline' | 'null' | 'lose-answer'
   calls: [],
   reset() {
+    this.afterGet = null;
     this.rows = new Map();
     this.as = null;
     this.mode = 'ok';
@@ -34,11 +35,16 @@ const server = {
     const fail = this.failure();
     if (fail) return fail;
     const row = this.rows.get(this.as);
-    return {
+    const answer = {
       data: row ? { rev: row.rev, save: JSON.parse(JSON.stringify(row.save)), updated_at: row.updated_at } : { rev: 0, save: null, updated_at: null },
       error: null,
       status: 200,
     };
+    // Another device writing just after this read was answered.
+    const after = this.afterGet;
+    this.afterGet = null;
+    after?.();
+    return answer;
   },
   put(save, base, extra = {}) {
     this.calls.push({ fn: 'put', base, save, ...extra });
@@ -410,6 +416,21 @@ describe('signing in', () => {
 });
 
 describe('a refused write', () => {
+  it('in the middle of a decision, decides again and still settles and tells the player once', async () => {
+    const starter = [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42];
+    useGameStore.setState({ ownerUserId: A, level: 20, totalBattles: 200 });
+    server.write(A, played({ level: 4, totalBattles: 1, ownedCards: starter }));
+    // Between this device's read and its write, another device sends rev 2.
+    server.afterGet = () => server.write(A, played({ level: 5, totalBattles: 2, ownedCards: starter }));
+    const { out, settled } = await signIn(A);
+    expect(out).toBe('pushed');
+    expect(server.puts().map((p) => p.base)).toEqual([1, 2]);
+    expect(server.rows.get(A).save.level).toBe(20);
+    expect(readBackup(A).save.level).toBe(5); // the newest of the two it replaced
+    expect(settled).toEqual(['pushed']);
+    expect(toasts).toHaveLength(1);
+  });
+
   it('re-reads and decides again: the account moved on, this device has more → sent on top, other backed up', async () => {
     useGameStore.setState({ ownerUserId: A, level: 5, totalBattles: 40 });
     await signIn(A);
