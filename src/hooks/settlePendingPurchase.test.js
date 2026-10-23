@@ -54,8 +54,11 @@ describe('settling a payment the player left before it confirmed', () => {
     expect(pendingPurchase()?.sessionId).toBe('cs_slow');
   });
 
-  it('drops a refunded or disputed payment without crediting it', async () => {
-    for (const status of ['refunded', 'disputed']) {
+  // refunded_duplicate: a second paid Starter Gem Pack, refunded by the
+  // webhook. It used to read as "not confirmed yet" and was checked on every
+  // return to the tab for a day.
+  it('drops a refunded, refunded-duplicate or disputed payment without crediting it', async () => {
+    for (const status of ['refunded', 'refunded_duplicate', 'disputed']) {
       rememberPendingPurchase('cs_back');
       net.row = { status, gems_granted: 500, bundle_id: 'gems_large' };
       expect(await settlePendingPurchase()).toBe(status);

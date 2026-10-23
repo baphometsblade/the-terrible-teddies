@@ -257,6 +257,24 @@ describe('a payment that was reversed', () => {
     expect(net.checks).toBe(checks);
   });
 
+  // A second paid Starter Gem Pack: the webhook refunds it rather than credit
+  // the offer twice, and records it as refunded_duplicate. Read as anything
+  // else, it would sit at "Waiting for Payment Confirmation" for ten minutes.
+  it('says why a second one-per-account payment was refunded, and stops waiting', async () => {
+    net.row = { status: 'refunded_duplicate', gems_granted: 300, bundle_id: 'starter_bundle' };
+    await render('cs_test_duplicate');
+    expect(text()).toContain('Payment Refunded');
+    expect(text()).toContain('one per account, and this account already has it');
+    expect(text()).toContain('refunded in full');
+    expect(text()).toContain('cs_test_duplicate');
+    expect(text()).not.toContain('Waiting for Payment Confirmation');
+    expect(button('Check now')).toBeUndefined();
+    expect(pendingPurchase()).toBeNull();
+    const checks = net.checks;
+    await wait(60_000);
+    expect(net.checks).toBe(checks);
+  });
+
   it('says a disputed payment\'s gems are off the account until it is settled', async () => {
     net.row = { status: 'disputed', gems_granted: 500, bundle_id: 'gems_large' };
     await render('cs_test_disputed');

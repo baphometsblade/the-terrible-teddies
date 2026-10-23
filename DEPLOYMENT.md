@@ -249,6 +249,14 @@ Point `ALLOWED_ORIGIN` (Supabase secret) at the deployed domain.
 - A won dispute puts the gems back (`restore_gem_purchase`), but only for a
   purchase reversed by a dispute — never one we refunded, which would let the
   customer keep both the money and the goods.
+- The Starter Gem Pack is one per account, even for a buyer with two
+  checkouts open: the checkout function hands back the account's open starter
+  session instead of creating a second (`checkout_holds`), and a second paid
+  one is never credited — `fulfill_gem_purchase` refuses it and the webhook
+  refunds it in full through Stripe (`refunded_duplicate`). Apply
+  `20261023000100_one_starter_per_account.sql` before deploying
+  `create-checkout-session`; until then the starter's checkout answers 503
+  (nothing is charged) while every other bundle sells as before.
 - The client-callable sync RPCs (`sync_battle_result`, `sync_player_level`)
   clamp each call (level +2, coins ≤ 1000 per battle) and are rate limited to
   5 calls a minute per action. That bounds the *rate*, not the total: a

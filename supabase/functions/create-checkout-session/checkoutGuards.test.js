@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import {
   resolveOrigin, lookupBundle, redirectUrls, onePerAccountRefusal, ONE_PER_ACCOUNT_BUNDLES,
+  checkoutExpiry, ONE_PER_ACCOUNT_CHECKOUT_TTL_SECONDS, holdDecision, HOLD_ACTION,
+  isMissingStripeSession, claimOutcome,
 } from './checkoutGuards.js';
 
 const PROD = 'https://terribleteddies.example';
@@ -160,5 +162,108 @@ describe('one Starter Gem Pack per account', () => {
     const refusal = source.indexOf('onePerAccountRefusal(');
     expect(refusal).toBeGreaterThan(-1);
     expect(refusal).toBeLessThan(source.indexOf('stripe.checkout.sessions.create'));
+  });
+
+  // fulfill_gem_purchase refuses a second one in SQL, from its own copy of
+  // the list. Drift either way is silent: a bundle the SQL does not know is
+  // credited twice, one the JS does not know is never offered a hold.
+  it('names the same bundles as the SQL that refuses a second one', () => {
+    const dir = resolve(process.cwd(), 'supabase/migrations');
+    let list = null;
+    for (const file of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) {
+      const sql = readFileSync(resolve(dir, file), 'utf8');
+      const def = sql.match(/FUNCTION\s+(?:public\.)?one_per_account_bundle\s*\([\s\S]*?ANY\s*\(\s*ARRAY\[([^\]]*)\]/i);
+      if (def) list = [...def[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+    }
+    expect(list, 'no migration defines one_per_account_bundle').not.toBeNull();
+    expect([...list].sort()).toEqual([...ONE_PER_ACCOUNT_BUNDLES].sort());
+  });
+});
+
+// A buyer who opened two starter checkouts before paying either could pay
+// both: the refusal above sees only fulfilled purchases. While an account has
+// one open, the function hands that one back.
+describe('one open starter checkout per account', () => {
+  const HOLD = { stripe_session_id: 'cs_open', checkout_url: 'https://checkout.stripe.com/c/pay/cs_open' };
+
+  it('creates one when the account has none open', () => {
+    expect(holdDecision(null, null)).toEqual({ action: HOLD_ACTION.CREATE });
+  });
+
+  it('hands back the open one instead of creating a second', () => {
+    const live = { id: 'cs_open', status: 'open', url: 'https://checkout.stripe.com/c/pay/cs_open#live' };
+    expect(holdDecision(HOLD, live)).toEqual({ action: HOLD_ACTION.REUSE, url: live.url, sessionId: 'cs_open' });
+    // Stripe's own url first; the recorded one if Stripe leaves it out.
+    expect(holdDecision(HOLD, { id: 'cs_open', status: 'open', url: null }).url).toBe(HOLD.checkout_url);
+  });
+
+  it('sells nothing more once that checkout is paid, with the code that marks the offer claimed', () => {
+    expect(holdDecision(HOLD, { id: 'cs_open', status: 'complete', url: null })).toEqual({
+      action: HOLD_ACTION.REFUSE,
+      status: 409,
+      error: expect.stringMatching(/gone through/),
+      code: 'already_purchased',
+    });
+  });
+
+  it('replaces it once Stripe says it expired, or does not know it', () => {
+    expect(holdDecision(HOLD, { id: 'cs_open', status: 'expired', url: null }))
+      .toEqual({ action: HOLD_ACTION.REPLACE, replaces: 'cs_open' });
+    expect(holdDecision(HOLD, null)).toEqual({ action: HOLD_ACTION.REPLACE, replaces: 'cs_open' });
+  });
+
+  it('tells "Stripe has no such session" from a failure worth refusing on', () => {
+    expect(isMissingStripeSession({ code: 'resource_missing' })).toBe(true);
+    expect(isMissingStripeSession({ raw: { code: 'resource_missing' } })).toBe(true);
+    expect(isMissingStripeSession({ statusCode: 404 })).toBe(true);
+    expect(isMissingStripeSession({ type: 'StripeConnectionError' })).toBe(false);
+    expect(isMissingStripeSession(new Error('socket hang up'))).toBe(false);
+    expect(isMissingStripeSession(undefined)).toBe(false);
+  });
+
+  // Two requests at once both find nothing open and both create a session;
+  // the hold's primary key lets one record it. The loser sends its buyer to
+  // the winner's page and expires its own, whose URL it never handed out.
+  it('sends the loser of a race to the winner\'s checkout and expires its own', () => {
+    const created = { id: 'cs_mine', url: 'https://checkout.stripe.com/c/pay/cs_mine' };
+    expect(claimOutcome([{ stripe_session_id: 'cs_mine', checkout_url: created.url, claimed: true }], created))
+      .toEqual({ url: created.url, sessionId: 'cs_mine', expireCreated: false });
+    expect(claimOutcome([{ stripe_session_id: 'cs_open', checkout_url: HOLD.checkout_url, claimed: false }], created))
+      .toEqual({ url: HOLD.checkout_url, sessionId: 'cs_open', expireCreated: true });
+  });
+
+  it('gives no answer, so the caller refuses, when the claim returns nothing usable', () => {
+    const created = { id: 'cs_mine', url: 'https://checkout.stripe.com/c/pay/cs_mine' };
+    for (const rows of [null, [], [{}], [{ claimed: false }], [{ claimed: 'yes' }]]) {
+      expect(claimOutcome(rows, created), JSON.stringify(rows)).toBeNull();
+    }
+  });
+
+  it('gives a starter checkout half an hour (Stripe\'s floor is 30 minutes) and leaves the rest at Stripe\'s default', () => {
+    const now = 1_800_000_000.7;
+    expect(checkoutExpiry('starter_bundle', now)).toBe(1_800_000_000 + ONE_PER_ACCOUNT_CHECKOUT_TTL_SECONDS);
+    expect(ONE_PER_ACCOUNT_CHECKOUT_TTL_SECONDS).toBeGreaterThan(30 * 60);
+    expect(ONE_PER_ACCOUNT_CHECKOUT_TTL_SECONDS).toBeLessThan(60 * 60);
+    for (const id of ['gems_small', 'gems_mega', 'weekly_gem_pass']) expect(checkoutExpiry(id, now), id).toBeUndefined();
+  });
+
+  it('is wired into the function: look up before creating, record after, expire a loser', () => {
+    const source = readFileSync(INDEX_TS, 'utf8');
+    const lookup = source.indexOf('"get_checkout_hold"');
+    const decide = source.indexOf('holdDecision(');
+    const create = source.indexOf('stripe.checkout.sessions.create');
+    const claim = source.indexOf('"claim_checkout_hold"');
+    expect(lookup).toBeGreaterThan(-1);
+    expect(lookup).toBeLessThan(decide);
+    expect(decide).toBeLessThan(create);
+    expect(create).toBeLessThan(claim);
+    expect(source.slice(claim)).toMatch(/claimOutcome\(/);
+    expect(source).toMatch(/expires_at:\s*expiresAt/);
+    expect(source).toMatch(/checkoutExpiry\(bundle_id/);
+    expect(source).toMatch(/stripe\.checkout\.sessions\.expire\(/);
+    // Holds are written with the service role: no client role can touch them.
+    expect(source).toMatch(/serviceClient\s*=\s*createClient\([\s\S]*?SUPABASE_SERVICE_ROLE_KEY/);
+    expect(source).toMatch(/serviceClient\.rpc\("get_checkout_hold"/);
+    expect(source).toMatch(/serviceClient\.rpc\("claim_checkout_hold"/);
   });
 });

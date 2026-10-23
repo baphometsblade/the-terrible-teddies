@@ -109,3 +109,98 @@ export function onePerAccountRefusal(bundleId, priorRows) {
     code: 'already_purchased',
   };
 }
+
+// ── One open checkout per account (checkout_holds) ─────────────────────────
+//
+// The refusal above sees only fulfilled purchases, so a buyer who opened two
+// starter checkouts before paying either could pay both. While an account has
+// a starter checkout open, the function hands back that same session instead
+// of creating a second. The webhook's refund of a second paid starter
+// (stripe-webhook/duplicateRefund.js) is what makes it airtight; this is what
+// keeps a buyer from being charged twice in the first place.
+
+// Stripe's floor for a Checkout Session's expires_at is 30 minutes after it
+// is created; the extra minute absorbs clock skew between this function and
+// Stripe, which would otherwise reject the session. Short on purpose: an
+// abandoned starter checkout stops blocking a new one after half an hour,
+// where Stripe's default is a day.
+export const ONE_PER_ACCOUNT_CHECKOUT_TTL_SECONDS = 31 * 60;
+
+/**
+ * The expires_at (epoch seconds) to create a session with: short for a
+ * one-per-account bundle, Stripe's default (undefined) for the rest.
+ */
+export function checkoutExpiry(bundleId, nowSeconds) {
+  return isOnePerAccount(bundleId) ? Math.floor(nowSeconds) + ONE_PER_ACCOUNT_CHECKOUT_TTL_SECONDS : undefined;
+}
+
+export const HOLD_ACTION = Object.freeze({
+  CREATE: 'create',   // no open checkout: create one
+  REUSE: 'reuse',     // hand back the open one
+  REFUSE: 'refuse',   // it was paid; the webhook is crediting it
+  REPLACE: 'replace', // it is finished without payment: create one in its place
+});
+
+/**
+ * What to do about an account's recorded open checkout.
+ *
+ * @param {{stripe_session_id: string, checkout_url: string}|null} hold
+ *   the live checkout_holds row (get_checkout_hold), or null
+ * @param {{id: string, status: string, url?: string|null}|null} session
+ *   Stripe's copy of that session, or null when Stripe has no such session
+ *   (a test-mode id after a switch to live keys, say)
+ * @returns {{action: string, url?: string, sessionId?: string, replaces?: string,
+ *            status?: number, error?: string, code?: string}}
+ */
+export function holdDecision(hold, session) {
+  if (!hold) return { action: HOLD_ACTION.CREATE };
+  if (!session) return { action: HOLD_ACTION.REPLACE, replaces: hold.stripe_session_id };
+  // Paid (cards only, so complete means paid): sell nothing more. The same
+  // code as the purchases refusal, so the Shop marks the offer claimed.
+  if (session.status === 'complete') {
+    return {
+      action: HOLD_ACTION.REFUSE,
+      status: 409,
+      error: 'Your Starter Gem Pack payment has gone through, and its gems are on their way. It\'s one per account.',
+      code: 'already_purchased',
+    };
+  }
+  // Still open: the same page, however little time it has left. Expiring it
+  // to start a fresh one could pull the page out from under a buyer typing
+  // their card number into it in another tab; if it lapses, the next tap
+  // finds it expired and replaces it.
+  if (session.status === 'open') {
+    const url = session.url || hold.checkout_url;
+    if (url) return { action: HOLD_ACTION.REUSE, url, sessionId: session.id ?? hold.stripe_session_id };
+  }
+  // Expired (or open with no address to send the buyer to): a new one.
+  return { action: HOLD_ACTION.REPLACE, replaces: hold.stripe_session_id };
+}
+
+/**
+ * Whether a Stripe error from retrieving a session means Stripe has no such
+ * session, as against a failure worth refusing on.
+ */
+export function isMissingStripeSession(err) {
+  return err?.code === 'resource_missing' || err?.raw?.code === 'resource_missing' || err?.statusCode === 404;
+}
+
+/**
+ * After creating a session and claiming the hold (claim_checkout_hold): which
+ * session to send the buyer to, and whether the one just created must be
+ * expired because a concurrent request claimed the hold first. That session's
+ * URL was never handed out, so expiring it cannot interrupt anyone.
+ *
+ * @param {object[]|null} claimRows the RPC's rows ([{ stripe_session_id, checkout_url, claimed }])
+ * @param {{id: string, url: string}} created the session this request created
+ * @returns {{url: string, sessionId: string, expireCreated: boolean} | null}
+ *   null when the claim gave no answer, so the caller refuses (and expires
+ *   what it created)
+ */
+export function claimOutcome(claimRows, created) {
+  const row = Array.isArray(claimRows) ? claimRows[0] : null;
+  if (!row || typeof row.claimed !== 'boolean') return null;
+  if (row.claimed) return { url: created.url, sessionId: created.id, expireCreated: false };
+  if (!row.checkout_url || !row.stripe_session_id) return null;
+  return { url: row.checkout_url, sessionId: row.stripe_session_id, expireCreated: true };
+}

@@ -3,12 +3,38 @@ import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
 // Origin allowlisting and bundle lookup are pure decisions, so they live in a
 // module the test suite can import. See checkoutGuards.js.
-import { resolveOrigin, lookupBundle, redirectUrls, isOnePerAccount, onePerAccountRefusal } from "./checkoutGuards.js";
+import {
+  resolveOrigin, lookupBundle, redirectUrls, isOnePerAccount, onePerAccountRefusal,
+  checkoutExpiry, holdDecision, HOLD_ACTION, isMissingStripeSession, claimOutcome,
+} from "./checkoutGuards.js";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   apiVersion: "2023-10-16",
   httpClient: Stripe.createFetchHttpClient(),
 });
+
+// The account's open one-per-account checkout (checkout_holds) is read and
+// written with the service role. No client role may touch that table, so a
+// buyer cannot clear their own hold to open a second starter checkout.
+const serviceClient = createClient(
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+);
+
+// Nothing is charged by saying no, so every check below that cannot be
+// completed refuses rather than sells.
+const NOT_CHARGED_RETRY = "Couldn't start checkout. You haven't been charged — please try again.";
+
+// Expire a session this request created but will not hand out. Its URL was
+// never sent anywhere, so nobody can be paying in it; if expiring fails it
+// simply lapses at its own expires_at.
+const expireUnsent = async (sessionId: string) => {
+  try {
+    await stripe.checkout.sessions.expire(sessionId);
+  } catch (err) {
+    console.error("Could not expire an unsent checkout session:", sessionId, err);
+  }
+};
 
 const GEM_BUNDLES: Record<string, { gems: number; bonus: number; price: number; name: string }> = {
   gems_small:        { gems: 50,   bonus: 0,   price: 99,   name: "50 Gems" },
@@ -100,6 +126,10 @@ serve(async (req) => {
       );
     }
 
+    // The finished checkout (expired, or unknown to Stripe) that a new one for
+    // a one-per-account bundle may take the place of.
+    let replacesHold: string | null = null;
+
     // One per account (the Starter Gem Pack). Read with the buyer's own JWT:
     // purchases_select_own lets an account see exactly its own rows, which is
     // all this needs. A failed read refuses rather than sells, because the
@@ -124,6 +154,50 @@ serve(async (req) => {
           { status: refusal.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      // Purchases only show a payment once it is fulfilled, so a buyer with a
+      // starter checkout already open (another tab, or Back to the Shop) used
+      // to get a second one and could pay both. Hand back the open one.
+      const { data: holdRows, error: holdError } = await serviceClient.rpc("get_checkout_hold", {
+        p_user_id: user.id,
+        p_bundle_id: bundle_id,
+      });
+      if (holdError) {
+        console.error("Open-checkout read failed:", holdError);
+        return new Response(
+          JSON.stringify({ error: NOT_CHARGED_RETRY }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const hold = Array.isArray(holdRows) ? holdRows[0] ?? null : null;
+      let heldSession: Stripe.Checkout.Session | null = null;
+      if (hold) {
+        try {
+          heldSession = await stripe.checkout.sessions.retrieve(hold.stripe_session_id);
+        } catch (err) {
+          if (!isMissingStripeSession(err)) {
+            console.error("Open-checkout lookup at Stripe failed:", hold.stripe_session_id, err);
+            return new Response(
+              JSON.stringify({ error: NOT_CHARGED_RETRY }),
+              { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+      }
+      const decision = holdDecision(hold, heldSession);
+      if (decision.action === HOLD_ACTION.REUSE) {
+        return new Response(
+          JSON.stringify({ url: decision.url, session_id: decision.sessionId, reused: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (decision.action === HOLD_ACTION.REFUSE) {
+        return new Response(
+          JSON.stringify({ error: decision.error, code: decision.code }),
+          { status: decision.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      replacesHold = decision.replaces ?? null;
     }
 
     // Validate origin is in allowlist — prevent open redirect
@@ -136,8 +210,12 @@ serve(async (req) => {
     }
 
     const totalGems = bundle.gems + bundle.bonus;
+    // Half an hour for a one-per-account bundle, so an abandoned checkout
+    // stops standing in for a new one quickly; Stripe's default otherwise.
+    const expiresAt = checkoutExpiry(bundle_id, Date.now() / 1000);
 
     const session = await stripe.checkout.sessions.create({
+      ...(expiresAt ? { expires_at: expiresAt } : {}),
       payment_method_types: ["card"],
       line_items: [
         {
@@ -163,6 +241,33 @@ serve(async (req) => {
         total_gems: String(totalGems),
       },
     });
+
+    if (isOnePerAccount(bundle_id)) {
+      // Record it as the account's open checkout. A request racing this one
+      // may have recorded its own first; then that one is the buyer's, and
+      // the session just created is expired unsent.
+      const { data: claimRows, error: claimError } = await serviceClient.rpc("claim_checkout_hold", {
+        p_user_id: user.id,
+        p_bundle_id: bundle_id,
+        p_session_id: session.id,
+        p_checkout_url: session.url,
+        p_expires_at: new Date(session.expires_at * 1000).toISOString(),
+        p_replaces: replacesHold,
+      });
+      const outcome = claimError ? null : claimOutcome(claimRows, session);
+      if (!outcome || outcome.expireCreated) await expireUnsent(session.id);
+      if (!outcome) {
+        console.error("Open-checkout claim failed:", claimError ?? claimRows, session.id);
+        return new Response(
+          JSON.stringify({ error: NOT_CHARGED_RETRY }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      return new Response(
+        JSON.stringify({ url: outcome.url, session_id: outcome.sessionId, ...(outcome.expireCreated ? { reused: true } : {}) }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
       JSON.stringify({ url: session.url, session_id: session.id }),

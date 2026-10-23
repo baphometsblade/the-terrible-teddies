@@ -161,6 +161,38 @@ of the screen whose job is covering a round-trip.
   to a question with no side effects, which is to say unit-testable. Add a
   branch here, add a case to `eventRouting.test.js`; there is no Deno in CI, so
   this is the only gate that covers it.
+- **One Starter Gem Pack per account** (`ONE_PER_ACCOUNT_BUNDLES` in
+  `checkoutGuards.js`, mirrored by `one_per_account_bundle()` in SQL;
+  `checkoutGuards.test.js` fails if the two lists drift). Three layers, from
+  `20261023000100_one_starter_per_account.sql`:
+  1. `create-checkout-session` refuses (409 `already_purchased`) once the
+     account's purchases hold one (`completed` or `disputed`).
+  2. Purchases only show a payment once it is fulfilled, so a buyer with two
+     starter checkouts open could pay both. `checkout_holds` records the
+     account's open starter session (service role only; no client role can
+     touch it). While Stripe says it is `open`, the function hands back that
+     same URL; `complete` answers 409; `expired`, or unknown to Stripe, is
+     replaced. Starter sessions get `expires_at` 31 minutes out (Stripe's floor
+     is 30), so an abandoned one frees up quickly. Two requests racing both
+     create a session; the hold's primary key lets one record it, and the
+     other expires its own (never handed out) and returns the winner's.
+  3. The airtight one: `fulfill_gem_purchase` takes a per-account advisory
+     lock and RAISEs `PT409` (`one_per_account_already_held`) for a second
+     starter. The webhook (`stripe-webhook/duplicateRefund.js`, pure and
+     tested) recognises it, refunds the whole payment through Stripe
+     (idempotency key per session; `charge_already_refunded` counts as done),
+     then records the row as `refunded_duplicate` (no gems). Refund first,
+     record second, 500 on either failing, so Stripe's redelivery finishes the
+     job. It RAISEs rather than returns so that a webhook deployed before the
+     migration answers 500 and keeps the event alive, instead of acking a paid
+     session with no gems and no refund. `refunded_duplicate` is neither
+     reversible nor restorable, does not hold the offer, and PurchaseSuccess
+     tells the buyer why they were refunded. `scripts/check-migrations.sh`
+     runs two overlapping fulfilments to pin the lock (without it: 600 gems).
+  Apply the migration before deploying `create-checkout-session`: its hold
+  lookups fail closed (503, "you haven't been charged") for the starter until
+  the SQL exists. It also needs `SUPABASE_SERVICE_ROLE_KEY`, which hosted edge
+  functions get by default.
 - `src/utils/stripe.js` — `redirectToStripeCheckout(bundleId)` gets user's JWT and calls edge function
 - `src/components/PurchaseSuccess.jsx` — polls for webhook completion after return from Stripe
 

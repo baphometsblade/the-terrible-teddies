@@ -53,6 +53,7 @@ const PHASE_LOOK = {
   success: { metal: RARITY_METAL.legendary, light: 'rgba(251, 191, 36, 0.3)' },
   pending: { metal: RARITY_METAL.epic, light: 'rgba(192, 132, 252, 0.18)' },
   refunded: { metal: RARITY_METAL.common, light: 'rgba(129, 140, 248, 0.14)' },
+  duplicate: { metal: RARITY_METAL.common, light: 'rgba(129, 140, 248, 0.14)' },
   disputed: { metal: RARITY_METAL.common, light: 'rgba(129, 140, 248, 0.14)' },
   error: { metal: RARITY_METAL.common, light: 'rgba(129, 140, 248, 0.14)' },
 };
@@ -61,6 +62,7 @@ const PHASE_LOOK = {
 const SUPPORT_SUBJECT = {
   pending: 'Gems not received',
   refunded: 'Refunded payment',
+  duplicate: 'Refunded payment',
   disputed: 'Disputed payment',
   error: 'Gems not received',
 };
@@ -98,7 +100,7 @@ const PaymentReference = ({ sessionId, phase }) => {
 
 const PurchaseSuccess = ({ sessionId, onDone }) => {
   const { reconcileServerGems } = useGameStore();
-  const [phase, setPhase] = useState('verifying'); // verifying | success | pending | refunded | disputed | error
+  const [phase, setPhase] = useState('verifying'); // verifying | success | pending | refunded | duplicate | disputed | error
   // The background checks have run their course (see pendingPollDelay).
   const [stalled, setStalled] = useState(false);
   // A "Check now" in flight, and when the last one came back still pending.
@@ -193,6 +195,11 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
         // appear" (what any non-completed row used to be told) is false.
         forgetPendingPurchase(sessionId);
         setPhase(purchase.status);
+      } else if (purchase && purchase.status === 'refunded_duplicate') {
+        // A second payment for a one-per-account offer (two checkouts, both
+        // paid): the webhook refunded it in full rather than credit it twice.
+        forgetPendingPurchase(sessionId);
+        setPhase('duplicate');
       } else {
         // Not confirmed yet; the marker set on arrival stays.
         setPhase('pending');
@@ -366,7 +373,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
             {phase === 'verifying' && <Gem className="h-8 w-8 text-fuchsia-300" strokeWidth={1.75} />}
             {phase === 'success' && <Gem className="h-9 w-9 text-brass-300" strokeWidth={1.75} />}
             {phase === 'pending' && <Hourglass className="h-9 w-9 text-fuchsia-300" strokeWidth={1.75} />}
-            {phase === 'refunded' && <Undo2 className="h-9 w-9 text-plush-200" strokeWidth={1.75} />}
+            {(phase === 'refunded' || phase === 'duplicate') && <Undo2 className="h-9 w-9 text-plush-200" strokeWidth={1.75} />}
             {phase === 'disputed' && <ShieldAlert className="h-9 w-9 text-plush-200" strokeWidth={1.75} />}
             {phase === 'error' && <CircleAlert className="h-9 w-9 text-plush-200" strokeWidth={1.75} />}
           </div>
@@ -472,6 +479,23 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
               This payment was refunded, so its gems aren&apos;t on your account.
             </p>
             <PaymentReference sessionId={sessionId} phase="refunded" />
+            <button ref={primaryRef} type="button" onClick={onDone} className={`${ACTION} btn-glass px-6 text-base`}>
+              Return to Game
+            </button>
+          </div>
+        )}
+
+        {phase === 'duplicate' && (
+          <div className="relative">
+            <h2 className="font-display text-3xl font-extrabold leading-tight text-white mb-2">Payment Refunded</h2>
+            {/* What stripe-webhook does with a second paid one-per-account
+                offer: refunds the whole payment (refunds.create with no
+                amount) and credits nothing. */}
+            <p className="text-plush-200 mb-5">
+              This offer is one per account, and this account already has it, so this payment was refunded in full.
+              No gems were added for it.
+            </p>
+            <PaymentReference sessionId={sessionId} phase="duplicate" />
             <button ref={primaryRef} type="button" onClick={onDone} className={`${ACTION} btn-glass px-6 text-base`}>
               Return to Game
             </button>

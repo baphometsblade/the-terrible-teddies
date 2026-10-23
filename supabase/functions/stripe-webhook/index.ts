@@ -5,6 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
 // can be unit tested. See eventRouting.js; every branch it owns has been wrong
 // at least once.
 import { ACTION, routeEvent, reversalNotFoundAction, paymentIntentId } from "./eventRouting.js";
+// A second paid Starter Gem Pack is refunded, not credited. See duplicateRefund.js.
+import { isOnePerAccountRefusal, duplicateRefundRequest, refundAlreadyMade } from "./duplicateRefund.js";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   apiVersion: "2023-10-16",
@@ -32,6 +34,46 @@ const GEM_BUNDLES: Record<string, { gems: number; bonus: number; price: number }
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
+
+// A paid session fulfill_gem_purchase refused because the account already
+// holds the bundle: refund it in full, then record it ('refunded_duplicate',
+// no gems). Every failure answers 500, so Stripe redelivers and the next
+// delivery picks up where this one stopped; the refund is idempotent by key
+// (and a refund Stripe already made counts as done), the record by session id.
+async function refundDuplicate(
+  session: Stripe.Checkout.Session,
+  { userId, bundleId, totalGems }: { userId: string; bundleId: string; totalGems: number },
+): Promise<Response> {
+  const request = duplicateRefundRequest(session, { userId, bundleId });
+  if (!request) {
+    console.error("Duplicate one-per-account payment with no payment_intent — cannot refund:", session.id);
+    return new Response("Duplicate purchase could not be refunded", { status: 500 });
+  }
+
+  try {
+    await stripe.refunds.create(request.params as Stripe.RefundCreateParams, request.options);
+  } catch (err) {
+    if (!refundAlreadyMade(err)) {
+      console.error("Refund of duplicate one-per-account payment failed:", err, session.id);
+      return new Response("Duplicate refund failed", { status: 500 });
+    }
+  }
+
+  const { data: outcome, error: recordError } = await supabase.rpc("record_refunded_duplicate", {
+    p_user_id: userId,
+    p_bundle_id: bundleId,
+    p_gems: totalGems,
+    p_session_id: session.id,
+    p_amount: session.amount_total ?? 0,
+    p_payment_intent: request.params.payment_intent,
+  });
+  if (recordError) {
+    console.error("Refunded a duplicate but could not record it:", recordError, session.id);
+    return new Response("Duplicate refund not recorded", { status: 500 });
+  }
+  console.log("Refunded a second one-per-account purchase:", bundleId, session.id, outcome);
+  return json({ received: true, outcome: "refunded_duplicate" });
+}
 
 serve(async (req) => {
   const signature = req.headers.get("Stripe-Signature");
@@ -127,6 +169,11 @@ serve(async (req) => {
         p_amount: session.amount_total ?? 0,
         p_payment_intent: paymentIntentId(session.payment_intent),
       });
+      if (rpcError && isOnePerAccountRefusal(rpcError)) {
+        // The account already holds this one-per-account bundle (two starter
+        // checkouts, both paid). Nothing was credited; give the money back.
+        return await refundDuplicate(session, { userId, bundleId, totalGems });
+      }
       if (rpcError) {
         // Return 500 so Stripe retries; nothing was committed.
         console.error("Fulfillment failed:", rpcError, session.id);

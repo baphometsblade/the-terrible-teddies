@@ -221,6 +221,20 @@ test('a refunded payment says no gems were added, and does not wait for any', as
   await expectNoAxeViolations(page, 'refunded purchase');
 });
 
+// Two starter checkouts, both paid: the webhook refunds the second rather than
+// credit the offer twice, and the buyer returning from it is told why.
+test('a second Starter Gem Pack payment says it was refunded because the account has one', async ({ page }) => {
+  await stubPurchase(page, { ...ROW, bundle_id: 'starter_bundle', gems_granted: 300, status: 'refunded_duplicate' });
+  const dialog = await returnFromCheckout(page, 'cs_test_duplicate');
+  await expect(dialog.getByRole('heading', { name: 'Payment Refunded' })).toBeVisible(SLOW);
+  await expect(dialog).toContainText('one per account, and this account already has it');
+  await expect(dialog).toContainText('refunded in full');
+  await expect(dialog.getByRole('button', { name: 'Check now' })).toHaveCount(0);
+  await expect(dialog.getByText('cs_test_duplicate')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Return to Game' })).toBeFocused();
+  await expectNoAxeViolations(page, 'refunded duplicate purchase');
+});
+
 test('gems from a payment that confirms after the screen is closed land on the next return to the tab', async ({ page }) => {
   const stub = await stubPurchase(page, null);
   const dialog = await returnFromCheckout(page, 'cs_test_late');

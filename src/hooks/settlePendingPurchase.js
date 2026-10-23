@@ -23,7 +23,7 @@ let inFlight = null;
  * high-water mark (so a second settle, or the purchase screen doing the same,
  * adds nothing), and it is bound to the account the balance was read for.
  *
- * @returns {Promise<'none'|'on-screen'|'signed-out'|'pending'|'credited'|'unconfirmed'|'other-account'|'refunded'|'disputed'>}
+ * @returns {Promise<'none'|'on-screen'|'signed-out'|'pending'|'credited'|'unconfirmed'|'other-account'|'refunded'|'refunded_duplicate'|'disputed'>}
  */
 export function settlePendingPurchase() {
   // focus and visibilitychange arrive together: one check, not two.
@@ -43,7 +43,9 @@ async function settle() {
   if (!uid) return 'signed-out';
 
   const purchase = await verifyPurchaseSession(pending.sessionId, 1);
-  if (!purchase || !['completed', 'refunded', 'disputed'].includes(purchase.status)) return 'pending';
+  // refunded_duplicate: a second paid one-per-account offer, refunded by the
+  // webhook instead of credited. Settled, with nothing to credit.
+  if (!purchase || !['completed', 'refunded', 'refunded_duplicate', 'disputed'].includes(purchase.status)) return 'pending';
 
   if (purchase.status !== 'completed') {
     forgetPendingPurchase(pending.sessionId);

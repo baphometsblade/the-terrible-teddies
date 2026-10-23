@@ -690,4 +690,182 @@ BEGIN
 END $$;
 SQL
 
+# ---------------------------------------------------------------------------
+# 20261023000100_one_starter_per_account.sql
+# ---------------------------------------------------------------------------
+echo "==> Asserting one Starter Gem Pack per account: open checkouts and fulfilment"
+"${PSQL[@]}" <<'SQL'
+-- A buyer with two starter checkouts open could pay both: the checkout guard
+-- only sees fulfilled rows. checkout_holds keeps one open session per account,
+-- and fulfill_gem_purchase refuses (PT409) a second starter so the webhook
+-- refunds it. These execute every branch the edge functions rely on, as the
+-- role that would call it.
+DO $$
+DECLARE
+  v_buyer  UUID := '5ca1ab1e-0000-4000-8000-000000000001';
+  v_other  UUID := '5ca1ab1e-0000-4000-8000-000000000002';
+  v_out    TEXT;
+  v_gems   INTEGER;
+  v_rows   INTEGER;
+  v_hold   RECORD;
+  v_raised BOOLEAN;
+  fn       TEXT;
+BEGIN
+  INSERT INTO auth.users(id) VALUES (v_buyer), (v_other) ON CONFLICT DO NOTHING;
+
+  -- (1) Server-only: no client role may execute the hold or refund functions,
+  --     nor touch the table (RLS is on with no policy, and nothing is granted).
+  FOR fn IN SELECT unnest(ARRAY['get_checkout_hold','claim_checkout_hold','record_refunded_duplicate','one_per_account_bundle'])
+  LOOP
+    IF EXISTS (
+      SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public' AND p.proname = fn
+        AND (has_function_privilege('anon', p.oid, 'EXECUTE') OR has_function_privilege('authenticated', p.oid, 'EXECUTE'))
+    ) THEN RAISE EXCEPTION 'a client role can EXECUTE %', fn; END IF;
+  END LOOP;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.role_table_grants
+    WHERE table_name = 'checkout_holds' AND grantee IN ('anon','authenticated')
+  ) THEN RAISE EXCEPTION 'anon/authenticated hold a privilege on checkout_holds'; END IF;
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.checkout_holds'::regclass) THEN
+    RAISE EXCEPTION 'checkout_holds has RLS off';
+  END IF;
+  -- ...and executing as one is refused, not just absent from the grant table.
+  v_raised := FALSE;
+  BEGIN
+    PERFORM set_config('request.jwt.claims',
+      json_build_object('sub', v_buyer::text, 'role', 'authenticated')::text, true);
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM claim_checkout_hold(v_buyer, 'starter_bundle', 'cs_forged', 'https://evil.test', NOW() + interval '1 day');
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_raised := TRUE;
+  END;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', '', true);
+  IF NOT v_raised THEN RAISE EXCEPTION 'an authenticated caller could claim a checkout hold'; END IF;
+
+  -- (2) The first open checkout is the account's; a second is told about it.
+  SELECT * INTO v_hold FROM claim_checkout_hold(v_buyer, 'starter_bundle', 'cs_hold_1', 'https://checkout.stripe.com/c/1', NOW() + interval '31 minutes');
+  IF NOT v_hold.claimed OR v_hold.stripe_session_id <> 'cs_hold_1' THEN
+    RAISE EXCEPTION 'the first starter checkout was not recorded (%)', row_to_json(v_hold);
+  END IF;
+  SELECT * INTO v_hold FROM claim_checkout_hold(v_buyer, 'starter_bundle', 'cs_hold_2', 'https://checkout.stripe.com/c/2', NOW() + interval '31 minutes');
+  IF v_hold.claimed OR v_hold.stripe_session_id <> 'cs_hold_1' OR v_hold.checkout_url <> 'https://checkout.stripe.com/c/1' THEN
+    RAISE EXCEPTION 'a second open starter checkout replaced the first (%)', row_to_json(v_hold);
+  END IF;
+  SELECT * INTO v_hold FROM get_checkout_hold(v_buyer, 'starter_bundle');
+  IF v_hold.stripe_session_id IS DISTINCT FROM 'cs_hold_1' THEN
+    RAISE EXCEPTION 'get_checkout_hold did not return the open checkout (%)', row_to_json(v_hold);
+  END IF;
+  -- Another account's checkout is its own.
+  SELECT * INTO v_hold FROM claim_checkout_hold(v_other, 'starter_bundle', 'cs_hold_other', 'https://checkout.stripe.com/c/o', NOW() + interval '31 minutes');
+  IF NOT v_hold.claimed THEN RAISE EXCEPTION 'one account''s hold blocked another account'; END IF;
+
+  -- (3) It gives way only to the session the caller confirmed finished, or
+  --     once it has expired.
+  SELECT * INTO v_hold FROM claim_checkout_hold(v_buyer, 'starter_bundle', 'cs_hold_3', 'https://checkout.stripe.com/c/3', NOW() + interval '31 minutes', 'cs_not_the_hold');
+  IF v_hold.claimed THEN RAISE EXCEPTION 'p_replaces naming another session displaced the hold'; END IF;
+  SELECT * INTO v_hold FROM claim_checkout_hold(v_buyer, 'starter_bundle', 'cs_hold_3', 'https://checkout.stripe.com/c/3', NOW() + interval '31 minutes', 'cs_hold_1');
+  IF NOT v_hold.claimed OR v_hold.stripe_session_id <> 'cs_hold_3' THEN
+    RAISE EXCEPTION 'a finished session could not be replaced (%)', row_to_json(v_hold);
+  END IF;
+  UPDATE checkout_holds SET expires_at = NOW() - interval '1 minute' WHERE user_id = v_buyer;
+  SELECT count(*) INTO v_rows FROM get_checkout_hold(v_buyer, 'starter_bundle');
+  IF v_rows <> 0 THEN RAISE EXCEPTION 'get_checkout_hold returned an expired checkout'; END IF;
+  SELECT * INTO v_hold FROM claim_checkout_hold(v_buyer, 'starter_bundle', 'cs_hold_4', 'https://checkout.stripe.com/c/4', NOW() + interval '31 minutes');
+  IF NOT v_hold.claimed THEN RAISE EXCEPTION 'an expired hold was not replaced'; END IF;
+  -- Holds are only for one-per-account bundles.
+  v_raised := FALSE;
+  BEGIN
+    PERFORM claim_checkout_hold(v_buyer, 'gems_small', 'cs_hold_small', 'https://checkout.stripe.com/c/s', NOW() + interval '1 hour');
+  EXCEPTION WHEN OTHERS THEN v_raised := TRUE;
+  END;
+  IF NOT v_raised THEN RAISE EXCEPTION 'claim_checkout_hold accepted an ordinary bundle'; END IF;
+
+  -- (4) Fulfilment: the first starter credits, a second paid one is refused
+  --     with PT409 and credits nothing, and a replay of the first is harmless.
+  SELECT fulfill_gem_purchase(v_buyer, 'starter_bundle', 300, 'cs_dup_first', 499, 'pi_dup_first') INTO v_out;
+  IF v_out <> 'credited' THEN RAISE EXCEPTION 'the first starter was not credited (%)', v_out; END IF;
+  v_raised := FALSE;
+  BEGIN
+    PERFORM fulfill_gem_purchase(v_buyer, 'starter_bundle', 300, 'cs_dup_second', 499, 'pi_dup_second');
+  EXCEPTION WHEN SQLSTATE 'PT409' THEN
+    v_raised := TRUE;
+  END;
+  SELECT gems INTO v_gems FROM user_gems WHERE user_id = v_buyer;
+  IF NOT v_raised THEN RAISE EXCEPTION 'a second paid starter was not refused with PT409'; END IF;
+  IF v_gems <> 300 THEN RAISE EXCEPTION 'a second starter changed the balance (gems=%)', v_gems; END IF;
+  IF EXISTS (SELECT 1 FROM purchases WHERE stripe_session_id = 'cs_dup_second') THEN
+    RAISE EXCEPTION 'the refused starter left a purchases row behind';
+  END IF;
+  SELECT fulfill_gem_purchase(v_buyer, 'starter_bundle', 300, 'cs_dup_first', 499, 'pi_dup_first') INTO v_out;
+  IF v_out <> 'duplicate' THEN RAISE EXCEPTION 'a replay of the credited starter was not a duplicate (%)', v_out; END IF;
+
+  -- (5) The refund is recorded once, credits nothing, and leaves the rest of
+  --     the money path alone: replays say duplicate, Stripe's charge.refunded
+  --     for it finds nothing to reverse, and it can never be restored.
+  SELECT record_refunded_duplicate(v_buyer, 'starter_bundle', 300, 'cs_dup_second', 499, 'pi_dup_second') INTO v_out;
+  IF v_out <> 'recorded' THEN RAISE EXCEPTION 'the refunded duplicate was not recorded (%)', v_out; END IF;
+  SELECT record_refunded_duplicate(v_buyer, 'starter_bundle', 300, 'cs_dup_second', 499, 'pi_dup_second') INTO v_out;
+  IF v_out <> 'duplicate' THEN RAISE EXCEPTION 'recording the refund twice wrote twice (%)', v_out; END IF;
+  SELECT fulfill_gem_purchase(v_buyer, 'starter_bundle', 300, 'cs_dup_second', 499, 'pi_dup_second') INTO v_out;
+  IF v_out <> 'duplicate' THEN RAISE EXCEPTION 'a replay of the refunded starter was not a duplicate (%)', v_out; END IF;
+  SELECT reverse_gem_purchase('pi_dup_second', 'refunded') INTO v_out;
+  IF v_out <> 'already_reversed' THEN RAISE EXCEPTION 'the duplicate''s own refund event reversed something (%)', v_out; END IF;
+  SELECT restore_gem_purchase('pi_dup_second') INTO v_out;
+  IF v_out <> 'not_reversed' THEN RAISE EXCEPTION 'a refunded duplicate was restorable (%)', v_out; END IF;
+  SELECT gems INTO v_gems FROM user_gems WHERE user_id = v_buyer;
+  IF v_gems <> 300 THEN RAISE EXCEPTION 'recording the duplicate moved gems (gems=%)', v_gems; END IF;
+  -- The buyer can read that row (the purchase screen explains the refund).
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_buyer::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO v_rows FROM public.purchases WHERE stripe_session_id = 'cs_dup_second' AND status = 'refunded_duplicate';
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', '', true);
+  IF v_rows <> 1 THEN RAISE EXCEPTION 'the buyer cannot read their refunded duplicate (saw %)', v_rows; END IF;
+
+  -- (6) What holds the one, as checkoutGuards.js counts it: a disputed
+  --     starter still does (a won dispute restores it), a refunded one frees it.
+  UPDATE purchases SET status = 'disputed' WHERE stripe_session_id = 'cs_dup_first';
+  v_raised := FALSE;
+  BEGIN
+    PERFORM fulfill_gem_purchase(v_buyer, 'starter_bundle', 300, 'cs_dup_third', 499, 'pi_dup_third');
+  EXCEPTION WHEN SQLSTATE 'PT409' THEN v_raised := TRUE;
+  END;
+  IF NOT v_raised THEN RAISE EXCEPTION 'a starter bought during a dispute was credited'; END IF;
+  UPDATE purchases SET status = 'refunded' WHERE stripe_session_id = 'cs_dup_first';
+  SELECT fulfill_gem_purchase(v_buyer, 'starter_bundle', 300, 'cs_dup_fourth', 499, 'pi_dup_fourth') INTO v_out;
+  IF v_out <> 'credited' THEN RAISE EXCEPTION 'a starter after a refunded one was refused (%)', v_out; END IF;
+
+  -- (7) Ordinary bundles are never limited.
+  SELECT fulfill_gem_purchase(v_other, 'gems_small', 50, 'cs_small_1', 99, 'pi_small_1') INTO v_out;
+  IF v_out <> 'credited' THEN RAISE EXCEPTION 'an ordinary bundle was refused (%)', v_out; END IF;
+  SELECT fulfill_gem_purchase(v_other, 'gems_small', 50, 'cs_small_2', 99, 'pi_small_2') INTO v_out;
+  IF v_out <> 'credited' THEN RAISE EXCEPTION 'a second ordinary bundle was refused (%)', v_out; END IF;
+
+  RAISE NOTICE 'one-starter-per-account assertions passed';
+END $$;
+SQL
+
+echo "==> Asserting two overlapping starter fulfilments cannot both credit"
+# The case the advisory lock exists for, run as it happens: two webhook
+# deliveries for two paid starter sessions of one account, in flight at once.
+# A credits and holds its transaction open; B starts meanwhile. Without the
+# lock B cannot see A's uncommitted row and credits a second starter (verified:
+# 600 gems, two 'completed' rows); with it B waits for A and is refused.
+CONC_USER='c0ffee00-0000-4000-8000-000000000001'
+"${PSQL[@]}" -c "INSERT INTO auth.users(id) VALUES ('$CONC_USER') ON CONFLICT DO NOTHING;"
+"${PSQL[@]}" -c "BEGIN; SELECT fulfill_gem_purchase('$CONC_USER', 'starter_bundle', 300, 'cs_conc_a', 499, 'pi_conc_a'); SELECT pg_sleep(3); COMMIT;" >/dev/null &
+CONC_A=$!
+sleep 1
+CONC_B_OUT=$(psql "$DB" -q -t -A -c "SELECT fulfill_gem_purchase('$CONC_USER', 'starter_bundle', 300, 'cs_conc_b', 499, 'pi_conc_b');" 2>&1 || true)
+wait "$CONC_A"
+CONC_GEMS=$(psql "$DB" -q -t -A -c "SELECT gems FROM user_gems WHERE user_id = '$CONC_USER';")
+if [ "$CONC_GEMS" != "300" ] || ! grep -q one_per_account_already_held <<<"$CONC_B_OUT"; then
+  echo "    FAIL overlapping starter fulfilments: gems=$CONC_GEMS, second said: $CONC_B_OUT"
+  exit 1
+fi
+echo "    ok   the second waited for the first and was refused"
+
 echo "==> Migrations apply cleanly and the security properties hold"
