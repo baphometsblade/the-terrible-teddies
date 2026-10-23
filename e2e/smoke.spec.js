@@ -691,6 +691,32 @@ test('concede shows the defeat dialog and Play Again deals a fresh game', async 
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
 });
 
+test('the battle log opens with one intro, on a first game and on Play Again', async ({ page }) => {
+  // The deal ran twice under React StrictMode (the dev server, which this
+  // suite runs against by default) and appended its intro each time, so the
+  // log opened with two "slams his deck" lines naming two different crews —
+  // one from a throwaway deal that was not the one in play. The deal now
+  // starts the log fresh. Under the production build StrictMode does not
+  // double-invoke, so there this is only a sanity check.
+  const log = page.locator('[role="log"][aria-live="polite"] > *');
+  const intros = log.filter({ hasText: 'slams his deck' });
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  await expect(intros).toHaveCount(1);
+  await expect(log.filter({ hasText: 'Your turn. Make it hurt.' })).toHaveCount(1);
+
+  await page.getByRole('button', { name: /Concede/ }).click();
+  await page.getByRole('dialog', { name: 'Concede this battle?' })
+    .getByRole('button', { name: 'Concede — counts as a loss' }).click();
+  const defeat = page.getByRole('dialog', { name: 'Defeat' });
+  await defeat.getByRole('button', { name: 'Play Again' }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  await expect(intros).toHaveCount(1);
+  // The last game's lines are gone too.
+  await expect(log.filter({ hasText: 'You conceded' })).toHaveCount(0);
+});
+
 test('Escape closes only the innermost layer of nested dialogs', async ({ page }) => {
   await page.getByRole('button', { name: 'Battle Pass', exact: true }).click();
   const pass = page.getByRole('dialog', { name: /battle pass/i });

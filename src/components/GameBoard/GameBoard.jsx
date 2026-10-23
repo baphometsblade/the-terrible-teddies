@@ -664,6 +664,13 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     const id = logIdRef.current;
     setBattleLog(prev => [...prev.slice(-9), { id, message }]);
   }, []);
+  // Replace the log outright, for the start of a game.
+  const startBattleLog = useCallback((messages) => {
+    setBattleLog(messages.map((message) => {
+      logIdRef.current += 1;
+      return { id: logIdRef.current, message };
+    }));
+  }, []);
 
   // Initialize decks
   useEffect(() => {
@@ -714,11 +721,18 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setOpponentField([{ ...withHp(initialOpponentDeck[0]), summoningSick: true }]);
     setOpponentDeck(initialOpponentDeck.slice(1));
 
-    addToBattleLog(`${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`);
-    addToBattleLog("Your turn. Make it hurt.");
+    // A fresh log at every deal, rather than appending to whatever is there.
+    // Everything above replaces state, so this effect can run twice and end
+    // the same — and in development it does: StrictMode mounts, unmounts and
+    // remounts, and appending showed the intro twice, the first copy naming
+    // a crew from the throwaway deal that is not the one in play.
+    startBattleLog([
+      `${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`,
+      'Your turn. Make it hurt.',
+    ]);
     setDeckReady(true);
     speak('gameStart');
-  }, [addToBattleLog, currentDeck, aiDifficulty, gameId, speak]);
+  }, [startBattleLog, currentDeck, aiDifficulty, gameId, speak]);
 
   // Check for game over. Opponent death is checked first so that a simultaneous
   // lethal (both reach 0 in the same commit) counts as a win for the player who
