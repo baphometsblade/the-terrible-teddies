@@ -344,8 +344,11 @@ const StatusChip = ({ children }) => (
   </div>
 );
 
+// Untracked: the rows are scaled to fit the felt (0.64 on a 320px phone), and
+// letter-spaced capitals that small split apart at 1x, as the card's old 6px
+// rarity line did ("COMM ON").
 const StealthBand = () => (
-  <div className="absolute inset-x-0 top-[27px] z-10 flex items-center justify-center gap-1 bg-purple-700/90 py-0.5 text-[9px] font-bold tracking-[0.12em] text-white">
+  <div className="absolute inset-x-0 top-[27px] z-10 flex items-center justify-center gap-1 bg-purple-700/90 py-0.5 text-[10px] font-bold leading-[14px] text-white">
     <Ghost className="h-2.5 w-2.5" aria-hidden="true" />
     STEALTH
   </div>

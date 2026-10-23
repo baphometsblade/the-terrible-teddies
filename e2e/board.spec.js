@@ -225,6 +225,31 @@ test('a table card drops its cost and rarity, wears Taunt as a frame, and carrie
   expect(Math.abs(slot.height - card.height), 'the row reserves room below the card again').toBeLessThanOrEqual(1);
 });
 
+// Letter-spaced text that renders under 8px splits apart at 1x ("COMM ON",
+// "E PIC"). The rows are scaled to the felt, so what counts is the size on
+// screen: on a 320px phone, with a stealthed card (its band) and Chuck's
+// opener on the table, nothing there may be tracked that small.
+test('at 320x640 nothing on the table is letter-spaced at the size it renders', async ({ page }) => {
+  await bootToMainMenu(page);
+  await page.setViewportSize({ width: 320, height: 640 });
+  await seed(page, { currentDeck: [7, 7, 7, 7, 7, 7] }); // Peeping Pete: Stealth
+  await page.reload();
+  await toBattle(page);
+  await page.getByRole('button', { name: /^Play / }).first().click();
+  await expect(page.getByText('STEALTH', { exact: true })).toBeVisible(SLOW);
+  const tracked = await page.evaluate(() => [...document.querySelectorAll('[data-field] *')]
+    .filter((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
+    .map((el) => {
+      const cs = getComputedStyle(el);
+      let zoom = 1;
+      for (let a = el; a; a = a.parentElement) zoom *= parseFloat(getComputedStyle(a).zoom) || 1;
+      return { text: el.textContent.trim(), px: parseFloat(cs.fontSize) * zoom, spacing: cs.letterSpacing };
+    })
+    .filter((t) => t.px < 8 && t.spacing !== 'normal' && parseFloat(t.spacing) !== 0)
+    .map((t) => `${t.text} (${t.px.toFixed(1)}px, ${t.spacing})`));
+  expect(tracked).toEqual([]);
+});
+
 // At full spacing an opening hand of six is 616px wide: on a 390px phone the
 // fourth card was cut at the edge and two were off screen. Five cards fan
 // widest (3° a place), six overlap furthest.
