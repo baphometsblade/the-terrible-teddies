@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, SearchX, X, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, SearchX, X, Zap } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Medallion } from '@/components/ui/game-chrome';
-import TeddyCard, { ArtOrEmoji } from './TeddyCard';
+import TeddyCard from './TeddyCard';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
@@ -11,6 +11,8 @@ import { RARITY, RARITY_METAL, RARITY_ORDER as RARITY_ORDER_ASC } from '@/lib/ra
 import { useDialog } from '@/hooks/useDialog';
 import { buildVisibleOrder, staggerDelay } from '@/lib/collectionOrder';
 import { CARD_ZOOM_QUERY, gridArtVariant } from '@/lib/cardZoom';
+import { abilityRules } from '@/lib/abilities';
+import { effectLabel, effectRules } from '@/lib/effects';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 // Collection sorts and lists rarest-first.
@@ -51,13 +53,62 @@ const RarityDot = ({ rarity, className = 'h-2 w-2' }) => (
 );
 
 // One fact about a card in the detail dialog: a caption over a value, in a
-// small recessed well.
-const Stat = ({ label, children, className = '' }) => (
+// small recessed well. `note` is a line of plain rules text under the value
+// (what an ability or an effect actually does).
+const Stat = ({ label, children, note, className = '' }) => (
   <div className={`rounded-xl bg-night-950/50 px-3 py-2 ring-1 ring-inset ring-white/[0.06] ${className}`}>
     <dt className="label-caps text-[10px] text-plush-300">{label}</dt>
-    <dd className="mt-0.5 flex items-center gap-1 font-display text-lg font-extrabold leading-tight">{children}</dd>
+    <dd className="mt-0.5">
+      <span className="flex items-center gap-1 font-display text-lg font-extrabold leading-tight">{children}</span>
+      {note && <p className="mt-1 text-sm leading-snug text-plush-200">{note}</p>}
+    </dd>
   </div>
 );
+
+// How much larger than hand size the detail view draws the card: 158x238,
+// the size of the art frame it replaced.
+const HERO_ZOOM = 1.65;
+
+// Whether the full-size art for this card has arrived. The detail view opens
+// on the thumbnail the grid behind it has already loaded, and switches to the
+// 768px original only once that is downloaded and decoded, so the card is
+// never an empty frame while it downloads; an <img> whose source changes keeps
+// painting the old picture until the new one is ready, so the switch sharpens
+// in place. A missing original leaves the thumbnail, which is a fine card.
+const useFullArtReady = (id) => {
+  const [readyId, setReadyId] = useState(null);
+  useEffect(() => {
+    if (!id || typeof Image === 'undefined') return undefined;
+    let live = true;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = `/cards/${id}.webp`;
+    const done = () => { if (live) setReadyId(id); };
+    if (typeof img.decode === 'function') img.decode().then(done, () => {});
+    else img.onload = done;
+    return () => { live = false; };
+  }, [id]);
+  return readyId === id;
+};
+
+// Thumbnails for the cards either side, so paging lands on art rather than an
+// empty face when the neighbour is further down the album than the grid has
+// loaded. Held in a ref so the requests are not collected before they finish.
+const usePreloadThumbs = (cards) => {
+  const held = useRef([]);
+  const key = cards.map((c) => c.id).join(',');
+  useEffect(() => {
+    if (typeof Image === 'undefined') return;
+    held.current = key.split(',').filter(Boolean).map((id) => {
+      const img = new Image();
+      img.src = `/cards/thumbs/${id}.webp`;
+      return img;
+    });
+  }, [key]);
+};
+
+const PAGE_BUTTON =
+  `btn-glass inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold ${FOCUS_OUTLINE}`;
 
 // The card-detail panel mounts conditionally, so it hosts its own useDialog
 // (the hook must live in a component that mounts with the overlay). Gives the
@@ -65,10 +116,34 @@ const Stat = ({ label, children, className = '' }) => (
 // tab into the 40+ card tiles behind it. Mirrors GameBoard's GameOverDialog.
 // The header's Close button is the first control, so it is what the hook
 // focuses on open.
-const CardDetailDialog = ({ card, onClose }) => {
+//
+// `cards` is the album as it is showing (filters applied, in grid order) and
+// `index` this card's place in it: Previous / Next, and the arrow keys, page
+// through it without closing, wrapping at either end.
+const CardDetailDialog = ({ cards, index, onIndex, onClose }) => {
   const ref = useDialog(onClose);
+  const card = cards[index];
+  const count = cards.length;
   const rarity = RARITY[card.rarity];
-  const foil = card.rarity === 'legendary' ? 'foil' : card.rarity === 'epic' ? 'foil foil-epic' : '';
+  const fullArt = useFullArtReady(card.id);
+  usePreloadThumbs(count > 1 ? [cards[(index + 1) % count], cards[(index - 1 + count) % count]] : []);
+  // Said once a page turns, not on open: the dialog's own name covers that.
+  const [announcement, setAnnouncement] = useState('');
+
+  const page = (step) => {
+    if (count < 2) return;
+    const next = (index + step + count) % count;
+    onIndex(next);
+    setAnnouncement(`${cards[next].name}, ${next + 1} of ${count}`);
+  };
+  const onKeyDown = (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.key === 'ArrowRight') { e.preventDefault(); page(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); page(-1); }
+  };
+
+  const ability = card.ability && card.ability !== 'none' ? card.ability : null;
+  const effect = effectLabel(card);
   return (
     <motion.div
       ref={ref}
@@ -80,13 +155,15 @@ const CardDetailDialog = ({ card, onClose }) => {
       exit={{ scale: 0.95, opacity: 0 }}
       className="dialog-panel relative my-auto w-full max-w-lg overflow-hidden rounded-2xl"
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={onKeyDown}
     >
-      {/* The tier's light, pooling from the top of the panel behind the art. */}
+      {/* The tier's light, pooling from the top of the panel behind the card. */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-64"
         style={{ background: `radial-gradient(ellipse 70% 80% at 25% 0%, ${rarity.borderHex}38, transparent 70%)` }}
       />
+      <p className="sr-only" aria-live="polite">{announcement}</p>
 
       <div className="relative flex items-start justify-between gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
         <div className="min-w-0">
@@ -106,23 +183,44 @@ const CardDetailDialog = ({ card, onClose }) => {
         </button>
       </div>
 
-      <div className="relative flex flex-col items-center gap-5 px-5 pb-6 pt-4 sm:flex-row sm:items-start sm:px-6">
-        {/* Big art frame: the card's illustration at gallery size in its
-            tier's metal, falling back to the emoji cast when no art has
-            shipped. Epic and legendary carry the same foil as the card. */}
+      {/* Keyed by card, so a page turn starts the new card from its own art
+          (an <img> handed a new source keeps painting the old picture until
+          the new one loads, which put the last card's art under this one's
+          name) and fades the page in. */}
+      <motion.div
+        key={card.id}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.15 }}
+        className="relative flex flex-col items-center gap-5 px-5 pb-6 pt-4 sm:flex-row sm:items-start sm:px-6"
+      >
+        {/* The card itself at gallery size: the frame, foil, cost coin, stats
+            and rules line the player will see in a hand, not just its art.
+            Missing cards are drawn as in the album, art drained under a lock.
+            Decorative here (the list beside it says all of it), and not a
+            control, so no hover lift and no pointer. No drop-shadow filter:
+            the foil sweeps under it, and a filter over moving content is
+            redrawn every frame; the card's own shadow seats it. */}
         <div
-          className="relative h-60 w-40 shrink-0 rounded-xl p-[3px] shadow-[0_18px_32px_-12px_rgba(0,0,0,0.85)]"
-          style={{ background: RARITY_METAL[card.rarity] }}
+          aria-hidden="true"
+          data-card-hero=""
+          className="pointer-events-none relative shrink-0"
+          style={{ zoom: HERO_ZOOM }}
         >
-          <div className={`relative grid h-full w-full place-items-center overflow-hidden rounded-[9px] bg-gradient-to-b ${rarity.bg}`}>
-            <ArtOrEmoji
-              teddy={card}
-              variant="full"
-              emojiClassName="text-7xl drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]"
-              imgClassName="absolute inset-0 h-full w-full object-cover"
-            />
-            {foil && <div aria-hidden="true" className={`pointer-events-none absolute inset-0 ${foil}`} />}
-          </div>
+          <TeddyCard
+            teddy={card}
+            dimmed={!card.owned}
+            lift={false}
+            artVariant={fullArt ? 'full' : 'thumb'}
+            artLoading="eager"
+          />
+          {!card.owned && (
+            <div className="absolute inset-0 grid place-items-center">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-night-950/85 ring-1 ring-white/15 shadow-[0_6px_14px_-4px_rgba(0,0,0,0.8)]">
+                <Lock className="h-4 w-4 text-plush-200" strokeWidth={2.4} />
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="w-full min-w-0 flex-1">
@@ -140,11 +238,15 @@ const CardDetailDialog = ({ card, onClose }) => {
                 <Stat label="Defense"><span className="tabular-nums text-sky-300">{card.defense}</span></Stat>
               </>
             )}
-            {card.ability && card.ability !== 'none' && (
-              <Stat label="Ability" className="col-span-2"><span className="capitalize text-purple-300">{card.ability}</span></Stat>
+            {ability && (
+              <Stat label="Ability" className="col-span-2" note={abilityRules(ability)}>
+                <span className="capitalize text-purple-300">{ability}</span>
+              </Stat>
             )}
-            {card.effect && (
-              <Stat label="Effect" className="col-span-2"><span className="capitalize text-cyan-300">{card.effect} {card.amount}</span></Stat>
+            {effect && (
+              <Stat label="Effect" className="col-span-2" note={effectRules(card)}>
+                <span className="text-cyan-300">{effect}</span>
+              </Stat>
             )}
           </dl>
 
@@ -155,14 +257,34 @@ const CardDetailDialog = ({ card, onClose }) => {
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
+
+      {/* Paging through the album as it is filtered. Wraps at either end, so
+          neither button is ever disabled under the focus. */}
+      {count > 1 && (
+        <div className="relative flex items-center justify-between gap-3 border-t border-white/[0.06] px-5 py-3 sm:px-6">
+          <button type="button" onClick={() => page(-1)} className={PAGE_BUTTON}>
+            <ChevronLeft aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
+            Previous<span className="sr-only"> card</span>
+          </button>
+          <span aria-hidden="true" data-card-position="" className="font-display text-sm font-bold tabular-nums text-plush-300">
+            {index + 1} <span className="text-plush-400">/</span> {count}
+          </span>
+          <button type="button" onClick={() => page(1)} className={PAGE_BUTTON}>
+            Next<span className="sr-only"> card</span>
+            <ChevronRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 };
 
 const TeddyCollection = () => {
   const { ownedCards } = useGameStore();
-  const [selectedCard, setSelectedCard] = useState(null);
+  // The id of the card open in the detail view. An id, not the card object,
+  // so the view pages through the live album and reads current ownership.
+  const [selectedId, setSelectedId] = useState(null);
   const [filter, setFilter] = useState('all');
   const [rarityFilter, setRarityFilter] = useState('all');
   const [showOwned, setShowOwned] = useState(true);
@@ -214,6 +336,10 @@ const TeddyCollection = () => {
   // the two differ under every filter but "all". `size` is the visible count.
   const visibleOrder = buildVisibleOrder(sortedCards, matchesFilters);
   const visibleCount = visibleOrder.size;
+  // The album as it is showing, in grid order: what the detail view pages
+  // through. -1 when nothing is open.
+  const visibleCards = sortedCards.filter((c) => visibleOrder.has(c.id));
+  const selectedIndex = visibleCards.findIndex((c) => c.id === selectedId);
 
   const totalOwned = ownedCards.length;
   const totalCards = ALL_CARDS.length;
@@ -403,7 +529,7 @@ const TeddyCollection = () => {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: staggerDelay(visibleOrder.get(card.id)) }}
-            {...pressable(() => setSelectedCard(card), `View ${card.name}`)}
+            {...pressable(() => setSelectedId(card.id), `View ${card.name}`)}
             className={`relative cursor-pointer rounded-[10px] ${FOCUS_RING} ${visibleOrder.has(card.id) ? '' : 'hidden'}`}
           >
             {/* Missing cards: the art drained of most colour and light, under
@@ -432,18 +558,24 @@ const TeddyCollection = () => {
       )}
 
       <AnimatePresence>
-        {selectedCard && (
+        {selectedIndex >= 0 && (
           // Scrolls, with the panel centred by my-auto rather than
           // items-center: a centred flex item taller than its box overflows
           // at both ends, which on a short phone cut off the panel's top.
           <motion.div
+            key="card-detail"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-4"
-            onClick={() => setSelectedCard(null)}
+            onClick={() => setSelectedId(null)}
           >
-            <CardDetailDialog card={selectedCard} onClose={() => setSelectedCard(null)} />
+            <CardDetailDialog
+              cards={visibleCards}
+              index={selectedIndex}
+              onIndex={(i) => setSelectedId(visibleCards[i].id)}
+              onClose={() => setSelectedId(null)}
+            />
           </motion.div>
         )}
       </AnimatePresence>

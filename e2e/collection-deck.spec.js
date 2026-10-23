@@ -3,6 +3,10 @@
 // the fold and the deck sat under a nested scroller, and desktops, where both
 // grids drew thumbnails.
 import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
+// The rules tables the detail view reads, so these tests expect what the
+// tables say rather than restating it (both modules are dependency-free).
+import { abilityRules } from '../src/lib/abilities.js';
+import { effectRules } from '../src/lib/effects.js';
 
 // Seeds the store for the next reload, after the shared boot's own seed (init
 // scripts run in registration order), then reloads to the main menu.
@@ -138,5 +142,102 @@ test.describe('card grids on a phone', () => {
     const img = tile.locator('img').first();
     await expect(img).toHaveAttribute('src', /\/cards\/thumbs\//);
     expect(await img.getAttribute('srcset')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Card detail
+// ---------------------------------------------------------------------------
+
+const detail = (page) => page.getByRole('dialog', { name: /details$/ });
+
+// A stat in the detail view ("Ability", "Effect"): its value, and the line of
+// rules text under it.
+async function statParts(dialog, label) {
+  const stat = dialog.locator('dt', { hasText: new RegExp(`^${label}$`, 'i') }).locator('..');
+  const value = (await stat.locator('dd > span').first().innerText()).trim();
+  const note = (await stat.locator('dd > p').innerText()).trim();
+  return { value, note };
+}
+
+test.describe('card detail', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('shows the card as it is played, and says what its ability and effect do', async ({ page }) => {
+    await openCollection(page);
+    await page.getByRole('button', { name: 'View Shit-Talk Sally' }).click();
+    const d = detail(page);
+    await expect(d).toBeVisible(SLOW);
+
+    // The real card at size: its frame, name, cost and stats, not bare art.
+    const hero = d.locator('[data-card-hero]');
+    await expect(hero).toContainText('Shit-Talk Sally');
+    expect((await hero.boundingBox()).width).toBeGreaterThan(150);
+
+    // The ability's rules text, not just its keyword.
+    const ability = await statParts(d, 'Ability');
+    expect(ability.note).not.toBe('');
+    expect(ability.note).toBe(abilityRules(ability.value.toLowerCase()));
+
+    // A trap's effect in words, with the amount its label states.
+    await page.keyboard.press('Escape');
+    await expect(d).toHaveCount(0, SLOW);
+    await page.getByRole('button', { name: 'View Honey Trap' }).click();
+    await expect(d).toBeVisible(SLOW);
+    const effect = await statParts(d, 'Effect');
+    const amount = Number(effect.value.match(/\d+/)[0]);
+    expect(effect.note).toBe(effectRules({ type: 'trap', amount }));
+  });
+
+  test('pages through the album as it is filtered, by button and by arrow key', async ({ page }) => {
+    await openCollection(page);
+    // Traps only: paging follows the grid's visible order, not the catalog's.
+    await page.locator('[data-collection-filters]').getByRole('button', { name: 'Trap', exact: true }).click();
+    const tiles = page.getByRole('button', { name: /^View / });
+    const names = (await tiles.evaluateAll((els) => els.map((el) => el.getAttribute('aria-label'))))
+      .map((n) => n.replace(/^View /, ''));
+    expect(names.length).toBeGreaterThan(1);
+
+    await tiles.first().click();
+    const d = detail(page);
+    const heading = d.getByRole('heading', { level: 2 });
+    await expect(heading).toHaveText(names[0]);
+    await expect(d.locator('[data-card-position]')).toHaveText(`1 / ${names.length}`);
+
+    await d.getByRole('button', { name: 'Next card' }).click();
+    await expect(heading).toHaveText(names[1]);
+    // The focus stays on the control that turned the page.
+    await expect(d.getByRole('button', { name: 'Next card' })).toBeFocused();
+
+    await page.keyboard.press('ArrowLeft');
+    await expect(heading).toHaveText(names[0]);
+    // Wraps: back from the first card is the last.
+    await page.keyboard.press('ArrowLeft');
+    await expect(heading).toHaveText(names[names.length - 1]);
+    await page.keyboard.press('ArrowRight');
+    await expect(heading).toHaveText(names[0]);
+    await d.getByRole('button', { name: 'Previous card' }).click();
+    await expect(heading).toHaveText(names[names.length - 1]);
+  });
+
+  test('shows the cached thumbnail at once and sharpens to the full art when it arrives', async ({ page }) => {
+    // Hold the full-size originals back, as a slow phone network would.
+    let release;
+    const held = new Promise((resolve) => { release = resolve; });
+    await page.route(/\/cards\/\d+\.webp$/, async (route) => {
+      await held;
+      await route.continue();
+    });
+    await openCollection(page);
+    await page.getByRole('button', { name: 'View Shit-Talk Sally' }).click();
+    const img = detail(page).locator('[data-card-hero] img');
+    // Never an empty frame: the grid's thumbnail is there, loaded, while the
+    // original is still on its way.
+    await expect(img).toHaveAttribute('src', /\/cards\/thumbs\/\d+\.webp$/);
+    expect(await img.evaluate((el) => el.complete && el.naturalWidth > 0)).toBe(true);
+
+    release();
+    await expect(img).toHaveAttribute('src', /\/cards\/\d+\.webp$/, SLOW);
+    await expect.poll(() => img.evaluate((el) => el.complete && el.naturalWidth > 0)).toBe(true);
   });
 });
