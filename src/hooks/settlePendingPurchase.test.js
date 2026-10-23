@@ -93,12 +93,16 @@ describe('settling a payment the player left before it confirmed', () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
-  it("does not credit a save bound to another account (the reconcile's own guard)", async () => {
+  it('neither credits nor announces a payment to a save bound to another account', async () => {
     rememberPendingPurchase('cs_switch');
     useGameStore.setState({ ownerUserId: 'u-2' });
     net.row = { status: 'completed', gems_granted: 500, bundle_id: 'gems_large' };
     net.balance = 500;
-    await settlePendingPurchase();
+    expect(await settlePendingPurchase()).toBe('other-account');
     expect(get().gems).toBe(10);
+    // Nor is the next player told about the previous buyer's payment, and the
+    // payment is still remembered rather than written off as settled.
+    expect(toast).not.toHaveBeenCalled();
+    expect(pendingPurchase()?.sessionId).toBe('cs_switch');
   });
 });

@@ -23,7 +23,7 @@ let inFlight = null;
  * high-water mark (so a second settle, or the purchase screen doing the same,
  * adds nothing), and it is bound to the account the balance was read for.
  *
- * @returns {Promise<'none'|'on-screen'|'signed-out'|'pending'|'credited'|'unconfirmed'|'refunded'|'disputed'>}
+ * @returns {Promise<'none'|'on-screen'|'signed-out'|'pending'|'credited'|'unconfirmed'|'other-account'|'refunded'|'disputed'>}
  */
 export function settlePendingPurchase() {
   // focus and visibilitychange arrive together: one check, not two.
@@ -54,6 +54,13 @@ async function settle() {
   // Credited server-side, but this device could not read the new balance:
   // keep the marker, so the next return tries again.
   if (balance === null) return 'unconfirmed';
+  // The save now belongs to someone else (the account changed while the
+  // check was out). The reconcile would refuse to credit it anyway, and
+  // announcing the payment would tell the next player about the previous
+  // buyer's gems. Say nothing and keep the marker; the buyer's own login
+  // reconciles their balance.
+  const owner = useGameStore.getState().ownerUserId;
+  if (owner !== null && owner !== uid) return 'other-account';
   useGameStore.getState().reconcileServerGems(balance, uid);
   forgetPendingPurchase(pending.sessionId);
   toast({
