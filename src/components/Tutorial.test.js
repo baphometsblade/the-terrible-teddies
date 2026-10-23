@@ -74,3 +74,66 @@ describe('the tutorial teaches the engine that actually ships', () => {
     ).toEqual([]);
   });
 });
+
+// The tutorial describes the card a player is about to meet, so its words
+// about where things sit on that card are claims about TeddyCard. They had
+// drifted: the copy taught Attack as ⚔️ and HP as 🛡️ (no card draws either,
+// and a shield on a card means Taunt) and called the cost "the brass gem"
+// (gems are the paid currency; the cost is struck on a brass disc). Each fact
+// below is read out of TeddyCard.jsx, so moving a badge fails this until the
+// copy moves with it.
+describe('the tutorial describes the card TeddyCard actually draws', () => {
+  const card = readFileSync(resolve(process.cwd(), 'src/components/TeddyCard.jsx'), 'utf8');
+  const tone = (src, name) => src.match(new RegExp(`const ${name} = '([^']+)'`))?.[1];
+  const badge = (title) => {
+    const m = card.match(new RegExp(`title="${title}" tone=\\{(?:wounded \\? \\w+ : )?(\\w+)\\} className="(left|right)-`));
+    return m ? { tone: tone(card, m[1]), side: m[2] } : null;
+  };
+  const copy = [...tutorialSrc.matchAll(/content: "([^"]*)"/g)].map((m) => m[1]).join(' ');
+
+  it('puts Attack and HP where the stat badges are, in their colours', () => {
+    const attack = badge('Attack');
+    const hp = badge('HP');
+    expect(attack, 'could not find the Attack badge in TeddyCard — parser drift?').toBeTruthy();
+    expect(hp, 'could not find the HP badge in TeddyCard — parser drift?').toBeTruthy();
+    expect(copy).toMatch(new RegExp(`Attack \\{attack\\}[^.;]*bottom ${attack.side}`));
+    expect(copy).toMatch(new RegExp(`HP \\{hp\\}[^.;]*bottom ${hp.side}`));
+    // The inline twins wear the badges' own faces.
+    expect(tone(tutorialSrc, 'ATTACK_DISC')).toBe(attack.tone);
+    expect(tone(tutorialSrc, 'HP_DISC')).toBe(hp.tone);
+  });
+
+  it('puts the cost in the corner the coin is struck in, and never calls it a gem', () => {
+    const corner = card.match(/<BrassCoin[\s\S]*?className="absolute (top|bottom)-\[\d+px\] (left|right)-/);
+    expect(corner, 'could not find the cost coin in TeddyCard — parser drift?').toBeTruthy();
+    expect(copy).toMatch(new RegExp(`\\{cost\\}[^.]*\\b${corner[1]}-${corner[2]}\\b`));
+    expect(copy).not.toMatch(/\bgem\b/i);
+    // No emoji stand-ins for marks the cards and the board draw as shapes.
+    expect(copy).not.toMatch(/⚔️|🛡️|⚡/u);
+  });
+});
+
+// The numbers the copy quotes are the engine's numbers.
+describe('the tutorial quotes the turn rules the board enforces', () => {
+  const stepCopy = (title) => tutorialSrc.match(new RegExp(`title: "${title}",\\s*content: "([^"]*)"`))?.[1] ?? '';
+
+  it('gives the first turn its real energy, and the real ceilings', async () => {
+    const { energyForTurn, MAX_ENERGY, MOMENTUM_MAX } = await import('@/components/GameBoard/turn');
+    const energy = stepCopy('Energy');
+    expect(energy).toMatch(new RegExp(`first turn gets ${energyForTurn(1)}\\b`));
+    expect(energy).toMatch(new RegExp(`up to ${MAX_ENERGY}\\b`));
+    expect(stepCopy('Momentum & Rally')).toMatch(new RegExp(`gauge to ${MOMENTUM_MAX}\\b`));
+  });
+
+  it('does not teach that only big teddies block the way to Chuck', async () => {
+    // Any targetable creature blocks a face attack, a 1-HP one included. The
+    // copy said "Big-HP teddies are bouncers", which taught that small ones
+    // could be walked past.
+    const { getValidTargets } = await import('@/utils/battleUtils');
+    const runt = { type: 'action', ability: 'none', attack: 1, defense: 1, currentHp: 1 };
+    expect(getValidTargets([], [runt])).toHaveLength(1);
+    const violence = stepCopy('Violence 101');
+    expect(violence).not.toMatch(/big-HP|high-HP/i);
+    expect(violence).toMatch(/every teddy[^.]*bouncer/i);
+  });
+});

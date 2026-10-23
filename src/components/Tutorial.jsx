@@ -9,9 +9,18 @@ import { ALL_CARDS } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { BrassCoin } from '@/components/ui/coin';
 
 // Presentation only — every `content` string is the copy as written, and
 // Tutorial.test.js reads it from this file.
+//
+// `{attack}`, `{hp}`, `{cost}` and `{energy}` in the copy draw small twins of
+// the marks the card and the board actually show — the red and blue stat
+// badges, the brass cost disc, the brass energy bolt — so the words point at
+// what the player will see. The copy used to say "Attack (⚔️) and HP (🛡️)",
+// and no card draws either: the badges are bare numbers on red and blue, and
+// a shield on a card means Taunt. The twins are aria-hidden; the words round
+// them say the same thing.
 //
 // `icon` is the step's medallion (`mascot` puts the bear himself in it). A
 // `list` step draws one row per line of its content, the words before the
@@ -34,13 +43,13 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "How a Turn Works",
-    content: "1. Draw — take a card. It's probably a bad one. Play it anyway.\n2. Your move — throw teddies and traps on the table and send ready teddies swinging, in any order\n3. End Turn — Chuck's turn to embarrass himself",
+    content: "1. Draw — take a card. It's probably a bad one. Play it anyway.\n2. Your move — play teddies, traps and specials, and send ready teddies swinging, in any order, for as long as your energy lasts\n3. End Turn — Chuck's turn to embarrass himself",
     icon: RefreshCw,
     list: true,
   },
   {
     title: "The Cast",
-    content: "Action Cards — your goons, with Attack (⚔️) and HP (🛡️). HP is how many beatings they can absorb before going back to fluff. Fresh off the barstool they're Warming Up — no swinging until your next turn. Same rule for Chuck's lot.\nTrap Cards — spring-loaded regret for whoever swings at you\nSpecial Cards — back-alley healing and questionable card advantage",
+    content: "Action Cards — your goons. Attack {attack} is the red badge, bottom left; HP {hp} is the blue one, bottom right, and it's how many beatings they can absorb before going back to fluff. Fresh off the barstool they're Warming Up — no swinging until your next turn. Same rule for Chuck's lot.\nTrap Cards — spring-loaded regret for whoever swings at you\nSpecial Cards — back-alley healing and questionable card advantage",
     icon: Layers,
     list: true,
     icons: [Swords, Bomb, Sparkles],
@@ -48,12 +57,12 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Energy",
-    content: "Cards cost energy (the brass gem in the corner). You start each turn with 3 and it climbs as the game drags on — just like a real bar tab.",
+    content: "Cards cost energy: the number on the brass disc {cost} in a card's top-left corner. What you have left is the brass bolt {energy} beside your health. Your first turn gets 3, and it climbs by one every other turn, up to 10 — just like a real bar tab.",
     icon: Zap,
   },
   {
     title: "Rap Sheets (Abilities)",
-    content: "Taunt — talks so much shit, enemies HAVE to hit them first\nPiercing — cuts straight through Shield\nShield — takes 50% less damage, the coward\nStealth — untargetable for a turn (currently hiding in your hamper)\nFury — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nProtect — while they're upright, nothing else on their side can be touched\nSwarm — costs 1 less once you've already got someone on the table\nRoyal — struts around giving everyone ELSE +1 Attack. Never itself.",
+    content: "Taunt — talks so much shit, enemies HAVE to hit them first\nPiercing — cuts straight through Shield\nShield — takes 50% less damage, the coward\nStealth — untargetable for a turn (currently hiding in your hamper)\nFury — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nProtect — while they're upright, nothing else on their side can be touched\nSwarm — costs 1 less once you've already got someone on the table, and its cost disc turns green to say so\nRoyal — struts around giving everyone ELSE +1 Attack. Never itself.",
     icon: ScrollText,
     list: true,
     icons: [Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown],
@@ -61,12 +70,12 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Violence 101",
-    content: "Click your teddy, then a victim. Damage comes off the target's HP — they stay on the table until it hits 0, and any leftover damage tramples straight into their owner's face. Big-HP teddies are bouncers: clear them off the table before you can deck Chuck directly. Piercing does NOT walk you past a bouncer — it just carves through the Shielded ones.",
+    content: "Pick your teddy, then a victim. Damage comes off the target's HP — they stay on the table until it hits 0, and any leftover damage tramples straight into their owner's face. Every teddy Chuck has standing is a bouncer, big or small (one hiding in Stealth doesn't count): clear them off the table before you can deck Chuck directly. Piercing does NOT walk you past a bouncer — it just carves through the Shielded ones.",
     icon: Swords,
   },
   {
     title: "Momentum & Rally",
-    content: "Playing cards and throwing hands builds Momentum. Fill the gauge to 10 and the ⚡ Rally button lights up — cash it in and your whole squad gets +1 Attack and a full restuff. It's the comeback button, and Chuck thinks it should be illegal.",
+    content: "Playing cards and throwing hands builds Momentum. Fill the gauge to 10 with a teddy on the table and the Rally button turns up — cash it in and your whole squad gets +1 Attack and a full restuff. It's the comeback button, and Chuck thinks it should be illegal.",
     icon: Rocket,
   },
   {
@@ -87,6 +96,54 @@ const parseLine = (line) => {
 const exampleCards = ['Shit-Talk Sally', 'Honey Trap', 'Emergency Fluff Job']
   .map((name) => ALL_CARDS.find((c) => c.name === name))
   .filter(Boolean);
+// The creature shown under The Cast: the twins in the copy carry her numbers,
+// so the words and the card below them agree.
+const SAMPLE = exampleCards.find((c) => c.type === 'action');
+
+// The stat badges' faces, as TeddyCard paints them (its ATTACK_TONE and
+// HP_TONE; Tutorial.test.js fails if the two drift apart).
+const ATTACK_DISC = 'linear-gradient(180deg, #dc2626, #7f1d1d)';
+const HP_DISC = 'linear-gradient(180deg, #0369a1, #0c4a6e)';
+
+// The same enamel pin as the card's StatBadge, at text size and in the line
+// rather than pinned to a corner.
+const StatDisc = ({ tone, value }) => (
+  <span
+    aria-hidden="true"
+    data-twin=""
+    className="mx-0.5 inline-grid h-[18px] min-w-[18px] place-items-center rounded-full px-[3px] align-[-4px] font-display text-[10px] font-extrabold leading-none tabular-nums text-white ring-[1.5px] ring-night-950 shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
+    style={{
+      background: `radial-gradient(ellipse 70% 32% at 50% 0%, rgba(255,255,255,0.4), transparent 100%), ${tone}`,
+      textShadow: '0 1px 1px rgba(0,0,0,0.6)',
+    }}
+  >
+    {value}
+  </span>
+);
+
+const TWINS = {
+  attack: () => <StatDisc tone={ATTACK_DISC} value={SAMPLE?.attack} />,
+  hp: () => <StatDisc tone={HP_DISC} value={SAMPLE?.defense} />,
+  cost: () => (
+    <span aria-hidden="true" data-twin="" className="mx-0.5 inline-block align-[-4px]">
+      <BrassCoin size="card">{SAMPLE?.cost}</BrassCoin>
+    </span>
+  ),
+  // The board's energy plaque: a bolt struck on brass.
+  energy: () => (
+    <span aria-hidden="true" data-twin="" className="mx-0.5 inline-block align-[-4px]">
+      <BrassCoin size="card"><Zap className="h-[11px] w-[11px]" fill="currentColor" strokeWidth={2} /></BrassCoin>
+    </span>
+  ),
+};
+
+// Copy with its twins drawn in. Splitting on a capture group keeps the token
+// names at the odd indices.
+const Rich = ({ text }) => text.split(/\{(attack|hp|cost|energy)\}/).map((part, i) => {
+  if (i % 2 === 0) return part;
+  const Twin = TWINS[part];
+  return <Twin key={i} />;
+});
 
 // Plain <button>s, not the shadcn Button: its bg-primary is a utility and
 // would beat the component-layer btn-brass / btn-glass materials.
@@ -114,7 +171,7 @@ const ListRow = ({ line, icon: Icon }) => {
       <div className="min-w-0">
         {/* The number badge is drawn, so it is said here instead. */}
         {term && <div className="font-display font-bold leading-tight text-brass-200">{number && <span className="sr-only">{number}. </span>}{term}</div>}
-        <p className="mt-0.5 text-sm leading-snug text-plush-200">{text}</p>
+        <p className="mt-0.5 text-sm leading-snug text-plush-200"><Rich text={text} /></p>
       </div>
     </li>
   );
@@ -169,6 +226,14 @@ const Tutorial = ({ onClose, onStartGame }) => {
         // row stay put and only the step itself scrolls, so the controls are
         // always in reach on a phone.
         //
+        // Fixed in height too, not only capped. With max-h alone the panel
+        // took each step's natural height and my-auto re-centred it, so Next
+        // moved by up to 190px between steps on a phone and a player tapping
+        // through landed on the scrim or the step instead. Now every step
+        // gets the same frame (44rem, or the screen less the scrim's padding
+        // when that is smaller), the body scroller takes up the difference,
+        // and a short step is centred inside it (see the body).
+        //
         // Except on a short screen (500px or less: a landscape phone, a laptop
         // at 200% zoom). There that frame is 180px of a 340px panel, and the
         // medallion and title filled the rest, so every step opened showing
@@ -178,7 +243,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
         // the bottom of the screen (overflow-clip, not -hidden: a hidden
         // overflow is a scroll container, and the row would stick to the
         // panel instead), and the step's own header tightens.
-        className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl dialog-panel sm:max-h-[calc(100dvh-3rem)] [@media(max-height:500px)]:max-h-none [@media(max-height:500px)]:overflow-clip"
+        className="relative my-auto flex max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl dialog-panel sm:max-h-[calc(100dvh-3rem)] [@media(min-height:501px)]:h-[min(44rem,calc(100dvh-1.5rem))] sm:[@media(min-height:501px)]:h-[min(44rem,calc(100dvh-3rem))] [@media(max-height:500px)]:max-h-none [@media(max-height:500px)]:overflow-clip"
       >
         {/* The light the step's medallion sits in. */}
         <div
@@ -241,13 +306,19 @@ const Tutorial = ({ onClose, onStartGame }) => {
 
         {/* Content. Focusable, because most steps hold no control: without a
             tab stop a keyboard user could not scroll a long one. A plain
-            element, so its focus may be an (inset) ring. */}
+            element, so its focus may be an (inset) ring.
+
+            A flex column whose step takes my-auto, so a short step sits in
+            the middle of the fixed frame. Not justify-center: a centred item
+            taller than its box overflows at both ends and its top could not
+            be scrolled to, whereas auto margins collapse to 0 once the step
+            overflows, and a long one scrolls from its top as before. */}
         <div
           ref={bodyRef}
           role="region"
           aria-labelledby="tutorial-step-title"
           tabIndex={0}
-          className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300/70"
+          className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300/70"
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -256,7 +327,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="px-4 pb-6 pt-3 sm:px-10 [@media(max-height:500px)]:pt-1"
+              className="my-auto w-full px-4 pb-6 pt-3 sm:px-10 [@media(max-height:500px)]:pt-1"
             >
               {/* Decoration, so it is the first thing a short screen gives up. */}
               <div
@@ -295,7 +366,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
               ) : (
                 <div className="mx-auto max-w-lg space-y-4 text-center">
                   {step.content.split('\n\n').map((para) => (
-                    <p key={para} className="leading-relaxed text-plush-200">{para}</p>
+                    <p key={para} className="leading-relaxed text-plush-200"><Rich text={para} /></p>
                   ))}
                 </div>
               )}
