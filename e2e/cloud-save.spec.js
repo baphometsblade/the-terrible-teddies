@@ -231,6 +231,19 @@ test('a server out of reach is said as it is, and the save stays on this device'
   expect((await saved(page)).level).toBe(4);
 });
 
+test('if the cloud save\'s code cannot load, gems are still reconciled as before', async ({ page }) => {
+  // The chunk the sign-in loads (the dev module, or the built, hashed one).
+  await page.route(/\/(src\/lib\/cloudSave\.js|assets\/cloudSave-[\w-]+\.js)/, (route) => route.abort());
+  const store = {
+    ownerUserId: SESSION.user.id, playerName: 'QA Bear', gems: 56, lastSyncedServerGems: 0,
+    tutorialCompleted: true, lastLoginDate: today(),
+  };
+  const { calls } = await boot(page, { account: accountSave(), store, balance: 300 });
+  // A purchase of 300 the save had not counted: credited, as it always was.
+  await expect.poll(async () => (await saved(page)).gems).toBe(356);
+  expect(calls.filter((c) => c.fn === 'get_player_save')).toHaveLength(0);
+});
+
 test('the leaderboard ranks the player from the server and marks their row', async ({ page }) => {
   const board = Array.from({ length: 50 }, (_, i) => ({
     username: i === 8 ? 'Phone Bear' : `Rival${i + 1}`,
