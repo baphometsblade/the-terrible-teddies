@@ -15,6 +15,19 @@ export const nextCoinPack = (coins, items = SHOP_ITEMS) => {
 };
 
 /**
+ * The cheapest pack sold for gems (a guaranteed-rarity pack), and how far
+ * `gems` is from it: the source a "Get gems" route leads to.
+ */
+export const nextGemPack = (gems, items = SHOP_ITEMS) => {
+  let item = null;
+  for (const i of items) {
+    if (['pack', 'premium', 'legendary'].includes(i.type) && i.currency === 'gems' && (!item || i.price < item.price)) item = i;
+  }
+  if (!item) return null;
+  return { item, short: Math.max(0, item.price - gems) };
+};
+
+/**
  * The Battle Pass tier whose reward is packs that the player should look to
  * next: one already reached and not yet claimed, else the lowest still ahead.
  * The free track always, the premium track only if the pass is owned.

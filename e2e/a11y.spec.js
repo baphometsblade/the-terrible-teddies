@@ -224,6 +224,18 @@ for (const { trigger, dialog } of DIALOGS) {
   });
 }
 
+// The Premium confirm, short of gems: its term, its totals, and the brass
+// "Get gems" that replaced a dead Purchase.
+test('battle pass premium confirm has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.getByRole('button', { name: 'Battle Pass', exact: true }).click();
+  const pass = page.getByRole('dialog', { name: 'Battle Pass' });
+  await expect(pass).toBeVisible(SLOW);
+  await pass.getByRole('button', { name: /^Unlock Premium/ }).click();
+  const confirm = page.getByRole('dialog', { name: 'Unlock Premium Pass' });
+  await expect(confirm.getByRole('button', { name: 'Get gems' })).toBeVisible();
+  await expectNoViolations(page, 'battle pass premium confirm');
+});
+
 // Daily Rewards auto-opens on the first launch of each day, so for most
 // players it is the first dialog they ever see — and it was the one dialog
 // this suite never audited (the session seed marks today as already visited,

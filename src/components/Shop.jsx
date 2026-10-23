@@ -107,7 +107,9 @@ const TAB_MOTION = {
   transition: { duration: 0.2 },
 };
 
-const Shop = ({ onClose }) => {
+// `initialTab` is the tab it opens on: App sends a route to gems (the Battle
+// Pass confirm, the empty Card Packs table) straight to "Buy Gems".
+const Shop = ({ onClose, initialTab = 'packs' }) => {
   const { coins, gems, cardPacks, premiumPacks, legendaryPacks, coinDoublerExpiresAt } = useGameStore();
   // Purchases re-render via the store subscription, but time ELAPSING is not a
   // store write — a dialog left open across the expiry would keep advertising
@@ -126,7 +128,7 @@ const Shop = ({ onClose }) => {
     : 0;
   const { session } = useSupabaseAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('packs');
+  const [activeTab, setActiveTab] = useState(TABS.some((t) => t.id === initialTab) ? initialTab : 'packs');
   const [showOdds, setShowOdds] = useState(false);
   const [processing, setProcessing] = useState(false);
   // Read by the Escape handler, which must see the current value.

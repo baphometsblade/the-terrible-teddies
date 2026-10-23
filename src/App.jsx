@@ -91,6 +91,9 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showDailyRewards, setShowDailyRewards] = useState(false);
   const [showShop, setShowShop] = useState(false);
+  // The tab the Shop opens on: its Card Packs tab, unless a route to gems
+  // (the Battle Pass confirm, the empty Card Packs table) sent the player.
+  const [shopTab, setShopTab] = useState('packs');
   const [showBattlePass, setShowBattlePass] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
@@ -108,6 +111,27 @@ function App() {
     setShowBattlePass(false); setShowLeaderboard(false); setShowChallenges(false);
   };
   const [purchaseSessionId, setPurchaseSessionId] = useState(null);
+
+  const openShop = (tab = 'packs') => { setShopTab(tab); setShowShop(true); };
+
+  // A route from one dialog to another: close the first, and open the next
+  // once the first has finished leaving (the dialogs' AnimatePresence reports
+  // that below). Opened together, the next dialog noted the leaving one's
+  // button as the place to hand focus back to, and the leaving one's own
+  // cleanup then moved focus out from under the new one, onto the menu.
+  // Sequenced, the first hands focus back to its menu tile and the next
+  // takes it from there, so closing it lands the player where they began.
+  const pendingRoute = useRef(null);
+  const routeTo = (closeFrom, open) => {
+    pendingRoute.current = open;
+    closeFrom(false);
+  };
+  const runPendingRoute = () => {
+    const open = pendingRoute.current;
+    pendingRoute.current = null;
+    open?.();
+  };
+  const toGems = (closeFrom) => routeTo(closeFrom, () => openShop('gems'));
 
   const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, reconcileServerGems, bindToUser } = useGameStore();
   const { toast } = useToast();
@@ -287,7 +311,7 @@ function App() {
     const action = new URLSearchParams(window.location.search).get('action');
     if (!action) return;
     if (action === 'battle') setCurrentScreen('game');
-    else if (action === 'shop') setShowShop(true);
+    else if (action === 'shop') openShop();
     else if (action === 'rewards') setShowDailyRewards(true);
     window.history.replaceState({}, '', window.location.pathname);
   }, [session]);
@@ -362,7 +386,7 @@ function App() {
               <Suspense fallback={<DialogLoader />}>
                 <GameBoard
                   onBackToMenu={() => navigateTo('menu')}
-                  onOpenShop={() => { navigateTo('menu'); setShowShop(true); }}
+                  onOpenShop={() => { navigateTo('menu'); openShop(); }}
                 />
               </Suspense>
             </DialogErrorBoundary>
@@ -414,7 +438,7 @@ function App() {
             onPlayerStats={() => setShowPlayerStats(true)}
             onSettings={() => setShowSettings(true)}
             onDailyRewards={() => setShowDailyRewards(true)}
-            onShop={() => setShowShop(true)}
+            onShop={() => openShop()}
             onBattlePass={() => setShowBattlePass(true)}
             onLeaderboard={() => setShowLeaderboard(true)}
             onChallenges={() => setShowChallenges(true)}
@@ -442,9 +466,13 @@ function App() {
 
             <DialogErrorBoundary resetKey={dialogFlags.join()} onDismiss={closeAllDialogs}>
             <Suspense fallback={<DialogLoader />}>
-              <AnimatePresence>
+              {/* Keyed, so AnimatePresence can tell one dialog from another: keyless,
+                  every dialog had the key "" and one leaving as another arrived
+                  (a route) read as the same child staying. */}
+              <AnimatePresence onExitComplete={runPendingRoute}>
                 {showTutorial && (
                   <Tutorial
+                    key="tutorial"
                     onClose={() => {
                       setShowTutorial(false);
                       setTutorialCompleted(true);
@@ -457,14 +485,30 @@ function App() {
                   />
                 )}
 
-                {showCardPacks && <CardPackOpening onClose={() => setShowCardPacks(false)} />}
-                {showPlayerStats && <PlayerStats onClose={() => setShowPlayerStats(false)} />}
-                {showSettings && <Settings onClose={() => setShowSettings(false)} />}
-                {showDailyRewards && <DailyRewards onClose={() => setShowDailyRewards(false)} />}
-                {showShop && <Shop onClose={() => setShowShop(false)} />}
-                {showBattlePass && <BattlePass onClose={() => setShowBattlePass(false)} />}
-                {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
-                {showChallenges && <Challenges onClose={() => setShowChallenges(false)} />}
+                {/* The empty table names where packs come from; these are the
+                    routes there that exist. */}
+                {showCardPacks && (
+                  <CardPackOpening
+                    key="card-packs"
+                    onClose={() => setShowCardPacks(false)}
+                    onGetGems={() => toGems(setShowCardPacks)}
+                    onBattlePass={() => routeTo(setShowCardPacks, () => setShowBattlePass(true))}
+                    onDailyRewards={() => routeTo(setShowCardPacks, () => setShowDailyRewards(true))}
+                  />
+                )}
+                {showPlayerStats && <PlayerStats key="player-stats" onClose={() => setShowPlayerStats(false)} />}
+                {showSettings && <Settings key="settings" onClose={() => setShowSettings(false)} />}
+                {showDailyRewards && <DailyRewards key="daily-rewards" onClose={() => setShowDailyRewards(false)} />}
+                {showShop && <Shop key="shop" initialTab={shopTab} onClose={() => setShowShop(false)} />}
+                {showBattlePass && (
+                  <BattlePass
+                    key="battle-pass"
+                    onClose={() => setShowBattlePass(false)}
+                    onGetGems={() => toGems(setShowBattlePass)}
+                  />
+                )}
+                {showLeaderboard && <Leaderboard key="leaderboard" onClose={() => setShowLeaderboard(false)} />}
+                {showChallenges && <Challenges key="challenges" onClose={() => setShowChallenges(false)} />}
               </AnimatePresence>
             </Suspense>
             </DialogErrorBoundary>

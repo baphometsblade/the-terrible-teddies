@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextCoinPack, nextPassPack, nextDailyPack } from './packSources';
+import { nextCoinPack, nextGemPack, nextPassPack, nextDailyPack } from './packSources';
 import { SHOP_ITEMS, DAILY_REWARDS } from '@/stores/gameStore';
 import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 
@@ -11,6 +11,18 @@ describe('nextCoinPack', () => {
     expect(p.short).toBe(cheapest - 50);
     expect(p.progress).toBeCloseTo(50 / cheapest);
     expect(nextCoinPack(cheapest + 1)).toMatchObject({ short: 0, progress: 1 });
+  });
+});
+
+describe('nextGemPack', () => {
+  it('measures the gap to the cheapest pack sold for gems', () => {
+    const gemPacks = SHOP_ITEMS.filter((i) => ['pack', 'premium', 'legendary'].includes(i.type) && i.currency === 'gems');
+    const cheapest = gemPacks.reduce((a, b) => (a.price <= b.price ? a : b));
+    expect(nextGemPack(0).item).toBe(cheapest);
+    expect(nextGemPack(10).short).toBe(cheapest.price - 10);
+    expect(nextGemPack(cheapest.price).short).toBe(0);
+    // Coin bags are sold for gems too, but they are not packs.
+    expect(nextGemPack(0, SHOP_ITEMS.filter((i) => i.type === 'coins'))).toBeNull();
   });
 });
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, PackageOpen, Crown, Coins, X, Sparkles, PartyPopper, Trophy, CalendarDays } from 'lucide-react';
+import { Package, PackageOpen, Crown, Coins, Gem, X, Sparkles, PartyPopper, Trophy, CalendarDays } from 'lucide-react';
 import TeddyCard, { CardBack } from './TeddyCard';
 import { useGameStore } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
@@ -13,7 +13,7 @@ import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile
 import { PackOddsGuide } from './PackOdds';
 import { RARITY, RARITY_ORDER } from '@/lib/rarity';
 import { revealOrder, waveRanges, tableLayout } from '@/lib/packReveal';
-import { nextCoinPack, nextPassPack, nextDailyPack } from '@/lib/packSources';
+import { nextCoinPack, nextGemPack, nextPassPack, nextDailyPack } from '@/lib/packSources';
 import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 
 // Plain <button>s rather than the shadcn Button: its bg-primary is a utility
@@ -44,7 +44,9 @@ const BEST_VALUE = bestValuePackId();
 const reducedMotion = () => !useGameStore.getState().animationsEnabled
   || (typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
-const CardPackOpening = ({ onClose }) => {
+// onGetGems / onBattlePass / onDailyRewards (from App) are the empty table's
+// routes to where packs come from; each closes this dialog and opens that one.
+const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) => {
   const { cardPacks, premiumPacks, legendaryPacks, openCardPack, coins, gems, getNextPackType } = useGameStore();
   const buyItem = useStoreBuy();
   const [isOpening, setIsOpening] = useState(false);
@@ -698,6 +700,7 @@ const CardPackOpening = ({ onClose }) => {
                     // focus goes on to the Open button that replaces it.
                     if (buyItem(item).success) requestAnimationFrame(() => openRef.current?.focus({ preventScroll: true }));
                   }}
+                  routes={{ onGetGems, onBattlePass, onDailyRewards }}
                 />
               )}
 
@@ -781,10 +784,13 @@ const CardPackOpening = ({ onClose }) => {
 // grants packs (its reward table), the next login-streak day that does
 // (DAILY_REWARDS). It used to say "No packs available. Buy some below!" over
 // a shop whose every tile was greyed out. When a pack is affordable, buying
-// one is right here.
-const PackSources = ({ onBuy }) => {
+// one is right here; when one is waiting somewhere else, a button goes there
+// (`routes`, from App): a reached pass tier to the Battle Pass, today's
+// unclaimed login reward to Daily Rewards, a gem pack the balance is short of
+// to the Shop's gems tab. Each is offered only where it leads to a pack.
+const PackSources = ({ onBuy, routes = {} }) => {
   const {
-    coins, seasonXP, claimedBattlePassRewards, hasBattlePassPremium, consecutiveLogins, lastLoginDate, syncSeason,
+    coins, gems, seasonXP, claimedBattlePassRewards, hasBattlePassPremium, consecutiveLogins, lastLoginDate, syncSeason,
   } = useGameStore();
   // Roll the Battle Pass over first, as the pass does when it opens: a save
   // from an ended season still holds that season's XP and claims, and read
@@ -793,6 +799,7 @@ const PackSources = ({ onBuy }) => {
   // never painted.
   useLayoutEffect(() => { syncSeason(); }, [syncSeason]);
   const coin = nextCoinPack(coins);
+  const gem = nextGemPack(gems);
   const pass = nextPassPack(
     { seasonXP, claimed: claimedBattlePassRewards, hasPremium: hasBattlePassPremium },
     BATTLE_PASS_REWARDS,
@@ -800,6 +807,8 @@ const PackSources = ({ onBuy }) => {
   const daily = nextDailyPack({ consecutiveLogins, lastLoginDate });
   const packs = (n) => `${n} pack${n === 1 ? '' : 's'}`;
   const DISC = 'grid h-9 w-9 shrink-0 place-items-center rounded-full bg-night-950/60 border border-white/10';
+  // Routes are glass: the one brass button here is the coin buy.
+  const ROUTE = `${ACTION} btn-glass mt-2 h-10 px-4 text-[15px]`;
   return (
     <div className="panel-glass w-full max-w-md rounded-xl p-4 text-left">
       <h2 className="font-display text-lg font-extrabold leading-tight text-white">No packs to open</h2>
@@ -835,6 +844,32 @@ const PackSources = ({ onBuy }) => {
             </div>
           </li>
         )}
+        {gem && (
+          <li className="flex gap-3">
+            <span aria-hidden="true" className={DISC}>
+              <Gem className="h-4 w-4 text-fuchsia-300" strokeWidth={2.4} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white">{`${gem.item.name} · ${gem.item.price.toLocaleString()} gems`}</p>
+              <p className="mt-0.5 text-xs text-plush-300">
+                {gem.short > 0
+                  ? `You have ${gems.toLocaleString()} gems: ${gem.short.toLocaleString()} short.`
+                  : 'You have enough for one now.'}
+              </p>
+              {gem.short === 0 ? (
+                <button type="button" onClick={() => onBuy(gem.item)} className={ROUTE}>
+                  <Gem aria-hidden="true" className="h-4 w-4 text-fuchsia-300" strokeWidth={2.4} />
+                  {`Buy a ${gem.item.name}`}
+                </button>
+              ) : routes.onGetGems && (
+                <button type="button" onClick={routes.onGetGems} className={ROUTE}>
+                  <Gem aria-hidden="true" className="h-4 w-4 text-fuchsia-300" strokeWidth={2.4} />
+                  Get gems
+                </button>
+              )}
+            </div>
+          </li>
+        )}
         {pass && (
           <li className="flex gap-3">
             <span aria-hidden="true" className={DISC}>
@@ -847,6 +882,12 @@ const PackSources = ({ onBuy }) => {
               <p className="mt-0.5 text-xs text-plush-300">
                 {pass.ready ? 'Reached — claim it in the Battle Pass.' : `${pass.xpToGo.toLocaleString()} XP to go.`}
               </p>
+              {pass.ready && routes.onBattlePass && (
+                <button type="button" onClick={routes.onBattlePass} className={ROUTE}>
+                  <Trophy aria-hidden="true" className="h-4 w-4 text-brass-300" strokeWidth={2.4} />
+                  Open the Battle Pass
+                </button>
+              )}
             </div>
           </li>
         )}
@@ -864,6 +905,12 @@ const PackSources = ({ onBuy }) => {
                     ? 'Tomorrow, if you log in.'
                     : `In ${daily.inDays} days, if you log in each day.`}
               </p>
+              {daily.inDays === 0 && routes.onDailyRewards && (
+                <button type="button" onClick={routes.onDailyRewards} className={ROUTE}>
+                  <CalendarDays aria-hidden="true" className="h-4 w-4 text-sky-300" strokeWidth={2.4} />
+                  Open Daily Rewards
+                </button>
+              )}
             </div>
           </li>
         )}

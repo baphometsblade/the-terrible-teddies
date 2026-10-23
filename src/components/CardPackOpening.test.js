@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createElement, act } from 'react';
 import { createRoot } from 'react-dom/client';
 import CardPackOpening from './CardPackOpening';
@@ -17,14 +17,15 @@ const firstDailyPack = DAILY_REWARDS.findIndex((r) => r.packs > 0) + 1;
 
 let host;
 let root;
-const render = () => {
+const render = (props = {}) => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   host = document.createElement('div');
   document.body.appendChild(host);
   root = createRoot(host);
-  act(() => root.render(createElement(CardPackOpening, { onClose() {} })));
+  act(() => root.render(createElement(CardPackOpening, { onClose() {}, ...props })));
   return host;
 };
+const buttonNamed = (name) => [...host.querySelectorAll('button')].find((b) => b.textContent === name);
 const text = () => host.textContent.replace(/\s+/g, ' ');
 
 beforeEach(() => {
@@ -113,5 +114,59 @@ describe('the empty Card Packs table', () => {
     expect(useGameStore.getState().cardPacks).toBe(cheapest.quantity);
     expect(useGameStore.getState().coins).toBe(0);
     expect(text()).not.toContain('No packs to open');
+  });
+});
+
+// The table named where packs come from but could not take the player there.
+// Each route is offered only where it leads to a pack.
+describe("the empty table's routes", () => {
+  const routes = () => ({ onGetGems: vi.fn(), onBattlePass: vi.fn(), onDailyRewards: vi.fn() });
+  const cheapestGem = SHOP_ITEMS.filter((i) => ['pack', 'premium', 'legendary'].includes(i.type) && i.currency === 'gems')
+    .reduce((a, b) => (a.price <= b.price ? a : b));
+
+  it('sends a player short of gems to get them, and lets one with enough buy the gem pack', () => {
+    const r = routes();
+    useGameStore.setState({ coins: 0, gems: cheapestGem.price - 1 });
+    render(r);
+    expect(text()).toContain(`${cheapestGem.name} · ${cheapestGem.price} gems`);
+    act(() => buttonNamed('Get gems').click());
+    expect(r.onGetGems).toHaveBeenCalledTimes(1);
+    act(() => root.unmount());
+
+    useGameStore.setState({ gems: cheapestGem.price });
+    render(r);
+    expect(buttonNamed('Get gems')).toBeUndefined();
+    act(() => buttonNamed(`Buy a ${cheapestGem.name}`).click());
+    expect(useGameStore.getState().gems).toBe(0);
+    expect(text()).not.toContain('No packs to open');
+  });
+
+  it('opens the Battle Pass only for a pack tier that is reached', () => {
+    const r = routes();
+    useGameStore.setState({ coins: 0, seasonXP: firstPassPack.xpRequired - 1 });
+    render(r);
+    expect(buttonNamed('Open the Battle Pass')).toBeUndefined();
+    act(() => root.unmount());
+
+    useGameStore.setState({ seasonXP: firstPassPack.xpRequired });
+    render(r);
+    act(() => buttonNamed('Open the Battle Pass').click());
+    expect(r.onBattlePass).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens Daily Rewards only when today's reward is unclaimed and pays packs", () => {
+    const r = routes();
+    render(r); // claimed today
+    expect(buttonNamed('Open Daily Rewards')).toBeUndefined();
+    act(() => root.unmount());
+
+    // The streak continues from yesterday onto the first day that pays packs.
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    useGameStore.setState({ consecutiveLogins: firstDailyPack - 1, lastLoginDate: yesterday.toDateString() });
+    render(r);
+    expect(text()).toContain("Today's daily reward.");
+    act(() => buttonNamed('Open Daily Rewards').click());
+    expect(r.onDailyRewards).toHaveBeenCalledTimes(1);
   });
 });
