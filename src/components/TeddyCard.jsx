@@ -5,6 +5,7 @@ import {
   Heart, Layers, Bomb, Swords, Sparkles,
 } from 'lucide-react';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
+import { BrassCoin } from '@/components/ui/game-chrome';
 
 // Dark-face fallbacks for cards without a rarity (typed opponent cards).
 const TYPE_STYLES = {
@@ -316,12 +317,9 @@ const TeddyCard = ({
 
         {/* Cost: a brass coin. */}
         {teddy.cost !== undefined && (
-          <div
-            className="absolute top-[2px] right-[2px] z-10 w-[17px] h-[17px] rounded-full grid place-items-center text-night-950 text-[10px] font-display font-extrabold leading-none tabular-nums ring-1 ring-night-950/80 shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
-            style={{ background: 'radial-gradient(circle at 50% 30%, #fffbeb, #fbbf24 55%, #b45309)' }}
-          >
+          <BrassCoin size="card" className="absolute top-[2px] right-[2px] z-10">
             {teddy.cost}
-          </div>
+          </BrassCoin>
         )}
 
         {/* Rules line */}
