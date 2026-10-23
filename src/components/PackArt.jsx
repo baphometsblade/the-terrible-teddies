@@ -1,5 +1,6 @@
-import { Package, Gem, Crown } from 'lucide-react';
+import { Package, Gem, Crown, Coins } from 'lucide-react';
 import { RARITY_ORDER, RARITY_METAL } from '@/lib/rarity';
+import { BrassCoin } from '@/components/ui/game-chrome';
 
 // The card-pack wrapper, drawn once for both store screens: the Shop's pack
 // tiles and the Card Packs table. They used to keep a copy each, and the copies
@@ -103,6 +104,25 @@ export const PackStack = ({ look, quantity = 1, size = 'sm' }) => {
       {FAN[layers].map((t, i) => (
         <span key={i} className={`col-start-1 row-start-1 ${t}`}>
           <MiniPack look={look} />
+        </span>
+      ))}
+    </span>
+  );
+};
+
+/**
+ * A coin bag's art, sized like a pack stack (same `size` scale): one brass
+ * coin, or a fan of three for a big bag. Decorative.
+ */
+export const CoinStack = ({ quantity = 1, size = 'sm' }) => {
+  const layers = quantity >= 1000 ? 3 : 1;
+  return (
+    <span className={`grid place-items-center ${MINI_SIZE[size]}`} aria-hidden="true">
+      {FAN[layers].map((t, i) => (
+        <span key={i} className={`col-start-1 row-start-1 ${t}`}>
+          <BrassCoin size="em" className="shadow-[0_8px_16px_-8px_rgba(0,0,0,0.95)]">
+            <Coins className="w-[1.7em] h-[1.7em] text-night-950/70" strokeWidth={2.2} />
+          </BrassCoin>
         </span>
       ))}
     </span>

@@ -1,8 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import fs, { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { ALL_CARDS, SHOP_ITEMS, PACK_SLOTS } from '@/stores/gameStore';
+import { createElement, act } from 'react';
+import { createRoot } from 'react-dom/client';
+import { ALL_CARDS, SHOP_ITEMS, PACK_SLOTS, PACK_ODDS, useGameStore } from '@/stores/gameStore';
 import { BATTLE_PASS_REWARDS } from './BattlePass';
+import { bestValuePackId } from './StoreTile';
+import CardPackOpening from './CardPackOpening';
+import Shop from './Shop';
 
 // Pins what the shop CLAIMS against what the economy actually does.
 //
@@ -21,6 +26,31 @@ import { BATTLE_PASS_REWARDS } from './BattlePass';
 //    the gem tiers whose entire selling point is that their first card ignores
 //    that table.
 const read = (p) => readFileSync(resolve(process.cwd(), p), 'utf8');
+const stripComments = (src) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+// Both storefronts, rendered (the Shop opens on its Card Packs tab). A real
+// client render, not renderToStaticMarkup: on the server zustand reads the
+// store's INITIAL state, so a balance set here would not reach the tiles.
+const renderHtml = (Component) => {
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  act(() => root.render(createElement(Component, { onClose() {} })));
+  const html = host.innerHTML;
+  act(() => root.unmount());
+  host.remove();
+  return html;
+};
+const renderCardPacks = () => renderHtml(CardPackOpening);
+const renderShop = () => renderHtml(Shop);
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// The rendered tile for one item, found by its accessible name.
+const tileFor = (html, item) => html.match(new RegExp(
+  `<button[^>]*aria-label="Buy ${escapeRe(item.name)} for ${item.price} ${item.currency}"[^>]*>([\\s\\S]*?)</button>`
+))?.[0] ?? null;
+const SOLD_AS_TILES = ['pack', 'premium', 'legendary', 'coins'];
 
 describe('shop copy matches the economy it is selling', () => {
   it('does not claim card exclusivity the pack pool does not enforce', () => {
@@ -51,29 +81,37 @@ describe('shop copy matches the economy it is selling', () => {
     }
   });
 
+  // Rewritten when the tiles moved to SHOP_ITEMS: the badge used to be a
+  // hand-placed JSX prop this test regex-matched; now it is computed, so the
+  // test pins the computation and that both storefronts badge from it.
   it('puts BEST VALUE on the tile that is actually the best value', () => {
-    const packSrc = read('src/components/CardPackOpening.jsx');
-
     // Coins per card for each coin-priced pack tier, from the real table.
-    const CARDS_PER_PACK = 5;
+    const CARDS_PER_PACK = PACK_SLOTS.regular.size;
     const coinPacks = SHOP_ITEMS
       .filter((i) => i.type === 'pack' && i.currency === 'coins')
       .map((i) => ({ id: i.id, perCard: i.price / (i.quantity * CARDS_PER_PACK) }))
       .sort((a, b) => a.perCard - b.perCard);
     expect(coinPacks.length, 'no coin pack tiers found').toBeGreaterThanOrEqual(2);
 
-    const best = coinPacks[0].id;
-    // Find which handleBuyPack('...') tile carries the badge.
-    const badged = [...packSrc.matchAll(
-      /handleBuyPack\('(\w+)'\)\}\s*\n\s*badge="BEST VALUE"/g
-    )].map((m) => m[1]);
-
     expect(
-      badged,
-      `BEST VALUE must sit on ${best} (${coinPacks[0].perCard} coins/card), the ` +
-        `cheapest per card. Found it on: ${badged.join(', ') || 'no tile'}. ` +
+      bestValuePackId(),
+      `BEST VALUE must sit on ${coinPacks[0].id} (${coinPacks[0].perCard} coins/card). ` +
         `Full ladder: ${coinPacks.map((p) => `${p.id}=${p.perCard}`).join(', ')}`
-    ).toEqual([best]);
+    ).toBe(coinPacks[0].id);
+
+    // And it follows a retune: make the single pack the cheapest per pack.
+    const retuned = SHOP_ITEMS.map((i) => (i.id === 'pack_1' ? { ...i, price: 1 } : i));
+    expect(bestValuePackId(retuned)).toBe('pack_1');
+
+    // Both storefronts render exactly one badge, on that tile.
+    for (const [label, html] of [['Card Packs', renderCardPacks()], ['Shop', renderShop()]]) {
+      const badges = html.match(/>BEST VALUE</g) || [];
+      expect(badges, `${label} should show one BEST VALUE badge`).toHaveLength(1);
+      const best = SHOP_ITEMS.find((i) => i.id === bestValuePackId());
+      const tile = tileFor(html, best);
+      expect(tile, `${label} has no tile for ${best.id}`).toBeTruthy();
+      expect(tile, `${label}'s BEST VALUE is not on ${best.id}`).toContain('>BEST VALUE<');
+    }
   });
 
   it('scopes the posted drop rates, which do not apply to guaranteed slots', () => {
@@ -93,6 +131,90 @@ describe('shop copy matches the economy it is selling', () => {
         'Legendary packs a first card on different odds. Scope the heading ' +
         '(e.g. "— per card, standard packs") so the paid tiers are not understated.'
     ).toBeGreaterThan(0);
+  });
+});
+
+// Card Packs used to hardcode a second storefront (names, copy, prices and an
+// opacity-50 "can't afford" state) that had already drifted from the Shop's,
+// and sold no Large Coin Bag at all. Both now render SHOP_ITEMS through one
+// tile; these pin that, by rendering both.
+describe('both storefronts sell SHOP_ITEMS through the same tile', () => {
+  const sold = SHOP_ITEMS.filter((i) => SOLD_AS_TILES.includes(i.type));
+  const saved = useGameStore.getState();
+  afterEach(() => useGameStore.setState({ coins: saved.coins, gems: saved.gems }));
+
+  it('lists every pack and coin bag in both, at the table price', () => {
+    expect(sold.map((i) => i.id)).toEqual(expect.arrayContaining(['coins_small', 'coins_large']));
+    for (const [label, html] of [['Card Packs', renderCardPacks()], ['Shop', renderShop()]]) {
+      for (const item of sold) {
+        expect(tileFor(html, item), `${label} does not sell ${item.id} at ${item.price} ${item.currency}`).toBeTruthy();
+      }
+    }
+  });
+
+  it('a retuned price reaches both storefronts', () => {
+    const item = SHOP_ITEMS.find((i) => i.id === 'pack_5');
+    const was = item.price;
+    item.price = 2345;
+    useGameStore.setState({ coins: 99999 });
+    try {
+      for (const html of [renderCardPacks(), renderShop()]) {
+        expect(tileFor(html, item)).toContain('2,345');
+      }
+    } finally {
+      item.price = was;
+    }
+  });
+
+  it('Card Packs carries no price, id or affordability literal of its own', () => {
+    const src = stripComments(read('src/components/CardPackOpening.jsx'));
+    expect(src, 'a hardcoded price={…} prop').not.toMatch(/price=\{\s*\d/);
+    expect(src, 'a hardcoded affordability check').not.toMatch(/(coins|gems)\s*>=\s*\d/);
+    const ids = SHOP_ITEMS.map((i) => i.id).filter((id) => new RegExp(`['"\`]${id}['"\`]`).test(src));
+    expect(ids, 'Card Packs names SHOP_ITEMS ids by hand').toEqual([]);
+  });
+
+  it('short of the price, a tile stays live and says how much more is needed', () => {
+    const pack = SHOP_ITEMS.find((i) => i.id === 'pack_1');
+    useGameStore.setState({ coins: pack.price - 37 });
+    for (const html of [renderCardPacks(), renderShop()]) {
+      const tile = tileFor(html, pack);
+      expect(tile).not.toMatch(/\sdisabled(=|\s|>)/);
+      expect(tile).not.toContain('opacity-50');
+      expect(tile.replace(/<[^>]+>/g, '')).toContain('Need 37 more');
+    }
+    useGameStore.setState({ coins: pack.price });
+    expect(tileFor(renderCardPacks(), pack).replace(/<[^>]+>/g, '')).not.toContain('Need');
+  });
+
+  it('the copy on each tile is true of the table', () => {
+    const single = SHOP_ITEMS.find((i) => i.type === 'pack' && i.quantity === 1);
+    for (const item of sold) {
+      for (const copy of [item.description, item.short].filter(Boolean)) {
+        // "(N% off)" / "· N% off": against N single packs bought one by one.
+        const off = copy.match(/(\d+)% off/);
+        if (off) {
+          const real = Math.round((1 - item.price / (item.quantity * single.price)) * 100);
+          expect(Number(off[1]), `${item.id}: "${copy}"`).toBe(real);
+        }
+        // "N cards" / "N random cards": the packs' real size.
+        const cards = copy.match(/(\d+)\s+(?:random\s+)?cards/);
+        if (cards) {
+          const tier = { pack: 'regular', premium: 'premium', legendary: 'legendary' }[item.type];
+          expect(Number(cards[1]), `${item.id}: "${copy}"`).toBe(item.quantity * PACK_SLOTS[tier].size);
+        }
+        // "+N coins": what the bag pays.
+        const coins = copy.match(/\+([\d,]+) coins/);
+        if (coins) expect(Number(coins[1].replace(/,/g, '')), `${item.id}: "${copy}"`).toBe(item.quantity);
+        // A guarantee: the tier's first card rolls on nothing worse.
+        const tier = { premium: 'premium', legendary: 'legendary' }[item.type];
+        if (tier) {
+          const first = PACK_ODDS[PACK_SLOTS[tier].first].map(([r]) => r);
+          if (/rare or better/i.test(copy)) expect(first.every((r) => ['rare', 'epic', 'legendary'].includes(r))).toBe(true);
+          if (/legendary/i.test(copy)) expect(first).toEqual(['legendary']);
+        }
+      }
+    }
   });
 });
 

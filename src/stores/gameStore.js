@@ -120,14 +120,17 @@ export const DAILY_REWARDS = [
   { day: 7, coins: 300, gems: 25, cards: 0, packs: 2 },
 ];
 
+// Both storefronts (the Shop and the Card Packs table) render from this one
+// table: `description` on the Shop's tiles, `short` on the compact Card Packs
+// tiles. shopCopy.test.js checks the claims in both against the prices.
 export const SHOP_ITEMS = [
-  { id: 'pack_1', name: 'Card Pack', description: '5 random cards', icon: '📦', price: 200, currency: 'coins', type: 'pack', quantity: 1 },
-  { id: 'pack_5', name: '5 Card Packs', description: '25 random cards (10% off)', icon: '📦', price: 900, currency: 'coins', type: 'pack', quantity: 5 },
-  { id: 'pack_10', name: '10 Card Packs', description: '50 random cards (20% off)', icon: '📦📦', price: 1600, currency: 'coins', type: 'pack', quantity: 10 },
-  { id: 'premium_pack', name: 'Premium Pack', description: 'Guaranteed rare or better!', icon: '💎', price: 50, currency: 'gems', type: 'premium', quantity: 1 },
-  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards, guaranteed legendary!', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
+  { id: 'pack_1', name: 'Card Pack', description: '5 random cards', short: '5 cards', icon: '📦', price: 200, currency: 'coins', type: 'pack', quantity: 1 },
+  { id: 'pack_5', name: '5 Card Packs', description: '25 random cards (10% off)', short: '25 cards · 10% off', icon: '📦', price: 900, currency: 'coins', type: 'pack', quantity: 5 },
+  { id: 'pack_10', name: '10 Card Packs', description: '50 random cards (20% off)', short: '50 cards · 20% off', icon: '📦📦', price: 1600, currency: 'coins', type: 'pack', quantity: 10 },
+  { id: 'premium_pack', name: 'Premium Pack', description: 'Guaranteed rare or better!', short: 'Rare or better', icon: '💎', price: 50, currency: 'gems', type: 'premium', quantity: 1 },
+  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards, guaranteed legendary!', short: '10 cards · 1 legendary', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
   { id: 'coins_small', name: 'Small Coin Bag', description: '+500 coins', icon: '💰', price: 10, currency: 'gems', type: 'coins', quantity: 500 },
-  { id: 'coins_large', name: 'Large Coin Bag', description: '+3000 coins', icon: '💰', price: 50, currency: 'gems', type: 'coins', quantity: 3000 },
+  { id: 'coins_large', name: 'Large Coin Bag', description: '+3,000 coins', icon: '💰', price: 50, currency: 'gems', type: 'coins', quantity: 3000 },
   // Timed booster rather than a lump sum: pays out only as you play, so it
   // rewards an active day instead of being a flat coin bag (those already
   // exist above at a guaranteed rate). Priced between the two bags — it beats

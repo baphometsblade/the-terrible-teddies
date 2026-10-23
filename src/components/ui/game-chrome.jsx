@@ -119,11 +119,14 @@ export const SectionHeading = ({ children, as: Tag = 'h3', id, className = 'mb-3
 // The brass a card's cost is struck on (TeddyCard's cost coin), lit from above.
 export const COIN_BRASS = 'radial-gradient(circle at 50% 30%, #fffbeb, #fbbf24 55%, #b45309)';
 
+// `em` takes its size from the parent's font-size, like PackArt's mini packs,
+// so a coin drawn into a pack-sized slot scales with it.
 const COIN_SIZES = {
   card: 'h-[17px] w-[17px] text-[10px]',
   sm: 'h-6 w-6 text-xs',
   md: 'h-9 w-9 text-sm',
   lg: 'h-12 w-12 text-base',
+  em: 'h-[3.6em] w-[3.6em]',
 };
 
 /**

@@ -9,10 +9,9 @@ import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useDialog } from '@/hooks/useDialog';
 import { pressable } from '@/lib/a11y';
 import { RARITY_METAL, RARITY_ORDER } from '@/lib/rarity';
-import { celebrate } from '@/lib/celebrate';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { Medallion, SectionHeading, WalletChips } from '@/components/ui/game-chrome';
-import { PACK_LOOK, PackStack } from './PackArt';
+import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
 
 const GEM_BUNDLES = [
   { id: 'gems_small', gems: 50, price: 0.99, bonus: 0, popular: false },
@@ -30,75 +29,6 @@ const ACTION =
   'disabled:opacity-50 disabled:cursor-not-allowed';
 
 const CHECKOUT_STATUS = 'Opening secure checkout…';
-
-// In-game prices sit in a glass pill; real-money prices (the Buy Gems tab) are
-// brass, because those are the purchases.
-const PricePill = ({ currency, price, className = '' }) => {
-  const Icon = currency === 'gems' ? Gem : Coins;
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 shrink-0 rounded-full h-8 px-3 bg-night-950/70 border border-white/10
-        shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] font-display font-extrabold text-[15px] tabular-nums
-        ${currency === 'gems' ? 'text-fuchsia-200' : 'text-brass-200'} ${className}`}
-    >
-      <Icon aria-hidden="true" className="w-4 h-4" strokeWidth={2.4} />
-      {price.toLocaleString()}
-    </span>
-  );
-};
-
-// Hoisted to module scope so their identity is stable across renders. Declared
-// inside Shop they were redefined every render, so a coin/pack purchase (which
-// stays on the shop screen and re-renders it) remounted every tile and replayed
-// its entrance animation, dropping focus from the just-clicked card. The parent
-// passes the buy handler (and processing flag) as props.
-//
-// A pack tile is a native button: it is always actionable (an unaffordable
-// pack still answers with a "Not enough coins" toast), so nothing here needs
-// the role to come and go. Its name is pinned by the e2e suite, so what the
-// tier is sold on (the guarantee) reaches a screen reader as its description.
-//
-// The price sits under the copy on a phone rather than beside it: beside it, a
-// 320px screen left the name a 52px column ("10 / Card / Packs").
-const PackCard = ({ item, onBuy }) => {
-  const descId = useId();
-  const tier = item.type === 'pack' ? 'regular' : item.type;
-  const look = PACK_LOOK[tier];
-  const feature = tier !== 'regular';
-  return (
-    <button
-      type="button"
-      onClick={onBuy}
-      aria-label={`Buy ${item.name} for ${item.price} ${item.currency}`}
-      aria-describedby={descId}
-      className={`tile-glass sheen relative w-full h-full rounded-2xl text-left transition-transform duration-200
-        hover:-translate-y-0.5 ${FOCUS_OUTLINE}
-        ${tier === 'legendary' ? 'trim-brass' : ''} ${tier === 'premium' ? 'border-purple-300/25' : ''}
-        ${feature
-          ? 'flex items-center gap-4 p-4 sm:p-5'
-          : 'flex items-center gap-3 p-3 pr-4 sm:flex-col sm:text-center sm:gap-3 sm:p-5'}`}
-    >
-      {/* The tier's own light, pooled behind the pack art. */}
-      {feature && (
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
-          style={{ background: `radial-gradient(ellipse 55% 90% at 12% 50%, ${look.light}, transparent 70%)` }}
-        />
-      )}
-      <span className={`relative shrink-0 grid place-items-center ${feature ? 'w-20 h-24' : 'w-[72px] h-16 sm:w-28 sm:h-24'}`}>
-        <PackStack look={look} quantity={item.quantity} size={feature ? 'md' : 'smToMd'} />
-      </span>
-      <span className={`relative flex-1 min-w-0 flex flex-col gap-0.5 ${feature ? '' : 'sm:items-center'}`}>
-        <span className={`font-display font-extrabold leading-tight text-white ${feature ? 'text-xl' : 'text-base sm:text-lg'}`}>{item.name}</span>
-        <span id={descId} className="text-xs leading-snug text-plush-300">{item.description}</span>
-        <span className={feature ? 'mt-2.5' : 'mt-2 sm:mt-auto sm:pt-2.5'}>
-          <PricePill currency={item.currency} price={item.price} />
-        </span>
-      </span>
-    </button>
-  );
-};
 
 // Each gem tier wears the next metal up the rarity ladder, pewter to brass, so
 // the five tiles read as a ladder rather than five copies of one tile.
@@ -177,7 +107,7 @@ const TAB_MOTION = {
 };
 
 const Shop = ({ onClose }) => {
-  const { coins, gems, cardPacks, premiumPacks, legendaryPacks, buyShopItem, coinDoublerExpiresAt } = useGameStore();
+  const { coins, gems, cardPacks, premiumPacks, legendaryPacks, coinDoublerExpiresAt } = useGameStore();
   // Purchases re-render via the store subscription, but time ELAPSING is not a
   // store write — a dialog left open across the expiry would keep advertising
   // an "Active" booster that recordBattleResult (which recomputes from
@@ -250,23 +180,11 @@ const Shop = ({ onClose }) => {
     analytics.trackShopView(activeTab);
   }, [activeTab]);
 
+  const buyItem = useStoreBuy();
   const handleBuyItem = (item) => {
-    const result = buyShopItem(item.id);
-    if (result.success) {
-      // Re-read the clock: `now` only ticks once a minute, so it predates the
-      // purchase, and a 24h Coin Doubler bought a moment ago read "25h left".
-      setNow(Date.now());
-      analytics.trackInGamePurchase({
-        itemId: item.id,
-        itemName: item.name,
-        cost: item.price,
-        currency: item.currency,
-      });
-      toast({ title: "Purchase Successful!", description: result.message });
-      celebrate({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-    } else {
-      toast({ title: "Purchase Failed", description: result.message, variant: "destructive" });
-    }
+    // Re-read the clock: `now` only ticks once a minute, so it predates the
+    // purchase, and a 24h Coin Doubler bought a moment ago read "25h left".
+    if (buyItem(item).success) setNow(Date.now());
   };
 
   const handleGemPurchase = async (bundle) => {
@@ -296,8 +214,10 @@ const Shop = ({ onClose }) => {
     }
   };
 
-  const coinPacks = SHOP_ITEMS.filter(i => i.type === 'pack');
-  const gemPacks = SHOP_ITEMS.filter(i => ['premium', 'legendary'].includes(i.type));
+  const coinPacks = storeItems(['pack']);
+  const gemPacks = storeItems(['premium', 'legendary']);
+  const coinBags = storeItems(['coins']);
+  const bestValue = bestValuePackId();
 
   return (
     <div
@@ -397,14 +317,26 @@ const Shop = ({ onClose }) => {
                 <SectionHeading>Standard packs</SectionHeading>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {coinPacks.map(item => (
-                    <PackCard key={item.id} item={item} onBuy={() => handleBuyItem(item)} />
+                    <StoreTile key={item.id} item={item} bestValue={item.id === bestValue} onBuy={handleBuyItem} />
                   ))}
                 </div>
                 <div className="mt-6">
                   <SectionHeading>Guaranteed packs</SectionHeading>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {gemPacks.map(item => (
-                      <PackCard key={item.id} item={item} onBuy={() => handleBuyItem(item)} />
+                      <StoreTile key={item.id} item={item} onBuy={handleBuyItem} />
+                    ))}
+                  </div>
+                </div>
+                {/* Gems for coins. Sold here and under the Card Packs table
+                    alike — coins_large used to be sold nowhere, while the
+                    Starter offer below pointed players at "Coin bags in the
+                    shop". */}
+                <div className="mt-6">
+                  <SectionHeading>Coin bags</SectionHeading>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {coinBags.map(item => (
+                      <StoreTile key={item.id} item={item} onBuy={handleBuyItem} />
                     ))}
                   </div>
                 </div>

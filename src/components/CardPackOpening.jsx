@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, PackageOpen, Gem, Crown, Coins, X, Sparkles, PartyPopper } from 'lucide-react';
+import { Package, PackageOpen, Crown, Coins, X, Sparkles, PartyPopper } from 'lucide-react';
 import TeddyCard, { CardBack } from './TeddyCard';
 import { useGameStore } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
 import { celebrate } from '@/lib/celebrate';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { Medallion, SectionHeading, WalletChips } from '@/components/ui/game-chrome';
-import { PACK_LOOK, HeroPack, PackStack } from './PackArt';
+import { PACK_LOOK, HeroPack } from './PackArt';
+import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
 
 import { RARITY, RARITY_ORDER, RARITY_METAL } from '@/lib/rarity';
 
@@ -23,8 +24,13 @@ const ACTION = `inline-flex items-center justify-center gap-2 h-11 rounded-xl fo
 // fits; below it the cards stay 96px and wrap. A ten-card pack is two rows.
 const ROW_CAP = 552;
 
+// The quick shop under the table sells what the Shop sells, from the same table.
+const QUICK_SHOP = storeItems(['pack', 'premium', 'legendary', 'coins']);
+const BEST_VALUE = bestValuePackId();
+
 const CardPackOpening = ({ onClose }) => {
-  const { cardPacks, premiumPacks, legendaryPacks, openCardPack, coins, gems, buyShopItem, getNextPackType } = useGameStore();
+  const { cardPacks, premiumPacks, legendaryPacks, openCardPack, coins, gems, getNextPackType } = useGameStore();
+  const buyItem = useStoreBuy();
   const [isOpening, setIsOpening] = useState(false);
   const [pulledCards, setPulledCards] = useState(null);
   const [dupeCoins, setDupeCoins] = useState(0);
@@ -164,13 +170,6 @@ const CardPackOpening = ({ onClose }) => {
     closeRef.current?.focus();
   };
 
-  const handleBuyPack = (itemId) => {
-    const result = buyShopItem(itemId);
-    if (result.success) {
-      fireConfetti('rare');
-    }
-  };
-
   const resetView = () => {
     setPulledCards(null);
     setDupeCoins(0);
@@ -213,13 +212,15 @@ const CardPackOpening = ({ onClose }) => {
       // Scrolls, and the panel is pinned to the top rather than centred: the
       // shop below the table goes away while a pack opens, and a centred panel
       // would jump down the screen under the player the moment they tap Open.
-      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center p-3 sm:p-6 overflow-y-auto"
+      // Below 360px the three nested paddings (here, the content, the stage)
+      // drop to 8px each: at 320 they took 72px of a 320px screen.
+      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center p-3 max-[359px]:p-2 sm:p-6 overflow-y-auto"
     >
       <div className="relative w-full max-w-5xl rounded-2xl dialog-panel overflow-hidden">
         {/* Header. Below md the balances take their own row under the title
             and the close control: from sm they no longer fit beside a
             "Card Packs" title and the X wrapped under it. */}
-        <div className="relative flex flex-wrap items-center gap-3 px-3 sm:px-6 pt-4 sm:pt-5 pb-4">
+        <div className="relative flex flex-wrap items-center gap-3 px-3 max-[359px]:px-2 sm:px-6 pt-4 sm:pt-5 pb-4">
           <div className="flex items-center gap-3 min-w-0 mr-auto">
             <Medallion icon={Package} />
             <h1 className="font-display text-3xl md:text-4xl font-extrabold leading-none text-brass-gradient">
@@ -244,7 +245,7 @@ const CardPackOpening = ({ onClose }) => {
           </button>
         </div>
 
-        <div className="relative px-3 sm:px-6 pb-5 sm:pb-6">
+        <div className="relative px-3 max-[359px]:px-2 sm:px-6 pb-5 sm:pb-6">
           <p role="status" className="sr-only">{announcement}</p>
 
           {/* The stage: a lit display case the pack sits in and the cards are
@@ -257,7 +258,7 @@ const CardPackOpening = ({ onClose }) => {
             role="group"
             aria-label="Pack table"
             onKeyDown={onStageKeyDown}
-            className={`relative isolate rounded-2xl border border-white/5 bg-night-950/55 shadow-[inset_0_2px_24px_rgba(0,0,0,0.65)] px-3 py-6 sm:p-8 outline-none ${
+            className={`relative isolate rounded-2xl border border-white/5 bg-night-950/55 shadow-[inset_0_2px_24px_rgba(0,0,0,0.65)] px-3 max-[359px]:px-2 py-6 sm:p-8 outline-none ${
               tearing ? 'overflow-hidden' : ''
             }`}
           >
@@ -418,68 +419,23 @@ const CardPackOpening = ({ onClose }) => {
           {!pulledCards && !isOpening && (
             <div className="mt-6">
               <SectionHeading>Shop</SectionHeading>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
-                <ShopItem
-                  tier="regular"
-                  quantity={1}
-                  name="Card Pack"
-                  description="5 cards"
-                  price={200}
-                  currency="coins"
-                  canAfford={coins >= 200}
-                  onClick={() => handleBuyPack('pack_1')}
-                />
-                <ShopItem
-                  tier="regular"
-                  quantity={5}
-                  name="5 Packs"
-                  description="25 cards (-10%)"
-                  price={900}
-                  currency="coins"
-                  canAfford={coins >= 900}
-                  onClick={() => handleBuyPack('pack_5')}
-                />
-                <ShopItem
-                  tier="regular"
-                  quantity={10}
-                  name="10 Packs"
-                  description="50 cards (-20%)"
-                  price={1600}
-                  currency="coins"
-                  canAfford={coins >= 1600}
-                  onClick={() => handleBuyPack('pack_10')}
-                  badge="BEST VALUE"
-                />
-                <ShopItem
-                  tier="premium"
-                  quantity={1}
-                  name="Premium Pack"
-                  description="Guaranteed rare+"
-                  price={50}
-                  currency="gems"
-                  canAfford={gems >= 50}
-                  onClick={() => handleBuyPack('premium_pack')}
-                />
-                <ShopItem
-                  tier="legendary"
-                  quantity={1}
-                  name="Legendary Pack"
-                  description="10 cards, 1 legendary!"
-                  price={200}
-                  currency="gems"
-                  canAfford={gems >= 200}
-                  onClick={() => handleBuyPack('legendary_pack')}
-                  badge="PREMIUM"
-                />
-                <ShopItem
-                  tier="coins"
-                  name="Coin Bag"
-                  description="+500 coins"
-                  price={10}
-                  currency="gems"
-                  canAfford={gems >= 10}
-                  onClick={() => handleBuyPack('coins_small')}
-                />
+              {/* Every item the Shop sells for packs or coins, through the
+                  Shop's own tile. Eight cells for seven items: the BEST VALUE
+                  tile is two wide, so the grid comes out in whole rows (of 2,
+                  then 4) instead of leaving one tile alone on the last. Not 8
+                  across at lg: in a 112px tile "Need 144 more" ran out of the
+                  pill. */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+                {QUICK_SHOP.map((item) => (
+                  <StoreTile
+                    key={item.id}
+                    item={item}
+                    variant="compact"
+                    bestValue={item.id === BEST_VALUE}
+                    className={item.id === BEST_VALUE ? 'col-span-2' : ''}
+                    onBuy={buyItem}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -600,56 +556,5 @@ const RevealCard = ({ card, index, revealed }) => {
     </motion.div>
   );
 };
-
-// The shop tiles' art: the same pack wrapper as the Shop's (PackArt), fanned
-// into a stack for a bundle; the coin bag is a brass coin.
-const ItemArt = ({ tier, quantity }) => {
-  if (tier === 'coins') {
-    return <Medallion icon={Coins} className="shadow-[0_8px_16px_-8px_rgba(0,0,0,0.95)]" />;
-  }
-  return <PackStack look={PACK_LOOK[tier]} quantity={quantity} size="sm" />;
-};
-
-const ShopItem = ({ tier, quantity = 1, name, description, price, currency, canAfford, onClick, badge }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={!canAfford}
-    className={`tile-glass sheen relative h-full rounded-xl px-2 pt-8 pb-3 flex flex-col items-center text-center
-      transition-transform duration-200 ${FOCUS_OUTLINE}
-      ${badge === 'BEST VALUE' ? 'trim-brass' : ''}
-      ${canAfford ? 'hover:-translate-y-0.5' : 'opacity-50 cursor-not-allowed'}`}
-  >
-    {badge && (
-      <span
-        className={`absolute top-2 left-1/2 -translate-x-1/2 rounded-full px-2 py-[3px] label-caps text-[9px] leading-none whitespace-nowrap ${
-          badge === 'BEST VALUE'
-            ? 'bg-brass-300 text-night-950'
-            : 'bg-night-950/60 text-brass-200 border border-brass-300/50'
-        }`}
-      >
-        {badge}
-      </span>
-    )}
-    <span aria-hidden="true" className="h-16 grid place-items-center">
-      <ItemArt tier={tier} quantity={quantity} />
-    </span>
-    <span className="mt-2 font-display font-extrabold text-[15px] leading-tight text-white">{name}</span>
-    <span className="mt-0.5 text-plush-300 text-[11px] leading-snug">{description}</span>
-    <span
-      className={`mt-auto pt-2.5 inline-flex items-center gap-1 font-display font-extrabold text-sm tabular-nums ${
-        currency === 'coins' ? 'text-brass-200' : 'text-fuchsia-200'
-      }`}
-    >
-      <span className="inline-flex items-center gap-1 rounded-full h-7 px-2.5 bg-night-950/70 border border-white/10">
-        {currency === 'coins'
-          ? <Coins aria-hidden="true" className="w-3.5 h-3.5" strokeWidth={2.4} />
-          : <Gem aria-hidden="true" className="w-3.5 h-3.5" strokeWidth={2.4} />}
-        {price.toLocaleString()}
-        <span className="sr-only">{currency}</span>
-      </span>
-    </span>
-  </button>
-);
 
 export default CardPackOpening;
