@@ -9,6 +9,7 @@ import { getDailyChallenges, getWeeklyChallenges, challengeProgress } from '../s
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion } from '@/components/ui/game-chrome';
 import { getTimeUntilReset } from '@/lib/resetTimer';
 
@@ -384,7 +385,7 @@ const Challenges = ({ onClose }) => {
       // the scrim instead. Either way the panel is centred by my-auto, not
       // items-center: a centred flex item taller than its box overflows at
       // both ends, out of reach.
-      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-3 sm:p-6"
+      className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto ${SCRIM_PAD}`}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}

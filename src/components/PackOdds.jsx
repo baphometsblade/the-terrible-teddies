@@ -4,6 +4,7 @@ import { PACK_ODDS, PACK_SLOTS } from '@/stores/gameStore';
 import { RARITY, RARITY_METAL, RARITY_ORDER } from '@/lib/rarity';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 import { PACK_LOOK } from './PackArt';
 
 // The posted odds, rendered from the table the roll uses (PACK_ODDS). Two of
@@ -101,7 +102,7 @@ export const PackOddsDialog = ({ onClose }) => {
   const ref = useDialog(onClose);
   const titleId = useId();
   return (
-    <div className="fixed inset-0 z-[60] dialog-scrim flex items-start justify-center p-3 sm:p-6 overflow-y-auto">
+    <div className={`fixed inset-0 z-[60] dialog-scrim flex items-start justify-center ${SCRIM_PAD} overflow-y-auto`}>
       <div
         ref={ref}
         role="dialog"

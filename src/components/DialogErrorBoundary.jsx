@@ -3,6 +3,7 @@ import { WifiOff } from 'lucide-react';
 import analytics from '../utils/analytics';
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 
 // Scoped error boundary for the lazy-loaded dialog chunks.
 //
@@ -90,7 +91,7 @@ class DialogErrorBoundary extends React.Component {
         // Scrolls, with the card centred by my-auto rather than items-center:
         // a centred flex item taller than its box overflows at both ends.
         <div
-          className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center p-4 overflow-y-auto"
+          className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center ${SCRIM_PAD} overflow-y-auto`}
           onClick={this.props.onDismiss}
         >
           <div

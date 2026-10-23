@@ -2,6 +2,7 @@ import { Flag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion } from '@/components/ui/game-chrome';
 
 const BUTTON = 'h-11 w-full rounded-xl px-4 font-display font-bold';
@@ -38,7 +39,7 @@ export default function LeaveBattleDialog({ mode, streak, onKeepPlaying, onConce
       // the window and scroll, and the question must be on screen whatever
       // part of it is. Above the rotate-phone card (z-30), like the menu
       // control that opens it.
-      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-4"
+      className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto ${SCRIM_PAD}`}
     >
       <div className="relative my-auto w-full max-w-sm rounded-2xl dialog-panel px-6 py-6 text-center">
         <Medallion icon={Flag} size="md" className="mx-auto mb-3 flex" />

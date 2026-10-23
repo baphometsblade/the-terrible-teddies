@@ -6,6 +6,7 @@ import { useGameStore } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
 import { celebrate } from '@/lib/celebrate';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { SCRIM_PAD, SCRIM_PAD_NARROW } from '@/lib/safeArea';
 import { Medallion, SectionHeading, WalletChips, BrassCoin } from '@/components/ui/game-chrome';
 import { Progress } from '@/components/ui/progress';
 import { PACK_LOOK, HeroPack } from './PackArt';
@@ -473,7 +474,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
       // would jump down the screen under the player the moment they tap Open.
       // Below 360px the three nested paddings (here, the content, the stage)
       // drop to 8px each: at 320 they took 72px of a 320px screen.
-      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center p-3 max-[359px]:p-2 sm:p-6 overflow-y-auto"
+      className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center ${SCRIM_PAD} ${SCRIM_PAD_NARROW} overflow-y-auto`}
     >
       <div className="relative w-full max-w-5xl rounded-2xl dialog-panel overflow-hidden">
         {/* Header. Below md the balances take their own row under the title

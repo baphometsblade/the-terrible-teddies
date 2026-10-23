@@ -10,6 +10,7 @@ import { useDialog } from '@/hooks/useDialog';
 import { setPlayerUsername } from '../utils/supabaseClient';
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 import { BalanceChip } from '@/components/ui/game-chrome';
 
 // The avatar ring the menu's player chip wears.
@@ -133,7 +134,7 @@ const PlayerStats = ({ onClose }) => {
       // The scrim scrolls and the panel centres with my-auto (not
       // items-center: a centred flex item taller than its box overflows at
       // both ends).
-      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-3 sm:p-6"
+      className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto ${SCRIM_PAD}`}
     >
       {/* Capped to the viewport, with the profile and the tabs pinned and only
           the tab content scrolling, only where the screen is tall enough to

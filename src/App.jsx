@@ -15,6 +15,7 @@ import { fetchServerGemBalance, ensurePlayerProfile, isSupabaseConfigured } from
 import analytics from './utils/analytics';
 import { useRehydrateOnFocus } from './hooks/useRehydrateOnFocus';
 import { FOCUS_OUTLINE } from './lib/focus';
+import { SCREEN_PAD } from './lib/safeArea';
 
 // GameBoard is lazy for the same reason the dialogs are: it is only reachable
 // after tapping Battle, but a static import put it — and its dependency tail,
@@ -63,11 +64,13 @@ const LEVEL_UP_TOAST_DELAY_MS = 1200;
 // keyboard focus. Takes its navigate handler as a prop.
 // A plain button on the glass material (the shadcn Button's bg-primary is a
 // utility and would beat it). Offset by the safe area so it clears a notch
-// when the game is installed full-screen, matching the battle board's rail.
+// when the game is installed full-screen, as the screen's content is (its
+// SCREEN_PAD), so the two keep their spacing. 44px tall, the smallest
+// comfortable touch target, and the content starts 12px below it (pt-14).
 const BackButton = ({ onClick }) => (
   <button
     type="button"
-    className={`btn-glass absolute top-[calc(1rem+env(safe-area-inset-top))] left-4 z-40 inline-flex h-10 items-center rounded-xl px-4 text-sm font-semibold ${FOCUS_OUTLINE}`}
+    className={`btn-glass absolute top-[calc(1rem+env(safe-area-inset-top))] left-[calc(1rem+env(safe-area-inset-left))] z-40 inline-flex h-11 items-center rounded-xl px-4 text-sm font-semibold ${FOCUS_OUTLINE}`}
     onClick={onClick}
   >
     ← Menu
@@ -406,7 +409,7 @@ function App() {
         );
       case 'deck':
         return (
-          <div className="relative min-h-screen bar-backdrop p-4 md:p-8">
+          <div className={`relative min-h-screen bar-backdrop ${SCREEN_PAD}`}>
             <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
             {/* The builder guards its own way out: with edits that are not
                 the battle deck yet it asks before they are dropped. Until its
@@ -415,7 +418,7 @@ function App() {
             <BackButton
               onClick={() => (deckBuilderRef.current ? deckBuilderRef.current.requestLeave() : navigateTo('menu'))}
             />
-            <div className="relative pt-12">
+            <div className="relative pt-14">
               <DialogErrorBoundary resetKey={currentScreen} onDismiss={() => navigateTo('menu')}>
                 <Suspense fallback={<DialogLoader />}>
                   <DeckBuilder ref={deckBuilderRef} onBackToMenu={() => navigateTo('menu')} />
@@ -426,10 +429,10 @@ function App() {
         );
       case 'collection':
         return (
-          <div className="relative min-h-screen bar-backdrop p-4 md:p-8">
+          <div className={`relative min-h-screen bar-backdrop ${SCREEN_PAD}`}>
             <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
             <BackButton onClick={() => navigateTo('menu')} />
-            <div className="relative pt-12">
+            <div className="relative pt-14">
               <DialogErrorBoundary resetKey={currentScreen} onDismiss={() => navigateTo('menu')}>
                 <Suspense fallback={<DialogLoader />}>
                   <TeddyCollection />

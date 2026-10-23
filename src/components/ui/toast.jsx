@@ -16,8 +16,10 @@ const ToastViewport = React.forwardRef(({ className, ...props }, ref) => (
     // placement rules in index.css target (the battle board's, the deck
     // builder's, and the one for a toast over a dialog), and toast-title /
     // toast-description let the dialog rule set the type tighter on a phone.
+    // Inset by the safe area, top on a phone and bottom from sm, so on a
+    // home-screen install it clears the status bar and the home indicator.
     className={cn(
-      "toast-viewport pointer-events-none fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      "toast-viewport pointer-events-none fixed top-[env(safe-area-inset-top)] z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-[env(safe-area-inset-bottom)] sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
       className
     )}
     {...props} />

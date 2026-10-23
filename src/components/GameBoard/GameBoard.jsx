@@ -25,6 +25,7 @@ import { battlePassTier } from './battlePassTiers';
 import { placePreview, CARD_W, CAPTION_W, CAPTION_ROW_W } from './previewPlacement';
 import { Medallion } from '@/components/ui/game-chrome';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 
 // Stamp a creature's starting durability when it enters the field. `defense` is
 // the HP pool in the creature-HP combat model; `currentHp` tracks the remaining
@@ -551,7 +552,7 @@ const GameOverDialog = ({ label, onEscape, children }) => {
       // Scrolls, with the panel centred by my-auto rather than items-center:
       // a centred flex item taller than its box overflows at both ends, and on
       // a landscape phone that put Play Again and Menu out of reach.
-      className="absolute inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-4"
+      className={`absolute inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto ${SCRIM_PAD}`}
     >
       {children}
     </motion.div>

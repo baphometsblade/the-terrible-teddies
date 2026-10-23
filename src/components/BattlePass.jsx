@@ -12,6 +12,7 @@ import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion, WalletChips } from '@/components/ui/game-chrome';
 import { ArtOrEmoji } from './TeddyCard';
 import { PACK_LOOK, PackStack } from './PackArt';
@@ -646,7 +647,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
       // Scrolls, with the panel centred by my-auto rather than items-center: a
       // centred flex item taller than its box overflows at both ends, which on
       // a short phone put the header — and the close button — out of reach.
-      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-3 sm:p-6"
+      className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto ${SCRIM_PAD}`}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -974,7 +975,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] dialog-scrim flex items-start justify-center overflow-y-auto p-3 sm:p-6"
+            className={`fixed inset-0 z-[60] dialog-scrim flex items-start justify-center overflow-y-auto ${SCRIM_PAD}`}
             onClick={() => setShowPurchaseConfirm(false)}
           >
             <PurchaseConfirmDialog

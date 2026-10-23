@@ -9,6 +9,7 @@ import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
 import { celebrate } from '@/lib/celebrate';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 
 // Gem bundle prices for analytics (mirrors server-side definitions)
 const BUNDLE_PRICES = {
@@ -161,7 +162,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
       aria-label="Purchase status"
       // Scrolls, with the panel centred by my-auto rather than items-center: a
       // centred flex item taller than its box overflows at both ends.
-      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center p-4 overflow-y-auto"
+      className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center ${SCRIM_PAD} overflow-y-auto`}
     >
       {/* aria-live: the whole body swaps between verifying / success /
           pending / error with focus staying put, so a screen-reader buyer was

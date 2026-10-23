@@ -10,6 +10,7 @@ import { useDialog } from '@/hooks/useDialog';
 import { pressable } from '@/lib/a11y';
 import { RARITY_METAL, RARITY_ORDER } from '@/lib/rarity';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion, SectionHeading, WalletChips } from '@/components/ui/game-chrome';
 import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
 import { PackOddsDialog } from './PackOdds';
@@ -239,7 +240,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
       // finger on every tab switch.
       // While checkout starts it does not scroll either: there is nothing
       // behind the overlay to scroll to.
-      className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center p-3 sm:p-6 outline-none ${
+      className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center ${SCRIM_PAD} outline-none ${
         processing ? 'overflow-hidden' : 'overflow-y-auto'
       }`}
     >
@@ -517,7 +518,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
 
       {processing && (
         // The spin is CSS (compositor-only) and stops when motion is off.
-        <div aria-hidden="true" className="fixed inset-0 z-[60] dialog-scrim grid place-items-center p-4">
+        <div aria-hidden="true" className={`fixed inset-0 z-[60] dialog-scrim grid place-items-center ${SCRIM_PAD}`}>
           <div className="dialog-panel rounded-2xl px-8 py-6 flex flex-col items-center gap-4">
             <div className="relative w-20 h-20">
               <div className="absolute inset-0 rounded-full border-[3px] border-fuchsia-300/15 border-t-fuchsia-300 motion-safe:animate-spin [[data-motion=off]_&]:animate-none" />

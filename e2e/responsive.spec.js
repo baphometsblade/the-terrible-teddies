@@ -207,3 +207,96 @@ for (const { trigger, dialog } of DIALOGS) {
     await expectDialogContentFits(page, dialog);
   });
 }
+
+// Installed to an iPhone's home screen the game draws under the status bar
+// and the home indicator: index.html asks for that (viewport-fit=cover, a
+// black-translucent status bar), and env(safe-area-inset-*) is all that keeps
+// the page out from under them. Only the battle board read it, so on the menu
+// the profile chip sat under the clock, every dialog's title and Close under
+// the clock and battery, and "← Menu" on top of the Collection's heading.
+// Chromium reports an iPhone 15's insets through the DevTools protocol.
+const INSETS = { top: 59, bottom: 34 };
+
+test.describe('under an installed iPhone\'s status bar and home indicator', () => {
+  test.beforeEach(async ({ page }) => {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: INSETS });
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+  });
+
+  test('the menu header starts below the status bar', async ({ page }) => {
+    await page.waitForTimeout(800); // the header's entrance
+    const top = await page.locator('header').evaluate((h) => Math.min(...[...h.querySelectorAll('button, [role="button"]')]
+      .map((el) => el.getBoundingClientRect().top)));
+    expect(top, 'a header control is under the clock').toBeGreaterThanOrEqual(INSETS.top);
+  });
+
+  for (const trigger of ['Shop', 'Challenges', 'Battle Pass', 'Rankings', 'Card Packs', 'Settings', 'How to play', 'Daily rewards', 'View player stats']) {
+    test(`the ${trigger} dialog keeps its title and Close below the status bar, and its foot above the home indicator`, async ({ page }) => {
+      await page.getByRole('button', { name: trigger, exact: true }).click();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog).toBeVisible(SLOW);
+      await page.waitForTimeout(400); // the panel's entrance
+      const top = await dialog.evaluate((d) => Math.min(...[...d.querySelectorAll('button, h1, h2')]
+        .map((el) => el.getBoundingClientRect()).filter((r) => r.width > 0).map((r) => r.top)));
+      expect(top, `${trigger}: a control or title is under the status bar`).toBeGreaterThanOrEqual(INSETS.top);
+      // A short panel is centred clear of both whatever the scrim does, so
+      // the scrim's own padding is checked too: the inset plus its 12px.
+      const pad = await dialog.evaluate((d) => {
+        const st = getComputedStyle(d.closest('.dialog-scrim') ?? d.querySelector('.dialog-scrim'));
+        return { top: parseFloat(st.paddingTop), bottom: parseFloat(st.paddingBottom) };
+      });
+      expect(pad, `${trigger}: the scrim does not reserve the insets`)
+        .toEqual({ top: INSETS.top + 12, bottom: INSETS.bottom + 12 });
+      // Scrolled to its end, the panel stops short of the home indicator.
+      const foot = await dialog.evaluate((d) => {
+        d.scrollTop = d.scrollHeight;
+        return d.querySelector('.dialog-panel').getBoundingClientRect().bottom;
+      });
+      expect(foot, `${trigger}: the panel's foot is under the home indicator`)
+        .toBeLessThanOrEqual(PHONE.height - INSETS.bottom);
+    });
+  }
+
+  for (const [tile, heading] of [['Collection', 'Card Collection'], ['Deck Builder', 'Deck Builder']]) {
+    test(`on ${tile}, "← Menu" clears the status bar and the heading clears "← Menu"`, async ({ page }) => {
+      await page.getByRole('button', { name: tile, exact: true }).click();
+      const h1 = page.getByRole('heading', { name: heading, level: 1 });
+      await expect(h1).toBeVisible(SLOW);
+      await page.waitForTimeout(300); // the screen's fade
+      const back = await page.getByRole('button', { name: '← Menu' }).boundingBox();
+      const head = await h1.boundingBox();
+      expect(back.y, '← Menu is under the clock').toBeGreaterThanOrEqual(INSETS.top);
+      expect(head.y, '← Menu sits on the heading').toBeGreaterThanOrEqual(back.y + back.height);
+    });
+  }
+
+  test('a toast lands below the status bar, on the menu and over a dialog', async ({ page }) => {
+    test.skip(!!process.env.E2E_PREVIEW, 'imports the toast module from /src');
+    const raise = (title) => page.evaluate(async (t) => {
+      const { toast } = await import('/src/components/ui/use-toast.js');
+      window.__probeToast = toast({ title: t, description: 'A notification.', duration: 60000 });
+    }, title);
+    const topOf = async (title) => {
+      const li = page.locator('.toast-viewport > li').filter({ hasText: title });
+      await expect(li).toBeVisible();
+      await page.waitForTimeout(300); // its entrance
+      return (await li.boundingBox()).y;
+    };
+    await raise('On the menu');
+    expect(await topOf('On the menu'), 'a toast on the menu is under the clock').toBeGreaterThanOrEqual(INSETS.top);
+    await page.evaluate(() => window.__probeToast.dismiss());
+    await page.getByRole('button', { name: 'Shop', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Shop' })).toBeVisible(SLOW);
+    await raise('Over a dialog');
+    expect(await topOf('Over a dialog'), 'a toast over a dialog is under the clock').toBeGreaterThanOrEqual(INSETS.top);
+  });
+
+  test('the battle board keeps "← Menu" below the status bar', async ({ page }) => {
+    await page.getByRole('button', { name: 'Battle', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    const back = await page.getByRole('button', { name: '← Menu' }).boundingBox();
+    expect(back.y).toBeGreaterThanOrEqual(INSETS.top);
+  });
+});

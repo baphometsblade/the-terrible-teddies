@@ -9,6 +9,7 @@ import { useGameStore } from '../stores/gameStore';
 import { supabase } from '../utils/supabaseClient';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion } from '@/components/ui/game-chrome';
 
 // Shape of every full-width action here. Plain <button>s, not the shadcn
@@ -163,7 +164,7 @@ const Settings = ({ onClose }) => {
       // The scrim scrolls and the panel centres with my-auto (not
       // items-center: a centred flex item taller than its box overflows at
       // both ends). Inside the panel only the settings list scrolls.
-      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-3 sm:p-6"
+      className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto ${SCRIM_PAD}`}
     >
       <motion.div
         initial={{ opacity: 0, y: 24 }}

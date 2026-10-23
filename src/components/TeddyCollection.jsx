@@ -7,6 +7,7 @@ import TeddyCard from './TeddyCard';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 import { RARITY, RARITY_METAL, RARITY_ORDER as RARITY_ORDER_ASC } from '@/lib/rarity';
 import { useDialog } from '@/hooks/useDialog';
 import { buildVisibleOrder, staggerDelay } from '@/lib/collectionOrder';
@@ -573,7 +574,7 @@ const TeddyCollection = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-4"
+            className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto ${SCRIM_PAD}`}
             onClick={() => setSelectedId(null)}
           >
             <CardDetailDialog

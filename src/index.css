@@ -701,11 +701,13 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
    header's 16px, the 40px button), and from sm it is 20rem wide. And it never
    takes a tap: one meant for something under it goes through, the toast
    still times out, and F8 still reaches it from the keyboard (the battle
-   board's precedent). Not during a battle, which places its own toasts. */
+   board's precedent). Not during a battle, which places its own toasts.
+   Inset by the safe area like the dialogs' scrims (SCRIM_PAD), so on a
+   home-screen install it keeps the same place below the status bar. */
 :root[data-dialog]:not([data-screen="battle"]) .toast-viewport {
-  top: 0;
+  top: env(safe-area-inset-top);
   bottom: auto;
-  left: 0;
+  left: env(safe-area-inset-left);
   right: 4rem;
   width: auto;
   max-width: none;

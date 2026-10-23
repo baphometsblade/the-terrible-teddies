@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion } from '@/components/ui/game-chrome';
 
 // Calculate trophies based on player stats
@@ -345,7 +346,7 @@ const Leaderboard = ({ onClose }) => {
       // The scrim scrolls and the panel centres with my-auto (not
       // items-center: a centred flex item taller than its box overflows at
       // both ends).
-      className="fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto p-3 sm:p-6"
+      className={`fixed inset-0 z-50 dialog-scrim flex items-start justify-center overflow-y-auto ${SCRIM_PAD}`}
     >
       {/* Capped to the viewport, with the header, the scope bar and Your
           Ranking pinned and only the list scrolling, only where the screen is
