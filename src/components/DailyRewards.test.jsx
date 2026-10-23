@@ -18,8 +18,8 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const get = () => useGameStore.getState();
 let host;
 let root;
-const render = () => act(() => {
-  root.render(<StrictMode><DailyRewards onClose={() => {}} /></StrictMode>);
+const render = (onClose = () => {}) => act(() => {
+  root.render(<StrictMode><DailyRewards onClose={onClose} /></StrictMode>);
 });
 const button = (name) => [...host.querySelectorAll('button')].find((b) => b.textContent.trim() === name);
 const look = (day) => host.querySelector(`[data-day="${day}"]`)?.getAttribute('data-look');
@@ -100,6 +100,46 @@ describe('Daily Rewards', () => {
     // into view.
     expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
     expect(Element.prototype.scrollIntoView.mock.contexts.at(-1)).toBe(claim);
+  });
+
+  // Claim turns into Continue on the same element, so a quick double tap's
+  // second half landed on Continue and closed the panel before the payout
+  // and the card were seen.
+  it('holds Continue for a beat after the claim, so a double tap does not close it', () => {
+    const onClose = vi.fn();
+    render(onClose);
+    const claim = button('Claim');
+    act(() => claim.click());
+    act(() => claim.click());
+    expect(onClose).not.toHaveBeenCalled();
+    expect(claim.getAttribute('aria-disabled')).toBe('true');
+    act(() => { vi.advanceTimersByTime(400); });
+    expect(claim.hasAttribute('aria-disabled')).toBe(false);
+    act(() => claim.click());
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('with motion on, holds until the card has turned, and a tap in the beat turns it at once', async () => {
+    useGameStore.setState({ animationsEnabled: true });
+    const onClose = vi.fn();
+    render(onClose);
+    await act(async () => { await import('./CardPackOpening'); });
+    const claim = button('Claim');
+    act(() => claim.click());
+    act(() => { vi.advanceTimersByTime(250); });
+    // The second tap: nothing closes, and the card, not yet even dealt, is
+    // put on the table face up.
+    act(() => claim.click());
+    await act(async () => {});
+    expect(onClose).not.toHaveBeenCalled();
+    expect(host.querySelector('[data-granted-card] [data-reveal-card="up"]')).toBeTruthy();
+    // Still held until the turn the timeline planned (1.1s, plus a beat).
+    act(() => { vi.advanceTimersByTime(1000); });
+    act(() => claim.click());
+    expect(onClose).not.toHaveBeenCalled();
+    act(() => { vi.advanceTimersByTime(300); });
+    act(() => claim.click());
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('reopens on today stamped and the time to the next reward', () => {

@@ -45,6 +45,17 @@ const DEAL_MS = 600;
 const TURN_MS = 1100;
 const TURN_STAGGER_MS = 300;
 
+// How long Continue holds still after the claim: until the chips have landed
+// or, on a card day, until the last card has turned over. Claim and Continue
+// are one button (so focus stays on it), and the second tap of a quick double
+// tap on Claim used to land on Continue and close the panel before the
+// payout, or the card it drew, had been seen. With motion off it is all there
+// at once, and only the double tap needs absorbing.
+const holdFor = (cardCount) => {
+  if (reducedMotion()) return 400;
+  return cardCount > 0 ? TURN_MS + (cardCount - 1) * TURN_STAGGER_MS + 400 : 800;
+};
+
 // Hoisted to module scope for a stable component identity: declared inside
 // DailyRewards it was a fresh type on every render, so the claim landing
 // (which re-renders the panel) remounted all seven days and replayed their
@@ -130,12 +141,14 @@ const RewardDay = ({ day, look, justStamped, coins, gems, cards, packs }) => {
           </motion.span>
         </div>
       )}
-      {/* Untracked, unlike Today's chip: "Tomorrow" in the same tracked caps
-          is wider than a day at 320. */}
+      {/* The next day's chip, in Today's lettering on the glass. "Next",
+          because "Tomorrow" was wider than a day's tile wherever the tiles
+          are narrowest (320, and the eight-across row at 640), and it pairs
+          with the "Next reward in" countdown under the row. */}
       {look === 'tomorrow' && (
         <div className="mt-auto pt-2">
-          <span className="inline-flex h-5 items-center rounded-full bg-white/[0.06] px-1.5 text-[10px] font-bold leading-none text-plush-200 ring-1 ring-inset ring-white/10">
-            Tomorrow
+          <span className="inline-flex h-5 items-center rounded-full bg-white/[0.06] px-1.5 text-[9px] font-bold uppercase leading-none tracking-[0.16em] text-plush-200 ring-1 ring-inset ring-white/10">
+            Next<span className="sr-only"> reward, tomorrow</span>
           </span>
         </div>
       )}
@@ -217,6 +230,8 @@ const DailyRewards = ({ onClose }) => {
   // leaves it waiting: the menu's Daily rewards button keeps its glow while
   // lastLoginDate is not today.
   const celebrateTimer = useRef(null);
+  const holdTimer = useRef(null);
+  const [holding, setHolding] = useState(false);
   const claim = () => {
     const paid = checkDailyLogin();
     setNow(new Date());
@@ -224,13 +239,18 @@ const DailyRewards = ({ onClose }) => {
     // the panel now shows as done.
     if (!paid) return;
     setReward(paid);
+    setHolding(true);
+    holdTimer.current = setTimeout(() => setHolding(false), holdFor(paid.cardIds?.length ?? 0));
     // A beat after the stamp starts to land.
     celebrateTimer.current = setTimeout(() => {
       celebrate({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }, 250);
   };
   // Cleared on unmount so a quick close doesn't burst confetti over the next screen.
-  useEffect(() => () => clearTimeout(celebrateTimer.current), []);
+  useEffect(() => () => {
+    clearTimeout(celebrateTimer.current);
+    clearTimeout(holdTimer.current);
+  }, []);
 
   // The claim grows the panel (the prizes, the cards), and on a phone or a
   // short window that pushed the button the player had just pressed below
@@ -267,6 +287,21 @@ const DailyRewards = ({ onClose }) => {
     }
     return () => timers.forEach(clearTimeout);
   }, [reward]);
+
+  // The brass button: Claim, then Continue. A tap while Continue holds turns
+  // any cards still face down at once, rather than doing nothing.
+  const press = () => {
+    if (phase === 'ready') {
+      claim();
+    } else if (holding) {
+      if (turned < cards.length) {
+        setDealt(true);
+        setTurned(cards.length);
+      }
+    } else {
+      onClose();
+    }
+  };
 
   const cardNames = cards.map((c) => `${c.name} (${c.rarity.charAt(0).toUpperCase()}${c.rarity.slice(1)})`);
 
@@ -410,7 +445,10 @@ const DailyRewards = ({ onClose }) => {
           <button
             ref={buttonRef}
             type="button"
-            onClick={phase === 'ready' ? claim : onClose}
+            onClick={press}
+            // Says so while Continue holds; the brass material drops its
+            // hover and press for it too.
+            aria-disabled={phase !== 'ready' && holding ? 'true' : undefined}
             className={`btn-brass inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl font-display text-lg font-bold ${FOCUS_OUTLINE}`}
           >
             {phase === 'ready' && <Gift aria-hidden="true" className="h-5 w-5" strokeWidth={2.2} />}
