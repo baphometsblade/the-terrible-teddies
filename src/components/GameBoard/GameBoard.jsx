@@ -22,6 +22,7 @@ import { abilityRules } from '@/lib/abilities';
 import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, canRally, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
 import LeaveBattleDialog from './LeaveBattleDialog';
 import { battlePassTier } from './battlePassTiers';
+import { placePreview, CARD_W, CAPTION_W, CAPTION_ROW_W } from './previewPlacement';
 import { Medallion } from '@/components/ui/game-chrome';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 
@@ -171,6 +172,7 @@ const FieldSlot = ({ cardId, side, press, className = '', children, ...motionPro
   return (
     <motion.div
       {...motionProps}
+      data-card-id={cardId}
       exit={exitFor(side, reduced)}
       className={cls}
       {...(present ? press : { inert: '', 'aria-hidden': true, 'data-exiting': '' })}
@@ -277,42 +279,83 @@ const fanOverhang = (count) => {
 };
 
 // How long a mouse rests on a card before its enlarged preview opens, and how
-// long a finger holds a table card for the same. The hover delay keeps the
-// preview from flashing up under every card the pointer crosses on its way
-// to a play.
+// long a finger holds a card for the same. The hover delay keeps the preview
+// from flashing up under every card the pointer crosses on its way to a
+// play. The grace is how long the preview waits, once the mouse leaves the
+// card, for the pointer to arrive on it.
 const PREVIEW_HOVER_MS = 350;
+const PREVIEW_HOVER_GRACE_MS = 300;
 const LONG_PRESS_MS = 450;
+
+// A key, drawn as a key cap (a bare capital I in a pill read as a bar).
+const Kbd = ({ children }) => (
+  <kbd className="mr-1 inline-grid h-4 min-w-[1.25rem] place-items-center rounded-[4px] bg-white/10 px-1 font-sans text-[10px] font-bold text-plush-100 ring-1 ring-inset ring-white/20 shadow-[0_1px_0_rgba(255,255,255,0.15)]">
+    {children}
+  </kbd>
+);
 
 /**
  * A card at full size, for reading it. Board cards are scaled to fit the felt
  * (to 0.64 on a 320px phone) and hand cards overlap, so neither can always be
  * read where it lies. Opened by hovering a card with a mouse, focusing it from
- * the keyboard, holding a table card down, or the first tap on a hand card on
- * a touch screen. Drawn at the hand layout (cost, rarity, rules line) with the
- * ability's rules text beneath it.
+ * the keyboard or pressing I (which reaches every card, tab stop or not),
+ * holding a card down, or the first tap on a hand card on a touch screen.
+ * Escape closes it. Drawn at the hand layout (cost, rarity, rules line), with
+ * the ability's rules text beside or beneath it, and — opened from the
+ * keyboard — the keys that drive it.
  *
- * Decorative — aria-hidden and transparent to the pointer — because what it
- * shows is already the card's own content and the battle log's, and the
- * card's accessible name stays the control's. `place` is 'right' where the
- * felt has room beside its rows, else 'centre'.
+ * `placement` (previewPlacement.js) is the box on the felt to centre it in,
+ * clear of the row it was opened from, and the zoom and layout that fit.
+ *
+ * Decorative — aria-hidden — because what it shows is already the card's own
+ * content and the battle log's, and the card's accessible name stays the
+ * control's. Transparent to the pointer except when a mouse opened it: then
+ * the pointer can move onto it without it closing (`onKeep`), and leaving it
+ * or clicking it closes it (`onDismiss`).
  */
-const CardPreview = ({ card, place, zoom, costDelta = 0, cosmeticBorder = null }) => {
-  const rules = card.ability && card.ability !== 'none' ? abilityRules(card.ability) : '';
-  const placement = place === 'right' ? 'right-3 sm:right-5' : 'inset-x-0 justify-center';
+const CardPreview = ({
+  card, placement, rules, keys, hoverable, onKeep, onDismiss, costDelta = 0, cosmeticBorder = null,
+}) => {
+  const { place, x, y, w, h, zoom, layout } = placement;
+  const beside = layout === 'row';
   return (
     <div
       aria-hidden="true"
       data-card-preview={place}
-      className={`pointer-events-none absolute inset-y-0 z-40 flex items-center ${placement}`}
+      className="pointer-events-none absolute z-40 flex items-center justify-center"
+      style={{ left: x, top: y, width: w, height: h }}
     >
-      <div className="flex flex-col items-center gap-2" style={{ width: Math.max(160, Math.round(96 * zoom)) }}>
+      <div
+        className={`flex items-center gap-2 ${beside ? 'flex-row' : 'flex-col'} ${hoverable ? 'pointer-events-auto' : ''}`}
+        onPointerEnter={hoverable ? onKeep : undefined}
+        onPointerLeave={hoverable ? onDismiss : undefined}
+        onClick={hoverable ? onDismiss : undefined}
+      >
         <div className="rounded-[10px] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.9)]" style={{ zoom }}>
           <TeddyCard teddy={card} lift={false} cosmeticBorder={cosmeticBorder} costDelta={costDelta} artVariant="responsive" artLoading="eager" />
         </div>
-        {rules && (
-          <div className="w-full rounded-lg bg-night-950/95 px-3 py-2 text-center ring-1 ring-white/10 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.8)]">
-            <div className="label-caps text-brass-300">{card.ability}</div>
-            <div className="mt-0.5 text-xs leading-snug text-plush-100">{rules}</div>
+        {(rules || keys) && (
+          <div
+            className="rounded-lg bg-night-950/95 px-3 py-2 text-center ring-1 ring-white/10 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.8)]"
+            style={{ width: beside ? CAPTION_ROW_W : Math.max(CAPTION_W, Math.round(CARD_W * zoom)) }}
+          >
+            {rules && (
+              <>
+                <div className="label-caps text-brass-300">{card.ability}</div>
+                <div className="mt-0.5 text-xs leading-snug text-plush-100">{rules}</div>
+              </>
+            )}
+            {/* Each key with its action, unbroken; the pairs wrap onto two
+                lines in the narrow caption beside the card. */}
+            {keys && (
+              <div
+                data-preview-keys=""
+                className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] leading-4 text-plush-300 ${rules ? 'mt-1.5 border-t border-white/10 pt-1.5' : ''}`}
+              >
+                <span className="whitespace-nowrap"><Kbd>I</Kbd> next card</span>
+                <span className="whitespace-nowrap"><Kbd>Esc</Kbd> close</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1744,11 +1787,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // only. A creature's status chip sits over the card, so a "Warming Up"
   // appearing never rescales the board.
   //
-  // The same measurement sizes the card preview (as large as the felt allows,
-  // up to twice hand size) and says whether it fits beside the rows, where it
-  // covers none of them, or has to sit over the middle of the table.
+  // The same measurement is what the card preview is placed by (see
+  // previewPlacement.js): the felt's box, the centre line, and the rows'
+  // size at their zoom.
   const [fieldZoom, setFieldZoom] = useState(1);
-  const [previewLayout, setPreviewLayout] = useState({ zoom: 2, side: false });
+  const [feltGeom, setFeltGeom] = useState(null);
   const rowSlots = Math.max(1, playerField.length, opponentField.length + (directTargets ? 1 : 0));
   const rowSlotsRef = useRef(rowSlots);
   rowSlotsRef.current = rowSlots;
@@ -1766,16 +1809,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     const fit = Math.min(1, forRows / (2 * FIELD_ROW_HEIGHT), width / rowWidth);
     const zoom = Math.max(0.45, Math.floor(fit * 100) / 100);
     setFieldZoom(zoom);
-    // The preview leaves ~80px under the card for its rules caption.
-    const previewZoom = Math.max(1.25, Math.min(2, Math.floor(((inner - 80) / 144) * 100) / 100));
-    // Beside the rows it may shrink to fit the room there (a tablet's felt
-    // has some, not a 2x card's worth), but not below 1.4x: smaller than
-    // that, it is better over the table at full size.
-    const sideRoom = (width - rowWidth * zoom) / 2 - 24;
-    const sideZoom = Math.min(previewZoom, Math.floor((sideRoom / 96) * 100) / 100);
-    const side = sideZoom >= 1.4;
-    const shown = side ? sideZoom : previewZoom;
-    setPreviewLayout((p) => (p.zoom === shown && p.side === side ? p : { zoom: shown, side }));
+    const geom = {
+      width: felt.clientWidth,
+      height: felt.clientHeight,
+      pad: { top: px(cs.paddingTop), right: px(cs.paddingRight), bottom: px(cs.paddingBottom), left: px(cs.paddingLeft) },
+      gap: px(cs.rowGap),
+      centre: { top: centre.offsetTop, bottom: centre.offsetTop + centre.offsetHeight },
+      rowH: FIELD_ROW_HEIGHT * zoom,
+      rowW: rowWidth * zoom,
+    };
+    setFeltGeom((g) => (g && JSON.stringify(g) === JSON.stringify(geom) ? g : geom));
     // Where the centre line really is, for the narrow-screen toast placement
     // in index.css (toasts are fixed, so viewport coordinates are right).
     const r = centre.getBoundingClientRect();
@@ -1846,9 +1889,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   }, [playerHand.length, handFit.overflow, reducedMotion]);
   const handOverlap = HAND_STEP - handFit.step;
 
-  // Reading a card: the enlarged preview (CardPreview). `preview` is the card
-  // a mouse rests on, the keyboard has focused, or a finger holds down on the
-  // table: { id, from: 'hand' | 'player' | 'opponent' }.
+  // Reading a card: the enlarged preview (CardPreview). `preview` is
+  // { id, from, via, anchor }: the card (from 'hand', 'player' or
+  // 'opponent'), what opened it — 'hover' (a mouse resting on it), 'focus'
+  // (the keyboard landing on it), 'hold' (a finger held on a table card) or
+  // 'key' (I, below) — and the row it must keep clear (previewPlacement.js).
   // `raisedId` is the hand card a first tap raised on a touch screen — there
   // the first tap inspects and the second plays, because overlapped cards
   // hide their cost coins and a tap that played at once left no way to read
@@ -1857,22 +1902,42 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const [preview, setPreview] = useState(null);
   const [raisedId, setRaisedId] = useState(null);
   const previewTimerRef = useRef(null);
+  const hideTimerRef = useRef(null);
+  // Whether a preview is on screen right now, for the hover's delay.
+  const previewShownRef = useRef(false);
   // The last press: its pointer type and the card it landed on.
   const lastPointerRef = useRef({ type: 'mouse', id: null });
   const longPressRef = useRef({ timer: null, fired: false, x: 0, y: 0 });
   useEffect(() => () => {
     clearTimeout(previewTimerRef.current);
+    clearTimeout(hideTimerRef.current);
     clearTimeout(longPressRef.current.timer);
   }, []);
   const showPreview = useCallback((p, delay = 0) => {
     clearTimeout(previewTimerRef.current);
+    clearTimeout(hideTimerRef.current);
     if (delay) previewTimerRef.current = setTimeout(() => setPreview(p), delay);
     else setPreview(p);
   }, []);
-  const hidePreview = useCallback((id) => {
+  // Take the preview down if it is showing card `id` (any card, without one)
+  // and `keep` does not claim it.
+  const hidePreview = useCallback((id, keep = () => false) => {
     clearTimeout(previewTimerRef.current);
-    setPreview((cur) => (cur && (id == null || cur.id === id) ? null : cur));
+    clearTimeout(hideTimerRef.current);
+    setPreview((cur) => (cur && (id == null || cur.id === id) && !keep(cur) ? null : cur));
   }, []);
+  // A mouse leaving a card gets a moment to reach the preview, which then
+  // stays for as long as the pointer is on it (WCAG 1.4.13: what hovering
+  // shows can itself be hovered — a magnifier user has to move there to
+  // read it). Only a hover preview goes this way; the keyboard's stays.
+  const hideAfterHover = useCallback((id) => {
+    clearTimeout(previewTimerRef.current);
+    clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      setPreview((cur) => (cur && cur.id === id && cur.via === 'hover' ? null : cur));
+    }, PREVIEW_HOVER_GRACE_MS);
+  }, []);
+  const keepPreview = useCallback(() => clearTimeout(hideTimerRef.current), []);
   // Any tap outside the raised card lowers it (a tap on another hand card
   // then raises that one).
   useEffect(() => {
@@ -1885,11 +1950,12 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     return () => document.removeEventListener('pointerdown', onDown, true);
   }, [raisedId]);
   useEffect(() => {
-    if (gameOver) {
+    if (gameOver || leaveMode) {
+      clearTimeout(previewTimerRef.current);
       setRaisedId(null);
       setPreview(null);
     }
-  }, [gameOver]);
+  }, [gameOver, leaveMode]);
 
   // The pointer and focus handlers that open a card's preview. `hold` is
   // what holding a finger on the card does: 'preview' (a table card) opens
@@ -1920,7 +1986,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
             hidePreview();
             setRaisedId(p.id);
           } else {
-            showPreview(p);
+            showPreview({ ...p, via: 'hold', anchor: p.from });
           }
         }, LONG_PRESS_MS);
       },
@@ -1947,16 +2013,21 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       // A held finger opens the phone's own menu (Android's contextmenu) on
       // top of the preview otherwise.
       onContextMenu: (e) => { if (lastPointerRef.current.type === 'touch') e.preventDefault(); },
-      onPointerEnter: (e) => { if (e.pointerType === 'mouse') showPreview(p, PREVIEW_HOVER_MS); },
-      onPointerLeave: (e) => { if (e.pointerType === 'mouse') hidePreview(p.id); },
+      // The first card a mouse rests on waits PREVIEW_HOVER_MS; moving on to
+      // the next while one is open swaps at once, as a row of tooltips does.
+      onPointerEnter: (e) => {
+        if (e.pointerType !== 'mouse') return;
+        showPreview({ ...p, via: 'hover', anchor: p.from }, previewShownRef.current ? 0 : PREVIEW_HOVER_MS);
+      },
+      onPointerLeave: (e) => { if (e.pointerType === 'mouse') hideAfterHover(p.id); },
       // Keyboard focus only: a click focuses a card too, and the preview
       // would then outstay the mouse.
       onFocus: (e) => {
         let keyboard = false;
         try { keyboard = e.target === e.currentTarget && e.target.matches(':focus-visible'); } catch { /* old engine */ }
-        if (keyboard) showPreview(p);
+        if (keyboard) showPreview({ ...p, via: 'focus', anchor: p.from });
       },
-      onBlur: () => hidePreview(p.id),
+      onBlur: () => hidePreview(p.id, (cur) => cur.via === 'hover'),
     };
   };
 
@@ -1988,16 +2059,72 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // played or has died takes its preview with it.
   const raisedInHand = raisedId != null && playerHand.some((c) => c.instanceId === raisedId);
   const previewTarget = raisedInHand
-    ? { id: raisedId, from: 'hand' }
+    ? { id: raisedId, from: 'hand', via: 'raise', anchor: 'hand' }
     : preview;
   const previewPool = { hand: playerHand, player: playerField, opponent: opponentField };
-  const previewCard = previewTarget
+  const previewCard = previewTarget && !gameOver && !leaveMode
     ? previewPool[previewTarget.from]?.find((c) => c.instanceId === previewTarget.id) ?? null
     : null;
-  // Beside the rows on the right where the felt has the room (fitField), so
-  // it covers no card; the felt's left corners are where the speech bubbles
-  // sit. Over the middle of the table otherwise.
-  const previewPlace = previewLayout.side ? 'right' : 'centre';
+  const previewRules = previewCard?.ability && previewCard.ability !== 'none' ? abilityRules(previewCard.ability) : '';
+  // A preview the keyboard opened says which keys drive it.
+  const previewKeys = previewTarget?.via === 'focus' || previewTarget?.via === 'key';
+  const previewPlacement = previewCard && feltGeom
+    ? placePreview(feltGeom, previewTarget.anchor ?? previewTarget.from, Boolean(previewRules) || previewKeys)
+    : null;
+  const previewShown = Boolean(previewPlacement && previewPlacement.zoom > 0);
+  previewShownRef.current = previewShown;
+
+  // Escape takes the preview down, however it was opened, and it stays down
+  // until something opens it again: focus moving, the mouse coming back,
+  // I. On document, because a hover preview may be up with focus nowhere.
+  // A dialog over the board owns Escape (useDialog), so the preview leaves
+  // it alone then.
+  useEffect(() => {
+    if (!previewShown) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (document.querySelector('[aria-modal="true"]')) return;
+      e.preventDefault();
+      clearTimeout(previewTimerRef.current);
+      clearTimeout(hideTimerRef.current);
+      setPreview(null);
+      setRaisedId(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [previewShown]);
+
+  // I reads the cards from the keyboard: the focused card first (or the
+  // first on the table), then each card in turn — Chuck's row, yours, your
+  // hand — and Shift+I goes back. Focus alone only ever reached the cards
+  // with a tab stop, so a keyboard player could not read Chuck's cards
+  // outside targeting, a creature warming up, or the hand on Chuck's turn,
+  // all of which a mouse or a finger can. Only while focus is on the board
+  // (the key is handled on its root), never in a dialog over it, and the
+  // preview keeps clear of the focused card's row.
+  const readingOrder = [
+    ...opponentField.map((c) => ({ id: c.instanceId, from: 'opponent' })),
+    ...playerField.map((c) => ({ id: c.instanceId, from: 'player' })),
+    ...playerHand.map((c) => ({ id: c.instanceId, from: 'hand' })),
+  ];
+  const onBoardKeyDown = (e) => {
+    if ((e.key !== 'i' && e.key !== 'I') || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (gameOver || leaveMode || !(e.target instanceof Element) || e.target.closest('[role="dialog"]')) return;
+    if (readingOrder.length === 0) return;
+    e.preventDefault();
+    const focusedRow = e.target.closest('[data-field]')?.getAttribute('data-field') ?? null;
+    const focusedId = e.target.closest('[data-card-id]')?.getAttribute('data-card-id')
+      ?? e.target.closest('[data-hand-id]')?.getAttribute('data-hand-id');
+    const at = previewShown ? readingOrder.findIndex((c) => c.id === previewTarget.id) : -1;
+    const next = at === -1
+      ? readingOrder.find((c) => String(c.id) === focusedId) ?? readingOrder[0]
+      : readingOrder[(at + (e.shiftKey ? -1 : 1) + readingOrder.length) % readingOrder.length];
+    setRaisedId(null);
+    showPreview({ ...next, via: 'key', anchor: focusedRow ?? next.from });
+  };
+  // A preview I opened belongs to where focus was: once focus moves, it goes
+  // (a card that takes focus opens its own straight after).
+  const onBoardFocus = () => setPreview((cur) => (cur?.via === 'key' ? null : cur));
 
   return (
     // Exactly the viewport's height on touch screens. With a mouse it never
@@ -2006,7 +2133,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // making the cards smaller — the opposite of what zooming in asked for.
     // (The height must stay definite either way; the felt's fit is measured
     // from it.)
-    <div className="game-surface relative w-full h-[100dvh] [@media(pointer:fine)]:h-[max(100dvh,40rem)] bar-backdrop overflow-hidden">
+    <div
+      className="game-surface relative w-full h-[100dvh] [@media(pointer:fine)]:h-[max(100dvh,40rem)] bar-backdrop overflow-hidden"
+      onKeyDown={onBoardKeyDown}
+      onFocus={onBoardFocus}
+    >
       <FxContext.Provider value={fx}>
       <div className="absolute inset-0 grain pointer-events-none" aria-hidden="true" />
       {/* A hit to your face reddens the edges of the screen for a moment. */}
@@ -2540,11 +2671,15 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               </AnimatePresence>
 
               {/* The card being read, at full size (see CardPreview). */}
-              {previewCard && !gameOver && (
+              {previewShown && (
                 <CardPreview
                   card={previewCard}
-                  place={previewPlace}
-                  zoom={previewLayout.zoom}
+                  placement={previewPlacement}
+                  rules={previewRules}
+                  keys={previewKeys}
+                  hoverable={previewTarget.via === 'hover'}
+                  onKeep={keepPreview}
+                  onDismiss={() => hidePreview()}
                   costDelta={previewTarget.from === 'hand' ? effectiveCost(previewCard, playerField) - previewCard.cost : 0}
                   cosmeticBorder={previewTarget.from === 'opponent' ? null : cosmeticBorder}
                 />

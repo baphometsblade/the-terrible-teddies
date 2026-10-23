@@ -234,6 +234,146 @@ test.describe('with a mouse and a keyboard', () => {
     await expect(preview(page)).toHaveCount(0);
   });
 
+  // The preview used to sit over the middle of the felt at every phone width:
+  // tabbing to a creature put a 2x card on top of the very card that had the
+  // focus (WCAG 2.4.11), and nothing but moving focus took it away (1.4.13).
+  test('a keyboard-opened preview keeps clear of the focused card\'s row, and Escape closes it until focus moves', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4] });
+    await page.reload();
+    await toBattle(page);
+    await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
+    await expect(page.locator('[data-field="player"]')).toHaveCount(1, SLOW);
+    await page.getByRole('button', { name: 'End Turn' }).click();
+    await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+    const attacker = page.getByRole('button', { name: 'Select Bar-Fight Barry to attack' });
+    await expect(attacker).toBeVisible(SLOW);
+
+    const clearOf = (field) => page.evaluate((side) => {
+      const shown = document.querySelector('[data-card-preview] > div').getBoundingClientRect();
+      const focused = document.activeElement.getBoundingClientRect();
+      const cx = focused.x + focused.width / 2;
+      const cy = focused.y + focused.height / 2;
+      const rowCovered = [...document.querySelectorAll(`[data-field="${side}"]`)].some((el) => {
+        const b = el.getBoundingClientRect();
+        return shown.x < b.right && b.x < shown.right && shown.y < b.bottom && b.y < shown.bottom;
+      });
+      return {
+        focusCovered: cx > shown.x && cx < shown.right && cy > shown.y && cy < shown.bottom,
+        rowCovered,
+      };
+    }, field);
+
+    // Keyboard focus, as Tab gives it.
+    await attacker.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expect(attacker).toBeFocused();
+    await expect(preview(page)).toBeVisible();
+    await expect(preview(page)).toContainText('next card');
+    expect(await clearOf('player')).toEqual({ focusCovered: false, rowCovered: false });
+
+    await page.keyboard.press('Escape');
+    await expect(preview(page)).toHaveCount(0);
+    await expect(attacker).toBeFocused();
+    await page.waitForTimeout(500);
+    await expect(preview(page)).toHaveCount(0);
+
+    // Targeting: the focus is on Chuck's row now, and the preview takes the
+    // other half.
+    await page.keyboard.press('Enter');
+    const target = page.getByRole('button', { name: /^Attack (?!opponent)/ }).first();
+    await expect(target).toBeVisible();
+    await target.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expect(target).toBeFocused();
+    await expect(preview(page)).toBeVisible();
+    expect(await clearOf('opponent')).toEqual({ focusCovered: false, rowCovered: false });
+  });
+
+  // Focus only reaches cards with a tab stop. Chuck's cards outside targeting,
+  // a creature warming up and the hand on Chuck's turn have none (giving them
+  // one would be a dead stop), so a keyboard player had no way to read them.
+  test('I steps the preview through every card, tab stop or not; Escape closes it', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await seed(page, { currentDeck: [6, 4, 4, 4, 4, 4] }); // Sally (Taunt) first
+    await page.reload();
+    await toBattle(page);
+    const opener = page.locator('[data-field="opponent"]').first();
+    await expect(opener).toBeVisible(SLOW);
+    const openerName = await opener.locator('[title]').first().getAttribute('title');
+    const shows = () => preview(page).locator('[title]').first();
+
+    // From a control that is not a card: the first card on the table.
+    await page.getByRole('button', { name: '← Menu' }).focus();
+    await page.keyboard.press('i');
+    await expect(preview(page)).toBeVisible();
+    await expect(shows()).toHaveAttribute('title', openerName);
+    await expect(preview(page)).toContainText('next card');
+
+    // Play Sally from the keyboard: she is warming up, with no tab stop.
+    const sally = page.getByRole('button', { name: 'Play Shit-Talk Sally' });
+    await sally.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('[data-field="player"]')).toHaveCount(1, SLOW);
+    await expect(page.getByRole('button', { name: /^Select Shit-Talk Sally/ })).toHaveCount(0);
+
+    // From the first hand card, Shift+I goes back across the table: Sally,
+    // then Chuck's opener; I comes forward again.
+    // (By role: Sally's own slot is still leaving the hand, inert.)
+    const first = page.getByRole('button', { name: /^Play / }).first();
+    await first.focus();
+    await expect(first).toBeFocused();
+    await page.keyboard.press('Shift+I');
+    await expect(shows()).toHaveAttribute('title', 'Shit-Talk Sally');
+    // Sally's own row is kept clear: the focus is in the hand, so the row to
+    // keep clear is the card's.
+    await expect(preview(page)).toContainText('Enemies must attack this card first');
+    await page.keyboard.press('Shift+I');
+    await expect(shows()).toHaveAttribute('title', openerName);
+    await page.keyboard.press('i');
+    await expect(shows()).toHaveAttribute('title', 'Shit-Talk Sally');
+
+    await page.keyboard.press('Escape');
+    await expect(preview(page)).toHaveCount(0);
+    // After Escape, I starts again at the focused card. Focus moving on
+    // ends I's preview, even when it shows a card other than the one that
+    // had the focus.
+    await page.keyboard.press('i');
+    await expect(shows()).toHaveAttribute('title', 'Bar-Fight Barry');
+    await page.keyboard.press('Shift+I');
+    await expect(shows()).toHaveAttribute('title', 'Shit-Talk Sally');
+    await page.getByRole('button', { name: '← Menu' }).focus();
+    await expect(preview(page)).toHaveCount(0);
+  });
+
+  // WCAG 1.4.13: what hovering shows can itself be hovered (a magnifier user
+  // has to move onto it to read it), and Escape dismisses it without moving
+  // the mouse.
+  test('the mouse can move onto a hover preview without losing it, and Escape dismisses it', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await seed(page, { currentDeck: [6, 6, 6, 6, 6, 6] });
+    await page.reload();
+    await toBattle(page);
+    const card = handCards(page).first();
+    await card.hover();
+    await expect(preview(page)).toBeVisible();
+    const shown = await preview(page).locator(':scope > div').boundingBox();
+    await page.mouse.move(shown.x + shown.width / 2, shown.y + shown.height / 2, { steps: 12 });
+    await page.waitForTimeout(700);
+    await expect(preview(page)).toBeVisible();
+    await page.mouse.move(2, 2);
+    await expect(preview(page)).toHaveCount(0);
+
+    await card.hover();
+    await expect(preview(page)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(preview(page)).toHaveCount(0);
+    await page.waitForTimeout(600);
+    await expect(preview(page)).toHaveCount(0);
+  });
+
   // effectiveCost lowered a Swarm card's cost once another creature was down,
   // and the hand checked affordability with it — but the coin drew the printed
   // cost, so a "2" card lit up as playable on 1 energy.
