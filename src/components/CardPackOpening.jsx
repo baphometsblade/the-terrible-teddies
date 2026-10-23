@@ -1,17 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, PackageOpen, Crown, Coins, X, Sparkles, PartyPopper } from 'lucide-react';
+import { Package, PackageOpen, Crown, Coins, X, Sparkles, PartyPopper, Trophy, CalendarDays } from 'lucide-react';
 import TeddyCard, { CardBack } from './TeddyCard';
 import { useGameStore } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
 import { celebrate } from '@/lib/celebrate';
 import { FOCUS_OUTLINE } from '@/lib/focus';
-import { Medallion, SectionHeading, WalletChips } from '@/components/ui/game-chrome';
+import { Medallion, SectionHeading, WalletChips, BrassCoin } from '@/components/ui/game-chrome';
+import { Progress } from '@/components/ui/progress';
 import { PACK_LOOK, HeroPack } from './PackArt';
 import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
 import { PackOddsGuide } from './PackOdds';
 import { RARITY, RARITY_ORDER } from '@/lib/rarity';
 import { revealOrder, waveRanges, tableLayout } from '@/lib/packReveal';
+import { nextCoinPack, nextPassPack, nextDailyPack } from '@/lib/packSources';
+import { BATTLE_PASS_REWARDS } from './BattlePass';
 
 // Plain <button>s rather than the shadcn Button: its bg-primary is a utility
 // and would beat the component-layer btn-brass / btn-glass materials.
@@ -679,9 +682,13 @@ const CardPackOpening = ({ onClose }) => {
               )}
 
               {!pulledCards && !isOpening && totalPacks === 0 && (
-                <div className="text-center">
-                  <p className="text-plush-200">No packs available. Buy some below!</p>
-                </div>
+                <PackSources
+                  onBuy={(item) => {
+                    // The panel (and this button) goes once a pack is held;
+                    // focus goes on to the Open button that replaces it.
+                    if (buyItem(item).success) requestAnimationFrame(() => openRef.current?.focus({ preventScroll: true }));
+                  }}
+                />
               )}
 
               {/* Mid-reveal: deal the next wave, or turn everything now. */}
@@ -754,6 +761,96 @@ const CardPackOpening = ({ onClose }) => {
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+// The empty table: where the next pack comes from, with the real numbers —
+// coins toward the cheapest pack (SHOP_ITEMS), the next Battle Pass tier that
+// grants packs (its reward table), the next login-streak day that does
+// (DAILY_REWARDS). It used to say "No packs available. Buy some below!" over
+// a shop whose every tile was greyed out. When a pack is affordable, buying
+// one is right here.
+const PackSources = ({ onBuy }) => {
+  const {
+    coins, seasonXP, claimedBattlePassRewards, hasBattlePassPremium, consecutiveLogins, lastLoginDate,
+  } = useGameStore();
+  const coin = nextCoinPack(coins);
+  const pass = nextPassPack(
+    { seasonXP, claimed: claimedBattlePassRewards, hasPremium: hasBattlePassPremium },
+    BATTLE_PASS_REWARDS,
+  );
+  const daily = nextDailyPack({ consecutiveLogins, lastLoginDate });
+  const packs = (n) => `${n} pack${n === 1 ? '' : 's'}`;
+  const DISC = 'grid h-9 w-9 shrink-0 place-items-center rounded-full bg-night-950/60 border border-white/10';
+  return (
+    <div className="panel-glass w-full max-w-md rounded-xl p-4 text-left">
+      <h2 className="font-display text-lg font-extrabold leading-tight text-white">No packs to open</h2>
+      <p className="mt-0.5 text-sm text-plush-300">This is where the next ones come from.</p>
+      <ul className="mt-3.5 space-y-3.5">
+        {coin && (
+          <li className="flex gap-3">
+            <BrassCoin size="md" aria-hidden="true">
+              <Coins className="h-4 w-4 text-night-950/70" strokeWidth={2.4} />
+            </BrassCoin>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white">{`${coin.item.name} · ${coin.item.price.toLocaleString()} coins`}</p>
+              <Progress
+                value={Math.round(coin.progress * 100)}
+                aria-label={`Coins toward a ${coin.item.name}: ${coins.toLocaleString()} of ${coin.item.price.toLocaleString()}`}
+                className="mt-1.5 h-2 bg-night-950/70 ring-1 ring-inset ring-white/[0.08] [&>div]:bg-gradient-to-r [&>div]:from-brass-200 [&>div]:to-brass-500"
+              />
+              <p className="mt-1 text-xs text-plush-300">
+                {coin.short > 0
+                  ? `${coin.short.toLocaleString()} more coins — win battles to earn them.`
+                  : 'You have enough for one now.'}
+              </p>
+              {coin.short === 0 && (
+                <button
+                  type="button"
+                  onClick={() => onBuy(coin.item)}
+                  className={`${ACTION} btn-brass mt-2.5 h-10 px-4 text-[15px]`}
+                >
+                  <Coins aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
+                  {`Buy a ${coin.item.name}`}
+                </button>
+              )}
+            </div>
+          </li>
+        )}
+        {pass && (
+          <li className="flex gap-3">
+            <span aria-hidden="true" className={DISC}>
+              <Trophy className="h-4 w-4 text-brass-300" strokeWidth={2.4} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white">
+                {`Battle Pass tier ${pass.tier}${pass.track === 'premium' ? ' (premium)' : ''} · ${packs(pass.packs)}`}
+              </p>
+              <p className="mt-0.5 text-xs text-plush-300">
+                {pass.ready ? 'Reached — claim it in the Battle Pass.' : `${pass.xpToGo.toLocaleString()} XP to go.`}
+              </p>
+            </div>
+          </li>
+        )}
+        {daily && (
+          <li className="flex gap-3">
+            <span aria-hidden="true" className={DISC}>
+              <CalendarDays className="h-4 w-4 text-sky-300" strokeWidth={2.4} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white">{`Login streak day ${daily.day} · ${packs(daily.packs)}`}</p>
+              <p className="mt-0.5 text-xs text-plush-300">
+                {daily.inDays === 0
+                  ? "Today's daily reward."
+                  : daily.inDays === 1
+                    ? 'Tomorrow, if you log in.'
+                    : `In ${daily.inDays} days, if you log in each day.`}
+              </p>
+            </div>
+          </li>
+        )}
+      </ul>
     </div>
   );
 };

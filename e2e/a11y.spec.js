@@ -347,3 +347,19 @@ test('a pack mid-reveal has no WCAG 2.1 A/AA violations', async ({ page }) => {
   await expect(dialog.getByRole('button', { name: /^Turn over card 2(,|$)/ })).toBeVisible(SLOW);
   await expectNoViolations(page, 'pack reveal');
 });
+
+test('the empty Card Packs table has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    // Affordable, so the panel's Buy control is on the page to be audited.
+    Object.assign(stored.state, { cardPacks: 0, premiumPacks: 0, legendaryPacks: 0, coins: 250, gems: 0 });
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Card Packs', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Card packs' });
+  await expect(dialog.getByRole('heading', { name: 'No packs to open' })).toBeVisible(SLOW);
+  await expect(dialog.getByRole('button', { name: 'Buy a Card Pack' })).toBeVisible();
+  await expectNoViolations(page, 'empty card packs table');
+});
