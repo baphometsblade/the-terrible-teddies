@@ -6,9 +6,10 @@ and progress a seasonal Battle Pass.
 
 ## The game
 
-- **Battles**: turn-based card combat (draw → main → battle → end) against a
-  difficulty-scaled AI. Cards have energy costs and abilities — taunt,
-  piercing, shield, stealth, protect, fury — plus trap and special cards.
+- **Battles**: turn-based card combat against a difficulty-scaled AI. Each
+  turn you draw, then play cards and attack in any order until you end it.
+  Cards have energy costs and abilities — taunt, piercing, shield, stealth,
+  protect, fury — plus trap and special cards.
 - **Collection & decks**: 30+ cards across five rarities; duplicates convert
   to coins. A deck builder with copy limits and saved decks.
 - **Progression**: XP/levels, achievements, daily login rewards, daily and
