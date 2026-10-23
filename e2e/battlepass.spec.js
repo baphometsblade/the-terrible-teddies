@@ -92,6 +92,23 @@ test("short of gems, the Premium confirm's Get gems opens the Shop on gems, and 
   await expect(page.getByRole('dialog', { name: 'Shop' }).getByRole('button', { name: 'Card Packs', exact: true })).toHaveAttribute('aria-pressed', 'true', SLOW);
 });
 
+test.describe('at 320x640', () => {
+  test.use({ viewport: { width: 320, height: 640 } });
+  // The confirm is taller than this screen and opens scrolled to its buttons
+  // (Cancel takes focus): the term has to be on screen with them.
+  test('the Premium term is on screen with the price and the buttons', async ({ page }) => {
+    await seed(page, {});
+    const pass = await openPass(page);
+    await pass.getByRole('button', { name: /^Unlock Premium/ }).click();
+    const confirm = page.getByRole('dialog', { name: 'Unlock Premium Pass' });
+    await expect(confirm.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await page.waitForTimeout(500);
+    for (const el of [confirm.locator('[data-pass-term]'), confirm.getByText('Price', { exact: true }), confirm.getByRole('button', { name: 'Cancel' })]) {
+      await expect(el).toBeInViewport({ ratio: 1 });
+    }
+  });
+});
+
 test('the empty Card Packs table routes to gems and to a reached Battle Pass tier', async ({ page }) => {
   await seed(page, {
     cardPacks: 0, premiumPacks: 0, legendaryPacks: 0, coins: 0, gems: 0,
