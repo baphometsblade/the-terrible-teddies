@@ -2,13 +2,15 @@ import { useState, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bomb, Check, Eraser, FolderOpen, PawPrint, Save, Sparkles, Trash2, X, Zap } from 'lucide-react';
 import TeddyCard, { ArtOrEmoji } from './TeddyCard';
-import { Medallion } from '@/components/ui/game-chrome';
+import { BrassCoin, Medallion } from '@/components/ui/game-chrome';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder } from '@/lib/cosmetics';
+import { CARD_ZOOM_QUERY, gridArtVariant } from '@/lib/cardZoom';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 
@@ -39,16 +41,6 @@ const TYPE_TILES = [
   { type: 'trap', label: 'Trap', Icon: Bomb, tone: 'text-purple-300' },
   { type: 'special', label: 'Special', Icon: Sparkles, tone: 'text-cyan-300' },
 ];
-
-// The brass coin a card's cost is struck on — TeddyCard's, at list size.
-const CostCoin = ({ cost }) => (
-  <span
-    className="grid h-6 w-6 shrink-0 place-items-center rounded-full font-display text-xs font-extrabold leading-none text-night-950 tabular-nums ring-1 ring-night-950/80 shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
-    style={{ background: 'radial-gradient(circle at 50% 30%, #fffbeb, #fbbf24 55%, #b45309)' }}
-  >
-    {cost}
-  </span>
-);
 
 // Save-Deck modal. Hosts its own useDialog (the hook must mount with the
 // overlay) for dialog semantics, Escape, and a focus trap — otherwise the deck
@@ -128,6 +120,7 @@ const DeckBuilder = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const { toast } = useToast();
   const copiesIdBase = useId();
+  const artVariant = gridArtVariant(useMediaQuery(CARD_ZOOM_QUERY));
 
   const ownedCardObjects = ALL_CARDS.filter(card => ownedCards.includes(card.id));
 
@@ -254,12 +247,17 @@ const DeckBuilder = () => {
               </div>
             </div>
 
-            {/* Padded inside the scroller so a card's hover lift and focus
-                ring are not clipped by its edge. Fixed card-width tracks, as
-                in the Collection: centred on a phone, spread to the panel's
-                edges from sm up so the grid lines up with the heading. */}
-            <div className="-mx-2 max-h-[500px] overflow-y-auto px-2 pb-2 pt-2 [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin]">
-              <div className="grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-3 sm:justify-between sm:gap-x-4">
+            {/* Fixed card-width tracks, as in the Collection: centred on a
+                phone, spread to the panel's edges from sm up so the grid
+                lines up with the heading, and drawn larger from md up
+                (.card-zoom). No scroller of its own: the pool used to be a
+                500px box scrolling inside the scrolling page, which on a phone
+                cut the third row mid-card and hid the fourth inside it, and
+                zoomed it would have shown two and a half rows. The page
+                scrolls instead; the deck stays reachable beside it from lg
+                (a sticky panel) and below it on smaller screens (the bar). */}
+            <div className="pt-1">
+              <div className="card-zoom grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-3 sm:justify-between sm:gap-x-4">
                 {filteredCards.map((card) => {
                   const copiesInDeck = deck.filter(c => c.id === card.id).length;
                   const isMaxed = copiesInDeck >= MAX_COPIES;
@@ -274,7 +272,7 @@ const DeckBuilder = () => {
                         {...pressable(addToDeck.bind(null, card), `Add ${card.name} to deck`, !isMaxed)}
                         aria-describedby={copiesInDeck > 0 && !isMaxed ? copiesId : undefined}
                       >
-                        <TeddyCard teddy={card} isDisabled={isMaxed} cosmeticBorder={cosmeticBorder} />
+                        <TeddyCard teddy={card} isDisabled={isMaxed} cosmeticBorder={cosmeticBorder} artVariant={artVariant} />
                       </div>
                       {/* Copies in the deck, one lit segment per copy — under
                           the card, where it can never cover the cost coin. */}
@@ -385,7 +383,8 @@ const DeckBuilder = () => {
                   >
                     {/* The card's tier, as a sliver of its frame metal. */}
                     <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px]" style={{ background: RARITY_METAL[card.rarity] }} />
-                    <CostCoin cost={card.cost} />
+                    {/* The brass coin a card's cost is struck on — TeddyCard's, at list size. */}
+                    <BrassCoin size="sm">{card.cost}</BrassCoin>
                     <span
                       aria-hidden="true"
                       className={`relative grid h-9 w-7 shrink-0 place-items-center overflow-hidden rounded-[5px] bg-gradient-to-b ring-1 ring-white/10 ${RARITY[card.rarity].bg}`}

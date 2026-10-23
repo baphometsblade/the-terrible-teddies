@@ -10,6 +10,8 @@ import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 import { RARITY, RARITY_METAL, RARITY_ORDER as RARITY_ORDER_ASC } from '@/lib/rarity';
 import { useDialog } from '@/hooks/useDialog';
 import { buildVisibleOrder, staggerDelay } from '@/lib/collectionOrder';
+import { CARD_ZOOM_QUERY, gridArtVariant } from '@/lib/cardZoom';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 // Collection sorts and lists rarest-first.
 const RARITY_ORDER = [...RARITY_ORDER_ASC].reverse();
@@ -163,6 +165,7 @@ const TeddyCollection = () => {
   const [filter, setFilter] = useState('all');
   const [rarityFilter, setRarityFilter] = useState('all');
   const [showOwned, setShowOwned] = useState(true);
+  const artVariant = gridArtVariant(useMediaQuery(CARD_ZOOM_QUERY));
 
   const allCardsWithOwnership = ALL_CARDS.map(card => ({
     ...card,
@@ -325,8 +328,9 @@ const TeddyCollection = () => {
           collection rather than a few cards adrift in wide columns. On a
           phone the three tracks sit centred at a tight gap; from sm up the
           tracks spread to the panel's edges, so the first and last columns
-          line up with it and the gap only grows by a fraction of a card. */}
-      <div className={`grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-4 sm:justify-between sm:gap-x-4 sm:gap-y-5 ${visibleCount > 0 ? 'mb-8' : ''}`}>
+          line up with it and the gap only grows by a fraction of a card.
+          From md up .card-zoom draws the whole grid larger, tracks and all. */}
+      <div className={`card-zoom grid grid-cols-[repeat(auto-fill,6rem)] justify-center gap-x-3 gap-y-4 sm:justify-between sm:gap-x-4 sm:gap-y-5 ${visibleCount > 0 ? 'mb-8' : ''}`}>
         {/* Every tile stays mounted; a filter change toggles `hidden` on the
             ones that don't match.
 
@@ -355,7 +359,7 @@ const TeddyCollection = () => {
                 a lock — still recognisably the card you are hunting for. Only
                 the art: filtering the whole card took its name, cost, stats
                 and rules line below AA, on a tile that is still a control. */}
-            <TeddyCard teddy={card} dimmed={!card.owned} />
+            <TeddyCard teddy={card} dimmed={!card.owned} artVariant={artVariant} />
             {!card.owned && (
               <div className="pointer-events-none absolute inset-0 grid place-items-center">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-night-950/85 ring-1 ring-white/15 shadow-[0_6px_14px_-4px_rgba(0,0,0,0.8)]">

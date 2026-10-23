@@ -366,6 +366,21 @@
   .board-zoom { zoom: 0.6; }
 }
 
+/* The Collection and Deck Builder card grids. Below md a grid card is hand
+   size, which on a phone is right; on a desktop monitor it was a 96px
+   thumbnail with 6px text that rasterised as "COMM ON". zoom rather than
+   transform for the same reason as .board-zoom: it scales layout, so the
+   grid's 6rem tracks grow with the cards and the column count is worked out
+   again at the larger size, instead of scaled cards overlapping their
+   neighbours. src/lib/cardZoom.js mirrors the first breakpoint, so the cards
+   ask for sharper art exactly when they are drawn larger. */
+@media (min-width: 768px) {
+  .card-zoom { zoom: 1.25; }
+}
+@media (min-width: 1024px) {
+  .card-zoom { zoom: 1.5; }
+}
+
 /* Battle notifications. GameBoard sets html[data-screen="battle"] while a game
    is in play; in the default corner toasts covered the turn controls on
    desktop and Chuck's health on phones.
