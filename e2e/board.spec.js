@@ -1,8 +1,22 @@
 // The battle board's cards: how they read on the table and in the hand, how
 // the hand fits a phone, how a touch screen plays a card, and what the result
 // panel says about XP. Each test names the defect it pins.
+import AxeBuilder from '@axe-core/playwright';
 import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
 import { getDailyChallenges } from '../src/stores/challenges.js';
+import { getCurrentSeason } from '../src/utils/season.js';
+
+// axe against what this spec adds that the a11y spec never opens: the result
+// panel's level-up beat and the card preview. Sampled once everything has
+// settled, since axe composites colours and a mid-fade element reports a
+// blended one (see e2e/a11y.spec.js).
+const expectNoAxeViolations = async (page, label) => {
+  await page.waitForTimeout(2600); // the panel's last beat lands at ~1.9s
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  const summary = violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(' | ')}`).join('\n');
+  expect(violations, `axe on ${label}:\n${summary}`).toHaveLength(0);
+};
 
 // Merges into the saved game for the next reload (the boot's own seed runs on
 // every navigation, and init scripts run in registration order, so this one
@@ -45,6 +59,7 @@ test.describe('on a touch screen', () => {
     await expect(card.getByText('Tap again to play')).toBeVisible();
     await expect(played).toHaveCount(0);
     await expect(energy).toHaveText('3/3');
+    await expectNoAxeViolations(page, 'a raised hand card and its preview');
 
     // A tap anywhere else lowers it, and plays nothing.
     await page.locator('.felt-table').tap({ position: { x: 20, y: 20 } });
@@ -284,7 +299,8 @@ test.describe('XP and level-ups', () => {
   // panel said "+20 XP · +5".
   test('the result panel shows a level-up and its coins, and the menu does not toast it again', async ({ page }) => {
     await bootToMainMenu(page);
-    await seed(page, { level: 1, xp: 95 });
+    // 90 season XP, in the live season: the loss's 20 opens Battle Pass tier 2.
+    await seed(page, { level: 1, xp: 95, seasonXP: 90, seasonKey: getCurrentSeason().key });
     await page.reload();
     await toBattle(page);
     await page.getByRole('button', { name: 'Concede' }).click();
@@ -295,6 +311,9 @@ test.describe('XP and level-ups', () => {
     await expect(levelUp).toContainText('Level 2');
     await expect(levelUp).toContainText('+200');
     await expect(panel.getByRole('progressbar', { name: 'Level 2: 15 of 150 XP' })).toBeAttached();
+
+    await expect(panel.locator('[data-pass-tier]')).toHaveText('Battle Pass tier 2 unlocked');
+    await expectNoAxeViolations(page, 'the result panel with a level-up');
 
     await panel.getByRole('button', { name: 'Menu' }).click();
     await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);

@@ -305,7 +305,7 @@ const CardPreview = ({ card, place, zoom, costDelta = 0, cosmeticBorder = null }
       data-card-preview={place}
       className={`pointer-events-none absolute inset-y-0 z-40 flex items-center ${placement}`}
     >
-      <div className="flex w-48 flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-2" style={{ width: Math.max(160, Math.round(96 * zoom)) }}>
         <div className="rounded-[10px] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.9)]" style={{ zoom }}>
           <TeddyCard teddy={card} lift={false} cosmeticBorder={cosmeticBorder} costDelta={costDelta} artVariant="responsive" artLoading="eager" />
         </div>
@@ -1760,9 +1760,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setFieldZoom(zoom);
     // The preview leaves ~80px under the card for its rules caption.
     const previewZoom = Math.max(1.25, Math.min(2, Math.floor(((inner - 80) / 144) * 100) / 100));
-    const previewWidth = Math.max(96 * previewZoom, 192);
-    const side = (width - rowWidth * zoom) / 2 >= previewWidth + 24;
-    setPreviewLayout((p) => (p.zoom === previewZoom && p.side === side ? p : { zoom: previewZoom, side }));
+    // Beside the rows it may shrink to fit the room there (a tablet's felt
+    // has some, not a 2x card's worth), but not below 1.4x: smaller than
+    // that, it is better over the table at full size.
+    const sideRoom = (width - rowWidth * zoom) / 2 - 24;
+    const sideZoom = Math.min(previewZoom, Math.floor((sideRoom / 96) * 100) / 100);
+    const side = sideZoom >= 1.4;
+    const shown = side ? sideZoom : previewZoom;
+    setPreviewLayout((p) => (p.zoom === shown && p.side === side ? p : { zoom: shown, side }));
     // Where the centre line really is, for the narrow-screen toast placement
     // in index.css (toasts are fixed, so viewport coordinates are right).
     const r = centre.getBoundingClientRect();
