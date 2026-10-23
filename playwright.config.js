@@ -19,7 +19,11 @@ export default defineConfig({
     // The app honors this via <MotionConfig reducedMotion="user">, so parallel
     // workers run without the continuous Framer Motion animations — lighter CPU
     // and a smaller animation-timing surface for the auto-waiting assertions.
-    reducedMotion: 'reduce',
+    // It has to sit in contextOptions: a bare `use.reducedMotion` is not a
+    // Playwright Test option and was silently ignored, so for a long time the
+    // suite ran with motion on while this comment said otherwise. Specs that
+    // need motion opt back in with contextOptions or page.emulateMedia.
+    contextOptions: { reducedMotion: 'reduce' },
   },
   projects: [
     {
