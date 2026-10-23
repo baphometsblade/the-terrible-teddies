@@ -48,7 +48,7 @@ async function boot(page, { account = null, store = null, balance = null, rest =
     const fn = url.match(/\/rest\/v1\/rpc\/([a-z_]+)/)?.[1];
     if (fn) {
       const body = req.postDataJSON();
-      calls.push({ fn, body });
+      calls.push({ fn, body, headers: req.headers() });
       if (fn === 'get_player_save' || fn === 'put_player_save') {
         if (account === 'missing') return route.fulfill(missing(fn));
         if (account === 'offline') return route.abort('internetdisconnected');
@@ -123,6 +123,31 @@ test('a new device takes the account\'s save, its gem mark with it: no gem is cr
   // The device's own switches stay on the device.
   expect(put.body.p_save).not.toHaveProperty('soundEnabled');
   await expect(dialog.getByText(/^Saved to your account · /)).toBeVisible();
+});
+
+test('hiding the tab sends a waiting change at once, carrying the session\'s own token', async ({ page }) => {
+  const { calls, row } = await boot(page, { account: accountSave(), store: null, balance: 500 });
+  await expect(page.getByText('Lv 7')).toBeVisible(SLOW);
+  const dialog = await openSettings(page);
+  await dialog.getByRole('button', { name: /^Normal/ }).click();
+  // Hidden well inside the three seconds a change waits: it goes now, as a
+  // keepalive request (the page may be going away), which supabase-js does not
+  // send, so this is the hand-built request with its own headers.
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  const puts = () => calls.filter((c) => c.fn === 'put_player_save');
+  await expect.poll(() => puts().length, { timeout: 2000 }).toBe(1);
+  const put = puts()[0];
+  expect(put.headers.authorization).toBe(`Bearer ${SESSION.access_token}`);
+  expect(put.headers.apikey).toBe('test-anon-key');
+  expect(put.body.p_base_rev).toBe(5);
+  expect(put.body.p_save.difficulty).toBe('normal');
+  await expect.poll(() => row().rev).toBe(6);
+  // Sent once: the wait it replaced does not send it again.
+  await page.waitForTimeout(3500);
+  expect(puts()).toHaveLength(1);
 });
 
 test('when this device and the account both moved, the other save is kept and can be switched to', async ({ page }) => {

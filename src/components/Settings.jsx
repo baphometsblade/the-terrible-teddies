@@ -194,6 +194,10 @@ const Settings = ({ onClose }) => {
   const handleSignOut = async () => {
     setSigningOut(true);
     setSignOutError(null);
+    // Send the last few seconds of play to the account first. Not reaching
+    // it does not hold up signing out: the save stays on this device, and is
+    // put aside rather than wiped if another account signs in here.
+    await saveNow({ timeoutMs: 4000 });
     // The auth listener (hooks/useSupabaseAuth) nulls the session on sign-out,
     // which drops the app back to the Auth screen automatically.
     //
@@ -203,10 +207,6 @@ const Settings = ({ onClose }) => {
     // signed in while the UI reports success by simply closing. On a shared
     // device that hands the next person a live session, so this must fail
     // loudly and keep the dialog open.
-    // Send the last few seconds of play to the account first. Not reaching
-    // it does not hold up signing out: the save stays on this device, and is
-    // put aside rather than wiped if another account signs in here.
-    await saveNow({ timeoutMs: 4000 });
     const { error } = await supabase.auth.signOut();
     setSigningOut(false);
     if (error) {
