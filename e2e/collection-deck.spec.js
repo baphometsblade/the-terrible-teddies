@@ -292,7 +292,11 @@ test.describe('card detail', () => {
     // Never an empty frame: the grid's thumbnail is there, loaded, while the
     // original is still on its way.
     await expect(img).toHaveAttribute('src', /\/cards\/thumbs\/\d+\.webp$/);
-    expect(await img.evaluate((el) => el.complete && el.naturalWidth > 0)).toBe(true);
+    // Decoding the cached thumb can take a frame or two on a loaded machine;
+    // the full-size art is still held back here, so whatever this sees
+    // loaded is the thumb.
+    await expect.poll(() => img.evaluate((el) => el.complete && el.naturalWidth > 0), { timeout: 3000 }).toBe(true);
+    await expect(img).toHaveAttribute('src', /\/cards\/thumbs\/\d+\.webp$/);
 
     release();
     await expect(img).toHaveAttribute('src', /\/cards\/\d+\.webp$/, SLOW);

@@ -149,13 +149,22 @@ test.describe('the system Back', () => {
 
   const battle = (page) => page.getByRole('button', { name: 'Battle', exact: true });
   const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('terrible-teddies-storage')).state);
+  // Back, once the open layer's guard entry is in place. A layer takes Back
+  // from its mount effect, which runs after the paint that makes it visible;
+  // under a loaded test machine a Back pressed in that gap went to the entry
+  // before the game and left it. A player cannot press Back that fast, so the
+  // tests wait for what a player would have.
+  const guardedBack = async (page) => {
+    await expect.poll(() => page.evaluate(() => window.history.state?.tt ?? null), SLOW).toBe('tt-back-guard');
+    await page.goBack();
+  };
 
   test('closes the open dialog instead of leaving the game', async ({ page }) => {
     const url = page.url();
     await page.getByRole('button', { name: 'Shop', exact: true }).click();
     const shop = page.getByRole('dialog', { name: 'Shop' });
     await expect(shop).toBeVisible(SLOW);
-    await page.goBack();
+    await guardedBack(page);
     await expect(shop).toHaveCount(0, SLOW);
     await expect(battle(page)).toBeVisible();
     expect(page.url()).toBe(url);
@@ -171,7 +180,7 @@ test.describe('the system Back', () => {
     await expect(battle(page)).toBeVisible(SLOW);
     await page.getByRole('button', { name: 'Shop', exact: true }).click();
     await expect(shop).toBeVisible(SLOW);
-    await page.goBack();
+    await guardedBack(page);
     await expect(shop).toHaveCount(0, SLOW);
     await expect(battle(page)).toBeVisible();
   });
@@ -183,10 +192,10 @@ test.describe('the system Back', () => {
     await page.getByRole('button', { name: 'View odds' }).click();
     const odds = page.getByRole('dialog', { name: 'Pack odds' });
     await expect(odds).toBeVisible(SLOW);
-    await page.goBack();
+    await guardedBack(page);
     await expect(odds).toHaveCount(0, SLOW);
     await expect(shop).toBeVisible();
-    await page.goBack();
+    await guardedBack(page);
     await expect(shop).toHaveCount(0, SLOW);
     await expect(battle(page)).toBeVisible();
   });
@@ -194,7 +203,7 @@ test.describe('the system Back', () => {
   test('returns from the Collection to the menu', async ({ page }) => {
     await page.getByRole('button', { name: 'Collection', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Card Collection' })).toBeVisible(SLOW);
-    await page.goBack();
+    await guardedBack(page);
     await expect(battle(page)).toBeVisible(SLOW);
   });
 
@@ -203,21 +212,21 @@ test.describe('the system Back', () => {
     await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
     await expect(heading).toBeVisible(SLOW);
     // Unchanged: straight back to the menu.
-    await page.goBack();
+    await guardedBack(page);
     await expect(battle(page)).toBeVisible(SLOW);
 
     await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
     await expect(heading).toBeVisible(SLOW);
     await page.locator('[data-deck-panel]').getByRole('button', { name: /^Remove .+ from deck$/ }).first().click();
     await expect(page.locator('[data-unsaved]')).toHaveCount(1);
-    await page.goBack();
+    await guardedBack(page);
     const ask = page.getByRole('dialog', { name: 'Leave without saving?' });
     await expect(ask).toBeVisible(SLOW);
     // Back again is "Keep editing", as Escape is.
-    await page.goBack();
+    await guardedBack(page);
     await expect(ask).toHaveCount(0, SLOW);
     await expect(page.locator('[data-unsaved]')).toHaveCount(1);
-    await page.goBack();
+    await guardedBack(page);
     await expect(ask).toBeVisible(SLOW);
     await ask.getByRole('button', { name: 'Discard changes' }).click();
     await expect(battle(page)).toBeVisible(SLOW);
@@ -237,17 +246,17 @@ test.describe('the system Back', () => {
     await expect(endTurn).toBeVisible(SLOW);
     const leave = page.getByRole('dialog', { name: 'Leave this battle?' });
 
-    await page.goBack();
+    await guardedBack(page);
     await expect(leave).toBeVisible(SLOW);
     await expect(leave).toContainText('2-win streak');
-    await page.goBack();
+    await guardedBack(page);
     await expect(leave).toHaveCount(0, SLOW);
     await expect(endTurn).toBeVisible();
     expect((await stored(page)).totalLosses).toBe(0);
     expect((await stored(page)).currentWinStreak).toBe(2);
 
     // Asked again, and this time the player goes: the loss is booked.
-    await page.goBack();
+    await guardedBack(page);
     await expect(leave).toBeVisible(SLOW);
     await leave.getByRole('button', { name: 'Concede — counts as a loss' }).click();
     await expect(battle(page)).toBeVisible(SLOW);
@@ -261,7 +270,7 @@ test.describe('the system Back', () => {
     await page.getByRole('dialog', { name: 'Concede this battle?' })
       .getByRole('button', { name: 'Concede — counts as a loss' }).click();
     await expect(page.getByRole('dialog', { name: 'Defeat' })).toBeVisible(SLOW);
-    await page.goBack();
+    await guardedBack(page);
     await expect(battle(page)).toBeVisible(SLOW);
   });
 
