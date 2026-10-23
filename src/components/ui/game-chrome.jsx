@@ -110,13 +110,18 @@ export const WalletChips = ({ coins, gems, packs, className = '', children }) =>
 
 /**
  * A section's small-caps label with a hairline fading off to its right.
- * `action` (a small control) sits at the end of the line.
+ * `action` (a small control) sits at the end of the line. Below 360px the
+ * hairline gives way to it: at 320 the label, the line's two gaps and
+ * "View odds" did not fit, and the control broke onto two lines.
  */
 export const SectionHeading = ({ children, as: Tag = 'h3', id, className = 'mb-3', action = null }) => (
   <div className={`flex items-center gap-3 ${className}`}>
     <Tag id={id} className="label-caps text-plush-300 shrink-0">{children}</Tag>
-    <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
-    {action}
+    <span
+      aria-hidden="true"
+      className={`h-px flex-1 bg-gradient-to-r from-white/10 to-transparent ${action ? 'max-[359px]:hidden' : ''}`}
+    />
+    {action && <span className="ml-auto flex shrink-0">{action}</span>}
   </div>
 );
 

@@ -330,9 +330,11 @@ const Shop = ({ onClose }) => {
                       <button
                         type="button"
                         onClick={() => setShowOdds(true)}
-                        className={`inline-flex items-center gap-1 -my-2 px-1.5 py-2 rounded-md text-xs font-semibold text-brass-200 hover:text-white ${FOCUS_RING}`}
+                        className={`inline-flex items-center gap-1 -my-2 px-1.5 py-2 rounded-md text-xs font-semibold whitespace-nowrap text-brass-200 hover:text-white ${FOCUS_RING}`}
                       >
-                        <Percent aria-hidden="true" className="w-3.5 h-3.5" strokeWidth={2.4} />
+                        {/* Shed below 360px, with the heading's hairline, so
+                            the label stays on one line beside the heading. */}
+                        <Percent aria-hidden="true" className="hidden min-[360px]:block w-3.5 h-3.5" strokeWidth={2.4} />
                         View odds
                       </button>
                     )}
@@ -348,10 +350,11 @@ const Shop = ({ onClose }) => {
                 {/* Gems for coins. Sold here and under the Card Packs table
                     alike — coins_large used to be sold nowhere, while the
                     Starter offer below pointed players at "Coin bags in the
-                    shop". */}
+                    shop". Two across from md, like the guaranteed packs: from
+                    sm a half-width row left "Need 10 more" a 127px column. */}
                 <div className="mt-6">
                   <SectionHeading>Coin bags</SectionHeading>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {coinBags.map(item => (
                       <StoreTile key={item.id} item={item} onBuy={handleBuyItem} />
                     ))}

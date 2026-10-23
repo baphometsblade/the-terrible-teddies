@@ -110,16 +110,32 @@ export const PackStack = ({ look, quantity = 1, size = 'sm' }) => {
   );
 };
 
+// Coins pile tighter than packs fan: borrowing the packs' 1.5em spread drew a
+// big bag's three coins 6.6em (92px) wide, past its 64px slot and under the
+// tile's rounded edge on a phone. This pile is 5.6em, the width of the slot
+// a coin bag's art gets.
+const COIN_FAN = {
+  1: [''],
+  3: [
+    '-rotate-[10deg] -translate-x-[1em] translate-y-[0.35em]',
+    'rotate-[10deg] translate-x-[1em] translate-y-[0.35em]',
+    '',
+  ],
+};
+
 /**
  * A coin bag's art, sized like a pack stack (same `size` scale): one brass
- * coin, or a fan of three for a big bag. Decorative.
+ * coin, or a pile of three for a big bag. Decorative.
  */
 export const CoinStack = ({ quantity = 1, size = 'sm' }) => {
   const layers = quantity >= 1000 ? 3 : 1;
   return (
     <span className={`grid place-items-center ${MINI_SIZE[size]}`} aria-hidden="true">
-      {FAN[layers].map((t, i) => (
-        <span key={i} className={`col-start-1 row-start-1 ${t}`}>
+      {/* Each coin positioned, so they paint in source order: a transformed
+          layer paints above an untransformed one, and the centre coin (the
+          only one not moved) was drawn behind the other two. */}
+      {COIN_FAN[layers].map((t, i) => (
+        <span key={i} className={`relative col-start-1 row-start-1 ${t}`}>
           <BrassCoin size="em" className="shadow-[0_8px_16px_-8px_rgba(0,0,0,0.95)]">
             <Coins className="w-[1.7em] h-[1.7em] text-night-950/70" strokeWidth={2.2} />
           </BrassCoin>

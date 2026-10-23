@@ -321,3 +321,59 @@ test("the Shop's odds open in their own dialog, and Escape closes only that", as
   await expect(shop).toBeVisible();
   await expect(viewOdds).toBeFocused();
 });
+
+// At a zero balance every tile shows its widest shortfall ("Need 1,600
+// more"). It used to run out of the tile: past the padding and under the
+// rounded edge at 320 in the Shop, out of the 3-across and 4-across tiles at
+// 640. The Large Coin Bag's coins spilled under the tile's edge on phones.
+async function spills(dialog) {
+  return dialog.evaluate((d) => {
+    const out = [];
+    for (const tile of d.querySelectorAll('button[aria-label^="Buy "]')) {
+      const name = tile.getAttribute('aria-label');
+      const t = tile.getBoundingClientRect();
+      const cs = getComputedStyle(tile);
+      const inner = [t.left + parseFloat(cs.paddingLeft), t.right - parseFloat(cs.paddingRight)];
+      const edge = [t.left + tile.clientLeft, t.left + tile.clientLeft + tile.clientWidth];
+      const pill = tile.querySelector('[data-price-pill]');
+      if (!pill) { out.push(`${name}: no price pill`); continue; }
+      const p = pill.getBoundingClientRect();
+      if (p.left < inner[0] - 0.5 || p.right > inner[1] + 0.5) {
+        out.push(`${name}: "${pill.textContent}" spans ${Math.round(p.left)}-${Math.round(p.right)}, tile content ${Math.round(inner[0])}-${Math.round(inner[1])}`);
+      }
+      for (const el of tile.querySelectorAll('[data-tile-art] *')) {
+        const r = el.getBoundingClientRect();
+        if (r.width && (r.left < edge[0] - 0.5 || r.right > edge[1] + 0.5)) {
+          out.push(`${name}: art spans ${Math.round(r.left)}-${Math.round(r.right)}, tile ${Math.round(edge[0])}-${Math.round(edge[1])}`);
+          break;
+        }
+      }
+    }
+    return out;
+  });
+}
+
+for (const viewport of [{ width: 320, height: 640 }, { width: 640, height: 800 }, { width: 768, height: 1024 }]) {
+  test(`at ${viewport.width}px every store tile holds its price and its art`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await seed(page, { coins: 0, gems: 0, cardPacks: 0, premiumPacks: 0, legendaryPacks: 0 });
+    // The seven tiles SHOP_ITEMS sells (the Shop's "Buy Gems" tab is not one).
+    const tiles = 'button[aria-label^="Buy "]';
+    const packs = await openCardPacks(page);
+    await expect(packs.locator(tiles)).toHaveCount(7);
+    expect(await spills(packs), 'Card Packs').toEqual([]);
+    await packs.getByRole('button', { name: 'Close card packs' }).click();
+
+    await page.getByRole('button', { name: 'Shop', exact: true }).click();
+    const shop = page.getByRole('dialog', { name: 'Shop' });
+    await expect(shop.locator(tiles)).toHaveCount(7, SLOW);
+    expect(await spills(shop), 'Shop').toEqual([]);
+    // And "View odds" keeps to one line beside its heading: at 320 it broke
+    // in two.
+    const lines = await shop.getByRole('button', { name: 'View odds' }).evaluate((b) => {
+      const cs = getComputedStyle(b);
+      return (b.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) / parseFloat(cs.lineHeight);
+    });
+    expect(lines).toBeLessThan(1.5);
+  });
+}

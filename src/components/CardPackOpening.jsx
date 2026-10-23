@@ -746,10 +746,11 @@ const CardPackOpening = ({ onClose }) => {
               {/* Every item the Shop sells for packs or coins, through the
                   Shop's own tile. Eight cells for seven items: the BEST VALUE
                   tile is two wide, so the grid comes out in whole rows (of 2,
-                  then 4) instead of leaving one tile alone on the last. Not 8
-                  across at lg: in a 112px tile "Need 144 more" ran out of the
-                  pill. */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+                  then 4) instead of leaving one tile alone on the last. Four
+                  across only from md: at 640 a quarter-width tile is 111px
+                  inside and "Need 200 more" ran out of it (and 8 across at lg
+                  did the same in a 112px tile). */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
                 {QUICK_SHOP.map((item) => (
                   <StoreTile
                     key={item.id}
