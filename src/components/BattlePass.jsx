@@ -17,7 +17,8 @@ import { ArtOrEmoji } from './TeddyCard';
 import { PACK_LOOK, PackStack } from './PackArt';
 import { frameFor, EMOTES } from '@/lib/cosmetics';
 import {
-  BATTLE_PASS_REWARDS, PREMIUM_PASS_PRICE, currentTier as tierFor, countReadyRewards, premiumTotals, listOf,
+  BATTLE_PASS_REWARDS, PREMIUM_PASS_PRICE, currentTier as tierFor, canClaim, readyRewards, countReadyRewards,
+  premiumTotals, listOf,
 } from '@/lib/battlePass';
 
 // Plain <button>s throughout, not the shadcn Button: its bg-primary is a
@@ -309,7 +310,7 @@ const Includes = ({ children, note }) => (
 // save, and it states the term: it sold "3 guaranteed legendary cards" (which
 // turn into coins if already owned) and never said the pass lasts one season.
 const PurchaseConfirmDialog = ({
-  gems, price, season, seasonXP, ownedCards, unlockedCosmetics, onPurchase, onGetGems, onClose,
+  gems, price, season, seasonXP, readyOnUnlock, ownedCards, unlockedCosmetics, onPurchase, onGetGems, onClose,
 }) => {
   const ref = useDialog(onClose);
   // Opens on Cancel, not Purchase. useDialog focuses the first control, and
@@ -323,6 +324,7 @@ const PurchaseConfirmDialog = ({
   }, []);
 
   const totals = premiumTotals();
+  const premiumTiers = BATTLE_PASS_REWARDS.filter((r) => r.premium).length;
   const legendaries = totals.cards.filter((c) => c.rarity === 'legendary').length;
   const ownedPassCards = totals.cards.filter((c) => ownedCards.includes(c.cardId));
   const ownedPassCoins = ownedPassCards.reduce((n, c) => n + coinsForDuplicate(c.cardId), 0);
@@ -362,7 +364,16 @@ const PurchaseConfirmDialog = ({
       </h3>
 
       <div className="relative mt-4 rounded-xl bg-black/25 p-4 text-left ring-1 ring-white/5">
-        <div className="label-caps mb-3 text-plush-300">On every premium tier you reach:</div>
+        {/* The list is the whole track added up, and says so: it was headed
+            "On every premium tier you reach", which read as each tier paying
+            all of it. How much of the track is reached already is beside it,
+            and how far the rest is sits with the term below. */}
+        <div className="label-caps text-plush-300">{`Across all ${premiumTiers} premium tiers:`}</div>
+        <p data-pass-reached="" className="mb-3 mt-1 text-xs leading-snug text-plush-300">
+          {'Each tier’s reward is yours when you reach it.'}
+          {readyOnUnlock > 0 && ` You have reached ${readyOnUnlock === premiumTiers ? `all ${readyOnUnlock}` : readyOnUnlock} already: ${
+            readyOnUnlock === 1 ? 'it is' : 'they are'} ready to claim the moment you unlock.`}
+        </p>
         <ul className="space-y-2.5 text-sm text-plush-100">
           <Includes
             note={ownedPassCards.length > 0
@@ -609,7 +620,10 @@ const BattlePass = ({ onClose, onGetGems }) => {
   // How many tiles are waiting to be claimed: the helper the menu tile badges
   // with too, and the same test each tile's canClaim uses below, so the
   // count, the menu and the brass tiles always agree.
-  const readyCount = countReadyRewards({ seasonXP: battlePassXP, claimed: claimedRewards, hasPremium });
+  // One reading of the pass for the badge, the tiles and the confirm, through
+  // the same predicate the store's claim checks.
+  const pass = { seasonXP: battlePassXP, claimed: claimedRewards, hasPremium };
+  const readyCount = countReadyRewards(pass);
   const lastTier = BATTLE_PASS_REWARDS[BATTLE_PASS_REWARDS.length - 1].tier;
   // In the season's last days the rail says how many rewards are unclaimed and
   // when the season stops: claiming then is the player's call (what is left
@@ -913,7 +927,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
                         tier={reward.tier}
                         isUnlocked={reward.tier <= currentTier}
                         isClaimed={claimedRewards.premium.includes(reward.tier)}
-                        canClaim={reward.tier <= currentTier && !claimedRewards.premium.includes(reward.tier) && hasPremium}
+                        canClaim={canClaim(pass, reward, 'premium')}
                         owned={ownedOf(reward.premium)}
                         onClaim={() => claimReward(reward.tier, true)}
                       />
@@ -927,7 +941,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
                         tier={reward.tier}
                         isUnlocked={reward.tier <= currentTier}
                         isClaimed={claimedRewards.free.includes(reward.tier)}
-                        canClaim={reward.tier <= currentTier && !claimedRewards.free.includes(reward.tier)}
+                        canClaim={canClaim(pass, reward, 'free')}
                         owned={ownedOf(reward.free)}
                         onClaim={() => claimReward(reward.tier, false)}
                       />
@@ -970,6 +984,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
               price={PREMIUM_PASS_PRICE}
               season={season}
               seasonXP={battlePassXP}
+              readyOnUnlock={readyRewards({ ...pass, hasPremium: true }).filter((r) => r.track === 'premium').length}
               ownedCards={ownedCards}
               unlockedCosmetics={unlockedCosmetics}
               onPurchase={handlePurchasePremium}

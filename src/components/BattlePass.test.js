@@ -173,6 +173,37 @@ describe('the Premium confirmation', () => {
     expect(t).not.toMatch(/guaranteed legendary/i);
   });
 
+  // The list is the whole track's totals. Headed "On every premium tier you
+  // reach", it read as each tier paying all of it, with nothing beside it to
+  // say how much of the track the buyer has actually reached.
+  it('heads its totals as the whole track, and says how much of it is reached', () => {
+    const premiumTiers = BATTLE_PASS_REWARDS.filter((r) => r.premium).length;
+    const row = BATTLE_PASS_REWARDS[6];
+    useGameStore.setState({ seasonXP: row.xpRequired });
+    const reached = BATTLE_PASS_REWARDS.filter((r) => r.premium && r.xpRequired <= row.xpRequired).length;
+    const t = open().textContent.replace(/\s+/g, ' ');
+    expect(t).toContain(`Across all ${premiumTiers} premium tiers:`);
+    expect(t).not.toMatch(/every premium tier/i);
+    expect(t).toContain(`You have reached ${reached} already: they are ready to claim the moment you unlock.`);
+  });
+
+  it('counts the reached tiers from the table at the start and the end of the track', () => {
+    const premiumTiers = BATTLE_PASS_REWARDS.filter((r) => r.premium).length;
+    const reachedLine = (xp) => {
+      useGameStore.setState({ seasonXP: xp });
+      const line = open().querySelector('[data-pass-reached]').textContent;
+      act(() => root.unmount());
+      host.remove();
+      root = null;
+      return line;
+    };
+    // Tier 1 opens at 0 XP, so a new season starts with one premium tier reached.
+    expect(BATTLE_PASS_REWARDS.filter((r) => r.premium && r.xpRequired === 0)).toHaveLength(1);
+    expect(reachedLine(0)).toBe('Each tier’s reward is yours when you reach it. You have reached 1 already: it is ready to claim the moment you unlock.');
+    expect(reachedLine(BATTLE_PASS_REWARDS[BATTLE_PASS_REWARDS.length - 1].xpRequired))
+      .toBe(`Each tier’s reward is yours when you reach it. You have reached all ${premiumTiers} already: they are ready to claim the moment you unlock.`);
+  });
+
   it('turns a short balance into a route to gems, keeping Cancel first in focus', () => {
     useGameStore.setState({ gems: 10 });
     const onGetGems = vi.fn();

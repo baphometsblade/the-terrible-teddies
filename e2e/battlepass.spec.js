@@ -87,7 +87,11 @@ test("short of gems, the Premium confirm's Get gems opens the Shop on gems, and 
   await page.keyboard.press('Escape');
   await expect(shop).toHaveCount(0, SLOW);
   await expect(passTile(page)).toBeFocused();
-  // Opened normally, the Shop is on Card Packs again.
+  // Opened normally, the Shop is on Card Packs again. The pointer is moved off
+  // first: it is still where Get gems was, and that can land in the 3px band
+  // at a menu tile's edge, where the tiles' hover lift turns hover on and off
+  // every frame and the tile never holds still long enough to be clicked.
+  await page.mouse.move(0, 0);
   await page.getByRole('button', { name: 'Shop', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Shop' }).getByRole('button', { name: 'Card Packs', exact: true })).toHaveAttribute('aria-pressed', 'true', SLOW);
 });
