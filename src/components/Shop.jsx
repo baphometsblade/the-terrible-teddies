@@ -11,7 +11,7 @@ import { pressable } from '@/lib/a11y';
 import { RARITY_METAL, RARITY_ORDER } from '@/lib/rarity';
 import { celebrate } from '@/lib/celebrate';
 import { FOCUS_OUTLINE } from '@/lib/focus';
-import { Medallion, BalanceChip } from '@/components/ui/game-chrome';
+import { Medallion, SectionHeading, WalletChips } from '@/components/ui/game-chrome';
 import { PACK_LOOK, PackStack } from './PackArt';
 
 const GEM_BUNDLES = [
@@ -28,10 +28,6 @@ const GEM_BUNDLES = [
 const ACTION =
   `inline-flex items-center justify-center gap-2 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS_OUTLINE} ` +
   'disabled:opacity-50 disabled:cursor-not-allowed';
-
-// panel-glass paints a gradient IMAGE, so a hover background-color sits under
-// it and never shows. The hover state is a lighter image instead.
-const TILE_HOVER = 'hover:[background-image:linear-gradient(180deg,rgba(59,45,84,0.85),rgba(32,23,47,0.92))]';
 
 const CHECKOUT_STATUS = 'Opening secure checkout…';
 
@@ -50,13 +46,6 @@ const PricePill = ({ currency, price, className = '' }) => {
     </span>
   );
 };
-
-const SectionHeading = ({ children }) => (
-  <div className="flex items-center gap-3 mb-3">
-    <h3 className="label-caps text-plush-300 shrink-0">{children}</h3>
-    <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
-  </div>
-);
 
 // Hoisted to module scope so their identity is stable across renders. Declared
 // inside Shop they were redefined every render, so a coin/pack purchase (which
@@ -82,8 +71,8 @@ const PackCard = ({ item, onBuy }) => {
       onClick={onBuy}
       aria-label={`Buy ${item.name} for ${item.price} ${item.currency}`}
       aria-describedby={descId}
-      className={`panel-glass sheen relative w-full h-full rounded-2xl text-left transition-transform duration-200
-        hover:-translate-y-0.5 ${TILE_HOVER} ${FOCUS_OUTLINE}
+      className={`tile-glass sheen relative w-full h-full rounded-2xl text-left transition-transform duration-200
+        hover:-translate-y-0.5 ${FOCUS_OUTLINE}
         ${tier === 'legendary' ? 'trim-brass' : ''} ${tier === 'premium' ? 'border-purple-300/25' : ''}
         ${feature
           ? 'flex items-center gap-4 p-4 sm:p-5'
@@ -137,8 +126,8 @@ const GemBundle = ({ bundle, tier, processing, onBuy }) => {
       // Every tile leaves room for the BEST VALUE pill from md up, so the five
       // medallions line up across the row; on a phone the best-value tile has a
       // row of its own and the others need not.
-      className={`panel-glass sheen relative h-full rounded-2xl px-3 pb-4 flex flex-col items-center text-center cursor-pointer
-        transition-transform duration-200 hover:-translate-y-0.5 ${TILE_HOVER} ${FOCUS_OUTLINE}
+      className={`tile-glass sheen relative h-full rounded-2xl px-3 pb-4 flex flex-col items-center text-center cursor-pointer
+        transition-transform duration-200 hover:-translate-y-0.5 ${FOCUS_OUTLINE}
         ${bundle.popular ? 'trim-brass col-span-2 md:col-span-1 pt-10' : 'pt-6 md:pt-10'}`}
     >
       {bundle.popular && (
@@ -188,7 +177,7 @@ const TAB_MOTION = {
 };
 
 const Shop = ({ onClose }) => {
-  const { coins, gems, cardPacks, buyShopItem, coinDoublerExpiresAt } = useGameStore();
+  const { coins, gems, cardPacks, premiumPacks, legendaryPacks, buyShopItem, coinDoublerExpiresAt } = useGameStore();
   // Purchases re-render via the store subscription, but time ELAPSING is not a
   // store write — a dialog left open across the expiry would keep advertising
   // an "Active" booster that recordBattleResult (which recomputes from
@@ -348,11 +337,15 @@ const Shop = ({ onClose }) => {
             <Medallion icon={Store} />
             <h2 className="font-display text-3xl font-extrabold leading-none text-brass-gradient">Shop</h2>
           </div>
-          <div className="order-last w-full sm:order-none sm:w-auto flex flex-wrap items-center gap-2">
-            <BalanceChip icon={Coins} value={coins.toLocaleString()} tone="text-brass-300" noun="coins" />
-            <BalanceChip icon={Gem} value={gems.toLocaleString()} tone="text-fuchsia-300" noun="gems" />
-            <BalanceChip icon={Package} value={cardPacks.toLocaleString()} tone="text-sky-300" noun="card packs" />
-          </div>
+          {/* The same wallet, in the same slot, as Card Packs: every tier of
+              pack counts, so a player holding only a Legendary pack no longer
+              reads 0 here. */}
+          <WalletChips
+            className="order-last w-full sm:order-none sm:w-auto"
+            coins={coins}
+            gems={gems}
+            packs={{ regular: cardPacks, premium: premiumPacks, legendary: legendaryPacks }}
+          />
           <button
             type="button"
             onClick={onClose}

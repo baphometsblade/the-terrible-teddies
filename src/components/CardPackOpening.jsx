@@ -6,7 +6,7 @@ import { useGameStore } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
 import { celebrate } from '@/lib/celebrate';
 import { FOCUS_OUTLINE } from '@/lib/focus';
-import { Medallion, BalanceChip } from '@/components/ui/game-chrome';
+import { Medallion, SectionHeading, WalletChips } from '@/components/ui/game-chrome';
 import { PACK_LOOK, HeroPack, PackStack } from './PackArt';
 
 import { RARITY, RARITY_ORDER, RARITY_METAL } from '@/lib/rarity';
@@ -14,10 +14,6 @@ import { RARITY, RARITY_ORDER, RARITY_METAL } from '@/lib/rarity';
 // Plain <button>s rather than the shadcn Button: its bg-primary is a utility
 // and would beat the component-layer btn-brass / btn-glass materials.
 const ACTION = `inline-flex items-center justify-center gap-2 h-11 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS_OUTLINE}`;
-
-// panel-glass paints a gradient IMAGE, so a hover background-color sits under
-// it and never shows. The hover state is a lighter image instead.
-const TILE_HOVER = 'hover:[background-image:linear-gradient(180deg,rgba(59,45,84,0.85),rgba(32,23,47,0.92))]';
 
 // Same wiring as the GameBoard's fitField: CSS zoom, not transform, so bigger
 // cards take the room they appear to. The zoom is measured rather than set at
@@ -230,25 +226,13 @@ const CardPackOpening = ({ onClose }) => {
               Card Packs
             </h1>
           </div>
-          <div className="order-last w-full md:order-none md:w-auto flex flex-wrap items-center gap-2">
-            <BalanceChip icon={Coins} tone="text-brass-300" noun="coins" value={coins.toLocaleString()} />
-            <BalanceChip icon={Gem} tone="text-fuchsia-300" noun="gems" value={gems.toLocaleString()} />
-            <BalanceChip
-              icon={Package}
-              tone="text-sky-300"
-              noun="packs to open"
-              value={(
-                <>
-                  {totalPacks}
-                  {(premiumPacks > 0 || legendaryPacks > 0) && (
-                    <span className="ml-1 font-sans text-xs font-semibold text-plush-300">
-                      ({cardPacks}+{premiumPacks}P+{legendaryPacks}L)
-                    </span>
-                  )}
-                </>
-              )}
-            />
-          </div>
+          {/* The same wallet, in the same slot, as the Shop. */}
+          <WalletChips
+            className="order-last w-full md:order-none md:w-auto"
+            coins={coins}
+            gems={gems}
+            packs={{ regular: cardPacks, premium: premiumPacks, legendary: legendaryPacks }}
+          />
           <button
             ref={closeRef}
             type="button"
@@ -433,10 +417,7 @@ const CardPackOpening = ({ onClose }) => {
           {/* Shop */}
           {!pulledCards && !isOpening && (
             <div className="mt-6">
-              <div className="flex items-center gap-3 mb-3">
-                <h3 className="label-caps text-plush-300 shrink-0">Shop</h3>
-                <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
-              </div>
+              <SectionHeading>Shop</SectionHeading>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
                 <ShopItem
                   tier="regular"
@@ -634,10 +615,10 @@ const ShopItem = ({ tier, quantity = 1, name, description, price, currency, canA
     type="button"
     onClick={onClick}
     disabled={!canAfford}
-    className={`panel-glass sheen relative h-full rounded-xl px-2 pt-8 pb-3 flex flex-col items-center text-center
+    className={`tile-glass sheen relative h-full rounded-xl px-2 pt-8 pb-3 flex flex-col items-center text-center
       transition-transform duration-200 ${FOCUS_OUTLINE}
       ${badge === 'BEST VALUE' ? 'trim-brass' : ''}
-      ${canAfford ? `hover:-translate-y-0.5 ${TILE_HOVER}` : 'opacity-50 cursor-not-allowed'}`}
+      ${canAfford ? 'hover:-translate-y-0.5' : 'opacity-50 cursor-not-allowed'}`}
   >
     {badge && (
       <span
