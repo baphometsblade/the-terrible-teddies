@@ -45,7 +45,7 @@ export const SupabaseProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [recovery, setRecovery] = useState(initialRecovery);
   // Where the sign-in screen should open: 'forgot' after an expired link's
-  // "Send a new link". Read once by Auth (consumeAuthIntent).
+  // "Send a new link". Read once by Auth (useAuthIntent), which clears it.
   const [authIntent, setAuthIntent] = useState(null);
 
   useEffect(() => {
@@ -77,7 +77,9 @@ export const SupabaseProvider = ({ children }) => {
       // Only in the tab the email link opened: supabase-js relays auth events
       // to the game's other open tabs, which must stay where they are.
       if (event === 'PASSWORD_RECOVERY' && FROM_AUTH_LINK) {
-        setRecovery((r) => (r?.stage === 'set-password' ? r : { stage: 'set-password' }));
+        // From "checking" (or, for a PKCE link, which this module cannot
+        // read ahead, from nothing); never back over a later stage.
+        setRecovery((r) => (r && r.stage !== 'checking' ? r : { stage: 'set-password' }));
       }
     });
 
