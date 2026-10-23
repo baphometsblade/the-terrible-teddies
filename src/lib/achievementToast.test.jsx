@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ACHIEVEMENTS } from '@/stores/gameStore';
 import { readingTime } from '@/components/ui/use-toast';
@@ -27,6 +29,27 @@ describe('achievement badges', () => {
   it('gives each achievement a badge of its own', () => {
     const icons = ACHIEVEMENTS.map((a) => a.icon);
     expect(new Set(icons).size).toBe(icons.length);
+  });
+
+  // Player Stats draws these badges in the same dialog as its stat tiles, so
+  // a badge that is a tile's icon reads as that stat. Shared only where the
+  // two count the same thing (Rising Champion once wore Best Streak's star).
+  it('shares a Player Stats icon only with the stat it is about', () => {
+    const SAME_THING = {
+      first_win: 'Victories', play_100: 'Battles', win_streak_5: 'Current',
+      deal_1000_damage: 'Total Damage', heal_500: 'Total Healing',
+    };
+    const source = readFileSync(resolve(process.cwd(), 'src/components/PlayerStats.jsx'), 'utf8');
+    const tiles = new Map(
+      [...source.matchAll(/<StatTile\s+icon=\{(\w+)\}\s+label=(?:"([^"]+)"|\{`([^`]+)`\})/g)]
+        .map(([, icon, label, template]) => [icon, label ?? template]),
+    );
+    // The parse found the tiles, so an empty map cannot pass for a clean one.
+    expect(tiles.get('HeartCrack')).toBe('Defeats');
+    const borrowed = ACHIEVEMENTS
+      .filter((a) => tiles.has(a.icon) && tiles.get(a.icon) !== SAME_THING[a.id])
+      .map((a) => `${a.id} wears ${a.icon}, Player Stats' "${tiles.get(a.icon)}"`);
+    expect(borrowed).toEqual([]);
   });
 
   it('falls back to a trophy rather than nothing, prototype names included', () => {

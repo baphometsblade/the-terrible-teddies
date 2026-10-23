@@ -100,7 +100,7 @@ export const ALL_CARDS = [
 // every platform draws differently.
 export const ACHIEVEMENTS = [
   { id: 'first_win', name: 'First Victory', description: 'Win your first battle', reward: 100, icon: 'Trophy' },
-  { id: 'win_10', name: 'Rising Champion', description: 'Win 10 battles', reward: 500, icon: 'Star' },
+  { id: 'win_10', name: 'Rising Champion', description: 'Win 10 battles', reward: 500, icon: 'Award' },
   { id: 'win_50', name: 'Teddy Master', description: 'Win 50 battles', reward: 2000, icon: 'Crown' },
   { id: 'win_streak_5', name: 'On Fire', description: 'Win 5 battles in a row', reward: 300, icon: 'Flame' },
   { id: 'collect_20', name: 'Collector', description: 'Collect 20 unique cards', reward: 400, icon: 'Library' },

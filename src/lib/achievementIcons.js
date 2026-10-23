@@ -1,5 +1,5 @@
 import {
-  Trophy, Star, Crown, Flame, Library, Archive, Warehouse, BadgeCheck, Gamepad2,
+  Trophy, Award, Crown, Flame, Library, Archive, Warehouse, BadgeCheck, Gamepad2,
   Bomb, HeartPulse, ShieldCheck, Swords, ChevronsUp, Medal, CalendarCheck,
 } from 'lucide-react';
 
@@ -10,9 +10,10 @@ import {
 // now draw the same icon on the same medallion. Where Player Stats already has
 // an icon for the same thing (Battles, Victories, the streak, total damage and
 // healing) the achievement uses it; none borrows one that means something else
-// there (HeartCrack is Defeats, TrendingUp the win rate).
+// there (HeartCrack is Defeats, TrendingUp the win rate, Star the best
+// streak). achievementToast.test.js holds the two lists to that.
 export const ACHIEVEMENT_ICONS = Object.freeze({
-  Trophy, Star, Crown, Flame, Library, Archive, Warehouse, BadgeCheck, Gamepad2,
+  Trophy, Award, Crown, Flame, Library, Archive, Warehouse, BadgeCheck, Gamepad2,
   Bomb, HeartPulse, ShieldCheck, Swords, ChevronsUp, Medal, CalendarCheck,
 });
 
