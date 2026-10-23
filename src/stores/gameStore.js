@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { shuffleDeck } from '@/utils/deckUtils';
 import { getCurrentSeason } from '@/utils/season';
+import analytics from '@/utils/analytics';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
@@ -175,6 +176,10 @@ export const rollRarity = (table, roll = Math.random() * table.reduce((n, [, w])
 
 const getXPForLevel = (level) => Math.floor(100 * Math.pow(1.5, level - 1));
 
+// Ids for queued level-up announcements. Module-wide and never reset, so an id
+// is unique for the whole session, across progress resets and account swaps.
+let levelUpSeq = 0;
+
 // Coins refunded when a card pull duplicates one you already own, so paid packs
 // always have value even for near-complete collections.
 const DUPLICATE_COIN_VALUE = { common: 10, uncommon: 20, rare: 40, epic: 75, legendary: 150 };
@@ -282,6 +287,17 @@ export const useGameStore = create(
 
       setPlayerName: (name) => set({ playerName: name }),
 
+      // Not persisted either: level-ups waiting to be announced. App toasts
+      // them, except while the battle screen is up — the game-over panel shows
+      // its own, and takes them off this queue (dismissLevelUp) as it does.
+      pendingLevelUps: [],
+
+      // Returns what changed, so a caller can show it: the level and XP before
+      // and after, each level's XP need (the progress bar's denominators), the
+      // coin bonus the level-ups paid, the season XP either side (the Battle
+      // Pass tier), and the id of the queued announcement, if any. Level-ups
+      // used to happen silently — 100 × the new level in coins credited with
+      // no word to the player anywhere.
       addXP: (amount) => {
         // Roll the Battle Pass season first so this XP lands in the correct
         // season's progress (get() below must see the post-rollover state).
@@ -297,14 +313,41 @@ export const useGameStore = create(
           bonusCoins += 100 * newLevel;
         }
 
-        set({
+        const levelsGained = newLevel - state.level;
+        const levelUp = levelsGained > 0
+          ? { id: ++levelUpSeq, level: newLevel, levelsGained, bonusCoins }
+          : null;
+        set((s) => ({
           xp: newXP,
           level: newLevel,
           seasonXP: state.seasonXP + amount,
           coins: state.coins + bonusCoins,
-        });
+          ...(levelUp ? { pendingLevelUps: [...s.pendingLevelUps, levelUp] } : {}),
+        }));
+        // One event per level reached, so a jump of two still counts both.
+        for (let lvl = state.level + 1; lvl <= newLevel; lvl++) analytics.trackLevelUp(lvl);
         get().checkAchievement('level_10', newLevel >= 10);
         get().checkAchievement('level_25', newLevel >= 25);
+
+        return {
+          levelBefore: state.level,
+          xpBefore: state.xp,
+          xpNeededBefore: getXPForLevel(state.level),
+          levelAfter: newLevel,
+          xpAfter: newXP,
+          xpNeededAfter: getXPForLevel(newLevel),
+          levelsGained,
+          bonusCoins,
+          seasonXPBefore: state.seasonXP,
+          seasonXPAfter: state.seasonXP + amount,
+          levelUpId: levelUp?.id ?? null,
+        };
+      },
+
+      // Take an announcement off the queue because the caller has shown it.
+      dismissLevelUp: (id) => {
+        if (id == null) return;
+        set((s) => ({ pendingLevelUps: s.pendingLevelUps.filter((l) => l.id !== id) }));
       },
 
       getXPForNextLevel: () => getXPForLevel(get().level),
@@ -361,7 +404,7 @@ export const useGameStore = create(
           set({ ownerUserId: userId });            // adopt a pre-existing save
           return;
         }
-        set({ ...initialState, ownerUserId: userId, pendingAchievements: [] });
+        set({ ...initialState, ownerUserId: userId, pendingAchievements: [], pendingLevelUps: [] });
       },
       // `forUserId` is the account the balance was READ for. When given, it
       // must still match the account the save is bound to, or the reconcile is
@@ -649,7 +692,7 @@ export const useGameStore = create(
         });
 
         const xpGain = won ? 50 : 20;
-        get().addXP(xpGain);
+        const progress = get().addXP(xpGain);
         // One grant for both outcomes — coinsThisBattle already encodes the
         // consolation amount on a loss. Granting a separate hardcoded 5 there
         // would drift from the figure weekCoinsEarned tracks the moment any
@@ -669,7 +712,9 @@ export const useGameStore = create(
         get().checkAchievement('perfect_win', won && finalHP === 30 && damageTaken === 0);
         get().checkAchievement('comeback', won && finalHP <= 5);
 
-        return { xpGain, coinsGain: coinsThisBattle };
+        // `progress` is addXP's account of the XP (level, bar, bonus coins,
+        // season XP), for the game-over panel.
+        return { xpGain, coinsGain: coinsThisBattle, progress };
       },
 
       checkAchievement: (achievementId, condition) => {
@@ -971,6 +1016,7 @@ export const useGameStore = create(
         ownerUserId: get().ownerUserId,
         lastSyncedServerGems: get().lastSyncedServerGems,
         pendingAchievements: [],
+        pendingLevelUps: [],
       }),
     }),
     {
@@ -978,7 +1024,7 @@ export const useGameStore = create(
       version: 3,
       // Don't persist in-flight UI state
       partialize: (state) => {
-        const { pendingAchievements, ...rest } = state;
+        const { pendingAchievements, pendingLevelUps, ...rest } = state;
         return rest;
       },
       // Normalize state persisted by any earlier release: fill in fields added

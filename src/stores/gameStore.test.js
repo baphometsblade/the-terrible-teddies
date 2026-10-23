@@ -476,6 +476,88 @@ describe('addXP — leveling and monotonic seasonXP', () => {
   });
 });
 
+// Level-ups used to be silent: addXP paid the coin bonus and returned nothing,
+// so neither the game-over panel nor anything else could say it happened.
+describe('addXP reports what changed, and announces level-ups', () => {
+  it('returns the level, the bar and the bonus either side of the XP', () => {
+    get().syncSeason();
+    useGameStore.setState({ xp: 60, level: 1, seasonXP: 60 });
+    const p = get().addXP(50); // 110 of 100: level 2, 10 into its 150
+    expect(p).toMatchObject({
+      levelBefore: 1, xpBefore: 60, xpNeededBefore: 100,
+      levelAfter: 2, xpAfter: 10, xpNeededAfter: 150,
+      levelsGained: 1, bonusCoins: 200,
+      seasonXPBefore: 60, seasonXPAfter: 110,
+    });
+    // The report is the store's own state, not a separate calculation.
+    expect(get().level).toBe(p.levelAfter);
+    expect(get().xp).toBe(p.xpAfter);
+  });
+
+  it('queues one announcement per call that levels up, and none otherwise', () => {
+    useGameStore.setState({ xp: 0, level: 1, coins: 0 });
+    const quiet = get().addXP(20);
+    expect(quiet.levelsGained).toBe(0);
+    expect(quiet.levelUpId).toBeNull();
+    expect(get().pendingLevelUps).toEqual([]);
+
+    const big = get().addXP(230); // 250 in all: level 3 (+200 +300)
+    expect(get().pendingLevelUps).toEqual([
+      { id: big.levelUpId, level: 3, levelsGained: 2, bonusCoins: 500 },
+    ]);
+  });
+
+  it('dismissLevelUp takes exactly that announcement off the queue', () => {
+    useGameStore.setState({ xp: 0, level: 1 });
+    const first = get().addXP(100);
+    const second = get().addXP(150);
+    get().dismissLevelUp(first.levelUpId);
+    expect(get().pendingLevelUps.map((l) => l.id)).toEqual([second.levelUpId]);
+    get().dismissLevelUp(null); // nothing to dismiss: a no-op, not a crash
+    expect(get().pendingLevelUps).toHaveLength(1);
+  });
+
+  it('never persists the queue', () => {
+    useGameStore.setState({ xp: 0, level: 1 });
+    get().addXP(100);
+    expect(get().pendingLevelUps).toHaveLength(1);
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    expect(saved.state.level).toBe(2);
+    expect(saved.state).not.toHaveProperty('pendingLevelUps');
+  });
+
+  it('tracks one level_up per level reached, and nothing for plain XP', async () => {
+    const analytics = (await import('@/utils/analytics')).default;
+    const spy = vi.spyOn(analytics, 'trackLevelUp');
+    try {
+      useGameStore.setState({ xp: 0, level: 1 });
+      get().addXP(20);
+      expect(spy).not.toHaveBeenCalled();
+      get().addXP(230); // level 1 -> 3
+      expect(spy.mock.calls).toEqual([[2], [3]]);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('recordBattleResult hands the report through for the game-over panel', () => {
+    useGameStore.setState({ xp: 95, level: 1 });
+    const res = get().recordBattleResult(false, 0, 0, 0, 1);
+    expect(res.xpGain).toBe(20);
+    expect(res.progress).toMatchObject({ levelBefore: 1, levelAfter: 2, xpBefore: 95, xpAfter: 15, bonusCoins: 200 });
+  });
+
+  it('resetProgress and an account switch clear the queue', () => {
+    useGameStore.setState({ xp: 0, level: 1, ownerUserId: 'a' });
+    get().addXP(100);
+    get().resetProgress();
+    expect(get().pendingLevelUps).toEqual([]);
+    get().addXP(100);
+    get().bindToUser('b');
+    expect(get().pendingLevelUps).toEqual([]);
+  });
+});
+
 describe('recordBattleResult', () => {
   it('on a win pays exactly 25 + streak*5 coins', () => {
     // Assert the EXACT battle payout, not just "> 0". The old >= assertion

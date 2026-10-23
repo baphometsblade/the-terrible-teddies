@@ -54,6 +54,9 @@ const DialogLoader = () => (
   </div>
 );
 
+// How long a level-up toast waits before it shows (see the drain in App).
+const LEVEL_UP_TOAST_DELAY_MS = 1200;
+
 // Hoisted to module scope for a stable identity. Declared inside App it was a
 // fresh component type on every render, so any toast (which re-renders App)
 // remounted the "← Menu" control mid-screen, replaying its mount and dropping
@@ -151,6 +154,32 @@ function App() {
       }, i * 600);
     });
   }, [pendingAchievements, toast]);
+
+  // Level-ups earned away from a battle's result screen — a challenge's XP
+  // reward, or a battle abandoned through "← Menu" — get a toast. Not while
+  // the battle screen is up: its game-over panel shows the level-up and its
+  // bonus coins itself, and takes the entry off the queue as it does, so the
+  // player is never told twice. Deduped by id, like the achievements above,
+  // so StrictMode's second effect pass (which still sees the old queue)
+  // schedules nothing. A beat late, because toasts replace one another and a
+  // challenge claim has just shown its own receipt.
+  const pendingLevelUps = useGameStore((s) => s.pendingLevelUps);
+  const shownLevelUpIds = useRef(new Set());
+  useEffect(() => {
+    if (currentScreen === 'game' || pendingLevelUps.length === 0) return;
+    const fresh = pendingLevelUps.filter((l) => !shownLevelUpIds.current.has(l.id));
+    useGameStore.setState({ pendingLevelUps: [] });
+    fresh.forEach((levelUp, i) => {
+      shownLevelUpIds.current.add(levelUp.id);
+      setTimeout(() => {
+        toast({
+          title: `⭐ Level ${levelUp.level}!`,
+          description: `Level-up bonus: +${levelUp.bonusCoins.toLocaleString()} 🪙`,
+          duration: 5000,
+        });
+      }, LEVEL_UP_TOAST_DELAY_MS + i * 600);
+    });
+  }, [pendingLevelUps, currentScreen, toast]);
 
   // Tie analytics events to the signed-in user (or clear the identity on
   // logout) so purchases and funnels are measured per-user, not per-device.
