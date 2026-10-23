@@ -648,6 +648,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     return notify({ duration: Math.min(7000, Math.max(2600, 1000 + 55 * chars)), ...t });
   }, [notify]);
 
+  // Asking whether to leave retires any open callout. Toasts sit above every
+  // dialog, and on a phone on the centre line, which is where the leave
+  // dialog's medallion and title land: a refusal ("Still finding the floor —
+  // …"), often the very thing that makes a player give up, otherwise sat on
+  // the question for up to 7 s. Here rather than in each control that opens
+  // it, so a caller of requestLeave from outside the board is covered too.
+  useEffect(() => {
+    if (leaveMode) dismissToasts();
+  }, [leaveMode, dismissToasts]);
+
   // From md up a battle toast docks at the top of the log column (index.css),
   // and the log steps down to make room for it instead of lying under it: the
   // toasts left are mostly rule explanations, which are not logged, and
@@ -1586,7 +1596,13 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
         </button>
       )}
 
-      <AnimatePresence>
+      {/* Keyed by gameOver: when the game ends with the question still open
+          (Chuck's turn plays on behind it), the dialog goes at once instead
+          of fading out. A fade would finish after the result dialog had taken
+          the focus, and its focus restore would then hand the focus back to
+          "← Menu" behind that dialog, where Enter means leave, not Play
+          Again. Gone in the same commit, it restores first. */}
+      <AnimatePresence key={gameOver ? 'over' : 'live'}>
         {leaveMode && !gameOver && (
           <LeaveBattleDialog
             key="leave"

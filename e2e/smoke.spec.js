@@ -126,6 +126,75 @@ test('"← Menu" mid-battle asks first: Keep playing (or Escape) costs nothing',
   expect(nativeDialogs).toEqual([]);
 });
 
+test('asking to leave clears a leftover toast, so nothing sits on the question', async ({ page }) => {
+  // Toasts sit above every dialog, and on a phone on the table's centre line,
+  // which is exactly where the leave dialog's medallion and title land. A rule
+  // refusal (often the very thing that makes a player give up) stayed over
+  // the question for its full six seconds. 390px, the common phone width.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.currentDeck = [1, 2, 3, 4, 5, 6]; // cheap creatures: the first play lands one
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  await page.getByRole('button', { name: /^Play / }).first().click();
+  await expect(page.getByText('Warming Up')).toHaveCount(2);
+
+  const toasts = page.locator('.toast-viewport > li');
+  // Up for about six seconds on its own (its duration scales with its length),
+  // so gone within two means the dialog cleared it.
+  const cleared = { timeout: 2_000 };
+  const refusal = async () => {
+    await page.locator('[data-field="player"]').first().click(); // a warming-up creature
+    await expect(page.locator('.toast-viewport').getByText('Still finding the floor')).toBeVisible(SLOW);
+  };
+
+  // From Concede...
+  await refusal();
+  await page.getByRole('button', { name: 'Concede' }).click();
+  const concede = page.getByRole('dialog', { name: 'Concede this battle?' });
+  await expect(concede).toBeVisible();
+  await expect(toasts).toHaveCount(0, cleared);
+  await concede.getByRole('button', { name: 'Keep playing' }).click();
+  await expect(concede).toHaveCount(0);
+
+  // ...and from "← Menu".
+  await refusal();
+  await page.getByRole('button', { name: '← Menu' }).click();
+  await expect(page.getByRole('dialog', { name: 'Leave this battle?' })).toBeVisible();
+  await expect(toasts).toHaveCount(0, cleared);
+});
+
+test('a game that ends under the leave question hands the focus to the result', async ({ page }) => {
+  // "← Menu" stays available on Chuck's turn, so the game can end while the
+  // question is open. The question used to fade out after the result dialog
+  // had taken the focus, and its focus restore then put the focus back on
+  // "← Menu" behind the result, where Enter left for the menu instead of
+  // pressing Play Again. A bfcache restore is the deterministic way to end a
+  // game here: it settles a battle the pagehide already booked as a defeat.
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  await page.getByRole('button', { name: '← Menu' }).click();
+  await expect(page.getByRole('dialog', { name: 'Leave this battle?' })).toBeVisible();
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }));
+    window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+  });
+  const defeat = page.getByRole('dialog', { name: 'Defeat' });
+  await expect(defeat).toBeVisible(SLOW);
+  await expect(page.getByRole('dialog', { name: 'Leave this battle?' })).toHaveCount(0);
+  // Past the length of the question's old fade, when its restore used to land.
+  await page.waitForTimeout(600);
+  const focusInResult = () => page.evaluate(() =>
+    !!document.querySelector('[role="dialog"][aria-label="Defeat"]')?.contains(document.activeElement));
+  expect(await focusInResult()).toBe(true);
+});
+
 test('the battle screen turns off pull-to-refresh, and only while a game is live', async ({ page }) => {
   // A downward drag on the fixed-height board would otherwise reload the page
   // on Chrome for Android, and a reload mid-battle books a loss unasked.
