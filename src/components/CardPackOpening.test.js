@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import CardPackOpening from './CardPackOpening';
 import { BATTLE_PASS_REWARDS } from './BattlePass';
 import { useGameStore, SHOP_ITEMS, DAILY_REWARDS } from '@/stores/gameStore';
+import { getCurrentSeason } from '@/utils/season';
 
 // The empty table used to say "No packs available. Buy some below!" over a
 // shop whose every tile was greyed out, and named no way to earn a pack. It
@@ -31,7 +32,8 @@ beforeEach(() => {
   useGameStore.getState().resetProgress();
   useGameStore.setState({
     cardPacks: 0, premiumPacks: 0, legendaryPacks: 0, gems: 0,
-    seasonXP: 0, claimedBattlePassRewards: { free: [], premium: [] },
+    // A save stamped with this season: the panel rolls an older one over.
+    seasonKey: getCurrentSeason().key, seasonXP: 0, claimedBattlePassRewards: { free: [], premium: [] },
     consecutiveLogins: 1, lastLoginDate: new Date().toDateString(),
     // celebrate() skips confetti with Animations off; jsdom has no canvas.
     animationsEnabled: false,
@@ -65,6 +67,25 @@ describe('the empty Card Packs table', () => {
     render();
     expect(text()).toContain(`Battle Pass tier ${firstPassPack.tier}`);
     expect(text()).toContain('claim it in the Battle Pass');
+  });
+
+  // A returning player's save still holds the ended season's XP and claims.
+  // Read straight, the panel said a tier-8 pack was "Reached — claim it",
+  // and opening the pass to claim it rolled the season and wiped it.
+  it("reads the Battle Pass of this season, not the save's ended one", () => {
+    const last = BATTLE_PASS_REWARDS[BATTLE_PASS_REWARDS.length - 1];
+    const claimedEarly = BATTLE_PASS_REWARDS.slice(0, 5).map((r) => r.tier);
+    useGameStore.setState({
+      coins: 0,
+      seasonKey: `season-${getCurrentSeason().number - 1}`,
+      seasonXP: last.xpRequired,
+      claimedBattlePassRewards: { free: claimedEarly, premium: [] },
+    });
+    render();
+    expect(useGameStore.getState().seasonKey).toBe(getCurrentSeason().key);
+    expect(text()).toContain(`Battle Pass tier ${firstPassPack.tier} · ${firstPassPack.free.amount} pack`);
+    expect(text()).toContain(`${firstPassPack.xpRequired} XP to go`);
+    expect(text()).not.toContain('claim it in the Battle Pass');
   });
 
   it('offers the pack when it is affordable, and buying it fills the table', () => {

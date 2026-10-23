@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Package, PackageOpen, Crown, Coins, X, Sparkles, PartyPopper, Trophy, CalendarDays } from 'lucide-react';
 import TeddyCard, { CardBack } from './TeddyCard';
@@ -783,8 +783,14 @@ const CardPackOpening = ({ onClose }) => {
 // one is right here.
 const PackSources = ({ onBuy }) => {
   const {
-    coins, seasonXP, claimedBattlePassRewards, hasBattlePassPremium, consecutiveLogins, lastLoginDate,
+    coins, seasonXP, claimedBattlePassRewards, hasBattlePassPremium, consecutiveLogins, lastLoginDate, syncSeason,
   } = useGameStore();
+  // Roll the Battle Pass over first, as the pass does when it opens: a save
+  // from an ended season still holds that season's XP and claims, and read
+  // straight it promised a returning player packs the pass would wipe the
+  // moment they went to claim them. A layout effect, so the stale numbers are
+  // never painted.
+  useLayoutEffect(() => { syncSeason(); }, [syncSeason]);
   const coin = nextCoinPack(coins);
   const pass = nextPassPack(
     { seasonXP, claimed: claimedBattlePassRewards, hasPremium: hasBattlePassPremium },
