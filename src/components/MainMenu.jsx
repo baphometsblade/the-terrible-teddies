@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Swords, Target, Trophy, Store, Package, Medal, Layers, LibraryBig,
@@ -10,6 +10,7 @@ import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 import { RARITY_ORDER } from '@/lib/rarity';
 import { bestOwnedBorder } from '@/lib/cosmetics';
+import { countReadyRewards, passOf } from '@/lib/battlePass';
 import TeddyCard from './TeddyCard';
 
 // Scatter/timing for the drifting background teddies. Hoisted to module scope
@@ -85,6 +86,7 @@ const MainMenu = ({
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
     syncPeriods, ownedCards,
+    seasonXP, claimedBattlePassRewards, hasBattlePassPremium, syncSeason,
   } = useGameStore();
 
   const today = new Date().toDateString();
@@ -117,6 +119,17 @@ const MainMenu = ({
     countClaimable(getDailyChallenges(), challengeStats, claimedChallenges ?? []) +
     countClaimable(getWeeklyChallenges(), challengeStats, claimedChallenges ?? []);
 
+  // How many Battle Pass tiles are waiting to be claimed: the helper the pass
+  // itself badges with, so the tile and the dialog always agree. The tile was
+  // hard-coded to its brass "asking for attention" trim, lit forever even
+  // with every tier claimed. The season is rolled first, as the pass does on
+  // open, or a save from an ended season badges tiers the pass would deliver
+  // and wipe the moment it opened; a layout effect, so the stale count is
+  // never painted. (This is usually where a returning player's rollover
+  // happens, and App announces what it delivered.)
+  useLayoutEffect(() => { syncSeason(); }, [syncSeason]);
+  const passReady = countReadyRewards(passOf({ seasonXP, claimedBattlePassRewards, hasBattlePassPremium }));
+
   const xpForNext = getXPForNextLevel();
   const xpProgress = (xp / xpForNext) * 100;
 
@@ -142,11 +155,12 @@ const MainMenu = ({
   // open while three were waiting.
   const packsToOpen = (cardPacks ?? 0) + (premiumPacks ?? 0) + (legendaryPacks ?? 0);
 
-  // Everything except Battle, which is the hero. `accent` marks the two
-  // destinations that are currently asking for attention.
+  // Everything except Battle, which is the hero. `accent` marks the
+  // destinations that are currently asking for attention, each with a badge
+  // that says why.
   const destinations = [
     { id: 'challenges', title: 'Challenges', description: 'Prove you have a problem', icon: Target, action: onChallenges, badge: claimableChallenges > 0 ? `${claimableChallenges} ready` : null, accent: claimableChallenges > 0 },
-    { id: 'battlepass', title: 'Battle Pass', description: 'Grind. Flex. Repeat.', icon: Trophy, action: onBattlePass, accent: true },
+    { id: 'battlepass', title: 'Battle Pass', description: 'Grind. Flex. Repeat.', icon: Trophy, action: onBattlePass, badge: passReady > 0 ? `${passReady} ready` : null, accent: passReady > 0 },
     { id: 'shop', title: 'Shop', description: 'Spend money you don’t have', icon: Store, action: onShop },
     { id: 'packs', title: 'Card Packs', description: 'Gambling, but cuter', icon: Package, action: onCardPacks, badge: packsToOpen > 0 ? `${packsToOpen} to open` : null, accent: packsToOpen > 0 },
     { id: 'deck', title: 'Deck Builder', description: 'Assemble your goon squad', icon: Layers, action: onDeckBuilder },
