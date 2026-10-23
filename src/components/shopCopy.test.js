@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs, { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { ALL_CARDS, SHOP_ITEMS } from '@/stores/gameStore';
+import { ALL_CARDS, SHOP_ITEMS, PACK_SLOTS } from '@/stores/gameStore';
 import { BATTLE_PASS_REWARDS } from './BattlePass';
 
 // Pins what the shop CLAIMS against what the economy actually does.
@@ -78,12 +78,12 @@ describe('shop copy matches the economy it is selling', () => {
 
   it('scopes the posted drop rates, which do not apply to guaranteed slots', () => {
     const packSrc = read('src/components/CardPackOpening.jsx');
-    const storeSrc = read('src/stores/gameStore.js');
 
-    // The guarantee branches exist, so an unqualified rate table is misleading.
-    const hasGuaranteeBranch = /guaranteed\s*===\s*'legendary'/.test(storeSrc)
-      && /guaranteed\s*===\s*'rare'/.test(storeSrc);
-    expect(hasGuaranteeBranch, 'expected guaranteed-rarity branches in openCardPack').toBe(true);
+    // Some tier's first card rolls on its own table, so an unqualified rate
+    // table is misleading. (Read from PACK_SLOTS now that the roll does; this
+    // used to regex the hand-written guarantee branches it replaced.)
+    const hasGuaranteedSlot = Object.values(PACK_SLOTS).some((s) => s.first !== 'standard');
+    expect(hasGuaranteedSlot, 'expected a tier whose first card rolls on better odds').toBe(true);
 
     const heading = packSrc.match(/>Drop Rates([^<]*)</);
     expect(heading, 'Drop Rates heading not found').toBeTruthy();

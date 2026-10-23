@@ -135,6 +135,41 @@ export const SHOP_ITEMS = [
   { id: 'coin_doubler', name: 'Coin Doubler', description: 'Double battle coins for 24h', icon: '🪙', price: 25, currency: 'gems', type: 'booster', durationHours: 24 },
 ];
 
+// The odds of every pack slot, as weights out of 100, best rarity first (the
+// roll walks them in this order). One table for both the roll and what the
+// screens post: the Shop sells two of these tiers for gems, which are bought
+// with real money, so the posted odds must be the ones the roll uses — and
+// when they were string literals beside the roll, nothing kept them in step.
+export const PACK_ODDS = {
+  // Every slot of a standard pack, and every slot after the first elsewhere.
+  standard: [['legendary', 1], ['epic', 5], ['rare', 15], ['uncommon', 30], ['common', 49]],
+  // The first card of a Premium pack: rare or better.
+  premiumFirst: [['legendary', 5], ['epic', 20], ['rare', 75]],
+  // The first card of a Legendary pack: legendary outright.
+  legendaryFirst: [['legendary', 100]],
+};
+
+// What each tier holds: how many cards, and which table its first card rolls
+// on. Every other card rolls on PACK_ODDS.standard.
+export const PACK_SLOTS = {
+  regular: { size: 5, first: 'standard' },
+  premium: { size: 5, first: 'premiumFirst' },
+  legendary: { size: 10, first: 'legendaryFirst' },
+};
+
+/**
+ * One rarity from an odds table: walks the cumulative weights. `roll` is a
+ * number in [0, total) — Math.random() scaled by default; tests pass it.
+ */
+export const rollRarity = (table, roll = Math.random() * table.reduce((n, [, w]) => n + w, 0)) => {
+  let edge = 0;
+  for (const [rarity, weight] of table) {
+    edge += weight;
+    if (roll < edge) return rarity;
+  }
+  return table[table.length - 1][0];
+};
+
 const getXPForLevel = (level) => Math.floor(100 * Math.pow(1.5, level - 1));
 
 // Coins refunded when a card pull duplicates one you already own, so paid packs
@@ -798,39 +833,15 @@ export const useGameStore = create(
         });
         if (!packType) return null; // No packs available
 
-        const guaranteedMinRarity =
-          packType === 'legendary' ? 'legendary' : packType === 'premium' ? 'rare' : null;
-
         const state = get();
 
-        const getRandomRarity = (guaranteed = false) => {
-          if (guaranteed === 'legendary') return 'legendary';
-          if (guaranteed === 'rare') {
-            const roll = Math.random() * 100;
-            if (roll < 5) return 'legendary';
-            if (roll < 25) return 'epic';
-            return 'rare';
-          }
-          const roll = Math.random() * 100;
-          if (roll < 1) return 'legendary';
-          if (roll < 6) return 'epic';
-          if (roll < 21) return 'rare';
-          if (roll < 51) return 'uncommon';
-          return 'common';
-        };
-
+        // The first card rolls on its tier's table (that IS what the Premium
+        // and Legendary packs are sold on); the rest roll on the standard one.
+        const slots = PACK_SLOTS[packType];
         const pulledCards = [];
-        const packSize = guaranteedMinRarity === 'legendary' ? 10 : 5;
 
-        for (let i = 0; i < packSize; i++) {
-          let rarity;
-          if (i === 0 && guaranteedMinRarity === 'legendary') {
-            rarity = 'legendary';
-          } else if (i === 0 && guaranteedMinRarity === 'rare') {
-            rarity = getRandomRarity('rare');
-          } else {
-            rarity = getRandomRarity();
-          }
+        for (let i = 0; i < slots.size; i++) {
+          const rarity = rollRarity(PACK_ODDS[i === 0 ? slots.first : 'standard']);
 
           let cardsOfRarity = ALL_CARDS.filter(c => c.rarity === rarity);
 

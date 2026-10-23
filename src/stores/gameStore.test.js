@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import { useGameStore, ALL_CARDS, SHOP_ITEMS } from './gameStore';
+import { useGameStore, ALL_CARDS, SHOP_ITEMS, PACK_ODDS, PACK_SLOTS, rollRarity } from './gameStore';
 
 const get = () => useGameStore.getState();
 const STORAGE_KEY = 'terrible-teddies-storage';
@@ -282,6 +282,70 @@ describe('openCardPack atomicity', () => {
     const pulled = get().openCardPack('regular');
     expect(pulled).not.toBeNull();
     expect(get().premiumPacks).toBe(0);
+  });
+});
+
+// The posted odds are rendered from PACK_ODDS, so these pin that the roll
+// reads the same table — retune it and the pulls follow, with no second copy
+// of the thresholds anywhere to fall out of step.
+describe('pack odds: openCardPack rolls on PACK_ODDS', () => {
+  const restore = [];
+  const retune = (key, table) => {
+    restore.push([key, PACK_ODDS[key]]);
+    PACK_ODDS[key] = table;
+  };
+  afterEach(() => {
+    while (restore.length) {
+      const [key, table] = restore.pop();
+      PACK_ODDS[key] = table;
+    }
+  });
+
+  it('walks the cumulative weights, best rarity first', () => {
+    // The same cut points the hand-written thresholds had: 1 / 6 / 21 / 51.
+    const std = PACK_ODDS.standard;
+    expect(rollRarity(std, 0.99)).toBe('legendary');
+    expect(rollRarity(std, 1)).toBe('epic');
+    expect(rollRarity(std, 5.99)).toBe('epic');
+    expect(rollRarity(std, 6)).toBe('rare');
+    expect(rollRarity(std, 20.99)).toBe('rare');
+    expect(rollRarity(std, 21)).toBe('uncommon');
+    expect(rollRarity(std, 50.99)).toBe('uncommon');
+    expect(rollRarity(std, 51)).toBe('common');
+    expect(rollRarity(std, 99.99)).toBe('common');
+    // Premium's first card: 5 / 25.
+    expect(rollRarity(PACK_ODDS.premiumFirst, 4.99)).toBe('legendary');
+    expect(rollRarity(PACK_ODDS.premiumFirst, 5)).toBe('epic');
+    expect(rollRarity(PACK_ODDS.premiumFirst, 25)).toBe('rare');
+  });
+
+  it('every table sums to 100, so each weight IS its posted percentage', () => {
+    for (const [key, table] of Object.entries(PACK_ODDS)) {
+      expect(table.reduce((n, [, w]) => n + w, 0), key).toBe(100);
+    }
+  });
+
+  it('a retuned standard table changes what a standard pack pulls', () => {
+    retune('standard', [['epic', 100]]);
+    useGameStore.setState({ cardPacks: 1, premiumPacks: 0, legendaryPacks: 0 });
+    const { cards } = get().openCardPack('regular');
+    expect(cards.map((c) => c.rarity)).toEqual(Array(PACK_SLOTS.regular.size).fill('epic'));
+  });
+
+  it("a retuned first-card table changes a Premium pack's first card only", () => {
+    retune('premiumFirst', [['legendary', 100]]);
+    retune('standard', [['common', 100]]);
+    useGameStore.setState({ cardPacks: 0, premiumPacks: 1, legendaryPacks: 0 });
+    const { cards } = get().openCardPack('premium');
+    expect(cards[0].rarity).toBe('legendary');
+    expect(cards.slice(1).every((c) => c.rarity === 'common')).toBe(true);
+  });
+
+  it('pack sizes come from PACK_SLOTS', () => {
+    for (const type of ['regular', 'premium', 'legendary']) {
+      useGameStore.setState({ cardPacks: 0, premiumPacks: 0, legendaryPacks: 0, [{ regular: 'cardPacks', premium: 'premiumPacks', legendary: 'legendaryPacks' }[type]]: 1 });
+      expect(get().openCardPack(type).cards).toHaveLength(PACK_SLOTS[type].size);
+    }
   });
 });
 
