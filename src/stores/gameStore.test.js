@@ -1,14 +1,18 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import { useGameStore, ALL_CARDS, SHOP_ITEMS, PACK_ODDS, PACK_SLOTS, rollRarity, DAILY_REWARDS, dailyClaimDay } from './gameStore';
+import { useGameStore, ALL_CARDS, SHOP_ITEMS, PACK_ODDS, PACK_SLOTS, rollRarity, DAILY_REWARDS, dailyClaimDay, keptThroughReset, STARTING_GEMS } from './gameStore';
+import { getCurrentSeason, getSeason } from '@/utils/season';
+import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 
 const get = () => useGameStore.getState();
 const STORAGE_KEY = 'terrible-teddies-storage';
 
 beforeEach(() => {
   localStorage.clear();
-  // resetProgress restores the full initial state (and clears the
-  // not-persisted achievement queue).
-  get().resetProgress();
+  // Back to the state the store was created with, actions included. This
+  // used to call resetProgress, which no longer wipes everything: it keeps
+  // what the player paid for (gems, the season's Premium Pass, unopened gem
+  // packs) and the claim ledgers, so it would carry those across tests.
+  useGameStore.setState(useGameStore.getInitialState(), true);
 });
 
 afterEach(() => {
@@ -1064,6 +1068,102 @@ describe('resetProgress keeps the server-gem high-water mark', () => {
     const before = get().gems;
     get().reconcileServerGems(500); // B's own $9.99 bundle -> server total 500
     expect(get().gems).toBe(before + 500); // credited in full, not swallowed
+  });
+});
+
+describe('resetProgress keeps what the player paid for', () => {
+  // A reset used to spread the whole initial state over the save, so a buyer
+  // who reset lost every purchased gem and the Premium Pass for good: the
+  // high-water mark above is kept, which means no later login could ever
+  // credit those gems back.
+  const season = () => getCurrentSeason().key;
+
+  it('keeps purchased gems and this season\'s Premium Pass, and a later login credits nothing twice', () => {
+    get().reconcileServerGems(500); // bought 500 gems: 10 starting + 500
+    useGameStore.setState({ seasonKey: season(), hasBattlePassPremium: true, coins: 4321, level: 9 });
+
+    get().resetProgress();
+
+    expect(get().gems).toBe(510);
+    expect(get().hasBattlePassPremium).toBe(true);
+    expect(get().seasonKey).toBe(season());
+    // Progress did reset.
+    expect(get().coins).toBe(500);
+    expect(get().level).toBe(1);
+
+    // The next login reads the same server total: nothing new was bought.
+    get().reconcileServerGems(500);
+    expect(get().gems).toBe(510);
+  });
+
+  it('still takes back a refunded purchase after the reset', () => {
+    get().reconcileServerGems(500);
+    get().resetProgress();
+    get().reconcileServerGems(0); // the 500-gem payment is refunded
+    expect(get().gems).toBe(10);
+  });
+
+  it('keeps unopened gem packs, a running Coin Doubler and cosmetics; drops an expired doubler', () => {
+    const running = Date.now() + 3_600_000;
+    useGameStore.setState({ premiumPacks: 2, legendaryPacks: 1, cardPacks: 7, coinDoublerExpiresAt: running, unlockedCosmetics: ['Golden Stitch Border'] });
+    get().resetProgress();
+    expect(get().premiumPacks).toBe(2);
+    expect(get().legendaryPacks).toBe(1);
+    expect(get().cardPacks).toBe(1); // coin-bought and free packs are progress
+    expect(get().coinDoublerExpiresAt).toBe(running);
+    expect(get().unlockedCosmetics).toEqual(['Golden Stitch Border']);
+
+    useGameStore.setState({ coinDoublerExpiresAt: Date.now() - 1 });
+    get().resetProgress();
+    expect(get().coinDoublerExpiresAt).toBeNull();
+  });
+
+  it('never leaves fewer gems than a fresh save starts with', () => {
+    useGameStore.setState({ gems: 3 });
+    get().resetProgress();
+    expect(get().gems).toBe(STARTING_GEMS);
+  });
+
+  it('does not let a claimed Battle Pass tier pay again once its XP is earned back', () => {
+    // Both tracks pay gems, and gems now survive a reset: with the claims
+    // wiped, reset-and-replay would pay the same tiers over and over.
+    const gemTier = BATTLE_PASS_REWARDS.find((r) => r.premium?.type === 'gems');
+    useGameStore.setState({ seasonKey: season(), hasBattlePassPremium: true, seasonXP: gemTier.xpRequired });
+    expect(get().claimBattlePassTier(gemTier.tier, 'premium').ok).toBe(true);
+    const gems = get().gems;
+
+    get().resetProgress();
+    expect(get().seasonXP).toBe(0); // the XP is progress, and goes
+    useGameStore.setState({ seasonXP: gemTier.xpRequired }); // earned back
+    expect(get().claimBattlePassTier(gemTier.tier, 'premium')).toEqual({ ok: false, reason: 'already-claimed' });
+    expect(get().gems).toBe(gems);
+  });
+
+  it('does not reopen a challenge already claimed this period', () => {
+    const today = new Date().toDateString();
+    useGameStore.setState({ dailyStatsDate: today, todayWins: 5 });
+    expect(get().claimChallenge('d_win_3')).toBe(true);
+    get().resetProgress();
+    expect(get().todayWins).toBe(0); // the counter is progress
+    expect(get().claimChallenge('d_win_3')).toBe(false);
+  });
+
+  it('drops a pass stamped for a season that has already ended', () => {
+    useGameStore.setState({ seasonKey: getSeason(1).key, hasBattlePassPremium: true, claimedBattlePassRewards: { free: [1], premium: [1] } });
+    // Only meaningful while Season 1 is over, which it is from July 2026.
+    expect(getCurrentSeason().key).not.toBe(getSeason(1).key);
+    get().resetProgress();
+    expect(get().hasBattlePassPremium).toBe(false);
+    expect(get().claimedBattlePassRewards).toEqual({ free: [], premium: [] });
+  });
+
+  it('is described by the same object it applies', () => {
+    // Settings words its confirmation from keptThroughReset, so what it says
+    // survives is exactly what does.
+    useGameStore.setState({ gems: 777, premiumPacks: 3, seasonKey: season(), hasBattlePassPremium: true });
+    const promised = keptThroughReset(get());
+    get().resetProgress();
+    for (const [key, value] of Object.entries(promised)) expect(get()[key], key).toEqual(value);
   });
 });
 

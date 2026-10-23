@@ -14,7 +14,9 @@ const allTiers = BATTLE_PASS_REWARDS.map((r) => r.tier);
 
 beforeEach(() => {
   localStorage.clear();
-  get().resetProgress();
+  // A clean store, not resetProgress: a reset now keeps this season's
+  // Premium Pass and its claims, which would leak from one test to the next.
+  useGameStore.setState(useGameStore.getInitialState(), true);
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-11-02T12:00:00Z')); // Season 3
   useGameStore.setState({ seasonKey: getCurrentSeason().key, animationsEnabled: false });

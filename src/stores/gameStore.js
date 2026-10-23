@@ -301,6 +301,59 @@ const initialState = {
   seasonKey: null,
 };
 
+/** What a fresh save starts with, for the reset confirmation to compare against. */
+export const STARTING_GEMS = initialState.gems;
+export const STARTER_CARD_COUNT = initialState.ownedCards.length;
+
+/**
+ * What "Reset All Progress" carries over: everything the player paid for, and
+ * the ledgers that stop a reward being claimed twice. Settings words its
+ * confirmation from this same object, so the copy cannot promise more or less
+ * than the reset does.
+ *
+ * Paid for, so kept:
+ *   - Gems, whole. Gems bought and gems earned are one balance and spending is
+ *     not attributed, so keeping only "the bought share" would be a guess, and
+ *     guessing wrong takes money. Spent gems are already gone, and the
+ *     lastSyncedServerGems mark (kept by resetProgress) stops the next login
+ *     crediting any purchase a second time. Never below the starting amount,
+ *     which is what a reset always handed out.
+ *   - Unopened Premium and Legendary packs (sold for gems), an active Coin
+ *     Doubler (sold for gems), and cosmetics (sold with the Premium Pass).
+ *   - This season's Premium Pass. A pass stamped for an earlier season is
+ *     already over, so it goes, as the rollover would have done.
+ *
+ * Ledgers, kept because gems now survive the reset: Battle Pass claims (both
+ * tracks pay gems) and challenge claims (they pay gems and Legendary packs),
+ * with the dates that scope them. Wiped, the same tiers and the same day's
+ * challenges could be claimed again straight after the reset, and again after
+ * the next one, minting gems from nothing. Season XP and the challenge
+ * counters still reset: the tiers and challenges not yet claimed are earned
+ * again from zero.
+ */
+export const keptThroughReset = (state, now = new Date()) => {
+  const passIsCurrent = state.seasonKey === getCurrentSeason(now).key;
+  const doublerRunning = typeof state.coinDoublerExpiresAt === 'number' && state.coinDoublerExpiresAt > now.getTime();
+  return {
+    gems: Math.max(STARTING_GEMS, state.gems),
+    premiumPacks: state.premiumPacks,
+    legendaryPacks: state.legendaryPacks,
+    coinDoublerExpiresAt: doublerRunning ? state.coinDoublerExpiresAt : null,
+    unlockedCosmetics: [...state.unlockedCosmetics],
+    claimedChallenges: [...state.claimedChallenges],
+    dailyStatsDate: state.dailyStatsDate,
+    weeklyStatsDate: state.weeklyStatsDate,
+    ...(passIsCurrent ? {
+      seasonKey: state.seasonKey,
+      hasBattlePassPremium: state.hasBattlePassPremium,
+      claimedBattlePassRewards: {
+        free: [...state.claimedBattlePassRewards.free],
+        premium: [...state.claimedBattlePassRewards.premium],
+      },
+    } : {}),
+  };
+};
+
 export const useGameStore = create(
   persist(
     (set, get) => ({
@@ -1116,8 +1169,14 @@ export const useGameStore = create(
       // Reset, relog, collect — repeatable, so one real purchase mints gems
       // forever. Progress resets; what the player already paid for does not
       // un-happen.
+      //
+      // Nor is it taken away: keptThroughReset (above) carries the gems, the
+      // season's Premium Pass and the other paid items through. This used to
+      // spread initialState over all of them, so a buyer who reset lost every
+      // purchased gem for good — the kept mark meant no login could return them.
       resetProgress: () => set({
         ...initialState,
+        ...keptThroughReset(get()),
         // Keep the save bound to the CURRENT account. Spreading initialState
         // would null ownerUserId, leaving an "unowned" save that still carries
         // this player's lastSyncedServerGems mark — the next DIFFERENT account to
