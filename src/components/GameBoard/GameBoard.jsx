@@ -364,11 +364,14 @@ const CardPreview = ({
 };
 
 // What a raised hand card says it will do on a second tap (touch screens,
-// where the first tap only raises it). Not a control: the card is.
+// where the first tap only raises it). Not a control: the card is. It sits
+// 10px over the card's top edge: with the raise (20px up, 1.08x from the
+// bottom edge) that keeps it inside the hand's 44px top padding, where the
+// strip's overflow would otherwise cut off the top of the words.
 const RaisedHint = ({ children }) => (
   <span
     aria-hidden="true"
-    className="pointer-events-none absolute -top-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-night-950/95 px-2 py-0.5 text-[10px] font-bold leading-[14px] text-brass-200 ring-1 ring-brass-300/60 shadow-[0_4px_10px_-2px_rgba(0,0,0,0.8)]"
+    className="pointer-events-none absolute -top-2.5 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-night-950/95 px-2 py-0.5 text-[10px] font-bold leading-[14px] text-brass-200 ring-1 ring-brass-300/60 shadow-[0_4px_10px_-2px_rgba(0,0,0,0.8)]"
   >
     {children}
   </span>
@@ -2841,7 +2844,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                     data-raised={raised ? '' : undefined}
                     initial={{ y: 50, opacity: 0 }}
                     animate={raised
-                      ? { y: -24, scale: 1.08, opacity: 1, rotate: 0, zIndex: 20 }
+                      ? { y: -20, scale: 1.08, opacity: 1, rotate: 0, zIndex: 20 }
                       : { y: Math.abs(index - mid) * step, scale: 1, opacity: 1, rotate: (index - mid) * step, zIndex: index }}
                     exit={{ y: 50, opacity: 0 }}
                     whileHover={{ y: -20, scale: 1.08, zIndex: 10 }}

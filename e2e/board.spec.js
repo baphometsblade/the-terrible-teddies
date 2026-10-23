@@ -57,6 +57,10 @@ test.describe('on a touch screen', () => {
     await expect(preview(page)).toBeVisible();
     await expect(preview(page)).toHaveAttribute('aria-hidden', 'true');
     await expect(card.getByText('Tap again to play')).toBeVisible();
+    // The hand strip clips what rises above it: the hint has to fit inside.
+    const hint = await card.getByText('Tap again to play').boundingBox();
+    const strip = await page.locator('.board-zoom').boundingBox();
+    expect(hint.y, 'the hint is cut off at the top of the hand').toBeGreaterThanOrEqual(strip.y);
     await expect(played).toHaveCount(0);
     await expect(energy).toHaveText('3/3');
     await expectNoAxeViolations(page, 'a raised hand card and its preview');
@@ -311,6 +315,7 @@ test.describe('with a mouse and a keyboard', () => {
     await expect(preview(page)).toBeVisible();
     await expect(shows()).toHaveAttribute('title', openerName);
     await expect(preview(page)).toContainText('next card');
+    await expectNoAxeViolations(page, 'a keyboard-opened preview with its keys');
 
     // Play Sally from the keyboard: she is warming up, with no tab stop.
     const sally = page.getByRole('button', { name: 'Play Shit-Talk Sally' });
