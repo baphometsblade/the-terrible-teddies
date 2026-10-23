@@ -1,4 +1,7 @@
 import { supabase } from '../integrations/supabase/supabase';
+// The checkout function's own rule for what uses up a one-per-account bundle,
+// so the Shop's "claimed" can never disagree with the 409 the server sends.
+import { ONE_PER_ACCOUNT_BUNDLES, holdsBundle } from '../../supabase/functions/create-checkout-session/checkoutGuards.js';
 
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -43,7 +46,13 @@ export async function redirectToStripeCheckout(bundleId) {
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(body.error ?? `HTTP ${res.status}`);
+      // The status and the function's code ride along, so the Shop can tell
+      // "you already have the Starter pack" (409, already_purchased) from a
+      // failure worth retrying.
+      throw Object.assign(new Error(body.error ?? `HTTP ${res.status}`), {
+        status: res.status,
+        code: body.code ?? null,
+      });
     }
     ({ url } = await res.json());
   } catch (err) {
@@ -58,6 +67,23 @@ export async function redirectToStripeCheckout(bundleId) {
   if (!url) throw new Error('No checkout URL returned');
 
   window.location.href = url;
+}
+
+/**
+ * Which one-per-account bundles (the Starter Gem Pack) this account already
+ * holds, read from its own purchases rows (purchases_select_own). Returns a
+ * Set of bundle ids, or null when the read fails — unknown, not "none": the
+ * checkout function enforces the rule either way.
+ */
+export async function fetchOnePerAccountHoldings(userId) {
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from('purchases')
+    .select('bundle_id, status')
+    .eq('user_id', userId)
+    .in('bundle_id', ONE_PER_ACCOUNT_BUNDLES);
+  if (error || !Array.isArray(data)) return null;
+  return new Set(ONE_PER_ACCOUNT_BUNDLES.filter((id) => holdsBundle(data.filter((row) => row.bundle_id === id))));
 }
 
 /**

@@ -55,3 +55,54 @@ test('Reset All Progress says what it keeps, in numbers, and keeps it', async ({
     return [s.gems, s.hasBattlePassPremium, s.premiumPacks, s.coins, s.level, s.lastSyncedServerGems];
   }).toEqual([3000, true, 2, 500, 1, 3000]);
 });
+
+async function openSpecialOffers(page) {
+  await page.getByRole('button', { name: 'Shop', exact: true }).click();
+  const shop = page.getByRole('dialog', { name: 'Shop' });
+  await expect(shop).toBeVisible(SLOW);
+  await shop.getByRole('button', { name: 'Special Offers' }).click();
+  await expect(shop.getByText('Starter Gem Pack')).toBeVisible(SLOW);
+  return shop;
+}
+
+test('an account that has its Starter Gem Pack sees it as claimed, with nothing to tap', async ({ page }) => {
+  // The account's own purchases, as purchases_select_own returns them.
+  let read = null;
+  await page.route(/\/rest\/v1\/purchases/, (route) => {
+    read = route.request().url();
+    return route.fulfill({ json: [{ bundle_id: 'starter_bundle', status: 'completed' }] });
+  });
+  const shop = await openSpecialOffers(page);
+  await expect(shop.getByText('Claimed', { exact: true })).toBeVisible(SLOW);
+  await expect(shop.getByText("One per account, and you've had yours.")).toBeVisible();
+  await expect(shop.getByRole('button', { name: 'Buy Now' })).toHaveCount(0);
+  // Scoped to this player and to the one-per-account bundle.
+  expect(decodeURIComponent(read)).toContain('user_id=eq.11111111-1111-4111-8111-111111111111');
+  expect(decodeURIComponent(read)).toContain('bundle_id=in.(');
+});
+
+test('a refunded Starter Gem Pack is on sale again', async ({ page }) => {
+  await page.route(/\/rest\/v1\/purchases/, (route) =>
+    route.fulfill({ json: [{ bundle_id: 'starter_bundle', status: 'refunded' }] }));
+  const shop = await openSpecialOffers(page);
+  await expect(shop.getByText('One per account.', { exact: true })).toBeVisible(SLOW);
+  await expect(shop.getByRole('button', { name: 'Buy Now' })).toBeVisible();
+});
+
+test("the checkout's one-per-account refusal marks the offer claimed instead of reading as a failure", async ({ page }) => {
+  // The purchases read says nothing (bought on another device a moment ago,
+  // say); the checkout function knows better and answers 409.
+  await page.route('**/functions/v1/create-checkout-session', (route) => route.fulfill({
+    status: 409,
+    json: { error: "You've already bought the Starter Gem Pack. It's one per account.", code: 'already_purchased' },
+  }));
+  const shop = await openSpecialOffers(page);
+  await shop.getByRole('button', { name: 'Buy Now' }).click();
+
+  await expect(page.getByText('Already claimed').first()).toBeVisible(SLOW);
+  await expect(page.getByText('Checkout Failed')).toHaveCount(0);
+  const claimed = shop.getByText('Claimed', { exact: true });
+  await expect(claimed).toBeVisible();
+  await expect(claimed).toBeFocused();
+  await expect(shop.getByRole('button', { name: 'Buy Now' })).toHaveCount(0);
+});

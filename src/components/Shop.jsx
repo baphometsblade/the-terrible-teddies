@@ -1,10 +1,10 @@
 import { useState, useEffect, useId, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Store, Package, Gem, Star, Coins, X, Timer, Sparkles, ShieldCheck, Percent } from 'lucide-react';
+import { Store, Package, Gem, Star, Coins, X, Timer, Sparkles, ShieldCheck, Percent, Check } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, SHOP_ITEMS } from '../stores/gameStore';
 import analytics from '../utils/analytics';
-import { redirectToStripeCheckout } from '../utils/stripe';
+import { redirectToStripeCheckout, fetchOnePerAccountHoldings } from '../utils/stripe';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useDialog } from '@/hooks/useDialog';
 import { pressable } from '@/lib/a11y';
@@ -129,6 +129,25 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
     : 0;
   const { session } = useSupabaseAuth();
   const { toast } = useToast();
+  // The Starter Gem Pack is one per account (the checkout function refuses a
+  // second with a 409). Read the account's own purchases so a player who has
+  // it sees it as claimed rather than meeting the refusal at the till. Until
+  // the read answers, or if it fails, the offer stays on sale: the server
+  // enforces the rule either way.
+  const userId = session?.user?.id;
+  const [starterClaimed, setStarterClaimed] = useState(false);
+  useEffect(() => {
+    if (!userId) return undefined;
+    let live = true;
+    fetchOnePerAccountHoldings(userId).then((held) => {
+      if (live && held?.has('starter_bundle')) setStarterClaimed(true);
+    });
+    return () => { live = false; };
+  }, [userId]);
+  // Where focus goes when a tap on Buy Now comes back refused: the button it
+  // was on has just been replaced by the claimed note.
+  const starterClaimedRef = useRef(null);
+  const focusStarterClaimed = useRef(false);
   const [activeTab, setActiveTab] = useState(TABS.some((t) => t.id === initialTab) ? initialTab : 'packs');
   const [showOdds, setShowOdds] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -211,6 +230,13 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
     } catch (err) {
       analytics.trackError(err, 'gem_purchase');
       setProcessing(false);
+      if (err?.code === 'already_purchased') {
+        // Not a failure to retry: this account has had its one.
+        setStarterClaimed(true);
+        focusStarterClaimed.current = true;
+        toast({ title: 'Already claimed', description: err.message });
+        return;
+      }
       toast({
         title: "Checkout Failed",
         description: err.message || "Please try again.",
@@ -218,6 +244,14 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
       });
     }
   };
+
+  // Declared after the effect that hands focus back to the checkout trigger,
+  // so it runs after it and wins: that trigger is gone.
+  useEffect(() => {
+    if (processing || !starterClaimed || !focusStarterClaimed.current) return;
+    focusStarterClaimed.current = false;
+    starterClaimedRef.current?.focus({ preventScroll: true });
+  }, [processing, starterClaimed]);
 
   const coinPacks = storeItems(['pack']);
   const gemPacks = storeItems(['premium', 'legendary']);
@@ -401,6 +435,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                   <div aria-hidden="true" className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_60%_90%_at_0%_0%,rgba(251,191,36,0.2),transparent_70%)]" />
                   <div className="relative flex flex-col md:flex-row md:items-center gap-5 md:gap-8">
                     <div className="flex-1 min-w-0">
+                      {/* True now: the checkout function sells it once per account. */}
                       <div className="label-caps text-brass-300 mb-1.5">NEW PLAYER BOOST</div>
                       <h3 className="font-display text-3xl font-extrabold leading-tight text-brass-gradient">Starter Gem Pack</h3>
                       <p className="mt-1 text-plush-200">A big gem boost to get you started.</p>
@@ -422,14 +457,31 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                     <div className="flex flex-col items-center text-center md:min-w-[13rem] rounded-xl bg-night-950/45 border border-white/5 px-5 py-4">
                       <div className="font-display text-4xl font-extrabold leading-none text-white tabular-nums">$4.99</div>
                       <div className="mt-2 text-emerald-300 text-sm font-semibold">vs 160 gems in the $2.99 pack</div>
-                      <button
-                        type="button"
-                        onClick={() => handleGemPurchase({ id: 'starter_bundle', gems: 300, bonus: 0, price: 4.99 })}
-                        disabled={processing}
-                        className={`${ACTION} btn-brass mt-4 h-11 w-full px-8 text-base`}
-                      >
-                        {processing ? '…' : 'Buy Now'}
-                      </button>
+                      {starterClaimed ? (
+                        // No button at all once it is used up: a control that
+                        // can only be refused is a dead end. Focusable only by
+                        // script, for the refused tap above.
+                        <div
+                          ref={starterClaimedRef}
+                          tabIndex={-1}
+                          className={`mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-400/10 font-display font-bold text-emerald-200 ring-1 ring-inset ring-emerald-300/40 ${FOCUS_OUTLINE}`}
+                        >
+                          <Check aria-hidden="true" className="h-4 w-4" strokeWidth={2.6} />
+                          Claimed
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleGemPurchase({ id: 'starter_bundle', gems: 300, bonus: 0, price: 4.99 })}
+                          disabled={processing}
+                          className={`${ACTION} btn-brass mt-4 h-11 w-full px-8 text-base`}
+                        >
+                          {processing ? '…' : 'Buy Now'}
+                        </button>
+                      )}
+                      <p className="mt-2 text-xs text-plush-300">
+                        {starterClaimed ? "One per account, and you've had yours." : 'One per account.'}
+                      </p>
                     </div>
                   </div>
                 </div>
