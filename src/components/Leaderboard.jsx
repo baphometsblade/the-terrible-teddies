@@ -18,22 +18,36 @@ const calculateLevel = (experience) => {
   return Math.floor((experience || 0) / 100) + 1;
 };
 
-// How many rows the board asks for. The view behind it is ordered by wins and
-// re-ranked here by trophies, so these are not "the top 50" in trophies, and
-// a player below every one of them could be anywhere past 50th.
+// How many rows the board asks for. The view behind it returns players by
+// wins (then experience), and they are re-ranked here by trophies, so these
+// are not "the top 50" in trophies.
 export const BOARD_SIZE = 50;
 
 /**
  * The player's place on the board in hand: a number where the rows support
- * one, and "50+" where they cannot. Counting the rows with more trophies and
- * adding one is only a rank while the player lands among those rows; below a
- * full board's last row it printed #51 for everyone, whatever their real
- * position (the board stops at 50, so it can never say more). A server-side
- * rank is what would turn "50+" into a number.
+ * one, and "50+" where they cannot. `me` is the player's own trophies, wins
+ * and leaderboard experience.
+ *
+ * Counting the rows with more trophies and adding one is a rank only while
+ * the player is among the rows. A short board is every player, so it always
+ * is. A full one is the view's top 50 by wins, so it is only when the view's
+ * own order would have returned them: more wins than its last row, or as
+ * many and at least its experience. Otherwise the count printed #51 for
+ * everyone below every row, and #1 for a player with fewer wins than all
+ * fifty who out-trophied them on level and best streak. A server-side rank
+ * is what would turn "50+" into a number.
  */
-export const placeOnBoard = (rows, trophies) => {
-  const above = rows.filter((p) => p.trophies > trophies).length;
-  return rows.length >= BOARD_SIZE && above === rows.length ? `${BOARD_SIZE}+` : above + 1;
+export const placeOnBoard = (rows, me) => {
+  const above = rows.filter((p) => p.trophies > me.trophies).length;
+  if (rows.length < BOARD_SIZE) return above + 1;
+  // The view's last row: the fewest wins, then the least experience.
+  const last = rows.reduce((low, p) => (
+    p.wins < low.wins || (p.wins === low.wins && p.experience < low.experience) ? p : low
+  ));
+  const returned = me.wins > last.wins || (me.wins === last.wins && me.experience >= last.experience);
+  // above === rows.length: the player's own row, if fetched, is behind their
+  // local stats (a sync still in flight), and they are below all of it.
+  return returned && above < rows.length ? above + 1 : `${BOARD_SIZE}+`;
 };
 
 /**
@@ -42,8 +56,30 @@ export const placeOnBoard = (rows, trophies) => {
  * The podium column is under 100px on a phone, and break-words alone broke
  * "GrizzlyAdamsF / amily" at whatever letter met the edge. Real <wbr>s
  * rather than zero-width spaces, which would ride along into copied text.
+ *
+ * A loop rather than a split on a lookbehind: the build targets Safari 16,
+ * and lookbehind only arrived in 16.4, so before that the pattern threw as
+ * each podium name rendered and took the whole dialog down with it.
  */
-export const nameBreaks = (name) => name.split(/(?<=[a-z])(?=[A-Z0-9])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[_.-])/);
+const LOWER = /[a-z]/;
+const UPPER = /[A-Z]/;
+export const nameBreaks = (name) => {
+  const parts = [];
+  let start = 0;
+  for (let i = 1; i < name.length; i += 1) {
+    const before = name[i - 1];
+    const at = name[i];
+    const wraps = (LOWER.test(before) && /[A-Z0-9]/.test(at)) // grizzly|Adams, ab|12
+      || (UPPER.test(before) && UPPER.test(at) && LOWER.test(name[i + 1] ?? '')) // QA|Bear
+      || /[_.-]/.test(before); // Player_|ab
+    if (wraps) {
+      parts.push(name.slice(start, i));
+      start = i;
+    }
+  }
+  parts.push(name.slice(start));
+  return parts;
+};
 const BreakableName = ({ name }) => nameBreaks(name).map((part, i) => (
   <Fragment key={i}>{i > 0 && <wbr />}{part}</Fragment>
 ));
@@ -215,7 +251,7 @@ const StatePanel = ({ tone = 'neutral', children }) => (
 );
 
 const Leaderboard = ({ onClose }) => {
-  const { playerName, level, totalWins, bestWinStreak } = useGameStore();
+  const { playerName, level, totalWins, bestWinStreak, getLeaderboardExperience } = useGameStore();
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -248,6 +284,7 @@ const Leaderboard = ({ onClose }) => {
             name: player.username || 'Unknown Player',
             level: playerLevel,
             wins: player.wins || 0,
+            experience: player.experience || 0,
             streak: player.best_win_streak || 0,
             trophies: trophies,
           };
@@ -291,7 +328,9 @@ const Leaderboard = ({ onClose }) => {
   // list beneath it was showing a network error. The list was gated on
   // loading/error; this was not.
   const rankKnown = !loading && !error && leaderboardData.length > 0;
-  const playerRank = rankKnown ? placeOnBoard(leaderboardData, playerTrophies) : null;
+  const playerRank = rankKnown
+    ? placeOnBoard(leaderboardData, { trophies: playerTrophies, wins: totalWins, experience: getLeaderboardExperience() })
+    : null;
 
   // The top three stand on the podium; everyone else is a row beneath it.
   const podium = leaderboardData.slice(0, 3);

@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 // The board's rows, as the leaderboard view would return them.
 let rows = [];
@@ -42,15 +44,33 @@ afterEach(() => {
 
 describe('the player\'s place on the board', () => {
   it('is a number while the player lands among the rows', () => {
-    const board = [{ trophies: 500 }, { trophies: 300 }, { trophies: 100 }];
-    expect(placeOnBoard(board, 400)).toBe(2);
-    expect(placeOnBoard(board, 50)).toBe(4); // a short board is every player
+    const board = [{ trophies: 500, wins: 50 }, { trophies: 300, wins: 30 }, { trophies: 100, wins: 10 }];
+    expect(placeOnBoard(board, { trophies: 400, wins: 40, experience: 0 })).toBe(2);
+    // A short board is every player.
+    expect(placeOnBoard(board, { trophies: 50, wins: 0, experience: 0 })).toBe(4);
   });
 
   it('is "50+" below a full board, never a made-up #51', () => {
-    const board = Array.from({ length: BOARD_SIZE }, () => ({ trophies: 800 }));
-    expect(placeOnBoard(board, 10)).toBe(`${BOARD_SIZE}+`);
-    expect(placeOnBoard(board, 900)).toBe(1);
+    const board = Array.from({ length: BOARD_SIZE }, () => ({ trophies: 800, wins: 100, experience: 0 }));
+    expect(placeOnBoard(board, { trophies: 10, wins: 0, experience: 0 })).toBe(`${BOARD_SIZE}+`);
+    expect(placeOnBoard(board, { trophies: 900, wins: 101, experience: 0 })).toBe(1);
+  });
+
+  // A full board is the view's top 50 by wins, then experience. A player
+  // the view would not have returned is not among the rows, however many
+  // trophies their level and best streak add: they used to be ranked
+  // against rows they were never compared with, up to a #1.
+  it('is "50+" for a player the view would not have returned, even with more trophies', () => {
+    const board = Array.from({ length: BOARD_SIZE }, () => ({ trophies: 170, wins: 20, experience: 0 }));
+    expect(placeOnBoard(board, { trophies: 185, wins: 10, experience: 700 })).toBe(`${BOARD_SIZE}+`);
+  });
+
+  it('follows the view\'s order at the cut: as many wins as the last row, then experience', () => {
+    const board = Array.from({ length: BOARD_SIZE }, (_, i) => ({ trophies: 400 - i, wins: 30 - Math.floor(i / 10), experience: 500 }));
+    // The last row has 26 wins and 500 experience.
+    expect(placeOnBoard(board, { trophies: 1000, wins: 26, experience: 500 })).toBe(1);
+    expect(placeOnBoard(board, { trophies: 1000, wins: 26, experience: 499 })).toBe(`${BOARD_SIZE}+`);
+    expect(placeOnBoard(board, { trophies: 395, wins: 27, experience: 0 })).toBe(6);
   });
 
   it('shows "50+" in Your Ranking when the player is past the rows fetched', async () => {
@@ -58,6 +78,15 @@ describe('the player\'s place on the board', () => {
     await open();
     expect(yourRank().textContent).toBe(`${BOARD_SIZE}+Outside the top ${BOARD_SIZE}`);
     expect(host.textContent).not.toContain(`#${BOARD_SIZE + 1}`);
+  });
+
+  it('shows "50+" in Your Ranking for fewer wins than every row, whatever the trophies', async () => {
+    // Fifty rows at 20 wins (170 trophies); the player has 10 wins but level 8
+    // and a best streak of 5, so 185 trophies. This printed "#1".
+    rows = Array.from({ length: BOARD_SIZE }, (_, i) => rival(i, 20));
+    useGameStore.setState({ totalWins: 10, level: 8, xp: 0, bestWinStreak: 5 });
+    await open();
+    expect(yourRank().textContent).toBe(`${BOARD_SIZE}+Outside the top ${BOARD_SIZE}`);
   });
 
   it('counts the player\'s row with the same streak the other rows show', async () => {
@@ -73,6 +102,15 @@ describe('the player\'s place on the board', () => {
 });
 
 describe('the board\'s chrome', () => {
+  // The build targets Safari 16 (Vite's baseline), and lookbehind only
+  // arrived in 16.4: esbuild turns the literal into new RegExp(...), which
+  // throws there the moment a podium name renders. Node runs it fine, so
+  // only the source can show it.
+  it('splits names without a regex lookbehind', () => {
+    const src = readFileSync(resolve(process.cwd(), 'src/components/Leaderboard.jsx'), 'utf8');
+    expect(src).not.toMatch(/\(\?<[=!]/);
+  });
+
   it('names its one scope in a caption, with no control that does nothing', async () => {
     rows = [rival(1)];
     await open();
@@ -85,6 +123,8 @@ describe('the board\'s chrome', () => {
     expect(nameBreaks('QABear')).toEqual(['QA', 'Bear']);
     expect(nameBreaks('Player_ab12cd34')).toEqual(['Player_', 'ab', '12cd', '34']);
     expect(nameBreaks('Teddy A1B2')).toEqual(['Teddy A1B2']);
+    expect(nameBreaks('x')).toEqual(['x']);
+    expect(nameBreaks('Bear-')).toEqual(['Bear-']);
     rows = [{ ...rival(1), username: 'GrizzlyAdamsFamily' }];
     await open();
     const name = [...host.querySelectorAll('ol li div')].find((d) => d.textContent === 'GrizzlyAdamsFamily');
