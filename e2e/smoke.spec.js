@@ -759,6 +759,52 @@ test('a heal at full HP says it did nothing, in a toast that covers no log, cont
   expect(covered, `the toast covers ${covered.join(', ')}`).toEqual([]);
 });
 
+// Every visible speech element (Chuck's quip, the player's emote) that
+// overlaps a card on the table, as "speaker over N card(s)".
+const speechOverCards = (page) => page.evaluate(() => {
+  const shown = (el) => {
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  };
+  const over = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  const cards = [...document.querySelectorAll('[data-field]')].map((c) => c.getBoundingClientRect());
+  return [...document.querySelectorAll('[data-speech]')].filter(shown).map((s) => {
+    const box = s.getBoundingClientRect();
+    return `${s.dataset.speech} over ${cards.filter((c) => over(box, c)).length} card(s)`;
+  });
+});
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 }]) {
+  test(`at ${viewport.width}px Chuck's quip and the player's emote never cover a card`, async ({ page }) => {
+    // Chuck speaks at every deal, and his bubble was pinned to the felt's
+    // top-left corner over a row that is centred, so on phones and tablets it
+    // hid his opener's name and cost (and the player's emote did the same to
+    // the player's row). Below xl the line now goes on the centre line.
+    await page.setViewportSize(viewport);
+    await page.addInitScript(() => {
+      const raw = localStorage.getItem('terrible-teddies-storage');
+      const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+      stored.state.currentDeck = [1, 2, 3, 4, 5, 6];
+      stored.state.unlockedCosmetics = ['Teddy Emote'];
+      localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+    });
+    await page.reload();
+    await page.getByRole('button', { name: 'Battle', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+    await expect(page.locator('[data-speech="opponent"]:visible')).toHaveCount(1, SLOW);
+    expect(await speechOverCards(page)).toEqual(['opponent over 0 card(s)']);
+
+    await page.getByRole('button', { name: /^Play / }).first().click();
+    await expect(page.getByText('Warming Up')).toHaveCount(2);
+    await page.getByRole('button', { name: 'Teddy Emote' }).click();
+    await expect(page.locator('[data-speech="player"]:visible')).toHaveCount(1, SLOW);
+    const placed = await speechOverCards(page);
+    expect(placed.length).toBeGreaterThan(0);
+    expect(placed.filter((p) => !p.endsWith('over 0 card(s)'))).toEqual([]);
+  });
+}
+
 test('the battle log opens with one intro, on a first game and on Play Again', async ({ page }) => {
   // The deal ran twice under React StrictMode (the dev server, which this
   // suite runs against by default) and appended its intro each time, so the

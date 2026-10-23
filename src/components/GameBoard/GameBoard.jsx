@@ -407,6 +407,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const [oppQuip, setOppQuip] = useState(null);
   const [endQuip, setEndQuip] = useState(null);
   const quipIdRef = useRef(0);
+  // One counter across both mouths, so the centre line can show whichever
+  // spoke last when Chuck and the player's emote are up together.
+  const speechSeqRef = useRef(0);
   const lastQuipRef = useRef(null);
   const nearDeathQuippedRef = useRef(false);
 
@@ -529,7 +532,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     const text = pickQuip('playerEmote', playerQuip?.text ?? null);
     if (!text) return;
     const id = ++playerQuipIdRef.current;
-    setPlayerQuip({ id, text });
+    setPlayerQuip({ id, text, seq: ++speechSeqRef.current });
     addToBattleLog(`🎭 You: "${text}"`);
     safeTimeout(() => {
       setPlayerQuip((q) => (q && q.id === id ? null : q));
@@ -541,7 +544,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     if (!text) return;
     lastQuipRef.current = text;
     const id = ++quipIdRef.current;
-    setOppQuip({ id, text });
+    setOppQuip({ id, text, seq: ++speechSeqRef.current });
     // Dismiss via the tracked-timeout system so restart/concede/unmount cancel
     // it; only clear if a newer quip hasn't already replaced this one.
     safeTimeout(() => {
@@ -1462,6 +1465,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const outOfMoves = playerMove && !hasMoveLeft(moveState);
   const directTargets = targetingMode && getValidTargets(playerField, opponentField).length === 0;
   const latestLog = battleLog.length > 0 ? battleLog[battleLog.length - 1].message : '';
+  // Whoever spoke last, for the centre line below xl (see the bubbles).
+  const speech = [oppQuip && { ...oppQuip, who: 'opponent' }, playerQuip && { ...playerQuip, who: 'player' }]
+    .filter(Boolean)
+    .sort((a, b) => b.seq - a.seq)[0] ?? null;
   const lastPlayerHit = latestHit(fx.filter((e) => e.face === 'player'));
 
   // Fit the two card rows to the table. The board is a fixed-height column
@@ -1708,17 +1715,23 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
             >
               {/* Chuck's trash talk — decorative speech bubble in the felt's
                   corner on his side; the battle log is the accessible record,
-                  so this is hidden from assistive tech. */}
+                  so this is hidden from assistive tech. From xl up only: the
+                  rows are centred, and narrower than that a full row reaches
+                  the corner (measured: at 1024px a three-card row starts at
+                  x=261 and a full bubble ends at 263; at 390 the bubble hid
+                  his opener's name and cost at every deal). Below xl the line
+                  goes on the centre line instead, which never covers a card. */}
               <AnimatePresence>
                 {oppQuip && (
                   <motion.div
                     key={oppQuip.id}
+                    data-speech="opponent"
                     aria-hidden="true"
                     initial={{ opacity: 0, y: -8, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-                    className="absolute top-2 left-2 sm:top-3 sm:left-3 z-20 max-w-[150px] sm:max-w-[220px] pointer-events-none"
+                    className="absolute top-3 left-3 z-20 max-w-[220px] pointer-events-none hidden xl:block"
                   >
                     <div className="relative bg-plush-100 text-night-900 text-xs sm:text-sm font-semibold rounded-2xl rounded-tl-sm px-3 py-2 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.8)] ring-1 ring-red-300/70">
                       <span className="mr-1">🧸</span>
@@ -1789,8 +1802,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               </div>
 
               {/* The centre line: momentum, the turn plaque, and a second line
-                  that is always reserved — the targeting prompt, or below md
-                  the latest event — so neither appearing moves the rows. */}
+                  that is always reserved — the targeting prompt; else, below
+                  xl, the last thing said (Chuck's quip or your emote); else,
+                  below md, the latest event — so nothing appearing there
+                  moves the rows. */}
               <div ref={centreRef} className="relative flex flex-col items-center gap-1.5">
                 <div className="flex w-full items-center gap-2 sm:gap-3">
                   <MomentumMeter value={playerMomentum} glow={!gameOver} />
@@ -1802,7 +1817,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                     Turn {turnCount}
                     <span className="mx-1.5 opacity-60" aria-hidden="true">·</span>
                     {playerTurn
-                      ? <>Your<span className="hidden min-[360px]:inline"> move</span></>
+                      ? <>You<span className="hidden min-[360px]:inline">r move</span></>
                       : <>{OPPONENT_NAME}<span className="hidden min-[360px]:inline">&apos;s turn</span></>}
                   </div>
                   <span className="h-px flex-1 bg-gradient-to-l from-transparent to-brass-300/45" aria-hidden="true" />
@@ -1818,6 +1833,24 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       <Crosshair className="h-3.5 w-3.5" aria-hidden="true" />
                       Pick a victim for {selectedCard?.name}!
                     </div>
+                  ) : speech ? (
+                    /* One line, truncated; the whole line is in the log. Keyed
+                       so each new line fades in. Framer Motion owns this
+                       element's transform, so it carries no transform class. */
+                    <motion.div
+                      key={`${speech.who}-${speech.id}`}
+                      aria-hidden="true"
+                      data-speech={speech.who}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={`xl:hidden max-w-full truncate rounded-full px-3 py-1 text-xs font-semibold text-night-900 pointer-events-none ${speech.who === 'opponent'
+                        ? 'bg-plush-100 ring-1 ring-red-300/70'
+                        : 'bg-brass-200 ring-1 ring-brass-400/70'}`}
+                    >
+                      <span className="mr-1">{speech.who === 'opponent' ? '🧸' : '🎭'}</span>
+                      {speech.text}
+                    </motion.div>
                   ) : latestLog && (
                     /* Latest-event ticker for screens without the log panel.
 
@@ -1925,18 +1958,20 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               )}
 
               {/* The player's emote bubble (Teddy Emote cosmetic), in the
-                  felt's corner on their side — same decorative treatment as
-                  Chuck's; the battle log carries the accessible record. */}
+                  felt's corner on their side — same decorative treatment, and
+                  the same xl threshold, as Chuck's; the battle log carries the
+                  accessible record. */}
               <AnimatePresence>
                 {playerQuip && (
                   <motion.div
                     key={playerQuip.id}
+                    data-speech="player"
                     aria-hidden="true"
                     initial={{ opacity: 0, y: 8, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ type: 'spring', stiffness: 350, damping: 22 }}
-                    className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-20 max-w-[150px] sm:max-w-[220px] pointer-events-none"
+                    className="absolute bottom-3 left-3 z-20 max-w-[220px] pointer-events-none hidden xl:block"
                   >
                     {/* brass-200, not brass-100: the palette starts at 200, so
                         bg-brass-100 generated no CSS at all. The bubble was
