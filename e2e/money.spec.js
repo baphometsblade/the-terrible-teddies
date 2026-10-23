@@ -184,6 +184,29 @@ test('an unconfirmed payment: honest copy, the reference to keep, ten minutes of
   stub.balance = 500;
   await dialog.getByRole('button', { name: 'Check now' }).click();
   await expect(dialog.getByText('Purchase Complete!')).toBeVisible(SLOW);
+  // Check now went with the body it sat in; focus goes on to the next action
+  // rather than falling to <body>.
+  await expect(dialog.getByRole('button', { name: /Let.?s Play/ })).toBeFocused();
+});
+
+test('a stalled screen left open lands a late payment when the buyer comes back to the tab', async ({ page }) => {
+  // A phone buyer who switched apps while the screen sat at "Still Waiting":
+  // the screen had stopped checking and held the return-to-tab check off, so
+  // the payment confirming meanwhile was never picked up.
+  const stub = await stubPurchase(page, null);
+  const dialog = await returnFromCheckout(page, 'cs_test_stalled_return');
+  await runClockUntil(page, dialog.getByRole('heading', { name: 'Still Waiting for Stripe' }), 30_000);
+  const gemsBefore = (await saved(page)).gems;
+
+  stub.row = { ...ROW, status: 'completed' };
+  stub.balance = 500;
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+
+  await expect(dialog.getByText('Purchase Complete!')).toBeVisible(SLOW);
+  await expect.poll(async () => (await saved(page)).gems).toBe(gemsBefore + 500);
+  // Announced once, by the screen; not a second time by a toast.
+  await page.clock.runFor(1_000);
+  await expect(page.getByText('Payment confirmed')).toHaveCount(0);
 });
 
 test('a refunded payment says no gems were added, and does not wait for any', async ({ page }) => {

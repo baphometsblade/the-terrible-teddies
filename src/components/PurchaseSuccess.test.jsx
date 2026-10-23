@@ -4,13 +4,13 @@ import { createRoot } from 'react-dom/client';
 import { MotionGlobalConfig } from 'framer-motion';
 
 // The purchases row, as each check reads it (null: Stripe has not confirmed).
-const net = { row: null, checks: 0 };
+const net = { row: null, checks: 0, balance: 500 };
 vi.mock('../utils/pendingPurchase', async (importOriginal) => ({
   ...(await importOriginal()),
   verifyPurchaseSession: async () => { net.checks += 1; if (net.hang) await new Promise(() => {}); return net.row; },
 }));
-// The server balance after one 500-gem purchase.
-vi.mock('../utils/supabaseClient', () => ({ fetchServerGemBalance: async () => 500 }));
+// The server balance after one 500-gem purchase (null: the read failed).
+vi.mock('../utils/supabaseClient', () => ({ fetchServerGemBalance: async () => net.balance }));
 vi.mock('@/lib/celebrate', () => ({ celebrate: vi.fn() }));
 // An owner who has configured a support address.
 vi.mock('@/lib/support', async (importOriginal) => {
@@ -23,7 +23,7 @@ vi.mock('@/lib/support', async (importOriginal) => {
 });
 
 const { default: PurchaseSuccess, pendingPollDelay } = await import('./PurchaseSuccess');
-const { pendingPurchase } = await import('../utils/pendingPurchase');
+const { pendingPurchase, purchaseOnScreen } = await import('../utils/pendingPurchase');
 const { useGameStore } = await import('@/stores/gameStore');
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -46,7 +46,7 @@ beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
   useGameStore.setState(useGameStore.getInitialState(), true);
-  Object.assign(net, { row: null, checks: 0, hang: false });
+  Object.assign(net, { row: null, checks: 0, hang: false, balance: 500 });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -123,6 +123,83 @@ describe('a payment Stripe has not confirmed yet', () => {
   });
 });
 
+describe('coming back to the tab with the screen still open', () => {
+  const comeBack = () => act(async () => {
+    window.dispatchEvent(new Event('focus'));
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+
+  // The screen holds the return-to-tab settle off while it is up, and a
+  // stalled one had stopped checking: a payment that confirmed meanwhile was
+  // never picked up, under copy saying the game checks again on return.
+  it('checks a stalled payment once, and lands the gems if it has confirmed', async () => {
+    await render();
+    await wait(10 * 60_000);
+    expect(text()).toContain('Still Waiting for Stripe');
+    net.row = { status: 'completed', gems_granted: 500, bundle_id: 'gems_large' };
+    const before = net.checks;
+    await comeBack();
+    // focus and visibilitychange arrive together: one check, not two.
+    expect(net.checks).toBe(before + 1);
+    expect(text()).toContain('Purchase Complete!');
+    expect(useGameStore.getState().gems).toBe(510);
+    expect(pendingPurchase()).toBeNull();
+  });
+
+  it('starts checking a stalled payment again if it still has not confirmed', async () => {
+    await render();
+    await wait(10 * 60_000);
+    const before = net.checks;
+    await comeBack();
+    expect(net.checks).toBe(before + 1);
+    expect(text()).toMatch(/Checked at .+: not confirmed yet\./);
+    expect(text()).toContain('Waiting for Payment Confirmation');
+    await wait(4_000);
+    expect(net.checks).toBe(before + 2);
+  });
+
+  it('does not check on the tab being hidden', async () => {
+    await render();
+    await wait(10 * 60_000);
+    const before = net.checks;
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    try {
+      await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
+    } finally {
+      visibility.mockRestore();
+    }
+    expect(net.checks).toBe(before);
+  });
+});
+
+describe('focus across the phase swap', () => {
+  // Check now unmounted with the pending body it sat in, leaving keyboard
+  // focus on <body>.
+  it('puts focus on the next action when Check now confirms the payment', async () => {
+    await render();
+    const check = button('Check now');
+    check.focus();
+    net.row = { status: 'completed', gems_granted: 500, bundle_id: 'gems_large' };
+    await act(async () => { check.click(); });
+    expect(text()).toContain('Purchase Complete!');
+    expect(document.activeElement).toBe(button("Awesome! Let's Play"));
+  });
+
+  it('leaves focus that was not lost where it is', async () => {
+    // Say a dialog stacked over this one has focus when a background check
+    // confirms the payment: the swap must not pull focus out from under it.
+    await render();
+    const elsewhere = document.createElement('button');
+    document.body.appendChild(elsewhere);
+    elsewhere.focus();
+    net.row = { status: 'completed', gems_granted: 500, bundle_id: 'gems_large' };
+    await wait(4_000);
+    expect(text()).toContain('Purchase Complete!');
+    expect(document.activeElement).toBe(elsewhere);
+    elsewhere.remove();
+  });
+});
+
 describe('leaving before the answer', () => {
   it('remembers the payment from the moment the buyer lands, so closing mid-check loses nothing', async () => {
     net.hang = true;
@@ -131,6 +208,39 @@ describe('leaving before the answer', () => {
     act(() => root.unmount());
     root = null;
     expect(pendingPurchase()?.sessionId).toBe('cs_test_closed_early');
+  });
+});
+
+describe('a confirmed payment whose new balance could not be read', () => {
+  // The marker used to be dropped before the balance reads, so a failed read
+  // (or closing the screen during them) gave up the return-to-tab pick-up.
+  it('stays remembered, and leaves the pick-up to the next return to the tab', async () => {
+    net.row = { status: 'completed', gems_granted: 500, bundle_id: 'gems_large' };
+    net.balance = null;
+    await render('cs_test_unread');
+    await wait(5_000);
+    expect(text()).toContain('Purchase Complete!');
+    expect(text()).toContain("couldn't refresh your balance");
+    expect(pendingPurchase()?.sessionId).toBe('cs_test_unread');
+    // The screen has stopped checking, so it no longer holds the settle off.
+    expect(purchaseOnScreen()).toBe(false);
+  });
+
+  it('stays remembered when the screen is closed during the balance reads', async () => {
+    net.row = { status: 'completed', gems_granted: 500, bundle_id: 'gems_large' };
+    net.balance = null;
+    await render('cs_test_closed_reading');
+    // The first read has failed and the retry is waiting on its timer.
+    act(() => root.unmount());
+    root = null;
+    expect(pendingPurchase()?.sessionId).toBe('cs_test_closed_reading');
+  });
+
+  it('is forgotten once the balance is read', async () => {
+    net.row = { status: 'completed', gems_granted: 500, bundle_id: 'gems_large' };
+    await render('cs_test_read');
+    expect(text()).toContain('Purchase Complete!');
+    expect(pendingPurchase()).toBeNull();
   });
 });
 

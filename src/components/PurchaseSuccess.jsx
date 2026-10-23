@@ -123,9 +123,13 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
     return () => { mountedRef.current = false; };
   }, []);
 
-  // While this screen is up it does the checking; a return to the tab must
-  // not check the same payment again and announce it twice.
-  useEffect(() => watchPurchaseOnScreen(), []);
+  // While this screen is checking the payment itself (verifying, pending,
+  // stalled or after an error: see the return-to-tab effect below), a return
+  // to the tab must not check it a second time and announce it twice. Once it
+  // has stopped, a success whose balance could not be read included, the
+  // hold goes, so settlePendingPurchase can finish what is left.
+  const checksItself = phase === 'verifying' || phase === 'pending' || phase === 'error';
+  useEffect(() => (checksItself ? watchPurchaseOnScreen() : undefined), [checksItself]);
 
   // silent=true is used by the background re-poll: it must not flip the phase
   // to 'verifying', because that would unmount/remount the polling effect on
@@ -142,7 +146,6 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
       if (purchase && purchase.status === 'completed') {
         if (synced.current) return;
         synced.current = true;
-        forgetPendingPurchase(sessionId);
 
         // 'completed' is only ever written by fulfill_gem_purchase, in the
         // same transaction that credits user_gems — so the gems are on the
@@ -161,7 +164,14 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
           if (serverBalance !== null) break;
         }
         if (!mountedRef.current) return;
-        if (serverBalance !== null) reconcileServerGems(serverBalance);
+        // The marker goes only once the gems are on this device. Dropped
+        // earlier, a balance that could not be read, or the buyer closing the
+        // screen during the reads, gave up the pick-up on the next return to
+        // the tab, and the gems waited for the next launch.
+        if (serverBalance !== null) {
+          reconcileServerGems(serverBalance);
+          forgetPendingPurchase(sessionId);
+        }
         setBalanceShown(serverBalance !== null);
 
         setGemsGranted(purchase.gems_granted);
@@ -268,6 +278,45 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
     setPollEpoch((e) => e + 1);
   };
 
+  // A return to this tab with the screen still open checks once, as Check
+  // now does. The screen holds settlePendingPurchase off while it is up, and
+  // a stalled one had stopped checking, so a phone buyer who switched apps
+  // and came back to "Still Waiting for Stripe" was never told the payment
+  // had since confirmed, though the screen says the game checks again then.
+  // The listeners read checkNow through a ref, so a render does not re-add them.
+  const checkNowRef = useRef(checkNow);
+  checkNowRef.current = checkNow;
+  const checksOnReturn = phase === 'pending' || phase === 'error';
+  useEffect(() => {
+    if (!checksOnReturn) return undefined;
+    const onReturn = () => {
+      // visibilitychange fires for hiding as well as showing.
+      if (document.visibilityState === 'hidden') return;
+      // focus and visibilitychange arrive together; checkNow runs one check.
+      checkNowRef.current();
+    };
+    window.addEventListener('focus', onReturn);
+    document.addEventListener('visibilitychange', onReturn);
+    return () => {
+      window.removeEventListener('focus', onReturn);
+      document.removeEventListener('visibilitychange', onReturn);
+    };
+  }, [checksOnReturn]);
+
+  // Each phase swaps the whole body, so the control that had focus (Check
+  // now, Try Again, Return to Game) can vanish with it and drop focus to
+  // <body>. When that happens, focus the new phase's main action. Only then:
+  // focus that survived the swap, or lives elsewhere, is left where it is.
+  const primaryRef = useRef(null);
+  const shownPhase = useRef(phase);
+  useEffect(() => {
+    if (shownPhase.current === phase) return;
+    shownPhase.current = phase;
+    const active = document.activeElement;
+    if (active && active !== document.body && active.isConnected) return;
+    primaryRef.current?.focus();
+  }, [phase]);
+
   const look = PHASE_LOOK[phase];
 
   return (
@@ -333,6 +382,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
                 dismissal, but this explicit control lets them leave — any
                 credited gems reconcile on the next login, so nothing is lost. */}
             <button
+              ref={primaryRef}
               type="button"
               onClick={onDone}
               className={`rounded-md px-1 text-plush-300 hover:text-white text-sm underline underline-offset-4 decoration-plush-400/60 ${FOCUS_RING}`}
@@ -356,14 +406,15 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
             {!balanceShown && (
               // Not "something went wrong": nothing did. The purchase is
               // complete and credited; only this screen's copy of the balance
-              // is behind, and the login sync brings it level on next launch.
+              // is behind. The payment stays remembered, so a return to the
+              // tab (settlePendingPurchase) or the login sync brings it level.
               <p className="text-plush-200 text-sm -mt-2 mb-6 rounded-xl bg-night-950/45 border border-white/5 px-4 py-3">
                 We couldn&apos;t refresh your balance on this screen just now, so the
-                counter may not show them yet. They&apos;re safely on your account and
-                will appear next time you open the game.
+                counter may not show them yet. They&apos;re safely on your account, and
+                show up next time you come back to this tab, or next time the game starts.
               </p>
             )}
-            <button type="button" onClick={onDone} className={`${ACTION} btn-brass px-8 text-lg`}>
+            <button ref={primaryRef} type="button" onClick={onDone} className={`${ACTION} btn-brass px-8 text-lg`}>
               Awesome! Let&apos;s Play
             </button>
           </div>
@@ -399,6 +450,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
               {/* aria-disabled rather than disabled while a check is out:
                   disabling the focused button would drop keyboard focus. */}
               <button
+                ref={primaryRef}
                 type="button"
                 onClick={checkNow}
                 aria-disabled={checking || undefined}
@@ -420,7 +472,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
               This payment was refunded, so its gems aren&apos;t on your account.
             </p>
             <PaymentReference sessionId={sessionId} phase="refunded" />
-            <button type="button" onClick={onDone} className={`${ACTION} btn-glass px-6 text-base`}>
+            <button ref={primaryRef} type="button" onClick={onDone} className={`${ACTION} btn-glass px-6 text-base`}>
               Return to Game
             </button>
           </div>
@@ -437,7 +489,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
               If the dispute is settled in the payment&apos;s favour, they come back automatically.
             </p>
             <PaymentReference sessionId={sessionId} phase="disputed" />
-            <button type="button" onClick={onDone} className={`${ACTION} btn-glass px-6 text-base`}>
+            <button ref={primaryRef} type="button" onClick={onDone} className={`${ACTION} btn-glass px-6 text-base`}>
               Return to Game
             </button>
           </div>
@@ -454,6 +506,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
             <PaymentReference sessionId={sessionId} phase="error" />
             <div className="flex flex-wrap gap-3 justify-center">
               <button
+                ref={primaryRef}
                 type="button"
                 onClick={() => { pollTriesRef.current = 0; synced.current = false; setStalled(false); verify(); }}
                 className={`${ACTION} btn-brass px-6 text-base`}
