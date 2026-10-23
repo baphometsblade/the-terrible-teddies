@@ -198,9 +198,14 @@ const Auth = () => {
                 onPointerEnter={prefetchForgotPassword}
                 onFocus={prefetchForgotPassword}
                 onClick={() => setMode('forgot')}
-                // The padding, cancelled by the negative margin, makes a
-                // finger-sized target of a line of small text.
-                className={`ml-auto -mx-1 -my-1.5 px-1 py-1.5 whitespace-nowrap rounded-sm text-xs font-semibold text-brass-200 underline underline-offset-4 decoration-brass-300/50 hover:text-white ${FOCUS_RING}`}
+                // A line of small text, in a box padded (and the padding
+                // cancelled by the negative margin) only enough for a snug
+                // focus ring. The 44px a finger needs is a transparent
+                // ::before instead: the password field is 8px above, so a
+                // 44px box would reach under it. The hit area starts at the
+                // field's edge and runs down into the gap above Sign In,
+                // stopping 4px short of it.
+                className={`relative ml-auto -mx-1 -my-1.5 px-1 py-1.5 whitespace-nowrap rounded-sm text-xs font-semibold text-brass-200 underline underline-offset-4 decoration-brass-300/50 hover:text-white before:absolute before:inset-x-0 before:-top-0.5 before:h-11 before:content-[''] ${FOCUS_RING}`}
               >
                 Forgot password?
               </button>

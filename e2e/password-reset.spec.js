@@ -394,6 +394,62 @@ test.describe('an expired link', () => {
   });
 });
 
+// How tall a target a finger meets, down the middle of a button: the run of
+// points that land on it, which for "Forgot password?" includes its ::before.
+const hitHeight = (locator) => locator.evaluate((el) => {
+  const r = el.getBoundingClientRect();
+  const x = r.left + r.width / 2;
+  let top = null;
+  let bottom = null;
+  for (let y = Math.floor(r.top) - 30; y <= Math.ceil(r.bottom) + 30; y += 1) {
+    const hit = document.elementFromPoint(x, y);
+    if (hit && (hit === el || el.contains(hit))) {
+      if (top === null) top = y;
+      bottom = y;
+    }
+  }
+  return top === null ? 0 : bottom - top + 1;
+});
+
+// The game holds every control to 44px. These are lines of small text, so
+// each is padded out to it, without reaching over a neighbour.
+for (const width of [320, 390]) {
+  test(`the account screens' text buttons are 44px targets at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await stubBackend(page);
+    await signInScreen(page);
+
+    const forgot = page.getByRole('button', { name: 'Forgot password?' });
+    expect(await hitHeight(forgot), 'Forgot password?').toBeGreaterThanOrEqual(44);
+    // Its hit area stops short of the password field above and Sign In below.
+    const field = await page.getByLabel('Password', { exact: true }).boundingBox();
+    const signIn = await page.getByRole('button', { name: 'Sign In' }).boundingBox();
+    const owner = (y) => page.evaluate(([px, py]) => {
+      const hit = document.elementFromPoint(px, py);
+      return hit?.closest('button')?.textContent.trim() ?? hit?.tagName;
+    }, [field.x + field.width - 20, y]);
+    expect(await owner(field.y + field.height - 2)).toBe('INPUT');
+    const signInOwner = await page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.closest('button')?.textContent.trim(), [signIn.x + signIn.width / 2, signIn.y + 2]);
+    expect(signInOwner).toBe('Sign In');
+
+    await forgot.click();
+    await page.getByLabel('Email').fill('qa@example.com');
+    const back = page.getByRole('button', { name: 'Back to sign in' });
+    expect((await back.boundingBox()).height, 'Back to sign in').toBeGreaterThanOrEqual(44);
+    await page.getByRole('button', { name: 'Send reset link' }).click();
+    for (const name of [/^Send again/, 'Use a different email', 'Back to sign in']) {
+      const box = await page.getByRole('button', { name }).boundingBox();
+      expect(box.height, String(name)).toBeGreaterThanOrEqual(44);
+    }
+
+    await page.goto('about:blank');
+    await page.goto(`/${recoveryHash()}`);
+    const notNow = page.getByRole('button', { name: 'Not now: continue to the game' });
+    await expect(notNow).toBeVisible(SLOW);
+    expect((await notNow.boundingBox()).height, 'Not now').toBeGreaterThanOrEqual(44);
+  });
+}
+
 // The panel and the reset form, at the phone widths the rest of the game is
 // checked at: no sideways scroll, and the primary action on screen.
 for (const width of [320, 390]) {

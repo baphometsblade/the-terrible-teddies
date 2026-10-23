@@ -27,10 +27,12 @@ export const AUTH_ACTION =
   `inline-flex w-full items-center justify-center gap-2 h-12 rounded-xl px-4 font-display text-base font-bold whitespace-nowrap ${FOCUS_OUTLINE}`;
 
 // The secondary way out of a step ("Back to sign in", "Send again"): plain
-// underlined text, so FOCUS_RING, and padded to a finger-sized target.
+// underlined text, so FOCUS_RING, in a box 44px tall (min-h-11), the size
+// the game holds every control to. Each sits on a line of its own, so the
+// box costs a little height rather than crowding a neighbour.
 // aria-disabled (a countdown) takes the underline away.
 export const AUTH_TEXT_BUTTON =
-  'rounded-md px-1 py-1.5 text-sm text-plush-300 underline underline-offset-4 decoration-plush-400/60 hover:text-white ' +
+  'inline-flex min-h-11 items-center justify-center rounded-md px-2 text-sm text-plush-300 underline underline-offset-4 decoration-plush-400/60 hover:text-white ' +
   'aria-disabled:no-underline aria-disabled:cursor-not-allowed aria-disabled:hover:text-plush-300 ' +
   FOCUS_RING;
 
