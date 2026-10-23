@@ -192,6 +192,8 @@ test.describe('landing from a reset link', () => {
     await page.getByRole('button', { name: 'Save new password' }).click();
     await expect(page.getByRole('alert')).toContainText('already has');
     await expect(page.getByLabel('New password', { exact: true })).toHaveAttribute('aria-invalid', 'true');
+    // Back in the field the refusal is about, ready to type over.
+    await expect(page.getByLabel('New password', { exact: true })).toBeFocused();
     await expect(page.getByRole('button', { name: 'Save new password' })).toBeVisible();
   });
 

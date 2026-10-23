@@ -96,7 +96,10 @@ const PasswordRecovery = ({ recovery, signedIn, onPasswordSet, onLinkExpired, on
     }
     setServerError(failure);
     // The field the refusal is about, so the player can type over it.
-    if (failure.kind === 'same' || failure.kind === 'weak') passwordRef.current?.select();
+    if (failure.kind === 'same' || failure.kind === 'weak') {
+      passwordRef.current?.focus();
+      passwordRef.current?.select();
+    }
   };
 
   const problemText = problem ? NEW_PASSWORD_PROBLEM_TEXT[problem] : null;
