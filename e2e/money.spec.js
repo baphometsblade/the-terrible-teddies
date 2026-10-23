@@ -46,6 +46,8 @@ test('Reset All Progress says what it keeps, in numbers, and keeps it', async ({
   const deleted = dialog.getByRole('region', { name: 'Deleted' });
   await expect(deleted).toContainText('Level 7');
   await expect(deleted).toContainText('2,345 coins');
+  // The reset brings the tutorial back, so the list says so.
+  await expect(deleted).toContainText('Tutorial completed — shown again');
   // The armed confirmation is a state no other spec audits.
   await expectNoAxeViolations(page, 'reset confirmation');
 

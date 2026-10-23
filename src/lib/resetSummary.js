@@ -31,6 +31,9 @@ export function describeReset(state, now = new Date()) {
     deletes.push({ label: count(state.cardPacks, 'card pack'), after: `back to ${FRESH_START.cardPacks}` });
   }
   if (state.seasonXP > 0) deletes.push({ label: `${state.seasonXP.toLocaleString()} Battle Pass XP` });
+  // The fresh save has not seen the tutorial, so App opens it again straight
+  // after the reset. Said here, so it does not arrive unannounced.
+  if (state.tutorialCompleted) deletes.push({ label: 'Tutorial completed', after: 'shown again' });
   deletes.push({ label: 'Stats, achievements, login streak and challenge progress' });
   // The fresh save brings its defaults for these too (resetProgress spreads
   // the whole initial state), so the list says so rather than leave a player

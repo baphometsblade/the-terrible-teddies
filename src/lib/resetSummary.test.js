@@ -48,6 +48,15 @@ describe('the reset confirmation', () => {
     ]);
   });
 
+  // resetProgress brings tutorialCompleted back to false, and App reopens
+  // the tutorial after the reset; the confirmation did not say so.
+  it('says the tutorial is shown again, when it has been completed', () => {
+    useGameStore.setState({ tutorialCompleted: true });
+    expect(describeReset(get(), NOW).deletes).toContainEqual({ label: 'Tutorial completed', after: 'shown again' });
+    useGameStore.getState().resetProgress();
+    expect(get().tutorialCompleted).toBe(false);
+  });
+
   it('lists only what the reset changes', () => {
     // A fresh save: nothing of its own to lose but the stats and settings.
     expect(describeReset(get(), NOW).deletes.map((d) => d.label)).toEqual([
