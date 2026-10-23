@@ -74,6 +74,23 @@ test('battle board has no WCAG 2.1 A/AA violations', async ({ page }) => {
   await expectNoViolations(page, 'battle board');
 });
 
+// The question "← Menu" and Concede ask before giving up a live battle. It
+// replaced a window.confirm, which axe could never see.
+test('leave-battle dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.currentWinStreak = 2; // so the streak line is audited too
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  await page.getByRole('button', { name: '← Menu' }).click();
+  await expect(page.getByRole('dialog', { name: 'Leave this battle?' })).toBeVisible();
+  await expectNoViolations(page, 'leave-battle dialog');
+});
+
 // Every stop in the tab order must be a real control. axe checks the controls
 // it can recognise; it cannot see a stop that is NOT a control, because a
 // focusable element with no role is not "wrong" markup, merely useless. Two

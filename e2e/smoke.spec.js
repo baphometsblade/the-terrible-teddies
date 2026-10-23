@@ -64,13 +64,86 @@ test('abandoning a battle mid-game records a loss and resets the win streak', as
   // End Turn visible == the opening hand was dealt (deckReady) == battle joined.
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
 
+  // "← Menu" asks first now, naming the streak at stake (it used to leave on
+  // the spot, so a tap meant as "back" silently cost the streak). Confirming
+  // is the one extra click this flow gained; the loss rule is unchanged.
   await page.getByRole('button', { name: '← Menu' }).click();
+  const leave = page.getByRole('dialog', { name: 'Leave this battle?' });
+  await expect(leave).toBeVisible();
+  await expect(leave).toContainText('3-win streak');
+  await leave.getByRole('button', { name: 'Concede — counts as a loss' }).click();
   await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
 
   const state = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('terrible-teddies-storage')).state);
   expect(state.totalLosses).toBe(1);
   expect(state.currentWinStreak).toBe(0);
+});
+
+test('"← Menu" mid-battle asks first: Keep playing (or Escape) costs nothing', async ({ page }) => {
+  // Seeded streak, as above. Answering "Keep playing" — or pressing Escape —
+  // must leave the board, the turn and the streak exactly as they were, and
+  // no browser-native confirm may appear at any point.
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.currentWinStreak = 4;
+    stored.state.totalLosses = 0;
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+  const nativeDialogs = [];
+  page.on('dialog', (d) => { nativeDialogs.push(d.message()); d.dismiss(); });
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  const endTurn = page.getByRole('button', { name: 'End Turn' });
+  await expect(endTurn).toBeVisible(SLOW);
+
+  const menu = page.getByRole('button', { name: '← Menu' });
+  const leave = page.getByRole('dialog', { name: 'Leave this battle?' });
+  await menu.click();
+  await expect(leave).toBeVisible();
+  await expect(leave).toContainText('4-win streak');
+  // The safe answer has the focus, so a stray Enter keeps the game.
+  await expect(leave.getByRole('button', { name: 'Keep playing' })).toBeFocused();
+  await leave.getByRole('button', { name: 'Keep playing' }).click();
+  await expect(leave).toHaveCount(0);
+  await expect(endTurn).toBeVisible();
+  await expect(page.getByText(/Turn 1/)).toBeVisible();
+
+  // Escape is "Keep playing" too.
+  await menu.click();
+  await expect(leave).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(leave).toHaveCount(0);
+  await expect(endTurn).toBeVisible();
+
+  const state = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('terrible-teddies-storage')).state);
+  expect(state.totalLosses).toBe(0);
+  expect(state.currentWinStreak).toBe(4);
+  expect(nativeDialogs).toEqual([]);
+});
+
+test('the battle screen turns off pull-to-refresh, and only while a game is live', async ({ page }) => {
+  // A downward drag on the fixed-height board would otherwise reload the page
+  // on Chrome for Android, and a reload mid-battle books a loss unasked.
+  const overscroll = () => page.evaluate(() => [
+    getComputedStyle(document.documentElement).overscrollBehaviorY,
+    getComputedStyle(document.body).overscrollBehaviorY,
+  ]);
+  expect(await overscroll()).toEqual(['auto', 'auto']);
+
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  expect(await overscroll()).toEqual(['none', 'none']);
+
+  // Once the result is in there is nothing left to lose by a reload.
+  await page.getByRole('button', { name: /Concede/ }).click();
+  await page.getByRole('dialog', { name: 'Concede this battle?' })
+    .getByRole('button', { name: 'Concede — counts as a loss' }).click();
+  await expect(page.getByRole('dialog', { name: 'Defeat' })).toBeVisible(SLOW);
+  expect(await overscroll()).toEqual(['auto', 'auto']);
 });
 
 test('reloading/closing mid-battle also records the loss (pagehide), not just "← Menu"', async ({ page }) => {
@@ -175,9 +248,11 @@ test('owned Battle Pass cosmetics render in battle: gold frames and working emot
 
   // The bubble must not strand across game over + Play Again: ending the game
   // inside its 3.5s window cancels its dismiss timer (clearAllTimeouts), so the
-  // game-over and restart paths must clear it explicitly.
-  page.once('dialog', (d) => d.accept()); // window.confirm on concede
+  // game-over and restart paths must clear it explicitly. (Concede asks in an
+  // in-app dialog now, not window.confirm.)
   await page.getByRole('button', { name: /Concede/ }).click();
+  await page.getByRole('dialog', { name: 'Concede this battle?' })
+    .getByRole('button', { name: 'Concede — counts as a loss' }).click();
   const defeat = page.getByRole('dialog', { name: 'Defeat' });
   await expect(defeat).toBeVisible(SLOW);
   await defeat.getByRole('button', { name: /Play Again/i }).click();
@@ -592,8 +667,17 @@ test('concede shows the defeat dialog and Play Again deals a fresh game', async 
   await page.getByRole('button', { name: 'Battle', exact: true }).click();
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
 
-  page.once('dialog', (d) => d.accept()); // window.confirm on concede
+  // Concede asks in the board's own dialog. It used to ask through
+  // window.confirm — an unstyled browser box, suppressed in some webviews —
+  // so a native dialog appearing at all is a failure.
+  const nativeDialogs = [];
+  page.on('dialog', (d) => { nativeDialogs.push(d.message()); d.dismiss(); });
   await page.getByRole('button', { name: /Concede/ }).click();
+  const confirm = page.getByRole('dialog', { name: 'Concede this battle?' });
+  await expect(confirm).toBeVisible();
+  await expect(confirm.getByRole('button', { name: 'Keep playing' })).toBeFocused();
+  await confirm.getByRole('button', { name: 'Concede — counts as a loss' }).click();
+  expect(nativeDialogs).toEqual([]);
 
   // Game-over screen is a real dialog with rewards and both exits.
   const defeat = page.getByRole('dialog', { name: 'Defeat' });
@@ -830,8 +914,10 @@ test('a mid-battle rehydrate refreshes the wallet without disturbing the game', 
   // abandonment, which CREDITS a few coins, so the total lands just above the
   // rehydrated 55,555 rather than exactly on it — which is the whole point: the
   // battle's write built on the other tab's save instead of reverting it to the
-  // 1,234 this tab booted with.
+  // 1,234 this tab booted with. ("← Menu" asks before booking that loss.)
   await page.getByRole('button', { name: /Menu/ }).click();
+  await page.getByRole('dialog', { name: 'Leave this battle?' })
+    .getByRole('button', { name: 'Concede — counts as a loss' }).click();
   await expect(page.getByText(/55,5\d\d/)).toBeVisible(SLOW);
   await expect(page.getByText('1,234')).toHaveCount(0);
 });

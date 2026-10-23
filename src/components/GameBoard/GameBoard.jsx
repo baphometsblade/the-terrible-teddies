@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext, forwardRef, useImperativeHandle } from 'react';
 import {
   Coins, Crosshair, Flag, Ghost, Heart, HeartCrack, ScrollText, Shield, Smartphone, Star, Trophy, Volume2, VolumeX, Zap,
 } from 'lucide-react';
@@ -20,6 +20,8 @@ import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder, ownedEmotes } from '@/lib/cosmetics';
 import { abilityRules } from '@/lib/abilities';
 import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
+import LeaveBattleDialog from './LeaveBattleDialog';
+import { FOCUS_OUTLINE } from '@/lib/focus';
 
 // Stamp a creature's starting durability when it enters the field. `defense` is
 // the HP pool in the creature-HP combat model; `currentHp` tracks the remaining
@@ -304,13 +306,19 @@ const GameOverDialog = ({ label, onEscape, children }) => {
  * resolve identically via resolveCreatureHit.
  *
  * Card abilities and their rules text: src/lib/abilities.js.
+ *
+ * The ref exposes `requestLeave()`: the same "leave this battle?" path the
+ * board's "← Menu" takes, for a caller outside the board (a browser Back
+ * handler). While a game is live it asks first; once the game is over, or
+ * before it has dealt, it leaves at once.
  */
-const GameBoard = ({ onBackToMenu, onOpenShop }) => {
+const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, ref) {
   // Get store data
   const {
     currentDeck,
     difficulty: aiDifficulty,
     soundEnabled: storeSoundEnabled,
+    currentWinStreak,
     recordBattleResult,
     playerName,
     gems,
@@ -407,8 +415,8 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
   const liveRef = useRef({ gameOver, deckReady, playerHealth });
   liveRef.current = { gameOver, deckReady, playerHealth };
 
-  // Leaving a battle mid-game counts as a loss. The "← Menu" control lives in
-  // App, outside this component, so abandoning simply unmounts the board — with
+  // Leaving a battle mid-game counts as a loss. Leaving through "← Menu" (once
+  // the player confirms it, see requestLeave) simply unmounts the board — with
   // no result recorded, a player could bail out of a losing game and keep their
   // win streak intact. Record the loss on unmount, but only for a battle that
   // was actually joined (deckReady) and isn't already resolved (gameOver) — a
@@ -480,6 +488,26 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     };
     // clearAllTimeouts is a stable [] useCallback, so this still runs once.
   }, [clearAllTimeouts]);
+
+  // Giving up a live battle asks first (LeaveBattleDialog). `leaveMode` is
+  // which control asked — 'leave' ("← Menu") or 'concede' — or null.
+  const [leaveMode, setLeaveMode] = useState(null);
+  const onBackToMenuRef = useRef(onBackToMenu);
+  onBackToMenuRef.current = onBackToMenu;
+  // Stable, and reads the live game through liveRef, so a caller holding it
+  // (the ref handle below) never acts on a stale idea of whether the game is
+  // still being played.
+  const requestLeave = useCallback(() => {
+    const { gameOver: over, deckReady: ready } = liveRef.current;
+    if (ready && !over) setLeaveMode('leave');
+    else onBackToMenuRef.current?.();
+  }, []);
+  useImperativeHandle(ref, () => ({ requestLeave }), [requestLeave]);
+  // The game can end with the question still open — Chuck's turn plays on
+  // behind it — and then the result dialog is the only thing to answer.
+  useEffect(() => {
+    if (gameOver) setLeaveMode(null);
+  }, [gameOver]);
 
   // Player-side emote bubble (Battle Pass emote cosmetics). Mirrors Chuck's
   // quip bubble: decorative and aria-hidden, with the battle log carrying the
@@ -1293,13 +1321,24 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
 
   // Concede the battle — counts as a loss. Guarantees the player can always
   // exit a stalled board (e.g. a hand of only buff/heal cards with an empty
-  // deck) instead of being soft-locked with no damaging play available.
+  // deck) instead of being soft-locked with no damaging play available. Asks
+  // first, through the same dialog as "← Menu".
   const concedeGame = () => {
     if (gameOver) return;
-    if (typeof window !== 'undefined' &&
-        !window.confirm(`Concede this battle? It counts as a loss, and ${OPPONENT_NAME} will NEVER let you hear the end of it.`)) {
+    setLeaveMode('concede');
+  };
+
+  // The dialog's answer. From "← Menu" the player is leaving: go, and the
+  // unmount books the loss (see recordAbandonment). From Concede they stay
+  // for the result: the defeat flow records it and shows the result dialog.
+  const confirmLeave = () => {
+    const mode = leaveMode;
+    setLeaveMode(null);
+    if (mode === 'leave') {
+      onBackToMenuRef.current?.();
       return;
     }
+    if (liveRef.current.gameOver) return;
     clearAllTimeouts(); // cancel any in-flight opponent-turn steps
     addToBattleLog(`You conceded. ${OPPONENT_NAME} is doing a little dance.`);
     setPlayerHealth(0); // routes through the existing defeat flow
@@ -1339,6 +1378,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
     // Reset UI state
     setSelectedCard(null);
     setTargetingMode(false);
+    setLeaveMode(null);
     setBattleLog([]);
     setFx([]);
     setGameOver(false);
@@ -1443,6 +1483,33 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
         <p className="font-display text-xl font-extrabold text-white">Turn your phone upright</p>
         <p className="text-sm text-plush-200 max-w-xs">The table needs more height than a sideways phone has.</p>
       </div>
+
+      {/* The board's own way out, in the slot Chuck's rail leaves for it
+          (pl-28), centred on the rail. The board owns it rather than App so
+          that, while a game is live, it can ask before booking the loss.
+          Above the rotate-phone card (z-30), so a landscape player can still
+          leave. */}
+      {onBackToMenu && (
+        <button
+          type="button"
+          onClick={requestLeave}
+          className={`btn-glass absolute top-[calc(0.375rem+env(safe-area-inset-top))] sm:top-[calc(0.625rem+env(safe-area-inset-top))] left-4 z-40 inline-flex h-11 items-center rounded-xl px-4 text-sm font-semibold ${FOCUS_OUTLINE}`}
+        >
+          ← Menu
+        </button>
+      )}
+
+      <AnimatePresence>
+        {leaveMode && !gameOver && (
+          <LeaveBattleDialog
+            key="leave"
+            mode={leaveMode}
+            streak={currentWinStreak}
+            onKeepPlaying={() => setLeaveMode(null)}
+            onConcede={confirmLeave}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Game Over Overlay */}
       <AnimatePresence>
@@ -1558,7 +1625,7 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       </AnimatePresence>
 
       <div className="relative z-10 flex h-full flex-col">
-        {/* Opponent's rail. pl-28 leaves room for App's "← Menu" control; the
+        {/* Opponent's rail. pl-28 leaves room for the "← Menu" control; the
             safe-area padding keeps it out from under a notch when the game is
             installed full-screen (the viewport is viewport-fit=cover). */}
         <div className="hud-opponent shrink-0 h-[calc(3.5rem+env(safe-area-inset-top))] sm:h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center justify-between gap-2 pl-28 pr-3 sm:pr-5">
@@ -2065,6 +2132,6 @@ const GameBoard = ({ onBackToMenu, onOpenShop }) => {
       </FxContext.Provider>
     </div>
   );
-};
+});
 
 export default GameBoard;

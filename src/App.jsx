@@ -286,8 +286,11 @@ function App() {
       case 'game':
         return (
           <div className="relative">
-            <BackButton onClick={() => navigateTo('menu')} />
-            {/* Same Suspense + error-boundary treatment the lazy dialogs get.
+            {/* No BackButton here: the board draws its own "← Menu", because
+                leaving a live battle books a loss and the board is what knows
+                whether one is live (and asks first if so).
+
+                Same Suspense + error-boundary treatment the lazy dialogs get.
                 The board chunk is fetched on the tap that navigates here, so
                 the spinner is typically a single frame.
 

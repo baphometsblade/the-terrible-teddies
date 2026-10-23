@@ -395,6 +395,14 @@
   [data-screen="battle"] .toast-viewport > li { pointer-events: none; }
 }
 
+/* No pull-to-refresh, overscroll bounce or swipe-back chaining while a battle
+   is in play. The board is a fixed-height screen that does not scroll, so on
+   Chrome for Android a downward drag across it reloaded the page — and a
+   reload mid-battle books a loss (GameBoard's pagehide handler), with no
+   question asked. GameBoard sets the attribute only until the game is over. */
+html[data-screen="battle"],
+html[data-screen="battle"] body { overscroll-behavior: none; }
+
 /* End Turn once the player has no move left (GameBoard's outOfMoves): brass,
    with a slow breath of brass light around it, so "you're done" reads at a
    glance. The halo is ::after (the only claimant on that button; .btn-brass
@@ -416,8 +424,9 @@
 /* Landscape phones get a "turn your phone upright" card over the board (see
    GameBoard): two card rows, a hand and two rails do not fit in ~360px of
    height, and below that the board overlaps itself. Touch screens only — a
-   short desktop window still gets the fitted board. Under App's "← Menu"
-   (z-40) so the player can still leave, and under the result dialog. */
+   short desktop window still gets the fitted board. Under the board's
+   "← Menu" (z-40) so the player can still leave, and under the result and
+   leave-battle dialogs. */
 .rotate-hint { display: none; }
 @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
   .rotate-hint {
