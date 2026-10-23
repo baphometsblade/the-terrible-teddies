@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { energyForTurn, cardWouldDoSomething, hasMoveLeft, MAX_FIELD_SIZE, MOMENTUM_MAX } from './turn';
+import { energyForTurn, cardWouldDoSomething, canRally, hasMoveLeft, MAX_FIELD_SIZE, MOMENTUM_MAX } from './turn';
 
 const creature = (over = {}) => ({ type: 'action', cost: 2, attack: 2, defense: 2, ability: 'none', ...over });
 const special = (effect, over = {}) => ({ type: 'special', effect, cost: 1, amount: 2, ...over });
@@ -75,5 +75,29 @@ describe('hasMoveLeft', () => {
     expect(hasMoveLeft(state({ momentum: MOMENTUM_MAX, field: [spent] }))).toBe(true);
     expect(hasMoveLeft(state({ momentum: MOMENTUM_MAX }))).toBe(false);
     expect(hasMoveLeft(state({ momentum: MOMENTUM_MAX - 1, field: [spent] }))).toBe(false);
+  });
+});
+
+describe('canRally', () => {
+  // The board shows Rally on exactly this. It used to show it on a full gauge
+  // alone, so with the table cleared a brass Rally that pumped nobody sat
+  // beside the brass End Turn that "no moves left" lights.
+  it('needs a full gauge and a creature on the table', () => {
+    const spent = creature({ hasAttacked: true });
+    expect(canRally(state({ momentum: MOMENTUM_MAX, field: [spent] }))).toBe(true);
+    expect(canRally(state({ momentum: MOMENTUM_MAX - 1, field: [spent] }))).toBe(false);
+    expect(canRally(state({ momentum: MOMENTUM_MAX }))).toBe(false);
+    // A trap is not rallied (rallyField leaves traps alone), so it does not count.
+    expect(canRally(state({ momentum: MOMENTUM_MAX, field: [{ type: 'trap' }] }))).toBe(false);
+  });
+
+  it('is never offered while End Turn is lit for having no move left', () => {
+    // Every combination of gauge and table: a rally-able board is a move.
+    for (const momentum of [0, MOMENTUM_MAX - 1, MOMENTUM_MAX]) {
+      for (const field of [[], [{ type: 'trap' }], [creature({ hasAttacked: true })], [creature({ summoningSick: true })]]) {
+        const s = state({ momentum, field });
+        expect(canRally(s) && !hasMoveLeft(s)).toBe(false);
+      }
+    }
   });
 });

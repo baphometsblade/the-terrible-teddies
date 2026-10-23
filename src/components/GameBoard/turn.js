@@ -35,10 +35,17 @@ export const cardWouldDoSomething = (card, { field, health, maxHealth, deckSize 
 export const isUsefulPlay = (card, state) =>
   state.energy >= effectiveCost(card, state.field) && cardWouldDoSomething(card, state);
 
+// Can the player Rally? A full gauge and a teddy to pump: Rally buffs and
+// restuffs creatures only, so with none on the table it would spend the whole
+// gauge on nothing. The board offers the button on exactly this, so it is never
+// lit (brass) beside an End Turn that is lit because no move is left.
+export const canRally = ({ momentum, field }) =>
+  momentum >= MOMENTUM_MAX && field.some((c) => c.type === 'action');
+
 // Does the player have a move left this turn? A ready attacker, a card worth
-// playing, or a Rally with someone to rally. When the answer is no, End Turn
-// becomes the board's primary action (Hearthstone's "no moves left").
+// playing, or a Rally. When the answer is no, End Turn becomes the board's
+// primary action (Hearthstone's "no moves left").
 export const hasMoveLeft = (state) =>
   state.field.some(canAttack)
   || state.hand.some((card) => isUsefulPlay(card, state))
-  || (state.momentum >= MOMENTUM_MAX && state.field.some((c) => c.type === 'action'));
+  || canRally(state);

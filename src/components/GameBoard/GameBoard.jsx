@@ -19,7 +19,7 @@ import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder, ownedEmotes } from '@/lib/cosmetics';
 import { abilityRules } from '@/lib/abilities';
-import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
+import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, canRally, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
 import LeaveBattleDialog from './LeaveBattleDialog';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 
@@ -1236,7 +1236,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // teddy gets +1 attack and heals to full HP (the only way to heal wounded
   // creatures under the HP model). Usable any time on the player's turn.
   const rally = () => {
-    if (currentTurn !== 'player' || gameOver || playerMomentum < MOMENTUM_MAX) return;
+    if (currentTurn !== 'player' || gameOver || !canRally({ momentum: playerMomentum, field: playerField })) return;
     // Creatures only, as rallyField: traps are untouched.
     pushFx(playerField.filter((c) => c.type === 'action').map((c) => ({ card: c.instanceId, tone: 'buff', text: '+1' })));
     setPlayerField(prev => rallyField(prev));
@@ -2132,8 +2132,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
             {/* Game controls. The line keeps its height on Chuck's turn, when
                 the buttons are gone: below md the table's height depends on
                 it, and an empty line made the whole table grow and shrink at
-                every turn boundary. Concede is icon-only on phones so that
-                Rally + Battle + End Turn + Concede fit one line at 360px. */}
+                every turn boundary. Concede is icon-only on phones, to keep
+                the line short enough not to wrap. */}
             <div className="flex min-h-11 flex-row flex-wrap items-center justify-center gap-2 md:flex-col md:items-stretch">
               {!gameOver && !playerTurn && (
                 <span className="text-xs italic text-plush-300" aria-hidden="true">
@@ -2145,7 +2145,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   Cancel
                 </button>
               )}
-              {!gameOver && playerMomentum >= MOMENTUM_MAX && playerTurn && (
+              {/* Only with a teddy to rally (canRally): with none, a full
+                  gauge would buy nothing, and a brass Rally sat beside the
+                  brass End Turn that no-moves-left lights. */}
+              {!gameOver && playerTurn && canRally(moveState) && (
                 <button type="button" className={`${ACTION} btn-brass foil relative`} onClick={rally}>
                   {/* Above the foil band (::after), which would otherwise
                       sweep across the label and wash it out. */}
