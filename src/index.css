@@ -354,11 +354,16 @@
   max-width: min(24rem, calc(100vw - 1rem));
   padding: 0.5rem;
 }
-/* From md up there is a battle log beside the table, and a battle toast IS
-   the newest log entry, so it docks over the top of the log and leaves the
-   centre line (and the targeting prompt on it) clear. The offsets are the top
-   rail plus the gap above the log, the log column's width (w-56), and the
-   board's side padding (sm:px-4, lg:px-6). */
+/* From md up there is a column beside the table, and a battle toast docks at
+   its top, in room the log steps down to make for it (GameBoard measures this
+   list and reserves its height above the log), so it covers neither the log,
+   the turn controls below it nor any card, and leaves the centre line (and
+   the targeting prompt on it) clear. It used to dock OVER the log, on the
+   premise that a toast was the newest log entry; once the toasts that only
+   repeated the log were removed, the ones left are mostly rule explanations
+   that are not logged, and docked there they hid the newest lines. The
+   offsets are the top rail plus the gap above the column, the column's width
+   (w-56), and the board's side padding (sm:px-4, lg:px-6). */
 @media (min-width: 768px) {
   [data-screen="battle"] .toast-viewport {
     top: calc(4.75rem + env(safe-area-inset-top));

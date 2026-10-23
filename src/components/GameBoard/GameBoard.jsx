@@ -599,6 +599,20 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     return notify({ duration: Math.min(7000, Math.max(2600, 1000 + 55 * chars)), ...t });
   }, [notify]);
 
+  // From md up a battle toast docks at the top of the log column (index.css),
+  // and the log steps down to make room for it instead of lying under it: the
+  // toasts left are mostly rule explanations, which are not logged, and
+  // docked over the log they hid exactly its newest lines. The height is the
+  // toast list's own, measured, so the room always matches what is showing.
+  const [toastRoom, setToastRoom] = useState(0);
+  useEffect(() => {
+    const list = document.querySelector('.toast-viewport');
+    if (!list || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => setToastRoom(Math.round(list.getBoundingClientRect().height)));
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, []);
+
   // The turn banner: "Your turn" / "Chuck's turn" across the felt at each turn
   // boundary and at the start of a game, so the hand-over reads at a glance.
   // Decorative (the log announces whose turn it is) and never in the way of a
@@ -889,9 +903,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
 
     // Handle action/trap cards
     if (playerField.length >= MAX_FIELD_SIZE) {
+      // Nothing removes a teddy by hand, so the copy cannot say "remove one".
       toast({
         title: "Field is full!",
-        description: "Remove a teddy before playing another",
+        description: `Three teddies is the limit. One has to go down before ${card.name} can join.`,
         variant: "destructive",
       });
       return;
@@ -914,23 +929,26 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     battleStatsRef.current.cardsPlayed += 1;
     playSound('cardPlay');
 
-    // One callout per play. A card with a rule gets the ability callout, which
-    // names the card as well; a plain card gets the toast. Both used to fire
-    // together and stack on the table's centre line, and the callout still
-    // clears a toast left over from earlier in the turn (a draw) for the same
-    // reason. The log entry below is what a screen reader hears either way.
+    // A card with a rule gets the ability callout, which names the rule it
+    // brings; it clears any toast left over from earlier in the turn, which
+    // would otherwise stack on it on the table's centre line. A plain card
+    // gets nothing more: the card landing on the table is the news, and the
+    // log entry below records it (and is what a screen reader hears) — a
+    // "Card Played" toast on every play only repeated both.
     if (card.ability && card.ability !== 'none') {
       dismissToasts();
       setShowAbilityPopup({ name: card.name, ability: card.ability });
       safeTimeout(() => setShowAbilityPopup(null), 1500);
-    } else {
-      toast({ title: "Card Played", description: `${card.name} enters the battlefield!` });
     }
 
     addToBattleLog(`Played ${card.name}${card.ability && card.ability !== 'none' ? ` (${card.ability})` : ''}`);
   };
 
-  // Apply special card effects
+  // Apply special card effects. What a special did shows on the board — a
+  // heal floats its number off your health, a draw lands in the hand, a buff
+  // floats over each creature — and the log records it, so none of that gets
+  // a toast. A toast is for the case the board cannot show: a legal play
+  // that did nothing.
   const applySpecialEffect = (card) => {
     switch (card.effect) {
       case 'heal': {
@@ -941,10 +959,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
         const healed = Math.min(PLAYER_MAX_HEALTH, playerHealth + card.amount) - playerHealth;
         setPlayerHealth(prev => Math.min(PLAYER_MAX_HEALTH, prev + card.amount));
         battleStatsRef.current.healingDone += healed;
-        if (healed > 0) pushFx([{ face: 'player', tone: 'heal', text: `+${healed}` }]);
         playSound('heal');
-        addToBattleLog(`${card.name}: +${healed} HP. No questions asked.`);
-        toast({ title: "Patched Up!", description: `+${healed} HP. The stuffing guy owed you a favor.` });
+        if (healed > 0) {
+          pushFx([{ face: 'player', tone: 'heal', text: `+${healed}` }]);
+          addToBattleLog(`${card.name}: +${healed} HP. No questions asked.`);
+        } else {
+          // Still a legal play, but not a win to celebrate: it said "Patched
+          // Up! +0 HP" once, which is congratulating a wasted card.
+          addToBattleLog(`${card.name} did nothing — you were already at full HP.`);
+          toast({ title: 'Already fully stuffed', description: `${card.name} did nothing — you were already at full HP.` });
+        }
         break;
       }
       case 'draw': {
@@ -958,17 +982,27 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
         setPlayerHand(prev => [...prev, ...drawnCards]);
         setPlayerDeck(prev => prev.slice(cardsToDraw));
         playSound('draw');
-        addToBattleLog(`${card.name}: drew ${cardsToDraw} — the dealer likes you`);
-        toast({ title: "Hit Me!", description: `Drew ${cardsToDraw}. The house always wins — congrats, you are the house.` });
+        if (cardsToDraw > 0) {
+          addToBattleLog(`${card.name}: drew ${cardsToDraw} — the dealer likes you`);
+        } else {
+          addToBattleLog(`${card.name} drew nothing — your deck is empty.`);
+          toast({ title: 'Nothing to draw', description: `${card.name} came up empty — your deck is out of cards.` });
+        }
         break;
       }
-      case 'buff':
+      case 'buff': {
         // Creatures only: a trap's attack is never shown or used.
-        pushFx(playerField.filter((c) => c.type === 'action').map((c) => ({ card: c.instanceId, tone: 'buff', text: `+${card.amount}` })));
+        const squad = playerField.filter((c) => c.type === 'action');
+        pushFx(squad.map((c) => ({ card: c.instanceId, tone: 'buff', text: `+${card.amount}` })));
         setPlayerField(prev => prev.map(c => ({ ...c, attack: c.attack + card.amount })));
-        addToBattleLog(`Your whole squad is FIRED UP — +${card.amount} attack across the board!`);
-        toast({ title: 'Juiced!', description: `Everybody +${card.amount} attack. Totally natural. Don't test them.` });
+        if (squad.length > 0) {
+          addToBattleLog(`Your whole squad is FIRED UP — +${card.amount} attack across the board!`);
+        } else {
+          addToBattleLog(`${card.name} did nothing — no teddy of yours on the table to pump.`);
+          toast({ title: 'Nobody to juice', description: `${card.name} did nothing — you have no teddy on the table.` });
+        }
         break;
+      }
       default:
         break;
     }
@@ -1038,6 +1072,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // Resolve against the target's HP: it survives a non-lethal hit (and its
     // fury fires), or dies and trample overkill spills to the opponent's face.
     // Pass playerField so a 'royal' ally on the attacker's side buffs the hit.
+    // The outcome is drawn on the table (the lunge, the hit, the number, the
+    // crumple) and written to the log, so it gets no toast: a toast for every
+    // hit covered the log and the table to repeat them.
     const { survivor, overkill, dmg } = resolveCreatureHit(attacker, target, playerField);
     playSound('attack');
     battleStatsRef.current.damageDealt += dmg;
@@ -1058,12 +1095,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
           : `${target.name} is already as furious as they get — capped at +3.`);
       }
       addToBattleLog(`${attacker.name} smacked ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
-      toast({ title: "Hit!", description: `${target.name} is hanging on at ${survivor.currentHp} HP.` });
     } else {
       setOpponentField(prev => prev.filter(c => c.instanceId !== target.instanceId));
       if (overkill > 0) setOpponentHealth(prev => Math.max(0, prev - overkill));
       addToBattleLog(`UNSTUFFED! ${attacker.name} took ${target.name} apart${overkill > 0 ? ` — ${overkill} trampled right into ${OPPONENT_NAME}'s beans` : ''}`);
-      toast({ title: "UNSTUFFED!", description: `${target.name} is fluff on the floor${overkill > 0 ? ` — ${overkill} tramples through!` : '.'}` });
       speak('oppLosesCreature');
     }
 
@@ -1107,7 +1142,6 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       setOpponentField(prev => prev.filter(c => c.instanceId !== trap.instanceId));
       playSound('trap');
       addToBattleLog(`${trap.name} sprang! ${trapDamage} damage, right in your pride`);
-      toast({ title: "It's a Trap!", description: `${trap.name} got you for ${trapDamage}. ${OPPONENT_NAME} is giggling.`, variant: "destructive" });
     } else {
       // Re-read the attacker from the live field, not the selection snapshot:
       // Rally mid-targeting replaces every field card with a +1-attack copy, so
@@ -1124,7 +1158,6 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       setOpponentHealth(prev => Math.max(0, prev - faceDamage));
       battleStatsRef.current.damageDealt += faceDamage;
       addToBattleLog(`${attacker.name} decked ${OPPONENT_NAME} in the face for ${faceDamage}!`);
-      toast({ title: "Right in the Face!", description: `${faceDamage} damage straight to ${OPPONENT_NAME}'s smug mug.` });
       if (faceDamage >= 4) speak('oppTakesFaceHit');
     }
 
@@ -1167,7 +1200,6 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       colors: ['#fbbf24', '#f59e0b', '#f97316', '#fde68a'],
     });
     addToBattleLog('⚡ RALLY! Your teddies scream something unprintable — +1 attack, fully restuffed!');
-    toast({ title: '⚡ Rally!', description: 'Your squad is juiced, restuffed, and legally a mob now.' });
     speak('playerRally');
   };
 
@@ -1950,13 +1982,18 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
 
           {/* Beside the table from md up; rows under it on phones. */}
           <div className="shrink-0 flex flex-col gap-2 md:gap-3 md:w-56 md:pb-1">
+            {/* The room an open toast docks into from md up (see toastRoom). */}
+            {toastRoom > 0 && (
+              <div aria-hidden="true" data-toast-room="" className="hidden md:block shrink-0" style={{ height: toastRoom }} />
+            )}
             {/* Battle log — a panel from md up; phones get the ticker on the
                 centre line instead, since a panel there would cover cards.
                 tabIndex + role/aria-label make the scrolling panel keyboard-
                 reachable (axe: scrollable-region-focusable), and the region
                 itself is the scroller, which axe requires. It has no aria-live
                 of its own; the sr-only log on the table is the one announcer.
-                Newest first, so the entry that just happened is in view. */}
+                Newest first, so the entry that just happened is in view, and
+                set apart as the log's headline. */}
             <div
               role="region"
               aria-label="Battle log"
@@ -1970,7 +2007,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               {[...battleLog].reverse().map((entry, i) => (
                 <div
                   key={entry.id}
-                  className={`text-xs leading-snug py-1.5 border-b border-white/[0.06] last:border-0 ${i === 0 ? 'text-plush-100' : 'text-plush-300'}`}
+                  data-newest={i === 0 ? '' : undefined}
+                  className={`text-xs leading-snug py-1.5 border-b border-white/[0.06] last:border-0 ${i === 0
+                    ? '-mx-1.5 mb-1 rounded-md border-l-2 border-l-brass-300 bg-white/[0.06] pl-2 pr-1.5 font-semibold text-plush-100'
+                    : 'text-plush-300'}`}
                 >
                   {entry.message}
                 </div>

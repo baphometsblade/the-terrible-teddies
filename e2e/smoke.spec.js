@@ -691,6 +691,74 @@ test('concede shows the defeat dialog and Play Again deals a fresh game', async 
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
 });
 
+// Seeds the player's deck for the next reload (as the tests above do inline).
+const seedDeck = (page, ids) => page.addInitScript((deck) => {
+  const raw = localStorage.getItem('terrible-teddies-storage');
+  const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+  stored.state.currentDeck = deck;
+  localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+}, ids);
+
+const overlaps = (a, b) =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+test('playing a plain card raises no toast: the card landing is the news', async ({ page }) => {
+  // Every plain play used to toast "Card Played — X enters the battlefield!",
+  // repeating both the card arriving on the table and the log line, on top of
+  // the log (md+) or the centre line (phones).
+  await seedDeck(page, [4, 4, 4, 4, 4, 4]); // Bar-Fight Barry: no ability, costs 1
+  await page.reload();
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  await page.getByRole('button', { name: /^Play / }).first().click();
+  await expect(page.getByText('Warming Up')).toHaveCount(2);
+  await expect(page.getByRole('region', { name: 'Battle log' }).getByText('Played Bar-Fight Barry')).toBeVisible();
+  // Counted once, not polled: a retrying toHaveCount(0) would simply wait out
+  // a toast's few seconds on screen and then pass.
+  await page.waitForTimeout(400); // a toast would be up by now
+  expect(await page.locator('.toast-viewport > li').count()).toBe(0);
+  expect(await page.getByText(/enters the battlefield/).count()).toBe(0);
+});
+
+test('a heal at full HP says it did nothing, in a toast that covers no log, control or card', async ({ page }) => {
+  // It used to celebrate a wasted card ("Patched Up! +0 HP"), docked over the
+  // top of the log, where it hid the newest entries. From md up a toast now
+  // docks in room the log steps down to make. (Desktop viewport by default.)
+  await seedDeck(page, [76, 76, 76, 76, 76, 76]); // Minibar Raid: heal 2 for 1 energy
+  await page.reload();
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  const endTurn = page.getByRole('button', { name: 'End Turn' });
+  await expect(endTurn).toBeVisible(SLOW);
+
+  // Still a legal play at full HP...
+  await page.getByRole('button', { name: /^Play / }).first().click();
+  const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Already fully stuffed' });
+  await expect(toast).toBeVisible(SLOW);
+  expect(await page.getByText(/Patched Up/).count()).toBe(0); // counted, not polled (see above)
+  await expect(page.locator('[data-energy]')).toHaveText('2/3');
+
+  // ...and the toast sits clear of the newest log line, the turn controls and
+  // every card, rather than on top of one of them.
+  await page.waitForTimeout(500); // the toast's entrance
+  const toastBox = await toast.boundingBox();
+  const newest = page.getByRole('region', { name: 'Battle log' }).locator('[data-newest]');
+  await expect(newest).toContainText('did nothing');
+  const covered = [];
+  const check = async (label, locator) => {
+    for (const el of await locator.all()) {
+      const box = await el.boundingBox();
+      if (box && overlaps(toastBox, box)) covered.push(label);
+    }
+  };
+  await check('the newest log entry', newest);
+  await check('End Turn', endTurn);
+  await check('Concede', page.getByRole('button', { name: /Concede/ }));
+  await check('a hand card', page.locator('[aria-label^="Play "]'));
+  await check('a table card', page.locator('[data-field]'));
+  expect(covered, `the toast covers ${covered.join(', ')}`).toEqual([]);
+});
+
 test('the battle log opens with one intro, on a first game and on Play Again', async ({ page }) => {
   // The deal ran twice under React StrictMode (the dev server, which this
   // suite runs against by default) and appended its intro each time, so the

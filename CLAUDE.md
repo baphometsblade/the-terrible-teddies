@@ -325,9 +325,21 @@ game's cards out as if they had died.
 
 While a game is in play GameBoard sets `html[data-screen="battle"]`, which
 moves toasts off the controls: onto the measured centre line on phones
-(`--battle-centre-y`), over the top of the battle log from md up. The board's
+(`--battle-centre-y`), and from md up into room at the top of the log column
+that the log steps down to make (GameBoard measures the toast list), so a toast
+covers neither the log, the controls nor the cards. Battle toasts are only for
+what the board cannot show — a rule refusing a move, or a legal play that did
+nothing ("Already fully stuffed"); a play, a hit, a kill or a heal is drawn on
+the table and written to the log, and a toast repeating it is noise. The same
+attribute turns off `overscroll-behavior`, so a pull-to-refresh cannot reload
+a live battle (which books a loss). The board's
 screen-reader announcer is a `role="log"` of recent entries, not one line of
 text — Chuck's turn writes several entries in a single render.
+
+Leaving a live battle — the board's own "← Menu" or Concede — asks first in
+`LeaveBattleDialog` (Keep playing is the focused default and Escape). App's
+game screen renders no BackButton; GameBoard's ref exposes the same
+`requestLeave()` for any other caller.
 
 ### Card Art
 
