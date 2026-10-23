@@ -7,6 +7,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  // The automatic JSX runtime, as @vitejs/plugin-react uses for the build, so
+  // a test can render a component: the source never imports React for JSX,
+  // and esbuild's default (classic) transform needs it in scope.
+  esbuild: { jsx: 'automatic' },
   test: {
     // jsdom gives the store's persist middleware a real localStorage to write to.
     environment: 'jsdom',
