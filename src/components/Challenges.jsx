@@ -4,35 +4,13 @@ import {
   Target, X, Clock, Check, Gift, Gem, Coins, Package, Star, Crown, CalendarDays, CalendarRange,
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/components/ui/use-toast";
 import { useGameStore } from '../stores/gameStore';
 import { getDailyChallenges, getWeeklyChallenges, challengeProgress } from '../stores/challenges';
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { Medallion } from '@/components/ui/game-chrome';
-
-const getTimeUntilReset = (isWeekly = false) => {
-  const now = new Date();
-  const reset = new Date();
-  
-  if (isWeekly) {
-    const daysUntilMonday = (8 - now.getDay()) % 7 || 7;
-    reset.setDate(now.getDate() + daysUntilMonday);
-    reset.setHours(0, 0, 0, 0);
-  } else {
-    reset.setDate(now.getDate() + 1);
-    reset.setHours(0, 0, 0, 0);
-  }
-  
-  const diff = reset - now;
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  
-  return isWeekly 
-    ? `${Math.floor(diff / (1000 * 60 * 60 * 24))}d ${hours % 24}h`
-    : `${hours}h ${minutes}m`;
-};
+import { getTimeUntilReset } from '@/lib/resetTimer';
 
 // Plain <button>s throughout, not the shadcn Button: its bg-primary is a
 // utility and would beat the btn-brass / btn-glass materials. Every button
@@ -40,33 +18,94 @@ const getTimeUntilReset = (isWeekly = false) => {
 // flatten, but it takes the outline too so the two tabs focus alike.
 
 // What each reward type looks like. lucide icons rather than emoji: emoji are
-// a different drawing on every platform. The noun is for screen readers.
+// a different drawing on every platform.
 //
 // A legendary pack is a pack wearing a crown (the mark legendary carries
 // across the game), not just a pack in another colour: the weekly set often
 // puts the two side by side, and sky against brass is all a colour-blind
 // player, or anyone who has not learned the code, would have had to go on.
-const REWARD_LOOK = {
-  coins: { Icon: Coins, tone: 'text-brass-300', noun: 'coins' },
-  gems: { Icon: Gem, tone: 'text-fuchsia-300', noun: 'gems' },
-  xp: { Icon: Star, tone: 'text-brass-300', noun: 'XP' },
-  pack: { Icon: Package, tone: 'text-sky-300', noun: 'card packs' },
-  legendaryPack: { Icon: Package, Mark: Crown, tone: 'text-brass-300', noun: 'legendary packs' },
+//
+// `one` and `many` are the reward's name in words, for the claim's
+// announcement and every screen-reader label. The claim toast used to print
+// the type key itself: "Claimed: 1 legendaryPack", "2 pack", "100 xp".
+export const REWARD_LOOK = {
+  coins: { Icon: Coins, tone: 'text-brass-300', one: 'coin', many: 'coins' },
+  gems: { Icon: Gem, tone: 'text-fuchsia-300', one: 'gem', many: 'gems' },
+  xp: { Icon: Star, tone: 'text-brass-300', one: 'XP', many: 'XP' },
+  pack: { Icon: Package, tone: 'text-sky-300', one: 'Card Pack', many: 'Card Packs' },
+  legendaryPack: { Icon: Package, Mark: Crown, tone: 'text-brass-300', one: 'Legendary Pack', many: 'Legendary Packs' },
 };
-const OTHER_REWARD = { Icon: Gift, tone: 'text-emerald-300' };
+const OTHER_REWARD = { Icon: Gift, tone: 'text-emerald-300', one: 'reward', many: 'rewards' };
+const lookFor = (type) => REWARD_LOOK[type] ?? OTHER_REWARD;
+
+/** "150 coins", "1 Card Pack", "100 XP": a reward in words. */
+export const rewardLabel = (type, amount) => {
+  const look = lookFor(type);
+  return `${amount.toLocaleString()} ${amount === 1 ? look.one : look.many}`;
+};
+
+// The reward's mark: its icon, and the crown over a legendary pack.
+const RewardMark = ({ look, size = 'h-4 w-4', markSize = 'h-3.5 w-3.5' }) => (
+  <span aria-hidden="true" className="inline-flex items-center gap-0.5">
+    {look.Mark && <look.Mark className={`${markSize} ${look.tone}`} strokeWidth={2.4} />}
+    <look.Icon className={`${size} ${look.tone}`} strokeWidth={2.2} />
+  </span>
+);
+
+// What a claim just paid, rising off the place it was claimed and fading:
+// .fx-float, the battle board's floating number, which stops moving with the
+// Animations switch and reduced motion (the caller takes it away after
+// FLOAT_MS either way). Claims used to say so in a toast, and the toast landed
+// on the dialog's own controls: on a phone over the Close button, on a
+// desktop over the bonus Claim that the claim had just made ready.
+// Decoration only; the dialog's status region says the same in words.
+const FLOAT_MS = 1200;
+//
+// Right-aligned to its slot: .fx-float centres itself on its anchor, and both
+// slots sit at the panel's right edge, where a centred "+25 gems +200 coins"
+// ran out of the panel (which clips). So the anchor is a box exactly as wide
+// as the float (an invisible copy sizes it), pinned to the slot's right edge;
+// the float centred in it ends where the slot does. It starts from the slot's
+// top edge, over the "Claimed" that replaces the button rather than on it.
+const FloatText = ({ rewards }) => rewards.map(({ type, amount }) => (
+  <span key={type} className="inline-flex items-center gap-1">
+    +{amount.toLocaleString()}
+    <RewardMark look={lookFor(type)} size="h-5 w-5" markSize="h-4 w-4" />
+  </span>
+));
+const FLOAT_TYPE = 'inline-flex items-center gap-2.5 whitespace-nowrap font-display text-xl font-extrabold tabular-nums';
+const ClaimFloat = ({ rewards }) => (
+  <span aria-hidden="true" className="pointer-events-none absolute right-0 top-0 z-20">
+    <span className={`invisible ${FLOAT_TYPE}`}><FloatText rewards={rewards} /></span>
+    <span data-claim-float="" className={`fx-float absolute left-1/2 top-0 text-white ${FLOAT_TYPE}`}>
+      <FloatText rewards={rewards} />
+    </span>
+  </span>
+);
+
+// The last claim's float: where it rises from (a challenge's id, or a bonus's
+// key) and what it shows, gone after FLOAT_MS. Each claim gets a fresh id, so
+// a second claim replays the float rather than extending the first.
+const useClaimFloat = () => {
+  const [float, setFloat] = useState(null);
+  useEffect(() => {
+    if (!float) return undefined;
+    const t = setTimeout(() => setFloat(null), FLOAT_MS);
+    return () => clearTimeout(t);
+  }, [float]);
+  const show = (at, rewards) => setFloat((prev) => ({ id: (prev?.id ?? 0) + 1, at, rewards }));
+  return [float, show];
+};
 
 const RewardChip = ({ type, amount, className = '' }) => {
-  const look = REWARD_LOOK[type] ?? { ...OTHER_REWARD, noun: type };
+  const look = lookFor(type);
   return (
     <span className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg bg-night-950/60 px-2 font-display text-sm font-bold
       tabular-nums text-white ring-1 ring-inset ring-white/10 ${className}`}
     >
-      <span aria-hidden="true" className="inline-flex items-center gap-0.5">
-        {look.Mark && <look.Mark className={`h-3.5 w-3.5 ${look.tone}`} strokeWidth={2.4} />}
-        <look.Icon className={`h-4 w-4 ${look.tone}`} strokeWidth={2.2} />
-      </span>
+      <RewardMark look={look} />
       {amount}
-      <span className="sr-only"> {look.noun}</span>
+      <span className="sr-only"> {amount === 1 ? look.one : look.many}</span>
     </span>
   );
 };
@@ -90,7 +129,9 @@ const RewardChip = ({ type, amount, className = '' }) => {
 // next Tab then sent useDialog back to the dialog's first control. So when the
 // button had focus, the "Claimed" that replaces it takes it (tabIndex -1,
 // never a tab stop), and Tab carries on from there to the next card.
-const ChallengeCard = ({ challenge, progress, isClaimed, onClaim }) => {
+//
+// `float` is what the card has just paid out, if anything (see ClaimFloat).
+const ChallengeCard = ({ challenge, progress, isClaimed, onClaim, float }) => {
   const isComplete = progress >= challenge.target;
   const progressPercent = Math.min((progress / challenge.target) * 100, 100);
   const isReady = isComplete && !isClaimed;
@@ -157,7 +198,8 @@ const ChallengeCard = ({ challenge, progress, isClaimed, onClaim }) => {
         />
         {/* One fixed-width status slot, so every bar in the list ends at
             the same x whatever sits beside it. */}
-        <div className="flex w-[4.75rem] shrink-0 justify-end">
+        <div className="relative flex w-[4.75rem] shrink-0 justify-end">
+          {float && <ClaimFloat key={float.id} rewards={float.rewards} />}
           {isReady && (
             <button
               type="button"
@@ -226,8 +268,11 @@ const Challenges = ({ onClose }) => {
     // Weekly stats (auto-reset each Monday)
     weekWins, weekCoinsEarned, weekBestStreak, weekNewCards,
   } = useGameStore();
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('daily');
+  // What the last claim paid: the float over the spot it was claimed from,
+  // and the same in words for the status region.
+  const [float, showFloat] = useClaimFloat();
+  const [announcement, setAnnouncement] = useState('');
   const [dailyResetTime, setDailyResetTime] = useState(getTimeUntilReset(false));
   const [weeklyResetTime, setWeeklyResetTime] = useState(getTimeUntilReset(true));
   const dialogRef = useDialog(onClose);
@@ -297,10 +342,8 @@ const Challenges = ({ onClose }) => {
     }
 
     celebrate({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
-    toast({
-      title: "Challenge Complete!",
-      description: `Claimed: ${challenge.reward.amount} ${challenge.reward.type}`,
-    });
+    showFloat(challenge.id, [challenge.reward]);
+    setAnnouncement(`${challenge.name} claimed: ${rewardLabel(challenge.reward.type, challenge.reward.amount)}.`);
   };
 
   const dailyComplete = DAILY_CHALLENGES.filter(c => getChallengeProgress(c) >= c.target).length;
@@ -321,7 +364,8 @@ const Challenges = ({ onClose }) => {
     addGems(bonus.gems);
     addCoins(bonus.coins);
     celebrate({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: ['#fbbf24', '#a855f7', '#34d399'] });
-    toast({ title: "Bonus Claimed!", description: `+${bonus.gems} 💎 and +${bonus.coins} 🪙` });
+    showFloat(bonus.key, [{ type: 'gems', amount: bonus.gems }, { type: 'coins', amount: bonus.coins }]);
+    setAnnouncement(`Bonus claimed: ${rewardLabel('gems', bonus.gems)} and ${rewardLabel('coins', bonus.coins)}.`);
   };
 
   return (
@@ -422,6 +466,7 @@ const Challenges = ({ onClose }) => {
                       progress={getChallengeProgress(challenge)}
                       isClaimed={(claimedChallenges ?? []).includes(challenge.id)}
                       onClaim={() => claimReward(challenge)}
+                      float={float?.at === challenge.id ? float : null}
                     />
                   </div>
                 ))}
@@ -437,6 +482,7 @@ const Challenges = ({ onClose }) => {
                       progress={getChallengeProgress(challenge)}
                       isClaimed={(claimedChallenges ?? []).includes(challenge.id)}
                       onClaim={() => claimReward(challenge)}
+                      float={float?.at === challenge.id ? float : null}
                     />
                   </div>
                 ))}
@@ -458,6 +504,8 @@ const Challenges = ({ onClose }) => {
                 <RewardChip type="coins" amount={BONUS[activeTab].coins} />
               </div>
             </div>
+            <div className="relative shrink-0">
+            {float?.at === BONUS[activeTab].key && <ClaimFloat key={float.id} rewards={float.rewards} />}
             {(claimedChallenges ?? []).includes(BONUS[activeTab].key) ? (
               <div
                 ref={bonusClaimedRef}
@@ -499,8 +547,14 @@ const Challenges = ({ onClose }) => {
                 </button>
               </div>
             )}
+            </div>
           </div>
         </div>
+
+        {/* What a claim paid, in words. Mounted empty with the dialog, so a
+            screen reader hears each claim as it lands; the float is
+            decoration. This was the claim toast's job, and the toast is gone. */}
+        <div role="status" className="sr-only">{announcement}</div>
       </motion.div>
     </div>
   );

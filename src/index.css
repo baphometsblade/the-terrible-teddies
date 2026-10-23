@@ -687,6 +687,63 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   }
 }
 
+/* Toasts over a dialog (useDialog sets html[data-dialog] while any is open).
+   A toast sits above every dialog (z-100 to their z-50), and in its usual
+   places it landed on the dialog's own controls: along the top of a phone,
+   over the header's Close; in the bottom-right corner from sm, over a
+   footer's actions (the Challenges bonus Claim, just made ready by the claim
+   the toast was reporting). Over a dialog it goes to the top-left corner
+   instead, compact, as on the battle board. That corner is the one place
+   every dialog keeps clear of controls: each puts its Close top-right, and
+   what sits top-left is its medallion and title, or the scrim (measured on
+   every dialog at 320, 390, 640, 768, 1024 and 1280). On a phone it stops
+   4rem short of the right edge, clear of the Close (the scrim's 12px, the
+   header's 16px, the 40px button), and from sm it is 20rem wide. And it never
+   takes a tap: one meant for something under it goes through, the toast
+   still times out, and F8 still reaches it from the keyboard (the battle
+   board's precedent). Not during a battle, which places its own toasts. */
+:root[data-dialog]:not([data-screen="battle"]) .toast-viewport {
+  top: 0;
+  bottom: auto;
+  left: 0;
+  right: 4rem;
+  width: auto;
+  max-width: none;
+  padding: 0.5rem;
+}
+:root[data-dialog]:not([data-screen="battle"]) .toast-viewport > li {
+  pointer-events: none;
+  padding: 0.5rem 1.75rem 0.5rem 0.875rem;
+}
+/* On a phone the type steps down a little, so an achievement's two lines
+   stay two lines and the toast ends above the first control under a header
+   (the tutorial's step bar, 77px down at 320). */
+@media (max-width: 639.98px) {
+  :root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-title {
+    font-size: 0.9375rem;
+    line-height: 1.25rem;
+  }
+  :root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-description {
+    font-size: 0.8125rem;
+    line-height: 1.125rem;
+  }
+}
+@media (min-width: 640px) {
+  :root[data-dialog]:not([data-screen="battle"]) .toast-viewport {
+    right: auto;
+    width: 21.5rem;
+    padding: 0.75rem;
+  }
+}
+/* Toasts slide in from the edge they sit on: from sm that was the bottom, and
+   over a dialog it is the top. Only with motion allowed; otherwise the
+   motion-off and reduced-motion rules after the layer keep them in place. */
+@media (min-width: 640px) and (prefers-reduced-motion: no-preference) {
+  :root[data-dialog]:not([data-screen="battle"]):not([data-motion="off"]) .toast-viewport > li[data-state="open"] {
+    --tw-enter-translate-y: -100%;
+  }
+}
+
 } /* end @layer components */
 
 @keyframes fx-float {

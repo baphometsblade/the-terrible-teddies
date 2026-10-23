@@ -10,6 +10,15 @@ const FOCUSABLE =
 // a single Escape would close every open dialog and the Tab traps would fight.
 const dialogStack = [];
 
+// Mirrors "is any dialog open" onto <html data-dialog>, where a stylesheet can
+// see it: index.css moves toasts off the dialog's controls while it is set
+// (they sit above every dialog, and in their usual places a claim's toast
+// covered Close on a phone and the bonus Claim on a desktop). Counted from
+// the stack, so closing one of two stacked dialogs leaves it set.
+const markOpen = () => {
+  document.documentElement.toggleAttribute('data-dialog', dialogStack.length > 0);
+};
+
 /**
  * Accessible modal-dialog behavior for an overlay element.
  *
@@ -32,6 +41,7 @@ export function useDialog(onClose) {
     if (!node) return;
     const previouslyFocused = document.activeElement;
     dialogStack.push(node);
+    markOpen();
 
     // Skips inert subtrees: a dialog that makes part of itself inert (the
     // Shop does while a checkout is starting) must not have the trap walk
@@ -86,6 +96,7 @@ export function useDialog(onClose) {
       // Remove by index — dialogs don't always unmount in LIFO order.
       const i = dialogStack.indexOf(node);
       if (i !== -1) dialogStack.splice(i, 1);
+      markOpen();
       if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
         previouslyFocused.focus();
       }

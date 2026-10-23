@@ -12,8 +12,10 @@ const ToastViewport = React.forwardRef(({ className, ...props }, ref) => (
     ref={ref}
     // pointer-events-none on the list, auto on each toast (below): the list's
     // padded box spans the screen edge, and while a toast was open it blocked
-    // taps on whatever sat around it. toast-viewport is the hook the battle
-    // board's placement rule in index.css targets.
+    // taps on whatever sat around it. toast-viewport is the hook the
+    // placement rules in index.css target (the battle board's, the deck
+    // builder's, and the one for a toast over a dialog), and toast-title /
+    // toast-description let the dialog rule set the type tighter on a phone.
     className={cn(
       "toast-viewport pointer-events-none fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
       className
@@ -83,14 +85,14 @@ const ToastClose = React.forwardRef(({ className, ...props }, ref) => (
 ToastClose.displayName = ToastPrimitives.Close.displayName
 
 const ToastTitle = React.forwardRef(({ className, ...props }, ref) => (
-  <ToastPrimitives.Title ref={ref} className={cn("font-display text-base font-extrabold text-white group-[.destructive]:text-red-200", className)} {...props} />
+  <ToastPrimitives.Title ref={ref} className={cn("toast-title font-display text-base font-extrabold text-white group-[.destructive]:text-red-200", className)} {...props} />
 ))
 ToastTitle.displayName = ToastPrimitives.Title.displayName
 
 // plush-200 on the glass fill is ~10:1; the old opacity-90 on the light theme
 // would have been fine there and is not needed here.
 const ToastDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <ToastPrimitives.Description ref={ref} className={cn("text-sm text-plush-200", className)} {...props} />
+  <ToastPrimitives.Description ref={ref} className={cn("toast-description text-sm text-plush-200", className)} {...props} />
 ))
 ToastDescription.displayName = ToastPrimitives.Description.displayName
 
