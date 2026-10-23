@@ -362,4 +362,42 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting a buyer reads exactly their own purchases (one-per-account check)"
+"${PSQL[@]}" <<'SQL'
+-- create-checkout-session refuses a second Starter Gem Pack by reading the
+-- buyer's purchases with the buyer's own JWT, and the Shop reads the same rows
+-- to show the offer as claimed. Both lean on purchases_select_own. If that
+-- policy were dropped with RLS left on, the read would return nothing rather
+-- than fail, and the check would quietly sell the pack again — so assert what
+-- the authenticated role actually sees.
+DO $$
+DECLARE
+  v_buyer UUID := 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+  v_other UUID := 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+  v_mine  INTEGER;
+  v_theirs INTEGER;
+BEGIN
+  INSERT INTO auth.users(id) VALUES (v_buyer), (v_other) ON CONFLICT DO NOTHING;
+  INSERT INTO purchases(user_id, stripe_session_id, bundle_id, gems_granted, amount_paid, status)
+  VALUES (v_buyer, 'cs_check_starter_buyer', 'starter_bundle', 300, 499, 'completed'),
+         (v_other, 'cs_check_starter_other', 'starter_bundle', 300, 499, 'completed');
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_buyer::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO v_mine FROM public.purchases
+    WHERE user_id = v_buyer AND bundle_id = 'starter_bundle' AND status = 'completed';
+  SELECT count(*) INTO v_theirs FROM public.purchases WHERE user_id = v_other;
+  RESET ROLE;
+
+  IF v_mine <> 1 THEN
+    RAISE EXCEPTION 'an authenticated buyer cannot read their own completed starter_bundle (saw % rows)', v_mine;
+  END IF;
+  IF v_theirs <> 0 THEN
+    RAISE EXCEPTION 'an authenticated buyer can read another account''s purchases (saw % rows)', v_theirs;
+  END IF;
+  RAISE NOTICE 'own-purchases read assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"

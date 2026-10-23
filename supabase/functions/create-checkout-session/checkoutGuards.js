@@ -66,3 +66,46 @@ export function redirectUrls(safeOrigin) {
     cancel_url: `${safeOrigin}/?purchase=cancelled`,
   };
 }
+
+/**
+ * Bundles an account may buy once, ever. The Shop sells the Starter Gem Pack
+ * as a "NEW PLAYER BOOST", and that was untrue while any account could buy it
+ * any number of times. The Shop reads this same list and rule to show the
+ * offer as claimed, so the two cannot disagree.
+ */
+export const ONE_PER_ACCOUNT_BUNDLES = Object.freeze(['starter_bundle']);
+
+export const isOnePerAccount = (bundleId) => ONE_PER_ACCOUNT_BUNDLES.includes(bundleId);
+
+// Purchase statuses that use up the one. 'completed' obviously. 'disputed'
+// too: restore_gem_purchase turns it back into 'completed' when a dispute is
+// won, so a second one bought during the dispute would end up as two. A
+// 'refunded' purchase gave the money back and took the gems, so the offer is
+// open again.
+const USES_UP_THE_ONE = new Set(['completed', 'disputed']);
+
+/**
+ * Whether an account's own purchases rows for a bundle ([{ status }]) already
+ * hold its one.
+ */
+export function holdsBundle(rows) {
+  return Array.isArray(rows) && rows.some((row) => USES_UP_THE_ONE.has(row?.status));
+}
+
+/**
+ * The refusal for a second one-per-account bundle, or null when the checkout
+ * may go ahead. `code` lets the client tell this apart from other failures
+ * and mark the offer as claimed.
+ *
+ * @param {string} bundleId
+ * @param {{status: string}[]} priorRows this account's purchases of bundleId
+ * @returns {{ status: 409, error: string, code: 'already_purchased' } | null}
+ */
+export function onePerAccountRefusal(bundleId, priorRows) {
+  if (!isOnePerAccount(bundleId) || !holdsBundle(priorRows)) return null;
+  return {
+    status: 409,
+    error: "You've already bought the Starter Gem Pack. It's one per account.",
+    code: 'already_purchased',
+  };
+}

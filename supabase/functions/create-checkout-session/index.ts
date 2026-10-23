@@ -3,7 +3,7 @@ import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
 // Origin allowlisting and bundle lookup are pure decisions, so they live in a
 // module the test suite can import. See checkoutGuards.js.
-import { resolveOrigin, lookupBundle, redirectUrls } from "./checkoutGuards.js";
+import { resolveOrigin, lookupBundle, redirectUrls, isOnePerAccount, onePerAccountRefusal } from "./checkoutGuards.js";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", {
   apiVersion: "2023-10-16",
@@ -98,6 +98,32 @@ serve(async (req) => {
         JSON.stringify({ error: "Invalid bundle ID" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // One per account (the Starter Gem Pack). Read with the buyer's own JWT:
+    // purchases_select_own lets an account see exactly its own rows, which is
+    // all this needs. A failed read refuses rather than sells, because the
+    // check cannot be skipped and nothing is charged by saying no.
+    if (isOnePerAccount(bundle_id)) {
+      const { data: prior, error: priorError } = await supabase
+        .from("purchases")
+        .select("status")
+        .eq("user_id", user.id)
+        .eq("bundle_id", bundle_id);
+      if (priorError) {
+        console.error("Purchase history read failed:", priorError);
+        return new Response(
+          JSON.stringify({ error: "Couldn't check your purchase history. You haven't been charged — please try again." }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const refusal = onePerAccountRefusal(bundle_id, prior);
+      if (refusal) {
+        return new Response(
+          JSON.stringify({ error: refusal.error, code: refusal.code }),
+          { status: refusal.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Validate origin is in allowlist — prevent open redirect

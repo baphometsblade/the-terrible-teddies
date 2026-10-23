@@ -1,8 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { resolveOrigin, lookupBundle, redirectUrls } from './checkoutGuards.js';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import {
+  resolveOrigin, lookupBundle, redirectUrls, onePerAccountRefusal, ONE_PER_ACCOUNT_BUNDLES,
+} from './checkoutGuards.js';
 
 const PROD = 'https://terribleteddies.example';
 const ALLOWED = [PROD, 'http://localhost:5173'];
+// By repo path, like gemBundles.test.js: under jsdom import.meta.url is not a file URL.
+const INDEX_TS = resolve(process.cwd(), 'supabase/functions/create-checkout-session/index.ts');
 
 describe('origin allowlisting (open-redirect prevention)', () => {
   it('honours an origin that is on the list', () => {
@@ -111,5 +117,48 @@ describe('redirect urls', () => {
     expect(success_url).toBe(`${PROD}/?purchase=success&session_id={CHECKOUT_SESSION_ID}`);
     expect(cancel_url).toBe(`${PROD}/?purchase=cancelled`);
     expect(success_url).not.toContain('evil.test');
+  });
+});
+
+describe('one Starter Gem Pack per account', () => {
+  // The Shop calls it a "NEW PLAYER BOOST"; the function used to sell it to
+  // any account any number of times.
+  it('refuses a second one once the first is completed', () => {
+    expect(onePerAccountRefusal('starter_bundle', [{ status: 'completed' }])).toEqual({
+      status: 409,
+      error: expect.stringMatching(/one per account/),
+      code: 'already_purchased',
+    });
+  });
+
+  it('counts a disputed one, which a won dispute turns back into completed', () => {
+    expect(onePerAccountRefusal('starter_bundle', [{ status: 'disputed' }])?.status).toBe(409);
+  });
+
+  it('allows it again after a refund, and for an account that never bought one', () => {
+    expect(onePerAccountRefusal('starter_bundle', [{ status: 'refunded' }])).toBeNull();
+    expect(onePerAccountRefusal('starter_bundle', [])).toBeNull();
+    expect(onePerAccountRefusal('starter_bundle', null)).toBeNull();
+  });
+
+  it('never limits the ordinary gem bundles', () => {
+    for (const id of ['gems_small', 'gems_mega', 'weekly_gem_pass']) {
+      expect(onePerAccountRefusal(id, [{ status: 'completed' }]), id).toBeNull();
+    }
+  });
+
+  it('names only bundles the function sells', () => {
+    // A typo here would quietly limit nothing.
+    const source = readFileSync(INDEX_TS, 'utf8');
+    for (const id of ONE_PER_ACCOUNT_BUNDLES) expect(source).toMatch(new RegExp(`\\b${id}:\\s*\\{`));
+  });
+
+  it('is checked by the function before a Stripe session is created', () => {
+    // There is no Deno in CI, so pin the wiring in the source: the refusal
+    // must be consulted, and answered, ahead of stripe.checkout.sessions.create.
+    const source = readFileSync(INDEX_TS, 'utf8');
+    const refusal = source.indexOf('onePerAccountRefusal(');
+    expect(refusal).toBeGreaterThan(-1);
+    expect(refusal).toBeLessThan(source.indexOf('stripe.checkout.sessions.create'));
   });
 });
