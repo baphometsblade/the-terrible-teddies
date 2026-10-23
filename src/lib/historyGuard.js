@@ -76,6 +76,26 @@ function onPopState() {
   pushGuard();
 }
 
+// Leaving the page while the guard is the current entry (the Shop starts a
+// Stripe checkout with a plain `location.href = url`) would push the new
+// page after the guard, and the guard would outlive the page that answered
+// for it: Back from the checkout landed on it, and it took an extra Back,
+// which reloaded the game, to get past it. So a push away from the page
+// replaces the guard instead, and the history is what it would have been
+// without one. Where the Navigation API is missing, the extra entry stays.
+function onNavigate(e) {
+  if (!guarded || !onGuardEntry()) return;
+  if (e.navigationType !== 'push' || e.destination.sameDocument || !e.cancelable) return;
+  // A download or a form post is not a page that can simply be reloaded.
+  if (e.downloadRequest != null || e.formData) return;
+  if (!/^https?:$/.test(new URL(e.destination.url).protocol)) return;
+  e.preventDefault();
+  const leaving = window.navigation.navigate(e.destination.url, { history: 'replace' });
+  // Never settled for a navigation that leaves the page; caught regardless.
+  leaving.committed?.catch(() => {});
+  leaving.finished?.catch(() => {});
+}
+
 function release(layer) {
   const i = layers.indexOf(layer);
   if (i === -1) return;
@@ -102,6 +122,7 @@ export function holdBack(onBack) {
   if (typeof window === 'undefined' || !window.history?.pushState) return () => {};
   if (!installed) {
     window.addEventListener('popstate', onPopState);
+    window.navigation?.addEventListener?.('navigate', onNavigate);
     installed = true;
   }
   const layer = { onBack };
@@ -113,7 +134,10 @@ export function holdBack(onBack) {
 // For tests: forget every layer and stop listening, so each test starts with
 // the module as a fresh page would have it.
 export function resetHistoryGuard() {
-  if (installed) window.removeEventListener('popstate', onPopState);
+  if (installed) {
+    window.removeEventListener('popstate', onPopState);
+    window.navigation?.removeEventListener?.('navigate', onNavigate);
+  }
   installed = false;
   layers.length = 0;
   guarded = false;

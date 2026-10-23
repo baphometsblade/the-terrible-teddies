@@ -265,6 +265,35 @@ test.describe('the system Back', () => {
     await expect(battle(page)).toBeVisible(SLOW);
   });
 
+  // The Shop starts a Stripe checkout with the Shop still open, so the guard
+  // was the current entry and the checkout page went in after it. Back from
+  // the checkout then landed on the leftover guard, and only a second Back
+  // (and a second boot of the game) got past it.
+  test('a checkout started from the open Shop leaves no guard behind it', async ({ page }) => {
+    const start = page.url();
+    const checkout = 'https://checkout.stripe.test/c/pay/cs_test_back';
+    await page.route('**/functions/v1/create-checkout-session', (route) => route.fulfill({ json: { url: checkout } }));
+    await page.route('https://checkout.stripe.test/**', (route) => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Checkout</title><h1>Checkout</h1>' }));
+    const before = await page.evaluate(() => window.history.length);
+    await page.getByRole('button', { name: 'Shop', exact: true }).click();
+    const shop = page.getByRole('dialog', { name: 'Shop' });
+    await expect(shop).toBeVisible(SLOW);
+    await shop.getByRole('button', { name: 'Buy Gems' }).click();
+    await shop.getByRole('button', { name: 'Buy 50 gems for $0.99' }).click();
+    await page.waitForURL(checkout, SLOW);
+    // The checkout took the guard's place: one entry more than the menu had.
+    expect(await page.evaluate(() => window.history.length)).toBe(before + 1);
+    // Back from the checkout: the menu, Shop closed, on a plain entry.
+    await page.goBack();
+    await expect(battle(page)).toBeVisible(SLOW);
+    expect(page.url()).toBe(start);
+    expect(await page.evaluate(() => window.history.state?.tt ?? null)).toBe(null);
+    await expect(shop).toHaveCount(0);
+    // And Back once more leaves, as it would have with no guard at all.
+    await page.goBack();
+    await expect.poll(() => page.url()).toBe('about:blank');
+  });
+
   test('piles up no history: after twenty dialogs, Back on the menu leaves the game', async ({ page }) => {
     const before = await page.evaluate(() => window.history.length);
     const shop = page.getByRole('dialog', { name: 'Shop' });

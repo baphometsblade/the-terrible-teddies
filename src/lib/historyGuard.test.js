@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { holdBack, resetHistoryGuard } from './historyGuard';
 
 // What the player's Back does to the page, and what the page does to the
@@ -138,5 +138,64 @@ describe('holdBack', () => {
     release();
     expect(back).not.toHaveBeenCalled();
     back.mockRestore();
+  });
+});
+
+// Leaving the page with the guard current: the Shop's Stripe checkout is a
+// plain `location.href = url` while the Shop is open. Pushed after the
+// guard, the checkout left it in the history, and Back from the checkout
+// needed one more press (reloading the game) to get past it.
+describe('leaving the page', () => {
+  let navigation;
+  // A navigation as the Navigation API reports it.
+  const leave = (url, { cancelable = true, ...more } = {}) => {
+    const e = new Event('navigate', { cancelable });
+    Object.assign(e, {
+      navigationType: 'push',
+      destination: { url, sameDocument: false },
+      downloadRequest: null,
+      formData: null,
+      ...more,
+    });
+    navigation.dispatchEvent(e);
+    return e;
+  };
+  beforeEach(() => {
+    navigation = new EventTarget();
+    navigation.navigate = vi.fn(() => ({ committed: Promise.resolve(), finished: Promise.resolve() }));
+    window.navigation = navigation;
+  });
+  afterEach(() => {
+    resetHistoryGuard();
+    delete window.navigation;
+  });
+
+  it('replaces the guard with the page it goes to, rather than leaving it behind', async () => {
+    const release = holdBack(() => {});
+    const e = leave('https://checkout.stripe.com/c/pay/cs_test_1');
+    expect(e.defaultPrevented).toBe(true);
+    expect(navigation.navigate).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/cs_test_1', { history: 'replace' });
+    release();
+    await settle();
+  });
+
+  it('leaves every other navigation alone', async () => {
+    const release = holdBack(() => {});
+    const untouched = [
+      leave('https://example.com/', { navigationType: 'replace' }),
+      leave('https://example.com/', { navigationType: 'reload' }),
+      leave('https://example.com/', { navigationType: 'traverse', cancelable: false }),
+      leave('http://localhost/#top', { destination: { url: 'http://localhost/#top', sameDocument: true } }),
+      leave('https://example.com/card.png', { downloadRequest: 'card.png' }),
+      leave('https://example.com/form', { formData: {} }),
+      leave('mailto:support@example.com'),
+    ];
+    for (const e of untouched) expect(e.defaultPrevented).toBe(false);
+    expect(navigation.navigate).not.toHaveBeenCalled();
+    release();
+    await settle();
+    // And with nothing open there is no guard to replace.
+    expect(leave('https://checkout.stripe.com/c/pay/cs_test_2').defaultPrevented).toBe(false);
+    expect(navigation.navigate).not.toHaveBeenCalled();
   });
 });
