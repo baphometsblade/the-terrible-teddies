@@ -173,13 +173,15 @@ test('an epic or legendary holds a beat before it turns', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Next 5' }).click();
   await expect(turnButton(dialog, 6)).toBeVisible(SLOW);
   for (let n = 6; n <= 9; n++) await tap(dialog, n);
+  // Card 9 may be an epic in its own beat: let it land first.
+  await expect(page.locator('[data-reveal-card="down"]')).toHaveCount(1, SLOW);
 
   // The legendary, named by its light for a screen reader.
   const legend = dialog.getByRole('button', { name: 'Turn over card 10, glowing gold' });
   await expect(legend).toBeVisible(SLOW);
   await legend.click();
   // Held: still face down, its light charged, its control spent.
-  await expect(page.locator('[data-charged]')).toHaveCount(1);
+  await expect(page.locator('[data-tease="legendary"]')).toHaveAttribute('data-charged', '');
   await expect(legend).toHaveAttribute('aria-disabled', 'true');
   await expect(page.locator('[data-reveal-card]').last()).toHaveAttribute('data-reveal-card', 'down');
   // ...and then it turns.
