@@ -316,13 +316,25 @@ function App() {
     window.history.replaceState({}, '', window.location.pathname);
   }, [session]);
 
+  // Daily Rewards opens by itself once per player per day in a tab, claimed or
+  // not. The reward waits for a tap now, so closing the panel unclaimed leaves
+  // lastLoginDate behind, and this effect re-runs whenever the session object
+  // changes, which supabase-js replaces on every return to the tab and every
+  // hourly token refresh. Gated on lastLoginDate alone, the panel reopened over
+  // whatever the player was doing, a battle or the tutorial included. After
+  // the first time, the menu's glowing Daily rewards button carries it.
+  const dailyAutoOpened = useRef(null);
   useEffect(() => {
     const today = new Date().toDateString();
+    const key = `${session?.user?.id}|${today}`;
     // Don't auto-open daily rewards over an in-progress purchase verification;
     // stacked dialogs would fight for the keyboard. It opens after the buyer
     // dismisses the payment screen (purchaseSessionId clears → effect re-runs).
-    if (session && lastLoginDate !== today && !purchaseSessionId) {
-      const timer = setTimeout(() => setShowDailyRewards(true), 500);
+    if (session && lastLoginDate !== today && !purchaseSessionId && dailyAutoOpened.current !== key) {
+      const timer = setTimeout(() => {
+        dailyAutoOpened.current = key;
+        setShowDailyRewards(true);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [session, lastLoginDate, purchaseSessionId]);

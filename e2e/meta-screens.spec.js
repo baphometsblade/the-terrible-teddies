@@ -121,6 +121,36 @@ test.describe('daily rewards', () => {
     await expect(dialog).toContainText(/Next reward in \d+h \d+m/);
     await expect(dialog.getByRole('button', { name: 'Claim', exact: true })).toHaveCount(0);
   });
+
+  // Once a reward could be left unclaimed, App's auto-open fired again on
+  // every new session object, and supabase-js makes one each time the tab
+  // comes back into view (and on every token refresh): the panel landed on
+  // top of a battle in progress. It opens by itself once a day, and after
+  // that the menu's glow carries the reward.
+  test('opens by itself once: a tab return does not bring it back over a battle', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await bootToMainMenu(page);
+    const yesterday = await page.evaluate(() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toDateString(); });
+    await page.addInitScript((y) => {
+      const stored = JSON.parse(localStorage.getItem('terrible-teddies-storage'));
+      Object.assign(stored.state, { lastLoginDate: y, consecutiveLogins: 1 });
+      localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+    }, yesterday);
+    await page.reload();
+    const dialog = page.getByRole('dialog', { name: 'Daily Rewards' });
+    await expect(dialog).toBeVisible(SLOW);
+    await dialog.getByRole('button', { name: 'Close daily rewards' }).click();
+    await expect(dialog).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Battle', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-screen', 'battle', SLOW);
+    // The tab comes back into view. supabase-js listens on document.
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange', { bubbles: true })));
+    // The auto-open waits 500ms after the session lands; give it well past that.
+    await page.waitForTimeout(2000);
+    await expect(dialog).toHaveCount(0);
+    await expect(page.locator('html')).toHaveAttribute('data-screen', 'battle');
+  });
 });
 
 test.describe('challenge claims', () => {
