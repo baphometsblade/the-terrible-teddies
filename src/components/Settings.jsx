@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings as SettingsIcon, X, Volume2, Sparkles, Smile, Meh, Angry,
-  LogOut, Trash2, TriangleAlert,
+  LogOut, Trash2, TriangleAlert, Minus, Check,
 } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { useGameStore } from '../stores/gameStore';
@@ -11,6 +11,7 @@ import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion } from '@/components/ui/game-chrome';
+import { describeReset } from '@/lib/resetSummary';
 
 // Shape of every full-width action here. Plain <button>s, not the shadcn
 // Button: its bg-primary is a utility and would beat a component-layer
@@ -86,14 +87,50 @@ const DifficultyButton = ({ value, label, description, icon: Icon, difficulty, s
   );
 };
 
+// The reset's two lists, deleted then kept (see describeReset). Inside the
+// red confirmation panel; every line is text on that panel's dark red, with
+// its own tone (red-100 / red-200 for what goes, emerald-200 for what stays).
+const ResetSummary = ({ summary }) => (
+  <div className="grid gap-3 text-sm leading-snug">
+    <section aria-labelledby="reset-deletes">
+      <h4 id="reset-deletes" className="label-caps mb-1.5 text-red-300">Deleted</h4>
+      <ul className="space-y-1">
+        {summary.deletes.map(({ label, after }) => (
+          <li key={label} className="flex gap-2">
+            <Minus aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-red-300" strokeWidth={2.4} />
+            <span className="min-w-0 text-red-100">
+              {label}
+              {after && <span className="text-red-200">{` — ${after}`}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+    <section aria-labelledby="reset-keeps">
+      <h4 id="reset-keeps" className="label-caps mb-1.5 text-emerald-300">Kept</h4>
+      <ul className="space-y-1">
+        {summary.keeps.map((label) => (
+          <li key={label} className="flex gap-2">
+            <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" strokeWidth={2.6} />
+            <span className="min-w-0 font-semibold text-emerald-100">{label}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs text-red-100">{summary.note}</p>
+    </section>
+  </div>
+);
+
 const Settings = ({ onClose }) => {
+  // The whole store: the reset confirmation is worded from the live save.
+  const store = useGameStore();
   const {
     soundEnabled, setSoundEnabled,
 
     animationsEnabled, setAnimationsEnabled,
     difficulty, setDifficulty,
     resetProgress,
-  } = useGameStore();
+  } = store;
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState('');
@@ -260,16 +297,24 @@ const Settings = ({ onClose }) => {
               </button>
             ) : (
               <div className="rounded-xl bg-red-950/40 p-4 ring-1 ring-inset ring-red-400/40">
-                <p className="mb-3 flex gap-2 text-sm text-red-200">
-                  <TriangleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.2} />
-                  <span>This will delete ALL progress. Type &quot;RESET&quot; to confirm.</span>
+                {/* What goes and what stays, in this player's numbers. It
+                    said only "This will delete ALL progress", which was
+                    wrong both ways: it hid that bought gems were deleted
+                    (they no longer are), and it now keeps several things. */}
+                <p className="mb-3 flex gap-2 text-sm font-semibold text-red-100">
+                  <TriangleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-red-300" strokeWidth={2.2} />
+                  <span>Resetting can&apos;t be undone.</span>
+                </p>
+                <ResetSummary summary={describeReset(store)} />
+                <p className="mb-2 mt-4 text-sm text-red-100">
+                  Type &quot;RESET&quot; to confirm.
                 </p>
                 <input
                   type="text"
                   value={resetConfirmText}
                   onChange={(e) => setResetConfirmText(e.target.value)}
                   placeholder="Type RESET"
-                  aria-label="Type RESET to confirm deleting all progress"
+                  aria-label="Type RESET to confirm the reset"
                   autoFocus
                   className="mb-3 h-11 w-full rounded-xl bg-night-950/80 px-3 font-semibold tracking-[0.12em] text-white ring-1 ring-inset ring-red-400/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] placeholder:font-normal placeholder:tracking-normal placeholder:text-plush-300 focus:outline-none focus:ring-2 focus:ring-red-300"
                 />

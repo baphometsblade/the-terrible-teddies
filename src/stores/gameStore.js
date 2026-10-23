@@ -303,7 +303,12 @@ const initialState = {
 
 /** What a fresh save starts with, for the reset confirmation to compare against. */
 export const STARTING_GEMS = initialState.gems;
-export const STARTER_CARD_COUNT = initialState.ownedCards.length;
+export const FRESH_START = {
+  gems: initialState.gems,
+  coins: initialState.coins,
+  cards: initialState.ownedCards.length,
+  cardPacks: initialState.cardPacks,
+};
 
 /**
  * What "Reset All Progress" carries over: everything the player paid for, and
