@@ -279,12 +279,17 @@ function App() {
             <span className="font-display text-lg font-extrabold leading-none text-brass-200">{levelUp.level}</span>
           </Medallion>
         ),
+        // Inline text, with the amount and its coin bound together: as two
+        // flex items, a wrap at 320 left the coin alone at the far edge.
         description: (
-          <span className="inline-flex items-center gap-1">
-            Level-up bonus: {bonus}
-            <Coins className="h-4 w-4 text-brass-300" aria-hidden="true" strokeWidth={2.4} />
-            <span className="sr-only">coins</span>
-          </span>
+          <>
+            Level-up bonus:{' '}
+            <span className="whitespace-nowrap">
+              {bonus}
+              <Coins className="ml-0.5 inline h-4 w-4 align-[-3px] text-brass-300" aria-hidden="true" strokeWidth={2.4} />
+              <span className="sr-only"> coins</span>
+            </span>
+          </>
         ),
         duration: readingTime(title, `Level-up bonus: ${bonus} coins`),
       };
