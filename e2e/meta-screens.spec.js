@@ -1,4 +1,6 @@
 import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { getDailyChallenges } from '../src/stores/challenges.js';
 
 // The progression and information screens around the menu: the tutorial,
@@ -122,6 +124,30 @@ test.describe('daily rewards', () => {
     await expect(dialog.getByRole('button', { name: 'Claim', exact: true })).toHaveCount(0);
   });
 
+  // The reopened panel marks the next day. Its chip said "Tomorrow", which
+  // ran 5px past both sides of a day's tile at 320 and 3px at 640, where the
+  // row goes eight across. Day 2 claimed puts it on the narrow Day 3.
+  for (const viewport of [{ width: 320, height: 640 }, { width: 640, height: 800 }]) {
+    test(`every day's contents stay inside its tile, reopened, at ${viewport.width}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await bootToMainMenu(page);
+      await seed(page, { consecutiveLogins: 2 });
+      await page.getByRole('button', { name: 'Daily rewards', exact: true }).click();
+      const dialog = page.getByRole('dialog', { name: 'Daily Rewards' });
+      await expect(dialog.locator('[data-day="3"]')).toHaveAttribute('data-look', 'tomorrow', SLOW);
+      const spills = await dialog.locator('[data-day]').evaluateAll((tiles) => tiles.flatMap((tile) => {
+        const t = tile.getBoundingClientRect();
+        return [...tile.querySelectorAll('*')]
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.width > 1 && (r.left < t.left - 0.5 || r.right > t.right + 0.5);
+          })
+          .map((el) => `day ${tile.dataset.day}: "${el.textContent.trim()}"`);
+      }));
+      expect(spills).toEqual([]);
+    });
+  }
+
   // Once a reward could be left unclaimed, App's auto-open fired again on
   // every new session object, and supabase-js makes one each time the tab
   // comes back into view (and on every token refresh): the panel landed on
@@ -198,30 +224,86 @@ test.describe('challenge claims', () => {
   }
 });
 
+// The achievement toast with the longest line, worded as App words it.
+const LONGEST_ACHIEVEMENT_TOAST = (() => {
+  const src = readFileSync(resolve(process.cwd(), 'src/stores/gameStore.js'), 'utf8');
+  const table = src.slice(src.indexOf('export const ACHIEVEMENTS = ['));
+  return [...table.slice(0, table.indexOf('];')).matchAll(/name: '([^']+)'.*?reward: (\d+), icon: '([^']+)'/g)]
+    .map(([, name, reward, icon]) => ({ title: `${icon} Achievement Unlocked!`, description: `${name} — +${Number(reward).toLocaleString('en-US')} 🪙` }))
+    .sort((a, b) => b.description.length - a.description.length)[0];
+})();
+
+test.describe('a toast over a dialog', () => {
+  // The tutorial's step bar is the highest control under any dialog's
+  // header, 77px down at 320. The longest achievement toast takes three
+  // lines there and reached 9px into it; set tighter, it ends above it.
+  // The toast is raised through the app's own toast module, which only the
+  // dev server serves at its source path.
+  test.skip(!!process.env.E2E_PREVIEW, 'imports the toast module from /src');
+  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
+    test(`the longest achievement toast clears the tutorial's controls at ${viewport.width}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await bootToMainMenu(page);
+      await page.getByRole('button', { name: 'How to play' }).click();
+      const dialog = page.getByRole('dialog', { name: 'How to play' });
+      await expect(dialog.getByText('Step 1 of 9')).toBeVisible(SLOW);
+      await page.evaluate(async (t) => {
+        const { toast } = await import('/src/components/ui/use-toast.js');
+        toast({ ...t, duration: 60000 });
+      }, LONGEST_ACHIEVEMENT_TOAST);
+      const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Achievement Unlocked!' });
+      await expect(toast).toBeVisible();
+      expect(await controlsUnder(dialog, await toast.boundingBox()), 'the toast covers dialog controls').toEqual([]);
+    });
+  }
+});
+
+// Every achievement id, read from the store's table so a new one is counted.
+const ACHIEVEMENT_IDS = (() => {
+  const src = readFileSync(resolve(process.cwd(), 'src/stores/gameStore.js'), 'utf8');
+  const table = src.slice(src.indexOf('export const ACHIEVEMENTS = ['));
+  return [...table.slice(0, table.indexOf('];')).matchAll(/id: '([^']+)'/g)].map((m) => m[1]);
+})();
+
 test.describe('player stats', () => {
   // "Achievements (0/16)" wrapped to two lines at 390 (and below), so its tab
   // stood taller than Statistics and off-centre. Each tab is one line now,
-  // the count in the pill Challenges' tabs use.
+  // the count in the pill Challenges' tabs use. A two-digit count ("10/16")
+  // at 320 then needed a pixel more than the switch had, and the pill sat on
+  // its rim, so the full count is checked against the well too.
   for (const width of [320, 390]) {
-    test(`each tab is one line, the same height as the other, at ${width}`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 800 });
-      await bootToMainMenu(page);
-      await page.getByLabel('View player stats').click();
-      const dialog = page.getByRole('dialog', { name: 'Player stats' });
-      await expect(dialog).toBeVisible(SLOW);
-      const achievements = dialog.getByRole('button', { name: /^Achievements\s*\(0 of \d+ unlocked\)$/ });
-      await expect(achievements).toBeVisible();
-      const tabs = await dialog.locator('[data-tab]').evaluateAll((els) => els.map((b) => {
-        const lines = new Set([...b.children]
-          .filter((c) => c.getBoundingClientRect().width > 1)
-          .map((c) => { const r = c.getBoundingClientRect(); return Math.round(r.top + r.height / 2); }));
-        return { height: Math.round(b.getBoundingClientRect().height), lines: lines.size, overflows: b.scrollWidth > b.clientWidth };
-      }));
-      expect(tabs).toHaveLength(2);
-      expect(tabs.map((t) => t.lines), 'a tab wrapped onto a second line').toEqual([1, 1]);
-      expect(tabs[0].height).toBe(tabs[1].height);
-      expect(tabs.some((t) => t.overflows), 'a tab runs out of its segment').toBe(false);
-      await expect(achievements.locator('[data-count]')).toHaveCSS('border-radius', /px/);
-    });
+    for (const done of [0, ACHIEVEMENT_IDS.length]) {
+      test(`each tab is one line, the same height as the other, inside the switch, at ${width} with ${done} unlocked`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 800 });
+        await bootToMainMenu(page);
+        if (done) await seed(page, { completedAchievements: ACHIEVEMENT_IDS.slice(0, done) });
+        await page.getByLabel('View player stats').click();
+        const dialog = page.getByRole('dialog', { name: 'Player stats' });
+        await expect(dialog).toBeVisible(SLOW);
+        const achievements = dialog.getByRole('button', { name: new RegExp(`^Achievements\\s*\\(${done} of \\d+ unlocked\\)$`) });
+        await expect(achievements).toBeVisible();
+        const tabs = await dialog.locator('[data-tab]').evaluateAll((els) => els.map((b) => {
+          const lines = new Set([...b.children]
+            .filter((c) => c.getBoundingClientRect().width > 1)
+            .map((c) => { const r = c.getBoundingClientRect(); return Math.round(r.top + r.height / 2); }));
+          return { height: Math.round(b.getBoundingClientRect().height), lines: lines.size, overflows: b.scrollWidth > b.clientWidth };
+        }));
+        expect(tabs).toHaveLength(2);
+        expect(tabs.map((t) => t.lines), 'a tab wrapped onto a second line').toEqual([1, 1]);
+        expect(tabs[0].height).toBe(tabs[1].height);
+        expect(tabs.some((t) => t.overflows), 'a tab runs out of its segment').toBe(false);
+        // The well's content box holds both tabs: its padding is the rim.
+        const fit = await dialog.locator('[data-tab]').first().evaluate((tab) => {
+          const well = tab.parentElement;
+          const w = well.getBoundingClientRect();
+          const pad = parseFloat(getComputedStyle(well).paddingRight);
+          const last = well.lastElementChild.getBoundingClientRect();
+          return { lastRight: last.right, contentRight: w.right - pad, scrolls: well.scrollWidth > well.clientWidth };
+        });
+        expect(fit.lastRight, 'a tab runs onto the switch\'s rim').toBeLessThanOrEqual(fit.contentRight + 0.5);
+        expect(fit.scrolls).toBe(false);
+        await expect(achievements.locator('[data-count]')).toHaveCSS('border-radius', /px/);
+      });
+    }
   }
 });

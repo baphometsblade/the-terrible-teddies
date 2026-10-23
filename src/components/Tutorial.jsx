@@ -49,7 +49,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "The Cast",
-    content: "Action Cards — your goons. Attack {attack} is the red badge, bottom left; HP {hp} is the blue one, bottom right, and it's how many beatings they can absorb before going back to fluff. Fresh off the barstool they're Warming Up — no swinging until your next turn. Same rule for Chuck's lot.\nTrap Cards — spring-loaded regret for whoever swings at you\nSpecial Cards — back-alley healing and questionable card advantage",
+    content: "Action Cards — your goons. Attack {attack} is the red badge, bottom left; HP {hp} is the blue one, bottom right (it goes red once they're hurt), and it's how many beatings they can absorb before going back to fluff. Fresh off the barstool they're Warming Up — no swinging until your next turn. Same rule for Chuck's lot.\nTrap Cards — spring-loaded regret for whoever swings at you\nSpecial Cards — back-alley healing and questionable card advantage",
     icon: Layers,
     list: true,
     icons: [Swords, Bomb, Sparkles],

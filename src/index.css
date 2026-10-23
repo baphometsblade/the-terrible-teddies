@@ -715,9 +715,9 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   pointer-events: none;
   padding: 0.5rem 1.75rem 0.5rem 0.875rem;
 }
-/* On a phone the type steps down a little, so an achievement's two lines
-   stay two lines and the toast ends above the first control under a header
-   (the tutorial's step bar, 77px down at 320). */
+/* On a phone the type steps down a little, so the toast ends above the first
+   control under a dialog's header: the tutorial's step bar, 77px down at 320,
+   is the highest. From 360 an achievement's description fits on one line. */
 @media (max-width: 639.98px) {
   :root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-title {
     font-size: 0.9375rem;
@@ -726,6 +726,24 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   :root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-description {
     font-size: 0.8125rem;
     line-height: 1.125rem;
+  }
+}
+/* Below 360 it takes two ("Complete Collection — / +10,000"), and at the
+   spacing above the toast reached 9px into the step bar. Set tighter, a title
+   and two lines of description end 3px above it. */
+@media (max-width: 359.98px) {
+  :root[data-dialog]:not([data-screen="battle"]) .toast-viewport {
+    padding-top: 0.375rem;
+  }
+  :root[data-dialog]:not([data-screen="battle"]) .toast-viewport > li {
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+  }
+  :root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-title {
+    line-height: 1.125rem;
+  }
+  :root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-description {
+    line-height: 1rem;
   }
 }
 @media (min-width: 640px) {

@@ -267,7 +267,10 @@ const PlayerStats = ({ onClose }) => {
               under the label in parentheses (at 390 as well as below 360),
               which made the tab taller than its neighbour and off-centre. It
               is the pill Challenges' tabs use now. The icons join from sm
-              up, where there is room. */}
+              up, where there is room. Below 360 the tabs and the pill pad
+              tighter: with a two-digit count ("10/16") the two tabs' one-line
+              widths came to a pixel more than the well, and the pill sat on
+              its rim. */}
           <div className="seg-well flex gap-1">
             {TABS.map((tab) => {
               const on = activeTab === tab.id;
@@ -278,7 +281,7 @@ const PlayerStats = ({ onClose }) => {
                   onClick={() => setActiveTab(tab.id)}
                   aria-pressed={on}
                   data-tab={tab.id}
-                  className={`flex min-h-9 min-w-fit flex-1 items-center justify-center gap-x-1 whitespace-nowrap rounded-lg px-1.5 py-1.5 text-[13px] font-semibold leading-tight transition-colors sm:gap-x-2 sm:px-2 sm:text-sm ${FOCUS_OUTLINE} ${
+                  className={`flex min-h-9 min-w-fit flex-1 items-center justify-center gap-x-1 whitespace-nowrap rounded-lg px-1 py-1.5 min-[360px]:px-1.5 text-[13px] font-semibold leading-tight transition-colors sm:gap-x-2 sm:px-2 sm:text-sm ${FOCUS_OUTLINE} ${
                     on ? 'seg-on' : 'seg-off'
                   }`}
                 >
@@ -289,7 +292,7 @@ const PlayerStats = ({ onClose }) => {
                       <span
                         aria-hidden="true"
                         data-count=""
-                        className={`rounded-full px-2 py-0.5 text-[11px] leading-tight tabular-nums ${
+                        className={`rounded-full px-1.5 py-0.5 text-[11px] leading-tight tabular-nums min-[360px]:px-2 ${
                           on ? 'bg-brass-400/15 text-brass-200' : 'bg-white/5 text-plush-300'}`}
                       >
                         {tab.done}/{tab.total}

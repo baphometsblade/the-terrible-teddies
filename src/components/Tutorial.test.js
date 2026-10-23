@@ -86,8 +86,8 @@ describe('the tutorial describes the card TeddyCard actually draws', () => {
   const card = readFileSync(resolve(process.cwd(), 'src/components/TeddyCard.jsx'), 'utf8');
   const tone = (src, name) => src.match(new RegExp(`const ${name} = '([^']+)'`))?.[1];
   const badge = (title) => {
-    const m = card.match(new RegExp(`title="${title}" tone=\\{(?:wounded \\? \\w+ : )?(\\w+)\\} className="(left|right)-`));
-    return m ? { tone: tone(card, m[1]), side: m[2] } : null;
+    const m = card.match(new RegExp(`title="${title}" tone=\\{(wounded \\? \\w+ : )?(\\w+)\\} className="(left|right)-`));
+    return m ? { tone: tone(card, m[2]), side: m[3], wounds: !!m[1] } : null;
   };
   const copy = [...tutorialSrc.matchAll(/content: "([^"]*)"/g)].map((m) => m[1]).join(' ');
 
@@ -98,6 +98,10 @@ describe('the tutorial describes the card TeddyCard actually draws', () => {
     expect(hp, 'could not find the HP badge in TeddyCard — parser drift?').toBeTruthy();
     expect(copy).toMatch(new RegExp(`Attack \\{attack\\}[^.;]*bottom ${attack.side}`));
     expect(copy).toMatch(new RegExp(`HP \\{hp\\}[^.;]*bottom ${hp.side}`));
+    // On the table a hurt teddy's HP badge turns red, so a board can show
+    // two red badges on one card; the copy that calls HP "the blue one" has
+    // to say so.
+    if (hp.wounds) expect(copy).toMatch(/HP \{hp\}[^.;]*\bred\b[^.;]*\bhurt\b/);
     // The inline twins wear the badges' own faces.
     expect(tone(tutorialSrc, 'ATTACK_DISC')).toBe(attack.tone);
     expect(tone(tutorialSrc, 'HP_DISC')).toBe(hp.tone);
