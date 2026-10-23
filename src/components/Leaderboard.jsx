@@ -9,25 +9,54 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion } from '@/components/ui/game-chrome';
 
-// Calculate trophies based on player stats
-const calculateTrophies = (wins, level, bestStreak) => {
+// Trophies from a player's stats. The server computes the same thing
+// (public.player_trophies in 20261023000000_cloud_saves_and_rank.sql) to
+// order the board and rank the player; both are pinned to one fixture table,
+// in Leaderboard.test.jsx and scripts/check-migrations.sh. Change one, change
+// both.
+export const calculateTrophies = (wins, level, bestStreak) => {
   return Math.floor((wins || 0) * 8 + (level || 1) * 10 + (bestStreak || 0) * 5);
 };
 
-// Calculate level from experience
-const calculateLevel = (experience) => {
-  return Math.floor((experience || 0) / 100) + 1;
+// The level the board shows for a player's experience (never below 1).
+export const calculateLevel = (experience) => {
+  return Math.floor(Math.max(0, experience || 0) / 100) + 1;
 };
 
-// How many rows the board asks for. The view behind it returns players by
-// wins (then experience), and they are re-ranked here by trophies, so these
-// are not "the top 50" in trophies.
+// How many rows the board asks for.
 export const BOARD_SIZE = 50;
 
+// The board in trophy order with each row's rank among every player, and the
+// caller's own row marked (leaderboard_trophies), beside the older view the
+// released client reads (leaderboard: wins order, no rank). The new one is
+// used wherever the backend has it; without it the board is what wave 3 made
+// of the old one.
+const RANKED_COLUMNS = 'username, wins, losses, experience, best_win_streak, trophies, rank, is_me';
+const LEGACY_COLUMNS = 'username, wins, losses, experience, best_win_streak';
+
+// PostgREST's "no such view / function": the migration has not landed.
+const isMissing = ({ error, status }) =>
+  status === 404 || ['PGRST202', 'PGRST205', '42883', '42P01'].includes(String(error?.code || ''));
+
 /**
- * The player's place on the board in hand: a number where the rows support
- * one, and "50+" where they cannot. `me` is the player's own trophies, wins
- * and leaderboard experience.
+ * The player's place from a board in trophy order (leaderboard_trophies),
+ * for when get_my_rank cannot say: a number while every player with more
+ * trophies is among the rows (a short board is every player; a full one holds
+ * everyone above its last row), "50+" below a full board. The player's own
+ * row is left out of the count, since its stats may lag their local ones.
+ */
+export const placeOnTrophyBoard = (rows, trophies) => {
+  const above = rows.filter((p) => !p.isMe && p.trophies > trophies).length;
+  if (rows.length < BOARD_SIZE) return above + 1;
+  const last = rows[rows.length - 1];
+  return trophies >= last.trophies ? above + 1 : `${BOARD_SIZE}+`;
+};
+
+/**
+ * The player's place on the OLD board (leaderboard, in wins order): a number
+ * where the rows support one, and "50+" where they cannot. `me` is the
+ * player's own trophies, wins and leaderboard experience. Used only on a
+ * backend without leaderboard_trophies and get_my_rank.
  *
  * Counting the rows with more trophies and adding one is a rank only while
  * the player is among the rows. A short board is every player, so it always
@@ -35,8 +64,8 @@ export const BOARD_SIZE = 50;
  * own order would have returned them: more wins than its last row, or as
  * many and at least its experience. Otherwise the count printed #51 for
  * everyone below every row, and #1 for a player with fewer wins than all
- * fifty who out-trophied them on level and best streak. A server-side rank
- * is what would turn "50+" into a number.
+ * fifty who out-trophied them on level and best streak. get_my_rank, where
+ * the backend has it, is what turns "50+" into a number.
  */
 export const placeOnBoard = (rows, me) => {
   const above = rows.filter((p) => p.trophies > me.trophies).length;
@@ -121,12 +150,21 @@ const PODIUM = {
 
 // Visual order on the podium is 2-1-3; DOM order stays 1-2-3, so a screen
 // reader reads the ranking in rank order. Pinned columns rather than `order`,
-// so a podium of one or two still puts first place in the middle.
+// so a podium of one or two still puts first place in the middle. Columns go
+// by place on the board (1st, 2nd, 3rd row); the metal by rank, so two
+// players tied for first both stand on gold.
 const PODIUM_COLUMN = { 1: 'col-start-2 row-start-1', 2: 'col-start-1 row-start-1', 3: 'col-start-3 row-start-1' };
 
 // Rows stagger in, but capped: at 50ms a row, fifty rows had the last one
 // arriving two and a half seconds after the dialog opened.
-const rowDelay = (rank) => Math.min(typeof rank === 'number' ? rank : 0, 12) * 0.04;
+const rowDelay = (place) => Math.min(typeof place === 'number' ? place : 0, 12) * 0.04;
+
+// The badge on the player's own row, in the list and on the podium.
+// night-950 on brass-400: 8.9:1 (a11y.spec.js waits for the row's fade
+// before sampling it).
+const YouBadge = ({ className = '' }) => (
+  <span className={`shrink-0 rounded bg-brass-400 px-1.5 py-[3px] text-[10px] font-extrabold leading-none tracking-wider text-night-950 ${className}`}>YOU</span>
+);
 
 const Trophies = ({ value, className = 'text-white' }) => (
   <span className={`inline-flex shrink-0 items-center gap-1.5 font-display font-extrabold tabular-nums ${className}`}>
@@ -147,13 +185,13 @@ const Streak = ({ streak }) => (
 // Module scope, so a re-render of the dialog updates the places and rows in
 // place instead of remounting them (which replayed every entrance animation).
 const PodiumPlace = ({ player }) => {
-  const p = PODIUM[player.rank];
+  const p = PODIUM[player.rank] ?? PODIUM[player.place];
   return (
-    <li className={`flex min-w-0 flex-col items-center ${PODIUM_COLUMN[player.rank]}`}>
+    <li className={`flex min-w-0 flex-col items-center ${PODIUM_COLUMN[player.place]}`}>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 + rowDelay(player.rank), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ delay: 0.1 + rowDelay(player.place), duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         className="flex w-full min-w-0 flex-col items-center text-center"
       >
         {player.rank === 1 && (
@@ -173,6 +211,7 @@ const PodiumPlace = ({ player }) => {
         <div className="mt-2 line-clamp-3 w-full break-words font-display text-[13px] font-bold leading-tight text-white min-[360px]:text-sm sm:text-base">
           <BreakableName name={player.name} />
         </div>
+        {player.isMe && <YouBadge className="mt-1" />}
         <Trophies value={player.trophies} className={`mt-1 text-sm ${p.tone}`} />
         {/* Stacked on a phone, where a podium column is under 100px wide. */}
         <div className="mt-0.5 flex flex-col items-center text-[11px] leading-snug text-plush-300 sm:flex-row sm:gap-1">
@@ -200,7 +239,7 @@ const LeaderboardRow = ({ player, isPlayer = false }) => (
   <motion.div
     initial={{ opacity: 0, y: 8 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: rowDelay(player.rank), duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+    transition={{ delay: rowDelay(player.place ?? player.rank), duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
     className={`relative flex items-center gap-2.5 rounded-xl px-2.5 py-2.5 sm:gap-3 sm:px-3 ${isPlayer
       ? 'trim-brass bg-brass-400/[0.08] shadow-[0_0_28px_-10px_rgba(251,191,36,0.55)]'
       : 'bg-white/[0.03] ring-1 ring-inset ring-white/[0.06] transition-colors hover:bg-white/[0.06]'}`}
@@ -223,9 +262,7 @@ const LeaderboardRow = ({ player, isPlayer = false }) => (
         <span className={`truncate font-display font-bold leading-tight ${isPlayer ? 'text-brass-200' : 'text-plush-100'}`}>
           {player.name}
         </span>
-        {/* night-950 on brass-400: 8.9:1 (a11y.spec.js waits for the row's
-            fade before sampling it). */}
-        {isPlayer && <span className="shrink-0 rounded bg-brass-400 px-1.5 py-[3px] text-[10px] font-extrabold leading-none tracking-wider text-night-950">YOU</span>}
+        {isPlayer && <YouBadge />}
       </div>
       {/* The streak rides on the meta line, not the name's: beside the name
           and the YOU badge it squeezed a 320px row's name down to two
@@ -251,9 +288,32 @@ const StatePanel = ({ tone = 'neutral', children }) => (
   </div>
 );
 
+// A row of either view, in the shape the board draws. `place` is its position
+// on the board; `rank` its place among every player (shared on a tie), which
+// only the trophy view knows: on the old one the rows are re-ranked here, and
+// rank is the position.
+const toRow = (player, index) => {
+  const level = calculateLevel(player.experience);
+  return {
+    place: index + 1,
+    rank: typeof player.rank === 'number' ? player.rank : index + 1,
+    name: player.username || 'Unknown Player',
+    level,
+    wins: player.wins || 0,
+    experience: player.experience || 0,
+    streak: player.best_win_streak || 0,
+    trophies: typeof player.trophies === 'number' ? player.trophies : calculateTrophies(player.wins, level, player.best_win_streak),
+    isMe: player.is_me === true,
+  };
+};
+
 const Leaderboard = ({ onClose }) => {
   const { playerName, level, totalWins, bestWinStreak, getLeaderboardExperience } = useGameStore();
   const [leaderboardData, setLeaderboardData] = useState([]);
+  // Whether the rows came from the trophy view, ranked by the server.
+  const [ranked, setRanked] = useState(false);
+  // The player's own place from get_my_rank, or null where it cannot say.
+  const [myRank, setMyRank] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const dialogRef = useDialog(onClose);
@@ -267,37 +327,46 @@ const Leaderboard = ({ onClose }) => {
     setError(null);
 
     try {
-        // Read from the leaderboard view, which exposes only ranking columns
-        // (no coins balance, no user_id) across all players.
-        const { data, error: fetchError } = await supabase
-          .from('leaderboard')
-          .select('username, wins, losses, experience, best_win_streak')
-          .limit(BOARD_SIZE);
+        // The trophy board and the player's rank, together. Both read a view
+        // or a function that exposes only ranking columns (no coins, no
+        // user_id) across all players.
+        const [board, rank] = await Promise.all([
+          supabase
+            .from('leaderboard_trophies')
+            .select(RANKED_COLUMNS)
+            .order('rank', { ascending: true })
+            .limit(BOARD_SIZE),
+          // Without the migration this is a 404; with it but no players row
+          // yet, no row. Either way the rows below still place the player.
+          Promise.resolve(supabase.rpc('get_my_rank')).catch((err) => ({ data: null, error: err })),
+        ]);
 
-        if (fetchError) throw fetchError;
+        let rows = board.data;
+        let fromRankedView = !board.error;
+        if (board.error) {
+          if (!isMissing(board)) throw board.error;
+          const legacy = await supabase.from('leaderboard').select(LEGACY_COLUMNS).limit(BOARD_SIZE);
+          if (legacy.error) throw legacy.error;
+          rows = legacy.data;
+        }
+        rows = rows || [];
+        // A row without the server's trophies and rank is the old view's
+        // shape, whatever answered: rank it the old way.
+        fromRankedView = fromRankedView && rows.every((r) => typeof r.trophies === 'number' && typeof r.rank === 'number');
 
-        // Transform data to match expected format with trophies calculation
-        const transformedData = (data || []).map((player, index) => {
-          const playerLevel = calculateLevel(player.experience);
-          const trophies = calculateTrophies(player.wins, playerLevel, player.best_win_streak);
-          return {
-            rank: index + 1,
-            name: player.username || 'Unknown Player',
-            level: playerLevel,
-            wins: player.wins || 0,
-            experience: player.experience || 0,
-            streak: player.best_win_streak || 0,
-            trophies: trophies,
-          };
-        });
+        let transformed = rows.map(toRow);
+        if (!fromRankedView) {
+          // The old view is in wins order: sort by trophies and re-rank by
+          // position, as the board always did there.
+          transformed = transformed
+            .sort((a, b) => b.trophies - a.trophies)
+            .map((player, index) => ({ ...player, place: index + 1, rank: index + 1, isMe: false }));
+        }
 
-        // Sort by trophies and re-rank
-        transformedData.sort((a, b) => b.trophies - a.trophies);
-        transformedData.forEach((player, index) => {
-          player.rank = index + 1;
-        });
-
-        setLeaderboardData(transformedData);
+        const mine = Array.isArray(rank?.data) ? rank.data[0] : rank?.data;
+        setMyRank(!rank?.error && mine && typeof mine.rank === 'number' ? mine : null);
+        setRanked(fromRankedView);
+        setLeaderboardData(transformed);
       } catch (err) {
         console.error('Error fetching leaderboard:', err);
         setError(err.message || 'Failed to load leaderboard');
@@ -321,17 +390,44 @@ const Leaderboard = ({ onClose }) => {
     fetchLeaderboard();
   };
 
-  // Calculate player's rank based on real leaderboard data
-  // null until a fetch has actually returned rows. The rank is derived from
-  // leaderboardData, which starts [] and STAYS [] when the fetch fails — so an
-  // ungated `filter(...).length + 1` is 1, and the panel confidently told every
-  // player "Your Current Rank: #1 — You're in the top 3! Keep it up!" while the
-  // list beneath it was showing a network error. The list was gated on
-  // loading/error; this was not.
-  const rankKnown = !loading && !error && leaderboardData.length > 0;
-  const playerRank = rankKnown
-    ? placeOnBoard(leaderboardData, { trophies: playerTrophies, wins: totalWins, experience: getLeaderboardExperience() })
-    : null;
+  // Your Ranking. Where the server ranks the player (get_my_rank), the row is
+  // the board's own record of them: their place among every player, and the
+  // trophies, wins and level that place was counted from, as every other
+  // player sees them. Otherwise it is the local stats, placed on the rows.
+  //
+  // No rank until a fetch has actually returned. The rank used to be derived
+  // from leaderboardData alone, which starts [] and STAYS [] when the fetch
+  // fails — so an ungated `filter(...).length + 1` is 1, and the panel
+  // confidently told every player "Your Current Rank: #1 — You're in the top
+  // 3! Keep it up!" while the list beneath it was showing a network error.
+  const serverRank = myRank && typeof myRank.rank === 'number' ? myRank : null;
+  const rankKnown = !loading && !error && (serverRank !== null || leaderboardData.length > 0);
+  let playerRank = null;
+  if (rankKnown) {
+    if (serverRank) playerRank = serverRank.rank;
+    else if (ranked) playerRank = placeOnTrophyBoard(leaderboardData, playerTrophies);
+    else playerRank = placeOnBoard(leaderboardData, { trophies: playerTrophies, wins: totalWins, experience: getLeaderboardExperience() });
+  }
+  const me = serverRank
+    ? {
+      rank: serverRank.rank,
+      name: serverRank.username || playerName,
+      level: calculateLevel(serverRank.experience),
+      wins: serverRank.wins ?? 0,
+      streak: serverRank.best_win_streak ?? 0,
+      trophies: serverRank.trophies,
+    }
+    : {
+      rank: playerRank ?? '—',
+      name: playerName,
+      level,
+      wins: totalWins,
+      // The best streak, as every other row shows (best_win_streak) and as
+      // the trophies are counted from. The current one made this row
+      // disagree with the board about the same player.
+      streak: bestWinStreak,
+      trophies: playerTrophies,
+    };
 
   // The top three stand on the podium; everyone else is a row beneath it.
   const podium = leaderboardData.slice(0, 3);
@@ -414,20 +510,7 @@ const Leaderboard = ({ onClose }) => {
             so it stays in view while the top fifty scroll beneath it. */}
         <div className="relative px-4 pb-4 sm:px-6">
           <h3 className="label-caps mb-2 text-brass-300">Your Ranking</h3>
-          <LeaderboardRow
-            player={{
-              rank: playerRank ?? '—',
-              name: playerName,
-              level: level,
-              wins: totalWins,
-              // The best streak, as every other row shows (best_win_streak)
-              // and as the trophies are counted from. The current one made
-              // this row disagree with the board about the same player.
-              streak: bestWinStreak,
-              trophies: playerTrophies,
-            }}
-            isPlayer={true}
-          />
+          <LeaderboardRow player={me} isPlayer={true} />
         </div>
 
         {/* Content. Focusable, because its rows hold no controls: without a
@@ -512,7 +595,7 @@ const Leaderboard = ({ onClose }) => {
                   <div className="mx-auto max-w-lg px-1 sm:px-2">
                     <ol className="grid grid-cols-3 items-end gap-1.5 min-[360px]:gap-2 sm:gap-4">
                       {podium.map(player => (
-                        <PodiumPlace key={player.rank} player={player} />
+                        <PodiumPlace key={player.place} player={player} />
                       ))}
                     </ol>
                     {/* The floor the steps stand on. */}
@@ -523,8 +606,10 @@ const Leaderboard = ({ onClose }) => {
                 {!loading && !error && rest.length > 0 && (
                   <ol start={4} className="mt-4 space-y-2">
                     {rest.map(player => (
-                      <li key={player.rank}>
-                        <LeaderboardRow player={player} />
+                      <li key={player.place}>
+                        {/* The player's own row, where the board knows it
+                            (the trophy view marks it), in Your Ranking's brass. */}
+                        <LeaderboardRow player={player} isPlayer={player.isMe} />
                       </li>
                     ))}
                   </ol>

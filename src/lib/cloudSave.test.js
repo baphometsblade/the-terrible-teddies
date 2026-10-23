@@ -76,7 +76,7 @@ vi.mock('@/components/ui/use-toast', () => ({ toast: (t) => toasts.push(t) }));
 const {
   decideSync, progressOf, isFreshSave, holdsPaidItems, cloudPayload, saveHash, classifyRpc,
   startCloudSync, stopCloudSync, bindSaveToUser, switchToBackupSave, saveNow, readBackup,
-  useCloudSave, PUSH_DEBOUNCE_MS, RETRY_BASE_MS, RECHECK_MIN_MS, CLOUD_FIELDS, CLOUD_SAVE_MAX_BYTES,
+  useCloudSave, describeSaveStatus, PUSH_DEBOUNCE_MS, RETRY_BASE_MS, RECHECK_MIN_MS, CLOUD_FIELDS, CLOUD_SAVE_MAX_BYTES,
 } = await import('./cloudSave');
 const { useGameStore, BATTLE_XP } = await import('@/stores/gameStore');
 
@@ -249,6 +249,22 @@ describe('what goes to the account', () => {
     expect(classifyRpc({ data: null, error: { code: 'PGRST301' }, status: 401 }, ok).kind).toBe('error');
     expect(classifyRpc({ data: null, error: { code: '' }, status: 503 }, ok).kind).toBe('error');
     expect(classifyRpc({ data: {}, error: null, status: 200 }, ok).kind).toBe('ok');
+  });
+});
+
+describe('what Settings says', () => {
+  it('names where the save is in each phase', () => {
+    const now = new Date(2026, 9, 23, 15, 0);
+    const today = new Date(2026, 9, 23, 14, 2).getTime();
+    const earlier = new Date(2026, 9, 20, 9, 30).getTime();
+    expect(describeSaveStatus({ phase: 'saved', savedAt: today }, now))
+      .toBe(`Saved to your account · ${new Date(today).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`);
+    expect(describeSaveStatus({ phase: 'saved', savedAt: earlier }, now)).toMatch(/^Saved to your account · .+, .+/);
+    expect(describeSaveStatus({ phase: 'pending' }, now)).toBe('Saving…');
+    expect(describeSaveStatus({ phase: 'saving' }, now)).toBe('Saving…');
+    expect(describeSaveStatus({ phase: 'offline' }, now)).toBe('Couldn’t reach the server — saved on this device, will retry');
+    expect(describeSaveStatus({ phase: 'unavailable' }, now)).toBe('Saved on this device only');
+    expect(describeSaveStatus({ phase: 'too-large' }, now)).toMatch(/^Saved on this device only/);
   });
 });
 

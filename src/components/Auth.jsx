@@ -206,6 +206,12 @@ const Auth = () => {
               </button>
             </div>
           </form>
+          {/* Where progress is kept, worded to be true before sign-in can
+              know which: the account keeps it once the server has cloud
+              saves (src/lib/cloudSave.js), and Settings says which it is. */}
+          <p className="relative mt-5 text-center text-xs leading-relaxed text-plush-300">
+            Your progress saves on this device, and to your account too when the server supports it. Settings shows which.
+          </p>
         </div>
       </main>
     </div>

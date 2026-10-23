@@ -16,6 +16,7 @@ import { useGameStore } from './stores/gameStore';
 import { fetchServerGemBalance, ensurePlayerProfile, isSupabaseConfigured } from './utils/supabaseClient';
 import analytics from './utils/analytics';
 import { useRehydrateOnFocus } from './hooks/useRehydrateOnFocus';
+import { bindSaveToUser, startCloudSync, stopCloudSync } from './lib/cloudSave';
 import { FOCUS_OUTLINE } from './lib/focus';
 import { SCREEN_PAD } from './lib/safeArea';
 import { holdBack } from './lib/historyGuard';
@@ -210,7 +211,7 @@ function App() {
   };
   const toGems = (closeFrom) => routeTo(closeFrom, () => openShop('gems'));
 
-  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, reconcileServerGems, bindToUser } = useGameStore();
+  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, reconcileServerGems } = useGameStore();
   const { toast } = useToast();
 
   // Show achievement unlock toasts — every queued achievement, one after another.
@@ -324,50 +325,62 @@ function App() {
     }
   }, [session]);
 
-  // Sync player profile and gem balance from server on login
+  // Sign-in: claim the save, sync it with the account's, then credit gems.
+  // Re-runs on every session change (supabase-js replaces the session on each
+  // return to the tab and each token refresh), which re-checks the account's
+  // save at most every RECHECK_MIN_MS (src/lib/cloudSave.js).
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      stopCloudSync();
+      return;
+    }
+    const uid = session.user?.id;
     // Claim the save for this account FIRST, synchronously. The persisted
     // store is one device-wide key, so a different account signing in here
     // must not inherit the previous player's progress — or their
     // lastSyncedServerGems mark, which would make their next purchase credit
-    // nothing. Must precede reconcileServerGems below.
-    bindToUser(session.user?.id);
+    // nothing. bindSaveToUser is gameStore's bindToUser, plus: the save it
+    // replaces is parked if its account has not got it yet, and comes back
+    // when that account signs in here again.
+    bindSaveToUser(uid);
 
-    const syncProfile = async () => {
-      try {
-        // Ensure player profile exists in database. Pass NO username: the
-        // server then uses its anonymous 'Player_<8 uuid chars>' default rather
-        // than the email local part, which used to be published to every player
-        // on the leaderboard permanently. A chosen name is set explicitly via
-        // set_player_username (PlayerStats rename).
-        // Run together, and hand both the id we already have. These were
-        // sequential and each opened with its own auth.getUser() round-trip, so
-        // one login cost four serial requests — two of them re-fetching this
-        // very user. Measured against the production build with Supabase at
-        // 120 ms RTT, the reconcile finished 674 ms after first paint; passing
-        // the id and parallelising takes it from 4 round-trips to 1.
-        const uid = session.user?.id;
-        const [, serverBalance] = await Promise.all([
-          ensurePlayerProfile(null, uid),
-          // Credit any gems purchased since our last sync (e.g. on another
-          // device or a checkout whose success screen never loaded) without
-          // restoring gems already spent locally.
-          fetchServerGemBalance(uid),
-        ]);
-        // Pass the id this balance was read FOR. If the account has changed
-        // while the request was in flight (sign out, sign in as someone else on
-        // a shared device), the store drops it rather than crediting the new
-        // player with the previous one's purchases.
-        if (serverBalance !== null) {
-          reconcileServerGems(serverBalance, uid);
-        }
-      } catch (err) {
-        console.error('Profile sync failed:', err);
-      }
-    };
-    syncProfile();
-  }, [session, reconcileServerGems, bindToUser]);
+    // Ensure the player profile exists. Pass NO username: the server then
+    // uses its anonymous 'Player_<8 uuid chars>' default rather than the email
+    // local part, which used to be published to every player on the
+    // leaderboard permanently. A chosen name is set explicitly via
+    // set_player_username (PlayerStats rename). Handed the id we have, so it
+    // costs no auth.getUser() round-trip, and independent of the save.
+    ensurePlayerProfile(null, uid).catch((err) => console.error('Profile sync failed:', err));
+
+    // The account's save, THEN the gems. The reconcile credits the server's
+    // purchase total above the save's lastSyncedServerGems mark, and taking
+    // the account's save replaces that mark with the one matching its gems —
+    // the reconcile must see the mark of the save that is going to be played.
+    // On a fresh profile the mark is 0, so reconciling first re-credited every
+    // gem the account had ever bought, however many were spent elsewhere.
+    // That is one round-trip after the save's rather than beside it, and the
+    // balance is read after the save on purpose: a balance from before it
+    // could be lower than the mark it brings, which reads as a refund and
+    // takes gems away. onSettled runs after each decision; while the account
+    // cannot be reached, no decision means no reconcile, rather than a guess.
+    startCloudSync({
+      userId: uid,
+      accessToken: session.access_token,
+      onSettled: () => {
+        // Credit any gems purchased since the save's mark (on another device,
+        // or a checkout whose success screen never loaded) without restoring
+        // gems already spent. Pass the id this balance was read FOR: if the
+        // account has changed while the request was in flight (sign out, sign
+        // in as someone else on a shared device), the store drops it rather
+        // than crediting the new player with the previous one's purchases.
+        fetchServerGemBalance(uid)
+          .then((serverBalance) => {
+            if (serverBalance !== null) reconcileServerGems(serverBalance, uid);
+          })
+          .catch((err) => console.error('Gem reconcile failed:', err));
+      },
+    });
+  }, [session, reconcileServerGems]);
 
   // Detect Stripe Checkout return
   useEffect(() => {

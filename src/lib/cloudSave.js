@@ -328,6 +328,40 @@ const parkedKey = (uid) => `terrible-teddies-parked:${uid}`;
 export const useCloudSave = create(() => ({ phase: 'off', savedAt: null, backup: null }));
 const setStatus = (patch) => useCloudSave.setState(patch);
 
+/** A moment as Settings says it: the time today, the date and time before. */
+export const formatSavedAt = (ms, now = new Date()) => {
+  const at = new Date(ms);
+  const time = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  if (at.toDateString() === now.toDateString()) return time;
+  return `${at.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}, ${time}`;
+};
+
+/**
+ * Where the save is, in words, for each phase. Every line is only what is
+ * true at that moment: "Saved to your account" only once the account has
+ * this save, and "Saved on this device only" when the backend has no cloud
+ * saves to keep it in.
+ */
+export const describeSaveStatus = ({ phase, savedAt }, now = new Date()) => {
+  switch (phase) {
+    case 'saved':
+      return savedAt ? `Saved to your account · ${formatSavedAt(savedAt, now)}` : 'Saved to your account';
+    case 'pending':
+    case 'saving':
+      return 'Saving…';
+    case 'checking':
+      return 'Checking your account…';
+    case 'offline':
+      return 'Couldn’t reach the server — saved on this device, will retry';
+    case 'too-large':
+      return 'Saved on this device only — too large to keep on your account';
+    case 'unavailable':
+      return 'Saved on this device only';
+    default:
+      return 'Saved on this device';
+  }
+};
+
 const backupSummary = (uid) => {
   const b = readBackup(uid);
   return b ? { savedAt: b.savedAt, level: b.level, cards: b.cards } : null;

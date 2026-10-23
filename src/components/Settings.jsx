@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Settings as SettingsIcon, X, Volume2, Sparkles, Smile, Meh, Angry,
   LogOut, Trash2, TriangleAlert, Minus, Check,
+  Cloud, CloudUpload, CloudOff, HardDrive, ArrowLeftRight,
 } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import { useGameStore } from '../stores/gameStore';
@@ -12,6 +13,18 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion } from '@/components/ui/game-chrome';
 import { describeReset } from '@/lib/resetSummary';
+import {
+  useCloudSave, describeSaveStatus, formatSavedAt, switchToBackupSave, saveNow,
+} from '@/lib/cloudSave';
+
+// The save's state, as an icon beside its words (describeSaveStatus).
+const SAVE_ICON = {
+  saved: Cloud,
+  pending: CloudUpload,
+  saving: CloudUpload,
+  checking: CloudUpload,
+  offline: CloudOff,
+};
 
 // Shape of every full-width action here. Plain <button>s, not the shadcn
 // Button: its bg-primary is a utility and would beat a component-layer
@@ -156,6 +169,15 @@ const Settings = ({ onClose }) => {
 
   const [signingOut, setSigningOut] = useState(false);
 
+  // Where the save is (src/lib/cloudSave.js), and the other save when two
+  // did not match. `switched` is said once a switch has happened.
+  const cloud = useCloudSave();
+  const [switched, setSwitched] = useState('');
+  const handleSwitch = () => {
+    const to = cloud.backup;
+    if (switchToBackupSave()) setSwitched(`Switched to the Level ${to.level} save. The one you had is now the other save.`);
+  };
+
   const dialogRef = useDialog(onClose);
 
   const handleReset = () => {
@@ -181,6 +203,10 @@ const Settings = ({ onClose }) => {
     // signed in while the UI reports success by simply closing. On a shared
     // device that hands the next person a live session, so this must fail
     // loudly and keep the dialog open.
+    // Send the last few seconds of play to the account first. Not reaching
+    // it does not hold up signing out: the save stays on this device, and is
+    // put aside rather than wiped if another account signs in here.
+    await saveNow({ timeoutMs: 4000 });
     const { error } = await supabase.auth.signOut();
     setSigningOut(false);
     if (error) {
@@ -267,6 +293,40 @@ const Settings = ({ onClose }) => {
 
           <section>
             <SectionHeading>Account</SectionHeading>
+            {/* Where the progress is kept, said as it is: on the account once
+                it has it, on this device until then, and on this device only
+                where the backend has no cloud saves. Sign-up says the same
+                (Auth.jsx). */}
+            <div className="panel-glass mb-3 rounded-xl">
+              <SettingRow
+                icon={SAVE_ICON[cloud.phase] ?? HardDrive}
+                label="Your progress"
+                description={describeSaveStatus(cloud)}
+              />
+              {cloud.backup && (
+                <div className="border-t border-white/[0.06] px-3.5 py-3.5 sm:px-4">
+                  <div className="font-display font-bold leading-tight text-plush-100">Other save on this device</div>
+                  <div className="mt-0.5 text-[13px] leading-snug text-plush-300">
+                    Level {cloud.backup.level} · {cloud.backup.cards} cards · kept {formatSavedAt(cloud.backup.savedAt)}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSwitch}
+                    className={`${ACTION} btn-glass mt-3`}
+                  >
+                    <ArrowLeftRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
+                    Switch to this save
+                  </button>
+                  <p className="mt-2 text-xs leading-snug text-plush-300">
+                    Your current save becomes the other one, so you can switch back.
+                  </p>
+                </div>
+              )}
+              {/* Mounted throughout, so the switch is announced when it lands. */}
+              <p role="status" className={switched ? 'border-t border-white/[0.06] px-3.5 py-2.5 text-xs font-semibold text-emerald-200 sm:px-4' : 'sr-only'}>
+                {switched}
+              </p>
+            </div>
             <button
               type="button"
               onClick={handleSignOut}

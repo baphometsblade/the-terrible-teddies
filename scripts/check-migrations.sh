@@ -622,6 +622,7 @@ BEGIN
      OR public.player_trophies(10, 99, 0) <> 90
      OR public.player_trophies(10, 100, 0) <> 100
      OR public.player_trophies(5, -50, 1) <> 55
+     OR public.player_trophies(0, -150, 0) <> 10
      OR public.player_trophies(120, 4321, 9) <> 1445 THEN
     RAISE EXCEPTION 'player_trophies does not match the client''s calculateTrophies fixture';
   END IF;
