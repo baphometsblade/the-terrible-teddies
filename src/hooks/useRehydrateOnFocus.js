@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useGameStore } from '../stores/gameStore';
+import { settlePendingPurchase } from './settlePendingPurchase';
 
 /**
  * Re-read the persisted save whenever this tab comes back to the foreground.
@@ -39,10 +40,15 @@ import { useGameStore } from '../stores/gameStore';
  */
 export function useRehydrateOnFocus() {
   useEffect(() => {
-    const rehydrate = () => {
+    const rehydrate = async () => {
       // visibilitychange fires for hiding as well as showing.
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-      useGameStore.persist?.rehydrate?.();
+      await useGameStore.persist?.rehydrate?.();
+      // Then, and only then, a payment still waiting on Stripe (see
+      // settlePendingPurchase): its reconcile must land on the fresh save,
+      // not be overwritten by the rehydrate. It does nothing, and sends
+      // nothing, unless a payment is pending.
+      settlePendingPurchase().catch((err) => console.error('Pending purchase check failed:', err));
     };
 
     // Both, deliberately: visibilitychange covers switching tabs within a

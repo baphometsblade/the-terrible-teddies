@@ -1,8 +1,11 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Gem, Hourglass, CircleAlert } from 'lucide-react';
+import { Gem, Hourglass, CircleAlert, Undo2, ShieldAlert, Mail } from 'lucide-react';
 import { useGameStore } from '../stores/gameStore';
-import { verifyPurchaseSession } from '../utils/stripe';
+import {
+  verifyPurchaseSession, rememberPendingPurchase, forgetPendingPurchase, watchPurchaseOnScreen,
+} from '../utils/stripe';
+import { SUPPORT_EMAIL, supportMailto } from '@/lib/support';
 import { fetchServerGemBalance } from '../utils/supabaseClient';
 import analytics from '../utils/analytics';
 import { useDialog } from '@/hooks/useDialog';
@@ -22,23 +25,83 @@ const BUNDLE_PRICES = {
 // device's counter can be updated now or catches up on the next launch.
 const BALANCE_READ_ATTEMPTS = 3;
 
+/**
+ * How long to wait before the background check number `n` (0-based) while a
+ * payment is pending, or null once the screen should stop and say so. Quick
+ * at first, when a slow webhook is likeliest to land, then slower: six at
+ * 4 s, four at 15 s, then every 30 s, about ten minutes in all. It used to
+ * stop after six checks (~24 s) while still saying "We're checking
+ * automatically", and then sat there saying it.
+ */
+export const pendingPollDelay = (n) => {
+  if (n < 6) return 4_000;
+  if (n < 10) return 15_000;
+  if (n < 27) return 30_000;
+  return null;
+};
+
 // Plain <button>s rather than the shadcn Button: its bg-primary is a utility
 // and would beat the component-layer btn-brass / btn-glass materials. Every
 // ACTION wears one, so it takes the outline, which leaves their shadow alone.
 const ACTION = `inline-flex items-center justify-center gap-2 h-11 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS_OUTLINE}`;
 
 // The medallion and the light it sits in, per phase: brass for a completed
-// purchase, amethyst while the order is in flight, pewter for a failure.
+// purchase, amethyst while the order is in flight, pewter for a payment that
+// was reversed or could not be checked.
 const PHASE_LOOK = {
   verifying: { metal: RARITY_METAL.epic, light: 'rgba(192, 132, 252, 0.18)' },
   success: { metal: RARITY_METAL.legendary, light: 'rgba(251, 191, 36, 0.3)' },
   pending: { metal: RARITY_METAL.epic, light: 'rgba(192, 132, 252, 0.18)' },
+  refunded: { metal: RARITY_METAL.common, light: 'rgba(129, 140, 248, 0.14)' },
+  disputed: { metal: RARITY_METAL.common, light: 'rgba(129, 140, 248, 0.14)' },
   error: { metal: RARITY_METAL.common, light: 'rgba(129, 140, 248, 0.14)' },
+};
+
+// What a question about this payment is about, per phase, for the mailto.
+const SUPPORT_SUBJECT = {
+  pending: 'Gems not received',
+  refunded: 'Refunded payment',
+  disputed: 'Disputed payment',
+  error: 'Gems not received',
+};
+
+// The payment's reference, and the way to ask about it. Stripe's Checkout
+// session id is what the support side can look the payment up by. With an
+// address configured it is a prefilled email; without one, the reference is
+// shown for the buyer to keep, and no contact is invented.
+const PaymentReference = ({ sessionId, phase }) => {
+  const mailto = supportMailto(sessionId, SUPPORT_SUBJECT[phase] ?? 'Payment question');
+  return (
+    <div className="mb-6 rounded-xl bg-night-950/45 border border-white/5 px-4 py-3 text-left">
+      <p className="label-caps text-plush-300">Order reference</p>
+      {/* select-all: one tap selects the whole id, for copying. */}
+      <p className="mt-1 select-all break-all font-mono text-[13px] leading-snug text-white">{sessionId}</p>
+      {mailto ? (
+        <p className="mt-2 text-sm text-plush-200">
+          Questions about this payment?{' '}
+          <a
+            href={mailto}
+            className={`inline-flex items-center gap-1 rounded-sm font-semibold text-brass-200 underline underline-offset-4 decoration-brass-300/60 hover:text-white ${FOCUS_RING}`}
+          >
+            <Mail aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
+            Email {SUPPORT_EMAIL}
+          </a>
+        </p>
+      ) : (
+        <p className="mt-2 text-sm text-plush-200">Keep this reference: it identifies this payment if you need help with it.</p>
+      )}
+    </div>
+  );
 };
 
 const PurchaseSuccess = ({ sessionId, onDone }) => {
   const { reconcileServerGems } = useGameStore();
-  const [phase, setPhase] = useState('verifying'); // verifying | success | pending | error
+  const [phase, setPhase] = useState('verifying'); // verifying | success | pending | refunded | disputed | error
+  // The background checks have run their course (see pendingPollDelay).
+  const [stalled, setStalled] = useState(false);
+  // A "Check now" in flight, and when the last one came back still pending.
+  const [checking, setChecking] = useState(false);
+  const [checkedAt, setCheckedAt] = useState(null);
   const [gemsGranted, setGemsGranted] = useState(0);
   // Whether this device's gem counter actually reflects the purchase yet.
   const [balanceShown, setBalanceShown] = useState(true);
@@ -58,6 +121,10 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
     return () => { mountedRef.current = false; };
   }, []);
 
+  // While this screen is up it does the checking; a return to the tab must
+  // not check the same payment again and announce it twice.
+  useEffect(() => watchPurchaseOnScreen(), []);
+
   // silent=true is used by the background re-poll: it must not flip the phase
   // to 'verifying', because that would unmount/remount the polling effect on
   // every tick (resetting its counter — the poll would never terminate) and
@@ -73,6 +140,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
       if (purchase && purchase.status === 'completed') {
         if (synced.current) return;
         synced.current = true;
+        forgetPendingPurchase(sessionId);
 
         // 'completed' is only ever written by fulfill_gem_purchase, in the
         // same transaction that credits user_gems — so the gems are on the
@@ -108,7 +176,15 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
           price: BUNDLE_PRICES[purchase.bundle_id] ?? 0,
           currency: 'USD',
         });
+      } else if (purchase && (purchase.status === 'refunded' || purchase.status === 'disputed')) {
+        // Reversed at Stripe: there is nothing to wait for, and "gems will
+        // appear" (what any non-completed row used to be told) is false.
+        forgetPendingPurchase(sessionId);
+        setPhase(purchase.status);
       } else {
+        // Not confirmed yet. Remembered, so the gems can still land if the
+        // player leaves this screen first (settlePendingPurchase).
+        rememberPendingPurchase(sessionId);
         setPhase('pending');
       }
     } catch (_err) {
@@ -120,37 +196,66 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
     verify();
   }, [verify]);
 
-  // If the webhook is still catching up ('pending'), keep re-polling in the
-  // background so gems appear automatically once it credits — instead of
-  // leaving the player on a dead-end screen. The attempt counter lives in a
-  // ref so it survives phase flips (a local variable would reset every time
-  // the effect re-ran, making the cap unreachable).
+  // If the webhook is still catching up ('pending'), keep re-checking in the
+  // background, on pendingPollDelay's slowing schedule, so gems appear by
+  // themselves once it credits. The attempt counter lives in a ref so it
+  // survives phase flips (a local variable would reset every time the effect
+  // re-ran, making the cap unreachable).
   const pollTriesRef = useRef(0);
-  // Guards against stacking loops. verifyPurchaseSession polls internally 12
-  // times with a back-off (~39 s end to end), and this interval used to launch
-  // a fresh one every 4 s with nothing checking whether the previous was still
+  // Guards against stacking checks. verifyPurchaseSession polls internally 12
+  // times with a back-off (~39 s end to end), and the old interval launched a
+  // fresh one every 4 s with nothing checking whether the previous was still
   // running — synced.current only latches after a SUCCESSFUL verify, which is
   // exactly the case that never happens while the webhook is slow. Measured
-  // with the purchases row absent: 68 requests in 75 s, ramping to ~5/second,
-  // with a worst case of 12 + 6x12 = 84 for a single purchase.
+  // with the purchases row absent: 68 requests in 75 s, ramping to ~5/second.
+  // Each tick is one request (maxAttempts 1), and a tick never starts while a
+  // check (a tick, or "Check now") is still out.
   const pollingRef = useRef(false);
+  // Bumped by "Check now" to start the schedule over from its quick end.
+  const [pollEpoch, setPollEpoch] = useState(0);
   useEffect(() => {
-    if (phase !== 'pending') return;
-    const id = setInterval(async () => {
-      if (pollTriesRef.current >= 6) { clearInterval(id); return; }
-      if (pollingRef.current) return; // a tick is still in flight — do not stack
+    if (phase !== 'pending' || stalled) return undefined;
+    let cancelled = false;
+    let timer = null;
+    const schedule = () => {
+      const delay = pendingPollDelay(pollTriesRef.current);
+      if (delay === null) { setStalled(true); return; }
+      timer = setTimeout(tick, delay);
+    };
+    const tick = async () => {
+      if (cancelled) return;
+      if (pollingRef.current) { schedule(); return; }
       pollingRef.current = true;
       pollTriesRef.current += 1;
       try {
-        // maxAttempts 1: this tick IS the retry cadence, so the background path
-        // is one request per 4 s rather than a nested 12-request back-off loop.
         await verify(true, 1);
       } finally {
         pollingRef.current = false;
       }
-    }, 4000);
-    return () => clearInterval(id);
-  }, [phase, verify]);
+      if (!cancelled) schedule();
+    };
+    schedule();
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [phase, stalled, verify, pollEpoch]);
+
+  // One check, now, without the spinner; then the schedule starts over,
+  // since the buyer is evidently still watching.
+  const checkNow = async () => {
+    if (pollingRef.current) return;
+    pollingRef.current = true;
+    setChecking(true);
+    try {
+      await verify(true, 1);
+    } finally {
+      pollingRef.current = false;
+    }
+    if (!mountedRef.current) return;
+    setChecking(false);
+    setCheckedAt(new Date());
+    pollTriesRef.current = 0;
+    setStalled(false);
+    setPollEpoch((e) => e + 1);
+  };
 
   const look = PHASE_LOOK[phase];
 
@@ -201,6 +306,8 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
             {phase === 'verifying' && <Gem className="h-8 w-8 text-fuchsia-300" strokeWidth={1.75} />}
             {phase === 'success' && <Gem className="h-9 w-9 text-brass-300" strokeWidth={1.75} />}
             {phase === 'pending' && <Hourglass className="h-9 w-9 text-fuchsia-300" strokeWidth={1.75} />}
+            {phase === 'refunded' && <Undo2 className="h-9 w-9 text-plush-200" strokeWidth={1.75} />}
+            {phase === 'disputed' && <ShieldAlert className="h-9 w-9 text-plush-200" strokeWidth={1.75} />}
             {phase === 'error' && <CircleAlert className="h-9 w-9 text-plush-200" strokeWidth={1.75} />}
           </div>
         </motion.div>
@@ -253,16 +360,39 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
 
         {phase === 'pending' && (
           <div className="relative">
-            <h2 className="font-display text-3xl font-extrabold leading-tight text-white mb-2">Processing…</h2>
-            <p className="text-plush-200 mb-2">
-              Your payment was received. Gems will appear within a minute.
+            {/* Never "payment received" before Stripe says so: no row yet
+                means Stripe has not confirmed the payment to us. */}
+            <h2 className="font-display text-3xl font-extrabold leading-tight text-white mb-2">
+              {stalled ? 'Still Waiting for Stripe' : 'Waiting for Payment Confirmation'}
+            </h2>
+            {stalled ? (
+              <p className="text-plush-200 mb-2">
+                Stripe hasn&apos;t confirmed this payment yet. Nothing is lost: tap Check now, or come back later.
+              </p>
+            ) : (
+              <p className="text-plush-200 mb-2">
+                Stripe hasn&apos;t confirmed this payment yet. This screen keeps checking for about ten minutes, and adds your gems once it does.
+              </p>
+            )}
+            <p className="text-plush-300 text-sm mb-5">
+              If you leave, the game checks again each time you come back to this tab, and every time it starts.
             </p>
-            <p className="text-plush-300 text-sm mb-6">
-              We&apos;re checking automatically. If gems don&apos;t appear, contact support with your order confirmation email.
-            </p>
+            {checkedAt && (
+              <p className="text-plush-200 text-sm -mt-2 mb-5">
+                {`Checked at ${checkedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}: not confirmed yet.`}
+              </p>
+            )}
+            <PaymentReference sessionId={sessionId} phase="pending" />
             <div className="flex flex-wrap gap-3 justify-center">
-              <button type="button" onClick={() => { pollTriesRef.current = 0; verify(); }} className={`${ACTION} btn-brass px-6 text-base`}>
-                Check now
+              {/* aria-disabled rather than disabled while a check is out:
+                  disabling the focused button would drop keyboard focus. */}
+              <button
+                type="button"
+                onClick={checkNow}
+                aria-disabled={checking || undefined}
+                className={`${ACTION} btn-brass px-6 text-base aria-disabled:cursor-wait aria-disabled:opacity-70`}
+              >
+                {checking ? 'Checking…' : 'Check now'}
               </button>
               <button type="button" onClick={onDone} className={`${ACTION} btn-glass px-6 text-base`}>
                 Return to Game
@@ -271,16 +401,49 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
           </div>
         )}
 
+        {phase === 'refunded' && (
+          <div className="relative">
+            <h2 className="font-display text-3xl font-extrabold leading-tight text-white mb-2">Payment Refunded</h2>
+            <p className="text-plush-200 mb-5">
+              This payment was refunded, so its gems aren&apos;t on your account.
+            </p>
+            <PaymentReference sessionId={sessionId} phase="refunded" />
+            <button type="button" onClick={onDone} className={`${ACTION} btn-glass px-6 text-base`}>
+              Return to Game
+            </button>
+          </div>
+        )}
+
+        {phase === 'disputed' && (
+          <div className="relative">
+            <h2 className="font-display text-3xl font-extrabold leading-tight text-white mb-2">Payment Disputed</h2>
+            {/* What the webhook does: a dispute that takes the money takes the
+                gems off (reverse_gem_purchase), and one settled in the
+                payment's favour puts them back (restore_gem_purchase). */}
+            <p className="text-plush-200 mb-5">
+              This payment is being disputed with the card issuer, so its gems have been taken off your account for now.
+              If the dispute is settled in the payment&apos;s favour, they come back automatically.
+            </p>
+            <PaymentReference sessionId={sessionId} phase="disputed" />
+            <button type="button" onClick={onDone} className={`${ACTION} btn-glass px-6 text-base`}>
+              Return to Game
+            </button>
+          </div>
+        )}
+
         {phase === 'error' && (
           <div className="relative">
             <h2 className="font-display text-3xl font-extrabold leading-tight text-white mb-2">Something Went Wrong</h2>
-            <p className="text-plush-200 mb-6">
-              If you were charged, please contact support — we&apos;ll sort it out immediately.
+            {/* It used to say "contact support" with no contact anywhere. */}
+            <p className="text-plush-200 mb-5">
+              We couldn&apos;t check this payment just now. If you were charged, your gems are added once Stripe
+              confirms it, at the latest the next time the game starts.
             </p>
+            <PaymentReference sessionId={sessionId} phase="error" />
             <div className="flex flex-wrap gap-3 justify-center">
               <button
                 type="button"
-                onClick={() => { pollTriesRef.current = 0; synced.current = false; verify(); }}
+                onClick={() => { pollTriesRef.current = 0; synced.current = false; setStalled(false); verify(); }}
                 className={`${ACTION} btn-brass px-6 text-base`}
               >
                 Try Again

@@ -1,5 +1,14 @@
-import { beforeEach, describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
 import { useGameStore } from '../stores/gameStore';
+
+// What the hook does after rehydrating, recorded with the coins it saw then.
+const settled = [];
+vi.mock('./settlePendingPurchase', () => ({
+  settlePendingPurchase: async () => { settled.push(useGameStore.getState().coins); return 'none'; },
+}));
+const { useRehydrateOnFocus } = await import('./useRehydrateOnFocus');
 
 const get = () => useGameStore.getState();
 const STORAGE_KEY = 'terrible-teddies-storage';
@@ -12,7 +21,33 @@ const otherTabSaves = (state) =>
 
 beforeEach(() => {
   localStorage.clear();
-  get().resetProgress();
+  // A clean store: resetProgress now keeps paid items, so it is no clean slate.
+  useGameStore.setState(useGameStore.getInitialState(), true);
+  settled.length = 0;
+});
+
+describe('a return to the tab', () => {
+  // A payment left pending is settled on the way back in, after the save is
+  // re-read: settled first, its reconcile would be overwritten by the rehydrate.
+  it('settles a pending purchase after rehydrating, not before', async () => {
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    const host = document.createElement('div');
+    const root = createRoot(host);
+    const Probe = () => { useRehydrateOnFocus(); return null; };
+    act(() => root.render(createElement(Probe)));
+
+    otherTabSaves({ coins: 4242 });
+    await act(async () => { window.dispatchEvent(new Event('focus')); });
+    expect(settled).toEqual([4242]);
+
+    // Hiding the tab is not a return.
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
+    expect(settled).toHaveLength(1);
+    delete document.visibilityState;
+
+    act(() => root.unmount());
+  });
 });
 
 describe('rehydrating picks up another tab\'s save', () => {
