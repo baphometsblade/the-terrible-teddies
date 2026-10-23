@@ -498,7 +498,17 @@ for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }
         const y = row.top + 0.65 * 144 * zoom;
         return document.elementFromPoint(x, y)?.closest('[data-hand-id]') === c;
       });
+      // Each card's cost coin is the topmost thing at its own centre. The hand
+      // overlaps left to right, so a coin in the right-hand corner sat under
+      // the next card on every card but the last.
+      const coins = cards.map((c) => {
+        const coin = c.querySelector('[data-cost]');
+        if (!coin) return 'no coin';
+        const r = coin.getBoundingClientRect();
+        return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('[data-hand-id]') === c;
+      });
       return {
+        coins,
         scroll: strip.scrollWidth - strip.clientWidth,
         doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         inside: row.left >= 0 && row.right <= window.innerWidth,
@@ -513,6 +523,7 @@ for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }
     expect(fit.minStrip, 'a card shows less than a 44px strip').toBeGreaterThanOrEqual(44);
     expect(fit.hits, 'a card is covered where it should be tapped').toEqual(fit.hits.map(() => true));
     expect(fit.fanned, 'the fan is gone').toBe(true);
+    expect(fit.coins, 'a hand card\'s cost is hidden under its neighbour').toEqual(fit.coins.map(() => true));
   });
   }
 }

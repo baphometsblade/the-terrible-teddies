@@ -421,10 +421,11 @@ const TeddyCard = ({
 
         {/* Name: up to two lines, which the top scrim covers. On one line 38
             of the 64 names were cut to an ellipsis, and the only way to read
-            the rest was a hover tooltip that touch screens never show. On the
-            board it runs further right — there is no coin there — and stops
-            short of the corner the target crosshair sits on. */}
-        <div className={`absolute top-[3px] left-[5px] z-10 ${board ? 'right-[16px]' : 'right-[22px]'}`}>
+            the rest was a hover tooltip that touch screens never show. In the
+            hand it starts after the cost coin; on the board there is no coin,
+            so it starts at the edge and stops short of the corner the target
+            crosshair sits on. */}
+        <div className={`absolute top-[3px] z-10 ${board ? 'left-[5px] right-[16px]' : cost === undefined ? 'left-[5px] right-[22px]' : 'left-[22px] right-[5px]'}`}>
           <span
             className={`block font-display font-extrabold leading-[1.1] text-white line-clamp-2 break-words ${board ? 'text-[10px]' : 'text-[9px]'}`}
             style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}
@@ -435,11 +436,14 @@ const TeddyCard = ({
         </div>
 
         {/* Cost: a brass coin, green when an effect has lowered it. Not on
-            the table, where it has been paid. */}
+            the table, where it has been paid. Top LEFT, as Hearthstone and
+            Snap print it: the hand overlaps left to right, so each card shows
+            only its left edge, and a coin in the right corner was hidden under
+            the next card on every card but the last. */}
         {!board && cost !== undefined && (
           <BrassCoin
             size="card"
-            className="absolute top-[2px] right-[2px] z-10"
+            className="absolute top-[2px] left-[2px] z-10"
             data-cost=""
             data-discounted={discounted ? '' : undefined}
             {...(discounted ? { style: { background: COIN_DISCOUNT }, title: `Discounted from ${teddy.cost}` } : {})}
