@@ -38,11 +38,13 @@ const OPPONENT_RING = 'linear-gradient(145deg, #fecaca 0%, #b91c1c 40%, #f87171 
 
 // Shared shape of every board control; the material (btn-brass / btn-glass)
 // is added per button. Plain <button>s rather than the shadcn Button, whose
-// bg-primary is a utility and would beat a component-layer material.
+// bg-primary is a utility and would beat a component-layer material. 44px
+// tall, the smallest comfortable touch target. FOCUS_OUTLINE, not a ring: a
+// ring is a box-shadow and would replace the material's own (the brass lip,
+// the glass rim) for as long as the control has focus.
 const ACTION =
-  'inline-flex items-center justify-center gap-1.5 h-10 px-4 md:w-full rounded-xl font-display font-bold ' +
-  'text-sm sm:text-base whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 ' +
-  'focus-visible:ring-brass-300 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950';
+  'inline-flex items-center justify-center gap-1.5 h-11 px-4 md:w-full rounded-xl font-display font-bold ' +
+  `text-sm sm:text-base whitespace-nowrap ${FOCUS_OUTLINE}`;
 
 const Avatar = ({ ring }) => (
   <div
@@ -1656,7 +1658,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   <button
                     type="button"
                     onClick={onOpenShop ?? onBackToMenu}
-                    className="btn-glass rounded-lg px-3 h-8 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
+                    className={`btn-glass rounded-lg px-4 h-11 text-sm font-bold ${FOCUS_OUTLINE}`}
                   >
                     Visit Shop
                   </button>
@@ -1760,7 +1762,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       initial={{ y: -40, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       data-field="opponent"
-                      className={`relative ${hittable ? 'cursor-crosshair' : ''}`}
+                      className={`relative rounded-[10px] ${FOCUS_OUTLINE} ${hittable ? 'cursor-crosshair' : ''}`}
                       press={pressable(() => attackTarget(card), `Attack ${card.name}`, targetingMode)}
                     >
                       <div
@@ -1791,7 +1793,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 {directTargets && (
                   <motion.div
                     whileHover={{ scale: 1.04 }}
-                    className="w-24 h-36 rounded-[10px] border-2 border-dashed border-red-400/80 bg-red-950/50 shadow-[0_0_22px_rgba(248,113,113,0.35)] flex flex-col items-center justify-center gap-2 cursor-crosshair"
+                    whileFocus={{ scale: 1.04 }}
+                    className={`w-24 h-36 rounded-[10px] border-2 border-dashed border-red-400/80 bg-red-950/50 shadow-[0_0_22px_rgba(248,113,113,0.35)] flex flex-col items-center justify-center gap-2 cursor-crosshair ${FOCUS_OUTLINE}`}
                     {...pressable(attackOpponentDirectly, opponentField.some(c => c.type === 'trap') ? 'Strike (springs trap)' : 'Attack opponent directly')}
                   >
                     <Crosshair className="h-7 w-7 text-red-300" aria-hidden="true" />
@@ -1906,7 +1909,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       animate={{ y: 0, opacity: 1, scale: 1 }}
                       transition={{ type: 'spring', stiffness: 380, damping: 26 }}
                       whileHover={ready ? { y: -5 } : undefined}
-                      className={`relative ${ready ? 'cursor-pointer' : ''}`}
+                      whileFocus={ready ? { y: -5 } : undefined}
+                      className={`relative rounded-[10px] ${FOCUS_OUTLINE} ${ready ? 'cursor-pointer' : ''}`}
                       /* Only a ready creature is a button: a warming-up or
                          spent one, or a trap, would be a "Select … to attack"
                          that cannot attack, and its chip ("Warming Up",
@@ -2034,7 +2038,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               role="region"
               aria-label="Battle log"
               tabIndex={0}
-              className="hidden md:block flex-1 min-h-0 overflow-y-auto panel-glass rounded-xl p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-400"
+              className={`hidden md:block flex-1 min-h-0 overflow-y-auto panel-glass rounded-xl p-3 ${FOCUS_OUTLINE}`}
             >
               <div className="flex items-center gap-1.5 mb-2 text-brass-300">
                 <ScrollText className="h-3.5 w-3.5" aria-hidden="true" />
@@ -2066,7 +2070,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                     onClick={() => sendEmote(emote)}
                     aria-label={emote.name}
                     title={emote.name}
-                    className="btn-glass flex-none grid place-items-center h-10 w-10 rounded-xl text-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brass-300"
+                    className={`btn-glass flex-none grid place-items-center h-11 w-11 rounded-xl text-lg ${FOCUS_OUTLINE}`}
                   >
                     {emote.icon}
                   </button>
@@ -2079,7 +2083,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 it, and an empty line made the whole table grow and shrink at
                 every turn boundary. Concede is icon-only on phones so that
                 Rally + Battle + End Turn + Concede fit one line at 360px. */}
-            <div className="flex min-h-10 flex-row flex-wrap items-center justify-center gap-2 md:flex-col md:items-stretch">
+            <div className="flex min-h-11 flex-row flex-wrap items-center justify-center gap-2 md:flex-col md:items-stretch">
               {!gameOver && !playerTurn && (
                 <span className="text-xs italic text-plush-300" aria-hidden="true">
                   {OPPONENT_NAME} is making his move…
@@ -2094,7 +2098,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 <button type="button" className={`${ACTION} btn-brass foil relative`} onClick={rally}>
                   {/* Above the foil band (::after), which would otherwise
                       sweep across the label and wash it out. */}
-                  <span className="relative z-10">⚡ Rally!</span>
+                  <span className="relative z-10 inline-flex items-center gap-1.5">
+                    <Zap className="h-4 w-4" fill="currentColor" aria-hidden="true" />
+                    Rally!
+                  </span>
                 </button>
               )}
               {/* The one turn control. Glass while the player still has a
@@ -2114,7 +2121,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 <button
                   type="button"
                   title="Concede"
-                  className={`${ACTION} btn-glass !px-3 sm:!px-4 text-plush-300 hover:text-white text-xs md:mt-1`}
+                  className={`${ACTION} btn-glass min-w-11 !px-3 sm:!px-4 text-plush-300 hover:text-white text-xs md:mt-1`}
                   onClick={concedeGame}
                 >
                   <Flag className="h-3.5 w-3.5" aria-hidden="true" />
@@ -2152,8 +2159,13 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                     animate={{ y: Math.abs(index - mid) * step, opacity: 1, rotate: (index - mid) * step }}
                     exit={{ y: 50, opacity: 0 }}
                     whileHover={{ y: -20, scale: 1.08, zIndex: 10 }}
+                    // The same lift for the keyboard (Framer Motion's focus
+                    // gesture follows :focus-visible and adds no tab stop),
+                    // and a brass outline rather than the browser's default
+                    // ring, which read as a stray line on the dark board.
+                    whileFocus={{ y: -20, scale: 1.08, zIndex: 10 }}
                     style={{ transformOrigin: 'bottom center' }}
-                    className={`shrink-0 rounded-[10px] ${playable ? 'cursor-pointer' : ''} ${!affordable
+                    className={`shrink-0 rounded-[10px] ${FOCUS_OUTLINE} ${playable ? 'cursor-pointer' : ''} ${!affordable
                       ? 'opacity-50 saturate-50'
                       : lit ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
                     {...pressable(() => playCard(card), `Play ${card.name}`, playable)}

@@ -853,6 +853,80 @@ test('at 320px the player rail fits: nothing runs under the sound toggle', async
   await expect(page.locator('[data-rail-counts]')).toContainText(/in hand/);
 });
 
+test('battle and result controls are at least 44px to tap on a phone', async ({ page }) => {
+  // They were 40px (End Turn, Concede, the emotes, "← Menu", Play Again and
+  // Menu) and 32px (Visit Shop): under the 44pt minimum for a thumb.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    stored.state.unlockedCosmetics = ['Teddy Emote'];
+    stored.state.gems = 0; // so the result screen offers Visit Shop
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+
+  const small = [];
+  const measure = async (scope, names) => {
+    for (const name of names) {
+      const box = await scope.getByRole('button', { name, exact: true }).boundingBox();
+      if (!box || box.width < 44 || box.height < 44) small.push(`${name} ${box ? `${Math.round(box.width)}x${Math.round(box.height)}` : 'missing'}`);
+    }
+  };
+  await measure(page, ['End Turn', 'Concede', 'Teddy Emote', '← Menu', 'Sound effects']);
+
+  await page.getByRole('button', { name: 'Concede' }).click();
+  await page.getByRole('dialog', { name: 'Concede this battle?' })
+    .getByRole('button', { name: 'Concede — counts as a loss' }).click();
+  const defeat = page.getByRole('dialog', { name: 'Defeat' });
+  await expect(defeat.getByRole('button', { name: 'Visit Shop' })).toBeVisible(SLOW);
+  await page.waitForTimeout(900); // the result panel's entrance scales it
+  await measure(defeat, ['Play Again', 'Menu', 'Visit Shop']);
+  expect(small, `controls under 44px: ${small.join(', ')}`).toEqual([]);
+});
+
+test('keyboard focus on the board is a brass outline, and lifts a hand card like hover', async ({ page }) => {
+  // The board's controls drew a focus RING on their brass and glass, and a
+  // ring is a box-shadow: it replaced the material's own shadow while focused.
+  // Hand cards got the browser's default ring and sat flat while hover lifts
+  // them. (Lift needs motion on; the suite defaults to reduced motion.)
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  const endTurn = page.getByRole('button', { name: 'End Turn' });
+  await expect(endTurn).toBeVisible(SLOW);
+
+  const look = (locator) => locator.evaluate((el) => {
+    const cs = getComputedStyle(el);
+    return { outline: `${cs.outlineStyle} ${cs.outlineWidth}`, shadow: cs.boxShadow, transform: cs.transform };
+  });
+  // Reached by the keyboard, so :focus-visible applies.
+  const tabTo = async (locator) => {
+    await locator.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expect(locator).toBeFocused();
+  };
+
+  const restingButton = await look(endTurn);
+  await tabTo(endTurn);
+  const focusedButton = await look(endTurn);
+  expect(focusedButton.outline).toBe('solid 2px');
+  expect(focusedButton.shadow, 'focus replaced the material shadow').toBe(restingButton.shadow);
+
+  const card = page.getByRole('button', { name: /^Play / }).first();
+  const restingCard = await look(card);
+  await tabTo(card);
+  await page.waitForTimeout(500); // the lift springs in
+  const focusedCard = await look(card);
+  // The hand is CSS-zoomed to the viewport height, which scales the computed
+  // width, so the style is the check here.
+  expect(focusedCard.outline).toMatch(/^solid [\d.]+px$/);
+  expect(restingCard.outline).not.toMatch(/^solid/);
+  expect(focusedCard.transform, 'a focused card should lift as a hovered one does').not.toBe(restingCard.transform);
+});
+
 test('the battle log opens with one intro, on a first game and on Play Again', async ({ page }) => {
   // The deal ran twice under React StrictMode (the dev server, which this
   // suite runs against by default) and appended its intro each time, so the
