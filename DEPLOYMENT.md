@@ -35,6 +35,66 @@ refund/chargeback reversal, and the search-path hardening.
 npx supabase db push
 ```
 
+### Cloud saves and the server-side rank (`20261023000000_cloud_saves_and_rank.sql`)
+
+This migration moves each player's progress onto their account and ranks the
+leaderboard on the server. It is applied by hand like the others, and **the
+client may be deployed before or after it**: the app checks for the new
+functions at sign-in and, while they are missing, behaves exactly as before —
+progress stays on the device, Settings → Account says *Saved on this device
+only*, and the leaderboard uses the old view.
+
+What it creates:
+
+| Object | What it is for |
+| --- | --- |
+| `player_saves` | One save per account (`save jsonb`, `rev`, `updated_at`). RLS on with no policies, and no privilege of any kind for `anon` or `authenticated`: clients reach it only through the two functions below. Rows go with the account (`ON DELETE CASCADE`). |
+| `get_player_save()` | The caller's save as `{rev, save, updated_at}` (`rev` 0 and `save` null when there is none). `SECURITY DEFINER`, acts on `auth.uid()`, takes no user id. |
+| `put_player_save(p_save, p_base_rev)` | Writes the caller's save only if the stored `rev` still equals `p_base_rev` (0 for a first save), returning the new rev; otherwise writes nothing and returns `ok: false` with the current rev. Saves over 64 KiB are refused (HTTP 413). |
+| `player_trophies(wins, experience, best_win_streak)` | The trophy formula, the same one `calculateTrophies` uses in `src/components/Leaderboard.jsx`. |
+| `leaderboard_trophies` (view) | The board in trophy order, each row's rank among all players, and `is_me` for the caller's own row. `SELECT` for `authenticated` only. |
+| `get_my_rank()` | The caller's rank among every player (1 + the number with strictly more trophies), with the stats it was counted from. |
+
+The old `leaderboard` view is left as it was, because the client already
+released decides its "50+" from that view's wins ordering. Once no deployed
+client reads it, it can be dropped.
+
+Before pushing, replay the whole chain against a scratch PostgreSQL 16 — the
+CI `migrations` job does the same, and it asserts the grants and the
+behaviour (own row only, compare-and-swap, the size cap, ties sharing a rank):
+
+```bash
+DATABASE_URL=postgres://user:pass@localhost:5432/scratch scripts/check-migrations.sh
+```
+
+After `db push`, sign in and open Settings: *Saved to your account · <time>*
+means the device has sent its save. On a second browser or device, the same
+account should load that progress (with a "Save loaded from your account"
+notice) and keep its gem balance rather than re-crediting past purchases.
+
+How the client uses it (`src/lib/cloudSave.js`): at sign-in it reads the
+account's save before the gem reconcile, then either sends this device's save,
+takes the account's, or — when both have moved on — keeps the one with more
+progress and keeps the other on the device, where Settings offers to switch to
+it. Changes are sent a few seconds after the last one and when the tab is
+hidden. Every write is a compare-and-swap, so a device that is behind is
+refused rather than overwriting another device's progress.
+
+Two limits worth knowing:
+
+- The save is the client's own state, as trustworthy as the localStorage it
+  is copied from. Nothing on the server grants anything from it; gems are
+  still minted only by the Stripe webhook, and *spending* gems is still
+  recorded only in the save.
+- The gem re-credit on a fresh browser is closed for an account once its
+  save row exists. An account that has never synced (its first sign-in after
+  this migration lands, on a fresh browser) still reconciles against a mark
+  of 0, as before; closing that needs server-side gem spending.
+
+To turn the feature off again, drop `get_player_save` and `put_player_save`:
+clients fall back to local-only saves at their next sign-in, and the rows in
+`player_saves` stay where they are.
+
 ### Deploy the Edge Functions
 
 ```bash
@@ -153,6 +213,9 @@ Point `ALLOWED_ORIGIN` (Supabase secret) at the deployed domain.
    in the DB.
 4. Spend gems (Battle Pass premium), refresh — gems are **not** restored
    (the high-water-mark reconciliation holds).
+   Then sign in to the same account in a private window: the progress loads
+   from the account, and the gem count matches the first window's rather than
+   adding the purchase again (needs `20261023000000`; see section 1).
 5. Run `get_advisors` (security) on the project — expect no RLS gaps on
    `players` / `user_gems` / `purchases` and no `function_search_path_mutable`
    warnings (every `SECURITY DEFINER` function now pins its search_path).
