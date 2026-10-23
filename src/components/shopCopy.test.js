@@ -3,12 +3,14 @@ import fs, { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createElement, act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { MotionGlobalConfig } from 'framer-motion';
 import { ALL_CARDS, SHOP_ITEMS, PACK_SLOTS, PACK_ODDS, useGameStore } from '@/stores/gameStore';
 import { BATTLE_PASS_REWARDS } from './BattlePass';
 import { bestValuePackId } from './StoreTile';
 import { describePackOdds, PackOddsDialog, TIER_NAME } from './PackOdds';
 import CardPackOpening from './CardPackOpening';
 import Shop from './Shop';
+import { routeEvent, ACTION } from '../../supabase/functions/stripe-webhook/eventRouting.js';
 
 // Pins what the shop CLAIMS against what the economy actually does.
 //
@@ -198,6 +200,70 @@ describe('the posted pack odds are the rolled odds', () => {
       // JSX text only (between > and <): gradients in class strings carry % too.
       const literal = stripComments(read(file)).match(/>[^<>{}]*\b\d+(\.\d+)?%[^<>{}]*</g);
       expect(literal, `${file} hardcodes a percentage: ${literal}`).toBeNull();
+    }
+  });
+});
+
+// The real-money tabs promised three things the code contradicts: "All
+// purchases are final" (the webhook removes gems on a refund or chargeback),
+// "See Terms of Service for details" (no such page exists anywhere), and gems
+// "credited instantly" (they are credited by the webhook, after Stripe
+// confirms, while PurchaseSuccess polls). Each check reads the behaviour it is
+// held to, so the copy has to move if the payment flow does.
+describe('the real-money copy says what the payment flow does', () => {
+  // The tab panels swap through AnimatePresence mode="wait", so the new tab
+  // mounts only once the old one has animated out: skip animations, wait a
+  // tick, and check the tab really opened so no assertion passes vacuously.
+  const TAB_MARK = { 'Card Packs': 'Standard packs', 'Buy Gems': 'Get More Gems', 'Special Offers': 'Coin Doubler' };
+  const shopTabText = async (tab) => {
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    MotionGlobalConfig.skipAnimations = true;
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    try {
+      act(() => root.render(createElement(Shop, { onClose() {} })));
+      const key = [...host.querySelectorAll('button')].find((b) => b.textContent.trim() === tab);
+      await act(async () => {
+        key.click();
+        await new Promise((r) => setTimeout(r, 50));
+      });
+      const text = host.textContent.replace(/\s+/g, ' ');
+      expect(text, `the ${tab} tab did not open`).toContain(TAB_MARK[tab]);
+      const hrefs = [...host.querySelectorAll('a[href]')].map((a) => a.getAttribute('href'));
+      return { text, hrefs };
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+      MotionGlobalConfig.skipAnimations = false;
+    }
+  };
+  const refund = routeEvent({
+    type: 'charge.refunded',
+    data: { object: { amount_refunded: 499, amount_captured: 499, payment_intent: 'pi_test' } },
+  });
+
+  it('does not call purchases final while a full refund removes the gems', async () => {
+    expect(refund.action).toBe(ACTION.REVERSE);
+    const { text } = await shopTabText('Buy Gems');
+    expect(text).not.toMatch(/\b(final|non-?refundable)\b/i);
+    expect(text, 'the Buy Gems tab should say what a refund does').toMatch(/refunded[^.]*gems[^.]*removed/i);
+  });
+
+  it('cites no terms page unless it links to one that ships', async () => {
+    for (const tab of ['Card Packs', 'Buy Gems', 'Special Offers']) {
+      const { text, hrefs } = await shopTabText(tab);
+      if (/terms of (service|use)|privacy policy/i.test(text)) {
+        const shipped = hrefs.filter((h) => h.startsWith('/') && fs.existsSync(resolve(process.cwd(), 'public', `.${h}`)));
+        expect(shipped, `${tab} cites terms but links no page in public/`).not.toHaveLength(0);
+      }
+    }
+  });
+
+  it('does not promise instant credit for a purchase the webhook fulfils', async () => {
+    expect(routeEvent({ type: 'checkout.session.completed', data: { object: {} } }).action).toBe(ACTION.FULFILL);
+    for (const tab of ['Buy Gems', 'Special Offers']) {
+      expect((await shopTabText(tab)).text, tab).not.toMatch(/\binstant(ly)?\b/i);
     }
   });
 });

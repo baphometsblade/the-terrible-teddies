@@ -377,7 +377,12 @@ const Shop = ({ onClose }) => {
                     <ShieldCheck aria-hidden="true" className="w-3.5 h-3.5 text-emerald-300" strokeWidth={2.4} />
                     Secure payment processing powered by Stripe
                   </p>
-                  <p>All purchases are final. See Terms of Service for details.</p>
+                  {/* What the Stripe webhook actually does (eventRouting.js): a
+                      full refund, or a chargeback that takes the money, removes
+                      the gems that payment bought. This used to say purchases
+                      were final, and point at a Terms of Service page that
+                      does not exist. */}
+                  <p>If a payment is fully refunded or charged back, the gems it bought are removed.</p>
                 </div>
                 </div>
               </motion.div>
@@ -430,7 +435,7 @@ const Shop = ({ onClose }) => {
                       <Medallion icon={Gem} metal={RARITY_METAL.epic} iconClassName="text-fuchsia-300" />
                       <div className="min-w-0">
                         <h4 className="font-display text-lg font-extrabold leading-tight text-white">Mega Gem Pack</h4>
-                        <p className="mt-0.5 text-plush-300 text-sm">A one-time gem boost — credited instantly.</p>
+                        <p className="mt-0.5 text-plush-300 text-sm">A one-time gem boost — credited as soon as your payment confirms.</p>
                       </div>
                     </div>
                     <div className="relative mt-4 pt-3 border-t border-white/5 flex justify-between items-center gap-3">
