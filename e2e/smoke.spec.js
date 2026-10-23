@@ -644,6 +644,20 @@ test('End Turn takes the lead once no move is left, and energy reads current/max
   await expect(energy).not.toHaveText('3/3');
   await expect(energy).toHaveText(/^[01]\/3$/);
 
+  // Its glow breathes only where motion is allowed: not under the OS's
+  // reduced motion, nor with the in-game Animations switch off. (Each media
+  // state is set explicitly: playwright.config's `use.reducedMotion` is not a
+  // Playwright option, so the suite does not actually run reduced.)
+  const glow = () => endTurn.evaluate((el) => getComputedStyle(el, '::after').animationName);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  expect(await glow()).toBe('end-turn-glow');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(await glow()).toBe('none');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.evaluate(() => { document.documentElement.dataset.motion = 'off'; });
+  expect(await glow()).toBe('none');
+  await page.evaluate(() => { document.documentElement.dataset.motion = 'on'; });
+
   // Turn 2: the energy refills to the new maximum, the creatures are ready,
   // so there are moves again and End Turn steps back.
   await endTurn.click();
@@ -909,7 +923,7 @@ test('keyboard focus on the board is a brass outline, and lifts a hand card like
   // The board's controls drew a focus RING on their brass and glass, and a
   // ring is a box-shadow: it replaced the material's own shadow while focused.
   // Hand cards got the browser's default ring and sat flat while hover lifts
-  // them. (Lift needs motion on; the suite defaults to reduced motion.)
+  // them. (The lift needs motion allowed, so this asks for it explicitly.)
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.getByRole('button', { name: 'Battle', exact: true }).click();
   const endTurn = page.getByRole('button', { name: 'End Turn' });
