@@ -184,9 +184,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
         forgetPendingPurchase(sessionId);
         setPhase(purchase.status);
       } else {
-        // Not confirmed yet. Remembered, so the gems can still land if the
-        // player leaves this screen first (settlePendingPurchase).
-        rememberPendingPurchase(sessionId);
+        // Not confirmed yet; the marker set on arrival stays.
         setPhase('pending');
       }
     } catch (_err) {
@@ -201,6 +199,11 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
   useEffect(() => {
     if (verifyStartedFor.current === sessionId) return;
     verifyStartedFor.current = sessionId;
+    // Remembered from the moment the buyer lands, so the gems can still land
+    // (settlePendingPurchase) however this screen is left: mid-verification
+    // ("Close and check back later"), after an error, or while pending.
+    // Forgotten once the row says completed, refunded or disputed.
+    rememberPendingPurchase(sessionId);
     verify();
   }, [verify, sessionId]);
 

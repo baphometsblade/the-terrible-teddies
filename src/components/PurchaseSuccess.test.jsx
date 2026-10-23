@@ -7,7 +7,7 @@ import { MotionGlobalConfig } from 'framer-motion';
 const net = { row: null, checks: 0 };
 vi.mock('../utils/pendingPurchase', async (importOriginal) => ({
   ...(await importOriginal()),
-  verifyPurchaseSession: async () => { net.checks += 1; return net.row; },
+  verifyPurchaseSession: async () => { net.checks += 1; if (net.hang) await new Promise(() => {}); return net.row; },
 }));
 // The server balance after one 500-gem purchase.
 vi.mock('../utils/supabaseClient', () => ({ fetchServerGemBalance: async () => 500 }));
@@ -46,7 +46,7 @@ beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
   useGameStore.setState(useGameStore.getInitialState(), true);
-  Object.assign(net, { row: null, checks: 0 });
+  Object.assign(net, { row: null, checks: 0, hang: false });
 });
 afterEach(() => {
   act(() => root?.unmount());
@@ -120,6 +120,17 @@ describe('a payment Stripe has not confirmed yet', () => {
     expect(text()).toContain('Waiting for Payment Confirmation');
     await wait(4_000);
     expect(net.checks).toBe(before + 2);
+  });
+});
+
+describe('leaving before the answer', () => {
+  it('remembers the payment from the moment the buyer lands, so closing mid-check loses nothing', async () => {
+    net.hang = true;
+    await render('cs_test_closed_early');
+    expect(text()).toContain('Verifying Payment');
+    act(() => root.unmount());
+    root = null;
+    expect(pendingPurchase()?.sessionId).toBe('cs_test_closed_early');
   });
 });
 
