@@ -318,3 +318,32 @@ test('cards only advertise themselves as buttons when they can actually be used'
   await selectable.first().click();
   await expect.poll(() => attackable.count(), { timeout: 15_000 }).toBeGreaterThan(0);
 });
+
+// The store and pack surfaces added with the storefront and reveal rework:
+// the Shop's odds dialog, a pack mid-reveal (face-down cards are buttons, a
+// rare-or-better one named by its light), and the empty Card Packs state.
+test('pack odds dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.getByRole('button', { name: 'Shop', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Shop' })).toBeVisible(SLOW);
+  await page.getByRole('button', { name: 'View odds' }).click();
+  await expect(page.getByRole('dialog', { name: 'Pack odds' })).toBeVisible(SLOW);
+  await expectNoViolations(page, 'pack odds dialog');
+});
+
+test('a pack mid-reveal has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.addInitScript(() => {
+    const raw = localStorage.getItem('terrible-teddies-storage');
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+    Object.assign(stored.state, { cardPacks: 0, premiumPacks: 0, legendaryPacks: 1 });
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Card Packs', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Card packs' });
+  await expect(dialog).toBeVisible(SLOW);
+  await dialog.getByRole('button', { name: /^Open Legendary Pack/ }).click();
+  // One card turned, the rest still face down and turnable.
+  await dialog.getByRole('button', { name: /^Turn over card 1(,|$)/ }).click();
+  await expect(dialog.getByRole('button', { name: /^Turn over card 2(,|$)/ })).toBeVisible(SLOW);
+  await expectNoViolations(page, 'pack reveal');
+});
