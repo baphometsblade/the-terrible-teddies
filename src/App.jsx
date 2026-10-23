@@ -16,6 +16,7 @@ import analytics from './utils/analytics';
 import { useRehydrateOnFocus } from './hooks/useRehydrateOnFocus';
 import { FOCUS_OUTLINE } from './lib/focus';
 import { SCREEN_PAD } from './lib/safeArea';
+import { holdBack } from './lib/historyGuard';
 
 // GameBoard is lazy for the same reason the dialogs are: it is only reachable
 // after tapping Battle, but a static import put it — and its dependency tail,
@@ -85,8 +86,27 @@ function App() {
   // rather than the storage event.
   useRehydrateOnFocus();
   const [currentScreen, setCurrentScreen] = useState('menu');
-  // The Deck Builder's leave guard (its requestLeave), for "← Menu".
+  // The Deck Builder's and the battle board's leave guards (each one's
+  // requestLeave): "← Menu" and the system's Back go through them.
   const deckBuilderRef = useRef(null);
+  const gameBoardRef = useRef(null);
+  const signedIn = !!session;
+
+  // The system's Back on any screen but the menu returns to the menu, as its
+  // "← Menu" does: through the Deck Builder's unsaved-changes question, and
+  // through the battle's leave question while a game is live (each screen's
+  // requestLeave decides; before its chunk has loaded there is nothing to
+  // ask about). It used to leave the game, from the middle of a battle
+  // included. Dialogs hold Back above this (useDialog), so it reaches the
+  // screen once they are closed. See src/lib/historyGuard.js.
+  useEffect(() => {
+    if (!signedIn || currentScreen === 'menu') return undefined;
+    const guard = { game: gameBoardRef, deck: deckBuilderRef }[currentScreen];
+    return holdBack(() => {
+      if (guard?.current) guard.current.requestLeave();
+      else setCurrentScreen('menu');
+    });
+  }, [signedIn, currentScreen]);
 
   const [showTutorial, setShowTutorial] = useState(false);
   const [showCardPacks, setShowCardPacks] = useState(false);
@@ -400,6 +420,7 @@ function App() {
             <DialogErrorBoundary resetKey={currentScreen} onDismiss={() => navigateTo('menu')}>
               <Suspense fallback={<DialogLoader />}>
                 <GameBoard
+                  ref={gameBoardRef}
                   onBackToMenu={() => navigateTo('menu')}
                   onOpenShop={() => { navigateTo('menu'); openShop(); }}
                 />

@@ -114,3 +114,147 @@ test.describe('the sign-in screen', () => {
     });
   });
 });
+
+// The system's Back — Android's gesture, an installed app's Back, the
+// browser's button. Navigation is React state, not URLs, so the game was one
+// history entry and Back left it from anywhere: an open dialog, the
+// Collection, the middle of a battle (booking the loss as it went).
+test.describe('the system Back', () => {
+  test.beforeEach(async ({ page }) => {
+    await bootToMainMenu(page);
+  });
+
+  const battle = (page) => page.getByRole('button', { name: 'Battle', exact: true });
+  const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('terrible-teddies-storage')).state);
+
+  test('closes the open dialog instead of leaving the game', async ({ page }) => {
+    const url = page.url();
+    await page.getByRole('button', { name: 'Shop', exact: true }).click();
+    const shop = page.getByRole('dialog', { name: 'Shop' });
+    await expect(shop).toBeVisible(SLOW);
+    await page.goBack();
+    await expect(shop).toHaveCount(0, SLOW);
+    await expect(battle(page)).toBeVisible();
+    expect(page.url()).toBe(url);
+  });
+
+  // A reload with a dialog open starts the new page on the old page's guard
+  // entry, which it must not mistake for its own.
+  test('still closes a dialog after a reload', async ({ page }) => {
+    const shop = page.getByRole('dialog', { name: 'Shop' });
+    await page.getByRole('button', { name: 'Shop', exact: true }).click();
+    await expect(shop).toBeVisible(SLOW);
+    await page.reload();
+    await expect(battle(page)).toBeVisible(SLOW);
+    await page.getByRole('button', { name: 'Shop', exact: true }).click();
+    await expect(shop).toBeVisible(SLOW);
+    await page.goBack();
+    await expect(shop).toHaveCount(0, SLOW);
+    await expect(battle(page)).toBeVisible();
+  });
+
+  test('closes only the innermost of nested dialogs', async ({ page }) => {
+    await page.getByRole('button', { name: 'Shop', exact: true }).click();
+    const shop = page.getByRole('dialog', { name: 'Shop' });
+    await expect(shop).toBeVisible(SLOW);
+    await page.getByRole('button', { name: 'View odds' }).click();
+    const odds = page.getByRole('dialog', { name: 'Pack odds' });
+    await expect(odds).toBeVisible(SLOW);
+    await page.goBack();
+    await expect(odds).toHaveCount(0, SLOW);
+    await expect(shop).toBeVisible();
+    await page.goBack();
+    await expect(shop).toHaveCount(0, SLOW);
+    await expect(battle(page)).toBeVisible();
+  });
+
+  test('returns from the Collection to the menu', async ({ page }) => {
+    await page.getByRole('button', { name: 'Collection', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Card Collection' })).toBeVisible(SLOW);
+    await page.goBack();
+    await expect(battle(page)).toBeVisible(SLOW);
+  });
+
+  test('from the Deck Builder asks about unsaved changes first, and otherwise just returns', async ({ page }) => {
+    const heading = page.getByRole('heading', { name: 'Deck Builder' });
+    await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+    await expect(heading).toBeVisible(SLOW);
+    // Unchanged: straight back to the menu.
+    await page.goBack();
+    await expect(battle(page)).toBeVisible(SLOW);
+
+    await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+    await expect(heading).toBeVisible(SLOW);
+    await page.locator('[data-deck-panel]').getByRole('button', { name: /^Remove .+ from deck$/ }).first().click();
+    await expect(page.locator('[data-unsaved]')).toHaveCount(1);
+    await page.goBack();
+    const ask = page.getByRole('dialog', { name: 'Leave without saving?' });
+    await expect(ask).toBeVisible(SLOW);
+    // Back again is "Keep editing", as Escape is.
+    await page.goBack();
+    await expect(ask).toHaveCount(0, SLOW);
+    await expect(page.locator('[data-unsaved]')).toHaveCount(1);
+    await page.goBack();
+    await expect(ask).toBeVisible(SLOW);
+    await ask.getByRole('button', { name: 'Discard changes' }).click();
+    await expect(battle(page)).toBeVisible(SLOW);
+  });
+
+  test('in a live battle asks before conceding, and Back again keeps playing', async ({ page }) => {
+    await page.addInitScript(() => {
+      const raw = localStorage.getItem('terrible-teddies-storage');
+      const save = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+      save.state.currentWinStreak = 2;
+      save.state.totalLosses = 0;
+      localStorage.setItem('terrible-teddies-storage', JSON.stringify(save));
+    });
+    await page.reload();
+    await battle(page).click();
+    const endTurn = page.getByRole('button', { name: 'End Turn' });
+    await expect(endTurn).toBeVisible(SLOW);
+    const leave = page.getByRole('dialog', { name: 'Leave this battle?' });
+
+    await page.goBack();
+    await expect(leave).toBeVisible(SLOW);
+    await expect(leave).toContainText('2-win streak');
+    await page.goBack();
+    await expect(leave).toHaveCount(0, SLOW);
+    await expect(endTurn).toBeVisible();
+    expect((await stored(page)).totalLosses).toBe(0);
+    expect((await stored(page)).currentWinStreak).toBe(2);
+
+    // Asked again, and this time the player goes: the loss is booked.
+    await page.goBack();
+    await expect(leave).toBeVisible(SLOW);
+    await leave.getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    await expect(battle(page)).toBeVisible(SLOW);
+    expect((await stored(page)).totalLosses).toBe(1);
+  });
+
+  test('from the result screen goes back to the menu', async ({ page }) => {
+    await battle(page).click();
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    await page.getByRole('button', { name: 'Concede' }).click();
+    await page.getByRole('dialog', { name: 'Concede this battle?' })
+      .getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    await expect(page.getByRole('dialog', { name: 'Defeat' })).toBeVisible(SLOW);
+    await page.goBack();
+    await expect(battle(page)).toBeVisible(SLOW);
+  });
+
+  test('piles up no history: after twenty dialogs, Back on the menu leaves the game', async ({ page }) => {
+    const before = await page.evaluate(() => window.history.length);
+    const shop = page.getByRole('dialog', { name: 'Shop' });
+    for (let i = 0; i < 20; i += 1) {
+      await page.getByRole('button', { name: 'Shop', exact: true }).click();
+      await expect(shop).toBeVisible(SLOW);
+      if (i % 2) await page.keyboard.press('Escape');
+      else await shop.getByRole('button', { name: 'Close shop' }).click();
+      await expect(shop).toHaveCount(0, SLOW);
+    }
+    expect(await page.evaluate(() => window.history.length)).toBeLessThanOrEqual(before + 1);
+    // Nothing open: Back does what it always did, and leaves.
+    await page.goBack();
+    await expect.poll(() => page.url()).toBe('about:blank');
+  });
+});

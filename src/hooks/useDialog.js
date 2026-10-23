@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { holdBack } from '@/lib/historyGuard';
 
 const FOCUSABLE =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -25,9 +26,12 @@ const markOpen = () => {
  * Attach the returned ref to the dialog container and give it
  * role="dialog" aria-modal="true" plus an aria-label/aria-labelledby. The hook
  * focuses the dialog on open, restores focus to the previously-focused element
- * on close, traps Tab focus within the dialog, and closes it on Escape.
+ * on close, traps Tab focus within the dialog, and closes it on Escape — and
+ * on the system's Back (src/lib/historyGuard.js), which used to leave the
+ * game from under an open dialog. Back reaches the top dialog only, as
+ * Escape does.
  *
- * @param {() => void} onClose called on Escape (and used as the close action)
+ * @param {() => void} onClose called on Escape and Back (and used as the close action)
  */
 export function useDialog(onClose) {
   const ref = useRef(null);
@@ -42,6 +46,9 @@ export function useDialog(onClose) {
     const previouslyFocused = document.activeElement;
     dialogStack.push(node);
     markOpen();
+    // Held in the same order as dialogStack, so Back and Escape agree on
+    // which dialog is on top.
+    const releaseBack = holdBack(() => onCloseRef.current?.());
 
     // Skips inert subtrees: a dialog that makes part of itself inert (the
     // Shop does while a checkout is starting) must not have the trap walk
@@ -93,6 +100,7 @@ export function useDialog(onClose) {
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
+      releaseBack();
       // Remove by index — dialogs don't always unmount in LIFO order.
       const i = dialogStack.indexOf(node);
       if (i !== -1) dialogStack.splice(i, 1);
