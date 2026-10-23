@@ -94,23 +94,27 @@ export const ALL_CARDS = [
   { id: 79, name: "Suspicious Brownies", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'draw', amount: 2, rarity: 'uncommon', description: "Don't ask what's in them. Draw two, feel weird later." },
 ];
 
+// `icon` names the badge drawn for each, on its unlock toast and in Player
+// Stats: src/lib/achievementIcons.js maps the name to a line icon. A name,
+// not the component, so the store stays plain data. They were emoji, which
+// every platform draws differently.
 export const ACHIEVEMENTS = [
-  { id: 'first_win', name: 'First Victory', description: 'Win your first battle', reward: 100, icon: '🏆' },
-  { id: 'win_10', name: 'Rising Champion', description: 'Win 10 battles', reward: 500, icon: '⭐' },
-  { id: 'win_50', name: 'Teddy Master', description: 'Win 50 battles', reward: 2000, icon: '👑' },
-  { id: 'win_streak_5', name: 'On Fire', description: 'Win 5 battles in a row', reward: 300, icon: '🔥' },
-  { id: 'collect_20', name: 'Collector', description: 'Collect 20 unique cards', reward: 400, icon: '📚' },
-  { id: 'collect_40', name: 'Hoarder', description: 'Collect 40 unique cards', reward: 1000, icon: '🗃️' },
-  { id: 'collect_55', name: 'Problem Collector', description: 'Collect 55 unique cards', reward: 2500, icon: '🏚️' },
-  { id: 'collect_all', name: 'Complete Collection', description: 'Collect all cards', reward: 10000, icon: '💎' },
-  { id: 'play_100', name: 'Dedicated Player', description: 'Play 100 battles', reward: 1000, icon: '🎮' },
-  { id: 'deal_1000_damage', name: 'Damage Dealer', description: 'Deal 1000 total damage', reward: 500, icon: '💥' },
-  { id: 'heal_500', name: 'Medic Bear', description: 'Heal 500 total HP', reward: 300, icon: '💚' },
-  { id: 'perfect_win', name: 'Flawless', description: 'Win without losing HP', reward: 1000, icon: '💫' },
-  { id: 'comeback', name: 'Comeback King', description: 'Win with 5 or less HP', reward: 500, icon: '👊' },
-  { id: 'level_10', name: 'Leveling Up', description: 'Reach level 10', reward: 500, icon: '📈' },
-  { id: 'level_25', name: 'Veteran', description: 'Reach level 25', reward: 1500, icon: '🎖️' },
-  { id: 'daily_7', name: 'Weekly Warrior', description: 'Log in 7 days in a row', reward: 700, icon: '📅' },
+  { id: 'first_win', name: 'First Victory', description: 'Win your first battle', reward: 100, icon: 'Trophy' },
+  { id: 'win_10', name: 'Rising Champion', description: 'Win 10 battles', reward: 500, icon: 'Star' },
+  { id: 'win_50', name: 'Teddy Master', description: 'Win 50 battles', reward: 2000, icon: 'Crown' },
+  { id: 'win_streak_5', name: 'On Fire', description: 'Win 5 battles in a row', reward: 300, icon: 'Flame' },
+  { id: 'collect_20', name: 'Collector', description: 'Collect 20 unique cards', reward: 400, icon: 'Library' },
+  { id: 'collect_40', name: 'Hoarder', description: 'Collect 40 unique cards', reward: 1000, icon: 'Archive' },
+  { id: 'collect_55', name: 'Problem Collector', description: 'Collect 55 unique cards', reward: 2500, icon: 'Warehouse' },
+  { id: 'collect_all', name: 'Complete Collection', description: 'Collect all cards', reward: 10000, icon: 'BadgeCheck' },
+  { id: 'play_100', name: 'Dedicated Player', description: 'Play 100 battles', reward: 1000, icon: 'Gamepad2' },
+  { id: 'deal_1000_damage', name: 'Damage Dealer', description: 'Deal 1000 total damage', reward: 500, icon: 'Bomb' },
+  { id: 'heal_500', name: 'Medic Bear', description: 'Heal 500 total HP', reward: 300, icon: 'HeartPulse' },
+  { id: 'perfect_win', name: 'Flawless', description: 'Win without losing HP', reward: 1000, icon: 'ShieldCheck' },
+  { id: 'comeback', name: 'Comeback King', description: 'Win with 5 or less HP', reward: 500, icon: 'Swords' },
+  { id: 'level_10', name: 'Leveling Up', description: 'Reach level 10', reward: 500, icon: 'ChevronsUp' },
+  { id: 'level_25', name: 'Veteran', description: 'Reach level 25', reward: 1500, icon: 'Medal' },
+  { id: 'daily_7', name: 'Weekly Warrior', description: 'Log in 7 days in a row', reward: 700, icon: 'CalendarCheck' },
 ];
 
 export const DAILY_REWARDS = [

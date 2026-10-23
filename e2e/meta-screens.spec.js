@@ -224,13 +224,16 @@ test.describe('challenge claims', () => {
   }
 });
 
-// The achievement toast with the longest line, worded as App words it.
-const LONGEST_ACHIEVEMENT_TOAST = (() => {
+// The achievement with the longest toast line. The toast itself is built in
+// the page by App's own achievementToast (its badge on a medallion, the
+// reward with a coin icon), so this measures what a player sees. It used to
+// rebuild App's wording here, emoji and all.
+const LONGEST_ACHIEVEMENT = (() => {
   const src = readFileSync(resolve(process.cwd(), 'src/stores/gameStore.js'), 'utf8');
   const table = src.slice(src.indexOf('export const ACHIEVEMENTS = ['));
   return [...table.slice(0, table.indexOf('];')).matchAll(/name: '([^']+)'.*?reward: (\d+), icon: '([^']+)'/g)]
-    .map(([, name, reward, icon]) => ({ title: `${icon} Achievement Unlocked!`, description: `${name} — +${Number(reward).toLocaleString('en-US')} 🪙` }))
-    .sort((a, b) => b.description.length - a.description.length)[0];
+    .map(([, name, reward, icon]) => ({ name, reward: Number(reward), icon }))
+    .sort((a, b) => `${b.name}${b.reward.toLocaleString('en-US')}`.length - `${a.name}${a.reward.toLocaleString('en-US')}`.length)[0];
 })();
 
 test.describe('a toast over a dialog', () => {
@@ -247,10 +250,11 @@ test.describe('a toast over a dialog', () => {
       await page.getByRole('button', { name: 'How to play' }).click();
       const dialog = page.getByRole('dialog', { name: 'How to play' });
       await expect(dialog.getByText('Step 1 of 9')).toBeVisible(SLOW);
-      await page.evaluate(async (t) => {
+      await page.evaluate(async (a) => {
         const { toast } = await import('/src/components/ui/use-toast.js');
-        toast({ ...t, duration: 60000 });
-      }, LONGEST_ACHIEVEMENT_TOAST);
+        const { achievementToast } = await import('/src/lib/achievementToast.jsx');
+        toast({ ...achievementToast(a), duration: 60000 });
+      }, LONGEST_ACHIEVEMENT);
       const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Achievement Unlocked!' });
       await expect(toast).toBeVisible();
       expect(await controlsUnder(dialog, await toast.boundingBox()), 'the toast covers dialog controls').toEqual([]);

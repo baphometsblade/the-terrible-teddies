@@ -754,6 +754,17 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   :root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-description {
     line-height: 1rem;
   }
+  /* And a toast's badge (an achievement's or a level-up's medallion) gives
+     its room to the words: beside it "Achievement Unlocked!" took two lines,
+     and the toast reached the step bar. It is decoration; the title says
+     what the toast is. */
+  :root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-icon {
+    display: none;
+  }
+  /* The toast's space-x gap skips only [hidden] children, not display:none. */
+  :root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-icon + * {
+    margin-left: 0;
+  }
 }
 @media (min-width: 640px) {
   :root[data-dialog]:not([data-screen="battle"]) .toast-viewport {

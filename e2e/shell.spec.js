@@ -565,6 +565,39 @@ test.describe('announcements', () => {
     expect(gap.across).toBeGreaterThanOrEqual(0);
   });
 
+  // The same for an achievement: its badge on a medallion and the coin icon,
+  // where it printed the achievement's emoji and a 🪙. At 320, where the line
+  // wraps, the coin stays beside the amount.
+  test('an achievement is drawn with its badge and the coin, not emoji', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await bootToMainMenu(page);
+    await seedSave(page, { totalBattles: 99, completedAchievements: [] });
+    await page.reload();
+    await concede(page);
+    const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Achievement Unlocked!' });
+    await expect(toast).toBeVisible(SLOW);
+    await expect(toast).toContainText('Dedicated Player — +1,000');
+    expect(await toast.textContent()).not.toMatch(/\p{Extended_Pictographic}/u);
+    // Gamepad2 is Dedicated Player's badge, the one Player Stats draws for battles.
+    await expect(toast.locator('[aria-hidden="true"] svg.lucide-gamepad2')).toHaveCount(1);
+    await expect(toast.locator('.toast-description .sr-only')).toHaveText('coins');
+    const gap = await toast.locator('.toast-description svg').evaluate((coin) => {
+      const walker = document.createTreeWalker(coin.closest('.toast-description'), NodeFilter.SHOW_TEXT);
+      let amount = null;
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.textContent.includes('+1,000')) amount = n;
+      const range = document.createRange();
+      const end = amount.textContent.indexOf('+1,000') + 6;
+      range.setStart(amount, end - 1);
+      range.setEnd(amount, end);
+      const a = range.getBoundingClientRect();
+      const c = coin.getBoundingClientRect();
+      return { across: c.left - a.right, sameLine: c.top < a.bottom && c.bottom > a.top };
+    });
+    expect(gap.sameLine, 'the coin is on the amount\'s line').toBe(true);
+    expect(gap.across, 'the coin sits beside the amount').toBeLessThan(6);
+    expect(gap.across).toBeGreaterThanOrEqual(0);
+  });
+
   // "No charge was made — your gems are still waiting in the shop." took
   // three lines at 320 and, over the first-run tutorial (which opens on the
   // same launch), reached its step bar.

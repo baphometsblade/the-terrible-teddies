@@ -12,6 +12,18 @@ import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { BalanceChip } from '@/components/ui/game-chrome';
+import { achievementIcon } from '@/lib/achievementIcons';
+
+// An achievement's badge: brass once unlocked, a dimmed outline before.
+const AchievementBadge = ({ achievement, unlocked }) => {
+  const Icon = achievementIcon(achievement);
+  return (
+    <Icon
+      className={`h-6 w-6 ${unlocked ? 'text-brass-300' : 'text-plush-300 opacity-60'}`}
+      strokeWidth={2}
+    />
+  );
+};
 
 // The avatar ring the menu's player chip wears.
 const AVATAR_RING = 'linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24)';
@@ -375,13 +387,14 @@ const PlayerStats = ({ onClose }) => {
                   >
                     {/* Only the badge dims on a locked achievement — never the
                         row, which would take its text below AA with it. */}
+                    {/* The badge its unlock toast draws (achievementIcons). */}
                     <div
                       aria-hidden="true"
                       className="row-span-2 h-12 w-12 rounded-full p-[2px] sm:row-span-1"
                       style={{ background: isCompleted ? RARITY_METAL.legendary : 'rgba(255, 255, 255, 0.1)' }}
                     >
                       <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
-                        <span className={`text-2xl leading-none ${isCompleted ? '' : 'opacity-50 grayscale'}`}>{achievement.icon}</span>
+                        <AchievementBadge achievement={achievement} unlocked={isCompleted} />
                       </div>
                     </div>
                     <div className="min-w-0">

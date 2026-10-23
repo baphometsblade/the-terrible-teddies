@@ -32,6 +32,7 @@ import { FOCUS_OUTLINE } from './lib/focus';
 import { SCREEN_PAD } from './lib/safeArea';
 import { holdBack } from './lib/historyGuard';
 import { focusWhenReady } from './lib/screenFocus';
+import { achievementToasts } from './lib/achievementAnnouncements';
 
 // GameBoard is lazy for the same reason the dialogs are: it is only reachable
 // after tapping Battle, but a static import put it — and its dependency tail,
@@ -259,10 +260,10 @@ function App() {
     useGameStore.setState({ pendingAchievements: [] });
 
     fresh.forEach((achievement) => shownAchievementIds.current.add(achievement.id));
-    announceAll(toast, fresh.map((achievement) => ({
-      title: `${achievement.icon} Achievement Unlocked!`,
-      description: `${achievement.name} — +${achievement.reward.toLocaleString()} 🪙`,
-    })));
+    if (fresh.length === 0) return;
+    // Each badge on a medallion and the coin icon, as the level-up toast
+    // below; drawn by a chunk that loads with the first unlock.
+    achievementToasts(fresh).then((items) => announceAll(toast, items));
   }, [pendingAchievements, toast]);
 
   // Level-ups earned away from a battle's result screen — a challenge's XP
