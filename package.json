@@ -18,6 +18,8 @@
     "art:monitor": "node scripts/art-monitor.mjs",
     "art:thumbs": "node scripts/make-card-thumbs.mjs",
     "art:tokens": "python3 scripts/check-art-tokens.py",
+    "art:og": "node scripts/make-og-image.mjs",
+    "art:icons": "node scripts/make-icons.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

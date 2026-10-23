@@ -117,6 +117,21 @@ Set environment variables (Project → Settings → Environment Variables):
 | `VITE_SUPABASE_URL` | `https://<project-ref>.supabase.co` |
 | `VITE_SUPABASE_ANON_KEY` | Settings → API anon key |
 | `VITE_POSTHOG_KEY` | optional analytics |
+| `VITE_SITE_URL` | optional: the site's public address (`https://your-domain.com`), for the link-preview tags |
+| `VITE_SUPPORT_EMAIL` | optional: a support address the purchase screens offer, with the Stripe reference |
+
+`VITE_SITE_URL` is what makes a shared link show its picture: Open Graph and X
+need absolute URLs, so the build writes `og:url`, `og:image` (with its size
+and alt text) and `twitter:image` from it (`vite.config.js`, `src/lib/siteMeta.js`).
+Left unset on Vercel, the build uses the project's production domain
+(`VERCEL_PROJECT_PRODUCTION_URL`); with neither, it leaves the tags out and
+warns, rather than guess. A value that is not an absolute `http(s)` URL fails
+the build. The image itself is `public/og-image.jpg`, drawn from the game's own
+stylesheet and card art by `npm run art:og`; the app icons come from
+`npm run art:icons`.
+
+`VITE_SUPPORT_EMAIL` is optional too: set, the purchase screens offer a
+`mailto:` carrying the Stripe checkout reference; unset, they offer none.
 
 Then deploy (`vercel.json` already configures the SPA build/rewrites):
 

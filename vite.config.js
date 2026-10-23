@@ -2,6 +2,32 @@ import { fileURLToPath, URL } from "url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
+import { siteUrlFrom, socialMetaTags } from "./src/lib/siteMeta.js";
+
+// The link preview's absolute URLs (og:url, og:image and its size and alt,
+// twitter:image), injected into index.html from the site's address. Shared
+// links got no picture from a relative og:image. With no address configured
+// (VITE_SITE_URL, or Vercel's production domain) the tags are left out, not
+// guessed. A plugin rather than %VITE_SITE_URL% in index.html: Vite leaves an
+// undefined %VAR% in the page verbatim, which would ship a broken URL, and
+// it keeps index.html's inline script, whose hash vercel.json pins, as it is.
+// See src/lib/siteMeta.js.
+export const socialMeta = () => {
+  let tags = [];
+  return {
+    name: "social-meta",
+    configResolved(config) {
+      const site = siteUrlFrom({ ...process.env, ...config.env });
+      tags = site ? socialMetaTags(site) : [];
+      if (!site && config.command === "build") {
+        config.logger.warn(
+          "social-meta: no VITE_SITE_URL (or VERCEL_PROJECT_PRODUCTION_URL), so the build has no og:image; shared links will show no picture."
+        );
+      }
+    },
+    transformIndexHtml: () => tags,
+  };
+};
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -9,7 +35,7 @@ export default defineConfig({
     host: "::",
     port: "8080",
   },
-  plugins: [react()],
+  plugins: [react(), socialMeta()],
   resolve: {
     alias: [
       {

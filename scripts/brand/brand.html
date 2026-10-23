@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!-- The page scripts/make-og-image.mjs and scripts/make-icons.mjs photograph:
+     the game's own stylesheet and components, drawn at the size of the
+     image being made. Served by Vite's dev server; never part of the app's
+     build (index.html is its only entry). -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brand images</title>
+    <style>
+      /* Transparent behind the icons that have corners or edges to keep
+         clear; index.css paints the body night, so this must win. */
+      html, body { margin: 0; padding: 0; background: transparent !important; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/scripts/brand/brand.jsx"></script>
+  </body>
+</html>
