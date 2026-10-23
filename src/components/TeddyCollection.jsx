@@ -228,16 +228,10 @@ const TeddyCollection = () => {
                 <div className="mt-1 font-display text-3xl font-extrabold leading-none text-brass-gradient tabular-nums">{completionPercent}%</div>
               </div>
             </div>
-            {/* The indicator is full-width and slid left by the unfilled
-                share, so a gradient on it spans the whole track and only its
-                dark right-hand end ever showed early on. Sized to the filled
-                share and pinned right, the full brass ramp sits on the part
-                that is visible. */}
             <Progress
               value={completion}
               aria-label={`Collection progress: ${totalOwned} of ${totalCards} cards`}
-              style={{ '--fill': completion }}
-              className="mt-3 h-2 bg-night-950/70 ring-1 ring-inset ring-white/[0.06] [&>div]:bg-transparent [&>div]:bg-gradient-to-r [&>div]:from-brass-200 [&>div]:to-brass-500 [&>div]:bg-right [&>div]:bg-no-repeat [&>div]:[background-size:calc(var(--fill)*1%)_100%]"
+              className="mt-3 h-2 bg-night-950/70 ring-1 ring-inset ring-white/[0.06] [&>div]:bg-gradient-to-r [&>div]:from-brass-200 [&>div]:to-brass-500"
             />
           </div>
 
