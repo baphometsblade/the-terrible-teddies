@@ -751,8 +751,8 @@ function onOnline() {
 /**
  * Start (or, for the same account, re-check) the cloud save. App calls this
  * from its session effect after bindSaveToUser, on every session change.
- * `onSettled(outcome)` runs after each decision (and once when the backend
- * turns out to have no cloud saves), which is when App reconciles gems.
+ * `onSettled(outcome)` runs after each decision (and, on a backend without
+ * cloud saves, on every session change), which is when App reconciles gems.
  * Resolves with the first decision's outcome.
  */
 export function startCloudSync({ userId, accessToken = null, onSettled = null }) {
