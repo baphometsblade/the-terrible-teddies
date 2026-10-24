@@ -172,7 +172,9 @@ test('a Settings row toggles its switch from anywhere on it', async ({ page }) =
 });
 
 // A toast over a dialog stops 4.75rem short of the right edge on a phone, so
-// it never lands on the Close, now 44px. Pack odds sits furthest in.
+// it never lands on the Close, now 44px. Every dialog outside the board,
+// the card screens' two included: Pack odds, the card detail and Save deck
+// sit furthest in.
 test.describe('a toast over a dialog on a phone', () => {
   test.skip(!!process.env.E2E_PREVIEW, 'imports the toast module from /src');
   test.use({ viewport: { width: 320, height: 640 } });
@@ -184,6 +186,13 @@ test.describe('a toast over a dialog on a phone', () => {
       const { toast } = await import('/src/components/ui/use-toast.js');
       toast({ title: 'Achievement Unlocked!', description: 'Complete Collection — +10,000', duration: 60000 });
     });
+    const clear = async () => {
+      await page.evaluate(async () => {
+        const { resetToasts } = await import('/src/components/ui/use-toast.js');
+        resetToasts();
+      });
+      await expect(page.locator('.toast-viewport > li[data-state="open"]')).toHaveCount(0);
+    };
     const gap = async (dialog) => {
       const t = await page.locator('.toast-viewport > li').first().boundingBox();
       const c = await dialog.getByRole('button', { name: /^Close/ }).first().boundingBox();
@@ -201,13 +210,32 @@ test.describe('a toast over a dialog on a phone', () => {
         expect(await gap(odds), 'the toast reaches Pack odds\' Close').toBeGreaterThan(0);
         await page.keyboard.press('Escape');
       }
-      await page.evaluate(async () => {
-        const { resetToasts } = await import('/src/components/ui/use-toast.js');
-        resetToasts();
-      });
-      await expect(page.locator('.toast-viewport > li[data-state="open"]')).toHaveCount(0);
+      await clear();
       await page.keyboard.press('Escape');
       await expect(dialog).toHaveCount(0);
     }
+
+    // The card screens' two dialogs: the card detail and Save deck, whose
+    // Close sits as far in as Pack odds'.
+    await page.getByRole('button', { name: 'Collection', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Card Collection' })).toBeVisible(SLOW);
+    await page.getByRole('button', { name: /^View / }).first().click();
+    const detail = page.getByRole('dialog', { name: /details$/ });
+    await expect(detail).toBeVisible(SLOW);
+    await raise();
+    await expect(page.locator('.toast-viewport > li')).toHaveCount(1);
+    expect(await gap(detail), "the toast reaches the card detail's Close").toBeGreaterThan(0);
+    await clear();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: '← Menu' }).click();
+
+    await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible(SLOW);
+    await page.getByRole('button', { name: /^Save As/ }).click();
+    const save = page.getByRole('dialog', { name: 'Save deck' });
+    await expect(save).toBeVisible(SLOW);
+    await raise();
+    await expect(page.locator('.toast-viewport > li')).toHaveCount(1);
+    expect(await gap(save), "the toast reaches Save deck's Close").toBeGreaterThan(0);
   });
 });
