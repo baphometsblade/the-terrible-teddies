@@ -107,6 +107,19 @@ describe('the toast line', () => {
     expect(latest.find((t) => t.open).duration).toBe(9000);
   });
 
+  // Radix reads a 'foreground' toast assertively, cutting off whatever the
+  // screen reader was saying, and that was every toast: an achievement 1.5 s
+  // into the result dialog's reading talked over it.
+  it('has announcements read politely, and feedback at once', () => {
+    act(() => {
+      toast({ queue: true, title: 'Achievement' });
+    });
+    wait(400);
+    expect(latest.find((t) => t.open).type).toBe('background');
+    act(() => { toast({ title: 'Not enough energy!' }); });
+    expect(latest.find((t) => t.open).type).toBe('foreground');
+  });
+
   it('lets feedback replace feedback at once: it answers the last tap', () => {
     act(() => {
       toast({ title: 'Not enough energy!' });

@@ -428,6 +428,19 @@ test.describe('announcements', () => {
   test('that arrive together are shown one after another, each in full', async ({ page }) => {
     test.skip(!!process.env.E2E_PREVIEW, 'imports the toast module from /src');
     await bootToMainMenu(page);
+    // What a screen reader is handed: Radix's announce region for each toast,
+    // which it removes again a second later, so it is caught as it arrives.
+    await page.evaluate(() => {
+      window.__announced = [];
+      new MutationObserver((records) => {
+        for (const r of records) {
+          for (const n of r.addedNodes) {
+            const region = n.nodeType === 1 && (n.matches('[aria-live]') ? n : n.querySelector('[aria-live]'));
+            if (region) window.__announced.push({ live: region.getAttribute('aria-live'), node: region });
+          }
+        }
+      }).observe(document.body, { childList: true, subtree: true });
+    });
     await page.evaluate(async () => {
       const { toast } = await import('/src/components/ui/use-toast.js');
       toast({ queue: true, title: 'First news', description: 'One.', duration: 1500 });
@@ -441,6 +454,13 @@ test.describe('announcements', () => {
     await expect(toasts.filter({ hasText: 'First news' })).toBeVisible();
     await expect(toasts.filter({ hasText: 'Second news' })).toBeVisible({ timeout: 5000 });
     await expect(toasts.filter({ hasText: 'First news' })).toHaveCount(0);
+    // News the player did not ask for waits for a pause in the speech: read
+    // assertively, it cut off whatever was being read (the result dialog).
+    const heard = await page.evaluate(() => window.__announced
+      .map((a) => ({ live: a.live, text: a.node.textContent }))
+      .filter((a) => /First news|Second news/.test(a.text)));
+    expect(heard.length, 'neither announcement reached a live region').toBeGreaterThanOrEqual(2);
+    expect(heard.map((a) => a.live)).toEqual(heard.map(() => 'polite'));
   });
 
   // One Escape over a dialog closed the dialog and the announcement on

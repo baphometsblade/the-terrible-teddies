@@ -165,6 +165,13 @@ function toast({
 
   const entry = {
     duration: queue ? readingTime(props.title, props.description) : undefined,
+    // How a screen reader hears it (Radix's type). An announcement is news
+    // the player did not ask for, so it waits for a pause in the speech
+    // ('background': polite) rather than cutting off whatever is being read
+    // (the result dialog, a claim's own status line). Feedback answers the
+    // last action, and a rule refusing it ("Not enough energy!") must be
+    // heard now ('foreground': assertive).
+    type: queue ? 'background' : 'foreground',
     ...props,
     id,
     queued: queue,
