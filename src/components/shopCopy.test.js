@@ -298,11 +298,23 @@ describe('the real-money copy says what the payment flow does', () => {
     data: { object: { amount_refunded: 499, amount_captured: 499, payment_intent: 'pi_test' } },
   });
 
-  it('does not call purchases final while a full refund removes the gems', async () => {
+  // The line used to end "the gems it bought are removed", which was true
+  // only while they were unspent: the clawback floored at 0 and the rest was
+  // forgotten. Spent gems are now owed (gemDebt) and taken from later gems,
+  // and the copy says so; this holds it to that.
+  it('does not call purchases final while a full refund takes the gems back, spent or not', async () => {
     expect(refund.action).toBe(ACTION.REVERSE);
     const { text } = await shopTabText('Buy Gems');
     expect(text).not.toMatch(/\b(final|non-?refundable)\b/i);
-    expect(text, 'the Buy Gems tab should say what a refund does').toMatch(/refunded[^.]*gems[^.]*removed/i);
+    expect(text, 'the Buy Gems tab should say what a refund does').toMatch(/refunded[^.]*gems it bought are taken back, from future gems if they were already spent/i);
+    useGameStore.setState(useGameStore.getInitialState(), true);
+    useGameStore.setState({ gems: 0, lastSyncedServerGems: 0 });
+    const s = () => useGameStore.getState();
+    s().reconcileServerGems(500);
+    s().spendGems(500);
+    s().reconcileServerGems(0);
+    s().addGems(100);
+    expect([s().gems, s().gemDebt], 'spent gems a refund took back are owed, and paid from the next ones').toEqual([0, 400]);
   });
 
   it('cites no terms page unless it links to one that ships', async () => {

@@ -246,6 +246,12 @@ const initialState = {
   ownerUserId: null,
   coins: 500,
   gems: 10,
+  // Gems a reversed payment took back that had already been spent: the part
+  // of the clawback the balance could not cover (reconcileServerGems). The
+  // next gems in, bought or earned, pay it off before they reach the balance,
+  // so a buy, spend, chargeback, won dispute cannot end with the goods and
+  // the gems both. Never negative; while it is above 0, gems is 0.
+  gemDebt: 0,
   ownedCards: [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42],
   currentDeck: [1, 2, 3, 4, 5, 6, 30, 40, 41, 42],
   savedDecks: [],
@@ -348,7 +354,10 @@ export const FRESH_START = {
  *     guessing wrong takes money. Spent gems are already gone, and the
  *     lastSyncedServerGems mark (kept by resetProgress) stops the next login
  *     crediting any purchase a second time. Never below the starting amount,
- *     which is what a reset always handed out.
+ *     which is what a reset always handed out, except while gems are owed.
+ *   - Gems owed (gemDebt), whole: a reset that wiped them would turn a
+ *     reversed payment's spent gems back into free ones, and it does not
+ *     hand out the starting 10 against them either.
  *   - Unopened Premium and Legendary packs (sold for gems), an active Coin
  *     Doubler (sold for gems), and cosmetics (sold with the Premium Pass).
  *   - This season's Premium Pass. A pass stamped for an earlier season is
@@ -365,8 +374,10 @@ export const FRESH_START = {
 export const keptThroughReset = (state, now = new Date()) => {
   const passIsCurrent = state.seasonKey === getCurrentSeason(now).key;
   const doublerRunning = typeof state.coinDoublerExpiresAt === 'number' && state.coinDoublerExpiresAt > now.getTime();
+  const owed = state.gemDebt > 0 ? state.gemDebt : 0;
   return {
-    gems: Math.max(STARTING_GEMS, state.gems),
+    gems: owed > 0 ? state.gems : Math.max(STARTING_GEMS, state.gems),
+    gemDebt: owed,
     premiumPacks: state.premiumPacks,
     legendaryPacks: state.legendaryPacks,
     coinDoublerExpiresAt: doublerRunning ? state.coinDoublerExpiresAt : null,
@@ -433,14 +444,30 @@ export const normalizeSave = (persisted) => {
   for (const k of ['coins', 'gems', 'xp', 'level', 'cardPacks', 'premiumPacks',
     'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'weekStreak', 'weekBestStreak', 'weekNewCards',
     'consecutiveLogins', 'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak',
-    'lastSyncedServerGems', 'cloudRev']) {
+    'lastSyncedServerGems', 'cloudRev', 'gemDebt']) {
     if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];
   }
+  // A debt is a count of gems: never negative, which would be a credit.
+  s.gemDebt = Math.max(0, s.gemDebt);
   // The sync bookkeeping is nullable like the booster's expiry: anything
   // malformed means "never in step", which at worst sends the save again.
   s.cloudSyncedHash = typeof persisted?.cloudSyncedHash === 'string' ? persisted.cloudSyncedHash : null;
   s.cloudSyncedAt = Number.isFinite(persisted?.cloudSyncedAt) ? persisted.cloudSyncedAt : null;
   return s;
+};
+
+/**
+ * The patch that adds `amount` gems to `state`: what is owed (gemDebt) is
+ * paid first, and only the rest reaches the balance. Every way gems come in
+ * goes through this (a purchase or a won dispute through the reconcile,
+ * challenge, Battle Pass and login rewards), so a debt cannot be skipped by
+ * earning gems another way.
+ */
+export const creditGems = (state, amount) => {
+  const n = Math.max(0, Number(amount) || 0);
+  const owed = state.gemDebt > 0 ? state.gemDebt : 0;
+  const pay = Math.min(owed, n);
+  return { gems: state.gems + n - pay, gemDebt: owed - pay };
 };
 
 // The store's own state and actions, held apart from persistence so that
@@ -552,7 +579,8 @@ export const useGameStore = create(
         return false;
       },
 
-      addGems: (amount) => set((state) => ({ gems: state.gems + Math.max(0, amount) })),
+      // Pays any gems owed first (creditGems).
+      addGems: (amount) => set((state) => creditGems(state, amount)),
       setGems: (amount) => set({ gems: amount }),
 
       // Credit only newly-purchased gems (the amount the authoritative server
@@ -605,7 +633,9 @@ export const useGameStore = create(
         if (forUserId && state.ownerUserId && state.ownerUserId !== forUserId) return;
         const delta = serverBalance - state.lastSyncedServerGems;
         if (delta > 0) {
-          set({ gems: state.gems + delta, lastSyncedServerGems: serverBalance });
+          // A purchase, or a reversal undone (a dispute won): it pays off
+          // whatever an earlier reversal left owed before it adds anything.
+          set({ ...creditGems(state, delta), lastSyncedServerGems: serverBalance });
         } else if (delta < 0) {
           // The server total moved DOWN. Only one thing moves it down:
           // reverse_gem_purchase, the refund/chargeback clawback
@@ -617,16 +647,23 @@ export const useGameStore = create(
           // local balance alone, on the reasoning that the server "shouldn't"
           // move down. The result was that the clawback landed on user_gems and
           // never reached the balance the game actually spends from, so a player
-          // could buy gems, charge back, and keep every one of them — precisely
-          // the "buy, spend, chargeback, keep the goods" case that migration
-          // says it exists to close. Worse, it was repeatable: the mark was reset
-          // to the post-reversal total, so the next purchase credited in full again.
+          // could buy gems, charge back, and keep every one of them. Worse, it
+          // was repeatable: the mark was reset to the post-reversal total, so
+          // the next purchase credited in full again.
           //
-          // Floor at zero exactly as the server does (GREATEST(gems - v_gems, 0)):
-          // the granted gems may already be partly spent, and a negative balance
-          // would strand the account.
+          // The balance floors at zero, but the clawback does not shrink to
+          // fit it. The gems may already be spent (on packs that are not
+          // taken back), and a floor alone made the reversal partial while
+          // the restore after a won dispute (restore_gem_purchase) is whole:
+          // buy 550, spend 540, charge back (10 taken), win (550 back) left
+          // 550 gems and every pack. What the balance cannot cover is owed
+          // (gemDebt) and paid from the next gems in (creditGems), so a
+          // restore only ever gives back what was actually taken.
+          const after = state.gems + delta;
+          const owed = state.gemDebt > 0 ? state.gemDebt : 0;
           set({
-            gems: Math.max(0, state.gems + delta),
+            gems: Math.max(0, after),
+            gemDebt: owed + Math.max(0, -after),
             lastSyncedServerGems: serverBalance,
           });
         }
@@ -1071,7 +1108,7 @@ export const useGameStore = create(
           lastLoginDate: today,
           consecutiveLogins: newConsecutive,
           coins: state.coins + reward.coins,
-          gems: state.gems + (reward.gems || 0),
+          ...creditGems(state, reward.gems || 0),
           cardPacks: state.cardPacks + reward.packs,
         });
 

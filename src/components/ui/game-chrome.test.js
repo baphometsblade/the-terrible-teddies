@@ -36,6 +36,21 @@ describe('WalletChips', () => {
     })))).toBe('0 coins 0 gems 2 packs to open: 1 standard, 1 premium');
   });
 
+  // A reversed payment whose gems were spent leaves them owed (gameStore's
+  // gemDebt), and the balance is 0. Shown as "0 gems" the next reward would
+  // seem to land, when it pays the debt instead.
+  it('shows gems owed as a minus, and says what it is', () => {
+    const out = html(createElement(WalletChips, { coins: 5, gems: 0, gemDebt: 540 }));
+    expect(text(out)).toBe('5 coins −540 gems owed after a reversed payment');
+    expect(text(html(createElement(WalletChips, { gems: 7, gemDebt: 0 })))).toBe('7 gems');
+  });
+
+  it('is given the debt by every dialog that shows the wallet', () => {
+    for (const file of ['src/components/Shop.jsx', 'src/components/CardPackOpening.jsx', 'src/components/BattlePass.jsx']) {
+      expect(read(file), file).toMatch(/<WalletChips[^>]*gemDebt=\{gemDebt\}/);
+    }
+  });
+
   it('is the wallet both store dialogs show, with no local copies left behind', () => {
     for (const file of ['src/components/Shop.jsx', 'src/components/CardPackOpening.jsx']) {
       const src = read(file);

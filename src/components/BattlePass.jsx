@@ -471,7 +471,7 @@ const PurchaseConfirmDialog = ({
 // `onGetGems` (from App) closes the pass and opens the Shop on its gems tab.
 const BattlePass = ({ onClose, onGetGems }) => {
   const {
-    coins, gems, seasonXP, ownedCards, unlockedCosmetics, claimedChallenges,
+    coins, gems, gemDebt, seasonXP, ownedCards, unlockedCosmetics, claimedChallenges,
     hasBattlePassPremium, purchaseBattlePassPremium,
     claimedBattlePassRewards, claimBattlePassTier, syncSeason,
   } = useGameStore();
@@ -748,6 +748,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
               <WalletChips
                 coins={coins}
                 gems={gems}
+                gemDebt={gemDebt}
                 className="flex-nowrap lg:col-start-4 lg:row-span-2 lg:row-start-1 lg:flex-wrap lg:justify-end"
               />
               <div className="w-full sm:w-auto lg:col-start-5 lg:row-span-2 lg:row-start-1 lg:whitespace-nowrap">

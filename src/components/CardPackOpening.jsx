@@ -49,7 +49,7 @@ const reducedMotion = () => !useGameStore.getState().animationsEnabled
 // onGetGems / onBattlePass / onDailyRewards (from App) are the empty table's
 // routes to where packs come from; each closes this dialog and opens that one.
 const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) => {
-  const { cardPacks, premiumPacks, legendaryPacks, openCardPack, coins, gems, getNextPackType } = useGameStore();
+  const { cardPacks, premiumPacks, legendaryPacks, openCardPack, coins, gems, gemDebt, getNextPackType } = useGameStore();
   // A gem-priced buy waits for its confirm (confirmNode, rendered last).
   const { requestBuy, confirmNode } = useStoreBuy();
   const [isOpening, setIsOpening] = useState(false);
@@ -494,6 +494,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
             className="order-last w-full md:order-none md:w-auto"
             coins={coins}
             gems={gems}
+            gemDebt={gemDebt}
             packs={{ regular: cardPacks, premium: premiumPacks, legendary: legendaryPacks }}
           />
           <button

@@ -40,10 +40,14 @@ export function describeReset(state, now = new Date()) {
   // who switched Animations off to find them back on.
   deletes.push({ label: 'Your name, sound, animation and difficulty settings', after: 'back to defaults' });
 
+  // Gems owed after a reversed payment survive the reset, and it does not
+  // top the balance up to the starting amount against them.
   const keeps = [
-    state.gems >= FRESH_START.gems
-      ? count(kept.gems, 'gem')
-      : `${count(kept.gems, 'gem')}, the starting amount`,
+    kept.gemDebt > 0
+      ? `${count(kept.gemDebt, 'gem')} owed after a reversed payment`
+      : state.gems >= FRESH_START.gems
+        ? count(kept.gems, 'gem')
+        : `${count(kept.gems, 'gem')}, the starting amount`,
   ];
   if (kept.hasBattlePassPremium) keeps.push(`Premium Pass for ${getCurrentSeason(now).name}`);
   const packs = [

@@ -112,7 +112,7 @@ const TAB_MOTION = {
 // `initialTab` is the tab it opens on: App sends a route to gems (the Battle
 // Pass confirm, the empty Card Packs table) straight to "Buy Gems".
 const Shop = ({ onClose, initialTab = 'packs' }) => {
-  const { coins, gems, cardPacks, premiumPacks, legendaryPacks, coinDoublerExpiresAt } = useGameStore();
+  const { coins, gems, gemDebt, cardPacks, premiumPacks, legendaryPacks, coinDoublerExpiresAt } = useGameStore();
   // Purchases re-render via the store subscription, but time ELAPSING is not a
   // store write — a dialog left open across the expiry would keep advertising
   // an "Active" booster that recordBattleResult (which recomputes from
@@ -306,6 +306,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
             className="order-last w-full sm:order-none sm:w-auto"
             coins={coins}
             gems={gems}
+            gemDebt={gemDebt}
             packs={{ regular: cardPacks, premium: premiumPacks, legendary: legendaryPacks }}
           />
           <button
@@ -421,11 +422,12 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                     Secure payment processing powered by Stripe
                   </p>
                   {/* What the Stripe webhook actually does (eventRouting.js): a
-                      full refund, or a chargeback that takes the money, removes
-                      the gems that payment bought. This used to say purchases
+                      full refund, or a chargeback that takes the money, takes
+                      back the gems that payment bought, and any already spent
+                      are owed (gameStore's gemDebt). This used to say purchases
                       were final, and point at a Terms of Service page that
                       does not exist. */}
-                  <p>If a payment is fully refunded or charged back, the gems it bought are removed.</p>
+                  <p>If a payment is fully refunded or charged back, the gems it bought are taken back, from future gems if they were already spent.</p>
                 </div>
                 </div>
               </motion.div>

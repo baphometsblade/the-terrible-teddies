@@ -68,14 +68,23 @@ export const PackBalanceChip = ({ regular = 0, premium = 0, legendary = 0, class
  *
  * `packs` is { regular, premium, legendary }, the three store counters.
  */
-export const WalletChips = ({ coins, gems, packs, className = '', children }) => (
+export const WalletChips = ({ coins, gems, gemDebt = 0, packs, className = '', children }) => (
   <div className={`flex flex-wrap items-center gap-2 ${className}`}>
     {coins !== undefined && (
       <BalanceChip icon={Coins} tone="text-brass-300" noun="coins" value={coins.toLocaleString()} />
     )}
-    {gems !== undefined && (
-      <BalanceChip icon={Gem} tone="text-fuchsia-300" noun="gems" value={gems.toLocaleString()} />
-    )}
+    {/* Gems owed after a reversed payment (the store's gemDebt) show as what
+        they are, a minus: "0" would say the next gems in are spendable. */}
+    {gems !== undefined && (gemDebt > 0
+      ? (
+        <BalanceChip
+          icon={Gem}
+          tone="text-rose-300"
+          noun="gems owed after a reversed payment"
+          value={`−${gemDebt.toLocaleString()}`}
+        />
+      )
+      : <BalanceChip icon={Gem} tone="text-fuchsia-300" noun="gems" value={gems.toLocaleString()} />)}
     {packs && <PackBalanceChip {...packs} />}
     {children}
   </div>

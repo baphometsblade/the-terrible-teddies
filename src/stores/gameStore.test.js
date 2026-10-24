@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import { useGameStore, ALL_CARDS, SHOP_ITEMS, PACK_ODDS, PACK_SLOTS, rollRarity, DAILY_REWARDS, dailyClaimDay, keptThroughReset, STARTING_GEMS } from './gameStore';
+import { useGameStore, ALL_CARDS, SHOP_ITEMS, PACK_ODDS, PACK_SLOTS, rollRarity, DAILY_REWARDS, dailyClaimDay, keptThroughReset, STARTING_GEMS, SAVE_FIELDS, normalizeSave } from './gameStore';
 import { getCurrentSeason, getSeason } from '@/utils/season';
 import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 
@@ -117,6 +117,69 @@ describe('reconcileServerGems (closes the gem-respend exploit)', () => {
     get().spendGems(450);             // gems 50
     get().reconcileServerGems(0);     // clawback of 500 against a balance of 50
     expect(get().gems).toBe(0);       // floored, exactly as the server's GREATEST(gems - v, 0)
+  });
+
+  // The floor alone made a reversal partial and the restore after a won
+  // dispute whole: buy 550, spend 540, charge back (10 taken), win (550
+  // back) ended at 550 gems with every pack still held. What the balance
+  // cannot cover is owed, and the restore pays that first.
+  it('a buy, spend, chargeback, won dispute leaves only what was never spent', () => {
+    useGameStore.setState({ gems: 0, coins: 0, lastSyncedServerGems: 0 });
+    get().reconcileServerGems(550);                       // bought 550
+    expect(get().buyShopItem('legendary_pack').success).toBe(true);
+    expect(get().buyShopItem('legendary_pack').success).toBe(true);
+    expect(get().buyShopItem('premium_pack').success).toBe(true);
+    expect(get().buyShopItem('coins_large').success).toBe(true);
+    for (let i = 0; i < 4; i += 1) expect(get().buyShopItem('coins_small').success).toBe(true);
+    expect(get().gems).toBe(10);                          // 540 spent
+    expect(get().legendaryPacks).toBe(2);
+
+    get().reconcileServerGems(0);                         // charged back
+    expect([get().gems, get().gemDebt]).toEqual([0, 540]);
+
+    get().reconcileServerGems(550);                       // dispute won
+    expect([get().gems, get().gemDebt]).toEqual([10, 0]);  // the 10 it took, no more
+    expect(get().lastSyncedServerGems).toBe(550);
+  });
+
+  it('takes what is owed from earned gems too, before any reach the balance', () => {
+    useGameStore.setState({ gems: 0, lastSyncedServerGems: 0 });
+    get().reconcileServerGems(500);
+    get().spendGems(460);
+    get().reconcileServerGems(0);                         // 40 left, 460 owed
+    expect([get().gems, get().gemDebt]).toEqual([0, 460]);
+    get().addGems(100);                                   // a challenge's gems
+    expect([get().gems, get().gemDebt]).toEqual([0, 360]);
+    get().grantReward({ type: 'gems', amount: 400 });     // a Battle Pass tier's
+    expect([get().gems, get().gemDebt]).toEqual([40, 0]);
+    // A login reward goes the same way: the first day that pays more gems
+    // than are owed, reached by a streak that ended yesterday.
+    const day = DAILY_REWARDS.findIndex((r) => r.gems > 5) + 1;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    useGameStore.setState({ gemDebt: 5, consecutiveLogins: day - 1, lastLoginDate: yesterday.toDateString() });
+    get().checkDailyLogin();
+    expect(get().gemDebt).toBe(0);
+    expect(get().gems).toBe(40 + DAILY_REWARDS[day - 1].gems - 5);
+  });
+
+  it('carries what is owed in the save, never as a negative', () => {
+    // A field of initialState, so persist and the cloud save (CLOUD_FIELDS)
+    // carry it with the gems it belongs to.
+    expect(SAVE_FIELDS).toContain('gemDebt');
+    expect(normalizeSave({ gemDebt: 120 }).gemDebt).toBe(120);
+    expect(normalizeSave({ gemDebt: -50 }).gemDebt).toBe(0);
+    expect(normalizeSave({ gemDebt: 'x' }).gemDebt).toBe(0);
+    expect(normalizeSave({}).gemDebt).toBe(0);
+  });
+
+  it('keeps adding to what is owed across reversals', () => {
+    useGameStore.setState({ gems: 0, lastSyncedServerGems: 0 });
+    get().reconcileServerGems(1000);
+    get().spendGems(1000);
+    get().reconcileServerGems(500);                       // one payment reversed
+    get().reconcileServerGems(0);                         // and the other
+    expect([get().gems, get().gemDebt]).toEqual([0, 1000]);
   });
 
   it('does not let a buy-chargeback cycle net free gems on repeat', () => {
@@ -1122,6 +1185,19 @@ describe('resetProgress keeps what the player paid for', () => {
     useGameStore.setState({ gems: 3 });
     get().resetProgress();
     expect(get().gems).toBe(STARTING_GEMS);
+  });
+
+  // Wiped, the debt would turn a reversed payment's spent gems into free
+  // ones; and the starting gems are not handed out against it.
+  it('keeps gems owed, and hands out no starting gems against them', () => {
+    useGameStore.setState({ gems: 0, lastSyncedServerGems: 0 });
+    get().reconcileServerGems(500);
+    get().spendGems(500);
+    get().reconcileServerGems(0);
+    get().resetProgress();
+    expect([get().gems, get().gemDebt]).toEqual([0, 500]);
+    get().reconcileServerGems(500); // a won dispute
+    expect([get().gems, get().gemDebt]).toEqual([0, 0]);
   });
 
   it('does not let a claimed Battle Pass tier pay again once its XP is earned back', () => {

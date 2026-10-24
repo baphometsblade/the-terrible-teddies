@@ -281,8 +281,11 @@ Point `ALLOWED_ORIGIN` (Supabase secret) at the deployed domain.
 - Each `checkout.session` credits at most once (UNIQUE `stripe_session_id`),
   atomically — a failed credit rolls the purchase row back, so a Stripe retry
   re-runs cleanly instead of leaving a paid-but-uncredited order.
-- Refunds and chargebacks claw the gems back (`reverse_gem_purchase`, flooring
-  the balance at 0), so a buy → spend → chargeback can't keep the goods.
+- Refunds and chargebacks take back the gems the payment bought
+  (`reverse_gem_purchase`); any already spent are recorded on the save as
+  owed (`gemDebt`) and taken from the next gems the account receives, bought
+  or earned, so a buy → spend → chargeback cannot keep the goods, and a won
+  dispute restores only what was taken.
 - A won dispute puts the gems back (`restore_gem_purchase`), but only for a
   purchase reversed by a dispute — never one we refunded, which would let the
   customer keep both the money and the goods.

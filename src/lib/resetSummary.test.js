@@ -30,6 +30,15 @@ describe('the reset confirmation', () => {
     ]);
   });
 
+  // keptThroughReset carries gems owed after a reversed payment and gives no
+  // starting gems against them, so "0 gems, the starting amount" was false.
+  it('names gems owed as kept, not a starting balance it does not give', () => {
+    useGameStore.setState({ gems: 0, gemDebt: 540 });
+    expect(describeReset(get(), NOW).keeps[0]).toBe('540 gems owed after a reversed payment');
+    useGameStore.getState().resetProgress();
+    expect([get().gems, get().gemDebt]).toEqual([0, 540]);
+  });
+
   it('names what goes, and what each thing goes back to', () => {
     useGameStore.setState({
       level: 7, coins: 2345, ownedCards: Array.from({ length: 48 }, (_, i) => i + 1),
