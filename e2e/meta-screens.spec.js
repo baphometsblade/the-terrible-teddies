@@ -101,7 +101,12 @@ test.describe('tutorial', () => {
     await page.getByRole('button', { name: 'How to play' }).click();
     const dialog = page.getByRole('dialog', { name: 'How to play' });
     await expect(dialog).toBeVisible(SLOW);
-    for (let step = 1; step < 4; step += 1) await dialog.getByRole('button', { name: 'Next' }).click();
+    // One step at a time, each seen before the next press, as the tests
+    // above walk them: a press during a step's entrance can be lost.
+    for (let step = 1; step < 4; step += 1) {
+      await expect(dialog.getByText(`Step ${step} of 9`)).toBeVisible();
+      await dialog.getByRole('button', { name: 'Next' }).click();
+    }
     await expect(dialog.getByText('Step 4 of 9')).toBeVisible();
     const body = dialog.getByRole('region');
     await expect(body).toHaveAttribute('data-more', '');
