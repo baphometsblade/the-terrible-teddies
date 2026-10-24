@@ -91,6 +91,46 @@ test.describe('tutorial', () => {
     });
   }
 
+  // The fade is a mask, and a mask fades everything its element paints: the
+  // step's focus ring was drawn on the masked scroller, so it faded out down
+  // the sides and was gone along the foot. Whatever the focus draws now must
+  // be clear of every mask, and frame the whole step.
+  test("the step's focus ring is whole while its foot fades", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await bootToMainMenu(page);
+    await page.getByRole('button', { name: 'How to play' }).click();
+    const dialog = page.getByRole('dialog', { name: 'How to play' });
+    await expect(dialog).toBeVisible(SLOW);
+    for (let step = 1; step < 4; step += 1) await dialog.getByRole('button', { name: 'Next' }).click();
+    await expect(dialog.getByText('Step 4 of 9')).toBeVisible();
+    const body = dialog.getByRole('region');
+    await expect(body).toHaveAttribute('data-more', '');
+
+    const shadows = () => dialog.evaluate((root) => [...root.querySelectorAll('*')].map((el) => getComputedStyle(el).boxShadow));
+    await dialog.getByRole('button', { name: 'Previous' }).focus();
+    const before = await shadows();
+    await page.keyboard.press('Shift+Tab');
+    await expect(body).toBeFocused();
+    const drawn = await dialog.evaluate((root, was) => {
+      const region = root.querySelector('[role="region"]').getBoundingClientRect();
+      const masked = (el) => {
+        for (let n = el; n; n = n.parentElement) if (getComputedStyle(n).maskImage !== 'none') return true;
+        return false;
+      };
+      return [...root.querySelectorAll('*')]
+        .filter((el, i) => { const now = getComputedStyle(el).boxShadow; return now !== 'none' && now !== was[i]; })
+        .map((el) => {
+          const r = el.getBoundingClientRect();
+          const frames = Math.abs(r.top - region.top) <= 1 && Math.abs(r.bottom - region.bottom) <= 1
+            && Math.abs(r.left - region.left) <= 1 && Math.abs(r.right - region.right) <= 1;
+          return { masked: masked(el), frames };
+        });
+    }, before);
+    expect(drawn.length, 'focusing the step drew no ring').toBeGreaterThan(0);
+    expect(drawn.filter((d) => d.masked), 'the ring is under the fade').toEqual([]);
+    expect(drawn.some((d) => d.frames), 'no ring frames the step').toBe(true);
+  });
+
   // Previous is aria-disabled on the first step, not disabled: disabling it
   // under a keyboard user's focus dropped the focus to <body>, and the next
   // Tab started again at Close.

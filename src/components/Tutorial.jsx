@@ -369,89 +369,100 @@ const Tutorial = ({ onClose, onStartGame }) => {
 
             While the step runs on below, its foot fades out (a mask on the
             scroller, so it stays put as the step scrolls under it): the
-            Collection's filter row says "more this way" the same way. */}
-        <div
-          ref={bodyRef}
-          role="region"
-          aria-labelledby="tutorial-step-title"
-          tabIndex={0}
-          onScroll={measure}
-          data-more={more ? '' : undefined}
-          className={`relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300/70 ${
-            more ? '[mask-image:linear-gradient(to_bottom,#000_calc(100%-3rem),transparent)]' : ''}`}
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              ref={stepRef}
-              key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="my-auto w-full px-4 pb-6 pt-3 sm:px-10 [@media(max-height:500px)]:pt-1"
-            >
-              {/* Decoration, so it is the first thing a short screen gives up. */}
-              <div
-                aria-hidden="true"
-                className="mx-auto mb-3 h-14 w-14 rounded-full p-[3px] shadow-[0_0_30px_rgba(251,191,36,0.28),0_12px_24px_-10px_rgba(0,0,0,0.85)] sm:h-16 sm:w-16 [@media(max-height:500px)]:hidden"
-                style={{ background: RARITY_METAL.legendary }}
+            Collection's filter row says "more this way" the same way.
+
+            Its focus ring is drawn by the span after it, over it, not on
+            it: a mask fades everything its element paints, and a ring on
+            the scroller faded out along the foot with the words. */}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <div
+            ref={bodyRef}
+            role="region"
+            aria-labelledby="tutorial-step-title"
+            tabIndex={0}
+            onScroll={measure}
+            data-more={more ? '' : undefined}
+            className={`peer relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden focus-visible:outline-none ${
+              more ? '[mask-image:linear-gradient(to_bottom,#000_calc(100%-3rem),transparent)]' : ''}`}
+          >
+            <AnimatePresence mode="wait">
+              <motion.div
+                ref={stepRef}
+                key={currentStep}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                className="my-auto w-full px-4 pb-6 pt-3 sm:px-10 [@media(max-height:500px)]:pt-1"
               >
-                <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
-                  {step.mascot
-                    ? <span className="text-[28px] leading-none sm:text-[32px]">🧸</span>
-                    : <StepIcon className="h-6 w-6 text-brass-300 sm:h-7 sm:w-7" strokeWidth={1.8} />}
+                {/* Decoration, so it is the first thing a short screen gives up. */}
+                <div
+                  aria-hidden="true"
+                  className="mx-auto mb-3 h-14 w-14 rounded-full p-[3px] shadow-[0_0_30px_rgba(251,191,36,0.28),0_12px_24px_-10px_rgba(0,0,0,0.85)] sm:h-16 sm:w-16 [@media(max-height:500px)]:hidden"
+                  style={{ background: RARITY_METAL.legendary }}
+                >
+                  <div className="grid h-full w-full place-items-center rounded-full bg-night-900">
+                    {step.mascot
+                      ? <span className="text-[28px] leading-none sm:text-[32px]">🧸</span>
+                      : <StepIcon className="h-6 w-6 text-brass-300 sm:h-7 sm:w-7" strokeWidth={1.8} />}
+                  </div>
                 </div>
-              </div>
 
-              {/* plush-200, not -300: it sits in the medallion's light. */}
-              <div className="label-caps mb-1.5 text-center text-plush-200 [@media(max-height:500px)]:mb-1">
-                Step {currentStep + 1} of {TUTORIAL_STEPS.length}
-              </div>
-              {/* The gradient is on an inline span cloned per line box, so a
-                  title that wraps on a phone gets the whole gradient on each
-                  line instead of one gradient stretched over both — which
-                  left the top line pale and the bottom one dark. */}
-              <h3
-                id="tutorial-step-title"
-                className="mb-5 text-center font-display text-[22px] font-extrabold leading-tight min-[360px]:text-2xl sm:text-3xl [@media(max-height:500px)]:mb-3 [@media(max-height:500px)]:text-2xl"
-              >
-                <span className="text-brass-gradient [-webkit-box-decoration-break:clone] [box-decoration-break:clone]">{step.title}</span>
-              </h3>
-
-              {step.list ? (
-                <ul className={`grid gap-2 text-left ${step.columns ? 'sm:grid-cols-2' : ''}`}>
-                  {step.content.split('\n').map((line, i) => (
-                    <ListRow key={line} line={line} icon={step.icons?.[i]} />
-                  ))}
-                </ul>
-              ) : (
-                <div className="mx-auto max-w-lg space-y-4 text-center">
-                  {step.content.split('\n\n').map((para) => (
-                    <p key={para} className="leading-relaxed text-plush-200"><Rich text={para} /></p>
-                  ))}
+                {/* plush-200, not -300: it sits in the medallion's light. */}
+                <div className="label-caps mb-1.5 text-center text-plush-200 [@media(max-height:500px)]:mb-1">
+                  Step {currentStep + 1} of {TUTORIAL_STEPS.length}
                 </div>
-              )}
+                {/* The gradient is on an inline span cloned per line box, so a
+                    title that wraps on a phone gets the whole gradient on each
+                    line instead of one gradient stretched over both — which
+                    left the top line pale and the bottom one dark. */}
+                <h3
+                  id="tutorial-step-title"
+                  className="mb-5 text-center font-display text-[22px] font-extrabold leading-tight min-[360px]:text-2xl sm:text-3xl [@media(max-height:500px)]:mb-3 [@media(max-height:500px)]:text-2xl"
+                >
+                  <span className="text-brass-gradient [-webkit-box-decoration-break:clone] [box-decoration-break:clone]">{step.title}</span>
+                </h3>
 
-              {/* Show example cards for card types step. Below 360px three
-                  hand-size cards are wider than the row, so the card (not its
-                  caption) is zoomed down — zoom rather than a transform, so it
-                  takes the room it appears to. */}
-              {step.showCards && (
-                <div className="mt-5 flex justify-center gap-2 min-[360px]:gap-3 sm:gap-5">
-                  {exampleCards.map(card => (
-                    <figure key={card.id} className="flex flex-col items-center">
-                      <div className="drop-shadow-[0_12px_18px_rgba(0,0,0,0.6)] [zoom:0.8] min-[360px]:[zoom:1]">
-                        <TeddyCard teddy={card} />
-                      </div>
-                      <figcaption className="label-caps mt-2 text-plush-300">
-                        {card.type.charAt(0).toUpperCase() + card.type.slice(1)}
-                      </figcaption>
-                    </figure>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+                {step.list ? (
+                  <ul className={`grid gap-2 text-left ${step.columns ? 'sm:grid-cols-2' : ''}`}>
+                    {step.content.split('\n').map((line, i) => (
+                      <ListRow key={line} line={line} icon={step.icons?.[i]} />
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="mx-auto max-w-lg space-y-4 text-center">
+                    {step.content.split('\n\n').map((para) => (
+                      <p key={para} className="leading-relaxed text-plush-200"><Rich text={para} /></p>
+                    ))}
+                  </div>
+                )}
+
+                {/* Show example cards for card types step. Below 360px three
+                    hand-size cards are wider than the row, so the card (not its
+                    caption) is zoomed down — zoom rather than a transform, so it
+                    takes the room it appears to. */}
+                {step.showCards && (
+                  <div className="mt-5 flex justify-center gap-2 min-[360px]:gap-3 sm:gap-5">
+                    {exampleCards.map(card => (
+                      <figure key={card.id} className="flex flex-col items-center">
+                        <div className="drop-shadow-[0_12px_18px_rgba(0,0,0,0.6)] [zoom:0.8] min-[360px]:[zoom:1]">
+                          <TeddyCard teddy={card} />
+                        </div>
+                        <figcaption className="label-caps mt-2 text-plush-300">
+                          {card.type.charAt(0).toUpperCase() + card.type.slice(1)}
+                        </figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          <span
+            aria-hidden="true"
+            data-region-ring=""
+            className="pointer-events-none absolute inset-0 peer-focus-visible:ring-2 peer-focus-visible:ring-inset peer-focus-visible:ring-brass-300/70"
+          />
         </div>
 
         {/* Navigation. Glass back, brass forward. Below 360px Previous keeps
