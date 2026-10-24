@@ -59,6 +59,14 @@ The old `leaderboard` view is left as it was, because the client already
 released decides its "50+" from that view's wins ordering. Once no deployed
 client reads it, it can be dropped.
 
+`20261024000000_board_trophies_index.sql` follows it: `players.board_trophies`
+is the same formula as a stored generated column with an index, and the view
+and `get_my_rank()` read that instead of computing every player's trophies on
+every call (at 200,000 players the board went from about 470 ms to about
+1 ms, and the rank from about 480 ms to about 11 ms, with the same answers).
+Adding the column rewrites `players` once under an exclusive lock, so on a
+large table apply it outside busy hours. The client needs no change.
+
 Supabase's security advisor will list two of these, both deliberate:
 `player_saves` as "RLS enabled, no policy" (there is meant to be no direct
 access at all), and `leaderboard_trophies` as a security-definer view, as it

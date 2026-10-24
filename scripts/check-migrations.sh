@@ -691,6 +691,105 @@ END $$;
 SQL
 
 # ---------------------------------------------------------------------------
+# 20261024000000_board_trophies_index.sql
+# ---------------------------------------------------------------------------
+echo "==> Asserting the trophy board reads an indexed column that is the formula (same answers, no full scan)"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_null UUID := 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1';
+  v_neg  UUID := 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2';
+  v_edge UUID := 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3';
+  v_big  UUID := 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee4';
+  v_bad INTEGER;
+  v_n INTEGER;
+  v_rank BIGINT;
+  v_plan TEXT;
+  v_ok BOOLEAN := FALSE;
+  r RECORD;
+BEGIN
+  -- Rows at the formula's edges, beside every row the earlier blocks made:
+  -- nothing recorded, negative experience, a level boundary, a large save.
+  INSERT INTO auth.users(id) VALUES (v_null), (v_neg), (v_edge), (v_big) ON CONFLICT DO NOTHING;
+  INSERT INTO public.players (user_id, username, wins, experience, best_win_streak) VALUES
+    (v_null, 'EdgeNull', NULL, NULL, NULL),
+    (v_neg, 'EdgeNeg', 5, -50, 1),
+    (v_edge, 'EdgeLevel', 10, 100, 0),
+    (v_big, 'EdgeBig', 120, 4321, 9)
+  ON CONFLICT (user_id) DO UPDATE SET
+    username = EXCLUDED.username, wins = EXCLUDED.wins,
+    experience = EXCLUDED.experience, best_win_streak = EXCLUDED.best_win_streak;
+
+  -- The column is the pinned formula on every row, and stays it through a write.
+  SELECT count(*) INTO v_bad FROM public.players
+   WHERE board_trophies IS DISTINCT FROM public.player_trophies(wins, experience, best_win_streak);
+  IF v_bad <> 0 THEN RAISE EXCEPTION 'board_trophies differs from player_trophies() on % row(s)', v_bad; END IF;
+  UPDATE public.players SET wins = 11 WHERE user_id = v_edge;
+  SELECT count(*) INTO v_bad FROM public.players WHERE user_id = v_edge AND board_trophies <> 108;
+  IF v_bad <> 0 THEN RAISE EXCEPTION 'board_trophies did not follow a write to wins'; END IF;
+
+  -- Nothing can write it: Postgres computes it.
+  BEGIN
+    UPDATE public.players SET board_trophies = 999999 WHERE user_id = v_edge;
+  EXCEPTION WHEN generated_always THEN v_ok := TRUE;
+  END;
+  IF NOT v_ok THEN RAISE EXCEPTION 'board_trophies accepted a direct write'; END IF;
+
+  -- Neither read evaluates the formula per row any more: that is what made
+  -- them full scans.
+  IF position('player_trophies' IN pg_get_viewdef('public.leaderboard_trophies'::regclass)) > 0 THEN
+    RAISE EXCEPTION 'leaderboard_trophies still computes player_trophies() per row';
+  END IF;
+  IF position('player_trophies' IN pg_get_functiondef('public.get_my_rank()'::regprocedure)) > 0
+     OR position('board_trophies' IN pg_get_functiondef('public.get_my_rank()'::regprocedure)) = 0 THEN
+    RAISE EXCEPTION 'get_my_rank does not count on board_trophies';
+  END IF;
+
+  -- And both use the index. Sequential scans are priced out first, because a
+  -- table this small is cheapest read whole: a plan that still cannot use the
+  -- index (an expression in place of the column, an index on something else)
+  -- falls back to one regardless, and this sees it.
+  PERFORM set_config('enable_seqscan', 'off', true);
+  EXECUTE 'EXPLAIN (FORMAT JSON) SELECT * FROM public.leaderboard_trophies' INTO v_plan;
+  IF position('players_board_trophies_idx' IN v_plan) = 0 THEN
+    RAISE EXCEPTION 'the board does not read players_board_trophies_idx: %', v_plan;
+  END IF;
+  -- The top 100 come off the index in order: only the ties are sorted
+  -- (Incremental Sort), never every player.
+  IF v_plan ~ '"Node Type": "Sort"' THEN
+    RAISE EXCEPTION 'the board sorts the whole table: %', v_plan;
+  END IF;
+  -- get_my_rank's count, as its body runs it.
+  EXECUTE 'EXPLAIN (FORMAT JSON) SELECT count(*) FROM public.players o WHERE o.board_trophies > 100' INTO v_plan;
+  IF position('players_board_trophies_idx' IN v_plan) = 0 THEN
+    RAISE EXCEPTION 'the rank count does not read players_board_trophies_idx: %', v_plan;
+  END IF;
+  PERFORM set_config('enable_seqscan', 'on', true);
+
+  -- The same answers as the formula, for every player: get_my_rank is 1 +
+  -- the players with strictly more player_trophies(), and the board ranks
+  -- each row the same way (the trophies block above checks the board too).
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  FOR r IN SELECT p.user_id,
+                  1 + (SELECT count(*) FROM public.players o
+                        WHERE public.player_trophies(o.wins, o.experience, o.best_win_streak)
+                            > public.player_trophies(p.wins, p.experience, p.best_win_streak)) AS want
+             FROM public.players p
+  LOOP
+    PERFORM set_config('request.jwt.claims', json_build_object('sub', r.user_id::text, 'role', 'authenticated')::text, true);
+    SELECT g.rank INTO v_rank FROM public.get_my_rank() g;
+    IF v_rank IS DISTINCT FROM r.want THEN
+      RAISE EXCEPTION 'get_my_rank for % is %, the formula says %', r.user_id, v_rank, r.want;
+    END IF;
+  END LOOP;
+  RESET ROLE;
+  SELECT count(*) INTO v_n FROM public.players;
+
+  RAISE NOTICE 'board_trophies assertions passed (% players ranked identically)', v_n;
+END $$;
+SQL
+
+# ---------------------------------------------------------------------------
 # 20261023000100_one_starter_per_account.sql
 # ---------------------------------------------------------------------------
 echo "==> Asserting one Starter Gem Pack per account: open checkouts and fulfilment"
