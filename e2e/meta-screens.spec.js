@@ -260,6 +260,48 @@ test.describe('a toast over a dialog', () => {
       expect(await controlsUnder(dialog, await toast.boundingBox()), 'the toast covers dialog controls').toEqual([]);
     });
   }
+
+  // A season's delivery is the longest announcement: it lists what it
+  // handed over. With the season's whole name in its title and a preamble
+  // before the list it ran to five lines, over Challenges' tabs, the step bar
+  // and Player Stats' pencil, at every width. Raised through the store, so it
+  // is App's own copy: the longest season name, a two-digit season, and the
+  // three longest card names (the most a summary names) plus a cosmetic.
+  for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }, { width: 640, height: 800 }, { width: 768, height: 1024 }, { width: 1280, height: 800 }]) {
+    test(`a season's delivery clears the dialogs' controls at ${viewport.width}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await bootToMainMenu(page);
+      for (const [opener, name] of [['Challenges', 'Challenges'], ['How to play', 'How to play'], ['View player stats', 'Player stats']]) {
+        await page.getByRole('button', { name: opener, exact: true }).click();
+        const dialog = page.getByRole('dialog', { name });
+        await expect(dialog).toBeVisible(SLOW);
+        const summary = await page.evaluate(async () => {
+          const { useGameStore, ALL_CARDS } = await import('/src/stores/gameStore.js');
+          const { describeGrants } = await import('/src/lib/battlePass.js');
+          const { SEASON_NAMES } = await import('/src/utils/season.js');
+          const longest = (list, key) => [...list].sort((a, b) => key(b).length - key(a).length);
+          const receipts = [
+            { coins: 1250 }, { gems: 30 }, { packs: 3 },
+            ...longest(ALL_CARDS, (c) => c.name).slice(0, 3).map((card) => ({ card })),
+            { cosmetic: 'Confetti Cannon Emote' },
+          ];
+          const season = `Season 12: ${longest(SEASON_NAMES, (n) => n)[0]}`;
+          useGameStore.setState({ pendingSeasonDeliveries: [{ id: Math.random(), season, receipts, summary: describeGrants(receipts) }] });
+          return describeGrants(receipts);
+        });
+        const toast = page.locator('.toast-viewport > li').filter({ hasText: 'rewards delivered' });
+        await expect(toast).toBeVisible(SLOW);
+        expect(await controlsUnder(dialog, await toast.boundingBox()), `the toast covers ${name}'s controls`).toEqual([]);
+        await expect(toast.locator('.toast-title')).toHaveText('Season 12 rewards delivered');
+        // Cut short on screen only: the whole list is still the toast's text,
+        // which is what Radix reads out.
+        await expect(toast.locator('.toast-description')).toHaveText(`${summary}.`);
+        await page.evaluate(async () => (await import('/src/components/ui/use-toast.js')).resetToasts());
+        await page.keyboard.press('Escape');
+        await expect(dialog).toHaveCount(0, SLOW);
+      }
+    });
+  }
 });
 
 // Every achievement id, read from the store's table so a new one is counted.

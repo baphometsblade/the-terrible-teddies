@@ -93,6 +93,11 @@ const announceAll = (toast, items) => {
   items.forEach((t) => toast({ queue: true, ...t }));
 };
 
+// "Season 4" out of a season's name ("Season 4: Hibernation Havoc", as
+// src/utils/season.js writes it), or the whole name if it is ever written
+// another way.
+const seasonNumber = (name) => /^Season \d+/.exec(name)?.[0] ?? name;
+
 // Hoisted to module scope for a stable identity. Declared inside App it was a
 // fresh component type on every render, so any toast (which re-renders App)
 // remounted the "← Menu" control mid-screen, replaying its mount and dropping
@@ -314,6 +319,14 @@ function App() {
   // rollover runs on whichever screen notices the new season first — the
   // menu on launch, as a rule — so it is said here, once, deduped by id for
   // StrictMode's second pass.
+  //
+  // Short, because it can land over a dialog, where the toast sits in the
+  // corner above the dialog's controls with room for a one-line title and
+  // two lines of description. The whole name ("Season 4: Hibernation Havoc
+  // rewards delivered") took the title to two lines on any phone, and the
+  // preamble the description had ("Unclaimed when the season ended:") said
+  // again what the title says; with both, the toast covered Challenges' tabs
+  // and the tutorial's step bar. The season's number, and what it handed over.
   const pendingSeasonDeliveries = useGameStore((s) => s.pendingSeasonDeliveries);
   const shownDeliveryIds = useRef(new Set());
   useEffect(() => {
@@ -322,8 +335,8 @@ function App() {
     useGameStore.setState({ pendingSeasonDeliveries: [] });
     fresh.forEach((delivery) => shownDeliveryIds.current.add(delivery.id));
     announceAll(toast, fresh.map((delivery) => ({
-      title: `${delivery.season} rewards delivered`,
-      description: `Unclaimed when the season ended: ${delivery.summary}.`,
+      title: `${seasonNumber(delivery.season)} rewards delivered`,
+      description: `${delivery.summary}.`,
     })));
   }, [pendingSeasonDeliveries, toast]);
 
