@@ -39,6 +39,18 @@ const rankOf = (card) => RARITY_ORDER.indexOf(card.rarity);
 const LOOK_RANK = { regular: 0, premium: 1, legendary: 2 };
 const lookFor = (rarity) => (rarity === 'legendary' ? 'legendary' : rarity === 'epic' ? 'premium' : 'regular');
 
+/**
+ * The open button's words: the tier of the pack it opens and how many of that
+ * tier are held. "Open Legendary Pack" over one legendary, "Open Pack (3)" over
+ * three standard. It used to count every tier, so a player holding two
+ * standard, a Premium and a Legendary read "Open Legendary Pack (4)", four
+ * legendaries; the wallet chip beside it carries the all-tier total.
+ */
+export const openPackLabel = (tier, count) => {
+  const name = { legendary: 'Legendary ', premium: 'Premium ' }[tier] ?? '';
+  return `Open ${name}Pack${count > 1 ? ` (${count.toLocaleString()})` : ''}`;
+};
+
 // The quick shop under the table sells what the Shop sells, from the same table.
 const QUICK_SHOP = storeItems(['pack', 'premium', 'legendary', 'coins']);
 const BEST_VALUE = bestValuePackId();
@@ -458,7 +470,8 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
     }, openedType || 'regular')
     : null;
   const litType = ((isOpening || pulledCards) ? (shownTier || openedType) : nextPackType) || nextPackType || 'regular';
-  const tierName = nextPackType === 'legendary' ? 'Legendary' : nextPackType === 'premium' ? 'Premium' : '';
+  const tierCount = { legendary: legendaryPacks, premium: premiumPacks }[nextPackType] ?? cardPacks;
+  const openLabel = openPackLabel(nextPackType, tierCount);
   const canOpen = totalPacks > 0 && !isOpening;
   // Only the tear needs the case to clip (its flash grows to ~2.3x the pack).
   // Clipping the reveal cut the rare+ glows off in a hard line along the case
@@ -685,7 +698,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
                   className={`${ACTION} btn-brass sheen relative px-4 text-base sm:px-8 sm:text-lg`}
                 >
                   <PackageOpen aria-hidden="true" className="hidden min-[360px]:block w-5 h-5" strokeWidth={2.2} />
-                  {`Open ${tierName ? `${tierName} ` : ''}Pack (${totalPacks})`}
+                  {openLabel}
                 </button>
               )}
 
@@ -719,15 +732,18 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
 
               {pulledCards && !isOpening && (
                 <>
+                  {/* Named for the pack it opens next, which need not be
+                      the tier just opened: "Open Another" did not say the
+                      next one was a Premium. */}
                   {totalPacks > 0 && (
                     <button
                       ref={openAnotherRef}
                       type="button"
                       onClick={() => { resetView(); handleOpenPack(); }}
-                      className={`${ACTION} btn-brass px-6 text-base`}
+                      className={`${ACTION} btn-brass px-4 text-base sm:px-6`}
                     >
-                      <PackageOpen aria-hidden="true" className="w-5 h-5" strokeWidth={2.2} />
-                      Open Another ({totalPacks})
+                      <PackageOpen aria-hidden="true" className="hidden min-[360px]:block w-5 h-5" strokeWidth={2.2} />
+                      {openLabel}
                     </button>
                   )}
                   <button ref={doneRef} type="button" onClick={resetAndClose} className={`${ACTION} btn-glass sm:min-w-[7rem] px-6 text-base`}>

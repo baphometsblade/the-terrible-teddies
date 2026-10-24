@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createElement, act } from 'react';
 import { createRoot } from 'react-dom/client';
-import CardPackOpening from './CardPackOpening';
+import CardPackOpening, { openPackLabel } from './CardPackOpening';
 import { REPEAT_BUY_MS } from './StoreTile';
 import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 import { useGameStore, SHOP_ITEMS, DAILY_REWARDS } from '@/stores/gameStore';
@@ -106,7 +106,9 @@ describe('the empty Card Packs table', () => {
     render();
     expect(useGameStore.getState().cardPacks).toBe(firstPassPack.free.amount);
     expect(text()).not.toContain('No packs to open');
-    expect(text()).toContain(`Open Pack (${firstPassPack.free.amount})`);
+    // The button's own words (a lone pack is "Open Pack", no count: the
+    // count is of the tier it opens, and it shows only past one).
+    expect(text()).toContain(openPackLabel('regular', firstPassPack.free.amount));
   });
 
   it('offers the pack when it is affordable, and buying it fills the table', () => {
@@ -182,5 +184,28 @@ describe("the empty table's routes", () => {
     expect(text()).toContain("Today's daily reward.");
     act(() => buttonNamed('Open Daily Rewards').click());
     expect(r.onDailyRewards).toHaveBeenCalledTimes(1);
+  });
+});
+
+// The open button named one tier and counted all three: two standard, a
+// Premium and a Legendary read "Open Legendary Pack (4)", four legendaries.
+// It counts its own tier now; the wallet chip beside it has the total.
+describe('the open button', () => {
+  it('counts the packs of the tier it opens', () => {
+    expect(openPackLabel('legendary', 1)).toBe('Open Legendary Pack');
+    expect(openPackLabel('premium', 2)).toBe('Open Premium Pack (2)');
+    expect(openPackLabel('regular', 3)).toBe('Open Pack (3)');
+    expect(openPackLabel('regular', 1)).toBe('Open Pack');
+  });
+
+  it('names the next tier over a mixed inventory', () => {
+    useGameStore.setState({ cardPacks: 2, premiumPacks: 1, legendaryPacks: 1 });
+    render();
+    const open = [...host.querySelectorAll('button')].find((b) => /^Open /.test(b.textContent));
+    expect(open.textContent).toBe('Open Legendary Pack');
+    act(() => root.unmount());
+    useGameStore.setState({ cardPacks: 2, premiumPacks: 0, legendaryPacks: 0 });
+    render();
+    expect(buttonNamed('Open Pack (2)')).toBeTruthy();
   });
 });

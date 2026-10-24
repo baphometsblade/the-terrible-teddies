@@ -190,6 +190,24 @@ test('Reveal all turns the rest at once, and both waves can be looked at after',
   await expect(page.locator('[data-reveal-card="up"]')).toHaveCount(5);
 });
 
+// The open button counts the tier it opens, not every tier ("Open Legendary
+// Pack (3)" over one legendary and two others), and the way on after a reveal
+// names the pack it opens next: "Open Another" did not say it was a Premium.
+test('the open buttons name the pack they open and count only its tier', async ({ page }) => {
+  await seed(page, { cardPacks: 0, premiumPacks: 2, legendaryPacks: 1 });
+  const dialog = await openCardPacks(page);
+  await dialog.getByRole('button', { name: 'Open Legendary Pack', exact: true }).click();
+  await expect(turnButton(dialog, 1)).toBeVisible(SLOW);
+  await dialog.getByRole('button', { name: 'Reveal all' }).click();
+  await expect(dialog.getByRole('button', { name: 'Done' })).toBeVisible(SLOW);
+  const next = dialog.getByRole('button', { name: 'Open Premium Pack (2)', exact: true });
+  await expect(next).toBeVisible();
+  await next.click();
+  await expect(turnButton(dialog, 1)).toBeVisible(SLOW);
+  await dialog.getByRole('button', { name: 'Reveal all' }).click();
+  await expect(dialog.getByRole('button', { name: 'Open Premium Pack', exact: true })).toBeVisible(SLOW);
+});
+
 test('an epic or legendary holds a beat before it turns', async ({ page }) => {
   await seed(page, { cardPacks: 0, premiumPacks: 0, legendaryPacks: 1 });
   const dialog = await openCardPacks(page);
