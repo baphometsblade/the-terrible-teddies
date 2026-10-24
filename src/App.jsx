@@ -60,17 +60,43 @@ const PurchaseSuccess = lazy(() => import('./components/PurchaseSuccess'));
 // repeat: Infinity it used to be, which ran on the main thread — the thread
 // the arriving chunk needs. Stops with the Animations switch or reduced
 // motion; the word says "loading" either way.
-const DialogLoader = () => (
-  <div className="fixed inset-0 z-50 dialog-scrim flex items-center justify-center" role="status">
-    <div className="flex flex-col items-center gap-3">
-      <div className="relative h-16 w-16">
-        <div className="absolute inset-0 rounded-full border-2 border-white/10 border-t-brass-300 motion-safe:animate-spin" aria-hidden="true" />
-        <div className="absolute inset-0 flex items-center justify-center text-2xl" aria-hidden="true">🧸</div>
+//
+// In front of a dialog it looks like that dialog on its way, so Back and
+// Escape mean what they will once it is up: close it (`onCancel`). Nothing
+// held Back until the dialog mounted, so on a slow connection Back, the
+// natural way to give up on a spinner, left the game from under it. The
+// chunk still arrives, and the dialog it brings does not open. A screen's
+// loader takes no onCancel: the screen already holds Back (App's screen
+// layer), and so does the purchase check, which must not be cancelled.
+const DialogLoader = ({ onCancel }) => {
+  // Through a ref: App's closeAllDialogs is a new function every render,
+  // and holding Back again for each one would step the history each time.
+  const cancelRef = useRef(onCancel);
+  cancelRef.current = onCancel;
+  const cancellable = Boolean(onCancel);
+  useEffect(() => {
+    if (!cancellable) return undefined;
+    const cancel = () => cancelRef.current?.();
+    const onKeyDown = (e) => { if (e.key === 'Escape') cancel(); };
+    document.addEventListener('keydown', onKeyDown);
+    const releaseBack = holdBack(cancel);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      releaseBack();
+    };
+  }, [cancellable]);
+  return (
+    <div className="fixed inset-0 z-50 dialog-scrim flex items-center justify-center" role="status">
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative h-16 w-16">
+          <div className="absolute inset-0 rounded-full border-2 border-white/10 border-t-brass-300 motion-safe:animate-spin" aria-hidden="true" />
+          <div className="absolute inset-0 flex items-center justify-center text-2xl" aria-hidden="true">🧸</div>
+        </div>
+        <span className="label-caps text-plush-300">Loading</span>
       </div>
-      <span className="label-caps text-plush-300">Loading</span>
     </div>
-  </div>
-);
+  );
+};
 
 // Each screen's name in the tab and the task switcher. The menu is the game's
 // own name; signed out (and while booting) the page keeps index.html's
@@ -615,7 +641,7 @@ function App() {
             </AnimatePresence>
 
             <DialogErrorBoundary resetKey={dialogFlags.join()} onDismiss={closeAllDialogs}>
-            <Suspense fallback={<DialogLoader />}>
+            <Suspense fallback={<DialogLoader onCancel={closeAllDialogs} />}>
               {/* Keyed, so AnimatePresence can tell one dialog from another: keyless,
                   every dialog had the key "" and one leaving as another arrived
                   (a route) read as the same child staying. */}

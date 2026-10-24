@@ -172,6 +172,59 @@ test.describe('the system Back', () => {
 
   // A reload with a dialog open starts the new page on the old page's guard
   // entry, which it must not mistake for its own.
+  // A dialog takes Back as it mounts, and its chunk comes first. On a slow
+  // connection the loader stood over the menu holding nothing, and Back, the
+  // natural way to give up on a spinner, left the game.
+  test('while a dialog is still loading gives up on it, staying in the game', async ({ page }) => {
+    test.skip(!!process.env.E2E_PREVIEW, 'holds the Shop back by its source path');
+    const url = page.url();
+    let release;
+    const held = new Promise((resolve) => { release = resolve; });
+    let landed = false;
+    await page.route('**/src/components/Shop.jsx*', async (route) => {
+      await held;
+      await route.continue();
+      landed = true;
+    });
+    await page.getByRole('button', { name: 'Shop', exact: true }).click();
+    const loader = page.locator('.dialog-scrim[role="status"]').filter({ hasText: 'Loading' });
+    await expect(loader).toBeVisible(SLOW);
+    await guardedBack(page);
+    await expect(loader).toHaveCount(0, SLOW);
+    expect(page.url()).toBe(url);
+    // The chunk lands, and the Shop it brings stays shut.
+    release();
+    await expect.poll(() => landed, SLOW).toBe(true);
+    await page.waitForTimeout(500);
+    const shop = page.getByRole('dialog', { name: 'Shop' });
+    await expect(shop).toHaveCount(0);
+    await expect(battle(page)).toBeVisible();
+    // Nothing is left holding Back, and the Shop opens as ever.
+    await expect.poll(() => page.evaluate(() => window.history.state?.tt ?? null)).toBe(null);
+    await page.getByRole('button', { name: 'Shop', exact: true }).click();
+    await expect(shop).toBeVisible(SLOW);
+  });
+
+  // Escape too, as it would close the dialog once it was up.
+  test('Escape while a dialog is still loading gives up on it', async ({ page }) => {
+    test.skip(!!process.env.E2E_PREVIEW, 'holds the Shop back by its source path');
+    let release;
+    const held = new Promise((resolve) => { release = resolve; });
+    await page.route('**/src/components/Shop.jsx*', async (route) => {
+      await held;
+      await route.continue();
+    });
+    await page.getByRole('button', { name: 'Shop', exact: true }).click();
+    const loader = page.locator('.dialog-scrim[role="status"]').filter({ hasText: 'Loading' });
+    await expect(loader).toBeVisible(SLOW);
+    await page.keyboard.press('Escape');
+    await expect(loader).toHaveCount(0, SLOW);
+    release();
+    await page.waitForTimeout(1000);
+    await expect(page.getByRole('dialog', { name: 'Shop' })).toHaveCount(0);
+    await expect(battle(page)).toBeVisible();
+  });
+
   test('still closes a dialog after a reload', async ({ page }) => {
     const shop = page.getByRole('dialog', { name: 'Shop' });
     await page.getByRole('button', { name: 'Shop', exact: true }).click();
