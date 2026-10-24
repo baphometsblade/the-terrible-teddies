@@ -270,6 +270,67 @@ test.describe('landing from a reset link', () => {
     await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
     await expect(page.getByRole('heading', { name: 'Set a New Password' })).toHaveCount(0);
   });
+
+  // supabase-js takes the tokens out of the address once it has used them,
+  // so a reload, or a phone discarding the tab while the player fetches a
+  // password from their password manager, dropped the panel and left them
+  // in the game, signed in by the link, not knowing their password.
+  test('comes back after a reload before the password is saved, and not once it is', async ({ page }) => {
+    const auth = await stubBackend(page);
+    await page.goto(`/${recoveryHash()}`);
+    const heading = page.getByRole('heading', { name: 'Set a New Password' });
+    await expect(heading).toBeVisible(SLOW);
+    expect(new URL(page.url()).hash).toBe('');
+
+    await page.reload();
+    await expect(heading).toBeVisible(SLOW);
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toHaveCount(0);
+    await expect(page.getByLabel('New password', { exact: true })).toBeFocused();
+
+    await page.getByLabel('New password', { exact: true }).fill('honeypot-9');
+    await page.getByLabel('Confirm new password').fill('honeypot-9');
+    await page.getByRole('button', { name: 'Save new password' }).click();
+    await expect(page.getByRole('heading', { name: 'Password Changed' })).toBeVisible();
+    expect(auth.updates.map((u) => u.password)).toEqual(['honeypot-9']);
+
+    // Done: a reload now is an ordinary visit.
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    await expect(heading).toHaveCount(0);
+  });
+
+  test('a reload after "Not now" is the game, and a new tab never resumes it', async ({ page, context }) => {
+    await stubBackend(page);
+    await page.goto(`/${recoveryHash()}`);
+    await expect(page.getByRole('heading', { name: 'Set a New Password' })).toBeVisible(SLOW);
+    // Per tab: another tab of the game is not the one the link opened.
+    const other = await context.newPage();
+    await stubBackend(other);
+    await other.goto('/');
+    await expect(other.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    await expect(other.getByRole('heading', { name: 'Set a New Password' })).toHaveCount(0);
+    await other.close();
+
+    await page.getByRole('button', { name: /Not now/ }).click();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    await expect(page.getByRole('heading', { name: 'Set a New Password' })).toHaveCount(0);
+  });
+
+  // Resumed after the reset session is gone (signed out elsewhere, say):
+  // there is nothing to set a password on, so it says so before the player
+  // types one, and offers the new link they need.
+  test('a resumed panel with no session left offers a new link instead of the form', async ({ page }) => {
+    await stubBackend(page);
+    await page.goto(`/${recoveryHash()}`);
+    await expect(page.getByRole('heading', { name: 'Set a New Password' })).toBeVisible(SLOW);
+    await page.evaluate((key) => localStorage.removeItem(key), `sb-${REF}-auth-token`);
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'This Link Has Expired' })).toBeVisible(SLOW);
+    await expect(page.getByRole('button', { name: 'Send a new link' })).toBeVisible();
+    await expect(page.getByLabel('New password', { exact: true })).toHaveCount(0);
+  });
 });
 
 test.describe('a reset link that cannot be used', () => {

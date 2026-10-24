@@ -24,10 +24,37 @@ const SupabaseAuthContext = createContext();
 // screen's Try Again) does not start it over.
 const LANDING = landingRecord(typeof window !== 'undefined' ? window.location.href : '');
 
+// The set-password panel, across a reload of its tab. supabase-js takes the
+// recovery tokens out of the address as soon as it has used them, so a
+// reload, or a phone discarding the tab while the player fetches a password
+// from their password manager, dropped the panel and left them in the game,
+// signed in by the link, with a password they did not know. Kept per tab
+// (sessionStorage survives a reload and a discarded tab's restore, not a new
+// tab) and for an hour, the life of the session the link signs in with.
+// `uid` is the account the link signed in, once known.
+const RESUME_KEY = 'terrible-teddies-recovery';
+const RESUME_MS = 60 * 60 * 1000;
+const readResume = () => {
+  try {
+    const r = JSON.parse(sessionStorage.getItem(RESUME_KEY) ?? 'null');
+    const age = Date.now() - r?.at;
+    return typeof r?.at === 'number' && age >= 0 && age < RESUME_MS ? r : null;
+  } catch {
+    return null;
+  }
+};
+const writeResume = (r) => {
+  try { sessionStorage.setItem(RESUME_KEY, JSON.stringify(r)); } catch { /* a convenience: without it, no resume */ }
+};
+const clearResume = () => {
+  try { sessionStorage.removeItem(RESUME_KEY); } catch { /* as above */ }
+};
+
 // The reset panel's state:
 //   null                                  the game (or the sign-in screen)
 //   { stage: 'checking' }                 a recovery link is being checked
 //   { stage: 'set-password' }             signed in by the link: choose a password
+//                                         (`resumed`: after a reload of its tab)
 //   { stage: 'link-error', reason }       'expired' (refused by Supabase),
 //                                         'invalid' or 'offline' (could not be used)
 const initialRecovery = () => {
@@ -38,6 +65,7 @@ const initialRecovery = () => {
   if (landing?.kind === 'link-error') {
     return { stage: 'link-error', reason: ['otp_expired', 'access_denied'].includes(landing.code) ? 'expired' : 'invalid' };
   }
+  if (!landing && readResume()) return { stage: 'set-password', resumed: true };
   return null;
 };
 
@@ -127,6 +155,32 @@ export const SupabaseProvider = ({ children }) => {
     };
   }, []);
 
+  // Note the panel while it is up, and the account it is for once the
+  // session says (PASSWORD_RECOVERY can arrive a tick before it does).
+  const recoveryUid = session?.user?.id ?? null;
+  useEffect(() => {
+    if (recovery?.stage !== 'set-password') return;
+    const held = readResume();
+    if (held && (held.uid || !recoveryUid)) return;
+    writeResume({ at: held?.at ?? Date.now(), uid: recoveryUid });
+  }, [recovery?.stage, recoveryUid]);
+
+  // A resumed panel, once the session is restored: with no session there is
+  // nothing to set a password on, so it says the link's session is over
+  // (and offers a new link) before the player types one; a different
+  // account in this tab is not the one the link was for.
+  useEffect(() => {
+    if (!recovery?.resumed || recovery.stage !== 'set-password' || loading) return;
+    const held = readResume();
+    if (!session) {
+      clearResume();
+      setRecovery({ stage: 'link-error', reason: 'expired' });
+    } else if (held?.uid && held.uid !== session.user.id) {
+      clearResume();
+      setRecovery(null);
+    }
+  }, [recovery, loading, session]);
+
   const logout = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -138,17 +192,20 @@ export const SupabaseProvider = ({ children }) => {
   const signedIn = !!session;
   const endRecovery = useCallback((intent = null) => {
     LANDING.consume();
+    clearResume();
     setAuthIntent(signInIntent(intent, signedIn));
     setRecovery(null);
   }, [signedIn]);
   // Changed, or found dead when saving: either way the link has done all it
-  // can, so a remount from here is an ordinary visit.
+  // can, so a remount (or a reload) from here is an ordinary visit.
   const passwordSet = useCallback(() => {
     LANDING.consume();
+    clearResume();
     setRecovery({ stage: 'done' });
   }, []);
   const linkExpired = useCallback(() => {
     LANDING.consume();
+    clearResume();
     setRecovery({ stage: 'link-error', reason: 'expired' });
   }, []);
   const clearAuthIntent = useCallback(() => setAuthIntent(null), []);
