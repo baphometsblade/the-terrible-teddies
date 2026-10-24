@@ -240,6 +240,11 @@ test.describe('with a mouse and a keyboard', () => {
       .toHaveAccessibleDescription(/^Costs 2 energy\. 2 attack, 3 of 3 HP\. Taunt: Enemies must attack this card first\.$/);
 
     await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
+    await page.getByRole('button', { name: 'Play Shit-Talk Sally' }).first().click();
+    await expect(page.locator('[data-energy]')).toHaveText('0/3');
+    // What the dimming says: pressed now, it would be refused.
+    await expect(page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first())
+      .toHaveAccessibleDescription('Costs 1 energy. 2 attack, 1 of 1 HP. Not enough energy.');
     await page.getByRole('button', { name: 'End Turn' }).click();
     await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
     const attacker = page.getByRole('button', { name: 'Select Bar-Fight Barry to attack' });

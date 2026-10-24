@@ -3047,7 +3047,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       : { onClick: pressHandCard(card, false, index) }}
                   >
                     <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} costDelta={cost - card.cost} />
-                    <CardDescription id={`desc-hand-${card.instanceId}`}>{describeCard(card, { cost })}</CardDescription>
+                    {/* What the dimming says, too: pressed now, it is refused. */}
+                    <CardDescription id={`desc-hand-${card.instanceId}`}>
+                      {`${describeCard(card, { cost })}${playable && !affordable ? ' Not enough energy.' : ''}`}
+                    </CardDescription>
                     {raised && playable && (
                       <RaisedHint>{affordable ? 'Tap again to play' : `Needs ${cost} energy`}</RaisedHint>
                     )}
