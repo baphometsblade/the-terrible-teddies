@@ -394,6 +394,9 @@ function App() {
     announceAll(toast, fresh.map((delivery) => ({
       title: `${seasonNumber(delivery.season)} rewards delivered`,
       description: `${delivery.summary}.`,
+      // Over a dialog the list stops at two lines (index.css), which every
+      // dialog's controls clear; the whole of it is still read out.
+      className: 'toast-clamp',
     })));
   }, [pendingSeasonDeliveries, toast]);
 

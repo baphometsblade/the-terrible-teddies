@@ -346,6 +346,31 @@ test('when this device and the account both moved, the other save is kept and ca
   await expect(dialog.getByText(/^Saved to your account · /)).toBeVisible();
 });
 
+// The notice can land over a dialog: decisions run on each return to the tab,
+// whatever is open. Over a dialog only a season's delivery is cut to two
+// lines (index.css's toast-clamp). Cut there too, this one lost where the
+// other save is ("in Settings"), the one thing it is there to say.
+for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }, { width: 1280, height: 800 }]) {
+  test(`a conflict notice over a dialog is shown whole at ${viewport.width}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await boot(page, {
+      account: accountSave({ level: 12, totalBattles: 120 }),
+      store: {
+        ownerUserId: SESSION.user.id, playerName: 'QA Bear', level: 3, totalBattles: 9, coins: 777,
+        tutorialCompleted: true, lastLoginDate: today(), cloudRev: 2, cloudSyncedHash: 'an-older-save',
+      },
+      // Time to open a dialog before the decision lands.
+      delay: 3000,
+    });
+    await openSettings(page);
+    const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Two saves didn’t match' });
+    await expect(toast).toBeVisible(SLOW);
+    const description = toast.locator('.toast-description');
+    await expect(description).toContainText('in Settings if you want it back');
+    expect(await description.evaluate((el) => el.scrollHeight - el.clientHeight), 'the notice is cut short').toBeLessThanOrEqual(1);
+  });
+}
+
 test('a backend without cloud saves says so, changes nothing, and asks no more', async ({ page }) => {
   const store = {
     ownerUserId: SESSION.user.id, playerName: 'QA Bear', level: 4, coins: 1234, gems: 56,

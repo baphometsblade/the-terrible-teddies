@@ -738,21 +738,24 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 @media (max-width: 639.98px) {
   .toast-viewport > li { pointer-events: none; }
 }
-/* Over a dialog a description stops at two lines. The corner above was
-   measured with achievements and level-ups, and a longer announcement (a
-   season's delivery lists what it handed over) ran to five lines and covered
+/* Over a dialog, a season's delivery (toast-clamp, App) stops at two lines.
+   The corner above was measured with achievements and level-ups, and the
+   delivery lists what it handed over: it ran to five lines and covered
    Challenges' tabs, the tutorial's step bar and Player Stats' pencil and tab
-   at every width, for its whole reading time. Only the drawing is cut: Radix
+   at every width, for its whole reading time. Cut on screen only: Radix
    reads its announcement from the text itself, so a screen reader still
-   hears all of it, and away from a dialog the whole line shows. */
-:root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-description {
+   hears all of it, and away from a dialog the whole list shows. Opt-in, not
+   every toast over a dialog: a list loses only its tail, but cut, the
+   cloud save's "Two saves didn't match" lost where the other save is (in
+   Settings), and a payment's lost what it paid for. */
+:root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-clamp .toast-description {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
-/* On a phone the type steps down a little, so a one-line title and those two
-   lines end above the first control under a dialog's header: the tutorial's
+/* On a phone the type steps down a little, so a one-line title and two
+   lines of description end above the first control under a dialog's header: the tutorial's
    step bar, 77px down at 320, is the highest. From 360 an achievement's
    description fits on one line. */
 @media (max-width: 639.98px) {
