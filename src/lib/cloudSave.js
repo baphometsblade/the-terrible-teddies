@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import {
-  useGameStore, normalizeSave, getXPForLevel, keptThroughReset, STARTING_GEMS, BATTLE_XP,
+  useGameStore, normalizeSave, getXPForLevel, keptThroughReset, STARTING_GEMS, BATTLE_XP, scratchGameStore,
 } from '@/stores/gameStore';
 import {
   CLOUD_FIELDS, cloudPayload, saveHash, hasUnsyncedChanges, pick, isSaveObject,
@@ -101,6 +101,53 @@ export const isFreshSave = (save, now = new Date()) =>
   progressOf(save) <= FRESH_PROGRESS && !holdsPaidItems(save, now);
 
 // ---------------------------------------------------------------------------
+// The calendar's own changes
+// ---------------------------------------------------------------------------
+
+/**
+ * A save as the calendar leaves it today: a new day's and a new week's
+ * challenge counters, a new season's pass (and the tiers it owed, delivered).
+ * The menu writes exactly this on the first open of each day (MainMenu's
+ * syncSeason, then syncPeriods), before any decision can have read the
+ * account's save, so a device that has done nothing since its last sync no
+ * longer holds the save it synced. That is not the player's change, and it
+ * must not make a device that is only behind look like one that moved on:
+ * it was told "Two saves didn't match", and on a progress tie sent its old
+ * save over the account's. Run by the store's own actions on a scratch copy
+ * (scratchGameStore), so it cannot drift from them. `steps`: the menu runs
+ * both; a screen opened later may have run only one (Challenges rolls the
+ * day, the Battle Pass the season), which ROLLOVERS covers.
+ */
+export const rollForward = (payload, steps = ['syncSeason', 'syncPeriods']) => {
+  const scratch = scratchGameStore(payload);
+  for (const step of steps) scratch.getState()[step]();
+  return cloudPayload(scratch.getState());
+};
+const ROLLOVERS = [['syncSeason', 'syncPeriods'], ['syncPeriods'], ['syncSeason']];
+
+// Bring the save just put in the store (the account's, or the backup) up to
+// today, as rollForward does: the menu's own rollovers ran on the save it
+// replaced, and will not run again until it remounts. Yesterday's counters
+// then badged today's challenges as finished until Challenges was opened and
+// zeroed them. An ordinary change, so it reaches the account like any other.
+const rollStoreForward = () => {
+  useGameStore.getState().syncSeason();
+  useGameStore.getState().syncPeriods();
+};
+
+// The save as this device last synced it, per account, newest only: what
+// rule 4 rolls forward. Kept beside the game save rather than in it, so the
+// save written on every change does not carry a second copy of itself; it is
+// only believed while its fingerprint is the store's cloudSyncedHash, so a
+// record another tab or account left behind is never mistaken for this one.
+const syncedKey = (uid) => `terrible-teddies-cloud-synced:${uid}`;
+const recordSynced = (uid, hash, payload) => writeJSON(syncedKey(uid), { hash, save: payload });
+export const lastSyncedSave = (uid, hash) => {
+  const r = uid && hash ? readJSON(syncedKey(uid)) : null;
+  return r && r.hash === hash && isSaveObject(r.save) && saveHash(r.save) === hash ? r.save : null;
+};
+
+// ---------------------------------------------------------------------------
 // The decision
 // ---------------------------------------------------------------------------
 
@@ -113,14 +160,17 @@ export const isFreshSave = (save, now = new Date()) =>
  *     synced at that rev, or one it sent or took since): this device's save
  *     is that plus more, so send it.
  *  4. This device has not changed since its last sync, and the account has:
- *     take the account's.
+ *     take the account's. The calendar's own changes (rollForward) do not
+ *     count as a change here.
  *  5. This device's save was never synced and holds nothing (a new device,
  *     or a save just wiped for this account): take the account's.
  *  6. Both have changed: keep the one with more progress (this device's on a
  *     tie), and keep the other as a backup.
  *
- * `local`: { hash, syncedHash, rev, progress, fresh } — `fresh` is rule 5's
- * test (never synced and isFreshSave). `server`: { rev, hash, progress }, hash
+ * `local`: { hash, syncedHash, rev, progress, fresh, rolledHashes } — `fresh`
+ * is rule 5's test (never synced and isFreshSave); `rolledHashes` are the
+ * fingerprints of the last synced save rolled forward to today (rollForward;
+ * empty when that save is not known). `server`: { rev, hash, progress }, hash
  * null when there is no save. `seen`: fingerprints this device has sent or
  * taken for this account.
  *
@@ -131,7 +181,8 @@ export const decideSync = ({ local, server, seen = new Set() }) => {
   if (local.hash === server.hash) return { action: 'in-sync', baseRev: server.rev, rule: 2 };
   const serverIsOurs = (server.rev === local.rev && server.hash === local.syncedHash) || seen.has(server.hash);
   if (serverIsOurs) return { action: 'push', baseRev: server.rev, rule: 3 };
-  if (local.syncedHash !== null && local.hash === local.syncedHash) return { action: 'adopt', rule: 4 };
+  const untouched = local.hash === local.syncedHash || (local.rolledHashes ?? []).includes(local.hash);
+  if (local.syncedHash !== null && untouched) return { action: 'adopt', rule: 4 };
   if (local.fresh) return { action: 'adopt', rule: 5 };
   if (local.progress >= server.progress) return { action: 'push', baseRev: server.rev, backup: 'server', rule: 6 };
   return { action: 'adopt', backup: 'local', rule: 6 };
@@ -366,13 +417,15 @@ const markUnavailable = (c, phase = 'unavailable') => {
   return phase;
 };
 
-// Note what the server holds now, on the store. In a hidden tab the store is
-// re-read from localStorage first: a hidden tab's copy can be older than what
-// the tab in front has written, and setState writes the whole save back.
-const commitMeta = (c, rev, hash, at) => {
+// Note what the server holds now (`payload`, at `rev`), on the store. In a
+// hidden tab the store is re-read from localStorage first: a hidden tab's
+// copy can be older than what the tab in front has written, and setState
+// writes the whole save back.
+const commitMeta = (c, rev, hash, payload, at) => {
   if (hidden()) quietly(() => useGameStore.persist?.rehydrate?.());
   const s = useGameStore.getState();
   if (s.ownerUserId !== c.uid) return;
+  recordSynced(c.uid, hash, payload);
   quietly(() => useGameStore.setState({ cloudRev: rev, cloudSyncedHash: hash, cloudSyncedAt: at ?? Date.now() }));
 };
 
@@ -395,6 +448,7 @@ const adopt = (c, server) => {
     pendingLevelUps: [],
     pendingSeasonDeliveries: [],
   }));
+  recordSynced(c.uid, server.hash, server.payload);
   newLineage(c.uid, [server.hash]);
 };
 
@@ -404,13 +458,17 @@ const describeServer = (res) => {
   return { rev: res.rev, hash: saveHash(payload), progress: progressOf(payload), payload, updatedAt: res.updatedAt };
 };
 
-const describeLocal = (state, payload) => ({
-  hash: saveHash(payload),
-  syncedHash: state.cloudSyncedHash,
-  rev: state.cloudRev,
-  progress: progressOf(payload),
-  fresh: state.cloudSyncedHash === null && isFreshSave(payload),
-});
+const describeLocal = (state, payload) => {
+  const synced = lastSyncedSave(state.ownerUserId, state.cloudSyncedHash);
+  return {
+    hash: saveHash(payload),
+    syncedHash: state.cloudSyncedHash,
+    rev: state.cloudRev,
+    progress: progressOf(payload),
+    fresh: state.cloudSyncedHash === null && isFreshSave(payload),
+    rolledHashes: synced ? ROLLOVERS.map((steps) => saveHash(rollForward(synced, steps))) : [],
+  };
+};
 
 // Send the store's save from `base` (default: the rev it is in step with).
 // `inner`: sent by a decision, which settles once for the both of them.
@@ -446,7 +504,7 @@ async function push(c, { base = null, conflicts = 0, inner = false } = {}) {
   if (c !== ctx) return 'stale';
 
   if (res.kind === 'ok' && res.ok) {
-    commitMeta(c, res.rev, hash, res.updatedAt);
+    commitMeta(c, res.rev, hash, payload, res.updatedAt);
     resetRetry(c);
     const now = useGameStore.getState();
     const dirty = hasUnsyncedChanges(now);
@@ -511,7 +569,7 @@ async function decide(c, trigger, conflicts = 0, inner = false) {
 
   let outcome;
   if (verdict.action === 'in-sync') {
-    commitMeta(c, server.rev, server.hash, server.updatedAt);
+    commitMeta(c, server.rev, server.hash, server.payload, server.updatedAt);
     remember(c.uid, server.hash);
     setStatus({ phase: 'saved', savedAt: server.updatedAt ?? Date.now() });
     outcome = 'in-sync';
@@ -533,6 +591,8 @@ async function decide(c, trigger, conflicts = 0, inner = false) {
     }
     adopt(c, server);
     setStatus({ phase: 'saved', savedAt: server.updatedAt ?? Date.now() });
+    // After the status: a rollover is a change waiting to go ('pending').
+    rollStoreForward();
     tell({
       ...(verdict.backup === 'local'
         ? {
@@ -586,7 +646,7 @@ function flush(reason) {
       if (c !== ctx) return;
       const res = classifyRpc(raw, validPut);
       if (res.kind === 'ok' && res.ok) {
-        commitMeta(c, res.rev, hash, res.updatedAt);
+        commitMeta(c, res.rev, hash, payload, res.updatedAt);
         resetRetry(c);
         setStatus({ phase: 'saved', savedAt: res.updatedAt ?? Date.now() });
       } else if (res.kind === 'ok') {
@@ -757,6 +817,7 @@ export function switchToBackupSave() {
     pendingSeasonDeliveries: [],
   }));
   newLineage(uid);
+  rollStoreForward();
   setStatus({ backup: backupSummary(uid) });
   const c = ctx;
   if (c && c.uid === uid && c.available) {

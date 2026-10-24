@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { createStore } from 'zustand/vanilla';
 import { shuffleDeck } from '@/utils/deckUtils';
 import { getCurrentSeason, getSeason, seasonFromKey } from '@/utils/season';
 import { BATTLE_PASS_REWARDS, readyRewards, passOf, describeGrants } from '@/lib/battlePass';
@@ -438,9 +439,17 @@ export const normalizeSave = (persisted) => {
   return s;
 };
 
+// The store's own state and actions, held apart from persistence so that
+// scratchGameStore (below) can run them on a save that is not the one in play.
+let gameState = null;
+const keepGameState = (creator) => {
+  gameState = creator;
+  return creator;
+};
+
 export const useGameStore = create(
   persist(
-    (set, get) => ({
+    keepGameState((set, get) => ({
       ...initialState,
 
       // Not persisted — populated only in the current session
@@ -1284,7 +1293,7 @@ export const useGameStore = create(
         pendingLevelUps: [],
         pendingSeasonDeliveries: [],
       }),
-    }),
+    })),
     {
       name: 'terrible-teddies-storage',
       version: 3,
@@ -1298,5 +1307,18 @@ export const useGameStore = create(
     }
   )
 );
+
+/**
+ * A copy of the store holding `save` that persists nothing and touches no
+ * screen: the store's own actions, run on a save other than the one in play.
+ * The cloud save asks it what the calendar's rollovers (syncSeason,
+ * syncPeriods) make of the save it last synced, so that it never has to keep
+ * a second copy of that logic which could drift from this one.
+ */
+export const scratchGameStore = (save) => {
+  const store = createStore(gameState);
+  store.setState(normalizeSave(save));
+  return store;
+};
 
 export default useGameStore;

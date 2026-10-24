@@ -83,8 +83,10 @@ const {
   decideSync, progressOf, isFreshSave, holdsPaidItems, cloudPayload, saveHash, classifyRpc,
   startCloudSync, stopCloudSync, bindSaveToUser, switchToBackupSave, saveNow, readBackup,
   useCloudSave, describeSaveStatus, PUSH_DEBOUNCE_MS, RETRY_BASE_MS, RECHECK_MIN_MS, CLOUD_FIELDS, CLOUD_SAVE_MAX_BYTES,
+  lastSyncedSave,
 } = await import('./cloudSave');
-const { useGameStore, BATTLE_XP } = await import('@/stores/gameStore');
+const { useGameStore, BATTLE_XP, scratchGameStore } = await import('@/stores/gameStore');
+const { BATTLE_PASS_REWARDS } = await import('@/lib/battlePass');
 
 const A = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const B = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -93,13 +95,24 @@ const phase = () => useCloudSave.getState().phase;
 const payloadNow = () => cloudPayload(get());
 const STORAGE_KEY = 'terrible-teddies-storage';
 
-// A save that has played: what another device would have sent.
+// The day, week and season stamps a save opened today carries: the menu
+// writes them on every device (syncPeriods, syncSeason) before anything else.
+const stampedToday = () => {
+  const s = scratchGameStore({});
+  s.getState().syncSeason();
+  s.getState().syncPeriods();
+  const { dailyStatsDate, weeklyStatsDate, seasonKey } = s.getState();
+  return { dailyStatsDate, weeklyStatsDate, seasonKey };
+};
+
+// A save that has played: what another device would have sent today.
 const played = (over = {}) => cloudPayload({
   ...useGameStore.getInitialState(),
   level: 7, xp: 40, totalBattles: 30, totalWins: 20,
   ownedCards: [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42, 7, 8, 9, 10, 11, 12],
   coins: 4321, gems: 210, lastSyncedServerGems: 500, tutorialCompleted: true,
   playerName: 'Phone Bear',
+  ...stampedToday(),
   ...over,
 });
 
@@ -138,6 +151,7 @@ afterEach(() => {
   stopCloudSync();
   delete document.visibilityState;
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe('the decision table', () => {
@@ -167,6 +181,11 @@ describe('the decision table', () => {
 
   it('4: untouched here since the last sync, the account moved → take the account\'s', () => {
     expect(decideSync({ local: local({ hash: 'S' }), server: remote({ progress: 1 }) })).toEqual({ action: 'adopt', rule: 4 });
+    // Changed only by the calendar: the last synced save, rolled forward to today.
+    expect(decideSync({ local: local({ hash: 'S+today', rolledHashes: ['S+today'] }), server: remote({ progress: 1 }) }))
+      .toEqual({ action: 'adopt', rule: 4 });
+    // Anything else is a change of this device's own.
+    expect(decideSync({ local: local({ hash: 'L', rolledHashes: ['S+today'] }), server: remote({ progress: 1 }) }).rule).toBe(6);
   });
 
   it('5: a never-synced save with nothing in it → take the account\'s, no backup', () => {
@@ -415,6 +434,149 @@ describe('signing in', () => {
   });
 });
 
+describe('the calendar\'s own changes', () => {
+  // The menu rolls the save over to today on mount (MainMenu: syncSeason in a
+  // layout effect, then syncPeriods), before the cloud save's chunk has even
+  // loaded, so by the time a decision reads the store a device that has done
+  // nothing since its last sync no longer holds the save it synced.
+  const openMenu = () => {
+    get().syncSeason();
+    get().syncPeriods();
+  };
+  const day1 = new Date(2026, 8, 30, 20, 0);   // Wed 30 Sep: the last day of Season 2
+  const day2 = new Date(2026, 9, 1, 9, 0);     // Thu 1 Oct: Season 3, a new day, the same week
+
+  // Yesterday: this device in step with the account at rev 1, a day's
+  // challenge counters on it, and the season stamped.
+  const syncedYesterday = async (over = {}) => {
+    vi.setSystemTime(day1);
+    useGameStore.setState({ ownerUserId: A, level: 6, totalBattles: 20, todayWins: 3, todayBattles: 4, ...over });
+    openMenu();
+    await signIn(A);
+    stopCloudSync();
+    expect(server.rows.get(A).rev).toBe(1);
+    vi.setSystemTime(day2);
+  };
+
+  it('a new day here is not a change: a device that is only behind takes the account\'s save, with no conflict', async () => {
+    await syncedYesterday();
+    // The phone opened today and played on (rev 2).
+    server.write(A, { ...server.rows.get(A).save, ...stampedToday(), todayWins: 0, todayBattles: 0, level: 8, totalBattles: 30 });
+    openMenu();
+    expect(get().todayWins).toBe(0); // the rollover did write to this device's save
+    toasts.length = 0;
+    const { out } = await signIn(A);
+    expect(out).toBe('adopted');
+    expect(get().level).toBe(8);
+    expect(readBackup(A)).toBeNull();
+    expect(toasts.map((t) => t.title)).toEqual(['Save loaded from your account']);
+  });
+
+  it('…nor, on a progress tie, does its old save go over the account\'s', async () => {
+    await syncedYesterday({ gems: 210, lastSyncedServerGems: 500 });
+    // The phone spent its gems on three Premium packs and took a new name:
+    // no progress either way, so a "both moved" tie would keep this device's.
+    server.write(A, { ...server.rows.get(A).save, ...stampedToday(), todayWins: 0, todayBattles: 0, gems: 0, premiumPacks: 3, playerName: 'Renamed Bear' });
+    openMenu();
+    const { out } = await signIn(A);
+    expect(out).toBe('adopted');
+    expect([get().gems, get().premiumPacks, get().playerName]).toEqual([0, 3, 'Renamed Bear']);
+    await vi.advanceTimersByTimeAsync(PUSH_DEBOUNCE_MS * 2);
+    expect(server.puts().slice(1)).toHaveLength(0); // nothing sent over it
+    expect(server.rows.get(A).save.premiumPacks).toBe(3);
+  });
+
+  it('a new season here, with the tiers it owed delivered, is not a change either', async () => {
+    // Season 2's pass, Premium, 1,500 XP in and nothing claimed: its end
+    // delivers cards, coins, gems, packs and a border on whichever device
+    // opens first.
+    await syncedYesterday({ seasonKey: 'season-2', seasonXP: 1500, hasBattlePassPremium: true });
+    expect(get().seasonKey).toBe('season-2');
+    server.write(A, { ...server.rows.get(A).save, ...stampedToday(), level: 9, totalBattles: 40, seasonXP: 0, hasBattlePassPremium: false });
+    const gemsBefore = get().gems;
+    openMenu();
+    expect(get().seasonKey).toBe('season-3');
+    expect(get().gems).toBeGreaterThan(gemsBefore); // delivered here
+    const { out } = await signIn(A);
+    expect(out).toBe('adopted');
+    expect(get().level).toBe(9);
+    expect(readBackup(A)).toBeNull();
+  });
+
+  it('a change of the player\'s own on top of the new day is still one: both moved', async () => {
+    await syncedYesterday();
+    server.write(A, { ...server.rows.get(A).save, ...stampedToday(), level: 12, totalBattles: 120 });
+    openMenu();
+    const rolled = get().coins;
+    get().addCoins(500); // the daily reward, claimed before the account answered
+    const { out } = await signIn(A);
+    expect(out).toBe('adopted');
+    expect(readBackup(A).save.coins).toBe(rolled + 500);
+    expect(toasts.at(-1).title).toBe('Two saves didn’t match');
+  });
+
+  it('brings an account save from an earlier day up to today when it takes it, and sends that back', async () => {
+    vi.setSystemTime(day1);
+    const yesterday = played({ ...stampedToday(), todayWins: 9, todayBattles: 20, claimedChallenges: ['d-yesterday'] });
+    vi.setSystemTime(day2);
+    server.write(A, yesterday);
+    const { out } = await signIn(A);
+    expect(out).toBe('adopted');
+    // Yesterday's nine wins no longer count towards today's challenges.
+    expect([get().todayWins, get().todayBattles, get().dailyStatsDate]).toEqual([0, 0, day2.toDateString()]);
+    expect(get().claimedChallenges).toEqual([]);
+    expect(get().seasonKey).toBe('season-3');
+    expect(phase()).toBe('pending');
+    await vi.advanceTimersByTimeAsync(PUSH_DEBOUNCE_MS);
+    expect(server.puts().map((p) => p.base)).toEqual([1]);
+    expect(server.rows.get(A).save.todayWins).toBe(0);
+    expect(phase()).toBe('saved');
+  });
+
+  it('a day rolled over by Challenges alone, while the game sat open, is not a change either', async () => {
+    await syncedYesterday();
+    await signIn(A); // the game is open from yesterday: in step at rev 1
+    server.write(A, { ...server.rows.get(A).save, ...stampedToday(), todayWins: 0, todayBattles: 0, level: 8 });
+    toasts.length = 0;
+    // This morning, Challenges opens first (it rolls only the day) and then
+    // the tab is left and come back to: its rollover is sent, refused (the
+    // phone wrote rev 2), and decided again.
+    get().syncPeriods();
+    await vi.advanceTimersByTimeAsync(PUSH_DEBOUNCE_MS);
+    expect(get().level).toBe(8);
+    expect(readBackup(A)).toBeNull();
+    expect(toasts.map((t) => t.title)).toEqual(['Save loaded from your account']);
+  });
+
+  it('believes its record of the synced save only while it is that save', async () => {
+    await syncedYesterday();
+    const key = `terrible-teddies-cloud-synced:${A}`;
+    const record = JSON.parse(localStorage.getItem(key));
+    expect(record.hash).toBe(get().cloudSyncedHash);
+    expect(lastSyncedSave(A, get().cloudSyncedHash)).toEqual(record.save);
+    // A record that is not the save under that fingerprint (another tab's,
+    // half-written), or a fingerprint it is not for: not believed, so the
+    // decision falls back to "both moved" rather than taking a guess.
+    localStorage.setItem(key, JSON.stringify({ ...record, save: { ...record.save, coins: 1 } }));
+    expect(lastSyncedSave(A, get().cloudSyncedHash)).toBeNull();
+    localStorage.setItem(key, JSON.stringify(record));
+    expect(lastSyncedSave(A, 'another-save')).toBeNull();
+    expect(lastSyncedSave(B, get().cloudSyncedHash)).toBeNull();
+  });
+
+  it('brings the backup up to today when the player switches to it', async () => {
+    await syncedYesterday({ level: 3, coins: 777 });
+    server.write(A, { ...server.rows.get(A).save, ...stampedToday(), level: 12, totalBattles: 120 });
+    useGameStore.setState({ coins: 778 }); // moved here too: the next sign-in keeps a backup
+    await signIn(A);
+    expect(readBackup(A).save.dailyStatsDate).toBe(day1.toDateString());
+    switchToBackupSave();
+    // Its 778 coins, plus what Season 2 still owed it (tier 1 opens at 0 XP).
+    expect(get().coins).toBe(778 + BATTLE_PASS_REWARDS[0].free.amount);
+    expect([get().todayWins, get().dailyStatsDate, get().seasonKey]).toEqual([0, day2.toDateString(), 'season-3']);
+  });
+});
+
 describe('a refused write', () => {
   it('in the middle of a decision, decides again and still settles and tells the player once', async () => {
     const starter = [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42];
@@ -527,6 +689,9 @@ describe('sending changes', () => {
   });
 
   it('retries a failed send, backing off, and says so meanwhile', async () => {
+    // No jitter: with it, the second retry (4 s ± 20%) could land inside the
+    // 2.5 s this checks it waits past the first (2 s ± 20%), now and then.
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
     useGameStore.setState({ ownerUserId: A });
     await signIn(A);
     server.mode = 'offline';
