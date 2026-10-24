@@ -383,12 +383,17 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
   // readable, recessed slot saying where the deck stands: how many cards are
   // missing, or that this is the battle deck. `compact` is the bar's: a
   // smaller face, and no icon but the battle deck's tick.
+  // aria-disabled, not disabled: pressing it makes the deck the battle deck,
+  // which turns it off under the player's finger, and a disabled button
+  // drops the keyboard focus to the page (as Tutorial's Previous did). It
+  // stays focusable, says it is unavailable, and does nothing when pressed.
   const canSet = deckFull && dirty;
+  const setAsCurrent = () => { if (canSet) handleSaveDeck(); };
   const primaryAction = (compact = false) => (
     <button
       type="button"
-      onClick={handleSaveDeck}
-      disabled={!canSet}
+      onClick={setAsCurrent}
+      aria-disabled={!canSet || undefined}
       data-deck-primary=""
       className={`${compact ? COMPACT_ACTION : `${ACTION} w-full`} ${canSet ? 'btn-brass' : `cursor-not-allowed text-plush-300 ${WELL}`}`}
     >

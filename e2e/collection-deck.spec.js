@@ -464,6 +464,19 @@ test.describe('deck builder on a phone', () => {
     await expect.poll(() => storedDeck(page)).not.toEqual(before);
     await expect(page.locator('[data-unsaved]')).toHaveCount(0);
   });
+
+  // The bar's compact copy of the button, from the keyboard: it keeps the
+  // focus once it has set the deck, rather than dropping it to the page.
+  test("the bar's Set as Current Deck keeps the focus once pressed", async ({ page }) => {
+    await openDeckBuilder(page);
+    await removeFirstCard(page);
+    await addable(page).last().click();
+    const set = page.locator('[data-deck-bar] [data-deck-primary]');
+    await set.focus();
+    await page.keyboard.press('Enter');
+    await expect(set).toHaveText('Battle deck');
+    await expect(set).toBeFocused();
+  });
 });
 
 test.describe('deck builder toasts between sm and lg', () => {
@@ -510,6 +523,33 @@ test.describe('deck builder on a desktop', () => {
     await primary.click();
     await expect(primary).toHaveText('Battle deck');
     await expect(primary).toBeDisabled();
+  });
+
+  // Setting the deck turns the button off under the press. Natively disabled,
+  // it dropped the keyboard focus to the page; it keeps it now, and a second
+  // press does nothing (no second "Deck Set!").
+  test('keeps the focus on Set as Current Deck once it has set the deck', async ({ page }) => {
+    await openDeckBuilder(page);
+    const before = await storedDeck(page);
+    await removeFirstCard(page);
+    await addable(page).last().click();
+    const primary = page.locator('[data-deck-primary]:visible');
+    await primary.focus();
+    await page.keyboard.press('Enter');
+    await expect(primary).toHaveText('Battle deck');
+    await expect(primary).toBeFocused();
+    await expect.poll(() => storedDeck(page)).not.toEqual(before);
+    // One toast shows at a time, a new one replacing the last, so mark the
+    // one up: a second "Deck Set!" would be a new element.
+    const toast = page.locator('.toast-viewport > li');
+    await expect(toast).toHaveCount(1);
+    await expect(toast).toContainText('Deck Set!');
+    await toast.evaluate((el) => { el.dataset.first = ''; });
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await expect(page.locator('.toast-viewport > li[data-first]')).toHaveCount(1);
+    await expect(toast).toHaveCount(1);
+    await expect(primary).toBeFocused();
   });
 
   test('keeps the whole deck panel on screen while a long pool scrolls past it', async ({ page }) => {
