@@ -89,7 +89,7 @@ const {
   decideSync, progressOf, isFreshSave, holdsPaidItems, cloudPayload, saveHash, classifyRpc,
   startCloudSync, stopCloudSync, bindSaveToUser, switchToBackupSave, saveNow, readBackup,
   useCloudSave, describeSaveStatus, PUSH_DEBOUNCE_MS, RETRY_BASE_MS, RECHECK_MIN_MS, CLOUD_FIELDS, CLOUD_SAVE_MAX_BYTES,
-  lastSyncedSave,
+  lastSyncedSave, rollForward,
 } = await import('./cloudSave');
 const { useGameStore, BATTLE_XP, scratchGameStore } = await import('@/stores/gameStore');
 const { BATTLE_PASS_REWARDS } = await import('@/lib/battlePass');
@@ -552,6 +552,19 @@ describe('the calendar\'s own changes', () => {
     expect(get().level).toBe(8);
     expect(readBackup(A)).toBeNull();
     expect(toasts.map((t) => t.title)).toEqual(['Save loaded from your account']);
+  });
+
+  it('works the rollover out on a scratch copy: the save in play and the stored one are untouched', () => {
+    vi.setSystemTime(day2);
+    useGameStore.setState({ ownerUserId: A, level: 4, seasonKey: 'season-2', seasonXP: 300, dailyStatsDate: day1.toDateString(), todayWins: 5 });
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const before = payloadNow();
+    const rolled = rollForward(before);
+    expect([rolled.seasonKey, rolled.seasonXP, rolled.todayWins]).toEqual(['season-3', 0, 0]);
+    expect(rolled.coins).toBeGreaterThan(before.coins); // what Season 2 still owed
+    expect(payloadNow()).toEqual(before);
+    expect(get().pendingSeasonDeliveries).toEqual([]);
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(stored);
   });
 
   it('believes its record of the synced save only while it is that save', async () => {
