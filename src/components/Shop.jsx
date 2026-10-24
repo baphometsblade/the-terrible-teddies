@@ -409,6 +409,14 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                 <div className="text-center mb-5">
                   <h3 className="font-display text-2xl font-extrabold text-white leading-tight">Get More Gems</h3>
                   <p className="mt-1 text-sm text-plush-300">Use gems to buy premium packs with guaranteed rare cards!</p>
+                  {/* Said before the buyer pays, not after: the gems a bundle
+                      brings pay what is owed first (creditGems), so the
+                      balance rises by less than the bundle. */}
+                  {gemDebt > 0 && (
+                    <p data-gems-owed="" className="mx-auto mt-3 max-w-md rounded-xl bg-rose-950/40 px-4 py-2.5 text-sm text-rose-200 ring-1 ring-rose-300/20">
+                      {`You owe ${gemDebt.toLocaleString()} gems after a reversed payment. The next gems you get, bought or earned, pay that first.`}
+                    </p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   {GEM_BUNDLES.map((bundle, tier) => (

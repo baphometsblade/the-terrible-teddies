@@ -443,3 +443,29 @@ test('gems from a payment that confirms after the screen is closed land on the n
   await page.clock.runFor(1_000);
   expect(stub.reads).toBe(reads);
 });
+
+// Gems owed after a reversed payment are paid first from any gems coming in,
+// so a purchase raises the counter by less than it brought. The screen said
+// "500 gems added to your account" over a counter that went from 0 to 10,
+// and the menu showed 0 while gems were owed: a buyer watching their payment
+// apparently not arrive.
+test('a purchase that pays gems owed says how much did, and the menu agrees', async ({ page }) => {
+  await seed(page, { gems: 0, gemDebt: 490, lastSyncedServerGems: 0 });
+  const banner = page.getByRole('banner');
+  await expect(banner.getByText('−490', { exact: true })).toBeVisible();
+  await expect(banner.getByText('gems owed after a reversed payment')).toBeAttached();
+
+  const stub = await stubPurchase(page, { ...ROW, status: 'completed' });
+  stub.balance = 500;
+  await page.goto('/?purchase=success&session_id=cs_test_owed');
+  const dialog = page.getByRole('dialog', { name: 'Purchase status' });
+  await expect(dialog.getByRole('heading', { name: 'Purchase Complete!' })).toBeVisible(SLOW);
+  await expect(dialog).toContainText('490 of them paid what was owed after a reversed payment, and 10 went to your balance.');
+  expect(await saved(page)).toMatchObject({ gems: 10, gemDebt: 0 });
+  await expectNoAxeViolations(page, 'purchase that pays gems owed');
+
+  await dialog.getByRole('button', { name: /Let.s Play/ }).click();
+  await expect(dialog).toHaveCount(0, SLOW);
+  await expect(banner.getByText('10', { exact: true })).toBeVisible();
+  await expect(banner.getByText('−490', { exact: true })).toHaveCount(0);
+});

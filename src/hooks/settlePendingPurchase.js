@@ -2,7 +2,7 @@ import { supabase, fetchServerGemBalance } from '../utils/supabaseClient';
 import {
   verifyPurchaseSession, pendingPurchase, forgetPendingPurchase, purchaseOnScreen,
 } from '../utils/pendingPurchase';
-import { useGameStore } from '../stores/gameStore';
+import { useGameStore, serverCreditAt } from '../stores/gameStore';
 import { trackPurchaseOnce } from '../utils/purchaseAnalytics';
 import { toast } from '@/components/ui/use-toast';
 
@@ -29,6 +29,27 @@ export const SETTLED_NOTICE = {
     description: 'That payment is being disputed with the card issuer, so its gems aren’t on your account for now. If the dispute is settled in its favour, they come back automatically.',
   },
 };
+
+/**
+ * What a purchase announcement adds when gems were owed after a reversed
+ * payment. Those are paid first from any gems coming in (creditGems), so the
+ * counter rises by less than the purchase, and "550 gems added" over a
+ * counter that went from 0 to 10 reads as a payment that never arrived: a
+ * support ticket, or another chargeback. `credit` is how the credit that
+ * carried the purchase was split (serverCreditAt), `stillOwed` the gems owed
+ * now. Null when none of the purchase went to what was owed.
+ */
+export function owedLine(granted, credit, stillOwed) {
+  const toDebt = Math.min(credit?.toDebt ?? 0, granted);
+  if (!(toDebt > 0)) return null;
+  const toBalance = granted - toDebt;
+  if (toBalance > 0) {
+    return `${toDebt.toLocaleString()} of them paid what was owed after a reversed payment, and ${toBalance.toLocaleString()} went to your balance.`;
+  }
+  return stillOwed > 0
+    ? `All of them went to what was owed after a reversed payment, and ${stillOwed.toLocaleString()} gems are still owed.`
+    : 'All of them paid what was owed after a reversed payment.';
+}
 
 /**
  * Settle a payment the player came back from before Stripe confirmed it.
@@ -95,10 +116,11 @@ async function settle() {
   // The sale, counted once per payment: the purchase screen may already have
   // counted it while leaving the credit to this (its balance read failed).
   trackPurchaseOnce(pending.sessionId, purchase);
+  const owed = owedLine(purchase.gems_granted, serverCreditAt(balance), useGameStore.getState().gemDebt);
   toast({
     queue: true,
     title: 'Payment confirmed',
-    description: `${purchase.gems_granted.toLocaleString()} gems from your purchase are on your account.`,
+    description: `${purchase.gems_granted.toLocaleString()} gems from your purchase are on your account.${owed ? ` ${owed}` : ''}`,
   });
   return 'credited';
 }

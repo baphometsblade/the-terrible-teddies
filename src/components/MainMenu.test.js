@@ -82,3 +82,17 @@ describe('the Battle Pass menu tile', () => {
     expect(document.getElementById(tile.getAttribute('aria-describedby')).textContent).toBe('1 ready');
   });
 });
+
+// With gems owed after a reversed payment the balance is 0, and the menu
+// said "0" while the stores' wallets said what was owed: to a buyer whose
+// purchase had just paid that debt, "0" read as gems that never arrived.
+describe('the menu gem balance', () => {
+  const gemChip = (host) => [...host.querySelectorAll('header .sr-only')].find((el) => /gems/.test(el.textContent))?.parentElement;
+
+  it('shows gems owed as owed, and the balance otherwise', () => {
+    useGameStore.setState({ gems: 0, gemDebt: 540 });
+    expect(gemChip(render(MainMenu)).textContent).toBe('−540gems owed after a reversed payment');
+    useGameStore.setState({ gems: 1250, gemDebt: 0 });
+    expect(gemChip(render(MainMenu)).textContent).toBe('1,250gems');
+  });
+});

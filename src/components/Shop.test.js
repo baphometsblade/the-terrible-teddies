@@ -3,6 +3,7 @@ import { createElement, act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MotionGlobalConfig } from 'framer-motion';
 import Shop from './Shop';
+import { useGameStore } from '@/stores/gameStore';
 
 // A route to gems (the Battle Pass confirm when the balance is short, the
 // empty Card Packs table) opens the Shop on its gems tab, not on Card Packs.
@@ -38,5 +39,23 @@ describe('Shop initialTab', () => {
     act(() => root.unmount());
     render({ initialTab: 'nope' });
     expect(pressed()).toEqual(['Card Packs']);
+  });
+});
+
+// The gems a bundle brings pay any gems owed after a reversed payment first,
+// so the balance rises by less than the bundle. The tab says so before the
+// buyer pays, rather than the counter seeming short after.
+describe('the Buy Gems tab with gems owed', () => {
+  afterEach(() => useGameStore.setState(useGameStore.getInitialState(), true));
+
+  it('says what is owed and that new gems pay it first, only while something is', () => {
+    useGameStore.setState({ gems: 0, gemDebt: 540 });
+    render({ initialTab: 'gems' });
+    expect(host.querySelector('[data-gems-owed]').textContent)
+      .toBe('You owe 540 gems after a reversed payment. The next gems you get, bought or earned, pay that first.');
+    act(() => root.unmount());
+    useGameStore.setState({ gems: 300, gemDebt: 0 });
+    render({ initialTab: 'gems' });
+    expect(host.querySelector('[data-gems-owed]')).toBeNull();
   });
 });

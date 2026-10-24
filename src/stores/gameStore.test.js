@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import { useGameStore, ALL_CARDS, SHOP_ITEMS, PACK_ODDS, PACK_SLOTS, rollRarity, DAILY_REWARDS, dailyClaimDay, keptThroughReset, STARTING_GEMS, SAVE_FIELDS, normalizeSave } from './gameStore';
+import { useGameStore, ALL_CARDS, SHOP_ITEMS, PACK_ODDS, PACK_SLOTS, rollRarity, DAILY_REWARDS, dailyClaimDay, keptThroughReset, STARTING_GEMS, SAVE_FIELDS, normalizeSave, serverCreditAt } from './gameStore';
 import { getCurrentSeason, getSeason } from '@/utils/season';
 import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 
@@ -171,6 +171,27 @@ describe('reconcileServerGems (closes the gem-respend exploit)', () => {
     expect(normalizeSave({ gemDebt: -50 }).gemDebt).toBe(0);
     expect(normalizeSave({ gemDebt: 'x' }).gemDebt).toBe(0);
     expect(normalizeSave({}).gemDebt).toBe(0);
+  });
+
+  // What a purchase screen needs to say "540 of these paid what was owed":
+  // with gems owed the counter rises by less than the purchase, and the
+  // credit that carried it is often App's login sync, not the screen's own.
+  it('records how the credit that reached a server balance was split', () => {
+    useGameStore.setState({ gems: 0, gemDebt: 540, lastSyncedServerGems: 7000, ownerUserId: 'u-1' });
+    get().reconcileServerGems(7550);
+    expect([get().gems, get().gemDebt]).toEqual([10, 0]);
+    expect(serverCreditAt(7550)).toEqual({ toDebt: 540, toBalance: 10 });
+    // A second reconcile at the same balance adds nothing and keeps the record.
+    get().reconcileServerGems(7550);
+    expect(serverCreditAt(7550)).toEqual({ toDebt: 540, toBalance: 10 });
+    // Asked about another balance, or for another account's save: nothing.
+    expect(serverCreditAt(7551)).toBeNull();
+    useGameStore.setState({ ownerUserId: 'u-2' });
+    expect(serverCreditAt(7550)).toBeNull();
+    useGameStore.setState({ ownerUserId: 'u-1' });
+    // With nothing owed, all of it reaches the balance.
+    get().reconcileServerGems(8050);
+    expect(serverCreditAt(8050)).toEqual({ toDebt: 0, toBalance: 500 });
   });
 
   it('keeps adding to what is owed across reversals', () => {

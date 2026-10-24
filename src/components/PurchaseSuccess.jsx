@@ -1,13 +1,14 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Gem, Hourglass, CircleAlert, Undo2, ShieldAlert, Mail } from 'lucide-react';
-import { useGameStore } from '../stores/gameStore';
+import { useGameStore, serverCreditAt } from '../stores/gameStore';
 import {
   verifyPurchaseSession, rememberPendingPurchase, forgetPendingPurchase, watchPurchaseOnScreen,
 } from '../utils/pendingPurchase';
 import { SUPPORT_EMAIL, supportMailto } from '@/lib/support';
 import { fetchServerGemBalance } from '../utils/supabaseClient';
 import { trackPurchaseOnce } from '../utils/purchaseAnalytics';
+import { owedLine } from '../hooks/settlePendingPurchase';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
 import { celebrate } from '@/lib/celebrate';
@@ -101,6 +102,8 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
   const [checking, setChecking] = useState(false);
   const [checkedAt, setCheckedAt] = useState(null);
   const [gemsGranted, setGemsGranted] = useState(0);
+  // How much of them paid gems owed after a reversed payment (owedLine), or null.
+  const [owed, setOwed] = useState(null);
   // Whether this device's gem counter actually reflects the purchase yet.
   const [balanceShown, setBalanceShown] = useState(true);
   const synced = useRef(false);
@@ -167,6 +170,7 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
         if (serverBalance !== null) {
           reconcileServerGems(serverBalance);
           forgetPendingPurchase(sessionId);
+          setOwed(owedLine(purchase.gems_granted, serverCreditAt(serverBalance), useGameStore.getState().gemDebt));
         }
         setBalanceShown(serverBalance !== null);
 
@@ -401,6 +405,9 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
                 <span className="sr-only">gems</span>
               </div>
               <p className="mt-2 text-plush-200">added to your account</p>
+              {/* With gems owed, the counter rises by less than this, and
+                  says why here rather than leaving it to look short. */}
+              {owed && <p data-owed-line="" className="mx-auto mt-2 max-w-xs text-sm text-plush-300">{owed}</p>}
             </div>
             {!balanceShown && (
               // Not "something went wrong": nothing did. The purchase is

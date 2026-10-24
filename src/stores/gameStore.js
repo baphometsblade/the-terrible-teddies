@@ -470,6 +470,29 @@ export const creditGems = (state, amount) => {
   return { gems: state.gems + n - pay, gemDebt: owed - pay };
 };
 
+// How the last server credit on this page was split between what was owed
+// and the balance (reconcileServerGems writes it). Outside the store's
+// state on purpose: it is about this page only, so it persists nowhere and
+// goes to no cloud save.
+let lastServerCredit = null;
+
+/**
+ * How the credit that brought `serverBalance` onto this device was split:
+ * `{ toDebt, toBalance }`, or null when no credit on this page did. For the
+ * screens that announce a purchase. With gems owed, "550 gems added" over a
+ * counter that rose by 10 reads as a purchase that never arrived. Asked by
+ * balance rather than taken from the caller's own reconcile, because App's
+ * login sync often credits the purchase first, and the caller's reconcile
+ * then finds nothing left to add.
+ */
+export const serverCreditAt = (serverBalance) => {
+  const c = lastServerCredit;
+  if (!c || c.serverBalance !== serverBalance) return null;
+  // A credit read for another account's save says nothing about this one.
+  if (c.ownerUserId !== useGameStore.getState().ownerUserId) return null;
+  return { toDebt: c.toDebt, toBalance: c.toBalance };
+};
+
 // The store's own state and actions, held apart from persistence so that
 // scratchGameStore (below) can run them on a save that is not the one in play.
 let gameState = null;
@@ -635,7 +658,12 @@ export const useGameStore = create(
         if (delta > 0) {
           // A purchase, or a reversal undone (a dispute won): it pays off
           // whatever an earlier reversal left owed before it adds anything.
-          set({ ...creditGems(state, delta), lastSyncedServerGems: serverBalance });
+          const credit = creditGems(state, delta);
+          const toBalance = credit.gems - state.gems;
+          lastServerCredit = {
+            serverBalance, ownerUserId: state.ownerUserId, toDebt: delta - toBalance, toBalance,
+          };
+          set({ ...credit, lastSyncedServerGems: serverBalance });
         } else if (delta < 0) {
           // The server total moved DOWN. Only one thing moves it down:
           // reverse_gem_purchase, the refund/chargeback clawback

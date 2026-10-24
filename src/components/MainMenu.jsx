@@ -76,7 +76,7 @@ const MainMenu = ({
 }) => {
   const {
     playerName, level, xp, getXPForNextLevel,
-    coins, gems, cardPacks, premiumPacks, legendaryPacks, unlockedCosmetics,
+    coins, gems, gemDebt, cardPacks, premiumPacks, legendaryPacks, unlockedCosmetics,
     totalWins, currentWinStreak, consecutiveLogins, lastLoginDate, animationsEnabled,
     claimedChallenges,
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
@@ -238,7 +238,12 @@ const MainMenu = ({
             )}
           </HeaderButton>
           <Currency icon={Coins} value={coins.toLocaleString()} tone="text-brass-300" noun="coins" />
-          <Currency icon={Gem} value={gems.toLocaleString()} tone="text-fuchsia-300" noun="gems" />
+          {/* Gems owed after a reversed payment read as what they are, as in
+              the stores' WalletChips: "0" said a purchase's gems had gone
+              missing, when they had paid what was owed. */}
+          {gemDebt > 0
+            ? <Currency icon={Gem} value={`−${gemDebt.toLocaleString()}`} tone="text-rose-300" noun="gems owed after a reversed payment" />
+            : <Currency icon={Gem} value={gems.toLocaleString()} tone="text-fuchsia-300" noun="gems" />}
           <HeaderButton icon={CircleHelp} onClick={onTutorial} label="How to play" />
           <HeaderButton icon={Settings} onClick={onSettings} label="Settings" />
         </motion.div>
