@@ -2,7 +2,7 @@
 // browser Back, document titles and focus between screens, and the hand-off
 // from the pre-JS loader.
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
+import { test, expect, bootToMainMenu, SESSION, SLOW } from './helpers/session.js';
 
 test.describe('the main menu', () => {
   test.beforeEach(async ({ page }) => {
@@ -442,9 +442,19 @@ test.describe('the loader hand-off', () => {
     }
   });
 
+  // A device that has synced this account goes straight from the session to
+  // the menu. (One new to the account waits for the account's save over
+  // BootScreen first, so there the loader cross-fades whole, as below.)
   test('past BootScreen, the loader keeps only its backdrop for the fade', async ({ page }) => {
     await recordLoaderClasses(page);
     await bootToMainMenu(page);
+    await page.addInitScript((uid) => {
+      const save = JSON.parse(localStorage.getItem('terrible-teddies-storage'));
+      Object.assign(save.state, { ownerUserId: uid, cloudSyncedHash: 'synced-here' });
+      localStorage.setItem('terrible-teddies-storage', JSON.stringify(save));
+    }, SESSION.user.id);
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
     await expect.poll(() => page.evaluate(() => window.__loaderClasses.join(' '))).toContain('to-app');
   });
 

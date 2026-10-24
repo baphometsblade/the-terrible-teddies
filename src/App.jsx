@@ -119,6 +119,15 @@ const announceAll = (toast, items) => {
   items.forEach((t) => toast({ queue: true, ...t }));
 };
 
+// The longest the game waits for the account's save (cloudSave's first
+// decision) before going on without it, counted while the tab is in view: a
+// hidden tab's decision waits for it to come back. The decision settles on
+// its own when the backend refuses or cannot be reached; this covers a
+// request that simply hangs. Under BootScreen's "still trying" hint
+// (HINT_AFTER_MS, 6 s), so the hint never flashes up just as the menu
+// replaces it.
+const SAVE_WAIT_MS = 5000;
+
 // "Season 4" out of a season's name ("Season 4: Hibernation Havoc", as
 // src/utils/season.js writes it), or the whole name if it is ever written
 // another way.
@@ -163,6 +172,25 @@ function App() {
   const gameBoardRef = useRef(null);
   const signedIn = !!session;
 
+  // Whether the save in play is settled for this sign-in: the account's save
+  // has been taken or kept (cloudSave's first decision), or it could not be
+  // had. Until then a new device is playing the wiped save bindToUser left:
+  // the menu read "Lv 1 · 500 coins", Daily Rewards and the first-run
+  // tutorial opened on it, and Daily Rewards then flipped to the account's
+  // "claimed today" under the player as the save arrived. The account it was
+  // settled for, so another account signing in waits afresh.
+  const [readyUid, setReadyUid] = useState(null);
+  const userId = session?.user?.id;
+  const saveReady = signedIn && readyUid === userId;
+  // A device that has never synced this account holds nothing of its own to
+  // show meanwhile: BootScreen stays up (below), so neither Lv 1 nor Battle is
+  // offered on the wiped save. One that has synced shows its own save, which
+  // the decision at most brings up to date. Another account's save counts as
+  // nothing (the first render of a new sign-in comes before the bind).
+  const neverSynced = useGameStore((s) => s.ownerUserId !== userId || s.cloudSyncedHash === null);
+  const awaitingSave = signedIn && !saveReady && neverSynced;
+  const booting = loading || awaitingSave;
+
   // The system's Back on any screen but the menu returns to the menu, as its
   // "← Menu" does: through the Deck Builder's unsaved-changes question, and
   // through the battle's leave question while a game is live (each screen's
@@ -190,11 +218,13 @@ function App() {
   // then ghosted over the menu's cards for the half-second fade. Once past
   // BootScreen they go at once (index.html's .to-app), and only the backdrop,
   // which matches the screens', fades. A no-op once the loader has gone.
+  // BootScreen covers the wait for the account's save too, so a session that
+  // restores at once on a device new to the account is still over BootScreen.
   useEffect(() => {
-    if (!loading || !isSupabaseConfigured) {
+    if (!booting || !isSupabaseConfigured) {
       document.getElementById('initial-loader')?.classList.add('to-app');
     }
-  }, [loading]);
+  }, [booting]);
 
   // The focus follows the player between screens: onto the new screen's
   // heading, and back on the menu onto the tile (or the Battle button) they
@@ -385,6 +415,7 @@ function App() {
       // Not loaded means never started; a start still loading checks
       // `current` below and gives up.
       cloudSave?.stopCloudSync();
+      setReadyUid(null);
       return undefined;
     }
     const uid = session.user?.id;
@@ -432,17 +463,40 @@ function App() {
     // A session that has changed again (or ended) before the chunk arrived is
     // left to the effect run that replaced it.
     let current = true;
+    // The save is settled (saveReady) by the sign-in's first decision, not by
+    // what startCloudSync answers this time: a token refresh while it is out
+    // answers 'recent' at once. A decision put off because the tab was hidden
+    // settles with the one the tab's return brings (onSettled). And after
+    // SAVE_WAIT_MS in view the game goes on regardless, so a backend that
+    // never answers never keeps the player out.
+    const ready = () => { if (current) setReadyUid(uid); };
+    let fallback = null;
+    const startFallback = () => {
+      if (fallback === null && document.visibilityState !== 'hidden') fallback = setTimeout(ready, SAVE_WAIT_MS);
+    };
+    startFallback();
+    document.addEventListener('visibilitychange', startFallback);
     loadCloudSave()
-      .then(({ startCloudSync }) => {
-        if (current) startCloudSync({ userId: uid, accessToken: session.access_token, onSettled: reconcile });
+      .then(({ startCloudSync, whenFirstDecision }) => {
+        if (!current) return;
+        startCloudSync({
+          userId: uid,
+          accessToken: session.access_token,
+          onSettled: () => { reconcile(); ready(); },
+        });
+        whenFirstDecision(uid).then((outcome) => { if (outcome !== 'deferred') ready(); });
       })
       .catch((err) => {
         // No cloud save without its code: reconcile as the game did before
-        // cloud saves, rather than not at all.
+        // cloud saves, rather than not at all, and play the save in hand.
         console.error('Cloud save failed to load:', err);
-        if (current) reconcile();
+        if (current) { reconcile(); ready(); }
       });
-    return () => { current = false; };
+    return () => {
+      current = false;
+      clearTimeout(fallback);
+      document.removeEventListener('visibilitychange', startFallback);
+    };
   }, [session, reconcileServerGems]);
 
   // Detect Stripe Checkout return
@@ -479,35 +533,57 @@ function App() {
     window.history.replaceState({}, '', window.location.pathname);
   }, [session, navigateTo]);
 
+  // Daily Rewards and the first-run tutorial open by themselves, and only
+  // onto a bare menu: never over a battle (a day that turns over mid-match,
+  // the Battle shortcut on a new day, a new player tapping Battle the moment
+  // Daily Rewards closed) or over another dialog, which would fight it for
+  // the keyboard. Not over a purchase being checked either (PurchaseSuccess
+  // renders outside the dialog flags). And not before the save is settled
+  // (saveReady): on a new device they opened on the wiped save, Daily Rewards
+  // offering a Day 1 the account had already claimed. Whatever holds them
+  // back, they open once it has gone: each effect re-runs as the screen, the
+  // dialogs and the save change.
+  const anyDialogOpen = dialogFlags.some(Boolean);
+  const onBareMenu = saveReady && currentScreen === 'menu' && !anyDialogOpen && !purchaseSessionId;
+
   // Daily Rewards opens by itself once per player per day in a tab, claimed or
   // not. The reward waits for a tap now, so closing the panel unclaimed leaves
   // lastLoginDate behind, and this effect re-runs whenever the session object
   // changes, which supabase-js replaces on every return to the tab and every
-  // hourly token refresh. Gated on lastLoginDate alone, the panel reopened over
-  // whatever the player was doing, a battle or the tutorial included. After
-  // the first time, the menu's glowing Daily rewards button carries it.
+  // hourly token refresh. After the first time, the menu's glowing Daily
+  // rewards button carries it. The day is marked as opened only when it
+  // opens, so one held back opens when the player is next on the menu.
   const dailyAutoOpened = useRef(null);
   useEffect(() => {
     const today = new Date().toDateString();
     const key = `${session?.user?.id}|${today}`;
-    // Don't auto-open daily rewards over an in-progress purchase verification;
-    // stacked dialogs would fight for the keyboard. It opens after the buyer
-    // dismisses the payment screen (purchaseSessionId clears → effect re-runs).
-    if (session && lastLoginDate !== today && !purchaseSessionId && dailyAutoOpened.current !== key) {
+    if (onBareMenu && lastLoginDate !== today && dailyAutoOpened.current !== key) {
       const timer = setTimeout(() => {
         dailyAutoOpened.current = key;
         setShowDailyRewards(true);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [session, lastLoginDate, purchaseSessionId]);
+  }, [session, lastLoginDate, onBareMenu]);
 
+  // The tutorial, for a player who has not finished it, a beat after the menu
+  // is bare (after Daily Rewards, as a rule). Opened this way it closes again
+  // if the save turns out to have finished it: the account's save arriving
+  // late, or another tab's.
+  const tutorialAutoOpened = useRef(false);
   useEffect(() => {
-    if (session && !tutorialCompleted && !showDailyRewards && !purchaseSessionId) {
-      const timer = setTimeout(() => setShowTutorial(true), 1000);
+    if (onBareMenu && !tutorialCompleted) {
+      const timer = setTimeout(() => {
+        tutorialAutoOpened.current = true;
+        setShowTutorial(true);
+      }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [session, tutorialCompleted, showDailyRewards, purchaseSessionId]);
+  }, [onBareMenu, tutorialCompleted]);
+  useEffect(() => {
+    if (!showTutorial) tutorialAutoOpened.current = false;
+    else if (tutorialCompleted && tutorialAutoOpened.current) setShowTutorial(false);
+  }, [showTutorial, tutorialCompleted]);
 
   if (!isSupabaseConfigured) {
     return (
@@ -529,7 +605,9 @@ function App() {
     );
   }
 
-  if (loading) {
+  // The session, then (on a device new to the account) the account's save.
+  // One BootScreen for both, so its hint and Reload count the whole wait.
+  if (booting) {
     return <BootScreen />;
   }
 

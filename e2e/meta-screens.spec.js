@@ -177,6 +177,70 @@ test.describe('daily rewards', () => {
     await expect(dialog).toHaveCount(0);
     await expect(page.locator('html')).toHaveAttribute('data-screen', 'battle');
   });
+
+  // It opens onto a bare menu only. The first open of a new day used to land
+  // wherever the player was: on a battle the Battle shortcut started (or one
+  // that crossed midnight), or over another dialog. Held back, it opens once
+  // the player is on the menu with nothing else open.
+  const seedNewDay = (page) => page.addInitScript(() => {
+    const stored = JSON.parse(localStorage.getItem('terrible-teddies-storage'));
+    Object.assign(stored.state, { lastLoginDate: 'Mon Jan 01 2001', consecutiveLogins: 1 });
+    localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+  });
+
+  test('waits out a battle the Battle shortcut starts, and opens back on the menu', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await bootToMainMenu(page);
+    await seedNewDay(page);
+    await page.goto('/?action=battle');
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    await page.waitForTimeout(1500);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await page.getByRole('dialog', { name: 'Leave this battle?' })
+      .getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    await expect(page.getByRole('dialog', { name: 'Daily Rewards' })).toBeVisible(SLOW);
+  });
+
+  test('waits for another dialog to close', async ({ page }) => {
+    await bootToMainMenu(page);
+    await seedNewDay(page);
+    await page.goto('/?action=shop');
+    const shop = page.getByRole('dialog', { name: 'Shop' });
+    await expect(shop).toBeVisible(SLOW);
+    await page.waitForTimeout(1500);
+    await expect(page.getByRole('dialog')).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(shop).toHaveCount(0, SLOW);
+    await expect(page.getByRole('dialog', { name: 'Daily Rewards' })).toBeVisible(SLOW);
+  });
+
+  // A new player who claims and goes straight into a battle: the tutorial,
+  // a second after Daily Rewards closed, landed on their first battle.
+  test('nor does the tutorial land on a battle started the moment it closed', async ({ page }) => {
+    await bootToMainMenu(page);
+    await page.addInitScript(() => {
+      const stored = JSON.parse(localStorage.getItem('terrible-teddies-storage'));
+      Object.assign(stored.state, { lastLoginDate: null, consecutiveLogins: 0, tutorialCompleted: false });
+      localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+    });
+    await page.reload();
+    const daily = page.getByRole('dialog', { name: 'Daily Rewards' });
+    await expect(daily).toBeVisible(SLOW);
+    await daily.getByRole('button', { name: 'Claim', exact: true }).click();
+    await daily.getByRole('button', { name: 'Continue' }).click();
+    await expect(daily).toHaveCount(0, SLOW);
+    await page.getByRole('button', { name: 'Battle', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    await page.waitForTimeout(2000);
+    await expect(page.getByRole('dialog', { name: 'How to play' })).toHaveCount(0);
+    // Offered once the player is back on the menu instead.
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await page.getByRole('dialog', { name: 'Leave this battle?' })
+      .getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    await expect(page.getByRole('dialog', { name: 'How to play' })).toBeVisible(SLOW);
+  });
 });
 
 test.describe('challenge claims', () => {

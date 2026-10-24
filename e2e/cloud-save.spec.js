@@ -49,9 +49,11 @@ const missing = (fn) => ({
  * Boot with a stubbed backend. `account`: the save the account holds (null:
  * none yet), or 'missing' for a backend without the functions, or 'offline'.
  * `store`: this device's save (null: a fresh browser). `balance`: the
- * account's purchased gems. Returns the RPC calls made, as they are made.
+ * account's purchased gems. `delay`: how long the account's save takes to
+ * arrive (ms), or `hang` for a request that is never answered. Returns the
+ * RPC calls made, as they are made.
  */
-async function boot(page, { account = null, store = null, balance = null, rest = {}, rank = null } = {}) {
+async function boot(page, { account = null, store = null, balance = null, rest = {}, rank = null, delay = 0, hang = false } = {}) {
   const calls = [];
   let row = account && typeof account === 'object'
     ? { rev: 5, save: account, updated_at: new Date().toISOString() }
@@ -76,6 +78,8 @@ async function boot(page, { account = null, store = null, balance = null, rest =
         if (account === 'offline') return route.abort('internetdisconnected');
       }
       if (fn === 'get_player_save') {
+        if (hang) return undefined;
+        if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
         return route.fulfill({ json: row ? { ...row } : { rev: 0, save: null, updated_at: null } });
       }
       if (fn === 'put_player_save') {
@@ -149,6 +153,86 @@ test('a new device takes the account\'s save, its gem mark with it: no gem is cr
   // The device's own switches stay on the device.
   expect(put.body.p_save).not.toHaveProperty('soundEnabled');
   await expect(dialog.getByText(/^Saved to your account · /)).toBeVisible();
+});
+
+// What the player could have seen while the account's save was on its way,
+// recorded from the first paint: each dialog that opened, the first day Daily
+// Rewards offered, and whether the menu ever showed the wiped save's Lv 1.
+const watchBoot = (page) => page.addInitScript(() => {
+  window.__seen = { dialogs: [], firstToday: null, lv1: false };
+  new MutationObserver(() => {
+    const seen = window.__seen;
+    for (const d of document.querySelectorAll('[role="dialog"]')) {
+      const name = d.getAttribute('aria-label') ?? document.getElementById(d.getAttribute('aria-labelledby'))?.textContent ?? '?';
+      if (!seen.dialogs.includes(name)) seen.dialogs.push(name);
+    }
+    seen.firstToday ??= document.querySelector('[data-day][data-look="today"]')?.dataset.day ?? null;
+    if (document.querySelector('[data-screen-root="menu"]') && /\bLv 1\b/.test(document.body.textContent)) seen.lv1 = true;
+  }).observe(document, { subtree: true, childList: true, characterData: true, attributes: true });
+});
+
+// The account's save takes a moment to arrive, and until it has, a new
+// device holds only the wiped save bindToUser leaves. The menu read "Lv 1",
+// and Daily Rewards and the first-run tutorial opened on that: Daily
+// Rewards offered a Day 1 the account had claimed, then flipped to the
+// account's own state under the player as the save landed.
+test('a new device shows nothing of the wiped save while the account\'s is on its way', async ({ page }) => {
+  await watchBoot(page);
+  await boot(page, { account: accountSave(), store: null, balance: 500, delay: 1500 });
+  await expect(page.getByText('Lv 7')).toBeVisible(SLOW);
+  // Well past both auto-opens' timers.
+  await page.waitForTimeout(2000);
+  expect(await page.evaluate(() => window.__seen)).toEqual({ dialogs: [], firstToday: null, lv1: false });
+});
+
+test('Daily Rewards waits for the account\'s save, and opens on the account\'s day', async ({ page }) => {
+  await watchBoot(page);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  // Claimed through day 3 yesterday, on another device: today is day 4.
+  await boot(page, {
+    account: accountSave({ lastLoginDate: yesterday.toDateString(), consecutiveLogins: 3 }),
+    store: null, balance: 500, delay: 1500,
+  });
+  const daily = page.getByRole('dialog', { name: 'Daily Rewards' });
+  await expect(daily).toBeVisible(SLOW);
+  await expect(daily.locator('[data-day="4"]')).toHaveAttribute('data-look', 'today');
+  expect(await page.evaluate(() => window.__seen.firstToday)).toBe('4');
+});
+
+// A request that never comes back must not keep the player out: after a
+// bounded wait the game goes on with what this device has.
+test('a save request that never answers holds the game up for a few seconds at most', async ({ page }) => {
+  // Over BootScreen, which goes before its "still trying" hint would come up
+  // only to be replaced in the same moment.
+  await page.addInitScript(() => {
+    window.__hinted = false;
+    new MutationObserver(() => {
+      if (document.body?.textContent.includes('Still trying to reach the server')) window.__hinted = true;
+    }).observe(document, { subtree: true, childList: true });
+  });
+  const started = Date.now();
+  await boot(page, { account: accountSave(), store: null, hang: true });
+  const waited = Date.now() - started;
+  expect(waited, 'it did not wait for the account\'s save').toBeGreaterThan(4500);
+  expect(waited).toBeLessThan(15000);
+  expect(await page.evaluate(() => window.__hinted)).toBe(false);
+});
+
+// Past that wait the game goes on with the wiped save, and the first-run
+// tutorial can open on it. The account's save landing later says the
+// tutorial was finished long ago, and the tutorial goes away again.
+test('a tutorial opened before a late save arrived closes once the save says it was done', async ({ page }) => {
+  test.setTimeout(60_000);
+  await boot(page, { account: accountSave(), store: null, delay: 12_000 });
+  const daily = page.getByRole('dialog', { name: 'Daily Rewards' });
+  await expect(daily).toBeVisible(SLOW);
+  await page.keyboard.press('Escape');
+  const tutorial = page.getByRole('dialog', { name: 'How to play' });
+  await expect(tutorial).toBeVisible(SLOW);
+  await expect(page.getByText('Save loaded from your account', { exact: true })).toBeVisible(SLOW);
+  await expect(tutorial).toHaveCount(0, SLOW);
+  await expect(page.getByText('Lv 7')).toBeVisible();
 });
 
 test('hiding the tab sends a waiting change at once, carrying the session\'s own token', async ({ page }) => {
