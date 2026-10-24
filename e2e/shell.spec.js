@@ -549,13 +549,20 @@ test.describe('announcements', () => {
   });
 
   // F8 takes the focus to the toasts, and then a toast is the top layer:
-  // Escape closes it, and only it.
+  // Escape closes it, and only it. The focus then goes back where it was, and
+  // the next Escape is the dialog's again: the focus used to stay on the
+  // emptied list, and every Escape from there was dropped.
   test('reached with F8 close on Escape, leaving the dialog open', async ({ page }) => {
     test.skip(!!process.env.E2E_PREVIEW, 'imports the toast module from /src');
     await bootToMainMenu(page);
     await page.getByRole('button', { name: 'Challenges', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Challenges' });
     await expect(dialog).toBeVisible(SLOW);
+    const focusedBefore = await page.evaluate(() => {
+      document.activeElement.dataset.probe = 'before-f8';
+      return document.activeElement.closest('[role="dialog"]') !== null;
+    });
+    expect(focusedBefore, 'the dialog does not have the focus').toBe(true);
     await page.evaluate(async () => {
       const { toast } = await import('/src/components/ui/use-toast.js');
       toast({ queue: true, title: 'Achievement Unlocked!', description: 'Veteran', duration: 60000 });
@@ -568,6 +575,24 @@ test.describe('announcements', () => {
     await expect(toast).toHaveCount(0, SLOW);
     await page.waitForTimeout(300);
     await expect(dialog).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.activeElement?.dataset.probe ?? null)).toBe('before-f8');
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0, SLOW);
+  });
+
+  // Even with the focus left in the list (a toast that went with nothing to
+  // give the focus back to), Escape still closes the dialog once the list is
+  // empty.
+  test('leave Escape to the dialog once none is left, wherever the focus is', async ({ page }) => {
+    test.skip(!!process.env.E2E_PREVIEW, 'imports the toast module from /src');
+    await bootToMainMenu(page);
+    await page.getByRole('button', { name: 'Challenges', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Challenges' });
+    await expect(dialog).toBeVisible(SLOW);
+    await page.evaluate(() => document.querySelector('.toast-viewport').focus());
+    await expect.poll(() => page.evaluate(() => document.activeElement?.matches('.toast-viewport'))).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0, SLOW);
   });
 
   // A battle's achievements are raised in the same moment as the board's
