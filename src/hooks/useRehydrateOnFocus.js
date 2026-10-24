@@ -18,8 +18,12 @@ import { settlePendingPurchase } from './settlePendingPurchase';
  *
  * Purchased gems happen to self-heal — the rolled-back high-water mark falls
  * below the server total, so the next login re-credits the difference — but
- * coins, cards, levels and achievements have no server copy and are simply
- * lost, with nothing telling the player it happened.
+ * the rest is lost, with nothing telling the player it happened. The account's
+ * copy (src/lib/cloudSave.js) does not save it either: the cloud save sends
+ * what this device's store holds, so tab B's stale save would go to the
+ * account a few seconds later as an ordinary change. Hence the re-read must
+ * come before the write, here, and cloudSave re-reads localStorage the same
+ * way before each of its decisions.
  *
  * Rehydrating on focus closes the realistic path, because a tab cannot be
  * written to without first being interacted with, and interaction needs focus.

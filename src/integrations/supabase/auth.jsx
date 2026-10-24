@@ -6,9 +6,9 @@ import {
 } from '@/lib/authLanding';
 
 // Only a reset email's landing draws it, so it is a chunk of its own (about
-// 2 kB gzip off everyone's first paint), fetched while supabase-js checks the
-// link. Until it arrives nothing is drawn into #root, so index.html's loader
-// stays up.
+// 4 kB gzip with the helpers it shares with the forgot-password form, off
+// everyone's first paint), fetched while supabase-js checks the link. Until it
+// arrives nothing is drawn into #root, so index.html's loader stays up.
 const PasswordRecovery = lazy(() => import('@/components/PasswordRecovery'));
 
 const SupabaseAuthContext = createContext();

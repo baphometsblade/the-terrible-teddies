@@ -10,11 +10,11 @@ import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 import { getTimeUntilReset } from '@/lib/resetTimer';
 
 // The pack opening's own card reveal, loaded only when a claim draws cards.
-// Its module is the whole Card Packs dialog (with the shop and the Battle Pass
-// table it reads, about 58 kB more), and four days in seven draw no card, so
-// a static import made every opening of this panel, which most players get on
-// their first launch of the day, download all of it. A card day fetches it
-// ahead of the tap (see the prefetch below).
+// Its module is the whole Card Packs dialog (with its store tiles, pack art and
+// odds disclosure, about 42 kB / 16 kB gzip more), and four days in seven draw
+// no card, so a static import made every opening of this panel, which most
+// players get on their first launch of the day, download all of it. A card day
+// fetches it ahead of the tap (see the prefetch below).
 const loadRevealCard = () => import('./CardPackOpening');
 const RevealCard = lazy(() => loadRevealCard().then((m) => ({ default: m.RevealCard })));
 

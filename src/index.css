@@ -162,9 +162,10 @@
    silently beat `border-l-[3px]` on the same element — a material must be
    refinable by a utility, never the other way round.
 
-   The pseudo-elements are claimed: .grain, .foil and .sheen use ::after, as
-   does .worn; .trim-brass uses ::before, as do .stitched and .stitched-plush.
-   Never put two classes that claim the same pseudo-element on one element.
+   The pseudo-elements are claimed: .grain, .foil, .sheen, .worn, .felt-print,
+   .end-turn-ready and .deck-slot-new use ::after; .trim-brass, .stitched and
+   .stitched-plush use ::before. Never put two classes that claim the same
+   pseudo-element on one element.
    ========================================================================== */
 
 @layer components {

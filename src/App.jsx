@@ -20,8 +20,9 @@ import { bindSaveToUser } from './lib/saveBinding';
 
 // The cloud save's controller (the decision, the sending, Settings' status)
 // loads with the sign-in it serves rather than on first paint, as the dialogs
-// do: it is 4 kB gzip, and its first job is a network round-trip anyway. Only
-// the bind step, which must run the moment a session appears, is static.
+// do: it is about 12 kB (5 kB gzip), and its first job is a network round-trip
+// anyway. Only the bind step, which must run the moment a session appears, is
+// static.
 // `cloudSave` is the module once loaded, so that signing out can stop it
 // synchronously: stopping through a second import() raced the sign-in's own,
 // and the stop that was asked first (at boot, before the session restored)
@@ -793,10 +794,15 @@ function App() {
           <Auth />
         )}
 
-        {/* Purchase verification renders regardless of auth state: returning
-            from Stripe is a full page navigation, so if session restoration is
-            slow or fails the buyer must still see confirmation rather than a
-            bare login screen with their paid session_id silently dropped. */}
+        {/* Purchase verification renders whether or not a session was
+            restored: returning from Stripe is a full page navigation, so a
+            buyer whose session restore failed still sees the confirmation,
+            over the login screen, rather than losing it. It does not show
+            over BootScreen (the early return above), which covers the session
+            check and the account's save. session_id is already off the URL
+            and in state by then, so the screen appears when the boot ends; a
+            buyer who reloads first loses only the screen, since the login
+            reconcile still credits the gems. */}
         {purchaseSessionId && (
           <DialogErrorBoundary resetKey={purchaseSessionId} onDismiss={() => setPurchaseSessionId(null)}>
             <Suspense fallback={<DialogLoader />}>
