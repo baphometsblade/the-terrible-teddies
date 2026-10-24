@@ -242,7 +242,7 @@ test.describe('with a mouse and a keyboard', () => {
   // goes inert on its way out, a target stops being a control once hit, and
   // End Turn leaves the screen for Chuck's turn. A screen reader lost its
   // place, and the board's own I key stopped answering until a Tab.
-  test('the focus moves on after a keyboard play, End Turn and an attack, never to the page', async ({ page }) => {
+  test('the focus moves on after a keyboard play, End Turn, Cancel and an attack, never to the page', async ({ page }) => {
     await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4] });
     await page.reload();
     await toBattle(page);
@@ -259,14 +259,59 @@ test.describe('with a mouse and a keyboard', () => {
     await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
     await expect(endTurn).toBeFocused(SLOW);
 
-    // Pick the attacker and a target it may hit, from the keys.
-    await page.getByRole('button', { name: 'Select Bar-Fight Barry to attack' }).focus();
+    // Pick the attacker, let it go with Cancel (the focus goes back to it,
+    // since Cancel leaves with the targeting), pick it again and hit a
+    // target, all from the keys.
+    const attacker = page.getByRole('button', { name: 'Select Bar-Fight Barry to attack' });
+    await attacker.focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: 'Cancel' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByText(/^Pick a victim/)).toHaveCount(0);
+    await expect(attacker).toBeFocused();
     await page.keyboard.press('Enter');
     const target = page.locator('[data-field="opponent"]:has([data-target-ring]), [role="button"][aria-label="Attack opponent directly"]').first();
     await target.focus();
     await page.keyboard.press('Enter');
     await expect(page.getByText(/^Pick a victim/)).toHaveCount(0);
     // Barry has swung and nothing else can: End Turn.
+    await expect(endTurn).toBeFocused();
+  });
+
+  // Rally spends the whole gauge, so its button leaves the screen as it is
+  // pressed. The gauge fills by playing (+1) and swinging (+2, +3 at the
+  // face), so the test plays and swings with every Barry it can, by mouse,
+  // until Rally is offered, and presses only Rally from the keys.
+  test('Rally from the keys leaves the focus on End Turn, not the page', async ({ page }) => {
+    await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4] });
+    await page.reload();
+    await toBattle(page);
+    const rally = page.getByRole('button', { name: 'Rally!' });
+    const endTurn = page.getByRole('button', { name: 'End Turn' });
+    const play = page.getByRole('button', { name: 'Play Bar-Fight Barry' });
+    const attacker = page.getByRole('button', { name: 'Select Bar-Fight Barry to attack' });
+    const prompt = page.getByText(/^Pick a victim/);
+    for (let turn = 1; turn <= 5 && !(await rally.isVisible()); turn += 1) {
+      while (await attacker.count() && !(await rally.isVisible())) {
+        await attacker.first().click();
+        await expect(prompt).toBeVisible();
+        await page.locator('[data-field="opponent"]:has([data-target-ring]), [role="button"][aria-label="Attack opponent directly"], [role="button"][aria-label="Strike (springs trap)"]').first().click();
+        await expect(prompt).toHaveCount(0, SLOW);
+      }
+      const energy = async () => parseInt(await page.locator('[data-energy]').textContent(), 10);
+      while (!(await rally.isVisible()) && await play.count() && await energy() > 0
+        && await page.locator('[data-field="player"]:not([data-exiting])').count() < 3) {
+        await play.first().click();
+        await page.waitForTimeout(300);
+      }
+      if (await rally.isVisible()) break;
+      await endTurn.click();
+      await expect(page.getByText(new RegExp(`Turn ${turn + 1}`))).toBeVisible(SLOW);
+      await expect(endTurn).toBeVisible(SLOW);
+    }
+    await rally.focus();
+    await page.keyboard.press('Enter');
+    await expect(rally).toHaveCount(0);
     await expect(endTurn).toBeFocused();
   });
 
@@ -337,8 +382,10 @@ test.describe('with a mouse and a keyboard', () => {
   // The result panel's upsell comes before Play Again in the DOM, and the
   // dialog focused its first control: for every player low on gems or
   // packs, Enter left the battle for the Shop.
-  test('the result panel opens on Play Again, and Enter plays again', async ({ page }) => {
-    await seed(page, { gems: 10, cardPacks: 0 });
+  // Both with motion and without, since the panel leaves on its own timing.
+  for (const animationsEnabled of [true, false]) {
+  test(`the result panel opens on Play Again, and Enter plays again (animations ${animationsEnabled ? 'on' : 'off'})`, async ({ page }) => {
+    await seed(page, { gems: 10, cardPacks: 0, animationsEnabled });
     await page.reload();
     await toBattle(page);
     await page.getByRole('button', { name: 'Concede' }).click();
@@ -351,7 +398,11 @@ test.describe('with a mouse and a keyboard', () => {
     await expect(panel).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
     await expect(page.getByRole('dialog', { name: 'Shop' })).toHaveCount(0);
+    // Play Again leaves with the panel: the focus goes on to the new game,
+    // not to the page.
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeFocused();
   });
+  }
 
   // TeddyCard drew a pointer on every card face, under the board's own
   // cursors, so Chuck's cards and a warming-up creature looked clickable.

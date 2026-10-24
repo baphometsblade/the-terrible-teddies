@@ -1988,10 +1988,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // The focus a keyboard move left behind (see refocusRef), once the board
   // has re-rendered: the card now in a played card's place, else End Turn;
   // after an attack the next ready attacker, else End Turn; after Cancel the
-  // attacker it let go of; after End Turn or Rally, End Turn — for End Turn,
-  // once it is back, on the player's next turn. Only when the focus really
-  // has been lost (to the page, an inert card on its way out, or a card that
-  // is no longer a control): a player who has moved on keeps their place.
+  // attacker it let go of; after End Turn, Rally or Play Again, End Turn —
+  // once it is there, on the player's turn. Only when the focus really has
+  // been lost (to the page, an inert card on its way out, or a card that is
+  // no longer a control): a player who has moved on keeps their place.
   useEffect(() => {
     const want = refocusRef.current;
     if (!want) return;
@@ -1999,8 +1999,12 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       refocusRef.current = null;
       return;
     }
+    // A wait for End Turn decides once End Turn is back, not before.
+    if (want.kind === 'turn' && (currentTurn !== 'player' || phase !== 'main' || !endTurnRef.current)) return;
+    // `from` is a control on its way out (Play Again leaves with its panel),
+    // so the focus still on it counts as lost.
     const active = document.activeElement;
-    const lost = !active || active === document.body || !active.isConnected
+    const lost = !active || active === document.body || !active.isConnected || active === want.from
       || Boolean(active.closest('[inert]')) || !active.matches(TABBABLE);
     if (!lost) {
       refocusRef.current = null;
@@ -2009,7 +2013,6 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     const endTurnButton = endTurnRef.current;
     let target = null;
     if (want.kind === 'turn') {
-      if (currentTurn !== 'player' || phase !== 'main' || !endTurnButton) return;
       target = endTurnButton;
     } else if (want.kind === 'hand') {
       const cards = [...(handScrollerRef.current?.querySelectorAll('[data-hand-id][role="button"]:not([inert])') ?? [])];
@@ -2455,8 +2458,19 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 {/* The dialog's first focus (useDialog's data-autofocus), so
                     Enter plays again. The upsell above comes first in the
                     DOM, and it used to take the focus for every player low
-                    on gems or packs: Enter left the battle for the Shop. */}
-                <button type="button" data-autofocus="" onClick={restartGame} className={`${ACTION} btn-brass min-w-[8rem]`}>
+                    on gems or packs: Enter left the battle for the Shop.
+                    Pressed from the keys, the focus goes on to the new game's
+                    End Turn: this button goes with the panel, and the focus
+                    went to the page. */}
+                <button
+                  type="button"
+                  data-autofocus=""
+                  onClick={(e) => {
+                    if (viaKeys(e)) refocusRef.current = { kind: 'turn', from: e.currentTarget };
+                    restartGame();
+                  }}
+                  className={`${ACTION} btn-brass min-w-[8rem]`}
+                >
                   Play Again
                 </button>
                 {onBackToMenu && (
