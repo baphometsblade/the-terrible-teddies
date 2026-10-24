@@ -453,7 +453,10 @@ test.describe('a toast over a dialog', () => {
       }, LONGEST_ACHIEVEMENT);
       const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Achievement Unlocked!' });
       await expect(toast).toBeVisible();
-      expect(await controlsUnder(dialog, await toast.boundingBox()), 'the toast covers dialog controls').toEqual([]);
+      // Measured once the slide-in and the dialog's entrance have settled: on
+      // a loaded machine the first visible frame can still be moving. An
+      // overlap that persists still fails, after the poll's few seconds.
+      await expect.poll(async () => controlsUnder(dialog, await toast.boundingBox()), { message: 'the toast covers dialog controls', timeout: 5000 }).toEqual([]);
     });
   }
 
@@ -485,13 +488,14 @@ test.describe('a toast over a dialog', () => {
           useGameStore.setState({ pendingSeasonDeliveries: [{ id: Math.random(), season, receipts, summary: describeGrants(receipts) }] });
           return describeGrants(receipts);
         });
-        const toast = page.locator('.toast-viewport > li').filter({ hasText: 'rewards delivered' });
+        const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Delivered:' });
         await expect(toast).toBeVisible(SLOW);
-        expect(await controlsUnder(dialog, await toast.boundingBox()), `the toast covers ${name}'s controls`).toEqual([]);
-        await expect(toast.locator('.toast-title')).toHaveText('Season 12 rewards delivered');
+        // The settled layout, as above: not a frame of the slide-in.
+        await expect.poll(async () => controlsUnder(dialog, await toast.boundingBox()), { message: `the toast covers ${name}'s controls`, timeout: 5000 }).toEqual([]);
+        await expect(toast.locator('.toast-title')).toHaveText('Season 12 rewards');
         // Cut short on screen only: the whole list is still the toast's text,
         // which is what Radix reads out.
-        await expect(toast.locator('.toast-description')).toHaveText(`${summary}.`);
+        await expect(toast.locator('.toast-description')).toHaveText(`Delivered: ${summary}.`);
         await page.evaluate(async () => (await import('/src/components/ui/use-toast.js')).resetToasts());
         await page.keyboard.press('Escape');
         await expect(dialog).toHaveCount(0, SLOW);

@@ -180,7 +180,7 @@ test("a season's end delivers what was left unclaimed, and says so", async ({ pa
   // Titled by the season's number alone, and the list without a preamble:
   // the whole name and "Unclaimed when the season ended:" ran the toast to
   // five lines over a dialog's controls (meta-screens.spec.js pins that).
-  await expect(page.getByText(`Season ${last.number} rewards delivered`, { exact: true })).toBeVisible(SLOW);
+  await expect(page.getByText(`Season ${last.number} rewards`, { exact: true })).toBeVisible(SLOW);
   await expect(page.locator('.toast-viewport .toast-description').filter({ hasText: /card pack/ })).toBeVisible();
   // The packs it delivered are waiting, the pass has started over, and the
   // border the pass sold is still the player's.

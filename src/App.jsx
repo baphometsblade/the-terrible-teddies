@@ -383,7 +383,11 @@ function App() {
   // rewards delivered") took the title to two lines on any phone, and the
   // preamble the description had ("Unclaimed when the season ended:") said
   // again what the title says; with both, the toast covered Challenges' tabs
-  // and the tutorial's step bar. The season's number, and what it handed over.
+  // and the tutorial's step bar. "Season 12 rewards delivered" then wrapped
+  // too, once the dialogs' Close grew to 44px and the corner narrowed by
+  // 12px: at 320 it took two lines and the toast ended 3px into the step
+  // bar. So the title is the season's number and "rewards", one line at any
+  // width, and "Delivered:" leads the list.
   const pendingSeasonDeliveries = useGameStore((s) => s.pendingSeasonDeliveries);
   const shownDeliveryIds = useRef(new Set());
   useEffect(() => {
@@ -392,8 +396,8 @@ function App() {
     useGameStore.setState({ pendingSeasonDeliveries: [] });
     fresh.forEach((delivery) => shownDeliveryIds.current.add(delivery.id));
     announceAll(toast, fresh.map((delivery) => ({
-      title: `${seasonNumber(delivery.season)} rewards delivered`,
-      description: `${delivery.summary}.`,
+      title: `${seasonNumber(delivery.season)} rewards`,
+      description: `Delivered: ${delivery.summary}.`,
       // Over a dialog the list stops at two lines (index.css), which every
       // dialog's controls clear; the whole of it is still read out.
       className: 'toast-clamp',

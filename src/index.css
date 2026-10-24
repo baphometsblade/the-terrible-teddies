@@ -759,8 +759,10 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 }
 /* On a phone the type steps down a little, so a one-line title and two
    lines of description end above the first control under a dialog's header: the tutorial's
-   step bar, 77px down at 320, is the highest. From 360 an achievement's
-   description fits on one line. */
+   step bar, 89px down at 320 now its frame fills a phone, is the highest.
+   From 360 an achievement's description fits on one line. A title has to
+   stay on one line for this to hold, which is why App titles a season's
+   delivery "Season N rewards". */
 @media (max-width: 639.98px) {
   :root[data-dialog]:not([data-screen="battle"]) .toast-viewport .toast-title {
     font-size: 0.9375rem;
