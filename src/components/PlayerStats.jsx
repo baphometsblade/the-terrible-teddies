@@ -194,7 +194,7 @@ const PlayerStats = ({ onClose }) => {
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     aria-label="Player name"
-                    className="h-10 min-w-0 flex-1 rounded-xl bg-night-950/70 px-3 font-display text-lg font-bold text-white ring-1 ring-inset ring-white/15 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 focus:ring-brass-300"
+                    className="h-11 min-w-0 flex-1 rounded-xl bg-night-950/70 px-3 font-display text-lg font-bold text-white ring-1 ring-inset ring-white/15 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] focus:outline-none focus:ring-2 focus:ring-brass-300"
                     maxLength={20}
                     autoFocus
                     // preventDefault, because saving hands focus to the pencil
@@ -224,7 +224,7 @@ const PlayerStats = ({ onClose }) => {
                   <button
                     type="button"
                     onClick={handleSaveName}
-                    className={`btn-brass inline-flex h-10 shrink-0 items-center rounded-xl px-4 font-display font-bold ${FOCUS_OUTLINE}`}
+                    className={`btn-brass inline-flex h-11 shrink-0 items-center rounded-xl px-4 font-display font-bold ${FOCUS_OUTLINE}`}
                   >
                     Save
                   </button>

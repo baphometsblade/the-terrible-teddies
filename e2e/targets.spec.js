@@ -112,6 +112,12 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }
           }));
           for (let i = 1; i < edges.length; i += 1) expect(edges[i][0], 'a gap between step buttons').toBeCloseTo(edges[i - 1][1], 0);
         }
+        if (name === 'Player stats') {
+          // The rename field and its Save, drawn only while renaming.
+          await dialog.getByRole('button', { name: 'Edit player name' }).click();
+          expect(await shortTargets(dialog), 'short targets while renaming').toEqual([]);
+          await page.keyboard.press('Escape');
+        }
         await page.keyboard.press('Escape');
         await expect(dialog).toHaveCount(0);
       }
