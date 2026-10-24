@@ -2,7 +2,7 @@
 //
 // Fully hermetic: a fake Supabase session is seeded into localStorage before
 // the app boots (supabase-js restores it from the `sb-<ref>-auth-token` key),
-// and every request to the fake Supabase project, the sound CDN, and PostHog
+// and every request to the fake Supabase project and PostHog
 // is stubbed or aborted in the browser. No real backend is contacted.
 //
 // The session/stub/boot plumbing lives in e2e/helpers/session.js so
