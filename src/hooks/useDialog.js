@@ -75,6 +75,9 @@ export function useDialog(onClose) {
       // Only the most-recently-opened dialog owns the keyboard.
       if (dialogStack[dialogStack.length - 1] !== node) return;
       if (e.key === 'Escape') {
+        // A toast the player reached with F8 takes this Escape itself
+        // (Toaster): it closes, and the dialog under it stays.
+        if (e.target instanceof Element && e.target.closest('.toast-viewport')) return;
         e.stopImmediatePropagation();
         onCloseRef.current?.();
         return;

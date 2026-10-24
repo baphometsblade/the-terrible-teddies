@@ -443,6 +443,50 @@ test.describe('announcements', () => {
     await expect(toasts.filter({ hasText: 'First news' })).toHaveCount(0);
   });
 
+  // One Escape over a dialog closed the dialog and the announcement on
+  // screen, which never came back: a dismissal by the player is final. A
+  // battle's achievements land over the result dialog, where Escape means
+  // "Menu". The dialog takes the Escape alone now, and the news plays on.
+  test('outlive the Escape that closes the dialog under them', async ({ page }) => {
+    test.skip(!!process.env.E2E_PREVIEW, 'imports the toast module from /src');
+    await bootToMainMenu(page);
+    await page.getByRole('button', { name: 'Challenges', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Challenges' });
+    await expect(dialog).toBeVisible(SLOW);
+    await page.evaluate(async () => {
+      const { toast } = await import('/src/components/ui/use-toast.js');
+      toast({ queue: true, title: 'Achievement Unlocked!', description: 'Veteran', duration: 60000 });
+    });
+    const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Achievement Unlocked!' });
+    await expect(toast).toHaveAttribute('data-state', 'open');
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0, SLOW);
+    await page.waitForTimeout(500);
+    await expect(toast).toHaveAttribute('data-state', 'open');
+  });
+
+  // F8 takes the focus to the toasts, and then a toast is the top layer:
+  // Escape closes it, and only it.
+  test('reached with F8 close on Escape, leaving the dialog open', async ({ page }) => {
+    test.skip(!!process.env.E2E_PREVIEW, 'imports the toast module from /src');
+    await bootToMainMenu(page);
+    await page.getByRole('button', { name: 'Challenges', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Challenges' });
+    await expect(dialog).toBeVisible(SLOW);
+    await page.evaluate(async () => {
+      const { toast } = await import('/src/components/ui/use-toast.js');
+      toast({ queue: true, title: 'Achievement Unlocked!', description: 'Veteran', duration: 60000 });
+    });
+    const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Achievement Unlocked!' });
+    await expect(toast).toHaveAttribute('data-state', 'open');
+    await page.keyboard.press('F8');
+    await expect.poll(() => page.evaluate(() => !!document.activeElement?.closest('.toast-viewport'))).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(toast).toHaveCount(0, SLOW);
+    await page.waitForTimeout(300);
+    await expect(dialog).toBeVisible();
+  });
+
   // A battle's achievements are raised in the same moment as the board's
   // game-over clear (it closes any callout as the result dialog opens), in
   // either order. That clear used to empty the line, so not one of them was
