@@ -577,9 +577,10 @@ const GameOverDialog = ({ label, onEscape, children }) => {
  */
 const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, ref) {
   // Get store data
+  // Not the deck or the difficulty: a game is dealt from a snapshot of
+  // those (see the deal below), so nothing the store does mid-game can reach
+  // a game in progress.
   const {
-    currentDeck,
-    difficulty: aiDifficulty,
     soundEnabled: storeSoundEnabled,
     setSoundEnabled,
     currentWinStreak,
@@ -988,8 +989,20 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     return shuffled;
   };
 
-  // Initialize decks
+  // The difficulty this game was dealt at: Chuck's energy budget reads it
+  // all game, so a change in Settings applies from the next deal.
+  const dealtDifficultyRef = useRef('normal');
+
+  // Deal. From a snapshot of the deck and the difficulty taken here, and once
+  // per game (gameId), never again until Play Again or the next battle. It
+  // used to depend on the store's currentDeck, and every rehydrate — each
+  // focus and each return to the tab, see useRehydrateOnFocus — puts a newly
+  // parsed array there: one alt-tab re-dealt the game in progress, with a new
+  // hand, a new crew for Chuck at full HP and the log restarted, while the
+  // table and the turn stayed as they were.
   useEffect(() => {
+    const { currentDeck, difficulty: aiDifficulty } = useGameStore.getState();
+    dealtDifficultyRef.current = aiDifficulty;
     // Build player deck from store's currentDeck (card IDs mapped to ALL_CARDS)
     const playerDeckCards = currentDeck
       .map(cardId => ALL_CARDS.find(c => c.id === cardId))
@@ -1051,7 +1064,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     speak('gameStart');
     addToBattleLog('Your turn. Make it hurt.');
     setDeckReady(true);
-  }, [startBattleLog, addToBattleLog, currentDeck, aiDifficulty, gameId, speak]);
+    // startBattleLog, addToBattleLog and speak are stable useCallbacks, so
+    // only a new game (gameId) deals.
+  }, [startBattleLog, addToBattleLog, gameId, speak]);
 
   // Check for game over. Opponent death is checked first so that a simultaneous
   // lethal (both reach 0 in the same commit) counts as a win for the player who
@@ -1125,7 +1140,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       // Keep the server level/xp current even on a loss (a loss still grants XP).
       syncLevelToServer();
     }
-  }, [playerHealth, opponentHealth, gameOver, playSound, recordBattleResult, aiDifficulty, clearAllTimeouts, showLevelUp]);
+  }, [playerHealth, opponentHealth, gameOver, playSound, recordBattleResult, clearAllTimeouts, showLevelUp]);
 
   // Chuck starts sweating when he's nearly unstuffed — once per game.
   useEffect(() => {
@@ -1531,7 +1546,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // Opponent plays every card it can afford within its per-turn energy
     // budget (difficulty-scaled) while the field has room. Only played cards
     // leave the deck, so a full board never mills it.
-    const energyBudget = OPPONENT_ENERGY_BY_DIFFICULTY[aiDifficulty] ?? OPPONENT_ENERGY_BY_DIFFICULTY.normal;
+    // At the difficulty this game was dealt at, not the live setting.
+    const energyBudget = OPPONENT_ENERGY_BY_DIFFICULTY[dealtDifficultyRef.current] ?? OPPONENT_ENERGY_BY_DIFFICULTY.normal;
     // Pass activeOpponentField so a 'swarm' card in the opponent's hand is
     // budgeted at its discounted cost under the same rule the player follows.
     const { plays, remainingDeck } = chooseOpponentPlays(opponentDeck, opponentField.length, energyBudget, MAX_FIELD_SIZE, activeOpponentField);

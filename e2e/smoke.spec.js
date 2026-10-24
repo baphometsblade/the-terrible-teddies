@@ -1281,41 +1281,70 @@ test('a save written by another tab is picked up when this one is refocused', as
 });
 
 test('a mid-battle rehydrate refreshes the wallet without disturbing the game', async ({ page }) => {
-  // useRehydrateOnFocus can fire at any moment, including with a battle open,
-  // so this pins the claim its comment makes: the battle lives in GameBoard's
-  // React state (health, fields, hands) and not in the persisted store, so
-  // re-reading the save must refresh currency and progression while leaving the
-  // game in progress untouched. If that were wrong, switching tabs mid-fight
-  // would reset the board.
+  // useRehydrateOnFocus fires on every focus and every return to the tab —
+  // on a phone, every app switch — so a battle has to survive it. It once
+  // did not: every rehydrate puts a freshly parsed currentDeck into the
+  // store, the deal effect depended on it, and one focus re-dealt the game in
+  // progress — a new hand, a new crew for Chuck at full HP, the log
+  // restarted. The old version of this test counted "Warming Up" chips, which
+  // a re-deal still satisfies (Chuck's new opener is warming up too), so it
+  // never saw it. This one records the game a re-deal would replace.
+  //
+  // Traps, so Chuck takes damage the board can show: on his second turn his
+  // opener swings into the trap and springs it.
   await page.addInitScript(() => {
     const raw = localStorage.getItem('terrible-teddies-storage');
     const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
-    stored.state.currentDeck = [1, 2, 3, 4, 5, 6];
+    stored.state.currentDeck = [31, 71, 31, 71, 31, 71]; // 1-energy traps
     localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
   });
   await page.reload();
 
   await page.getByRole('button', { name: 'Battle', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
-
-  // Put a creature on the board so there is game state that could be lost.
+  const endTurn = page.getByRole('button', { name: 'End Turn' });
+  await expect(endTurn).toBeVisible(SLOW);
   await page.getByRole('button', { name: /^Play / }).first().click();
-  await expect(page.getByText('Warming Up')).toHaveCount(2);
+  await expect(page.locator('[data-field="player"]')).toHaveCount(1, SLOW);
+  await endTurn.click();
+  await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+  await expect(endTurn).toBeVisible(SLOW);
+  await endTurn.click();
+  await expect(page.getByText(/Turn 3/)).toBeVisible(SLOW);
+  await expect(endTurn).toBeVisible(SLOW);
+  await page.waitForTimeout(600); // the draw, and the last of the wave's exits
 
-  // Another tab banks a fortune; this tab is refocused mid-battle.
+  const snapshot = () => page.evaluate(() => ({
+    hand: [...document.querySelectorAll('[data-hand-id]')].map((el) => el.getAttribute('data-hand-id')),
+    chuck: document.querySelector('.hud-opponent').textContent.match(/(\d+)\/(\d+)/).slice(1).map(Number),
+    chuckField: [...document.querySelectorAll('[data-field="opponent"]')].map((el) => el.getAttribute('data-card-id')),
+    intros: [...document.querySelectorAll('[role="log"] > div')].filter((el) => /slams his deck/.test(el.textContent)).length,
+  }));
+  const before = await snapshot();
+  // Chuck is hurt, so a re-deal that put him back to full would show.
+  expect(before.chuck[0], 'the trap never hurt Chuck').toBeLessThan(before.chuck[1]);
+  expect(before.hand.length).toBeGreaterThan(0);
+  expect(before.chuckField.length).toBeGreaterThan(0);
+
+  // A return to the tab with nothing changed in storage.
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('focus'));
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.waitForTimeout(500);
+  expect(await snapshot(), 'a plain refocus changed the game').toEqual(before);
+
+  // Another tab banks a fortune; this tab is refocused mid-battle, and this
+  // time the rehydrate has something to read.
   await page.evaluate(() => {
     const stored = JSON.parse(localStorage.getItem('terrible-teddies-storage'));
     stored.state.coins = 55555;
     localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
     window.dispatchEvent(new Event('focus'));
+    document.dispatchEvent(new Event('visibilitychange'));
   });
-
-  // The board survives: the creature is still there, the turn still ends
-  // here, and the hand is still live. (This step used to check the old
-  // "⚔️ Battle" phase button, which merging the phases removed.)
-  await expect(page.getByText('Warming Up')).toHaveCount(2);
-  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Play / }).first()).toBeVisible();
+  await page.waitForTimeout(500);
+  expect(await snapshot(), 'a refocus that read another tab\'s save changed the game').toEqual(before);
+  await expect(endTurn).toBeVisible();
 
   // ...and the refreshed wallet carried through. Leaving mid-battle records an
   // abandonment, which CREDITS a few coins, so the total lands just above the

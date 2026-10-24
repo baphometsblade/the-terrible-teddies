@@ -50,6 +50,44 @@ describe('a return to the tab', () => {
   });
 });
 
+// persist's rehydrate replaces every array in the state with a newly parsed
+// copy even when the save is unchanged, and the battle board once re-dealt the
+// game in progress on exactly that (its deal depended on currentDeck). A
+// return to the tab with nothing new in storage must leave the state as it is.
+describe('a return to the tab with nothing new in the save', () => {
+  const mountHook = () => {
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    const host = document.createElement('div');
+    const root = createRoot(host);
+    const Probe = () => { useRehydrateOnFocus(); return null; };
+    act(() => root.render(createElement(Probe)));
+    return root;
+  };
+
+  it('keeps the state object and its arrays, and still settles a pending purchase', async () => {
+    // A write through the store, so storage holds what this tab wrote.
+    useGameStore.setState({ coins: 321, currentDeck: [1, 2, 3, 4, 5] });
+    const root = mountHook();
+    const before = get();
+    const deck = before.currentDeck;
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(get()).toBe(before);
+    expect(get().currentDeck).toBe(deck);
+    expect(settled).toEqual([321, 321]);
+
+    // Another tab's write is still read.
+    otherTabSaves({ ...JSON.parse(localStorage.getItem(STORAGE_KEY)).state, coins: 999 });
+    await act(async () => { window.dispatchEvent(new Event('focus')); });
+    expect(get().coins).toBe(999);
+    expect(get().currentDeck).toEqual([1, 2, 3, 4, 5]);
+    act(() => root.unmount());
+  });
+});
+
 describe('rehydrating picks up another tab\'s save', () => {
   it('reproduces the loss without a rehydrate, and prevents it with one', async () => {
     // This tab's in-memory snapshot.

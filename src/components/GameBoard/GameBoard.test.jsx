@@ -58,6 +58,36 @@ describe('GameBoard', () => {
     expect(entries.filter((e) => e === 'Your turn. Make it hurt.')).toHaveLength(1);
   });
 
+  // Every rehydrate (each focus, each return to the tab) puts a newly parsed
+  // currentDeck in the store, and the deal depended on it: one alt-tab
+  // re-dealt the game in progress. A game is dealt once, from a snapshot; a
+  // new deck or difficulty applies from the next deal.
+  it('deals once per game: a store change mid-game reaches the next deal, not this one', async () => {
+    useGameStore.setState(useGameStore.getInitialState(), true);
+    useGameStore.setState({ difficulty: 'easy' });
+    await renderBoard({ onBackToMenu: () => {} });
+    const hand = () => [...container.querySelectorAll('[data-hand-id]')].map((el) => el.getAttribute('data-hand-id'));
+    const intros = () => [...container.querySelectorAll('[role="log"] > div')]
+      .map((e) => e.textContent).filter((e) => e.includes('slams his deck'));
+    const dealt = hand();
+    expect(intros()).toHaveLength(1);
+    expect(intros()[0]).toContain('EASY');
+
+    await act(async () => {
+      useGameStore.setState({ currentDeck: [...useGameStore.getState().currentDeck], difficulty: 'hard' });
+    });
+    expect(hand()).toEqual(dealt);
+    expect(intros()).toHaveLength(1);
+    expect(intros()[0]).toContain('EASY');
+
+    // Play Again deals at the new difficulty.
+    await act(async () => container.querySelector('button[title="Concede"]').click());
+    await act(async () => button('Concede — counts as a loss').click());
+    await act(async () => button('Play Again').click());
+    expect(intros()).toHaveLength(1);
+    expect(intros()[0]).toContain('HARD');
+  });
+
   it('exposes a stable requestLeave that asks while the game is live', async () => {
     const onBackToMenu = vi.fn();
     const ref = await renderBoard({ onBackToMenu });
