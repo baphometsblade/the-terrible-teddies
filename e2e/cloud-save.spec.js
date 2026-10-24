@@ -5,13 +5,31 @@
 // trophy board and get_my_rank, and the copy each state shows.
 import AxeBuilder from '@axe-core/playwright';
 import { test, expect, SESSION, REF, SLOW } from './helpers/session.js';
+import { getCurrentSeason } from '../src/utils/season.js';
 
 const STORAGE_KEY = 'terrible-teddies-storage';
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 const today = () => new Date().toDateString();
 
-// What another device sent to the account: a player well into the game.
+// The stamps the menu writes on a save opened on `day` (syncPeriods,
+// syncSeason): the store's own week key is the Monday of that week.
+const stampedOn = (day) => {
+  const monday = new Date(day.getFullYear(), day.getMonth(), day.getDate() - day.getDay() + (day.getDay() === 0 ? -6 : 1));
+  return {
+    dailyStatsDate: day.toDateString(),
+    weeklyStatsDate: monday.toDateString(),
+    seasonKey: getCurrentSeason(day).key,
+    lastLoginDate: day.toDateString(),
+  };
+};
+// Two days in one week and one season: Wednesday evening, Thursday morning.
+const WEDNESDAY = new Date(2026, 9, 21, 20, 0);
+const THURSDAY = new Date(2026, 9, 22, 9, 0);
+
+// What another device sent to the account today (its menu stamped the day,
+// week and season): a player well into the game.
 const accountSave = (over = {}) => ({
+  ...stampedOn(new Date()),
   playerName: 'Phone Bear',
   level: 7, xp: 40, totalBattles: 30, totalWins: 20, coins: 4321,
   ownedCards: [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42, 7, 8, 9, 10, 11, 12],
@@ -87,7 +105,11 @@ async function boot(page, { account = null, store = null, balance = null, rest =
 
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
-  return { calls, row: () => row };
+  // `write`: another device sending the next rev.
+  const write = (save) => {
+    row = { rev: (row?.rev ?? 0) + 1, save, updated_at: new Date().toISOString() };
+  };
+  return { calls, row: () => row, write };
 }
 
 const saved = (page) => page.evaluate((key) => JSON.parse(localStorage.getItem(key)).state, STORAGE_KEY);
@@ -284,4 +306,84 @@ test('without the trophy board, the leaderboard falls back to the old view', asy
   const dialog = page.getByRole('dialog', { name: 'Leaderboard' });
   await expect(dialog.getByText('Outside the top 50')).toBeAttached(SLOW);
   await expect(dialog.getByText('Rival1', { exact: true })).toBeVisible();
+});
+
+test('a device that is only behind on a new day takes the account\'s save, without calling it a conflict', async ({ page }) => {
+  // Wednesday: a fresh browser takes the account's save and is in step.
+  await page.clock.setFixedTime(WEDNESDAY);
+  const { row, write } = await boot(page, {
+    account: accountSave({ ...stampedOn(WEDNESDAY), todayWins: 2, todayBattles: 3 }),
+    store: null,
+    balance: 500,
+  });
+  await expect(page.getByText('Save loaded from your account', { exact: true })).toBeVisible(SLOW);
+  await expect.poll(async () => (await saved(page)).cloudRev).toBe(5);
+
+  // Overnight the phone played on: a level and ten battles more (rev 6).
+  write({ ...row().save, ...stampedOn(THURSDAY), todayWins: 0, todayBattles: 0, level: 8, totalBattles: 40 });
+
+  // Thursday this device opens the game, untouched since its sync. The menu
+  // rolls its save over to the new day before the account has answered.
+  await page.clock.setFixedTime(THURSDAY);
+  await page.reload();
+  await expect(page.getByText('Save loaded from your account', { exact: true })).toBeVisible(SLOW);
+  await expect(page.getByText('Lv 8')).toBeVisible();
+  await expect(page.getByText('Two saves didn’t match', { exact: true })).toHaveCount(0);
+  expect(await page.evaluate((uid) => localStorage.getItem(`terrible-teddies-backup:${uid}`), SESSION.user.id)).toBeNull();
+  expect(row().rev).toBe(6); // nothing of this device's went over it
+});
+
+test('an account save from an earlier day is brought up to today: yesterday\'s wins finish no challenge', async ({ page }) => {
+  await page.clock.setFixedTime(THURSDAY);
+  const { calls } = await boot(page, {
+    account: accountSave({
+      ...stampedOn(WEDNESDAY), lastLoginDate: THURSDAY.toDateString(),
+      todayWins: 9, todayBattles: 20, todayDamageDealt: 99_999, todayCardsPlayed: 500, claimedChallenges: [],
+    }),
+    store: null,
+    balance: 500,
+  });
+  await expect(page.getByText('Save loaded from your account', { exact: true })).toBeVisible(SLOW);
+  await expect(page.getByText('Lv 7')).toBeVisible();
+  // The menu's own rollover ran on the empty save this one replaced.
+  await expect(page.getByRole('button', { name: /^Challenges/ })).not.toContainText('ready');
+  const s = await saved(page);
+  expect([s.todayWins, s.todayBattles, s.dailyStatsDate]).toEqual([0, 0, THURSDAY.toDateString()]);
+  // And the rolled-over save goes back to the account, from the rev it took.
+  await expect.poll(() => calls.filter((c) => c.fn === 'put_player_save').length, { timeout: 10_000 }).toBe(1);
+  const put = calls.find((c) => c.fn === 'put_player_save');
+  expect(put.body.p_base_rev).toBe(5);
+  expect(put.body.p_save.todayWins).toBe(0);
+});
+
+test('reloading or closing mid-battle sends the abandoned battle\'s loss to the account on the way out', async ({ page }) => {
+  const { calls, row } = await boot(page, { account: accountSave(), store: null, balance: 500 });
+  await expect(page.getByText('Save loaded from your account', { exact: true })).toBeVisible(SLOW);
+  await expect.poll(async () => (await saved(page)).cloudRev).toBe(5);
+  await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  expect((await saved(page)).totalLosses).toBe(0);
+  const before = calls.length;
+
+  // From here no timer runs, as none does once a page has gone: the save's
+  // usual three-second wait cannot be what sends the loss.
+  await page.clock.install();
+  // A reload or close, in the browser's own order: pagehide while the tab is
+  // still visible (GameBoard's listener, after the cloud save's, books the
+  // loss), then hidden. Fired here rather than by a real reload: Playwright
+  // now and then loses the intercepted keepalive request of a page that has
+  // really gone, which would make this test flaky rather than the app.
+  await page.evaluate(() => {
+    window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: false }));
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  expect((await saved(page)).totalLosses).toBe(1); // booked by GameBoard
+
+  await expect.poll(() => row().save.totalLosses ?? 0, { timeout: 10_000 }).toBe(1);
+  const sent = calls.slice(before).filter((c) => c.fn === 'put_player_save');
+  expect(sent).toHaveLength(1);
+  expect(sent[0].body.p_base_rev).toBe(5);
+  expect(sent[0].headers.authorization).toBe(`Bearer ${SESSION.access_token}`);
+  expect(row().rev).toBe(6);
 });
