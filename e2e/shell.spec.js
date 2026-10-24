@@ -491,18 +491,30 @@ test.describe('announcements', () => {
   test('that arrive together are shown one after another, each in full', async ({ page }) => {
     test.skip(!!process.env.E2E_PREVIEW, 'imports the toast module from /src');
     await bootToMainMenu(page);
-    // What a screen reader is handed: Radix's announce region for each toast,
-    // which it removes again a second later, so it is caught as it arrives.
+    // What a screen reader is handed: Radix's announce region for each toast.
+    // Radix fills it a frame after mounting it and empties it again about a
+    // second later, so its text is recorded the moment it appears; reading
+    // the nodes at the end found the first one already emptied whenever the
+    // machine was slow enough for the second to take longer to arrive.
     await page.evaluate(() => {
       window.__announced = [];
+      const seen = new Set();
+      const note = (el) => {
+        const region = el?.nodeType === 1 ? el.closest('[aria-live]') : el?.parentElement?.closest('[aria-live]');
+        const text = region?.textContent ?? '';
+        if (!region || !/First news|Second news/.test(text) || seen.has(text)) return;
+        seen.add(text);
+        window.__announced.push({ live: region.getAttribute('aria-live'), text });
+      };
       new MutationObserver((records) => {
         for (const r of records) {
+          note(r.target);
           for (const n of r.addedNodes) {
-            const region = n.nodeType === 1 && (n.matches('[aria-live]') ? n : n.querySelector('[aria-live]'));
-            if (region) window.__announced.push({ live: region.getAttribute('aria-live'), node: region });
+            note(n);
+            if (n.nodeType === 1) n.querySelectorAll('[aria-live]').forEach((region) => note(region));
           }
         }
-      }).observe(document.body, { childList: true, subtree: true });
+      }).observe(document.body, { childList: true, subtree: true, characterData: true });
     });
     await page.evaluate(async () => {
       const { toast } = await import('/src/components/ui/use-toast.js');
@@ -519,9 +531,7 @@ test.describe('announcements', () => {
     await expect(toasts.filter({ hasText: 'First news' })).toHaveCount(0);
     // News the player did not ask for waits for a pause in the speech: read
     // assertively, it cut off whatever was being read (the result dialog).
-    const heard = await page.evaluate(() => window.__announced
-      .map((a) => ({ live: a.live, text: a.node.textContent }))
-      .filter((a) => /First news|Second news/.test(a.text)));
+    const heard = await page.evaluate(() => window.__announced);
     expect(heard.length, 'neither announcement reached a live region').toBeGreaterThanOrEqual(2);
     expect(heard.map((a) => a.live)).toEqual(heard.map(() => 'polite'));
   });
