@@ -810,7 +810,22 @@ export function startCloudSync({ userId, accessToken = null, onSettled = null })
     window.removeEventListener('online', onOnline);
   };
   setStatus({ phase: 'checking', savedAt: useGameStore.getState().cloudSyncedAt, backup: backupSummary(userId) });
-  return enqueueDecision(c, 'login');
+  c.firstDecision = enqueueDecision(c, 'login');
+  return c.firstDecision;
+}
+
+/**
+ * The sign-in's first decision for `uid`: resolves with its outcome once the
+ * account's save has been taken, kept, or found out of reach. It resolves on
+ * every outcome ('offline' and 'unavailable' included, and 'deferred' when
+ * the tab was hidden), never rejects, and resolves at once for any account
+ * this page is not syncing, so nothing waiting on it is held up by a backend
+ * that cannot answer. App holds Daily Rewards and the first-run tutorial on
+ * it: before it, a new device is still playing the wiped save bindToUser
+ * left, and they opened on that.
+ */
+export function whenFirstDecision(uid) {
+  return ctx && ctx.uid === uid && ctx.firstDecision ? ctx.firstDecision : Promise.resolve('none');
 }
 
 /** Stop syncing (sign-out). */
