@@ -99,7 +99,6 @@ async function boot(page, { account = null, store = null, balance = null, rest =
     if (table && rest[table]) return rest[table](route);
     return route.fulfill({ json: [] });
   });
-  await page.route('**assets.mixkit.co/**', (r) => r.abort());
   await page.route('https://*.posthog.com/**', (r) => r.abort());
 
   await page.addInitScript(([authKey, session, key, state]) => {

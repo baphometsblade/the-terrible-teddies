@@ -2,8 +2,10 @@
 //
 // Fully hermetic: a fake Supabase session is seeded into localStorage before
 // the app boots (supabase-js restores it from the `sb-<ref>-auth-token` key),
-// and every request to the fake Supabase project, the sound CDN, and PostHog
-// is stubbed or aborted in the browser. No real backend is contacted.
+// and every request to the fake Supabase project and to PostHog is stubbed or
+// aborted in the browser. Sounds, card art and fonts are the app's own files,
+// served with it (src/utils/sounds.test.js fails on an external sound URL).
+// No real backend is contacted.
 //
 // Factored out of e2e/smoke.spec.js so e2e/a11y.spec.js (and any future spec)
 // can reuse the exact same boot without duplicating it or drifting from it.
@@ -52,7 +54,7 @@ export const test = base.extend({
   ],
 });
 
-// Stubs the fake Supabase project + sound CDN + analytics, seeds the fake
+// Stubs the fake Supabase project + analytics, seeds the fake
 // auth session and a deterministic game store, then boots the app and waits
 // for the main menu. Call from a `test.beforeEach`.
 export async function bootToMainMenu(page) {
@@ -64,7 +66,6 @@ export async function bootToMainMenu(page) {
     if (url.includes('/rest/v1/')) return route.fulfill({ json: [] });
     return route.fulfill({ json: {} });
   });
-  await page.route('**assets.mixkit.co/**', (r) => r.abort());
   await page.route('https://*.posthog.com/**', (r) => r.abort());
 
   // lastLoginDate=today and tutorialCompleted=true suppress the first-run
