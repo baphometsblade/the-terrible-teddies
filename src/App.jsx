@@ -796,13 +796,18 @@ function App() {
 
         {/* Purchase verification renders whether or not a session was
             restored: returning from Stripe is a full page navigation, so a
-            buyer whose session restore failed still sees the confirmation,
-            over the login screen, rather than losing it. It does not show
-            over BootScreen (the early return above), which covers the session
-            check and the account's save. session_id is already off the URL
-            and in state by then, so the screen appears when the boot ends; a
-            buyer who reloads first loses only the screen, since the login
-            reconcile still credits the gems. */}
+            buyer whose session restore failed still gets the purchase screen
+            and its order reference over the login screen, rather than losing
+            the payment's trail. It can confirm only once they sign in: a
+            purchases row is readable by its owner alone, so until then it
+            shows the payment as unconfirmed. It does not show over BootScreen
+            (the early return above), which covers the session check and the
+            account's save. session_id is already off the URL and in state by
+            then, so the screen appears when the boot ends. A buyer who
+            reloads first loses the screen and what only it starts (the
+            pending-purchase marker, so the sale's analytics event and any
+            refund or duplicate notice), but not the gems: the login
+            reconcile credits them. */}
         {purchaseSessionId && (
           <DialogErrorBoundary resetKey={purchaseSessionId} onDismiss={() => setPurchaseSessionId(null)}>
             <Suspense fallback={<DialogLoader />}>
