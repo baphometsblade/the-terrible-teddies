@@ -248,9 +248,9 @@ const TAUNT_TONE = {
 };
 
 // A board card's ability, as an icon between its stat badges, with its name
-// in sr-only text for where the card is content. Where the card is a control
-// (a button's children are presentational), the board's description says it
-// instead (describeCard, src/lib/abilities.js). Taunt's is a metal plate in its side's colours, part of the frame drawn
+// in sr-only text. The battle board itself hides the face and says the card
+// in words instead (describeCard, src/lib/abilities.js), since a button's
+// children are presentational. Taunt's is a metal plate in its side's colours, part of the frame drawn
 // around the card (see TeddyCard): the rule that decides where every attack
 // goes has to read from across the table.
 const AbilityChip = ({ rules, taunt }) => (
@@ -272,8 +272,8 @@ const AbilityChip = ({ rules, taunt }) => (
 // zoom, which the word was not. It used to be the word in 6px small caps,
 // tracked 0.12em, which at 1x rounded apart into "COMM ON" and "E PIC"; at a
 // legible 8px, untracked, "Uncommon" is 43px wide and the gap between the
-// badges is 42. The name is sr-only, for where the card is content; on the
-// board, where a card is a control, its description says what it is.
+// badges is 42. The name is sr-only, for where the card is content; the
+// battle board says its cards in words instead (describeCard).
 const RarityGem = ({ rarity }) => (
   <>
     <span
@@ -336,8 +336,9 @@ const RarityGem = ({ rarity }) => (
 // print — the numerals, a trap's two lines — grows by as much as it takes
 // to stay at 8px or more on screen, and `nameless` (board only) drops the
 // name, which cannot: at 0.64 on a 320px phone it rendered at 6.4px, and
-// counter-scaled it would run to two lines over half the card. The card's
-// control still names it, and its preview shows it whole.
+// counter-scaled it would run to two lines over half the card. The board
+// says each card in words beside it (GameBoard's CardWords, name included),
+// and its preview shows it whole.
 const TeddyCard = ({
   teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null,
   lift = true, artVariant = 'thumb', artLoading = 'lazy', dimmed = false,

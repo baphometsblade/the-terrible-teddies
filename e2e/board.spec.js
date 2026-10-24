@@ -159,6 +159,49 @@ test.describe('on a touch screen', () => {
     await expect(page.locator('[data-field="player"]')).toHaveCount(1, SLOW);
   });
 
+  // Below a row zoom of 0.8 the table drops a card's name (it would render
+  // under 8px), and the name was the card's only words wherever the card is
+  // content rather than a control: Chuck's row outside targeting, a creature
+  // warming up. A screen reader heard "1 1 Warming Up" and no name. 390x664
+  // is an iPhone in Safari, at a zoom of 0.73. Each card now reads once, in
+  // words, name first, its state said once.
+  test('a table card that is not a control says its name and state once, where the table hides the name', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 664 });
+    await bootToMainMenu(page);
+    await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4] });
+    await page.reload();
+    await toBattle(page);
+    const zoom = await page.locator('[data-field="opponent"]').first().evaluate((el) => {
+      let z = 1;
+      for (let a = el; a; a = a.parentElement) z *= parseFloat(getComputedStyle(a).zoom) || 1;
+      return z;
+    });
+    expect(zoom, 'this viewport no longer hides the names: pick a shorter one').toBeLessThan(0.8);
+
+    const play = page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first();
+    await play.focus();
+    await page.keyboard.press('Enter');
+    const barry = page.locator('[data-field="player"]');
+    await expect(barry).toHaveCount(1, SLOW);
+    await expect(barry).not.toHaveAttribute('role');
+    expect(await barry.ariaSnapshot()).toBe('- text: Bar-Fight Barry. 2 attack, 1 of 1 HP. Warming Up.');
+
+    // Chuck's opener, warming up too, between attacks: no role, and its name
+    // is the one his card is drawn with (the preview shows it whole).
+    const opener = page.locator('[data-field="opponent"]').first();
+    await expect(opener).not.toHaveAttribute('role');
+    const words = await opener.ariaSnapshot();
+    // (Quoted when the words hold a colon, as an ability's rules do.)
+    const read = words.match(/^- text: "?(.+?)\. (\d+ attack, \d+ of \d+ HP\..*?)"?$/);
+    expect(read, `Chuck's card reads "${words}"`).toBeTruthy();
+    expect(read[2].match(/Warming Up/g), 'its state, said once').toHaveLength(1);
+    const box = await opener.boundingBox();
+    const at = { pointerType: 'touch', isPrimary: true, pointerId: 7, clientX: box.x + box.width / 2, clientY: box.y + box.height / 2 };
+    await opener.dispatchEvent('pointerdown', at);
+    await expect(preview(page)).toContainText(read[1]);
+    await opener.dispatchEvent('pointerup', at);
+  });
+
   // Reading Chuck's card mid-turn: hold it down. The hold must not also act
   // on the card (on an attack target, that would be an attack).
   test('holding a table card down opens its preview, and letting go closes it', async ({ page }) => {

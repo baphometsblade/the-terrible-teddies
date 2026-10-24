@@ -309,10 +309,10 @@ const Kbd = ({ children }) => (
  * clear of the row it was opened from, and the zoom and layout that fit.
  *
  * Decorative — aria-hidden — because what it shows a screen reader already
- * has: the card's description (describeCard, on every card control) and the
- * battle log. The card's accessible name stays the control's. Transparent to the pointer except when a mouse opened it: then
- * the pointer can move onto it without it closing (`onKeep`), and leaving it
- * or clicking it closes it (`onDismiss`).
+ * has: the card in words (CardWords, in every card's slot) and the battle
+ * log. Transparent to the pointer except when a mouse opened it: then the
+ * pointer can move onto it without it closing (`onKeep`), and leaving it or
+ * clicking it closes it (`onDismiss`).
  */
 const CardPreview = ({
   card, placement, rules, keys, hoverable, onKeep, onDismiss, costDelta = 0, attackDelta = 0, cosmeticBorder = null,
@@ -380,14 +380,15 @@ const RaisedHint = ({ children }) => (
 
 // "Warming Up" / "Exhausted", across the lower part of the card, above its
 // stats — over the art rather than in a slot reserved below it. Outside the
-// card's own dimming, so it keeps its contrast on a resting card. The e2e
-// suite counts these chips by their exact text (the card's description for a
-// screen reader says the same words, in a longer line). `zoom` is the row's: the words grow to stay
-// at 8px on screen (legibleSize), onto two lines where one no longer fits.
+// card's own dimming, so it keeps its contrast on a resting card. Hidden from
+// a screen reader, which hears the state in the card's words (CardWords); the
+// e2e suite counts these chips by their exact text, since those words say it
+// too, in a longer line. `zoom` is the row's: the words grow to stay at 8px
+// on screen (legibleSize), onto two lines where one no longer fits.
 const StatusChip = ({ children, zoom = 1 }) => {
   const size = legibleSize(10, zoom);
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-[37px] z-10 flex justify-center">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-[37px] z-10 flex justify-center">
       <span
         className="max-w-full rounded-full bg-night-950/90 ring-1 ring-white/15 px-2 py-0.5 text-center text-[10px] leading-[14px] font-semibold text-plush-100 shadow-[0_2px_6px_rgba(0,0,0,0.6)]"
         // Grown, it gives up most of its side padding, so "Warming Up" keeps
@@ -402,11 +403,12 @@ const StatusChip = ({ children, zoom = 1 }) => {
 
 // Untracked: the rows are scaled to fit the felt (0.64 on a 320px phone), and
 // letter-spaced capitals that small split apart at 1x, as the card's old 6px
-// rarity line did ("COMM ON").
+// rarity line did ("COMM ON"). Hidden from a screen reader, as StatusChip is.
 const StealthBand = ({ zoom = 1 }) => {
   const size = legibleSize(10, zoom);
   return (
     <div
+      aria-hidden="true"
       className="absolute inset-x-0 top-[27px] z-10 flex items-center justify-center gap-1 bg-purple-700/90 py-0.5 text-[10px] font-bold leading-[14px] text-white"
       style={size > 10 ? { fontSize: size, lineHeight: `${Math.round(size * 1.2)}px` } : undefined}
     >
@@ -417,15 +419,22 @@ const StealthBand = ({ zoom = 1 }) => {
 };
 
 // Below this row zoom a table card's 10px name renders under 8px, and the
-// card drops it (TeddyCard's `nameless`): its control and its preview still
-// name it.
+// card drops it (TeddyCard's `nameless`): its slot's words (CardWords) and
+// its preview still name it.
 const NAMELESS_BELOW = 0.8;
 
-// A card's description, for the card control's aria-describedby (see
-// describeCard). Visually hidden, in the card's own slot.
-const CardDescription = ({ id, children }) => <span id={id} className="sr-only">{children}</span>;
+// A card in its slot, said once, in words (describeCard). The face beside it
+// is aria-hidden: a control's children are presentational anyway, and where
+// the card is content — Chuck's row outside targeting, a resting creature, a
+// trap, the hand on Chuck's turn — the face read its numerals bare, its
+// state chip twice, and below NAMELESS_BELOW no name at all. So a control
+// gets the words as its description (its label names the card), and content
+// reads them in place, name first.
+const CardWords = ({ id, card, press, children }) => (
+  <span id={id} className="sr-only">{press.role ? children : `${card.name}. ${children}`}</span>
+);
 // Press props with the description attached — only to a control: a card
-// with no role is content, and its description is read in place.
+// with no role is content, and its words are read in place.
 const describedPress = (press, id) => (press.role ? { ...press, 'aria-describedby': id } : press);
 
 // Whether an activation came from the keys (Enter or Space on a card, or a
@@ -2534,6 +2543,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   const validTargets = getValidTargets(playerField, opponentField);
                   const isValidTarget = validTargets.find(t => t.instanceId === card.instanceId);
                   const hittable = targetingMode && isValidTarget;
+                  const press = describedPress(
+                    pressable((e) => attackTarget(card, e), `Attack ${card.name}`, targetingMode),
+                    `desc-field-${card.instanceId}`,
+                  );
 
                   return (
                     <FieldSlot
@@ -2544,10 +2557,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       animate={{ y: 0, opacity: 1 }}
                       data-field="opponent"
                       className={`relative rounded-[10px] ${FOCUS_OUTLINE} ${hittable ? 'cursor-crosshair' : ''}`}
-                      press={describedPress(
-                        pressable((e) => attackTarget(card, e), `Attack ${card.name}`, targetingMode),
-                        `desc-field-${card.instanceId}`,
-                      )}
+                      press={press}
                       {...inspectHandlers({ id: card.instanceId, from: 'opponent' }, { hold: 'preview' })}
                     >
                       <div
@@ -2555,8 +2565,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                         className={`relative rounded-[10px] transition-shadow ${hittable ? 'ring-2 ring-red-400 shadow-[0_0_22px_4px_rgba(248,113,113,0.55)]' : ''}`}
                       >
                         {/* Only the card dims for stealth; the band and tags
-                            stay at full strength so they keep their contrast. */}
-                        <div className={card.stealthActive ? 'opacity-50' : ''}>
+                            stay at full strength so they keep their contrast.
+                            The face is said in words (CardWords). */}
+                        <div aria-hidden="true" className={card.stealthActive ? 'opacity-50' : ''}>
                           <TeddyCard
                             teddy={card}
                             lift={false}
@@ -2574,9 +2585,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                             summoning sickness is only legible on their own
                             half of the table. */}
                         {card.summoningSick && <StatusChip zoom={fieldZoom}>Warming Up</StatusChip>}
-                        <CardDescription id={`desc-field-${card.instanceId}`}>
+                        <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
                           {describeCard(card, { attack: effectiveAttack(card, opponentField) })}
-                        </CardDescription>
+                        </CardWords>
                         {hittable && (
                           <span data-target-mark="" className="absolute -top-2.5 -right-2.5 z-20 grid h-7 w-7 place-items-center rounded-full bg-red-600 ring-2 ring-red-200 shadow-lg" aria-hidden="true">
                             <Crosshair className="h-4 w-4 text-white" />
@@ -2701,6 +2712,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   // any point in their turn; nothing else on their side is.
                   const ready = playerMove && canAttack(card);
                   const resting = card.type === 'action' && !canAttack(card);
+                  /* Only a ready creature is a button: a warming-up or spent
+                     one, or a trap, would be a "Select … to attack" that
+                     cannot attack, and its chip ("Warming Up", "Exhausted")
+                     already says why. A tap on one still reaches
+                     selectCardForAttack, which owns the rejection messages,
+                     so a pointer player who tries is told the rule rather
+                     than met with silence. */
+                  const press = ready
+                    ? describedPress(pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`), `desc-field-${card.instanceId}`)
+                    : (playerMove ? { onClick: () => selectCardForAttack(card) } : {});
                   return (
                     <FieldSlot
                       key={card.instanceId}
@@ -2712,16 +2733,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       whileHover={ready ? { y: -5 } : undefined}
                       whileFocus={ready ? { y: -5 } : undefined}
                       className={`relative rounded-[10px] ${FOCUS_OUTLINE} ${ready ? 'cursor-pointer' : ''}`}
-                      /* Only a ready creature is a button: a warming-up or
-                         spent one, or a trap, would be a "Select … to attack"
-                         that cannot attack, and its chip ("Warming Up",
-                         "Exhausted") already says why. A tap on one still
-                         reaches selectCardForAttack, which owns the rejection
-                         messages, so a pointer player who tries is told the
-                         rule rather than met with silence. */
-                      press={ready
-                        ? describedPress(pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`), `desc-field-${card.instanceId}`)
-                        : (playerMove ? { onClick: () => selectCardForAttack(card) } : {})}
+                      press={press}
                       data-field="player"
                       {...inspectHandlers({ id: card.instanceId, from: 'player' }, { hold: 'preview' })}
                     >
@@ -2732,25 +2744,28 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                           : ready ? 'shadow-[0_0_18px_2px_rgba(52,211,153,0.5)]' : ''}`}
                       >
                         {/* Resting dims the art alone: the Taunt frame, the
-                            name and the stats keep their strength. */}
-                        <TeddyCard
-                          teddy={card}
-                          cosmeticBorder={cosmeticBorder}
-                          lift={false}
-                          variant="board"
-                          side="player"
-                          resting={resting}
-                          tauntActive={card.ability === 'taunt' && !card.stealthActive}
-                          attackDelta={effectiveAttack(card, playerField) - card.attack}
-                          nameless={fieldZoom < NAMELESS_BELOW}
-                          zoom={fieldZoom}
-                        />
+                            name and the stats keep their strength. The face
+                            is said in words (CardWords). */}
+                        <div aria-hidden="true">
+                          <TeddyCard
+                            teddy={card}
+                            cosmeticBorder={cosmeticBorder}
+                            lift={false}
+                            variant="board"
+                            side="player"
+                            resting={resting}
+                            tauntActive={card.ability === 'taunt' && !card.stealthActive}
+                            attackDelta={effectiveAttack(card, playerField) - card.attack}
+                            nameless={fieldZoom < NAMELESS_BELOW}
+                            zoom={fieldZoom}
+                          />
+                        </div>
                         {card.stealthActive && <StealthBand zoom={fieldZoom} />}
                         {card.hasAttacked && <StatusChip zoom={fieldZoom}>Exhausted</StatusChip>}
                         {card.summoningSick && !card.hasAttacked && <StatusChip zoom={fieldZoom}>Warming Up</StatusChip>}
-                        <CardDescription id={`desc-field-${card.instanceId}`}>
+                        <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
                           {describeCard(card, { attack: effectiveAttack(card, playerField) })}
-                        </CardDescription>
+                        </CardWords>
                       </div>
                     </FieldSlot>
                   );
@@ -3019,6 +3034,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 // would do nothing (a heal at full HP) stays bright but unlit.
                 const lit = playable && isUsefulPlay(card, moveState);
                 const raised = raisedId === card.instanceId;
+                const press = playable
+                  ? describedPress(pressable(pressHandCard(card, true, index), `Play ${card.name}`), `desc-hand-${card.instanceId}`)
+                  : { onClick: pressHandCard(card, false, index) };
                 return (
                   <HandSlot
                     key={card.instanceId}
@@ -3042,15 +3060,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       ? 'opacity-50 saturate-50'
                       : lit ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
                     {...inspectHandlers({ id: card.instanceId, from: 'hand' }, { hold: 'raise' })}
-                    press={playable
-                      ? describedPress(pressable(pressHandCard(card, true, index), `Play ${card.name}`), `desc-hand-${card.instanceId}`)
-                      : { onClick: pressHandCard(card, false, index) }}
+                    press={press}
                   >
-                    <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} costDelta={cost - card.cost} />
+                    {/* The face is said in words (CardWords). */}
+                    <div aria-hidden="true">
+                      <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} costDelta={cost - card.cost} />
+                    </div>
                     {/* What the dimming says, too: pressed now, it is refused. */}
-                    <CardDescription id={`desc-hand-${card.instanceId}`}>
+                    <CardWords id={`desc-hand-${card.instanceId}`} card={card} press={press}>
                       {`${describeCard(card, { cost })}${playable && !affordable ? ' Not enough energy.' : ''}`}
-                    </CardDescription>
+                    </CardWords>
                     {raised && playable && (
                       <RaisedHint>{affordable ? 'Tap again to play' : `Needs ${cost} energy`}</RaisedHint>
                     )}
