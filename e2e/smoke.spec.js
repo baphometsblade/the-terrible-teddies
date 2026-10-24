@@ -392,6 +392,12 @@ test('the Coin Doubler is buyable and then shows as active', async ({ page }) =>
   await expect(buy).toBeVisible(SLOW);
   await expect(buy).toBeEnabled(); // the seed has 300 gems
   await buy.click();
+  // Gems are spent from a confirm, never from the first press (a held Enter
+  // used to buy on every auto-repeat), so this step is Buy, then its Buy.
+  const confirm = page.getByRole('dialog', { name: 'Buy Coin Doubler?' });
+  await expect(confirm).toBeVisible(SLOW);
+  await confirm.getByRole('button', { name: /^Buy for \d+ gems$/ }).click();
+  await expect(confirm).toHaveCount(0);
 
   // The card flips to the active state with time remaining, and the button's
   // ACCESSIBLE NAME flips to Extend with it (WCAG 2.5.3: the visible "Extend"

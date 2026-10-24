@@ -10,6 +10,7 @@ import { SCRIM_PAD, SCRIM_PAD_NARROW } from '@/lib/safeArea';
 import { Medallion, SectionHeading, WalletChips, BrassCoin } from '@/components/ui/game-chrome';
 import { Progress } from '@/components/ui/progress';
 import { PACK_LOOK, HeroPack } from './PackArt';
+import { ignoreKeyRepeat } from '@/lib/keyRepeat';
 import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
 import { PackOddsGuide } from './PackOdds';
 import { RARITY, RARITY_ORDER } from '@/lib/rarity';
@@ -49,7 +50,8 @@ const reducedMotion = () => !useGameStore.getState().animationsEnabled
 // routes to where packs come from; each closes this dialog and opens that one.
 const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) => {
   const { cardPacks, premiumPacks, legendaryPacks, openCardPack, coins, gems, getNextPackType } = useGameStore();
-  const buyItem = useStoreBuy();
+  // A gem-priced buy waits for its confirm (confirmNode, rendered last).
+  const { requestBuy, confirmNode } = useStoreBuy();
   const [isOpening, setIsOpening] = useState(false);
   // The pull in display order (revealOrder: the best card last). The store's
   // own order is untouched; this is only the order the cards are shown in.
@@ -696,11 +698,11 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
 
               {!pulledCards && !isOpening && totalPacks === 0 && (
                 <PackSources
-                  onBuy={(item) => {
+                  onBuy={(item) => requestBuy(item, (result) => {
                     // The panel (and this button) goes once a pack is held;
                     // focus goes on to the Open button that replaces it.
-                    if (buyItem(item).success) requestAnimationFrame(() => openRef.current?.focus({ preventScroll: true }));
-                  }}
+                    if (result.success) requestAnimationFrame(() => openRef.current?.focus({ preventScroll: true }));
+                  })}
                   routes={{ onGetGems, onBattlePass, onDailyRewards }}
                 />
               )}
@@ -762,7 +764,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
                     variant="compact"
                     bestValue={item.id === BEST_VALUE}
                     className={item.id === BEST_VALUE ? 'col-span-2' : ''}
-                    onBuy={buyItem}
+                    onBuy={requestBuy}
                   />
                 ))}
               </div>
@@ -776,6 +778,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
           </div>
         </div>
       </div>
+      {confirmNode}
     </div>
   );
 };
@@ -836,6 +839,7 @@ const PackSources = ({ onBuy, routes = {} }) => {
                 <button
                   type="button"
                   onClick={() => onBuy(coin.item)}
+                  onKeyDown={ignoreKeyRepeat}
                   className={`${ACTION} btn-brass mt-2.5 h-10 px-4 text-[15px]`}
                 >
                   <Coins aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
@@ -858,7 +862,7 @@ const PackSources = ({ onBuy, routes = {} }) => {
                   : 'You have enough for one now.'}
               </p>
               {gem.short === 0 ? (
-                <button type="button" onClick={() => onBuy(gem.item)} className={ROUTE}>
+                <button type="button" onClick={() => onBuy(gem.item)} onKeyDown={ignoreKeyRepeat} className={ROUTE}>
                   <Gem aria-hidden="true" className="h-4 w-4 text-fuchsia-300" strokeWidth={2.4} />
                   {`Buy a ${gem.item.name}`}
                 </button>

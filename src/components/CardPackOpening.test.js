@@ -139,6 +139,12 @@ describe("the empty table's routes", () => {
     render(r);
     expect(buttonNamed('Get gems')).toBeUndefined();
     act(() => buttonNamed(`Buy a ${cheapestGem.name}`).click());
+    // Gems are spent from a confirm now (StoreTile's GemSpendConfirm), never
+    // from the first press: nothing has gone until its Buy.
+    expect(useGameStore.getState().gems).toBe(cheapestGem.price);
+    const confirm = host.querySelector('[role="dialog"][aria-labelledby]');
+    expect(confirm.textContent).toContain(`Buy ${cheapestGem.name}?`);
+    act(() => confirm.querySelector(`button[aria-label="Buy for ${cheapestGem.price} gems"]`).click());
     expect(useGameStore.getState().gems).toBe(0);
     expect(text()).not.toContain('No packs to open');
   });

@@ -113,6 +113,78 @@ test("the checkout's one-per-account refusal marks the offer claimed instead of 
   await expect(shop.getByRole('button', { name: 'Buy Now' })).toHaveCount(0);
 });
 
+// --- Spending gems ----------------------------------------------------------
+
+// Hold Enter on the focused control: one press and `repeats` auto-repeats,
+// sent as the browser's own key events (CDP), which is what makes Chrome
+// click a focused button on every repeat. Playwright's keyboard.down never
+// sets `repeat`.
+async function holdEnter(page, repeats) {
+  const cdp = await page.context().newCDPSession(page);
+  const key = { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13, text: '\r', unmodifiedText: '\r' };
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', ...key });
+  for (let i = 0; i < repeats; i += 1) {
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', autoRepeat: true, ...key });
+  }
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', ...key });
+  await cdp.detach();
+}
+
+test('a held Enter on a gem tile asks once, spends nothing, and Buy spends the price once', async ({ page }) => {
+  // A one-second hold on this tile used to buy sixteen Legendary packs.
+  await seed(page, { gems: 1000, legendaryPacks: 0 });
+  await page.getByRole('button', { name: 'Shop', exact: true }).click();
+  const shop = page.getByRole('dialog', { name: 'Shop' });
+  await expect(shop).toBeVisible(SLOW);
+  const tile = shop.getByRole('button', { name: 'Buy Legendary Pack for 200 gems' });
+  await tile.focus();
+  await holdEnter(page, 15);
+
+  const confirm = page.getByRole('dialog', { name: 'Buy Legendary Pack?' });
+  await expect(confirm).toBeVisible(SLOW);
+  await expect(confirm.getByRole('button', { name: 'Cancel' })).toBeFocused();
+  await expect(confirm).toContainText('You have 1,000 gems · 800 after');
+  expect((await saved(page)).gems).toBe(1000);
+  await expectNoAxeViolations(page, 'gem spend confirm');
+
+  // Held again on Buy itself: the first press buys, the repeats land on the
+  // tile focus returns to, and buy nothing.
+  await confirm.getByRole('button', { name: 'Buy for 200 gems' }).focus();
+  await holdEnter(page, 15);
+  await expect(confirm).toHaveCount(0);
+  await expect(tile).toBeFocused();
+  await expect.poll(async () => {
+    const s = await saved(page);
+    return [s.gems, s.legendaryPacks];
+  }).toEqual([800, 1]);
+  await expect(page.getByRole('dialog', { name: 'Buy Legendary Pack?' })).toHaveCount(0);
+
+  // Escape backs out of the confirm and leaves the Shop open. (Past the
+  // 400ms after a buy in which a press is taken for a double-click's second.)
+  await page.waitForTimeout(500);
+  await tile.click();
+  await expect(confirm).toBeVisible(SLOW);
+  await page.keyboard.press('Escape');
+  await expect(confirm).toHaveCount(0);
+  await expect(shop).toBeVisible();
+  expect((await saved(page)).gems).toBe(800);
+});
+
+test('a double-click on a coin tile buys one pack', async ({ page }) => {
+  await seed(page, { coins: 1000, cardPacks: 0 });
+  await page.getByRole('button', { name: 'Shop', exact: true }).click();
+  const shop = page.getByRole('dialog', { name: 'Shop' });
+  await expect(shop).toBeVisible(SLOW);
+  await shop.getByRole('button', { name: 'Buy Card Pack for 200 coins' }).dblclick();
+  await expect.poll(async () => {
+    const s = await saved(page);
+    return [s.coins, s.cardPacks];
+  }).toEqual([800, 1]);
+  // Nothing else is still to come.
+  await page.waitForTimeout(600);
+  expect((await saved(page)).coins).toBe(800);
+});
+
 // --- Coming back from Stripe before the payment is confirmed ---------------
 
 const ROW = { gems_granted: 500, bundle_id: 'gems_large' };

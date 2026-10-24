@@ -13,6 +13,7 @@ import { useDialog } from '@/hooks/useDialog';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
+import { ignoreKeyRepeat } from '@/lib/keyRepeat';
 import { Medallion, WalletChips } from '@/components/ui/game-chrome';
 import { ArtOrEmoji } from './TeddyCard';
 import { PACK_LOOK, PackStack } from './PackArt';
@@ -343,6 +344,8 @@ const PurchaseConfirmDialog = ({
       role="dialog"
       aria-modal="true"
       aria-label="Unlock Premium Pass"
+      // The hold that opened it keeps repeating on Cancel, which closed it.
+      onKeyDown={ignoreKeyRepeat}
       initial={{ scale: 0.9 }}
       animate={{ scale: 1 }}
       exit={{ scale: 0.9 }}
@@ -752,6 +755,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
                   <button
                     type="button"
                     onClick={() => setShowPurchaseConfirm(true)}
+                    onKeyDown={ignoreKeyRepeat}
                     className={`btn-brass sheen relative inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl pl-3.5 pr-1.5
                       font-display font-bold sm:w-auto ${FOCUS_OUTLINE}`}
                   >

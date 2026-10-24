@@ -12,6 +12,7 @@ import { RARITY_METAL, RARITY_ORDER } from '@/lib/rarity';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion, SectionHeading, WalletChips } from '@/components/ui/game-chrome';
+import { ignoreKeyRepeat } from '@/lib/keyRepeat';
 import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
 import { PackOddsDialog } from './PackOdds';
 
@@ -204,11 +205,13 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
     analytics.trackShopView(activeTab);
   }, [activeTab]);
 
-  const buyItem = useStoreBuy();
+  // Gem-priced items are bought from a confirm (confirmNode), so the result
+  // comes back later, through the callback.
+  const { requestBuy, confirmNode } = useStoreBuy();
   const handleBuyItem = (item) => {
     // Re-read the clock: `now` only ticks once a minute, so it predates the
     // purchase, and a 24h Coin Doubler bought a moment ago read "25h left".
-    if (buyItem(item).success) setNow(Date.now());
+    requestBuy(item, (result) => { if (result.success) setNow(Date.now()); });
   };
 
   const handleGemPurchase = async (bundle) => {
@@ -539,6 +542,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                       <button
                         type="button"
                         onClick={() => handleBuyItem(doubler)}
+                        onKeyDown={ignoreKeyRepeat}
                         disabled={gems < doubler.price}
                         // The accessible name must track the state AND contain
                         // the visible text (WCAG 2.5.3 Label in Name): a voice
@@ -567,6 +571,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
       <p role="status" className="sr-only">{processing ? CHECKOUT_STATUS : ''}</p>
 
       {showOdds && <PackOddsDialog onClose={() => setShowOdds(false)} />}
+      {confirmNode}
 
       {processing && (
         // The spin is CSS (compositor-only) and stops when motion is off.

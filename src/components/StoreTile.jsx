@@ -1,10 +1,16 @@
-import { useCallback, useId } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Coins, Gem } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useGameStore, SHOP_ITEMS } from '@/stores/gameStore';
 import analytics from '@/utils/analytics';
 import { celebrate } from '@/lib/celebrate';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { RARITY_METAL } from '@/lib/rarity';
+import { SCRIM_PAD } from '@/lib/safeArea';
+import { ignoreKeyRepeat } from '@/lib/keyRepeat';
+import { useDialog } from '@/hooks/useDialog';
+import { Medallion } from '@/components/ui/medallion';
 import { PACK_LOOK, PackStack, CoinStack } from './PackArt';
 
 // The one store tile. The Shop and the Card Packs table both sell from
@@ -34,13 +40,36 @@ export const bestValuePackId = (items = SHOP_ITEMS) => {
 };
 
 /**
+ * How long after a buy (or a confirm closing) another request is ignored: a
+ * double-click or a double tap is two clicks a few hundred ms apart, and
+ * each used to buy.
+ */
+export const REPEAT_BUY_MS = 400;
+
+/**
  * Buying from either storefront: the same toasts, the same celebration, the
- * same analytics. Returns the store's result so a caller can follow up.
+ * same analytics, and the same guard on paid currency.
+ *
+ * `requestBuy(item, then)` buys a coin-priced item at once. A gem-priced one
+ * the player can afford is only asked about: `confirmNode` (render it) is the
+ * confirm, and the gems are spent once, from its Buy. Gems are bought with
+ * real money and a spend cannot be undone, which is why premium stores
+ * confirm them. One the player cannot afford goes straight to the "Not
+ * enough gems" answer: there is nothing to confirm. `then(result)` runs once
+ * the store has answered, whenever that is.
  */
 export function useStoreBuy() {
   const buyShopItem = useGameStore((s) => s.buyShopItem);
   const { toast } = useToast();
-  return useCallback((item) => {
+  // The confirm's item, in a ref as well as in state: two clicks landing in
+  // one frame both run with the same render's closure, and only the ref has
+  // already been cleared by the first.
+  const [pending, setPending] = useState(null);
+  const pendingRef = useRef(null);
+  const quietUntil = useRef(0);
+
+  const buy = useCallback((item, then) => {
+    quietUntil.current = Date.now() + REPEAT_BUY_MS;
     const result = buyShopItem(item.id);
     if (result.success) {
       analytics.trackInGamePurchase({
@@ -54,9 +83,140 @@ export function useStoreBuy() {
     } else {
       toast({ title: 'Purchase Failed', description: result.message, variant: 'destructive' });
     }
+    then?.(result);
     return result;
   }, [buyShopItem, toast]);
+
+  const requestBuy = useCallback((item, then) => {
+    if (pendingRef.current || Date.now() < quietUntil.current) return;
+    if (item.currency === 'gems' && useGameStore.getState().gems >= item.price) {
+      pendingRef.current = { item, then };
+      setPending(pendingRef.current);
+      return;
+    }
+    buy(item, then);
+  }, [buy]);
+
+  const close = useCallback(() => {
+    pendingRef.current = null;
+    quietUntil.current = Date.now() + REPEAT_BUY_MS;
+    setPending(null);
+  }, []);
+  // Cleared before buying, so a second Buy (a double-click, a second Enter)
+  // finds nothing left to buy.
+  const confirm = useCallback(() => {
+    const p = pendingRef.current;
+    if (!p) return;
+    close();
+    buy(p.item, p.then);
+  }, [buy, close]);
+
+  const confirmNode = pending
+    ? <GemSpendConfirm item={pending.item} onConfirm={confirm} onCancel={close} />
+    : null;
+  return { requestBuy, confirmNode };
 }
+
+// The confirm's picture: the tile's own art for packs and coin bags, the
+// Shop card's medallion for the Coin Doubler.
+const ConfirmArt = ({ item }) => {
+  if (item.type === 'booster') {
+    return <Medallion icon={Coins} metal={RARITY_METAL.uncommon} size="lg" iconClassName="text-emerald-300" />;
+  }
+  const tier = TIER_OF[item.type] || 'regular';
+  return tier === 'coins'
+    ? <CoinStack quantity={item.quantity} size="md" />
+    : <PackStack look={PACK_LOOK[tier]} quantity={item.quantity} size="md" />;
+};
+
+/**
+ * "Buy this for gems?": the item, its price, and the balance before and
+ * after. A modal over the storefront with its own useDialog (Escape, Back and
+ * the focus trap are its own), modelled on the Battle Pass's confirm.
+ *
+ * It opens on Cancel, not Buy, because the press that opened it is often an
+ * Enter still held down. Its keys ignore auto-repeat as the tiles do, so that
+ * hold neither buys nor cancels. A click on the scrim does not close it:
+ * the second click of a double-click lands there.
+ */
+export const GemSpendConfirm = ({ item, onConfirm, onCancel }) => {
+  const ref = useDialog(onCancel);
+  // Declared after useDialog, so its effect runs second: useDialog has noted
+  // the tile as the place to hand focus back to, and focused Buy.
+  const cancelRef = useRef(null);
+  useEffect(() => {
+    cancelRef.current?.focus();
+  }, []);
+  const titleId = useId();
+  const gems = useGameStore((s) => s.gems);
+  const doublerEnds = useGameStore((s) => s.coinDoublerExpiresAt);
+  // buyShopItem adds a running booster's hours on rather than restarting it.
+  const extending = item.type === 'booster' && typeof doublerEnds === 'number' && doublerEnds > Date.now();
+  const verb = extending ? 'Extend' : 'Buy';
+  const after = Math.max(0, gems - item.price);
+  return (
+    <div className={`fixed inset-0 z-[60] dialog-scrim flex items-start justify-center overflow-y-auto ${SCRIM_PAD}`}>
+      <motion.div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onKeyDown={ignoreKeyRepeat}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.18 }}
+        className="relative my-auto w-full max-w-sm overflow-hidden rounded-2xl dialog-panel px-5 pt-6 pb-5 text-center sm:px-6"
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_60%_80%_at_50%_0%,rgba(232,121,249,0.16),transparent_70%)]"
+        />
+        <span aria-hidden="true" data-confirm-art="" className="relative grid h-24 place-items-center">
+          <ConfirmArt item={item} />
+        </span>
+        <h2 id={titleId} className="relative mt-3 font-display text-2xl font-extrabold leading-tight text-white">
+          {`${verb} ${item.name}?`}
+        </h2>
+        <p className="relative mt-1 text-sm text-plush-300">
+          {extending ? `Adds ${item.durationHours} hours to the one running.` : item.description}
+        </p>
+        <div className="relative mt-4 rounded-xl bg-black/25 px-4 py-3 ring-1 ring-white/5">
+          <div className="flex items-center justify-center gap-2 font-display text-3xl font-extrabold leading-none text-white tabular-nums">
+            <Gem aria-hidden="true" className="h-6 w-6 text-fuchsia-300" strokeWidth={2.2} />
+            {item.price.toLocaleString()}
+            <span className="sr-only"> gems</span>
+          </div>
+          <p data-confirm-balance="" className="mt-2 text-sm text-plush-300 tabular-nums">
+            {`You have ${gems.toLocaleString()} gems · ${after.toLocaleString()} after`}
+          </p>
+        </div>
+        <div className="relative mt-5 flex gap-3">
+          <button
+            type="button"
+            onClick={onConfirm}
+            aria-label={`${verb} for ${item.price} gems`}
+            className={`btn-brass inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl font-display font-bold tabular-nums ${FOCUS_OUTLINE}`}
+          >
+            {verb}
+            <span aria-hidden="true" className="inline-flex items-center gap-1">
+              <span>·</span>
+              <Gem className="h-4 w-4" strokeWidth={2.4} />
+              {item.price.toLocaleString()}
+            </span>
+          </button>
+          <button
+            ref={cancelRef}
+            type="button"
+            onClick={onCancel}
+            className={`btn-glass h-11 flex-1 rounded-xl font-display font-bold ${FOCUS_OUTLINE}`}
+          >
+            Cancel
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const PILL_SIZE = {
   md: 'h-8 px-3 gap-1.5 text-[15px]',
@@ -129,6 +289,7 @@ export const StoreTile = ({ item, onBuy, variant = 'shop', bestValue = false, cl
   const common = {
     type: 'button',
     onClick: () => onBuy(item),
+    onKeyDown: ignoreKeyRepeat,
     'aria-label': `Buy ${item.name} for ${item.price} ${item.currency}`,
     'aria-describedby': described,
   };
