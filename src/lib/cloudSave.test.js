@@ -10,6 +10,7 @@ const server = {
   calls: [],
   reset() {
     this.afterGet = null;
+    this.gate = null;
     this.rows = new Map();
     this.as = null;
     this.mode = 'ok';
@@ -72,7 +73,12 @@ const server = {
 
 vi.mock('@/utils/supabaseClient', () => ({
   getPlayerSave: vi.fn(async () => server.get()),
-  putPlayerSave: vi.fn(async (save, base) => server.put(save, base)),
+  // `gate`: a plain (not keepalive) write waits on it before it reaches the
+  // server, as one still out when the page goes.
+  putPlayerSave: vi.fn(async (save, base) => {
+    if (server.gate) await server.gate;
+    return server.put(save, base);
+  }),
   putPlayerSaveKeepalive: vi.fn(async (save, base, token) => server.put(save, base, { keepalive: true, token })),
 }));
 
@@ -670,11 +676,25 @@ describe('sending changes', () => {
     expect(server.puts()).toHaveLength(2);
   });
 
+  // GameBoard's pagehide listener, which books an abandoned battle as a loss.
+  // Registered after the cloud save's, as GameBoard mounts after sign-in.
+  let detachBoard = null;
+  const abandonOnPageHide = () => {
+    const book = () => get().recordBattleResult(false);
+    window.addEventListener('pagehide', book);
+    detachBoard = () => window.removeEventListener('pagehide', book);
+  };
+  afterEach(() => {
+    detachBoard?.();
+    detachBoard = null;
+  });
+
   it('holds the send through a battle until its result, then sends the result', async () => {
     useGameStore.setState({ ownerUserId: A });
     await signIn(A);
     get().addCoins(5); // a change waiting when the battle starts
     document.documentElement.dataset.screen = 'battle';
+    // Switched away first, closed later: hidden, then pagehide.
     setVisibility('hidden');
     window.dispatchEvent(new Event('pagehide'));
     await vi.advanceTimersByTimeAsync(0);
@@ -686,6 +706,70 @@ describe('sending changes', () => {
     expect(last.keepalive).toBe(true);
     expect(server.rows.get(A).save.totalLosses).toBe(1);
     expect(server.rows.get(A).save.coins).toBe(get().coins);
+  });
+
+  it('a reload or close of the tab in front, mid-battle, still sends the abandoned battle\'s loss', async () => {
+    useGameStore.setState({ ownerUserId: A });
+    await signIn(A);
+    get().addCoins(5);
+    document.documentElement.dataset.screen = 'battle';
+    abandonOnPageHide();
+    // The browser's own order on the way out: pagehide while still visible
+    // (GameBoard books the loss in its listener, after ours), then hidden.
+    window.dispatchEvent(new Event('pagehide'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(server.puts()).toHaveLength(2);
+    const last = server.puts().at(-1);
+    expect(last.keepalive).toBe(true);
+    expect(last.save.totalLosses).toBe(1);
+    expect(server.rows.get(A).save.coins).toBe(get().coins);
+    setVisibility('hidden');
+    await vi.advanceTimersByTimeAsync(PUSH_DEBOUNCE_MS);
+    expect(server.puts()).toHaveLength(2); // sent once, the whole result in it
+    expect(server.rows.get(A).save).toMatchObject({ totalLosses: 1, totalBattles: 1, xp: get().xp, coins: get().coins });
+  });
+
+  it('…and sends what was waiting, once hidden, when there was no result to book', async () => {
+    useGameStore.setState({ ownerUserId: A });
+    await signIn(A);
+    get().addCoins(5);
+    document.documentElement.dataset.screen = 'battle'; // a board with no battle joined yet
+    window.dispatchEvent(new Event('pagehide'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(server.puts()).toHaveLength(1); // held for a result that may follow
+    setVisibility('hidden'); // after every pagehide listener: nothing more is coming
+    await vi.advanceTimersByTimeAsync(0);
+    expect(server.puts()).toHaveLength(2);
+    expect(server.puts().at(-1).keepalive).toBe(true);
+    expect(server.rows.get(A).save.coins).toBe(get().coins);
+  });
+
+  it('a plain send still out when the page goes does not keep the keepalive one back', async () => {
+    useGameStore.setState({ ownerUserId: A });
+    await signIn(A);
+    get().addCoins(7);
+    server.gate = new Promise(() => {}); // unloading cancels it: it never lands
+    await vi.advanceTimersByTimeAsync(PUSH_DEBOUNCE_MS);
+    expect(phase()).toBe('saving');
+    window.dispatchEvent(new Event('pagehide'));
+    await vi.advanceTimersByTimeAsync(0);
+    const last = server.puts().at(-1);
+    expect(last.keepalive).toBe(true);
+    expect(server.rows.get(A).save.coins).toBe(get().coins);
+  });
+
+  it('a page back from the back/forward cache waits its few seconds again', async () => {
+    useGameStore.setState({ ownerUserId: A });
+    await signIn(A);
+    window.dispatchEvent(new Event('pagehide'));
+    window.dispatchEvent(new Event('pageshow'));
+    get().addCoins(1);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(server.puts()).toHaveLength(1);
+    expect(phase()).toBe('pending');
+    await vi.advanceTimersByTimeAsync(PUSH_DEBOUNCE_MS);
+    expect(server.puts()).toHaveLength(2);
+    expect(server.puts().at(-1).keepalive).toBeUndefined();
   });
 
   it('retries a failed send, backing off, and says so meanwhile', async () => {
@@ -750,6 +834,21 @@ describe('a backend without cloud saves', () => {
       expect(server.calls).toHaveLength(0);
     });
   }
+
+  it('still reconciles gems on every later session change, as it did before cloud saves', async () => {
+    server.mode = 'missing';
+    useGameStore.setState({ ownerUserId: A });
+    let balance = 100;
+    const onSettled = () => get().reconcileServerGems(balance, A);
+    bindSaveToUser(A);
+    await startCloudSync({ userId: A, accessToken: 't1', onSettled });
+    expect(get().gems).toBe(110);
+    balance = 150; // bought on another device while this tab is open
+    // supabase-js hands App a new session (a token refresh, a return to the tab).
+    await startCloudSync({ userId: A, accessToken: 't2', onSettled });
+    expect(get().gems).toBe(160);
+    expect(server.calls.filter((c) => c.fn === 'get')).toHaveLength(1); // and asks the backend nothing
+  });
 
   it('does not reconcile gems before a decision it could not make (offline at sign-in)', async () => {
     server.write(A, played({ gems: 210, lastSyncedServerGems: 500 }));

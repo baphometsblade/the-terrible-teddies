@@ -334,11 +334,16 @@ const hidden = () => typeof document !== 'undefined' && document.visibilityState
  * store, so mid-battle the save does not change; its result is one store
  * write at the end. Two things wait for that write. A decision, which could
  * swap the save under the board, waits until the battle is over. And the
- * flush when the tab is hidden: if the page is going away, GameBoard's own
- * pagehide listener (registered after ours) books the abandoned battle as a
- * loss a moment later, and that write is sent by itself (see onStoreChange).
- * Sent first, the save without the loss would hold the rev, and the save
- * with it, carrying the same base, could only be refused.
+ * flush when the tab is hidden or the page goes: if the page is going away,
+ * GameBoard's own pagehide listener (registered after ours) books the
+ * abandoned battle as a loss a moment later, and that write is sent by itself
+ * (see onStoreChange). Sent first, the save without the loss would hold the
+ * rev, and the save with it, carrying the same base, could only be refused.
+ *
+ * A reload or a close fires pagehide while the tab is still visible, and only
+ * then hides it, so "is the page going" is its own flag (`unloading`), not
+ * the visibility: keyed on visibility alone, the loss written in between was
+ * left to a three-second wait that never ran, and never reached the account.
  */
 export const battleInPlay = () =>
   typeof document !== 'undefined' && document.documentElement?.dataset?.screen === 'battle';
@@ -623,14 +628,21 @@ function flush(reason) {
   if (!c || !c.available || !c.token) return;
   clearTimeout(c.debounce);
   c.debounce = null;
-  // Hidden mid-battle: hold the send for the battle's result (battleInPlay).
-  if (reason === 'hide' && battleInPlay()) {
+  // Mid-battle, hold the send for the battle's result (battleInPlay): when
+  // the tab is hidden, and at pagehide, whose listeners book that result
+  // after this one. Not when the tab hides once the page is already going:
+  // that comes after every pagehide listener, so whatever result there was to
+  // book has been booked, and what is waiting goes now.
+  const awaitingResult = reason === 'pagehide' || (reason === 'hide' && !c.unloading);
+  if (awaitingResult && battleInPlay()) {
     c.wantPush = true;
     return;
   }
   // A send is out with this base already; a second could only be refused.
-  // The first one's answer sends again if the save moved meanwhile.
-  if (c.pushing || c.flushing) return;
+  // The first one's answer sends again if the save moved meanwhile. Except a
+  // plain request while the page goes: unloading cancels it, and if it landed
+  // after all, the compare-and-swap refuses this one, which is harmless.
+  if ((c.pushing && !c.unloading) || c.flushing) return;
   const state = useGameStore.getState();
   if (state.ownerUserId !== c.uid) return;
   const payload = cloudPayload(state);
@@ -666,7 +678,7 @@ function flush(reason) {
       c.flushing = null;
       if (c !== ctx || !c.available) return;
       // The save moved while this was out, and the page is still here.
-      if (hidden() && hasUnsyncedChanges(useGameStore.getState()) && !c.wantDecision) flush('changed');
+      if ((hidden() || c.unloading) && hasUnsyncedChanges(useGameStore.getState()) && !c.wantDecision) flush('changed');
     });
 }
 
@@ -675,11 +687,20 @@ function onStoreChange(state, prev) {
   if (!c || !c.available || applyingRemote) return;
   if (state.ownerUserId !== c.uid) return;
   if (!CLOUD_FIELDS.some((k) => state[k] !== prev[k])) return;
-  // A change while hidden is sent at once: the page may be going away. This
-  // is how an abandoned battle's loss, written by GameBoard's pagehide
-  // listener after the hide, still reaches the account.
-  if (hidden()) {
-    flush('changed');
+  // A change while hidden, or while the page goes, is sent at once: there
+  // will be no three seconds. This is how an abandoned battle's loss, written
+  // by GameBoard's pagehide listener after ours, still reaches the account.
+  // At once, but after the code writing it has finished (a microtask): a
+  // battle's result is several store writes in a row, and sent on the first,
+  // the rest waited for an answer that a page going away never gets.
+  if (hidden() || c.unloading) {
+    if (!c.flushSoon) {
+      c.flushSoon = true;
+      queueMicrotask(() => {
+        c.flushSoon = false;
+        if (c === ctx) flush('changed');
+      });
+    }
     return;
   }
   clearTimeout(c.debounce);
@@ -697,6 +718,8 @@ function onVisibility() {
     flush('hide');
     return;
   }
+  // Back (a page restored from the back/forward cache comes back visible).
+  c.unloading = false;
   c.flushedHash = null;
   const stale = Date.now() - c.lastCheck >= RECHECK_MIN_MS;
   if (c.wantDecision || stale) {
@@ -708,7 +731,13 @@ function onVisibility() {
 }
 
 function onPageHide() {
-  flush('hide');
+  if (ctx) ctx.unloading = true;
+  flush('pagehide');
+}
+
+// A page restored from the back/forward cache was never unloaded after all.
+function onPageShow() {
+  if (ctx) ctx.unloading = false;
 }
 
 function onOnline() {
@@ -731,7 +760,15 @@ export function startCloudSync({ userId, accessToken = null, onSettled = null })
   if (ctx && ctx.uid === userId) {
     ctx.token = accessToken ?? ctx.token;
     ctx.onSettled = onSettled ?? ctx.onSettled;
-    if (!ctx.available) return Promise.resolve(useCloudSave.getState().phase);
+    if (!ctx.available) {
+      // No cloud save to wait for, so the gems are reconciled on every
+      // session change, exactly as they were before cloud saves: a purchase
+      // made on another device lands without a reload. No decision can be
+      // running to change the mark underneath it.
+      const phase = useCloudSave.getState().phase;
+      settle(ctx, phase);
+      return Promise.resolve(phase);
+    }
     // Session changes arrive on every return to the tab and every token
     // refresh; a re-read at most every RECHECK_MIN_MS is plenty.
     if (!ctx.wantDecision && Date.now() - ctx.lastCheck < RECHECK_MIN_MS) return Promise.resolve('recent');
@@ -753,6 +790,8 @@ export function startCloudSync({ userId, accessToken = null, onSettled = null })
     pushing: false,
     flushing: null,
     flushedHash: null,
+    flushSoon: false,
+    unloading: false,
     decisionQueued: null,
     told: false,
     detach: null,
@@ -761,11 +800,13 @@ export function startCloudSync({ userId, accessToken = null, onSettled = null })
   const unsubscribe = useGameStore.subscribe(onStoreChange);
   document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('pagehide', onPageHide);
+  window.addEventListener('pageshow', onPageShow);
   window.addEventListener('online', onOnline);
   c.detach = () => {
     unsubscribe();
     document.removeEventListener('visibilitychange', onVisibility);
     window.removeEventListener('pagehide', onPageHide);
+    window.removeEventListener('pageshow', onPageShow);
     window.removeEventListener('online', onOnline);
   };
   setStatus({ phase: 'checking', savedAt: useGameStore.getState().cloudSyncedAt, backup: backupSummary(userId) });
