@@ -390,7 +390,9 @@ const StatusChip = ({ children, zoom = 1 }) => {
     <div className="pointer-events-none absolute inset-x-0 bottom-[37px] z-10 flex justify-center">
       <span
         className="max-w-full rounded-full bg-night-950/90 ring-1 ring-white/15 px-2 py-0.5 text-center text-[10px] leading-[14px] font-semibold text-plush-100 shadow-[0_2px_6px_rgba(0,0,0,0.6)]"
-        style={size > 10 ? { fontSize: size, lineHeight: `${Math.round(size * 1.2)}px` } : undefined}
+        // Grown, it gives up most of its side padding, so "Warming Up" keeps
+        // to one line down to 0.64 (87px of text on a 96px card).
+        style={size > 10 ? { fontSize: size, lineHeight: `${Math.round(size * 1.15)}px`, paddingInline: 3 } : undefined}
       >
         {children}
       </span>
