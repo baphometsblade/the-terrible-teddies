@@ -55,17 +55,23 @@ export function chooseOpponentPlays(deck, fieldCount, energy, maxField = 3, fiel
  * biggest threat, tie-broken toward the lowest remaining HP (closest to dead,
  * least wasted overkill).
  *
+ * Pass `attackerField` (the attacker's own side) so the kill check counts a
+ * Royal ally's +1, as the hit itself does (resolveCreatureHit gets the same
+ * field). Without it a 2-attack creature beside a Royal "could not" kill a
+ * 3-HP target it then killed anyway, and the AI chipped a bigger threat
+ * instead of taking the kill.
+ *
  * Legacy (no attacker): biggest threat, tie-broken by lowest defense. Retained
  * so callers without attacker context keep their old behavior.
  */
-export function chooseAttackTarget(validTargets, attacker = null) {
+export function chooseAttackTarget(validTargets, attacker = null, attackerField = undefined) {
   if (!validTargets || validTargets.length === 0) return null;
 
   const atk = (t) => t.attack ?? 0;
   const hp = (t) => t.currentHp ?? t.defense ?? 0;
 
   if (attacker) {
-    const lethal = validTargets.filter((t) => damageToCreatureHp(attacker, t) >= hp(t));
+    const lethal = validTargets.filter((t) => damageToCreatureHp(attacker, t, attackerField) >= hp(t));
     const pool = lethal.length > 0 ? lethal : validTargets;
     return pool.reduce((best, t) => {
       if (atk(t) !== atk(best)) return atk(t) > atk(best) ? t : best;

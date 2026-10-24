@@ -100,6 +100,18 @@ describe('chooseAttackTarget', () => {
       const plain = card(3, 1, 1, 2); // 4 >= 2, killable
       expect(chooseAttackTarget([shielded, plain], attacker).id).toBe(3);
     });
+
+    // The hit counts a Royal ally's +1 (resolveCreatureHit gets the field), so
+    // the kill check has to as well: a 2-attack creature beside a Royal kills
+    // a 3-HP target, and that kill beats chipping a bigger threat.
+    it('counts a Royal ally on the attacker\'s own field when judging lethality', () => {
+      const attacker = { ...card(9, 1, 2, 2), type: 'action', instanceId: 'o-9' };
+      const royal = { ...card(14, 4, 3, 3), type: 'action', ability: 'royal', instanceId: 'o-14' };
+      const threat = card(2, 1, 6, 5); // biggest threat, not killable either way
+      const killable = card(3, 1, 4, 3); // 3 HP: dies to 2 + 1
+      expect(chooseAttackTarget([threat, killable], attacker).id).toBe(2);
+      expect(chooseAttackTarget([threat, killable], attacker, [attacker, royal]).id).toBe(3);
+    });
   });
 });
 
