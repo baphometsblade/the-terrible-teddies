@@ -31,9 +31,11 @@ const HEAD = {
  * cannot be reached. Announced, so the wait is not silent to a screen reader.
  */
 const RestoringNote = ({ slow }) => (
-  <div role="status" className="flex flex-col items-center gap-2 text-sm text-plush-200">
-    <p className="flex items-center justify-center gap-2">
-      <LoaderCircle aria-hidden="true" className="h-[18px] w-[18px] shrink-0 text-brass-300 motion-safe:animate-spin [[data-motion=off]_&]:animate-none" strokeWidth={2.4} />
+  <div role="status" className="flex flex-col items-center gap-2 text-sm text-plush-200 text-balance">
+    {/* The spinner inline, so a line that wraps stays centred with it
+        rather than leaving a word alone beside it. */}
+    <p>
+      <LoaderCircle aria-hidden="true" className="inline-block mr-2 h-[18px] w-[18px] align-[-4px] text-brass-300 motion-safe:animate-spin [[data-motion=off]_&]:animate-none" strokeWidth={2.4} />
       Checking whether you’re still signed in on this device…
     </p>
     {slow && (
