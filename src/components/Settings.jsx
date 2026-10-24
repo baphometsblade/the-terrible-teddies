@@ -172,6 +172,10 @@ const Settings = ({ onClose }) => {
   // Where the save is (src/lib/cloudSave.js), and the other save when two
   // did not match. `switched` is said once a switch has happened.
   const cloud = useCloudSave();
+  // Every phase but these reaches the account (offline and checking
+  // included: the reset is sent once the account can be reached).
+  const onAccount = !['off', 'unavailable', 'too-large'].includes(cloud.phase);
+  const resetSummary = describeReset(store, undefined, { onAccount });
   const [switched, setSwitched] = useState('');
   const handleSwitch = () => {
     const to = cloud.backup;
@@ -363,9 +367,14 @@ const Settings = ({ onClose }) => {
                     (they no longer are), and it now keeps several things. */}
                 <p className="mb-3 flex gap-2 text-sm font-semibold text-red-100">
                   <TriangleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-red-300" strokeWidth={2.2} />
-                  <span>Resetting can&apos;t be undone.</span>
+                  <span>
+                    Resetting can&apos;t be undone.
+                    {/* While the account keeps this save, the reset goes to
+                        it too (see describeReset). */}
+                    {resetSummary.account && <span data-reset-account="" className="mt-1 block">{resetSummary.account}</span>}
+                  </span>
                 </p>
-                <ResetSummary summary={describeReset(store)} />
+                <ResetSummary summary={resetSummary} />
                 <p className="mb-2 mt-4 text-sm text-red-100">
                   Type &quot;RESET&quot; to confirm.
                 </p>

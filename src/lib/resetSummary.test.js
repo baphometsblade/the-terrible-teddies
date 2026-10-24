@@ -30,6 +30,23 @@ describe('the reset confirmation', () => {
     ]);
   });
 
+  // resetProgress keeps the cloud save's bookkeeping (cloudRev and the synced
+  // fingerprint) precisely so that the reset reaches the account as an
+  // ordinary change, and cloudSave.test.js pins that it is sent. So while the
+  // account keeps this save, the confirmation has to say the account resets
+  // too; it said only "can't be undone".
+  it('says the account resets too while the cloud save is on, and only then', () => {
+    useGameStore.setState({ level: 6, cloudRev: 4, cloudSyncedHash: 'synced', cloudSyncedAt: 1 });
+    const line = describeReset(get(), NOW, { onAccount: true }).account;
+    expect(line).toBe('This resets the save on your account too, not just on this device.');
+    expect(describeReset(get(), NOW, { onAccount: false }).account).toBeNull();
+    expect(describeReset(get(), NOW).account).toBeNull();
+    // What makes the line true: the reset goes out from the rev this device
+    // was in step with, as a change, not as a save never synced.
+    get().resetProgress();
+    expect([get().cloudRev, get().cloudSyncedHash, get().level]).toEqual([4, 'synced', 1]);
+  });
+
   // keptThroughReset carries gems owed after a reversed payment and gives no
   // starting gems against them, so "0 gems, the starting amount" was false.
   it('names gems owed as kept, not a starting balance it does not give', () => {

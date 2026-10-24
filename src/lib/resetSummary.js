@@ -10,9 +10,17 @@ const count = (n, one, many = `${one}s`) => `${n.toLocaleString()} ${n === 1 ? o
  * disagree. Each deleted line says what it goes back to, where that is
  * not nothing.
  *
- * @returns {{ deletes: {label: string, after?: string}[], keeps: string[], note: string }}
+ * `onAccount`: the cloud save is keeping this save on the account (any phase
+ * but off, unavailable and too-large). resetProgress keeps the cloud save's
+ * bookkeeping so that the reset reaches the account as an ordinary change,
+ * and a device that has not played since takes it from there; the
+ * confirmation used to say only "can't be undone", which a player starting
+ * over on one phone did not read as the account too. It claims no more than
+ * is certain: a device that has played since keeps its own save.
+ *
+ * @returns {{ deletes: {label: string, after?: string}[], keeps: string[], note: string, account: string|null }}
  */
-export function describeReset(state, now = new Date()) {
+export function describeReset(state, now = new Date(), { onAccount = false } = {}) {
   const kept = keptThroughReset(state, now);
 
   // Only what the reset changes: "500 coins, back to 500" says nothing.
@@ -68,5 +76,6 @@ export function describeReset(state, now = new Date()) {
     deletes,
     keeps,
     note: "Rewards you've already claimed (Battle Pass tiers, and today's and this week's challenges) stay claimed.",
+    account: onAccount ? 'This resets the save on your account too, not just on this device.' : null,
   };
 }

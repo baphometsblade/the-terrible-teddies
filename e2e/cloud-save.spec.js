@@ -650,3 +650,36 @@ test('a call while the session cannot be refreshed waits for it, and never switc
   await expect.poll(() => row().save.difficulty).toBe('hard');
   await expect(dialog.getByText(/^Saved to your account · /)).toBeVisible();
 });
+
+// --- Resetting --------------------------------------------------------------
+
+// The reset is sent to the account like any other change, so the account's
+// save resets too; the confirmation said only "can't be undone", a few rows
+// under "Saved to your account".
+test('the reset confirmation says the account resets too, and the reset reaches it', async ({ page }) => {
+  const { row } = await boot(page, { account: accountSave(), store: null, balance: 500 });
+  await expect(page.getByText('Lv 7')).toBeVisible(SLOW);
+  const dialog = await openSettings(page);
+  await expect(dialog.getByText(/^Saved to your account · /)).toBeVisible(SLOW);
+  await dialog.getByRole('button', { name: 'Reset All Progress' }).click();
+  const line = dialog.getByText('This resets the save on your account too, not just on this device.');
+  await expect(line).toBeVisible();
+  await expect.poll(async () => new AxeBuilder({ page }).withTags(AXE_TAGS).analyze().then((r) => r.violations.map((v) => v.id)))
+    .toEqual([]);
+
+  await dialog.getByRole('textbox', { name: 'Type RESET to confirm the reset' }).fill('RESET');
+  await dialog.getByRole('button', { name: 'Confirm Reset' }).click();
+  await expect.poll(() => row().save.level, { timeout: 10_000 }).toBe(1);
+});
+
+test('without cloud saves the reset confirmation does not mention an account', async ({ page }) => {
+  const store = {
+    ownerUserId: SESSION.user.id, playerName: 'QA Bear', level: 4, tutorialCompleted: true, lastLoginDate: today(),
+  };
+  await boot(page, { account: 'missing', store });
+  const dialog = await openSettings(page);
+  await expect(dialog.getByText('Saved on this device only')).toBeVisible(SLOW);
+  await dialog.getByRole('button', { name: 'Reset All Progress' }).click();
+  await expect(dialog.getByText("Resetting can't be undone.")).toBeVisible();
+  await expect(dialog.getByText(/resets the save on your account/)).toHaveCount(0);
+});
