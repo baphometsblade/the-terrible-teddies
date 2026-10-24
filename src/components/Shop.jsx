@@ -1,6 +1,6 @@
 import { useState, useEffect, useId, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Store, Package, Gem, Star, Coins, X, Timer, Sparkles, ShieldCheck, Percent, Check } from 'lucide-react';
+import { Store, Package, Gem, Star, Coins, Timer, Sparkles, ShieldCheck, Percent, Check } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, SHOP_ITEMS } from '../stores/gameStore';
 import analytics from '../utils/analytics';
@@ -11,7 +11,7 @@ import { pressable } from '@/lib/a11y';
 import { RARITY_METAL, RARITY_ORDER } from '@/lib/rarity';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
-import { Medallion, SectionHeading, WalletChips } from '@/components/ui/game-chrome';
+import { Medallion, SectionHeading, WalletChips, DialogClose } from '@/components/ui/game-chrome';
 import { ignoreKeyRepeat } from '@/lib/keyRepeat';
 import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
 import { PackOddsDialog } from './PackOdds';
@@ -309,14 +309,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
             gemDebt={gemDebt}
             packs={{ regular: cardPacks, premium: premiumPacks, legendary: legendaryPacks }}
           />
-          <button
-            type="button"
-            onClick={onClose}
-            className={`btn-glass grid place-items-center w-10 h-10 shrink-0 rounded-xl ${FOCUS_OUTLINE}`}
-            aria-label="Close shop"
-          >
-            <X aria-hidden="true" className="w-5 h-5" strokeWidth={2.4} />
-          </button>
+          <DialogClose label="Close shop" onClick={onClose} />
         </div>
 
         {/* Tabs: a segmented control recessed into the panel. Below sm each

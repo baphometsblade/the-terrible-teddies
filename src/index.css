@@ -705,8 +705,11 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
    every dialog keeps clear of controls: each puts its Close top-right, and
    what sits top-left is its medallion and title, or the scrim (measured on
    every dialog at 320, 390, 640, 768, 1024 and 1280). On a phone it stops
-   4rem short of the right edge, clear of the Close (the scrim's 12px, the
-   header's 16px, the 40px button), and from sm it is 20rem wide. And it never
+   4.75rem short of the right edge, clear of the Close. The furthest in
+   (Pack odds, Save deck) starts about 76px from the edge: the scrim's 12px,
+   the panel's 20px padding and the 44px DialogClose. The viewport's own 8px
+   padding then leaves the toast 7px clear of it, and 11px clear of the
+   usual header's. From sm it is 21.5rem wide. And it never
    takes a tap: one meant for something under it goes through, the toast
    still times out, and F8 still reaches it from the keyboard (the battle
    board's precedent). Not during a battle, which places its own toasts.
@@ -716,7 +719,7 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   top: env(safe-area-inset-top);
   bottom: auto;
   left: env(safe-area-inset-left);
-  right: 4rem;
+  right: 4.75rem;
   width: auto;
   max-width: none;
   padding: 0.5rem;

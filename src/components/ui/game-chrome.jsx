@@ -1,5 +1,7 @@
-import { Coins, Gem, Package } from 'lucide-react';
+import { forwardRef } from 'react';
+import { Coins, Gem, Package, X } from 'lucide-react';
 import { RARITY_METAL } from '@/lib/rarity';
+import { FOCUS_OUTLINE } from '@/lib/focus';
 
 // Small pieces of chrome every dialog header and balance row repeats. They were
 // copy-pasted into each screen as the screens were redesigned; one definition
@@ -8,6 +10,29 @@ import { RARITY_METAL } from '@/lib/rarity';
 // The Medallion lives in its own leaf module, as BrassCoin does, so App can
 // put one on a toast without shipping the rest of this module on first paint.
 export { Medallion } from './medallion';
+
+/**
+ * A dialog's close control: an X on a glass key, 44px square, the size the
+ * game holds every control to. Each dialog drew its own at 40px, and the
+ * copies had drifted in colour and offset. `label` is its accessible name
+ * ("Close shop"); `className` places it (absolute corners, grid cells). The
+ * ref reaches the button, for a dialog that hands focus to it.
+ *
+ * The toast-over-dialog inset in index.css is measured against this size.
+ */
+export const DialogClose = forwardRef(function DialogClose({ label, onClick, className = '' }, ref) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`btn-glass grid h-11 w-11 shrink-0 place-items-center rounded-xl text-plush-200 hover:text-white ${FOCUS_OUTLINE} ${className}`}
+    >
+      <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
+    </button>
+  );
+});
 
 /**
  * A currency balance on glass. The icon carries the meaning visually and the

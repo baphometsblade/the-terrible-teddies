@@ -1,12 +1,12 @@
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Gift, Coins, Gem, Package, GalleryVerticalEnd, Check, Flame, Sparkles, X, Clock } from 'lucide-react';
+import { Gift, Coins, Gem, Package, GalleryVerticalEnd, Check, Flame, Sparkles, Clock } from 'lucide-react';
 import { useGameStore, DAILY_REWARDS, ALL_CARDS, dailyClaimDay } from '../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
-import { Medallion } from '@/components/ui/game-chrome';
+import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 import { getTimeUntilReset } from '@/lib/resetTimer';
 
 // The pack opening's own card reveal, loaded only when a claim draws cards.
@@ -461,14 +461,7 @@ const DailyRewards = ({ onClose }) => {
             DOM on purpose: useDialog focuses the first control on open, and
             that stays the brass button, the one thing this dialog asks you
             to do. Closing before claiming leaves the reward waiting. */}
-        <button
-          type="button"
-          onClick={onClose}
-          className={`btn-glass absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-xl sm:right-4 sm:top-4 ${FOCUS_OUTLINE}`}
-          aria-label="Close daily rewards"
-        >
-          <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
-        </button>
+        <DialogClose label="Close daily rewards" onClick={onClose} className="absolute right-3 top-3 sm:right-4 sm:top-4" />
       </motion.div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, ChevronLeft, ChevronRight, Swords, Target, RefreshCw, Layers, Zap, ScrollText, Rocket, Trophy,
+  ChevronLeft, ChevronRight, Swords, Target, RefreshCw, Layers, Zap, ScrollText, Rocket, Trophy,
   Bomb, Sparkles, Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown,
 } from 'lucide-react';
 import TeddyCard from './TeddyCard';
@@ -11,6 +11,7 @@ import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { BrassCoin } from '@/components/ui/coin';
+import { DialogClose } from '@/components/ui/game-chrome';
 
 // Presentation only — every `content` string is the copy as written, and
 // Tutorial.test.js reads it from this file.
@@ -255,14 +256,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
         {/* Header */}
         <div className="relative flex items-center gap-3 px-4 pb-2 pt-4 sm:px-6 sm:pt-5 [@media(max-height:500px)]:pb-1 [@media(max-height:500px)]:pt-3">
           <h2 className="min-w-0 flex-1 font-display text-xl font-extrabold leading-tight text-white">How to Play</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className={`btn-glass grid h-10 w-10 shrink-0 place-items-center rounded-xl text-plush-200 hover:text-white ${FOCUS_OUTLINE}`}
-            aria-label="Close tutorial"
-          >
-            <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
-          </button>
+          <DialogClose label="Close tutorial" onClick={onClose} />
         </div>
 
         {/* Progress: one segment per step. Each is a 24px-tall button around a

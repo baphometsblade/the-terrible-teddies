@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Settings as SettingsIcon, X, Volume2, Sparkles, Smile, Meh, Angry,
+  Settings as SettingsIcon, Volume2, Sparkles, Smile, Meh, Angry,
   LogOut, Trash2, TriangleAlert, Minus, Check,
   Cloud, CloudUpload, CloudOff, HardDrive, ArrowLeftRight,
 } from 'lucide-react';
@@ -11,7 +11,7 @@ import { supabase } from '../utils/supabaseClient';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
-import { Medallion } from '@/components/ui/game-chrome';
+import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 import { describeReset } from '@/lib/resetSummary';
 import {
   useCloudSave, describeSaveStatus, formatSavedAt, switchToBackupSave, saveNow,
@@ -250,14 +250,7 @@ const Settings = ({ onClose }) => {
           <h2 className="min-w-0 flex-1 font-display text-2xl font-extrabold leading-none text-brass-gradient sm:text-3xl">
             Settings
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close settings"
-            className={`btn-glass grid h-10 w-10 shrink-0 place-items-center rounded-xl text-plush-200 hover:text-white ${FOCUS_OUTLINE}`}
-          >
-            <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
-          </button>
+          <DialogClose label="Close settings" onClick={onClose} />
         </div>
 
         <div className="relative min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-5 sm:px-6">

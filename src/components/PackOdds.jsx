@@ -1,10 +1,9 @@
 import { useId } from 'react';
-import { X } from 'lucide-react';
 import { PACK_ODDS, PACK_SLOTS } from '@/stores/gameStore';
 import { RARITY, RARITY_METAL, RARITY_ORDER } from '@/lib/rarity';
 import { useDialog } from '@/hooks/useDialog';
-import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
+import { DialogClose } from '@/components/ui/game-chrome';
 import { PACK_LOOK } from './PackArt';
 
 // The posted odds, rendered from the table the roll uses (PACK_ODDS). Two of
@@ -112,14 +111,7 @@ export const PackOddsDialog = ({ onClose }) => {
       >
         <div className="flex items-center gap-3">
           <h2 id={titleId} className="mr-auto font-display text-2xl font-extrabold leading-none text-brass-gradient">Pack odds</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close pack odds"
-            className={`btn-glass grid place-items-center w-10 h-10 shrink-0 rounded-xl ${FOCUS_OUTLINE}`}
-          >
-            <X aria-hidden="true" className="w-5 h-5" strokeWidth={2.4} />
-          </button>
+          <DialogClose label="Close pack odds" onClick={onClose} />
         </div>
         <p className="mt-2 text-sm text-plush-300">
           The chance of each rarity, card by card — the same table the game rolls on.

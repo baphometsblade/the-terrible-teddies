@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Trophy, Crown, Lock, Check, Clock, Gem, X, Sparkles, Swords, Coins, Drama, PartyPopper, Hourglass,
+  Trophy, Crown, Lock, Check, Clock, Gem, Sparkles, Swords, Coins, Drama, PartyPopper, Hourglass,
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
@@ -14,7 +14,7 @@ import { RARITY, RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { ignoreKeyRepeat, useArmedAfterOpen } from '@/lib/keyRepeat';
-import { Medallion, WalletChips } from '@/components/ui/game-chrome';
+import { Medallion, WalletChips, DialogClose } from '@/components/ui/game-chrome';
 import { ArtOrEmoji } from './TeddyCard';
 import { PACK_LOOK, PackStack } from './PackArt';
 import { frameFor, EMOTES } from '@/lib/cosmetics';
@@ -736,15 +736,11 @@ const BattlePass = ({ onClose, onGetGems }) => {
                 stray Enters (or one held one) would walk straight through. It
                 also makes Tab run top to bottom below lg, where Close sits on
                 the first row and the button on the fourth. */}
-            <button
-              type="button"
+            <DialogClose
+              label="Close battle pass"
               onClick={onClose}
-              className={`btn-glass col-start-3 row-start-1 grid h-10 w-10 shrink-0 place-items-center self-start rounded-xl
-                lg:col-start-6 lg:row-span-2 lg:row-start-1 lg:self-center ${FOCUS_OUTLINE}`}
-              aria-label="Close battle pass"
-            >
-              <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
-            </button>
+              className="col-start-3 row-start-1 self-start lg:col-start-6 lg:row-span-2 lg:row-start-1 lg:self-center"
+            />
 
             {/* One wrapping row below lg; from lg, display: contents hands the
                 wallet and the button a grid column each. */}

@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { PackBalanceChip, WalletChips, Medallion } from './game-chrome';
+import { PackBalanceChip, WalletChips, Medallion, DialogClose } from './game-chrome';
 
 const html = (el) => renderToStaticMarkup(el);
 const text = (markup) => markup.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -75,5 +75,31 @@ describe('Medallion', () => {
     const src = read('src/components/BattlePass.jsx');
     expect(src).toMatch(/<Medallion\s+size="smToLg"\s+icon=\{Trophy\}/);
     expect(src, 'BattlePass.jsx hand-builds a medallion again').not.toMatch(/style=\{\{ background: RARITY_METAL\.legendary \}\}/);
+  });
+});
+
+describe('DialogClose', () => {
+  // Every dialog drew its own 40px Close, below the 44px the rest of the game
+  // holds a control to, and the copies drifted in colour and offset. One
+  // button now; e2e/targets.spec.js measures it on screen.
+  it('is a named 44px glass button that never submits a form', () => {
+    const out = html(createElement(DialogClose, { label: 'Close shop', onClick: () => {} }));
+    expect(out).toMatch(/^<button type="button"/);
+    expect(out).toContain('aria-label="Close shop"');
+    expect(out).toMatch(/class="[^"]*\bbtn-glass\b[^"]*\bh-11 w-11\b/);
+    // The X is decoration; the label is the name.
+    expect(out).toMatch(/<svg[^>]*aria-hidden="true"/);
+  });
+
+  const DIALOGS = [
+    'BattlePass', 'CardPackOpening', 'Challenges', 'DailyRewards', 'DeckBuilder', 'Leaderboard',
+    'PackOdds', 'PlayerStats', 'Settings', 'Shop', 'TeddyCollection', 'Tutorial',
+  ];
+  it('is the Close of every dialog outside the battle board, with no local copy left', () => {
+    for (const name of DIALOGS) {
+      const src = read(`src/components/${name}.jsx`);
+      expect(src, `${name}.jsx should close through <DialogClose>`).toMatch(/<DialogClose\b[^>]*\blabel="Close/);
+      expect(src, `${name}.jsx draws its own Close button again`).not.toMatch(/aria-label=["{`]+Close/);
+    }
   });
 });

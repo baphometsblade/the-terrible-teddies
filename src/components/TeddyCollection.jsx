@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Lock, SearchX, X, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, SearchX, Zap } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
-import { Medallion } from '@/components/ui/game-chrome';
+import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 import TeddyCard from './TeddyCard';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
@@ -182,14 +182,7 @@ const CardDetailDialog = ({ cards, index, onIndex, onClose }) => {
           </div>
           <h2 className="mt-1 font-display text-2xl font-extrabold leading-tight text-white sm:text-[1.75rem]">{card.name}</h2>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className={`btn-glass grid h-10 w-10 shrink-0 place-items-center rounded-xl ${FOCUS_OUTLINE}`}
-        >
-          <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
-        </button>
+        <DialogClose label="Close" onClick={onClose} />
       </div>
 
       {/* Keyed by card, so a page turn starts the new card from its own art

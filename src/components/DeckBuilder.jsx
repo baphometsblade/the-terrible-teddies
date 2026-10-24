@@ -2,7 +2,7 @@ import { forwardRef, useState, useEffect, useId, useImperativeHandle, useRef } f
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bomb, Check, ChevronDown, Eraser, FolderOpen, Layers, PawPrint, Save, Sparkles, Trash2, X, Zap } from 'lucide-react';
 import TeddyCard, { ArtOrEmoji } from './TeddyCard';
-import { BrassCoin, Medallion } from '@/components/ui/game-chrome';
+import { BrassCoin, Medallion, DialogClose } from '@/components/ui/game-chrome';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
@@ -183,15 +183,9 @@ const SaveDeckDialog = ({ deckName, setDeckName, onSave, onClose }) => {
         <button type="button" onClick={onClose} className={`${ACTION} btn-glass flex-1`}>Cancel</button>
       </div>
 
-      {/* Centred on the 44px medallion row: the panel's padding plus 2px. */}
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close"
-        className={`btn-glass absolute right-5 top-[22px] grid h-10 w-10 place-items-center rounded-xl sm:right-6 sm:top-[26px] ${FOCUS_OUTLINE}`}
-      >
-        <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
-      </button>
+      {/* On the 44px medallion row, which is the button's own height: set in
+          by just the panel's padding. */}
+      <DialogClose label="Close" onClick={onClose} className="absolute right-5 top-5 sm:right-6 sm:top-6" />
     </motion.div>
   );
 };

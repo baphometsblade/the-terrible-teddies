@@ -1,13 +1,13 @@
 import { Fragment, useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Crown, Flame, Globe, X, TriangleAlert, RotateCcw } from 'lucide-react';
+import { Trophy, Crown, Flame, Globe, TriangleAlert, RotateCcw } from 'lucide-react';
 import { useGameStore } from '../stores/gameStore';
 import { supabase } from '../lib/supabase';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
-import { Medallion } from '@/components/ui/game-chrome';
+import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 
 // Trophies from a player's stats. The server computes the same thing
 // (public.player_trophies in 20261023000000_cloud_saves_and_rank.sql) to
@@ -481,14 +481,7 @@ const Leaderboard = ({ onClose }) => {
               Global · All time
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className={`btn-glass grid h-10 w-10 shrink-0 place-items-center rounded-xl text-plush-200 hover:text-white ${FOCUS_OUTLINE}`}
-            aria-label="Close leaderboard"
-          >
-            <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
-          </button>
+          <DialogClose label="Close leaderboard" onClick={onClose} />
         </div>
 
         {/* No 'Friends' tab: it rendered a "Coming Soon!" panel with a

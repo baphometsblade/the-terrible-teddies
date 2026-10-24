@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, PackageOpen, Crown, Coins, Gem, X, Sparkles, PartyPopper, Trophy, CalendarDays } from 'lucide-react';
+import { Package, PackageOpen, Crown, Coins, Gem, Sparkles, PartyPopper, Trophy, CalendarDays } from 'lucide-react';
 import TeddyCard, { CardBack } from './TeddyCard';
 import { useGameStore } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
 import { celebrate } from '@/lib/celebrate';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD, SCRIM_PAD_NARROW } from '@/lib/safeArea';
-import { Medallion, SectionHeading, WalletChips, BrassCoin } from '@/components/ui/game-chrome';
+import { Medallion, SectionHeading, WalletChips, BrassCoin, DialogClose } from '@/components/ui/game-chrome';
 import { Progress } from '@/components/ui/progress';
 import { PACK_LOOK, HeroPack } from './PackArt';
 import { ignoreKeyRepeat } from '@/lib/keyRepeat';
@@ -497,15 +497,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
             gemDebt={gemDebt}
             packs={{ regular: cardPacks, premium: premiumPacks, legendary: legendaryPacks }}
           />
-          <button
-            ref={closeRef}
-            type="button"
-            onClick={resetAndClose}
-            className={`btn-glass grid place-items-center w-10 h-10 shrink-0 rounded-xl ${FOCUS_OUTLINE}`}
-            aria-label="Close card packs"
-          >
-            <X aria-hidden="true" className="w-5 h-5" strokeWidth={2.4} />
-          </button>
+          <DialogClose ref={closeRef} label="Close card packs" onClick={resetAndClose} />
         </div>
 
         <div className="relative px-3 max-[359px]:px-2 sm:px-6 pb-5 sm:pb-6">

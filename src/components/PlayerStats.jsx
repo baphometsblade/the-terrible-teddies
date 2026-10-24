@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  X, Pencil, Coins, Gem, BarChart3, Trophy, Gamepad2, HeartCrack, TrendingUp, Flame, Star,
+  Pencil, Coins, Gem, BarChart3, Trophy, Gamepad2, HeartCrack, TrendingUp, Flame, Star,
   CalendarDays, LibraryBig, Bomb, HeartPulse, Sparkles, Check, Lock,
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
@@ -11,7 +11,7 @@ import { setPlayerUsername } from '../utils/supabaseClient';
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
-import { BalanceChip } from '@/components/ui/game-chrome';
+import { BalanceChip, DialogClose } from '@/components/ui/game-chrome';
 import { achievementIcon } from '@/lib/achievementIcons';
 
 // An achievement's badge: brass once unlocked, a dimmed outline before.
@@ -259,14 +259,7 @@ const PlayerStats = ({ onClose }) => {
               translate on the button, whose material owns transform for its
               press. */}
           <div className="absolute right-4 top-4 sm:right-6 md:inset-y-0 md:top-0 md:flex md:items-center">
-            <button
-              type="button"
-              onClick={onClose}
-              className={`btn-glass grid h-10 w-10 place-items-center rounded-xl text-plush-200 hover:text-white ${FOCUS_OUTLINE}`}
-              aria-label="Close stats"
-            >
-              <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
-            </button>
+            <DialogClose label="Close stats" onClick={onClose} />
           </div>
         </div>
 

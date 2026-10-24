@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Target, X, Clock, Check, Gift, Gem, Coins, Package, Star, Crown, CalendarDays, CalendarRange,
+  Target, Clock, Check, Gift, Gem, Coins, Package, Star, Crown, CalendarDays, CalendarRange,
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useGameStore } from '../stores/gameStore';
@@ -10,7 +10,7 @@ import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
-import { Medallion } from '@/components/ui/game-chrome';
+import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 import { getTimeUntilReset } from '@/lib/resetTimer';
 
 // Plain <button>s throughout, not the shadcn Button: its bg-primary is a
@@ -405,14 +405,7 @@ const Challenges = ({ onClose }) => {
           <h2 className="min-w-0 flex-1 whitespace-nowrap font-display text-3xl font-extrabold leading-none text-brass-gradient">
             Challenges
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className={`btn-glass grid h-10 w-10 shrink-0 place-items-center rounded-xl ${FOCUS_OUTLINE}`}
-            aria-label="Close challenges"
-          >
-            <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
-          </button>
+          <DialogClose label="Close challenges" onClick={onClose} />
         </div>
 
         {/* Tabs: a segmented control recessed into the panel. */}
