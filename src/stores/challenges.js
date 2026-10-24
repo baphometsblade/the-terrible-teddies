@@ -24,6 +24,14 @@ export const STAT_TO_STORE_FIELD = {
   weeklyCoinsEarned: 'weekCoinsEarned',
 };
 
+// Each `icon` is drawn as the challenge's emoji (Challenges.jsx), so it must be
+// a real emoji that every platform draws in colour: one with emoji
+// presentation (or an explicit U+FE0F), from Emoji 13.0 or earlier. '🂠'
+// (U+1F0A0) has no emoji form and drew as a flat white rectangle among colour
+// ones; '🫙' (U+1FAD9, Emoji 14.0) is a blank box on Windows 10 and Android
+// before 12L. Nothing from Emoji 14.0 on (U+1FAD7-1FAD9 and its neighbours)
+// is safe yet. challenges.test.js holds every icon to this.
+//
 // --- Daily pool (12 candidates, 3 per tracked daily stat) -----------------
 export const DAILY_POOL = [
   // dailyWins (todayWins)
@@ -39,7 +47,7 @@ export const DAILY_POOL = [
   { id: 'd8', name: 'Deal 50 Damage', description: 'Deal a total of 50 damage', target: 50, reward: { type: 'coins', amount: 100 }, icon: '💥', stat: 'dailyDamage' },
   { id: 'd9', name: 'Scorched Earth Policy', description: 'Deal a total of 100 damage', target: 100, reward: { type: 'gems', amount: 20 }, icon: '🔥', stat: 'dailyDamage' },
   // dailyCardsPlayed (todayCardsPlayed)
-  { id: 'd10', name: 'Warm Up The Deck', description: 'Play 5 cards in battles', target: 5, reward: { type: 'coins', amount: 50 }, icon: '🂠', stat: 'dailyCardsPlayed' },
+  { id: 'd10', name: 'Warm Up The Deck', description: 'Play 5 cards in battles', target: 5, reward: { type: 'coins', amount: 50 }, icon: '🎴', stat: 'dailyCardsPlayed' },
   { id: 'd11', name: 'Use 10 Cards', description: 'Play 10 cards in battles', target: 10, reward: { type: 'pack', amount: 1 }, icon: '🃏', stat: 'dailyCardsPlayed' },
   { id: 'd12', name: 'Card Shark Behavior', description: 'Play 20 cards in battles', target: 20, reward: { type: 'gems', amount: 25 }, icon: '🦈', stat: 'dailyCardsPlayed' },
 ];
@@ -57,9 +65,9 @@ export const WEEKLY_POOL = [
   { id: 'w6', name: 'Fresh Meat For The Deck', description: 'Add 3 new cards to your collection', target: 3, reward: { type: 'gems', amount: 20 }, icon: '🆕', stat: 'weeklyNewCards' },
   { id: 'w7', name: 'Collect 5 New Cards', description: 'Add 5 new cards to your collection', target: 5, reward: { type: 'gems', amount: 30 }, icon: '📚', stat: 'weeklyNewCards' },
   // weeklyCoinsEarned (weekCoinsEarned)
-  { id: 'w8', name: "Rattle The Tip Jar", description: 'Earn 250 coins from battles', target: 250, reward: { type: 'pack', amount: 1 }, icon: '🫙', stat: 'weeklyCoinsEarned' },
+  { id: 'w8', name: "Rattle The Tip Jar", description: 'Earn 250 coins from battles', target: 250, reward: { type: 'pack', amount: 1 }, icon: '💸', stat: 'weeklyCoinsEarned' },
   { id: 'w9', name: 'Earn 500 Coins', description: 'Earn 500 coins from battles', target: 500, reward: { type: 'legendaryPack', amount: 1 }, icon: '🪙', stat: 'weeklyCoinsEarned' },
-  { id: 'w10', name: 'Rob The Whole Register', description: 'Earn 1000 coins from battles', target: 1000, reward: { type: 'gems', amount: 75 }, icon: '💰', stat: 'weeklyCoinsEarned' },
+  { id: 'w10', name: 'Rob The Whole Register', description: 'Earn 1,000 coins from battles', target: 1000, reward: { type: 'gems', amount: 75 }, icon: '💰', stat: 'weeklyCoinsEarned' },
 ];
 
 const DAILY_PICK_COUNT = 4;

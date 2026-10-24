@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 // jsdom has no canvas to throw confetti on.
 vi.mock('@/lib/celebrate', () => ({ celebrate: vi.fn() }));
 
-import Challenges, { REWARD_LOOK, rewardLabel } from './Challenges';
+import Challenges, { REWARD_LOOK, RewardChip, rewardLabel } from './Challenges';
 import { useGameStore } from '@/stores/gameStore';
 import { DAILY_POOL, WEEKLY_POOL, getDailyChallenges } from '@/stores/challenges';
 import { useToast } from '@/components/ui/use-toast';
@@ -19,6 +19,16 @@ describe('reward labels', () => {
   it('names every reward type the challenge pools pay', () => {
     const types = [...new Set([...DAILY_POOL, ...WEEKLY_POOL].map((c) => c.reward.type))];
     expect(types.filter((t) => !REWARD_LOOK[t])).toEqual([]);
+  });
+
+  // The weekly bonus's 1000 coins printed as "1000", beside wallet chips
+  // reading "1,234".
+  it('draws a reward chip with a thousands separator', () => {
+    const host = document.createElement('div');
+    const root = createRoot(host);
+    act(() => root.render(<RewardChip type="coins" amount={1000} />));
+    expect(host.textContent).toBe('1,000 coins');
+    act(() => root.unmount());
   });
 
   it('says the reward the way a player would', () => {

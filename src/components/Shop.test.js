@@ -59,3 +59,17 @@ describe('the Buy Gems tab with gems owed', () => {
     expect(host.querySelector('[data-gems-owed]')).toBeNull();
   });
 });
+
+// Every count on screen takes a thousands separator. The gem bundles printed
+// "1400 total" under "1,200" and "+750 BONUS" beside wallet chips reading
+// "1,234".
+describe('Shop gem bundles', () => {
+  it('write their bonus and total with thousands separators', () => {
+    render({ initialTab: 'gems' });
+    const lines = [...host.querySelectorAll('[id$="-bonus"], [id$="-total"]')].map((el) => el.textContent.trim());
+    expect(lines.length).toBeGreaterThan(0);
+    for (const line of lines) expect(line).toMatch(/^\+?\d{1,3}(?:,\d{3})* (?:BONUS|total)$/);
+    // The largest bundle does pass a thousand, so the separator is seen.
+    expect(lines.some((line) => line.includes(','))).toBe(true);
+  });
+});

@@ -98,14 +98,16 @@ const useClaimFloat = () => {
   return [float, show];
 };
 
-const RewardChip = ({ type, amount, className = '' }) => {
+// Exported for its test: the weekly bonus's 1000 coins printed as "1000" beside
+// wallet chips reading "1,234". Every count in the game takes a separator.
+export const RewardChip = ({ type, amount, className = '' }) => {
   const look = lookFor(type);
   return (
     <span className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg bg-night-950/60 px-2 font-display text-sm font-bold
       tabular-nums text-white ring-1 ring-inset ring-white/10 ${className}`}
     >
       <RewardMark look={look} />
-      {amount}
+      {amount.toLocaleString()}
       <span className="sr-only"> {amount === 1 ? look.one : look.many}</span>
     </span>
   );
@@ -199,7 +201,7 @@ const ChallengeCard = ({ challenge, progress, isClaimed, onClaim, float }) => {
               ? '[&>div]:bg-plush-400/50'
               : '[&>div]:bg-gradient-to-r [&>div]:from-brass-200 [&>div]:to-brass-500'
           }`}
-          aria-label={`${challenge.name} progress: ${progress} of ${challenge.target}`}
+          aria-label={`${challenge.name} progress: ${progress.toLocaleString()} of ${challenge.target.toLocaleString()}`}
         />
         {/* One fixed-width status slot, so every bar in the list ends at
             the same x whatever sits beside it. */}
@@ -229,7 +231,7 @@ const ChallengeCard = ({ challenge, progress, isClaimed, onClaim, float }) => {
           )}
           {!isComplete && !isClaimed && (
             <span className="whitespace-nowrap font-display text-sm font-bold tabular-nums text-plush-100">
-              {progress}<span className="text-plush-300"> / {challenge.target}</span>
+              {progress.toLocaleString()}<span className="text-plush-300"> / {challenge.target.toLocaleString()}</span>
             </span>
           )}
         </div>

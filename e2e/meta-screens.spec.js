@@ -463,6 +463,26 @@ const ACHIEVEMENT_IDS = (() => {
 })();
 
 test.describe('player stats', () => {
+  // Every count takes a thousands separator, as the result panel and the
+  // achievement toast write them: this screen printed "340 / 1139 XP" and
+  // "+2000" beside them.
+  test('writes its counts with thousands separators', async ({ page }) => {
+    await bootToMainMenu(page);
+    // Level 7 needs 1,139 XP.
+    await seed(page, { level: 7, xp: 1000, totalBattles: 4321 });
+    await page.getByLabel('View player stats').click();
+    const dialog = page.getByRole('dialog', { name: 'Player stats' });
+    await expect(dialog).toBeVisible(SLOW);
+    await expect(dialog.getByText('1,000 / 1,139 XP')).toBeVisible();
+    await expect(dialog.getByRole('progressbar', { name: 'Level 7 XP progress: 1,000 of 1,139' })).toBeVisible();
+    await expect(dialog.getByText('4,321', { exact: true })).toBeVisible();
+    await dialog.locator('[data-tab="achievements"]').click();
+    const rewards = await dialog.getByRole('listitem').evaluateAll((items) => items.map((li) => li.lastElementChild.textContent.trim()));
+    expect(rewards.length).toBe(ACHIEVEMENT_IDS.length);
+    for (const reward of rewards) expect(reward).toMatch(/^\+\d{1,3}(?:,\d{3})*coins$/);
+    expect(rewards.some((r) => r.includes(',')), 'no achievement pays a thousand or more').toBe(true);
+  });
+
   // Escape in the rename field reached the dialog's own Escape and closed
   // Player Stats, dropping the typed name. It cancels the edit now, the way
   // Escape backs out of the innermost thing everywhere else.

@@ -80,6 +80,48 @@ describe('challenge pool shape', () => {
       expect(challenge.description.length).toBeGreaterThan(0);
     }
   });
+
+  // A count in copy takes a separator, as every number on screen does.
+  it('writes its numbers with thousands separators', () => {
+    for (const challenge of [...DAILY_POOL, ...WEEKLY_POOL]) {
+      expect(`${challenge.name} ${challenge.description}`, challenge.id).not.toMatch(/\d{4}/);
+    }
+  });
+});
+
+// Each challenge's icon is drawn as an emoji (Challenges.jsx), so it must be
+// one that every platform draws in colour. Two were not: '🂠' has no emoji
+// form and drew as a flat white rectangle among colour ones, and '🫙' (Emoji
+// 14.0) is a blank box on Windows 10 and on Android before 12L.
+describe('challenge icons', () => {
+  // Starts with an emoji that defaults to its colour form, or one that asks
+  // for it (U+FE0F).
+  const COLOUR_EMOJI = /^(?:\p{Emoji_Presentation}|\p{Emoji}️)/u;
+  // Emoji 14.0 and later: Symbols and Pictographs Extended-A outside what
+  // Emoji 12.0 and 13.0 put there, and the few added in other blocks since.
+  const EXTENDED_A_TO_13 = [
+    [0x1fa70, 0x1fa74], [0x1fa78, 0x1fa7a], [0x1fa80, 0x1fa86], [0x1fa90, 0x1faa8],
+    [0x1fab0, 0x1fab6], [0x1fac0, 0x1fac2], [0x1fad0, 0x1fad6],
+  ];
+  const NEWER_ELSEWHERE = [0x1f6d8, 0x1f6dc, 0x1f6dd, 0x1f6de, 0x1f6df, 0x1f7f0, 0x1f979, 0x1f9cc];
+  const tooNew = (cp) => NEWER_ELSEWHERE.includes(cp)
+    || (cp >= 0x1fa70 && cp <= 0x1faff && !EXTENDED_A_TO_13.some(([from, to]) => cp >= from && cp <= to));
+  const graphemes = (s) => [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(s)];
+
+  it('catches the two that broke', () => {
+    expect('🂠').not.toMatch(COLOUR_EMOJI);
+    expect(tooNew('🫙'.codePointAt(0))).toBe(true);
+    // ...and lets the old ones through.
+    expect('⚔️').toMatch(COLOUR_EMOJI);
+    expect(tooNew('🪙'.codePointAt(0))).toBe(false);
+  });
+
+  it.each([...DAILY_POOL, ...WEEKLY_POOL].map((c) => [c.id, c.icon]))('%s (%s) is one colour emoji from Emoji 13.0 or earlier', (id, icon) => {
+    expect(graphemes(icon), 'more than one glyph').toHaveLength(1);
+    expect(icon, 'has no colour (emoji) form').toMatch(COLOUR_EMOJI);
+    const fresh = [...icon].map((ch) => ch.codePointAt(0)).filter(tooNew);
+    expect(fresh.map((cp) => `U+${cp.toString(16).toUpperCase()}`), 'is newer than Emoji 13.0').toEqual([]);
+  });
 });
 
 describe('rotation stability', () => {

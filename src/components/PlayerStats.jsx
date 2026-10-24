@@ -254,12 +254,12 @@ const PlayerStats = ({ onClose }) => {
               <div className="mx-auto mt-2 w-full max-w-[16rem] md:mx-0">
                 <div className="flex items-center justify-center gap-2 text-xs text-plush-200 md:justify-start">
                   <span className="btn-brass whitespace-nowrap rounded-md px-1.5 py-[3px] text-[11px] font-extrabold leading-none">Lv. {level}</span>
-                  <span className="whitespace-nowrap tabular-nums">{xp} / {xpForNext} XP</span>
+                  <span className="whitespace-nowrap tabular-nums">{xp.toLocaleString()} / {xpForNext.toLocaleString()} XP</span>
                 </div>
                 <Progress
                   value={xpProgress}
                   className="mt-1.5 h-1.5 bg-night-950/70 [&>div]:bg-gradient-to-r [&>div]:from-brass-300 [&>div]:to-brass-500"
-                  aria-label={`Level ${level} XP progress: ${xp} of ${xpForNext}`}
+                  aria-label={`Level ${level} XP progress: ${xp.toLocaleString()} of ${xpForNext.toLocaleString()}`}
                 />
               </div>
             </div>
@@ -342,18 +342,18 @@ const PlayerStats = ({ onClose }) => {
             <div className="space-y-6">
               <Section title="Battle Statistics">
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  <StatTile icon={Gamepad2} label="Battles" value={totalBattles} />
-                  <StatTile icon={Trophy} label="Victories" value={totalWins} tone="text-emerald-300" />
-                  <StatTile icon={HeartCrack} label="Defeats" value={totalLosses} tone="text-red-300" />
+                  <StatTile icon={Gamepad2} label="Battles" value={totalBattles.toLocaleString()} />
+                  <StatTile icon={Trophy} label="Victories" value={totalWins.toLocaleString()} tone="text-emerald-300" />
+                  <StatTile icon={HeartCrack} label="Defeats" value={totalLosses.toLocaleString()} tone="text-red-300" />
                   <StatTile icon={TrendingUp} label="Win Rate" value={`${winRate}%`} tone="text-brass-300" bar={Number(winRate)} />
                 </div>
               </Section>
 
               <Section title="Streaks">
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  <StatTile icon={Flame} label="Current" value={currentWinStreak} tone="text-orange-300" />
-                  <StatTile icon={Star} label="Best Streak" value={bestWinStreak} tone="text-brass-300" />
-                  <StatTile icon={CalendarDays} label="Login Streak" value={consecutiveLogins} tone="text-sky-300" />
+                  <StatTile icon={Flame} label="Current" value={currentWinStreak.toLocaleString()} tone="text-orange-300" />
+                  <StatTile icon={Star} label="Best Streak" value={bestWinStreak.toLocaleString()} tone="text-brass-300" />
+                  <StatTile icon={CalendarDays} label="Login Streak" value={consecutiveLogins.toLocaleString()} tone="text-sky-300" />
                   <StatTile icon={LibraryBig} label={`Cards (${ALL_CARDS.length})`} value={ownedCards.length} tone="text-sky-300" />
                 </div>
               </Section>
@@ -430,7 +430,7 @@ const PlayerStats = ({ onClose }) => {
                         isCompleted ? 'bg-brass-400/10 text-brass-300 ring-brass-300/30' : 'bg-white/[0.04] text-plush-300 ring-white/10'
                       }`}
                     >
-                      +{achievement.reward}
+                      +{achievement.reward.toLocaleString()}
                       <Coins aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
                       <span className="sr-only">coins</span>
                     </div>

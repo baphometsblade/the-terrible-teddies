@@ -85,8 +85,8 @@ const GemBundle = ({ bundle, tier, processing, onBuy }) => {
       <span className="relative mt-3 font-display text-3xl font-extrabold leading-none text-white tabular-nums">
         {bundle.gems.toLocaleString()}
       </span>
-      {bundle.bonus > 0 && <span id={`${id}-bonus`} className="relative mt-2 text-emerald-300 text-xs font-bold tracking-wide">+{bundle.bonus} BONUS</span>}
-      {bundle.bonus > 0 && <span id={`${id}-total`} className="relative text-plush-300 text-[11px] mt-0.5">{bundle.gems + bundle.bonus} total</span>}
+      {bundle.bonus > 0 && <span id={`${id}-bonus`} className="relative mt-2 text-emerald-300 text-xs font-bold tracking-wide">+{bundle.bonus.toLocaleString()} BONUS</span>}
+      {bundle.bonus > 0 && <span id={`${id}-total`} className="relative text-plush-300 text-[11px] mt-0.5">{(bundle.gems + bundle.bonus).toLocaleString()} total</span>}
       <span className="relative mt-auto pt-4">
         <span className="btn-brass inline-flex items-center h-9 px-5 rounded-full font-display font-extrabold text-base tabular-nums">
           ${bundle.price.toFixed(2)}
