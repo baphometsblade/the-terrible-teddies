@@ -1,7 +1,6 @@
 import { fileURLToPath, URL } from "url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { resolve } from "path";
 import { siteUrlFrom, socialMetaTags } from "./src/lib/siteMeta.js";
 
 // The link preview's absolute URLs (og:url, og:image and its size and alt,
@@ -42,10 +41,6 @@ export default defineConfig({
         find: "@",
         replacement: fileURLToPath(new URL("./src", import.meta.url)),
       },
-      {
-        find: "lib",
-        replacement: resolve(__dirname, "lib"),
-      },
       // supabase-js statically imports Realtime and Storage and constructs both
       // in its constructor, so they ship in the entry chunk whether or not the
       // app uses them. This one never opens a channel or touches a bucket — it
@@ -84,7 +79,12 @@ export default defineConfig({
           animations: ['framer-motion'],
           ui: ['@radix-ui/react-slot', '@radix-ui/react-toast', '@radix-ui/react-progress', '@radix-ui/react-switch'],
           state: ['zustand'],
-          effects: ['canvas-confetti', 'howler'],
+          // Howler is deliberately not here. Its only importer is
+          // src/utils/sounds.js, which only GameBoard imports, so Rollup keeps
+          // it in the GameBoard chunk. Grouped with confetti it downloaded with
+          // every dialog that celebrates, Daily Rewards' once-a-day auto-open
+          // included, for players who might never start a battle.
+          effects: ['canvas-confetti'],
         },
       },
     },
