@@ -387,11 +387,13 @@ for (const viewport of [{ width: 320, height: 640 }, { width: 640, height: 800 }
     await expect(shop.locator(tiles)).toHaveCount(7, SLOW);
     expect(await spills(shop), 'Shop').toEqual([]);
     // And "View odds" keeps to one line beside its heading: at 320 it broke
-    // in two.
+    // in two. Counted from its words' line boxes, not its height: the button
+    // is a 44px target now, far taller than its one line of text.
     const lines = await shop.getByRole('button', { name: 'View odds' }).evaluate((b) => {
-      const cs = getComputedStyle(b);
-      return (b.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) / parseFloat(cs.lineHeight);
+      const range = document.createRange();
+      range.selectNodeContents(b);
+      return new Set([...range.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top + r.height / 2))).size;
     });
-    expect(lines).toBeLessThan(1.5);
+    expect(lines).toBe(1);
   });
 }
