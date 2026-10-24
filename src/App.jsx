@@ -551,20 +551,23 @@ function App() {
   // lastLoginDate behind, and this effect re-runs whenever the session object
   // changes, which supabase-js replaces on every return to the tab and every
   // hourly token refresh. After the first time, the menu's glowing Daily
-  // rewards button carries it. The day is marked as opened only when it
-  // opens, so one held back opens when the player is next on the menu.
+  // rewards button carries it. The day is marked when the panel shows, not
+  // when this would open it: one held back still opens when the player is
+  // next on the menu, and one the player opened first (the Daily Rewards
+  // shortcut, or its menu button before this fired) counts as today's. Marked
+  // only by this timer, that panel reopened by itself the moment it closed.
   const dailyAutoOpened = useRef(null);
   useEffect(() => {
+    if (showDailyRewards && userId) dailyAutoOpened.current = `${userId}|${new Date().toDateString()}`;
+  }, [showDailyRewards, userId]);
+  useEffect(() => {
     const today = new Date().toDateString();
-    const key = `${session?.user?.id}|${today}`;
+    const key = `${userId}|${today}`;
     if (onBareMenu && lastLoginDate !== today && dailyAutoOpened.current !== key) {
-      const timer = setTimeout(() => {
-        dailyAutoOpened.current = key;
-        setShowDailyRewards(true);
-      }, 500);
+      const timer = setTimeout(() => setShowDailyRewards(true), 500);
       return () => clearTimeout(timer);
     }
-  }, [session, lastLoginDate, onBareMenu]);
+  }, [userId, session, lastLoginDate, onBareMenu]);
 
   // The tutorial, for a player who has not finished it, a beat after the menu
   // is bare (after Daily Rewards, as a rule). Opened this way it closes again

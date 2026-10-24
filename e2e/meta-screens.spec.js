@@ -216,6 +216,26 @@ test.describe('daily rewards', () => {
     await expect(page.getByRole('dialog', { name: 'Daily Rewards' })).toBeVisible(SLOW);
   });
 
+  // Opened by the player (the Daily Rewards shortcut here, or its menu button
+  // before the auto-open fired), it is today's opening: closed unclaimed, it
+  // stays closed. Only the auto-open marked the day, and that is held back
+  // while a dialog is open, so this one reopened the moment it was closed.
+  test('opened by its shortcut, stays closed once closed unclaimed', async ({ page }) => {
+    await bootToMainMenu(page);
+    await seedNewDay(page);
+    await page.goto('/?action=rewards');
+    const daily = page.getByRole('dialog', { name: 'Daily Rewards' });
+    await expect(daily).toBeVisible(SLOW);
+    await expect(daily.getByRole('button', { name: 'Claim', exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(daily).toHaveCount(0, SLOW);
+    await page.waitForTimeout(1500);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    // The menu's button still opens it.
+    await page.getByRole('button', { name: /Daily rewards/i }).first().click();
+    await expect(daily).toBeVisible(SLOW);
+  });
+
   // A new player who claims and goes straight into a battle: the tutorial,
   // a second after Daily Rewards closed, landed on their first battle.
   test('nor does the tutorial land on a battle started the moment it closed', async ({ page }) => {
