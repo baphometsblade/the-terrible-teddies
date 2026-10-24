@@ -90,37 +90,47 @@ describe('challenge pool shape', () => {
 });
 
 // Each challenge's icon is drawn as an emoji (Challenges.jsx), so it must be
-// one that every platform draws in colour. Two were not: '🂠' has no emoji
-// form and drew as a flat white rectangle among colour ones, and '🫙' (Emoji
-// 14.0) is a blank box on Windows 10 and on Android before 12L.
+// one that every platform draws in colour. Browsers draw emoji with the
+// system's font, and Windows 10's stops at Emoji 12.0 (13.0 came with
+// Windows 11 and Android 11). Three were not: '🂠' has no emoji form and drew
+// as a flat white rectangle among colour ones, and '🫙' (Emoji 14.0) and '🪙'
+// (13.0) are blank boxes on Windows 10 and on Android 10.
 describe('challenge icons', () => {
   // Starts with an emoji that defaults to its colour form, or one that asks
   // for it (U+FE0F).
   const COLOUR_EMOJI = /^(?:\p{Emoji_Presentation}|\p{Emoji}️)/u;
-  // Emoji 14.0 and later: Symbols and Pictographs Extended-A outside what
-  // Emoji 12.0 and 13.0 put there, and the few added in other blocks since.
-  const EXTENDED_A_TO_13 = [
-    [0x1fa70, 0x1fa74], [0x1fa78, 0x1fa7a], [0x1fa80, 0x1fa86], [0x1fa90, 0x1faa8],
-    [0x1fab0, 0x1fab6], [0x1fac0, 0x1fac2], [0x1fad0, 0x1fad6],
+  // Emoji 13.0 and later: Symbols and Pictographs Extended-A outside what
+  // Emoji 12.0 put there, and the ones added in other blocks since (13.0's
+  // hut to bubble tea, then 14.0 on).
+  const EXTENDED_A_TO_12 = [[0x1fa70, 0x1fa73], [0x1fa78, 0x1fa7a], [0x1fa80, 0x1fa82], [0x1fa90, 0x1fa95]];
+  const NEWER_ELSEWHERE = [
+    0x1f6d6, 0x1f6d7, 0x1f6fb, 0x1f6fc, 0x1f90c, 0x1f972, 0x1f977, 0x1f978, 0x1f9a3, 0x1f9a4, 0x1f9ab, 0x1f9ac,
+    0x1f9ad, 0x1f9cb,
+    0x1f6d8, 0x1f6dc, 0x1f6dd, 0x1f6de, 0x1f6df, 0x1f7f0, 0x1f979, 0x1f9cc,
   ];
-  const NEWER_ELSEWHERE = [0x1f6d8, 0x1f6dc, 0x1f6dd, 0x1f6de, 0x1f6df, 0x1f7f0, 0x1f979, 0x1f9cc];
   const tooNew = (cp) => NEWER_ELSEWHERE.includes(cp)
-    || (cp >= 0x1fa70 && cp <= 0x1faff && !EXTENDED_A_TO_13.some(([from, to]) => cp >= from && cp <= to));
+    || (cp >= 0x1fa70 && cp <= 0x1faff && !EXTENDED_A_TO_12.some(([from, to]) => cp >= from && cp <= to));
   const graphemes = (s) => [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(s)];
 
-  it('catches the two that broke', () => {
+  it('catches the three that broke', () => {
     expect('🂠').not.toMatch(COLOUR_EMOJI);
     expect(tooNew('🫙'.codePointAt(0))).toBe(true);
-    // ...and lets the old ones through.
+    expect(tooNew('🪙'.codePointAt(0))).toBe(true);
+    // ...and the rest of Emoji 13.0, in Extended-A and outside it.
+    expect(tooNew('🪃'.codePointAt(0))).toBe(true);
+    expect(tooNew('🥲'.codePointAt(0))).toBe(true);
+    // ...and lets the old ones through, up to Emoji 12.0's last.
     expect('⚔️').toMatch(COLOUR_EMOJI);
-    expect(tooNew('🪙'.codePointAt(0))).toBe(false);
+    expect(tooNew('🩸'.codePointAt(0))).toBe(false);
+    expect(tooNew('🪕'.codePointAt(0))).toBe(false);
+    expect(tooNew('🥱'.codePointAt(0))).toBe(false);
   });
 
-  it.each([...DAILY_POOL, ...WEEKLY_POOL].map((c) => [c.id, c.icon]))('%s (%s) is one colour emoji from Emoji 13.0 or earlier', (id, icon) => {
+  it.each([...DAILY_POOL, ...WEEKLY_POOL].map((c) => [c.id, c.icon]))('%s (%s) is one colour emoji from Emoji 12.0 or earlier', (id, icon) => {
     expect(graphemes(icon), 'more than one glyph').toHaveLength(1);
     expect(icon, 'has no colour (emoji) form').toMatch(COLOUR_EMOJI);
     const fresh = [...icon].map((ch) => ch.codePointAt(0)).filter(tooNew);
-    expect(fresh.map((cp) => `U+${cp.toString(16).toUpperCase()}`), 'is newer than Emoji 13.0').toEqual([]);
+    expect(fresh.map((cp) => `U+${cp.toString(16).toUpperCase()}`), 'is newer than Emoji 12.0').toEqual([]);
   });
 });
 

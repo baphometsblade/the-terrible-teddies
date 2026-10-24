@@ -26,11 +26,13 @@ export const STAT_TO_STORE_FIELD = {
 
 // Each `icon` is drawn as the challenge's emoji (Challenges.jsx), so it must be
 // a real emoji that every platform draws in colour: one with emoji
-// presentation (or an explicit U+FE0F), from Emoji 13.0 or earlier. '🂠'
-// (U+1F0A0) has no emoji form and drew as a flat white rectangle among colour
-// ones; '🫙' (U+1FAD9, Emoji 14.0) is a blank box on Windows 10 and Android
-// before 12L. Nothing from Emoji 14.0 on (U+1FAD7-1FAD9 and its neighbours)
-// is safe yet. challenges.test.js holds every icon to this.
+// presentation (or an explicit U+FE0F), from Emoji 12.0 or earlier. Browsers
+// draw emoji with the system's font, and Windows 10's stops at Emoji 12.0
+// (Emoji 13.0 came with Windows 11 and Android 11), so anything newer is a
+// blank box there and on Android 10. '🂠' (U+1F0A0) has no emoji form and
+// drew as a flat white rectangle among colour ones; '🫙' (Emoji 14.0) and
+// '🪙' (Emoji 13.0) were boxes on Windows 10. challenges.test.js holds every
+// icon to this.
 //
 // --- Daily pool (12 candidates, 3 per tracked daily stat) -----------------
 export const DAILY_POOL = [
@@ -66,7 +68,7 @@ export const WEEKLY_POOL = [
   { id: 'w7', name: 'Collect 5 New Cards', description: 'Add 5 new cards to your collection', target: 5, reward: { type: 'gems', amount: 30 }, icon: '📚', stat: 'weeklyNewCards' },
   // weeklyCoinsEarned (weekCoinsEarned)
   { id: 'w8', name: "Rattle The Tip Jar", description: 'Earn 250 coins from battles', target: 250, reward: { type: 'pack', amount: 1 }, icon: '💸', stat: 'weeklyCoinsEarned' },
-  { id: 'w9', name: 'Earn 500 Coins', description: 'Earn 500 coins from battles', target: 500, reward: { type: 'legendaryPack', amount: 1 }, icon: '🪙', stat: 'weeklyCoinsEarned' },
+  { id: 'w9', name: 'Earn 500 Coins', description: 'Earn 500 coins from battles', target: 500, reward: { type: 'legendaryPack', amount: 1 }, icon: '🤑', stat: 'weeklyCoinsEarned' },
   { id: 'w10', name: 'Rob The Whole Register', description: 'Earn 1,000 coins from battles', target: 1000, reward: { type: 'gems', amount: 75 }, icon: '💰', stat: 'weeklyCoinsEarned' },
 ];
 
