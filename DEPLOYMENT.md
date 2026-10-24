@@ -29,7 +29,10 @@ npx supabase link --project-ref <your-project-ref>
 Migrations live in `supabase/migrations/` and are ordered by timestamp. They
 create the players/purchases/user_gems tables, RLS policies, the
 `SECURITY DEFINER` RPCs, rate limiting, atomic Stripe fulfillment with
-refund/chargeback reversal, and the search-path hardening.
+refund/chargeback reversal, and the search-path hardening; then cloud saves and
+the server-side rank (`20261023000000`, with its index in `20261024000000`) and
+the one-per-account Starter Gem Pack hold (`20261023000100`), each described
+below.
 
 ```bash
 npx supabase db push
@@ -38,9 +41,10 @@ npx supabase db push
 ### Cloud saves and the server-side rank (`20261023000000_cloud_saves_and_rank.sql`)
 
 This migration moves each player's progress onto their account and ranks the
-leaderboard on the server. It is applied by hand like the others, and **the
-client may be deployed before or after it**: the app checks for the new
-functions at sign-in and, while they are missing, behaves exactly as before —
+leaderboard on the server. It is applied with `npx supabase db push`, like the
+others, and **the client may be deployed before or after it**: the app checks
+for the new functions at sign-in and, while they are missing, behaves exactly
+as before —
 progress stays on the device, Settings → Account says *Saved on this device
 only*, and the leaderboard uses the old view.
 
@@ -71,7 +75,11 @@ Supabase's security advisor will list two of these, both deliberate:
 `player_saves` as "RLS enabled, no policy" (there is meant to be no direct
 access at all), and `leaderboard_trophies` as a security-definer view, as it
 already lists `leaderboard` — definer rights are what let it rank across
-every player while exposing only the ranking columns.
+every player while exposing only the ranking columns. Leave both as they are:
+no client role holds any privilege on `player_saves`, so the missing policy is
+the design, not a gap, and as a `security_invoker` view the board would shrink
+to the caller's own row (`players` lets each player read only their own). The
+full list of deliberate findings is in step 7 of section 4.
 
 Before pushing, replay the whole chain against a scratch PostgreSQL 16 — the
 CI `migrations` job does the same, and it asserts the grants and the
@@ -145,8 +153,9 @@ Dashboard → Edge Functions → Secrets (or `npx supabase secrets set KEY=value
 | `DENO_ENV` | `production` |
 
 `SUPABASE_SERVICE_ROLE_KEY` is used by `create-checkout-session` as well as the
-webhook: it records each account's open Starter Gem Pack checkout. Hosted edge
-functions are given it by default.
+webhook: it records each account's open Starter Gem Pack checkout in
+`checkout_holds` (`20261023000100`), a table no client role can touch. Hosted
+edge functions are given it by default.
 
 ### Auth: Site URL, redirect URLs and email (password reset)
 
@@ -188,8 +197,11 @@ set a new password, sign out, and sign in with it.
 1. Use **live** keys for real revenue (test keys for staging).
 2. The gem bundles and their prices are defined **server-side** in
    `supabase/functions/create-checkout-session/index.ts` and re-validated in
-   `stripe-webhook/index.ts`. Prices cannot be tampered from the client. Keep
-   the `GEM_BUNDLES` tables in those two files in sync.
+   `stripe-webhook/index.ts`. Prices cannot be tampered from the client. Four
+   tables must agree: `GEM_BUNDLES` in both edge functions, `GEM_BUNDLES` in
+   `src/components/Shop.jsx` (what the tiles show) and `BUNDLE_PRICES` in
+   `src/utils/purchaseAnalytics.js` (the revenue event's value);
+   `src/utils/gemBundles.test.js` fails CI if they drift.
 3. Create the webhook endpoint: Stripe → Developers → Webhooks → Add endpoint
    - URL: `https://<project-ref>.functions.supabase.co/stripe-webhook`
    - Events:
@@ -271,10 +283,31 @@ Point `ALLOWED_ORIGIN` (Supabase secret) at the deployed domain.
    Then sign in to the same account in a private window: the progress loads
    from the account, and the gem count matches the first window's rather than
    adding the purchase again (needs `20261023000000`; see section 1).
-5. Run `get_advisors` (security) on the project — expect no RLS gaps on
+5. Buy the **Starter Gem Pack** once on an account (a test card on test
+   keys), then open the Shop again: the offer shows *Claimed* ("One per
+   account, and you've had yours.") with no Buy button. A Shop that was
+   already open meets `409 already_purchased` from `create-checkout-session`
+   instead, shown as "Already claimed". A second payment that got through
+   anyway is refunded in full in Stripe and recorded in `purchases` as
+   `refunded_duplicate`, with no gems (needs `20261023000100`; see the
+   security model below).
+6. Reset a password end to end, as in section 1: ask for a reset on the live
+   site, open the email's link, set a new password, sign out, and sign in
+   with it.
+7. Run `get_advisors` (security) on the project — expect no RLS gaps on
    `players` / `user_gems` / `purchases` and no `function_search_path_mutable`
    warnings (every `SECURITY DEFINER` function now pins its search_path).
-6. If a previous deploy ever shipped the (now-removed) `battle-action` function,
+   Expect these findings, all deliberate: "RLS enabled, no policy" on
+   `rate_limits`, `player_saves` and `checkout_holds` (each is reached only
+   through `SECURITY DEFINER` functions or the service role, and no client
+   role holds any privilege on it), and "security definer view" on
+   `leaderboard` and `leaderboard_trophies` (definer rights let them rank
+   every player while exposing only the ranking columns). Leave them as they
+   are: those tables are meant to be out of every client's reach
+   (`checkout_holds` holds each buyer's live Stripe checkout URL), and as
+   `security_invoker` views the boards would show each player only their own
+   row.
+8. If a previous deploy ever shipped the (now-removed) `battle-action` function,
    undeploy it: `npx supabase functions delete battle-action`.
 
 ---
