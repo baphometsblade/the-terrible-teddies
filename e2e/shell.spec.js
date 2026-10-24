@@ -170,8 +170,6 @@ test.describe('the system Back', () => {
     expect(page.url()).toBe(url);
   });
 
-  // A reload with a dialog open starts the new page on the old page's guard
-  // entry, which it must not mistake for its own.
   // A dialog takes Back as it mounts, and its chunk comes first. On a slow
   // connection the loader stood over the menu holding nothing, and Back, the
   // natural way to give up on a spinner, left the game.
@@ -225,6 +223,8 @@ test.describe('the system Back', () => {
     await expect(battle(page)).toBeVisible();
   });
 
+  // A reload with a dialog open starts the new page on the old page's guard
+  // entry, which it must not mistake for its own.
   test('still closes a dialog after a reload', async ({ page }) => {
     const shop = page.getByRole('dialog', { name: 'Shop' });
     await page.getByRole('button', { name: 'Shop', exact: true }).click();
