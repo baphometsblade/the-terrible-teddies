@@ -186,8 +186,12 @@ export const GemSpendConfirm = ({ item, onConfirm, onCancel }) => {
             {item.price.toLocaleString()}
             <span className="sr-only"> gems</span>
           </div>
+          {/* Two halves that each stay whole: at 320 the line broke as
+              "3,606 / after". */}
           <p data-confirm-balance="" className="mt-2 text-sm text-plush-300 tabular-nums">
-            {`You have ${gems.toLocaleString()} gems · ${after.toLocaleString()} after`}
+            <span className="whitespace-nowrap">{`You have ${gems.toLocaleString()} gems`}</span>
+            {' · '}
+            <span className="whitespace-nowrap">{`${after.toLocaleString()} after`}</span>
           </p>
         </div>
         <div className="relative mt-5 flex gap-3">
