@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Mail, LockKeyhole, LogIn, UserPlus, LoaderCircle } from 'lucide-react';
 import { supabase } from '../utils/supabaseClient';
-import { useToast } from "@/components/ui/use-toast";
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_RING } from '@/lib/focus';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -10,7 +9,7 @@ import { PASSWORD_MIN_LENGTH } from '@/lib/authLanding';
 import { ALL_CARDS } from '../stores/gameStore';
 import CardFan from './CardFan';
 import DialogErrorBoundary from './DialogErrorBoundary';
-import { AuthField, AUTH_ACTION, busyLook } from './AuthField';
+import { AuthAlert, AuthField, AUTH_ACTION, busyLook, CheckEmailPanel } from './AuthField';
 
 // The reset form is a chunk of its own: this screen is on everyone's first
 // paint, and few visitors ever open it. Fetched as the pointer or the focus
@@ -31,25 +30,51 @@ const KEY_ART = ['Mama Mauls', 'The Godfluffer', 'Duke of Dumpsterfire']
 // form and the set-new-password panel (AuthField.jsx), which says why each
 // is drawn the way it is.
 
+// What a failed sign-in or sign-up says. The server's own words for a refusal
+// ("Invalid login credentials"); for a request that got no answer at all,
+// which supabase-js reports as an AuthRetryableFetchError rather than
+// throwing, the reset form's words (resetRequestOutcome) instead of
+// "Failed to fetch".
+const OFFLINE = "Couldn't reach the server. Check your connection and try again.";
+const requestErrorText = (error) => (error?.name === 'AuthRetryableFetchError' || !error?.message ? OFFLINE : error.message);
+
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loadingAction, setLoadingAction] = useState(null); // 'signin' | 'signup' | null
-  const { toast } = useToast();
+  // What sign-in or sign-up came back with, said under the buttons until the
+  // player types again. These were toasts, gone in five seconds: a player
+  // who looked away from a failed sign-in saw an unchanged form.
+  const [formError, setFormError] = useState(null);
+  // The address a sign-up is waiting on a confirmation for. The form gives
+  // way to "Check your email" (the reset form's panel), which stays until
+  // the player goes back; it was a toast too, and once it had gone the
+  // screen gave no sign the account was made or what to do next.
+  const [signedUpAs, setSignedUpAs] = useState(null);
   // 'signin' (sign in or sign up) or 'forgot' (ask for a reset link). An
   // expired reset link's "Send a new link" opens it on 'forgot'.
   const [authIntent, clearAuthIntent] = useAuthIntent();
   const [mode, setMode] = useState(() => (authIntent === 'forgot' ? 'forgot' : 'signin'));
   useEffect(() => { if (authIntent) clearAuthIntent(); }, [authIntent, clearAuthIntent]);
-  // Back from the reset form, focus returns to the control that opened it.
+  // Back from the reset form or the sign-up panel, focus returns to the
+  // control that opened it.
   const forgotRef = useRef(null);
-  const returning = useRef(false);
+  const signUpRef = useRef(null);
+  const passwordRef = useRef(null);
+  const returning = useRef(null); // the ref to focus on the way back
   useEffect(() => {
-    if (mode === 'signin' && returning.current) {
-      returning.current = false;
-      forgotRef.current?.focus();
+    if (mode === 'signin' && !signedUpAs && returning.current) {
+      const to = returning.current;
+      returning.current = null;
+      to.current?.focus();
     }
-  }, [mode]);
+  }, [mode, signedUpAs]);
+
+  // Typing again clears what the last attempt said.
+  const changeField = (setter) => (e) => {
+    setter(e.target.value);
+    setFormError(null);
+  };
   // Only where there is room beside the form: the fan and the form side by
   // side need about 800px. On a phone the form already runs most of the
   // screen's height, and art above it would push Sign In below the fold.
@@ -65,15 +90,19 @@ const Auth = () => {
     if (form && !form.reportValidity()) return;
     if (!email || !password) return;
     setLoadingAction('signup');
+    setFormError(null);
     try {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
-      } else {
-        toast({ title: "Account Created", description: "Check your email for the confirmation link!" });
+        setFormError(requestErrorText(error));
+      } else if (!data?.session) {
+        // The server wants the address confirmed first. (With confirmation
+        // off it signs the player straight in, and the auth listener takes
+        // them on to the game; there is nothing to say here.)
+        setSignedUpAs(email.trim());
       }
-    } catch (err) {
-      toast({ title: "Network error", description: "Couldn't reach the server. Please try again.", variant: "destructive" });
+    } catch {
+      setFormError(OFFLINE);
     } finally {
       setLoadingAction(null);
     }
@@ -83,15 +112,27 @@ const Auth = () => {
     e.preventDefault();
     if (!email || !password) return;
     setLoadingAction('signin');
+    setFormError(null);
+    let failed = false;
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        toast({ title: "Sign In Failed", description: error.message, variant: "destructive" });
+        setFormError(requestErrorText(error));
+        failed = true;
       }
-    } catch (err) {
-      toast({ title: "Network error", description: "Couldn't reach the server. Please try again.", variant: "destructive" });
+    } catch {
+      setFormError(OFFLINE);
+      failed = true;
     } finally {
       setLoadingAction(null);
+    }
+    // Into the password, selected, so it can be typed again at once (the
+    // button had the focus, and was disabled while the request ran).
+    if (failed) {
+      requestAnimationFrame(() => {
+        passwordRef.current?.focus();
+        passwordRef.current?.select();
+      });
     }
   };
 
@@ -151,10 +192,16 @@ const Auth = () => {
                 <ForgotPassword
                   email={email}
                   onEmailChange={setEmail}
-                  onBack={() => { returning.current = true; setMode('signin'); }}
+                  onBack={() => { returning.current = forgotRef; setMode('signin'); }}
                 />
               </Suspense>
             </DialogErrorBoundary>
+          ) : signedUpAs ? (
+            <CheckEmailPanel onBack={() => { returning.current = signUpRef; setSignedUpAs(null); }}>
+              If <strong className="font-semibold text-white [overflow-wrap:anywhere]">{signedUpAs}</strong> is new here,
+              we&apos;ve sent it a link to confirm your account. Open it, then sign in. If nothing arrives in a few
+              minutes, check your spam folder; if that address already has an account, sign in with its password.
+            </CheckEmailPanel>
           ) : (
           <form onSubmit={handleSignIn} className="relative">
             <AuthField
@@ -165,7 +212,7 @@ const Auth = () => {
               autoComplete="email"
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={changeField(setEmail)}
               required
             />
 
@@ -173,12 +220,13 @@ const Auth = () => {
               id="auth-password"
               label="Password"
               icon={LockKeyhole}
+              inputRef={passwordRef}
               className=""
               type="password"
               autoComplete="current-password"
-              aria-describedby="auth-password-rule"
+              aria-describedby={formError ? 'auth-password-rule auth-error' : 'auth-password-rule'}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={changeField(setPassword)}
               minLength={PASSWORD_MIN_LENGTH}
               required
             />
@@ -197,7 +245,7 @@ const Auth = () => {
                 type="button"
                 onPointerEnter={prefetchForgotPassword}
                 onFocus={prefetchForgotPassword}
-                onClick={() => setMode('forgot')}
+                onClick={() => { setFormError(null); setMode('forgot'); }}
                 // A line of small text, in a box padded (and the padding
                 // cancelled by the negative margin) only enough for a snug
                 // focus ring. The 44px a finger needs is a transparent
@@ -226,6 +274,7 @@ const Auth = () => {
                 {loadingAction === 'signin' ? 'Signing in…' : 'Sign In'}
               </button>
               <button
+                ref={signUpRef}
                 type="button"
                 onClick={handleSignUp}
                 disabled={!!loadingAction}
@@ -237,6 +286,9 @@ const Auth = () => {
                 {loadingAction === 'signup' ? 'Creating…' : 'Sign Up'}
               </button>
             </div>
+            {/* Under the buttons, where the reset form says its own, so the
+                buttons do not move under the player's finger when it comes. */}
+            {formError && <AuthAlert id="auth-error">{formError}</AuthAlert>}
           </form>
           )}
           {/* Where progress is kept, worded to be true before sign-in can

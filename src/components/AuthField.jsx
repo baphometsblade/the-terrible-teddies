@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+import { CircleAlert } from 'lucide-react';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 
 // The account screens' shared form parts: the sign-in / sign-up / reset form
@@ -41,6 +43,44 @@ export const AUTH_TEXT_BUTTON =
 // rather than broken.
 export const busyLook = (loadingAction, which) =>
   loadingAction === which ? 'disabled:cursor-wait' : 'disabled:opacity-60 disabled:cursor-not-allowed';
+
+/**
+ * What a request on the account screens came back with, said where the
+ * player is looking (under the form's buttons) and announced (role=alert).
+ * The reset form's network failure, and sign-in and sign-up's answers, which
+ * used to be toasts that were gone in five seconds.
+ */
+export const AuthAlert = ({ id, children }) => (
+  <p id={id} role="alert" className="mt-4 flex items-start justify-center gap-1.5 text-sm text-red-200">
+    <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-red-300" strokeWidth={2.4} />
+    <span>{children}</span>
+  </p>
+);
+
+/**
+ * "Check your email", in place of a form whose job is done: after asking for
+ * a reset link, and after signing up while the server wants the address
+ * confirmed. The heading takes the focus as it appears (tabIndex -1: never a
+ * tab stop), so a screen reader starts here; `children` is the message,
+ * `onBack` returns to signing in, and `footer` is anything under that (the
+ * reset form's Send again).
+ */
+export const CheckEmailPanel = ({ children, onBack, footer = null }) => {
+  const headingRef = useRef(null);
+  useEffect(() => { headingRef.current?.focus(); }, []);
+  return (
+    <div className="relative">
+      <h2 ref={headingRef} tabIndex={-1} className="font-display text-xl font-bold text-white focus:outline-none">
+        Check your email
+      </h2>
+      <p className="mt-2 mb-6 text-sm leading-relaxed text-plush-200">{children}</p>
+      <button type="button" onClick={onBack} className={`btn-brass ${AUTH_ACTION}`}>
+        Back to sign in
+      </button>
+      {footer}
+    </div>
+  );
+};
 
 /**
  * A labelled field with its icon set into the left of the well. The label

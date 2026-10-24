@@ -14,14 +14,16 @@ const TITLE = 'Reset Password · Terrible Teddies';
 
 // What each stage shows at its head: the medallion's icon and metal, and the
 // title. Brass for the work at hand and its success, pewter for a link that
-// could not be used.
+// could not be used. Titles in sentence case, as the reset form that sends
+// the link writes its own ("Reset your password", "Check your email"): one
+// flow, one case.
 const HEAD = {
-  checking: { icon: KeyRound, metal: RARITY_METAL.epic, title: 'Checking Your Link' },
-  'set-password': { icon: KeyRound, metal: RARITY_METAL.legendary, title: 'Set a New Password' },
-  done: { icon: Check, metal: RARITY_METAL.legendary, title: 'Password Changed' },
-  expired: { icon: MailX, metal: RARITY_METAL.common, title: 'This Link Has Expired' },
-  invalid: { icon: MailX, metal: RARITY_METAL.common, title: 'This Link Can’t Be Used' },
-  offline: { icon: WifiOff, metal: RARITY_METAL.common, title: 'Couldn’t Check Your Link' },
+  checking: { icon: KeyRound, metal: RARITY_METAL.epic, title: 'Checking your link' },
+  'set-password': { icon: KeyRound, metal: RARITY_METAL.legendary, title: 'Set a new password' },
+  done: { icon: Check, metal: RARITY_METAL.legendary, title: 'Password changed' },
+  expired: { icon: MailX, metal: RARITY_METAL.common, title: 'This link has expired' },
+  invalid: { icon: MailX, metal: RARITY_METAL.common, title: 'This link can’t be used' },
+  offline: { icon: WifiOff, metal: RARITY_METAL.common, title: 'Couldn’t check your link' },
 };
 
 /**

@@ -13,11 +13,12 @@ async function expectNoAxeViolations(page, label) {
 
 // Every request to the fake project, answered per test. `auth` records what
 // the reset form and the panel sent.
-async function stubBackend(page, { recover, updateUser, user, token } = {}) {
+async function stubBackend(page, { recover, updateUser, user, token, signup } = {}) {
   const auth = { recover: [], updates: [] };
   await page.route(`**${REF}.supabase.co/**`, async (route) => {
     const req = route.request();
     const url = req.url();
+    if (url.includes('/auth/v1/signup') && signup) return signup(route);
     if (url.includes('/auth/v1/recover')) {
       auth.recover.push({ url, body: req.postDataJSON() });
       return recover ? recover(route) : route.fulfill({ json: {} });
@@ -157,6 +158,80 @@ test.describe('asking for a reset link', () => {
     await page.getByRole('button', { name: 'Send reset link' }).click();
     await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible();
     expect(auth.recover.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// Sign-in and sign-up answered in toasts at the top of the screen, gone in
+// five seconds, while the reset flow on the same card says what happened in
+// place. They say it in place now too.
+test.describe('signing in and signing up', () => {
+  test('a refused sign-in says why under the form until the player types again', async ({ page }) => {
+    await stubBackend(page, {
+      token: (route) => route.fulfill({ status: 400, headers: GOTRUE_2024, json: { code: 'invalid_credentials', msg: 'Invalid login credentials' } }),
+    });
+    await signInScreen(page);
+    await page.getByLabel('Email').fill('qa@example.com');
+    const password = page.getByLabel('Password', { exact: true });
+    await password.fill('not-the-one');
+    const signIn = page.getByRole('button', { name: 'Sign In' });
+    const before = await signIn.boundingBox();
+    await signIn.click();
+
+    const alert = page.getByRole('alert');
+    await expect(alert).toHaveText('Invalid login credentials');
+    await expect(page.locator('form')).toContainText('Invalid login credentials');
+    await expect(page.locator('.toast-viewport > li')).toHaveCount(0);
+    // Ready to type the password again, and tied to the message.
+    await expect(password).toBeFocused();
+    await expect(password).toHaveAccessibleDescription(/Invalid login credentials/);
+    // The buttons did not move under the finger.
+    expect(await signIn.boundingBox()).toEqual(before);
+    await expectNoAxeViolations(page, 'sign-in refused');
+
+    await password.press('x');
+    await expect(alert).toHaveCount(0);
+  });
+
+  test('a sign-up that needs the address confirmed says so in place of the form', async ({ page }) => {
+    await stubBackend(page, {
+      // What Supabase answers when it must confirm the address first: the
+      // new user, and no session.
+      signup: (route) => route.fulfill({
+        json: {
+          id: '22222222-2222-4222-8222-222222222222', aud: 'authenticated', role: '', email: 'new@example.com',
+          confirmation_sent_at: new Date().toISOString(), app_metadata: { provider: 'email' }, user_metadata: {},
+          identities: [], created_at: new Date().toISOString(),
+        },
+      }),
+    });
+    await signInScreen(page);
+    await page.getByLabel('Email').fill('new@example.com');
+    await page.getByLabel('Password', { exact: true }).fill('honeypot-9');
+    await page.getByRole('button', { name: 'Sign Up' }).click();
+
+    const heading = page.getByRole('heading', { name: 'Check your email' });
+    await expect(heading).toBeVisible(SLOW);
+    await expect(heading).toBeFocused();
+    await expect(page.getByText('new@example.com', { exact: true })).toBeVisible();
+    await expect(page.locator('.toast-viewport > li')).toHaveCount(0);
+    await expectNoAxeViolations(page, 'sign-up sent');
+    // It stays: the toast that said this was gone in five seconds.
+    await page.waitForTimeout(5500);
+    await expect(heading).toBeVisible();
+
+    await page.getByRole('button', { name: 'Back to sign in' }).click();
+    await expect(page.getByRole('button', { name: 'Sign Up' })).toBeFocused();
+    await expect(page.getByLabel('Email')).toHaveValue('new@example.com');
+  });
+
+  test('a sign-up that gets no answer says so in the reset form\'s words', async ({ page }) => {
+    await stubBackend(page, { signup: (route) => route.abort('internetdisconnected') });
+    await signInScreen(page);
+    await page.getByLabel('Email').fill('new@example.com');
+    await page.getByLabel('Password', { exact: true }).fill('honeypot-9');
+    await page.getByRole('button', { name: 'Sign Up' }).click();
+    await expect(page.getByRole('alert')).toHaveText("Couldn't reach the server. Check your connection and try again.");
+    await expect(page.locator('.toast-viewport > li')).toHaveCount(0);
   });
 });
 
