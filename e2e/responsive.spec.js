@@ -123,7 +123,8 @@ for (const viewport of [
       const endTurn = page.getByRole('button', { name: 'End Turn' });
       await expect(endTurn).toBeVisible(SLOW);
       await page.getByRole('button', { name: /^Play / }).first().click();
-      await expect(page.getByText('Warming Up')).toHaveCount(2, SLOW); // a card on each side
+      // Exact: the cards' screen-reader descriptions say "Warming Up" too.
+      await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2, SLOW); // a card on each side
       await page.waitForTimeout(600); // entrance animations
 
       const spill = await page.evaluate(() => {
@@ -142,6 +143,24 @@ for (const viewport of [
         return el?.closest('button')?.textContent?.trim() ?? el?.tagName;
       }, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
       expect(hit, 'whatever sits on End Turn takes its taps').toBe('End Turn');
+
+      // Nothing on the table renders under 8px on screen. The rows are
+      // scaled to fit (0.64 at 320x640, 0.45 here at 375x553), and the
+      // names fell to 6.4px and 4.5px, the status chips with them: a card
+      // below the threshold now drops its name (its control and its preview
+      // name it), and the rest of its print grows to stay legible.
+      const tiny = await page.evaluate(() => [...document.querySelectorAll('[data-field] *')]
+        .filter((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
+        // Visible text only: an sr-only description is a 1px box.
+        .filter((el) => { const r = el.getBoundingClientRect(); return r.width > 1 && r.height > 1; })
+        .map((el) => {
+          let zoom = 1;
+          for (let a = el; a; a = a.parentElement) zoom *= parseFloat(getComputedStyle(a).zoom) || 1;
+          return { text: el.textContent.trim(), px: parseFloat(getComputedStyle(el).fontSize) * zoom };
+        })
+        .filter((t) => t.px < 7.99)
+        .map((t) => `${t.text} (${t.px.toFixed(1)}px)`));
+      expect(tiny, 'text on the table renders under 8px').toEqual([]);
     });
   });
 }

@@ -142,7 +142,7 @@ test('asking to leave clears a leftover toast, so nothing sits on the question',
   await page.getByRole('button', { name: 'Battle', exact: true }).click();
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
   await page.getByRole('button', { name: /^Play / }).first().click();
-  await expect(page.getByText('Warming Up')).toHaveCount(2);
+  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2);
 
   const toasts = page.locator('.toast-viewport > li');
   // Up for about six seconds on its own (its duration scales with its length),
@@ -193,6 +193,10 @@ test('a game that ends under the leave question hands the focus to the result', 
   const focusInResult = () => page.evaluate(() =>
     !!document.querySelector('[role="dialog"][aria-label="Defeat"]')?.contains(document.activeElement));
   expect(await focusInResult()).toBe(true);
+  // On Play Again itself, which is what Enter is meant to press, not merely
+  // somewhere inside. (board.spec.js pins it under the Shop upsell, which
+  // used to take the focus for a player low on gems or packs.)
+  await expect(defeat.getByRole('button', { name: 'Play Again' })).toBeFocused();
 });
 
 test('the battle screen turns off pull-to-refresh, and only while a game is live', async ({ page }) => {
@@ -618,12 +622,14 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
   // Chuck's opener is summoning-sick too. The player's field is empty before
   // the first play, so exactly one "Warming Up" here is Chuck's — without this
   // the opener would get a free turn-1 swing the player cannot answer.
-  await expect(page.getByText('Warming Up')).toHaveCount(1);
+  // (Exact, here and below: each card's description for a screen reader says
+  // its state in the same words, and these count the chips.)
+  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(1);
 
   // Turn 1 — play a creature. It arrives summoning-sick, so it must NOT be
   // able to swing this turn: selecting it never opens targeting.
   await page.getByRole('button', { name: /^Play / }).first().click();
-  await expect(page.getByText('Warming Up')).toHaveCount(2); // Chuck's opener + the new arrival
+  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2); // Chuck's opener + the new arrival
 
   // The player's turn is one phase (cards and attacks in any order), so a
   // creature is offered as an attacker the moment it can attack, and a
@@ -655,7 +661,7 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
   // turn 1.
   await endTurn.click();
   await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
-  await expect(page.getByText('Warming Up')).toHaveCount(0);
+  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(0);
   const attacker = page.getByRole('button', { name: /^Select .+ to attack$/ }).first();
   await expect(attacker).toBeVisible(SLOW);
   await attacker.click();
@@ -667,14 +673,14 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
   const hittable = page.locator('.cursor-crosshair').first();
   await expect(hittable).toBeVisible(SLOW);
   await hittable.click();
-  await expect(page.getByText('Exhausted').first()).toBeVisible(SLOW);
+  await expect(page.getByText('Exhausted', { exact: true }).first()).toBeVisible(SLOW);
 
   // Survive the opponent's turn: the attacker must NOT still be Exhausted on
   // turn 3 (a stale write-back once bricked surviving attackers permanently).
   await endTurn.click();
   await expect(page.getByText(/Turn 3/)).toBeVisible(SLOW);
   await expect(endTurn).toBeVisible(SLOW);
-  await expect(page.getByText('Exhausted')).toHaveCount(0);
+  await expect(page.getByText('Exhausted', { exact: true })).toHaveCount(0);
 
   expect(pageErrors, `Unexpected page errors: ${pageErrors.map((e) => e.message).join('; ')}`)
     .toHaveLength(0);
@@ -816,7 +822,7 @@ test('playing a plain card raises no toast: the card landing is the news', async
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
 
   await page.getByRole('button', { name: /^Play / }).first().click();
-  await expect(page.getByText('Warming Up')).toHaveCount(2);
+  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2);
   await expect(page.getByRole('region', { name: 'Battle log' }).getByText('Played Bar-Fight Barry')).toBeVisible();
   // Counted once, not polled: a retrying toHaveCount(0) would simply wait out
   // a toast's few seconds on screen and then pass.
@@ -900,7 +906,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 
     expect(await speechOverCards(page)).toEqual(['opponent over 0 card(s)']);
 
     await page.getByRole('button', { name: /^Play / }).first().click();
-    await expect(page.getByText('Warming Up')).toHaveCount(2);
+    await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2);
     await page.getByRole('button', { name: 'Teddy Emote' }).click();
     await expect(page.locator('[data-speech="player"]:visible')).toHaveCount(1, SLOW);
     const placed = await speechOverCards(page);

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, createContext, useContext, fo
 import {
   Coins, Crosshair, Crown, Flag, Ghost, Hand, Heart, HeartCrack, Layers, ScrollText, Smartphone, Star, Trophy, Volume2, VolumeX, Zap,
 } from 'lucide-react';
-import TeddyCard, { CardBack } from '../TeddyCard';
+import TeddyCard, { CardBack, legibleSize } from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
 import { RARITY_METAL } from '@/lib/rarity';
 import { useToast } from "@/components/ui/use-toast";
@@ -18,7 +18,7 @@ import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../util
 import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder, ownedEmotes } from '@/lib/cosmetics';
-import { abilityRules } from '@/lib/abilities';
+import { abilityRules, describeCard } from '@/lib/abilities';
 import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, canRally, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
 import LeaveBattleDialog from './LeaveBattleDialog';
 import { battlePassTier } from './battlePassTiers';
@@ -308,14 +308,14 @@ const Kbd = ({ children }) => (
  * `placement` (previewPlacement.js) is the box on the felt to centre it in,
  * clear of the row it was opened from, and the zoom and layout that fit.
  *
- * Decorative — aria-hidden — because what it shows is already the card's own
- * content and the battle log's, and the card's accessible name stays the
- * control's. Transparent to the pointer except when a mouse opened it: then
+ * Decorative — aria-hidden — because what it shows a screen reader already
+ * has: the card's description (describeCard, on every card control) and the
+ * battle log. The card's accessible name stays the control's. Transparent to the pointer except when a mouse opened it: then
  * the pointer can move onto it without it closing (`onKeep`), and leaving it
  * or clicking it closes it (`onDismiss`).
  */
 const CardPreview = ({
-  card, placement, rules, keys, hoverable, onKeep, onDismiss, costDelta = 0, cosmeticBorder = null,
+  card, placement, rules, keys, hoverable, onKeep, onDismiss, costDelta = 0, attackDelta = 0, cosmeticBorder = null,
 }) => {
   const { place, x, y, w, h, zoom, layout } = placement;
   const beside = layout === 'row';
@@ -333,7 +333,7 @@ const CardPreview = ({
         onClick={hoverable ? onDismiss : undefined}
       >
         <div className="rounded-[10px] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.9)]" style={{ zoom }}>
-          <TeddyCard teddy={card} lift={false} cosmeticBorder={cosmeticBorder} costDelta={costDelta} artVariant="responsive" artLoading="eager" />
+          <TeddyCard teddy={card} lift={false} cosmeticBorder={cosmeticBorder} costDelta={costDelta} attackDelta={attackDelta} artVariant="responsive" artLoading="eager" />
         </div>
         {(rules || keys) && (
           <div
@@ -381,25 +381,58 @@ const RaisedHint = ({ children }) => (
 // "Warming Up" / "Exhausted", across the lower part of the card, above its
 // stats — over the art rather than in a slot reserved below it. Outside the
 // card's own dimming, so it keeps its contrast on a resting card. The e2e
-// suite counts those words exactly, so each state renders them in a
-// StatusChip and nowhere else.
-const StatusChip = ({ children }) => (
-  <div className="pointer-events-none absolute inset-x-0 bottom-[37px] z-10 flex justify-center">
-    <span className="rounded-full bg-night-950/90 ring-1 ring-white/15 px-2 py-0.5 text-[10px] leading-[14px] font-semibold text-plush-100 whitespace-nowrap shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
-      {children}
-    </span>
-  </div>
-);
+// suite counts these chips by their exact text (the card's description for a
+// screen reader says the same words, in a longer line). `zoom` is the row's: the words grow to stay
+// at 8px on screen (legibleSize), onto two lines where one no longer fits.
+const StatusChip = ({ children, zoom = 1 }) => {
+  const size = legibleSize(10, zoom);
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-[37px] z-10 flex justify-center">
+      <span
+        className="max-w-full rounded-full bg-night-950/90 ring-1 ring-white/15 px-2 py-0.5 text-center text-[10px] leading-[14px] font-semibold text-plush-100 shadow-[0_2px_6px_rgba(0,0,0,0.6)]"
+        style={size > 10 ? { fontSize: size, lineHeight: `${Math.round(size * 1.2)}px` } : undefined}
+      >
+        {children}
+      </span>
+    </div>
+  );
+};
 
 // Untracked: the rows are scaled to fit the felt (0.64 on a 320px phone), and
 // letter-spaced capitals that small split apart at 1x, as the card's old 6px
 // rarity line did ("COMM ON").
-const StealthBand = () => (
-  <div className="absolute inset-x-0 top-[27px] z-10 flex items-center justify-center gap-1 bg-purple-700/90 py-0.5 text-[10px] font-bold leading-[14px] text-white">
-    <Ghost className="h-2.5 w-2.5" aria-hidden="true" />
-    STEALTH
-  </div>
-);
+const StealthBand = ({ zoom = 1 }) => {
+  const size = legibleSize(10, zoom);
+  return (
+    <div
+      className="absolute inset-x-0 top-[27px] z-10 flex items-center justify-center gap-1 bg-purple-700/90 py-0.5 text-[10px] font-bold leading-[14px] text-white"
+      style={size > 10 ? { fontSize: size, lineHeight: `${Math.round(size * 1.2)}px` } : undefined}
+    >
+      <Ghost className="h-2.5 w-2.5" aria-hidden="true" />
+      STEALTH
+    </div>
+  );
+};
+
+// Below this row zoom a table card's 10px name renders under 8px, and the
+// card drops it (TeddyCard's `nameless`): its control and its preview still
+// name it.
+const NAMELESS_BELOW = 0.8;
+
+// A card's description, for the card control's aria-describedby (see
+// describeCard). Visually hidden, in the card's own slot.
+const CardDescription = ({ id, children }) => <span id={id} className="sr-only">{children}</span>;
+// Press props with the description attached — only to a control: a card
+// with no role is content, and its description is read in place.
+const describedPress = (press, id) => (press.role ? { ...press, 'aria-describedby': id } : press);
+
+// Whether an activation came from the keys (Enter or Space on a card, or a
+// native button's keyboard click, which has no click count) or from
+// assistive tech (a click with no pointer behind it), rather than a pointer.
+const viaKeys = (e) => e?.type === 'keydown' || (e?.type === 'click' && e.detail === 0);
+
+// What can hold the focus, for telling whether the focus has been lost.
+const TABBABLE = 'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 // Push the player's current level/xp to the server on the leaderboard's
 // experience scale. Fire-and-forget; syncPlayerLevel no-ops when signed out.
@@ -682,7 +715,19 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
   const [showAbilityPopup, setShowAbilityPopup] = useState(null);
+  const abilityTimerRef = useRef(null);
   const [battleRewards, setBattleRewards] = useState(() => rewardsFrom(null));
+
+  // Where the keyboard focus goes after a keyboard move takes its control
+  // away. A played hand card goes inert on its way out, a target stops being
+  // a control once it is hit, End Turn leaves the screen for Chuck's turn,
+  // Rally and Cancel go once used — and the focus fell to the page each time,
+  // which resets a screen reader's place and leaves the board's own keys (I)
+  // deaf until the player Tabs back in. Set by the move, acted on by the
+  // effect further down once the board has re-rendered. Pointer moves leave
+  // it alone.
+  const refocusRef = useRef(null);
+  const endTurnRef = useRef(null);
 
   // Add to battle log. Ids must be unique — several entries are appended in
   // the same millisecond during the opponent's turn, so Date.now() collides
@@ -1195,7 +1240,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const handRef = useRef(playerHand);
   handRef.current = playerHand;
 
-  // Play a card from hand
+  // Play a card from hand. Says whether it did, for a caller that acts on a
+  // play (pressHandCard's keyboard focus).
   const playCard = (card) => {
     if (currentTurn !== 'player' || phase !== 'main' || gameOver) return;
     if (!handRef.current.some((c) => c.instanceId === card.instanceId)) return;
@@ -1227,7 +1273,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 1));
       battleStatsRef.current.cardsPlayed += 1;
       playSound('cardPlay');
-      return;
+      return true;
     }
 
     // Handle action/trap cards
@@ -1264,13 +1310,17 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // gets nothing more: the card landing on the table is the news, and the
     // log entry below records it (and is what a screen reader hears) — a
     // "Card Played" toast on every play only repeated both.
+    // One timer for the callout: an earlier play's would otherwise take a
+    // later callout down early.
     if (card.ability && card.ability !== 'none') {
       dismissToasts();
       setShowAbilityPopup({ name: card.name, ability: card.ability });
-      safeTimeout(() => setShowAbilityPopup(null), 1500);
+      clearTimeout(abilityTimerRef.current);
+      abilityTimerRef.current = safeTimeout(() => setShowAbilityPopup(null), 1500);
     }
 
     addToBattleLog(`Played ${card.name}${card.ability && card.ability !== 'none' ? ` (${card.ability})` : ''}`);
+    return true;
   };
 
   // Apply special card effects. What a special did shows on the board — a
@@ -1363,12 +1413,21 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setSelectedCard(card);
     setTargetingMode(true);
     // On narrow screens a toast sits on the centre line, exactly where the
-    // "Pick a victim" prompt appears.
+    // "Pick a victim" prompt appears — and so, at every width, does the
+    // ability callout, an opaque panel that hid the prompt for the rest of
+    // its 1.5s when the player picked an attacker straight after a play. Both
+    // have done their job once the player moves on.
     dismissToasts();
+    setShowAbilityPopup(null);
+    // And the attacker's own preview: below ~900px there is no room beside
+    // the rows, so a hover preview of a card on your side opens over Chuck's
+    // row — over the targets — and the first click on one only closed it.
+    hidePreview();
   };
 
-  // Attack a target
-  const attackTarget = (target) => {
+  // Attack a target. `e` is the activation, so a keyboard attack can put the
+  // focus somewhere once the target stops being a control (see refocusRef).
+  const attackTarget = (target, e) => {
     if (!selectedCard || !targetingMode) return;
 
     // Only creatures are valid targets (traps spring on their own and are
@@ -1438,10 +1497,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 2));
     setSelectedCard(null);
     setTargetingMode(false);
+    if (viaKeys(e)) refocusRef.current = { kind: 'attack' };
   };
 
   // Attack opponent directly
-  const attackOpponentDirectly = () => {
+  const attackOpponentDirectly = (e) => {
     if (!selectedCard || !targetingMode) return;
 
     const validTargets = getValidTargets(playerField, opponentField);
@@ -1496,14 +1556,18 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 3));
     setSelectedCard(null);
     setTargetingMode(false);
+    if (viaKeys(e)) refocusRef.current = { kind: 'attack' };
   };
 
   // End turn
-  const endTurn = () => {
+  const endTurn = (e) => {
     // Guard like every sibling handler: only the player, on their own turn, ends
     // it — so a stray call during the opponent's turn can't queue a second
     // executeOpponentTurn.
     if (currentTurn !== 'player') return;
+    // End Turn leaves the screen for Chuck's turn; from the keyboard, the
+    // focus goes back to it when it returns.
+    if (viaKeys(e)) refocusRef.current = { kind: 'turn' };
     setPlayerField(prev => readyCreatures(prev));
     setSelectedCard(null);
     setTargetingMode(false);
@@ -1590,7 +1654,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       const waveFx = [];
 
       // Aura field for royal: the pre-existing board PLUS what was just played,
-      // so a royal the opponent dropped this turn buffs its other attackers.
+      // so a royal the opponent dropped this turn buffs its other attackers —
+      // in the hit, and in the AI's kill check that picks the target.
       // Attackers still come only from activeOpponentField (played cards are
       // summoning-sick and filtered by canAttack).
       const auraField = [...activeOpponentField, ...playedThisTurn];
@@ -1605,7 +1670,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
           // Attack the biggest threat; resolve against its HP just like the
           // player's attackTarget — it survives (fury fires) or dies with trample
           // overkill carrying through to the player's face.
-          const target = chooseAttackTarget(targets, card);
+          const target = chooseAttackTarget(targets, card, auraField);
           // Pass auraField so a 'royal' ally on the opponent's own field —
           // including one it just played this turn — buffs this attacker's hit,
           // same as the player's attackTarget.
@@ -1909,6 +1974,44 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   }, [playerHand.length, handFit.overflow, reducedMotion]);
   const handOverlap = HAND_STEP - handFit.step;
 
+  // The focus a keyboard move left behind (see refocusRef), once the board
+  // has re-rendered: the card now in a played card's place, else End Turn;
+  // after an attack the next ready attacker, else End Turn; after Cancel the
+  // attacker it let go of; after End Turn or Rally, End Turn — for End Turn,
+  // once it is back, on the player's next turn. Only when the focus really
+  // has been lost (to the page, an inert card on its way out, or a card that
+  // is no longer a control): a player who has moved on keeps their place.
+  useEffect(() => {
+    const want = refocusRef.current;
+    if (!want) return;
+    if (gameOver) {
+      refocusRef.current = null;
+      return;
+    }
+    const active = document.activeElement;
+    const lost = !active || active === document.body || !active.isConnected
+      || Boolean(active.closest('[inert]')) || !active.matches(TABBABLE);
+    if (!lost) {
+      refocusRef.current = null;
+      return;
+    }
+    const endTurnButton = endTurnRef.current;
+    let target = null;
+    if (want.kind === 'turn') {
+      if (currentTurn !== 'player' || phase !== 'main' || !endTurnButton) return;
+      target = endTurnButton;
+    } else if (want.kind === 'hand') {
+      const cards = [...(handScrollerRef.current?.querySelectorAll('[data-hand-id][role="button"]:not([inert])') ?? [])];
+      target = cards[Math.min(want.index, cards.length - 1)] ?? endTurnButton;
+    } else if (want.kind === 'attack') {
+      target = feltRef.current?.querySelector('[data-field="player"][role="button"]:not([inert])') ?? endTurnButton;
+    } else if (want.kind === 'select') {
+      target = feltRef.current?.querySelector(`[data-card-id="${want.id}"][role="button"]`) ?? endTurnButton;
+    }
+    refocusRef.current = null;
+    target?.focus();
+  }, [playerHand, playerField, currentTurn, phase, targetingMode, gameOver]);
+
   // Reading a card: the enlarged preview (CardPreview). `preview` is
   // { id, from, via, anchor }: the card (from 'hand', 'player' or
   // 'opponent'), what opened it — 'hover' (a mouse resting on it), 'focus'
@@ -2037,6 +2140,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       // the next while one is open swaps at once, as a row of tooltips does.
       onPointerEnter: (e) => {
         if (e.pointerType !== 'mouse') return;
+        // While an attacker is picked, a card on your own side opens no hover
+        // preview: below ~900px it would open over Chuck's row, on the very
+        // targets, and swallow the click meant for one.
+        if (targetingMode && p.from === 'player') return;
         showPreview({ ...p, via: 'hover', anchor: p.from }, previewShownRef.current ? 0 : PREVIEW_HOVER_MS);
       },
       onPointerLeave: (e) => { if (e.pointerType === 'mouse') hideAfterHover(p.id); },
@@ -2060,7 +2167,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // (Chromium, Firefox and Safari 17 send it as a PointerEvent), it must also
   // say 'touch'. There is no time limit: a slow press is still a finger, and
   // the 1-second window this once had played a card held down to be read.
-  const pressHandCard = (card, playable) => (e) => {
+  const pressHandCard = (card, playable, index) => (e) => {
     const last = lastPointerRef.current;
     lastPointerRef.current = { type: 'mouse', id: null };
     const clickType = typeof e?.nativeEvent?.pointerType === 'string' ? e.nativeEvent.pointerType : null;
@@ -2072,7 +2179,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       return;
     }
     setRaisedId(null);
-    if (playable) playCard(card);
+    // Played from the keys, the card's slot goes inert on its way out and
+    // the focus would fall to the page: it moves on to the card now in its
+    // place (see refocusRef).
+    if (playable && playCard(card) && viaKeys(e)) refocusRef.current = { kind: 'hand', index };
   };
 
   // The card the preview shows, looked up live, so a card that has just been
@@ -2331,7 +2441,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               )}
 
               <div className="relative flex gap-3 justify-center">
-                <button type="button" onClick={restartGame} className={`${ACTION} btn-brass min-w-[8rem]`}>
+                {/* The dialog's first focus (useDialog's data-autofocus), so
+                    Enter plays again. The upsell above comes first in the
+                    DOM, and it used to take the focus for every player low
+                    on gems or packs: Enter left the battle for the Shop. */}
+                <button type="button" data-autofocus="" onClick={restartGame} className={`${ACTION} btn-brass min-w-[8rem]`}>
                   Play Again
                 </button>
                 {onBackToMenu && (
@@ -2428,7 +2542,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       animate={{ y: 0, opacity: 1 }}
                       data-field="opponent"
                       className={`relative rounded-[10px] ${FOCUS_OUTLINE} ${hittable ? 'cursor-crosshair' : ''}`}
-                      press={pressable(() => attackTarget(card), `Attack ${card.name}`, targetingMode)}
+                      press={describedPress(
+                        pressable((e) => attackTarget(card, e), `Attack ${card.name}`, targetingMode),
+                        `desc-field-${card.instanceId}`,
+                      )}
                       {...inspectHandlers({ id: card.instanceId, from: 'opponent' }, { hold: 'preview' })}
                     >
                       <div
@@ -2438,14 +2555,26 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                         {/* Only the card dims for stealth; the band and tags
                             stay at full strength so they keep their contrast. */}
                         <div className={card.stealthActive ? 'opacity-50' : ''}>
-                          <TeddyCard teddy={card} lift={false} variant="board" side="opponent" tauntActive={card.ability === 'taunt' && !card.stealthActive} />
+                          <TeddyCard
+                            teddy={card}
+                            lift={false}
+                            variant="board"
+                            side="opponent"
+                            tauntActive={card.ability === 'taunt' && !card.stealthActive}
+                            attackDelta={effectiveAttack(card, opponentField) - card.attack}
+                            nameless={fieldZoom < NAMELESS_BELOW}
+                            zoom={fieldZoom}
+                          />
                         </div>
-                        {card.stealthActive && <StealthBand />}
+                        {card.stealthActive && <StealthBand zoom={fieldZoom} />}
                         {/* Tells the player which of Chuck's teddies can
                             actually swing at them next turn — without it,
                             summoning sickness is only legible on their own
                             half of the table. */}
-                        {card.summoningSick && <StatusChip>Warming Up</StatusChip>}
+                        {card.summoningSick && <StatusChip zoom={fieldZoom}>Warming Up</StatusChip>}
+                        <CardDescription id={`desc-field-${card.instanceId}`}>
+                          {describeCard(card, { attack: effectiveAttack(card, opponentField) })}
+                        </CardDescription>
                         {hittable && (
                           <span data-target-mark="" className="absolute -top-2.5 -right-2.5 z-20 grid h-7 w-7 place-items-center rounded-full bg-red-600 ring-2 ring-red-200 shadow-lg" aria-hidden="true">
                             <Crosshair className="h-4 w-4 text-white" />
@@ -2589,7 +2718,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                          messages, so a pointer player who tries is told the
                          rule rather than met with silence. */
                       press={ready
-                        ? pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`)
+                        ? describedPress(pressable(() => selectCardForAttack(card), `Select ${card.name} to attack`), `desc-field-${card.instanceId}`)
                         : (playerMove ? { onClick: () => selectCardForAttack(card) } : {})}
                       data-field="player"
                       {...inspectHandlers({ id: card.instanceId, from: 'player' }, { hold: 'preview' })}
@@ -2610,10 +2739,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                           side="player"
                           resting={resting}
                           tauntActive={card.ability === 'taunt' && !card.stealthActive}
+                          attackDelta={effectiveAttack(card, playerField) - card.attack}
+                          nameless={fieldZoom < NAMELESS_BELOW}
+                          zoom={fieldZoom}
                         />
-                        {card.stealthActive && <StealthBand />}
-                        {card.hasAttacked && <StatusChip>Exhausted</StatusChip>}
-                        {card.summoningSick && !card.hasAttacked && <StatusChip>Warming Up</StatusChip>}
+                        {card.stealthActive && <StealthBand zoom={fieldZoom} />}
+                        {card.hasAttacked && <StatusChip zoom={fieldZoom}>Exhausted</StatusChip>}
+                        {card.summoningSick && !card.hasAttacked && <StatusChip zoom={fieldZoom}>Warming Up</StatusChip>}
+                        <CardDescription id={`desc-field-${card.instanceId}`}>
+                          {describeCard(card, { attack: effectiveAttack(card, playerField) })}
+                        </CardDescription>
                       </div>
                     </FieldSlot>
                   );
@@ -2678,6 +2813,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 {showAbilityPopup && (
                   <div
                     key={`${showAbilityPopup.name}-${showAbilityPopup.ability}`}
+                    data-ability-callout=""
                     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 w-max max-w-[calc(100%-1rem)] pointer-events-none"
                   >
                     <motion.div
@@ -2705,6 +2841,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   onKeep={keepPreview}
                   onDismiss={() => hidePreview()}
                   costDelta={previewTarget.from === 'hand' ? effectiveCost(previewCard, playerField) - previewCard.cost : 0}
+                  // A hand card is not on the table yet, so no aura reaches it.
+                  attackDelta={previewTarget.from === 'hand'
+                    ? 0
+                    : effectiveAttack(previewCard, previewTarget.from === 'player' ? playerField : opponentField) - previewCard.attack}
                   cosmeticBorder={previewTarget.from === 'opponent' ? null : cosmeticBorder}
                 />
               )}
@@ -2781,7 +2921,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 </span>
               )}
               {targetingMode && (
-                <button type="button" className={`${ACTION} btn-glass`} onClick={cancelTargeting}>
+                <button
+                  type="button"
+                  className={`${ACTION} btn-glass`}
+                  onClick={(e) => {
+                    if (viaKeys(e) && selectedCard) refocusRef.current = { kind: 'select', id: selectedCard.instanceId };
+                    cancelTargeting();
+                  }}
+                >
                   Cancel
                 </button>
               )}
@@ -2789,7 +2936,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   gauge would buy nothing, and a brass Rally sat beside the
                   brass End Turn that no-moves-left lights. */}
               {!gameOver && playerTurn && canRally(moveState) && (
-                <button type="button" className={`${ACTION} btn-brass foil relative`} onClick={rally}>
+                <button
+                  type="button"
+                  className={`${ACTION} btn-brass foil relative`}
+                  onClick={(e) => {
+                    if (viaKeys(e)) refocusRef.current = { kind: 'turn' };
+                    rally();
+                  }}
+                >
                   {/* Above the foil band (::after), which would otherwise
                       sweep across the label and wash it out. */}
                   <span className="relative z-10 inline-flex items-center gap-1.5">
@@ -2803,6 +2957,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   brass once they have none, like Hearthstone's End Turn. */}
               {playerMove && (
                 <button
+                  ref={endTurnRef}
                   type="button"
                   className={`${ACTION} ${outOfMoves ? 'btn-brass end-turn-ready' : 'btn-glass'}`}
                   data-out-of-moves={outOfMoves ? '' : undefined}
@@ -2845,7 +3000,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
             : ''}`}
         >
           <div className="mx-auto flex w-max gap-2">
-            <AnimatePresence>
+            {/* Keyed by game, as the rows are: Play Again remounts the hand,
+                rather than playing the last game's cards out beside the new
+                deal (holding their slots, so it dealt in with gaps) and
+                reviving the ones whose ids recur in place of dealing them. */}
+            <AnimatePresence key={gameId}>
               {playerHand.map((card, index) => {
                 const mid = (playerHand.length - 1) / 2;
                 const step = fanStep(playerHand.length);
@@ -2882,10 +3041,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       : lit ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
                     {...inspectHandlers({ id: card.instanceId, from: 'hand' }, { hold: 'raise' })}
                     press={playable
-                      ? pressable(pressHandCard(card, true), `Play ${card.name}`)
-                      : { onClick: pressHandCard(card, false) }}
+                      ? describedPress(pressable(pressHandCard(card, true, index), `Play ${card.name}`), `desc-hand-${card.instanceId}`)
+                      : { onClick: pressHandCard(card, false, index) }}
                   >
                     <TeddyCard teddy={card} cosmeticBorder={cosmeticBorder} lift={false} costDelta={cost - card.cost} />
+                    <CardDescription id={`desc-hand-${card.instanceId}`}>{describeCard(card, { cost })}</CardDescription>
                     {raised && playable && (
                       <RaisedHint>{affordable ? 'Tap again to play' : `Needs ${cost} energy`}</RaisedHint>
                     )}

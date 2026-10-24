@@ -195,6 +195,134 @@ test.describe('with a mouse and a keyboard', () => {
     await expect(page.locator('[data-raised]')).toHaveCount(0);
   });
 
+  // Each keyboard move used to drop the focus on the page: the played card
+  // goes inert on its way out, a target stops being a control once hit, and
+  // End Turn leaves the screen for Chuck's turn. A screen reader lost its
+  // place, and the board's own I key stopped answering until a Tab.
+  test('the focus moves on after a keyboard play, End Turn and an attack, never to the page', async ({ page }) => {
+    await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4] });
+    await page.reload();
+    await toBattle(page);
+    const barry = page.getByRole('button', { name: 'Play Bar-Fight Barry' });
+    await barry.first().focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('[data-field="player"]')).toHaveCount(1, SLOW);
+    // The card now in its place.
+    await expect(barry.first()).toBeFocused();
+
+    const endTurn = page.getByRole('button', { name: 'End Turn' });
+    await endTurn.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+    await expect(endTurn).toBeFocused(SLOW);
+
+    // Pick the attacker and a target it may hit, from the keys.
+    await page.getByRole('button', { name: 'Select Bar-Fight Barry to attack' }).focus();
+    await page.keyboard.press('Enter');
+    const target = page.locator('[data-field="opponent"]:has([data-target-ring]), [role="button"][aria-label="Attack opponent directly"]').first();
+    await target.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByText(/^Pick a victim/)).toHaveCount(0);
+    // Barry has swung and nothing else can: End Turn.
+    await expect(endTurn).toBeFocused();
+  });
+
+  // A screen reader hears a card control's name — "Play Bar-Fight Barry" —
+  // and a button's children are presentational, so the cost, the stats, the
+  // ability and the state on the card face never reached it at all.
+  test('every card control carries the card in words: cost, attack, HP, ability and state', async ({ page }) => {
+    await seed(page, { currentDeck: [4, 4, 4, 6, 6, 6] }); // Barry (1), Sally (Taunt, 2)
+    await page.reload();
+    await toBattle(page);
+    await expect(page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first())
+      .toHaveAccessibleDescription('Costs 1 energy. 2 attack, 1 of 1 HP.');
+    await expect(page.getByRole('button', { name: 'Play Shit-Talk Sally' }).first())
+      .toHaveAccessibleDescription(/^Costs 2 energy\. 2 attack, 3 of 3 HP\. Taunt: Enemies must attack this card first\.$/);
+
+    await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
+    await page.getByRole('button', { name: 'End Turn' }).click();
+    await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+    const attacker = page.getByRole('button', { name: 'Select Bar-Fight Barry to attack' });
+    await expect(attacker).toBeVisible(SLOW);
+    // On the table: no cost, it has been paid.
+    await expect(attacker).toHaveAccessibleDescription('2 attack, 1 of 1 HP.');
+    await attacker.click();
+    const targets = page.getByRole('button', { name: /^Attack (?!opponent)/ });
+    await expect(targets.first()).toBeVisible();
+    for (const t of await targets.all()) {
+      await expect(t).toHaveAccessibleDescription(/^\d+ attack( \(\+1 from a Royal ally\))?, \d+ of \d+ HP\./);
+    }
+  });
+
+  // Royal's +1 was always dealt (effectiveAttack) but never drawn: the badge
+  // read the printed attack, so the table's numbers did not add up to the
+  // log's, and nobody could count lethal.
+  test('a Royal ally\'s +1 shows on the badge it raises, in the preview and in the card\'s words', async ({ page }) => {
+    await seed(page, { currentDeck: [14, 4, 4, 4, 4, 4] }); // Slumlord Cotton (Royal, 4) + Barry
+    await page.reload();
+    await toBattle(page);
+    await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
+    const barry = page.locator('[data-field="player"][data-card-id^="p-4-"]');
+    const badge = barry.locator('[data-stat="attack"]');
+    await expect(badge).toHaveText('2', SLOW);
+    await expect(badge).not.toHaveAttribute('data-buffed');
+
+    await page.getByRole('button', { name: 'End Turn' }).click();
+    await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+    await page.getByRole('button', { name: 'Play Slumlord Cotton' }).click();
+    await expect(page.locator('[data-field="player"]')).toHaveCount(2, SLOW);
+    await expect(badge).toHaveText('3');
+    await expect(badge).toHaveAttribute('data-buffed', '');
+    await expect(badge).toHaveAttribute('title', 'Attack (includes +1 from a Royal ally)');
+    // Cotton does not raise himself.
+    const cotton = page.locator('[data-field="player"][data-card-id^="p-14-"]');
+    await expect(cotton.locator('[data-stat="attack"]')).toHaveText('3');
+    await expect(cotton.locator('[data-stat="attack"]')).not.toHaveAttribute('data-buffed');
+    await expect(page.getByRole('button', { name: 'Select Bar-Fight Barry to attack' }))
+      .toHaveAccessibleDescription('3 attack (+1 from a Royal ally), 1 of 1 HP.');
+
+    await page.mouse.move(0, 0);
+    await barry.hover();
+    await expect(preview(page).locator('[data-stat="attack"]')).toHaveText('3');
+  });
+
+  // The result panel's upsell comes before Play Again in the DOM, and the
+  // dialog focused its first control: for every player low on gems or
+  // packs, Enter left the battle for the Shop.
+  test('the result panel opens on Play Again, and Enter plays again', async ({ page }) => {
+    await seed(page, { gems: 10, cardPacks: 0 });
+    await page.reload();
+    await toBattle(page);
+    await page.getByRole('button', { name: 'Concede' }).click();
+    await page.getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    const panel = page.getByRole('dialog', { name: 'Defeat' });
+    await expect(panel).toBeVisible(SLOW);
+    await expect(panel.getByRole('button', { name: 'Visit Shop' })).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Play Again' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(panel).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    await expect(page.getByRole('dialog', { name: 'Shop' })).toHaveCount(0);
+  });
+
+  // TeddyCard drew a pointer on every card face, under the board's own
+  // cursors, so Chuck's cards and a warming-up creature looked clickable.
+  test('only a card that takes a press shows a pointer', async ({ page }) => {
+    await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4] });
+    await page.reload();
+    await toBattle(page);
+    await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
+    await expect(page.locator('[data-field="player"]')).toHaveCount(1, SLOW);
+    await page.waitForTimeout(500);
+    const cursorAt = (locator) => locator.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return getComputedStyle(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)).cursor;
+    });
+    expect(await cursorAt(page.locator('[data-field="opponent"]').first()), 'Chuck\'s card outside targeting').toBe('auto');
+    expect(await cursorAt(page.locator('[data-field="player"]').first()), 'a creature warming up').toBe('auto');
+    expect(await cursorAt(handCards(page).last()), 'a playable hand card').toBe('pointer');
+  });
+
   // Hover with a mouse and keyboard focus both open the enlarged card, and on
   // a wide table it sits beside the rows rather than over them.
   test('hovering or focusing a card opens it at full size, clear of the table\'s cards', async ({ page }) => {
@@ -403,6 +531,87 @@ test.describe('with a mouse and a keyboard', () => {
     await expect(page.locator('[data-field="player"]')).toHaveCount(2, SLOW);
     await expect(page.locator('[data-energy]')).toHaveText('1/3');
   });
+
+  // Below ~900px there is no room beside the rows, so the hover preview of a
+  // card on your side opens over Chuck's row. Picking an attacker leaves the
+  // pointer resting on it: its preview opened over the targets, and the first
+  // click on one only closed it.
+  test('at 768x1024 one click on a target attacks, with the attacker\'s preview never in the way', async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4] });
+    await page.reload();
+    await toBattle(page);
+    await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
+    await page.getByRole('button', { name: 'End Turn' }).click();
+    await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+    const attacker = page.getByRole('button', { name: 'Select Bar-Fight Barry to attack' });
+    await expect(attacker).toBeVisible(SLOW);
+    await page.mouse.move(0, 0);
+    await attacker.hover();
+    await page.waitForTimeout(500);
+    await expect(preview(page)).toBeVisible();
+    await attacker.click();
+    await expect(page.getByText(/^Pick a victim/)).toBeVisible();
+    await expect(preview(page)).toHaveCount(0);
+
+    const target = page.locator('[data-field="opponent"]:has([data-target-ring]), [role="button"][aria-label="Attack opponent directly"]').first();
+    const box = await target.boundingBox();
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await page.mouse.move(at.x, at.y, { steps: 8 });
+    await page.mouse.click(at.x, at.y);
+    await expect(page.getByText(/^Pick a victim/)).toHaveCount(0);
+    await expect(page.locator('[role="log"]')).toContainText(/Bar-Fight Barry (smacked|took|decked)/);
+  });
+
+  // The ability callout is an opaque panel on the centre line, where the
+  // "Pick a victim" prompt appears: picking an attacker straight after a play
+  // — the normal flow, now that a turn is one phase — hid the prompt for the
+  // rest of the callout's 1.5s. And an earlier play's timer took a later
+  // callout down early.
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) {
+    test(`at ${viewport.width}x${viewport.height} picking an attacker clears the ability callout off the prompt`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await seed(page, { currentDeck: [4, 4, 4, 6, 6, 6] }); // Barry, and Sally (Taunt)
+      await page.reload();
+      await toBattle(page);
+      await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
+      await page.getByRole('button', { name: 'End Turn' }).click();
+      await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
+      const attacker = page.getByRole('button', { name: 'Select Bar-Fight Barry to attack' });
+      await expect(attacker).toBeVisible(SLOW);
+      const callout = page.locator('[data-ability-callout]');
+
+      const firstPlay = Date.now();
+      await page.getByRole('button', { name: 'Play Shit-Talk Sally' }).first().click();
+      await expect(callout).toBeVisible();
+      await attacker.click();
+      const prompt = page.getByText(/^Pick a victim/);
+      await expect(prompt).toBeVisible();
+      await expect(callout).toHaveCount(0, { timeout: 800 });
+      await page.getByRole('button', { name: 'Cancel' }).click();
+
+      // A second callout outlives the first play's timer.
+      await page.waitForTimeout(Math.max(0, firstPlay + 900 - Date.now()));
+      await page.getByRole('button', { name: 'Play Shit-Talk Sally' }).first().click();
+      await expect(callout).toBeVisible();
+      await page.waitForTimeout(Math.max(0, firstPlay + 2100 - Date.now()));
+      expect(await callout.count(), 'the first play\'s timer took the second callout down').toBe(1);
+    });
+  }
+
+  // Play Again kept the hand's AnimatePresence across games, so the last
+  // game's cards played out beside the new deal, holding their slots.
+  test('Play Again deals a fresh hand, with none of the last game\'s cards still leaving', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await toBattle(page);
+    await page.getByRole('button', { name: 'Concede' }).click();
+    await page.getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    const panel = page.getByRole('dialog', { name: 'Defeat' });
+    await expect(panel).toBeVisible(SLOW);
+    await panel.getByRole('button', { name: 'Play Again' }).click();
+    expect(await page.evaluate(() => document.querySelectorAll('[data-hand-id][inert]').length)).toBe(0);
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  });
 });
 
 // The table drew the hand card scaled to the felt: names at 5.3px on a 320px
@@ -427,7 +636,7 @@ test('a table card drops its cost and rarity, wears Taunt as a frame, and carrie
 
   // "Warming Up" is drawn over the card, and the slot is the card's height.
   const card = await sally.locator('[data-variant="board"]').boundingBox();
-  const chip = await sally.getByText('Warming Up').boundingBox();
+  const chip = await sally.getByText('Warming Up', { exact: true }).boundingBox();
   expect(chip.y).toBeGreaterThanOrEqual(card.y);
   expect(chip.y + chip.height).toBeLessThanOrEqual(card.y + card.height);
   const slot = await sally.boundingBox();

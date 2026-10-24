@@ -162,6 +162,11 @@ export const CardBack = ({ className = 'w-24 h-36', mini = false }) => (
   </div>
 );
 
+// A font size for print on the battle table, which the board scales to fit
+// the felt (`zoom`, down to 0.45 on a short phone): raised just enough to
+// stay at 8px or more on screen, in half pixels, and left alone at full size.
+export const legibleSize = (px, zoom = 1) => (zoom < 1 ? Math.max(px, Math.ceil((8 / zoom) * 2) / 2) : px);
+
 // One-line rules for the card: the ability keyword for creatures, an effect
 // summary for traps and specials. Ability wins over effect — no card in
 // ALL_CARDS carries both; revisit if one does.
@@ -190,8 +195,9 @@ const rulesFor = (teddy) => {
 // the highlight stays in the top band above them. The first version lit the
 // upper half, right through the digits, over faces that started at red-400 and
 // sky-400 — 2.8:1 and 2.1:1 — on every creature in the game.
-const StatBadge = ({ value, title, tone, className, board = false }) => (
+const StatBadge = ({ value, title, tone, className, board = false, fontSize, ...data }) => (
   <div
+    {...data}
     title={title}
     className={`absolute bottom-[3px] z-10 rounded-full grid place-items-center
       text-white font-display font-extrabold leading-none tabular-nums
@@ -200,6 +206,7 @@ const StatBadge = ({ value, title, tone, className, board = false }) => (
     style={{
       background: `radial-gradient(ellipse 70% 32% at 50% 0%, rgba(255,255,255,0.4), transparent 100%), ${tone}`,
       textShadow: '0 1px 1px rgba(0,0,0,0.6)',
+      ...(fontSize ? { fontSize } : {}),
     }}
   >
     {value}
@@ -207,6 +214,10 @@ const StatBadge = ({ value, title, tone, className, board = false }) => (
 );
 
 const ATTACK_TONE = 'linear-gradient(180deg, #dc2626, #7f1d1d)';
+// Attack a Royal ally is raising right now: the same pin struck in emerald,
+// as the discounted cost coin is. Emerald-700 at the top keeps the white
+// numerals above 4.5:1 wherever they cross, as the red and blue faces do.
+const ATTACK_BUFFED_TONE = 'linear-gradient(180deg, #047857, #064e3b)';
 const HP_TONE = 'linear-gradient(180deg, #0369a1, #0c4a6e)';
 const WOUNDED_TONE = 'linear-gradient(180deg, #b91c1c, #450a0a)';
 
@@ -231,9 +242,10 @@ const TAUNT_TONE = {
   },
 };
 
-// A board card's ability, as an icon between its stat badges. The name is
-// sr-only, so a screen reader still hears "Taunt" where the hand card prints
-// it. Taunt's is a metal plate in its side's colours, part of the frame drawn
+// A board card's ability, as an icon between its stat badges, with its name
+// in sr-only text for where the card is content. Where the card is a control
+// (a button's children are presentational), the board's description says it
+// instead (describeCard, src/lib/abilities.js). Taunt's is a metal plate in its side's colours, part of the frame drawn
 // around the card (see TeddyCard): the rule that decides where every attack
 // goes has to read from across the table.
 const AbilityChip = ({ rules, taunt }) => (
@@ -255,7 +267,8 @@ const AbilityChip = ({ rules, taunt }) => (
 // zoom, which the word was not. It used to be the word in 6px small caps,
 // tracked 0.12em, which at 1x rounded apart into "COMM ON" and "E PIC"; at a
 // legible 8px, untracked, "Uncommon" is 43px wide and the gap between the
-// badges is 42. The name is sr-only, so a screen reader still hears it.
+// badges is 42. The name is sr-only, for where the card is content; on the
+// board, where a card is a control, its description says what it is.
 const RarityGem = ({ rarity }) => (
   <>
     <span
@@ -309,12 +322,26 @@ const RarityGem = ({ rarity }) => (
 // does. The board used to fade the whole card, which took the Taunt frame
 // down with it, and a resting Taunt creature still decides where every one
 // of Chuck's attacks goes.
+// `attackDelta` is what an aura adds to the printed attack right now (a
+// Royal ally's +1): the badge shows the attack the card actually hits for,
+// in emerald when raised, as costDelta does for the cost. Damage always
+// included it; the badge used to print the base figure, so the numbers on
+// the table did not add up to the ones in the log.
+// `zoom` (board only) is the scale the table draws the card at. The small
+// print — the numerals, a trap's two lines — grows by as much as it takes
+// to stay at 8px or more on screen, and `nameless` (board only) drops the
+// name, which cannot: at 0.64 on a 320px phone it rendered at 6.4px, and
+// counter-scaled it would run to two lines over half the card. The card's
+// control still names it, and its preview shows it whole.
 const TeddyCard = ({
   teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null,
   lift = true, artVariant = 'thumb', artLoading = 'lazy', dimmed = false,
-  variant = 'hand', costDelta = 0, side = 'player', tauntActive, resting = false,
+  variant = 'hand', costDelta = 0, attackDelta = 0, side = 'player', tauntActive, resting = false,
+  nameless = false, zoom = 1,
 }) => {
   const board = variant === 'board';
+  const legible = (px) => (board ? legibleSize(px, zoom) : px);
+  const showName = !(board && nameless);
   // Use rarity style if available, otherwise fall back to type style
   const rarityStyle = teddy.rarity ? RARITY[teddy.rarity] : null;
   const typeStyle = TYPE_STYLES[teddy.type] || TYPE_STYLES.action;
@@ -355,9 +382,16 @@ const TeddyCard = ({
         data-cosmetic={cosmeticBorder || undefined}
         data-variant={board ? 'board' : undefined}
         data-taunt={taunt ? side : undefined}
+        // A pointer and a press only where something takes the press: this
+        // card's own onClick, or the control around it ([role=button] — a
+        // pressable wrapper that is not actionable has no role). Always on,
+        // they made every card on the board look clickable, Chuck's and a
+        // warming-up creature's included, under the board's own cursors.
         className={`
-          w-24 h-36 rounded-[10px] cursor-pointer relative overflow-hidden transition-transform duration-100
-          ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.97]'}
+          w-24 h-36 rounded-[10px] relative overflow-hidden transition-transform duration-100
+          ${isDisabled
+            ? 'opacity-50 cursor-not-allowed'
+            : `${onClick ? 'cursor-pointer active:scale-[0.97]' : ''} [[role=button]:active_&]:scale-[0.97]`}
         `}
         style={{
           border: '2px solid transparent',
@@ -406,7 +440,7 @@ const TeddyCard = ({
 
         {/* Scrims: a shallow one under the name, a deeper one under the rules
             and stats, so the text stays legible over any art. */}
-        <div className="absolute inset-x-0 top-0 h-9 bg-gradient-to-b from-black/80 via-black/45 to-transparent pointer-events-none" />
+        {showName && <div className="absolute inset-x-0 top-0 h-9 bg-gradient-to-b from-black/80 via-black/45 to-transparent pointer-events-none" />}
         <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent pointer-events-none ${board ? 'h-[50px]' : 'h-[62px]'}`} />
 
         {/* Name: up to two lines, which the top scrim covers. On one line 38
@@ -415,15 +449,17 @@ const TeddyCard = ({
             hand it starts after the cost coin; on the board there is no coin,
             so it starts at the edge and stops short of the corner the target
             crosshair sits on. */}
-        <div className={`absolute top-[3px] z-10 ${board ? 'left-[5px] right-[16px]' : cost === undefined ? 'left-[5px] right-[22px]' : 'left-[22px] right-[5px]'}`}>
-          <span
-            className={`block font-display font-extrabold leading-[1.1] text-white line-clamp-2 break-words ${board ? 'text-[10px]' : 'text-[9px]'}`}
-            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}
-            title={teddy.name}
-          >
-            {teddy.name}
-          </span>
-        </div>
+        {showName && (
+          <div className={`absolute top-[3px] z-10 ${board ? 'left-[5px] right-[16px]' : cost === undefined ? 'left-[5px] right-[22px]' : 'left-[22px] right-[5px]'}`}>
+            <span
+              className={`block font-display font-extrabold leading-[1.1] text-white line-clamp-2 break-words ${board ? 'text-[10px]' : 'text-[9px]'}`}
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}
+              title={teddy.name}
+            >
+              {teddy.name}
+            </span>
+          </div>
+        )}
 
         {/* Cost: a brass coin, green when an effect has lowered it. Not on
             the table, where it has been paid. Top LEFT, as Hearthstone and
@@ -442,11 +478,15 @@ const TeddyCard = ({
           </BrassCoin>
         )}
 
-        {/* Rules line (hand size, and a trap on the table) */}
+        {/* Rules line (hand size, and a trap on the table, where it sits
+            over the type label whatever size the two have grown to) */}
         {rules && !abilityChip && (
           <div
-            className={`absolute inset-x-[4px] z-10 flex items-center justify-center gap-[3px] font-bold leading-none text-plush-100 ${board ? 'bottom-[20px] text-[10px]' : 'bottom-[34px] text-[8px]'}`}
-            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9)' }}
+            className={`absolute inset-x-[4px] z-10 flex items-center justify-center gap-[3px] font-bold leading-none text-plush-100 ${board ? '' : 'bottom-[34px] text-[8px]'}`}
+            style={{
+              textShadow: '0 1px 2px rgba(0,0,0,0.9)',
+              ...(board ? { bottom: Math.max(20, 9 + legible(9)), fontSize: legible(10) } : {}),
+            }}
             title={teddy.ability && teddy.ability !== 'none' ? teddy.ability : undefined}
           >
             <rules.Icon aria-hidden="true" className={`shrink-0 text-brass-300 ${board ? 'w-[11px] h-[11px]' : 'w-[9px] h-[9px]'}`} strokeWidth={2.5} />
@@ -465,7 +505,10 @@ const TeddyCard = ({
             that says it is not a creature. */}
         {board ? (
           !isAction && (
-            <div className="absolute inset-x-[4px] bottom-[6px] z-10 text-center leading-none whitespace-nowrap font-display text-[9px] font-bold text-plush-300">
+            <div
+              className="absolute inset-x-[4px] bottom-[6px] z-10 text-center leading-none whitespace-nowrap font-display text-[9px] font-bold text-plush-300"
+              style={zoom < 1 ? { fontSize: legible(9) } : undefined}
+            >
               {typeLabel}
             </div>
           )
@@ -479,8 +522,25 @@ const TeddyCard = ({
         {/* Stats (creatures only): attack bottom-left, HP bottom-right. */}
         {isAction && (
           <>
-            <StatBadge board={board} value={teddy.attack} title="Attack" tone={ATTACK_TONE} className="left-[3px]" />
-            <StatBadge board={board} value={hp} title="HP" tone={wounded ? WOUNDED_TONE : HP_TONE} className="right-[3px]" />
+            <StatBadge
+              board={board}
+              value={teddy.attack + attackDelta}
+              title={attackDelta > 0 ? `Attack (includes +${attackDelta} from a Royal ally)` : 'Attack'}
+              tone={attackDelta > 0 ? ATTACK_BUFFED_TONE : ATTACK_TONE}
+              className="left-[3px]"
+              fontSize={board && zoom < 1 ? legible(14) : undefined}
+              data-stat="attack"
+              data-buffed={attackDelta > 0 ? '' : undefined}
+            />
+            <StatBadge
+              board={board}
+              value={hp}
+              title="HP"
+              tone={wounded ? WOUNDED_TONE : HP_TONE}
+              className="right-[3px]"
+              fontSize={board && zoom < 1 ? legible(14) : undefined}
+              data-stat="hp"
+            />
           </>
         )}
       </div>

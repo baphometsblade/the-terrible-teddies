@@ -381,7 +381,8 @@ test('cards only advertise themselves as buttons when they can actually be used'
   // an attacker. (This step used to press a "⚔️ Battle" phase button, after
   // which the hand went dead and every creature became selectable; merging
   // the phases removed both halves of that.)
-  await expect(page.getByText('Warming Up')).toHaveCount(2);
+  // Exact: the cards' screen-reader descriptions say "Warming Up" too.
+  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2);
   await expect.poll(() => playable.count(), { timeout: 15_000 }).toBeGreaterThan(0);
   await expect(selectable).toHaveCount(0);
   await expect(attackable).toHaveCount(0);
