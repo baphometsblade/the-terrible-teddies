@@ -195,21 +195,26 @@ const rulesFor = (teddy) => {
 // the highlight stays in the top band above them. The first version lit the
 // upper half, right through the digits, over faces that started at red-400 and
 // sky-400 — 2.8:1 and 2.1:1 — on every creature in the game.
-const StatBadge = ({ value, title, tone, className, board = false, fontSize, ...data }) => (
+// `raisedBy` is what a Royal ally adds to the attack right now: the badge
+// shows the raised figure (`value` is the printed one) in BUFFED_TONE, and
+// its title says where the rest comes from. `fontSize` overrides the
+// numerals' size, for a board card scaled below full size (see legibleSize).
+const StatBadge = ({ value, title, tone, className, board = false, raisedBy = 0, fontSize, ...data }) => (
   <div
     {...data}
-    title={title}
+    data-buffed={raisedBy > 0 ? '' : undefined}
+    title={raisedBy > 0 ? `${title} (includes +${raisedBy} from a Royal ally)` : title}
     className={`absolute bottom-[3px] z-10 rounded-full grid place-items-center
       text-white font-display font-extrabold leading-none tabular-nums
       ring-[1.5px] ring-night-950 shadow-[0_2px_4px_rgba(0,0,0,0.6)]
       ${board ? 'w-[28px] h-[28px] text-[14px]' : 'w-[22px] h-[22px] text-[11px]'} ${className}`}
     style={{
-      background: `radial-gradient(ellipse 70% 32% at 50% 0%, rgba(255,255,255,0.4), transparent 100%), ${tone}`,
+      background: `radial-gradient(ellipse 70% 32% at 50% 0%, rgba(255,255,255,0.4), transparent 100%), ${raisedBy > 0 ? BUFFED_TONE : tone}`,
       textShadow: '0 1px 1px rgba(0,0,0,0.6)',
       ...(fontSize ? { fontSize } : {}),
     }}
   >
-    {value}
+    {value + raisedBy}
   </div>
 );
 
@@ -217,7 +222,7 @@ const ATTACK_TONE = 'linear-gradient(180deg, #dc2626, #7f1d1d)';
 // Attack a Royal ally is raising right now: the same pin struck in emerald,
 // as the discounted cost coin is. Emerald-700 at the top keeps the white
 // numerals above 4.5:1 wherever they cross, as the red and blue faces do.
-const ATTACK_BUFFED_TONE = 'linear-gradient(180deg, #047857, #064e3b)';
+const BUFFED_TONE = 'linear-gradient(180deg, #047857, #064e3b)';
 const HP_TONE = 'linear-gradient(180deg, #0369a1, #0c4a6e)';
 const WOUNDED_TONE = 'linear-gradient(180deg, #b91c1c, #450a0a)';
 
@@ -341,6 +346,7 @@ const TeddyCard = ({
 }) => {
   const board = variant === 'board';
   const legible = (px) => (board ? legibleSize(px, zoom) : px);
+  const statSize = board && zoom < 1 ? legible(14) : undefined;
   const showName = !(board && nameless);
   // Use rarity style if available, otherwise fall back to type style
   const rarityStyle = teddy.rarity ? RARITY[teddy.rarity] : null;
@@ -522,25 +528,11 @@ const TeddyCard = ({
         {/* Stats (creatures only): attack bottom-left, HP bottom-right. */}
         {isAction && (
           <>
-            <StatBadge
-              board={board}
-              value={teddy.attack + attackDelta}
-              title={attackDelta > 0 ? `Attack (includes +${attackDelta} from a Royal ally)` : 'Attack'}
-              tone={attackDelta > 0 ? ATTACK_BUFFED_TONE : ATTACK_TONE}
-              className="left-[3px]"
-              fontSize={board && zoom < 1 ? legible(14) : undefined}
-              data-stat="attack"
-              data-buffed={attackDelta > 0 ? '' : undefined}
-            />
-            <StatBadge
-              board={board}
-              value={hp}
-              title="HP"
-              tone={wounded ? WOUNDED_TONE : HP_TONE}
-              className="right-[3px]"
-              fontSize={board && zoom < 1 ? legible(14) : undefined}
-              data-stat="hp"
-            />
+            {/* title, tone and className stay together on one line:
+                Tutorial.test.js reads where each badge sits, and in what
+                colour, from here. */}
+            <StatBadge board={board} value={teddy.attack} title="Attack" tone={ATTACK_TONE} className="left-[3px]" raisedBy={attackDelta} fontSize={statSize} data-stat="attack" />
+            <StatBadge board={board} value={hp} title="HP" tone={wounded ? WOUNDED_TONE : HP_TONE} className="right-[3px]" fontSize={statSize} data-stat="hp" />
           </>
         )}
       </div>
