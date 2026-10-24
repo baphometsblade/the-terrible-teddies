@@ -6,6 +6,7 @@ import { useGameStore, coinsForDuplicate, BATTLE_XP } from '@/stores/gameStore';
 import { getDailyChallenges, getWeeklyChallenges } from '@/stores/challenges';
 import { BATTLE_PASS_REWARDS, premiumTotals, countReadyRewards } from '@/lib/battlePass';
 import { getCurrentSeason, formatSeasonEnd } from '@/utils/season';
+import { DOUBLE_PRESS_MS } from '@/lib/keyRepeat';
 
 // What the Battle Pass promises, against what the store and the tables do.
 // Each expectation is derived from the live tables, not restated.
@@ -49,6 +50,7 @@ afterEach(() => {
   host?.remove();
   MotionGlobalConfig.skipAnimations = false;
   vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 describe('the reward tiles', () => {
@@ -224,6 +226,32 @@ describe('the Premium confirmation', () => {
     const dialog = open({ onGetGems() {} });
     const purchase = [...dialog.querySelectorAll('button')].find((b) => b.textContent === 'Purchase');
     expect(purchase.disabled).toBe(false);
+    // Pressed after the moment in which a press is the opening
+    // double-click's second (the next test).
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + DOUBLE_PRESS_MS);
+    click(purchase);
+    expect(get()).toMatchObject({ hasBattlePassPremium: true, gems: 100 });
+  });
+
+  // The second click of a double-click on Unlock lands wherever the confirm
+  // has put a button by then, and Purchase spent the gems on a confirm the
+  // player never saw.
+  it("takes no press for its first moment, so a double-click's second click buys nothing", async () => {
+    const start = Date.now();
+    const now = vi.spyOn(Date, 'now').mockReturnValue(start);
+    useGameStore.setState({ gems: 600 });
+    const dialog = open({ onGetGems() {} });
+    const purchase = [...dialog.querySelectorAll('button')].find((b) => b.textContent === 'Purchase');
+    const actions = dialog.querySelector('[data-confirm-actions]');
+    expect(actions.className).toContain('pointer-events-none');
+    now.mockReturnValue(start + DOUBLE_PRESS_MS - 1);
+    click(purchase);
+    expect(get()).toMatchObject({ hasBattlePassPremium: false, gems: 600 });
+    expect(confirm()).not.toBeNull();
+
+    await act(() => new Promise((r) => { setTimeout(r, DOUBLE_PRESS_MS + 20); }));
+    expect(actions.className).not.toContain('pointer-events-none');
+    now.mockReturnValue(start + DOUBLE_PRESS_MS);
     click(purchase);
     expect(get()).toMatchObject({ hasBattlePassPremium: true, gems: 100 });
   });

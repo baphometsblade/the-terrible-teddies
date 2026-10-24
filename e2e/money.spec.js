@@ -185,6 +185,96 @@ test('a double-click on a coin tile buys one pack', async ({ page }) => {
   expect((await saved(page)).coins).toBe(800);
 });
 
+// The gem confirm opens centred, under the pointer that opened it, and the
+// second press of a double-click or a double tap lands on whatever is there
+// by then. Where that was the confirm's Buy, the gems were spent on a confirm
+// the player never saw. This scrolls `tile` under where the confirm puts Buy
+// (as a player scrolled down the Shop finds it) and returns a point on the
+// tile that sits under Buy, or null where none does.
+async function pointUnderBuy(page, tile, confirmName) {
+  // Measured at rest: the Shop slides in, the confirm scales in.
+  await page.waitForTimeout(900);
+  await tile.scrollIntoViewIfNeeded();
+  await tile.click();
+  const confirm = page.getByRole('dialog', { name: confirmName });
+  await expect(confirm).toBeVisible(SLOW);
+  await page.waitForTimeout(500);
+  const b = await confirm.getByRole('button', { name: /^Buy for \d+ gems$/ }).boundingBox();
+  await page.keyboard.press('Escape');
+  await expect(confirm).toHaveCount(0);
+  // Bring the tile's middle level with Buy's, scrolling the Shop's own list.
+  await tile.evaluate((el, buyMid) => {
+    let box = el.parentElement;
+    while (box && !(box.scrollHeight > box.clientHeight && /(auto|scroll)/.test(getComputedStyle(box).overflowY))) {
+      box = box.parentElement;
+    }
+    const r = el.getBoundingClientRect();
+    if (box) box.scrollTop += (r.top + r.height / 2) - buyMid;
+  }, b.y + b.height / 2);
+  // Past the quiet moment after a confirm closes, and the scroll settled.
+  await page.waitForTimeout(500);
+  const t = await tile.boundingBox();
+  const x1 = Math.max(t.x, b.x); const x2 = Math.min(t.x + t.width, b.x + b.width);
+  const y1 = Math.max(t.y, b.y); const y2 = Math.min(t.y + t.height, b.y + b.height);
+  return x2 > x1 && y2 > y1 ? { x: (x1 + x2) / 2, y: (y1 + y2) / 2 } : null;
+}
+
+test.describe('a double press on a gem tile that the confirm opens over', () => {
+  test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+  test.describe('at 320x640, double-clicked', () => {
+    test.use({ viewport: { width: 320, height: 640 } });
+    test('opens the confirm and spends nothing', async ({ page }) => {
+      await seed(page, { gems: 1000, legendaryPacks: 0, animationsEnabled: true });
+      await page.getByRole('button', { name: 'Shop', exact: true }).click();
+      const shop = page.getByRole('dialog', { name: 'Shop' });
+      await expect(shop).toBeVisible(SLOW);
+      const tile = shop.getByRole('button', { name: 'Buy Legendary Pack for 200 gems' });
+      const at = await pointUnderBuy(page, tile, 'Buy Legendary Pack?');
+      // The layout this guards: if Buy ever stops sitting over the tile, the
+      // case needs a new tile, not a pass.
+      expect(at, 'Buy sits over the Legendary tile at 320').not.toBeNull();
+
+      await page.mouse.click(at.x, at.y);
+      await page.waitForTimeout(150);
+      await page.mouse.click(at.x, at.y);
+      await page.waitForTimeout(700);
+      const confirm = page.getByRole('dialog', { name: 'Buy Legendary Pack?' });
+      await expect(confirm).toBeVisible();
+      expect((await saved(page)).gems).toBe(1000);
+      expect((await saved(page)).legendaryPacks).toBe(0);
+
+      // A deliberate Buy, once the moment has passed, still buys.
+      await confirm.getByRole('button', { name: 'Buy for 200 gems' }).click();
+      await expect(confirm).toHaveCount(0);
+      await expect.poll(async () => {
+        const s = await saved(page);
+        return [s.gems, s.legendaryPacks];
+      }).toEqual([800, 1]);
+    });
+  });
+
+  test.describe('at 390x844, double-tapped', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    test('opens the confirm and spends nothing', async ({ page }) => {
+      await seed(page, { gems: 1000, animationsEnabled: true });
+      await page.getByRole('button', { name: 'Shop', exact: true }).click();
+      const shop = page.getByRole('dialog', { name: 'Shop' });
+      await expect(shop).toBeVisible(SLOW);
+      const tile = shop.getByRole('button', { name: 'Buy Small Coin Bag for 10 gems' });
+      const at = await pointUnderBuy(page, tile, 'Buy Small Coin Bag?');
+      expect(at, 'Buy sits over the Small Coin Bag tile at 390').not.toBeNull();
+
+      await page.touchscreen.tap(at.x, at.y);
+      await page.waitForTimeout(150);
+      await page.touchscreen.tap(at.x, at.y);
+      await page.waitForTimeout(700);
+      await expect(page.getByRole('dialog', { name: 'Buy Small Coin Bag?' })).toBeVisible();
+      expect((await saved(page)).gems).toBe(1000);
+    });
+  });
+});
+
 // --- Coming back from Stripe before the payment is confirmed ---------------
 
 const ROW = { gems_granted: 500, bundle_id: 'gems_large' };

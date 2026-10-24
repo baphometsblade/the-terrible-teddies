@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createElement, act } from 'react';
 import { createRoot } from 'react-dom/client';
 import CardPackOpening from './CardPackOpening';
+import { REPEAT_BUY_MS } from './StoreTile';
 import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 import { useGameStore, SHOP_ITEMS, DAILY_REWARDS } from '@/stores/gameStore';
 import { getCurrentSeason } from '@/utils/season';
@@ -45,6 +46,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root?.unmount());
   host?.remove();
+  vi.restoreAllMocks();
 });
 
 describe('the empty Card Packs table', () => {
@@ -144,6 +146,10 @@ describe("the empty table's routes", () => {
     expect(useGameStore.getState().gems).toBe(cheapestGem.price);
     const confirm = host.querySelector('[role="dialog"][aria-labelledby]');
     expect(confirm.textContent).toContain(`Buy ${cheapestGem.name}?`);
+    // Its Buy takes no press for the first moment (a double-click's second
+    // click lands on it), so this one comes after that.
+    const opened = Date.now();
+    vi.spyOn(Date, 'now').mockReturnValue(opened + REPEAT_BUY_MS);
     act(() => confirm.querySelector(`button[aria-label="Buy for ${cheapestGem.price} gems"]`).click());
     expect(useGameStore.getState().gems).toBe(0);
     expect(text()).not.toContain('No packs to open');

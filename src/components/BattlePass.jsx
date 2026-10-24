@@ -13,7 +13,7 @@ import { useDialog } from '@/hooks/useDialog';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
-import { ignoreKeyRepeat } from '@/lib/keyRepeat';
+import { ignoreKeyRepeat, useArmedAfterOpen } from '@/lib/keyRepeat';
 import { Medallion, WalletChips } from '@/components/ui/game-chrome';
 import { ArtOrEmoji } from './TeddyCard';
 import { PACK_LOOK, PackStack } from './PackArt';
@@ -324,6 +324,10 @@ const PurchaseConfirmDialog = ({
   useEffect(() => {
     cancelRef.current?.focus();
   }, []);
+  // And the click that opened it does not answer it: the second click of a
+  // double-click on Unlock lands wherever the confirm has put a button by
+  // then (on a short phone it opens scrolled to them), as the Shop's did.
+  const { armed, whenArmed } = useArmedAfterOpen();
 
   const totals = premiumTotals();
   const premiumTiers = BATTLE_PASS_REWARDS.filter((r) => r.premium).length;
@@ -434,7 +438,7 @@ const PurchaseConfirmDialog = ({
       {/* Brass for the way forward: Purchase while it can be bought, and a
           route to gems while it cannot (it used to be a disabled Purchase,
           with nowhere to go but Cancel). */}
-      <div className="relative mt-6 flex gap-3">
+      <div data-confirm-actions="" className={`relative mt-6 flex gap-3 ${armed ? '' : 'pointer-events-none'}`}>
         {short && onGetGems ? (
           <button
             type="button"
@@ -447,7 +451,7 @@ const PurchaseConfirmDialog = ({
         ) : (
           <button
             type="button"
-            onClick={onPurchase}
+            onClick={whenArmed(onPurchase)}
             disabled={short}
             className={`h-11 flex-1 rounded-xl font-display font-bold ${FOCUS_OUTLINE} ${
               short ? 'btn-glass cursor-not-allowed text-plush-400 opacity-70' : 'btn-brass'}`}

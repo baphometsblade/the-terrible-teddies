@@ -62,6 +62,8 @@ describe('a gem-priced tile', () => {
     expect(confirmDialog().textContent).toContain(`You have 1,000 gems · ${(1000 - legendary.price).toLocaleString()} after`);
     expect(document.activeElement?.textContent).toBe('Cancel');
 
+    // Past the moment in which a press is the opening double-click's second.
+    now += REPEAT_BUY_MS;
     click(confirmBuy(legendary));
     expect(useGameStore.getState().gems).toBe(1000 - legendary.price);
     expect(useGameStore.getState().legendaryPacks).toBe(1);
@@ -72,11 +74,37 @@ describe('a gem-priced tile', () => {
     render([legendary]);
     click(tile(legendary));
     const buy = confirmBuy(legendary);
+    now += REPEAT_BUY_MS;
     // Both clicks before React re-renders: the second runs on the same
     // render's handler, so only the cleared ref stops it.
     act(() => { buy.click(); buy.click(); });
     expect(useGameStore.getState().legendaryPacks).toBe(1);
     expect(useGameStore.getState().gems).toBe(1000 - legendary.price);
+  });
+
+  // The confirm opens centred, under the pointer, so the second click of the
+  // double-click (or double tap) that opened it landed on its Buy: at 320 a
+  // double-click on the Legendary tile spent 200 gems on a confirm the player
+  // never saw.
+  it("takes no press for its first moment, so a double-click's second click buys nothing", async () => {
+    render([legendary]);
+    click(tile(legendary));
+    const actions = confirmDialog().querySelector('[data-confirm-actions]');
+    expect(actions.className).toContain('pointer-events-none');
+    click(confirmBuy(legendary));
+    now += REPEAT_BUY_MS - 1;
+    click(confirmBuy(legendary));
+    expect(useGameStore.getState().gems).toBe(1000);
+    expect(useGameStore.getState().legendaryPacks).toBe(0);
+    expect(confirmDialog()).not.toBeNull();
+
+    // Then it is armed: pointer events back on, and Buy buys.
+    await act(() => new Promise((r) => { setTimeout(r, REPEAT_BUY_MS + 20); }));
+    expect(actions.className).not.toContain('pointer-events-none');
+    now += 1;
+    click(confirmBuy(legendary));
+    expect(useGameStore.getState().gems).toBe(1000 - legendary.price);
+    expect(useGameStore.getState().legendaryPacks).toBe(1);
   });
 
   it('Cancel spends nothing, and a tile pressed straight after does not reopen it', () => {

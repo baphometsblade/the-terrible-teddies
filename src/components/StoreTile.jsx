@@ -8,7 +8,7 @@ import { celebrate } from '@/lib/celebrate';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { RARITY_METAL } from '@/lib/rarity';
 import { SCRIM_PAD } from '@/lib/safeArea';
-import { ignoreKeyRepeat } from '@/lib/keyRepeat';
+import { ignoreKeyRepeat, useArmedAfterOpen, DOUBLE_PRESS_MS } from '@/lib/keyRepeat';
 import { useDialog } from '@/hooks/useDialog';
 import { Medallion } from '@/components/ui/medallion';
 import { PACK_LOOK, PackStack, CoinStack } from './PackArt';
@@ -40,11 +40,11 @@ export const bestValuePackId = (items = SHOP_ITEMS) => {
 };
 
 /**
- * How long after a buy (or a confirm closing) another request is ignored: a
- * double-click or a double tap is two clicks a few hundred ms apart, and
- * each used to buy.
+ * How long after a buy (or a confirm opening or closing) another press is
+ * ignored: a double-click or a double tap is two clicks a few hundred ms
+ * apart, and each used to buy.
  */
-export const REPEAT_BUY_MS = 400;
+export const REPEAT_BUY_MS = DOUBLE_PRESS_MS;
 
 /**
  * Buying from either storefront: the same toasts, the same celebration, the
@@ -136,11 +136,14 @@ const ConfirmArt = ({ item }) => {
  *
  * It opens on Cancel, not Buy, because the press that opened it is often an
  * Enter still held down. Its keys ignore auto-repeat as the tiles do, so that
- * hold neither buys nor cancels. A click on the scrim does not close it:
- * the second click of a double-click lands there.
+ * hold neither buys nor cancels. A click on the scrim does not close it, and
+ * its buttons take no press for its first REPEAT_BUY_MS (useArmedAfterOpen):
+ * the second click of the double-click that opened it lands on whatever is
+ * under the pointer by then, the scrim or Buy itself.
  */
 export const GemSpendConfirm = ({ item, onConfirm, onCancel }) => {
   const ref = useDialog(onCancel);
+  const { armed, whenArmed } = useArmedAfterOpen(REPEAT_BUY_MS);
   // Declared after useDialog, so its effect runs second: useDialog has noted
   // the tile as the place to hand focus back to, and focused Buy.
   const cancelRef = useRef(null);
@@ -194,10 +197,11 @@ export const GemSpendConfirm = ({ item, onConfirm, onCancel }) => {
             <span className="whitespace-nowrap">{`${after.toLocaleString()} after`}</span>
           </p>
         </div>
-        <div className="relative mt-5 flex gap-3">
+        {/* Until armed, a click here falls through to the panel. */}
+        <div data-confirm-actions="" className={`relative mt-5 flex gap-3 ${armed ? '' : 'pointer-events-none'}`}>
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={whenArmed(onConfirm)}
             aria-label={`${verb} for ${item.price} gems`}
             className={`btn-brass inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl font-display font-bold tabular-nums ${FOCUS_OUTLINE}`}
           >
