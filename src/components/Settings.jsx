@@ -56,23 +56,39 @@ const SectionHeading = ({ children, tone = 'text-plush-300' }) => (
 //
 // The icon tile steps aside below 360px, where the label and its description
 // need the width more than the row needs the ornament.
-const SettingRow = ({ icon: Icon, label, description, children }) => (
-  <div className="flex items-center justify-between gap-3 px-3.5 py-3.5 sm:gap-4 sm:px-4">
-    <div className="flex min-w-0 items-center gap-3">
-      <span
-        aria-hidden="true"
-        className="hidden h-9 w-9 shrink-0 place-items-center rounded-lg bg-brass-400/10 ring-1 ring-inset ring-brass-300/25 min-[360px]:grid"
-      >
-        <Icon className="h-[18px] w-[18px] text-brass-300" strokeWidth={2} />
+//
+// `htmlFor` names the row's control (a Switch's id): the row is then its
+// <label>, so a tap anywhere on it — the words included — toggles the switch,
+// not just the 44x24 track at its end. The control takes its name and
+// description from the row's text (`${htmlFor}-label` / `-desc`), through
+// aria-labelledby and aria-describedby. Spans throughout, since a label
+// holds phrasing content only.
+const SettingRow = ({ icon: Icon, label, description, htmlFor, children }) => {
+  const Row = htmlFor ? 'label' : 'div';
+  return (
+    <Row
+      htmlFor={htmlFor}
+      className={`flex items-center justify-between gap-3 rounded-xl px-3.5 py-3.5 sm:gap-4 sm:px-4 ${
+        htmlFor ? 'cursor-pointer transition-colors hover:bg-white/[0.03]' : ''}`}
+    >
+      <span className="flex min-w-0 items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="hidden h-9 w-9 shrink-0 place-items-center rounded-lg bg-brass-400/10 ring-1 ring-inset ring-brass-300/25 min-[360px]:grid"
+        >
+          <Icon className="h-[18px] w-[18px] text-brass-300" strokeWidth={2} />
+        </span>
+        <span className="block min-w-0">
+          <span id={htmlFor && `${htmlFor}-label`} className="block font-display font-bold leading-tight text-plush-100">{label}</span>
+          {description && (
+            <span id={htmlFor && `${htmlFor}-desc`} className="mt-0.5 block text-[13px] leading-snug text-plush-300">{description}</span>
+          )}
+        </span>
       </span>
-      <div className="min-w-0">
-        <div className="font-display font-bold leading-tight text-plush-100">{label}</div>
-        {description && <div className="mt-0.5 text-[13px] leading-snug text-plush-300">{description}</div>}
-      </div>
-    </div>
-    {children}
-  </div>
-);
+      {children}
+    </Row>
+  );
+};
 
 // `difficulty`/`setDifficulty` were closed over when this lived inside the
 // component; hoisting means they arrive as props instead.
@@ -257,8 +273,15 @@ const Settings = ({ onClose }) => {
           <section>
             <SectionHeading>Audio</SectionHeading>
             <div className="panel-glass rounded-xl">
-              <SettingRow icon={Volume2} label="Sound Effects" description="Card plays, attacks, and abilities">
-                <Switch checked={soundEnabled} onCheckedChange={setSoundEnabled} aria-label="Sound Effects" className={SWITCH} />
+              <SettingRow icon={Volume2} label="Sound Effects" description="Card plays, attacks, and abilities" htmlFor="setting-sound">
+                <Switch
+                  checked={soundEnabled}
+                  onCheckedChange={setSoundEnabled}
+                  id="setting-sound"
+                  aria-labelledby="setting-sound-label"
+                  aria-describedby="setting-sound-desc"
+                  className={SWITCH}
+                />
               </SettingRow>
             </div>
             {/* No "Music" row. It toggled a persisted musicEnabled flag that
@@ -271,8 +294,15 @@ const Settings = ({ onClose }) => {
           <section>
             <SectionHeading>Visual</SectionHeading>
             <div className="panel-glass rounded-xl">
-              <SettingRow icon={Sparkles} label="Animations" description="Card animations and effects">
-                <Switch checked={animationsEnabled} onCheckedChange={setAnimationsEnabled} aria-label="Animations" className={SWITCH} />
+              <SettingRow icon={Sparkles} label="Animations" description="Card animations and effects" htmlFor="setting-animations">
+                <Switch
+                  checked={animationsEnabled}
+                  onCheckedChange={setAnimationsEnabled}
+                  id="setting-animations"
+                  aria-labelledby="setting-animations-label"
+                  aria-describedby="setting-animations-desc"
+                  className={SWITCH}
+                />
               </SettingRow>
             </div>
           </section>

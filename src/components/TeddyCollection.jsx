@@ -26,8 +26,9 @@ const RARITY_ORDER = [...RARITY_ORDER_ASC].reverse();
 // scrolls sideways, and from sm up they wrap and centre. The raised key
 // carries a material shadow, so its focus is an outline (a ring would replace
 // the shadow); an unselected segment has none to lose and keeps the ring.
+// 44px tall, the size every control is held to (they were 32px).
 const SEG =
-  'inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold ' +
+  'inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold ' +
   'whitespace-nowrap transition-colors';
 const seg = (on) => `${SEG} ${on ? `seg-on ${FOCUS_OUTLINE}` : `seg-off ${FOCUS_RING}`}`;
 
@@ -113,7 +114,7 @@ const usePreloadThumbs = (cards) => {
 };
 
 const PAGE_BUTTON =
-  `btn-glass inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold ${FOCUS_OUTLINE}`;
+  `btn-glass inline-flex h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold ${FOCUS_OUTLINE}`;
 
 // The card-detail panel mounts conditionally, so it hosts its own useDialog
 // (the hook must live in a component that mounts with the overlay). Gives the

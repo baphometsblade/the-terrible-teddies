@@ -52,7 +52,7 @@ const COMPACT_ACTION =
 // the Collection's filters, with the same focus split: an outline on the
 // raised key (a ring would replace its shadow), the ring on the others.
 const SEG =
-  'inline-flex h-8 items-center justify-center rounded-lg px-3 text-[13px] font-semibold whitespace-nowrap ' +
+  'inline-flex h-11 items-center justify-center rounded-lg px-3 text-[13px] font-semibold whitespace-nowrap ' +
   'transition-colors';
 const seg = (on) => `${SEG} ${on ? `seg-on ${FOCUS_OUTLINE}` : `seg-off ${FOCUS_RING}`}`;
 
@@ -493,7 +493,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
               <button
                 type="button"
                 onClick={showDeck}
-                className={`min-w-0 flex-1 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-white/5 ${FOCUS_RING}`}
+                className={`min-h-11 min-w-0 flex-1 rounded-xl px-2.5 py-2 text-left transition-colors hover:bg-white/5 ${FOCUS_RING}`}
               >
                 <span className="sr-only">View deck: </span>
                 <DeckSlots filled={deck.length} pulse={pulse} />
@@ -534,9 +534,9 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
               <button
                 type="button"
                 onClick={clearDeck}
-                className={`btn-glass inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-red-300 ${FOCUS_OUTLINE}`}
+                className={`btn-glass inline-flex h-11 items-center gap-1.5 rounded-xl px-3.5 text-sm font-bold text-red-300 ${FOCUS_OUTLINE}`}
               >
-                <Eraser aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
+                <Eraser aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
                 Clear
               </button>
             </div>
@@ -613,7 +613,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className={`relative flex items-center gap-2.5 overflow-hidden rounded-xl py-1.5 pl-3 pr-1.5 ${WELL}`}
+                    className={`relative flex items-center gap-2.5 overflow-hidden rounded-xl py-0.5 pl-3 pr-0.5 ${WELL}`}
                   >
                     {/* The card's tier, as a sliver of its frame metal. */}
                     <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px]" style={{ background: RARITY_METAL[card.rarity] }} />
@@ -626,10 +626,14 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                       <ArtOrEmoji teddy={card} emojiClassName="text-sm" imgClassName="absolute inset-0 h-full w-full object-cover" />
                     </span>
                     <span className="min-w-0 flex-1 truncate text-sm font-semibold text-plush-100">{card.name}</span>
+                    {/* 44px, filling the row's height bar 2px each side, so
+                        the row stays 48px. Its focus ring is inset: the row
+                        clips (overflow-hidden), and a ring drawn outside the
+                        button would be cut off. A plain button, so a ring. */}
                     <button
                       type="button"
                       onClick={() => removeFromDeck(card)}
-                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 ${FOCUS_RING}`}
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300"
                       aria-label={`Remove ${card.name} from deck`}
                     >
                       <X aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
@@ -664,11 +668,11 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                 <ul className="-mx-1 space-y-1.5 px-1 [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin] lg:min-h-0 lg:overflow-y-auto">
 
                   {savedDecks.map((savedDeck) => (
-                    <li key={savedDeck.name} className={`flex items-center gap-1 rounded-xl p-1 ${WELL}`}>
+                    <li key={savedDeck.name} className={`flex items-center gap-1 rounded-xl px-1 ${WELL}`}>
                       <button
                         type="button"
                         onClick={() => loadSavedDeck(savedDeck)}
-                        className={`flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 text-left text-sm font-semibold text-plush-100 transition-colors hover:bg-white/5 ${FOCUS_RING}`}
+                        className={`flex h-11 min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 text-left text-sm font-semibold text-plush-100 transition-colors hover:bg-white/5 ${FOCUS_RING}`}
                       >
                         <FolderOpen aria-hidden="true" className="h-4 w-4 shrink-0 text-brass-300" strokeWidth={2.2} />
                         <span className="truncate">{savedDeck.name}</span>
@@ -677,7 +681,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                         type="button"
                         onClick={() => deleteDeck(savedDeck.name)}
                         aria-label={`Delete deck ${savedDeck.name}`}
-                        className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 ${FOCUS_RING}`}
+                        className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 ${FOCUS_RING}`}
                       >
                         <Trash2 aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
                       </button>

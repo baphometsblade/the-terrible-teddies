@@ -50,6 +50,68 @@ test.describe('tutorial', () => {
       expect([...tops], 'Next moved between steps').toHaveLength(1);
     });
   }
+
+  // The densest steps run past the frame on most screens. The body used to
+  // stop at its edge with nothing to say there was more (three of the eight
+  // abilities sat below it on a phone): now its foot fades while words are
+  // hidden below, and the fade goes once the step is read to its end. On a
+  // phone the frame is the whole screen, not a 44rem box in an empty scrim.
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 800 }, { width: 320, height: 640 }]) {
+    test(`a step that runs past the frame says so until it is read at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await bootToMainMenu(page);
+      await page.getByRole('button', { name: 'How to play' }).click();
+      const dialog = page.getByRole('dialog', { name: 'How to play' });
+      await expect(dialog).toBeVisible(SLOW);
+      if (viewport.width < 640) {
+        // The scrim's 12px padding at each end, and nothing else.
+        const panel = await dialog.locator(':scope > div').boundingBox();
+        expect(Math.round(panel.height)).toBe(viewport.height - 24);
+      }
+      const body = dialog.getByRole('region');
+      // Words below the frame: what overflows, less the step's own padding.
+      const hidden = () => body.evaluate((el) => {
+        const pad = parseFloat(getComputedStyle(el.firstElementChild).paddingBottom);
+        return el.scrollHeight - el.clientHeight - el.scrollTop - pad;
+      });
+      const cued = () => body.evaluate((el) => el.hasAttribute('data-more') && getComputedStyle(el).maskImage !== 'none');
+      let overflowing = 0;
+      for (let step = 1; step <= 9; step += 1) {
+        await expect(dialog.getByText(`Step ${step} of 9`)).toBeVisible();
+        await expect.poll(async () => (await hidden()) > 1 === (await cued()), `step ${step}: the cue disagrees with the step`).toBe(true);
+        if ((await hidden()) > 1) {
+          overflowing += 1;
+          await body.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+          await expect.poll(cued, `step ${step}: the cue stays once it is read to the end`).toBe(false);
+        }
+        if (step < 9) await dialog.getByRole('button', { name: 'Next' }).click();
+      }
+      // The Cast overflows at every one of these sizes, so the cue was seen.
+      expect(overflowing).toBeGreaterThan(0);
+    });
+  }
+
+  // Previous is aria-disabled on the first step, not disabled: disabling it
+  // under a keyboard user's focus dropped the focus to <body>, and the next
+  // Tab started again at Close.
+  test('Previous keeps the focus when it steps back onto the first step', async ({ page }) => {
+    await bootToMainMenu(page);
+    await page.getByRole('button', { name: 'How to play' }).click();
+    const dialog = page.getByRole('dialog', { name: 'How to play' });
+    await dialog.getByRole('button', { name: 'Next' }).click();
+    await expect(dialog.getByText('Step 2 of 9')).toBeVisible();
+    const previous = dialog.getByRole('button', { name: 'Previous' });
+    await previous.focus();
+    await page.keyboard.press('Enter');
+    await expect(dialog.getByText('Step 1 of 9')).toBeVisible();
+    await expect(previous).toBeFocused();
+    await expect(previous).toHaveAttribute('aria-disabled', 'true');
+    // On the first step it does nothing, and Tab goes on to Next.
+    await page.keyboard.press('Enter');
+    await expect(dialog.getByText('Step 1 of 9')).toBeVisible();
+    await page.keyboard.press('Tab');
+    await expect(dialog.getByRole('button', { name: 'Next' })).toBeFocused();
+  });
 });
 
 // The boxes of the visible controls in `dialog` that `box` overlaps.
@@ -326,9 +388,14 @@ test.describe('a toast over a dialog', () => {
   // lines there and reached 9px into it; set tighter, it ends above it.
   // The toast is raised through the app's own toast module, which only the
   // dev server serves at its source path.
+  //
+  // 360 and 1280x800 joined when the tutorial's frame grew to the screen on
+  // a phone and to 48rem from sm: the panel then starts at the top of the
+  // scrim at both, and the step bar sat 5px (360) and 1px (1280) into a
+  // toast that reaches 86px / 98px down.
   test.skip(!!process.env.E2E_PREVIEW, 'imports the toast module from /src');
-  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
-    test(`the longest achievement toast clears the tutorial's controls at ${viewport.width}`, async ({ page }) => {
+  for (const viewport of [{ width: 320, height: 568 }, { width: 360, height: 740 }, { width: 390, height: 844 }, { width: 1280, height: 800 }]) {
+    test(`the longest achievement toast clears the tutorial's controls at ${viewport.width}x${viewport.height}`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await bootToMainMenu(page);
       await page.getByRole('button', { name: 'How to play' }).click();
@@ -396,6 +463,35 @@ const ACHIEVEMENT_IDS = (() => {
 })();
 
 test.describe('player stats', () => {
+  // Escape in the rename field reached the dialog's own Escape and closed
+  // Player Stats, dropping the typed name. It cancels the edit now, the way
+  // Escape backs out of the innermost thing everywhere else.
+  test('Escape in the rename field cancels the edit, not the dialog', async ({ page }) => {
+    await bootToMainMenu(page);
+    await page.getByLabel('View player stats').click();
+    const dialog = page.getByRole('dialog', { name: 'Player stats' });
+    await expect(dialog).toBeVisible(SLOW);
+    const pencil = dialog.getByRole('button', { name: 'Edit player name' });
+    await pencil.click();
+    // exact: "Edit player name" (the pencil) contains it.
+    const field = dialog.getByLabel('Player name', { exact: true });
+    await field.fill('Someone Else');
+    await page.keyboard.press('Escape');
+    await expect(field).toHaveCount(0);
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'QA Bear' })).toBeVisible();
+    // The focus goes back to the control that opened the field.
+    await expect(pencil).toBeFocused();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('terrible-teddies-storage')).state.playerName)).toBe('QA Bear');
+    // Reopened, the field holds the name, not the abandoned edit.
+    await pencil.click();
+    await expect(field).toHaveValue('QA Bear');
+    // Out of the field, Escape is the dialog's again.
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+  });
+
   // "Achievements (0/16)" wrapped to two lines at 390 (and below), so its tab
   // stood taller than Statistics and off-centre. Each tab is one line now,
   // the count in the pill Challenges' tabs use. A two-digit count ("10/16")

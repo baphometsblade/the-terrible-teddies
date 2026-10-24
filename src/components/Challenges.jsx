@@ -132,6 +132,10 @@ const RewardChip = ({ type, amount, className = '' }) => {
 // never a tab stop), and Tab carries on from there to the next card.
 //
 // `float` is what the card has just paid out, if anything (see ClaimFloat).
+//
+// Claim is 44px tall, the size every control is held to, but takes the bar
+// row's 32px (-my-1.5): a card does not grow when it becomes claimable, nor
+// shrink when "Claimed" replaces the button.
 const ChallengeCard = ({ challenge, progress, isClaimed, onClaim, float }) => {
   const isComplete = progress >= challenge.target;
   const progressPercent = Math.min((progress / challenge.target) * 100, 100);
@@ -208,7 +212,7 @@ const ChallengeCard = ({ challenge, progress, isClaimed, onClaim, float }) => {
                 refocus.current = e.currentTarget === document.activeElement;
                 onClaim();
               }}
-              className={`btn-brass h-8 rounded-lg px-4 font-display text-sm font-bold ${FOCUS_OUTLINE}`}
+              className={`btn-brass -my-1.5 h-11 rounded-lg px-4 font-display text-sm font-bold ${FOCUS_OUTLINE}`}
             >
               Claim
             </button>
@@ -247,7 +251,7 @@ const TabButton = ({ active, onClick, icon: Icon, label, done, total }) => (
     type="button"
     onClick={onClick}
     aria-pressed={active}
-    className={`flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 py-2.5 font-display text-[15px] font-bold leading-tight
+    className={`flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 py-2.5 font-display text-[15px] font-bold leading-tight
       transition-colors ${FOCUS_OUTLINE}
       ${active ? 'btn-glass border-brass-300/40 text-brass-200' : 'border border-transparent text-plush-300 hover:text-white'}`}
   >

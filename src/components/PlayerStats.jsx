@@ -200,7 +200,22 @@ const PlayerStats = ({ onClose }) => {
                     // preventDefault, because saving hands focus to the pencil
                     // before this key's keypress is dispatched — and a keypress
                     // Enter on a button clicks it, reopening the field.
+                    //
+                    // Escape cancels the edit, not the dialog: the old name
+                    // comes back and the pencil gets the focus, as after a
+                    // save. It used to reach useDialog's document listener and
+                    // close Player Stats, typed name and all. React listens at
+                    // its root, below the document, and its stopPropagation
+                    // stops the native event too, so the dialog never hears it.
                     onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        refocusEdit.current = true;
+                        setNewName(playerName);
+                        setEditingName(false);
+                        return;
+                      }
                       if (e.key !== 'Enter') return;
                       e.preventDefault();
                       handleSaveName();
@@ -224,9 +239,9 @@ const PlayerStats = ({ onClose }) => {
                     type="button"
                     onClick={() => setEditingName(true)}
                     aria-label="Edit player name"
-                    className={`btn-glass grid h-8 w-8 shrink-0 place-items-center rounded-lg text-plush-200 hover:text-white ${FOCUS_OUTLINE}`}
+                    className={`btn-glass grid h-11 w-11 shrink-0 place-items-center rounded-xl text-plush-200 hover:text-white ${FOCUS_OUTLINE}`}
                   >
-                    <Pencil aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
+                    <Pencil aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
                   </button>
                 </div>
               )}
@@ -287,7 +302,7 @@ const PlayerStats = ({ onClose }) => {
                   onClick={() => setActiveTab(tab.id)}
                   aria-pressed={on}
                   data-tab={tab.id}
-                  className={`flex min-h-9 min-w-fit flex-1 items-center justify-center gap-x-1 whitespace-nowrap rounded-lg px-1 py-1.5 min-[360px]:px-1.5 text-[13px] font-semibold leading-tight transition-colors sm:gap-x-2 sm:px-2 sm:text-sm ${FOCUS_OUTLINE} ${
+                  className={`flex min-h-11 min-w-fit flex-1 items-center justify-center gap-x-1 whitespace-nowrap rounded-lg px-1 py-1.5 min-[360px]:px-1.5 text-[13px] font-semibold leading-tight transition-colors sm:gap-x-2 sm:px-2 sm:text-sm ${FOCUS_OUTLINE} ${
                     on ? 'seg-on' : 'seg-off'
                   }`}
                 >
