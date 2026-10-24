@@ -535,3 +535,118 @@ test('reloading or closing mid-battle sends the abandoned battle\'s loss to the 
   expect(sent[0].headers.authorization).toBe(`Bearer ${SESSION.access_token}`);
   expect(row().rev).toBe(6);
 });
+
+// --- Coming back to the game ------------------------------------------------
+
+// A desktop window beside another one, or on a second monitor, gets focus back
+// without its tab ever hiding. On visibilitychange alone the laptop kept the
+// save the phone had moved on from, and the player's next change there met the
+// phone's as "Two saves didn't match".
+test('focus back on the window re-reads the account and takes what the phone played', async ({ page }) => {
+  const { calls, write } = await boot(page, { account: accountSave(), store: null, balance: 500 });
+  await expect(page.getByText('Lv 7')).toBeVisible(SLOW);
+  // Past the 15 s a return waits between reads.
+  await page.clock.install();
+  await page.clock.runFor(16_000);
+  write(accountSave({ level: 9, totalBattles: 45, totalWins: 30, coins: 6000 }));
+  const gets = () => calls.filter((c) => c.fn === 'get_player_save').length;
+  const before = gets();
+
+  await page.evaluate(() => { window.dispatchEvent(new Event('blur')); window.dispatchEvent(new Event('focus')); });
+  await expect.poll(gets).toBe(before + 1);
+  await expect(page.getByText('Lv 9')).toBeVisible(SLOW);
+
+  // The player's next change is an ordinary one, on top of the phone's save.
+  const dialog = await openSettings(page);
+  await dialog.getByRole('button', { name: /^Hard/ }).click();
+  await page.clock.runFor(4_000);
+  await expect.poll(() => calls.filter((c) => c.fn === 'put_player_save').length).toBe(1);
+  const put = calls.find((c) => c.fn === 'put_player_save');
+  expect(put.body.p_base_rev).toBe(6);
+  expect(put.body.p_save.level).toBe(9);
+  expect(await page.getByText('Two saves didn’t match').count()).toBe(0);
+  expect(await page.evaluate((k) => localStorage.getItem(k), `terrible-teddies-backup:${SESSION.user.id}`)).toBeNull();
+});
+
+// Every return re-reads the save from localStorage, and the same save read
+// back came out as new arrays: "Saving…" for three seconds, and nothing sent.
+test('a return to the game with nothing changed does not say it is saving', async ({ page }) => {
+  const { calls } = await boot(page, { account: accountSave(), store: null, balance: 500 });
+  const dialog = await openSettings(page);
+  await expect(dialog.getByText(/^Saved to your account · /)).toBeVisible(SLOW);
+  // Settled: the adopted save rolled forward and sent, nothing waiting.
+  await page.waitForTimeout(4_000);
+  await expect(dialog.getByText(/^Saved to your account · /)).toBeVisible();
+  const putsBefore = calls.filter((c) => c.fn === 'put_player_save').length;
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('focus'));
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  // Read as it is at each moment: an auto-retrying assertion would wait the
+  // three seconds out and pass.
+  for (let i = 0; i < 6; i += 1) {
+    await page.waitForTimeout(250);
+    expect(await dialog.getByText('Saving…').count()).toBe(0);
+  }
+  await expect(dialog.getByText(/^Saved to your account · /)).toBeVisible();
+  expect(calls.filter((c) => c.fn === 'put_player_save')).toHaveLength(putsBefore);
+});
+
+// An hour-long token runs out while the network is down. auth-js then holds
+// the failed refresh for a minute and reads no session, and supabase-js sent
+// the next call with the anon key, which the migration refuses (401, 42501):
+// that read as "no cloud saves here" and turned them off for the session.
+test('a call while the session cannot be refreshed waits for it, and never switches the cloud save off', async ({ page }) => {
+  const { calls, row } = await boot(page, { account: accountSave(), store: null, balance: 500 });
+  await expect(page.getByText('Lv 7')).toBeVisible(SLOW);
+  const net = { down: false };
+  const anon = [];
+  // In front of boot's stub: everything fails while the network is down, and
+  // the save RPCs refuse the anon key as PostgREST does.
+  await page.route('**testproject.supabase.co/**', (route) => {
+    const req = route.request();
+    if (net.down) return route.abort('internetdisconnected');
+    const fn = req.url().match(/\/rest\/v1\/rpc\/([a-z_]+)/)?.[1];
+    if ((fn === 'get_player_save' || fn === 'put_player_save') && req.headers().authorization === 'Bearer test-anon-key') {
+      anon.push(fn);
+      return route.fulfill({ status: 401, json: { code: '42501', message: `permission denied for function ${fn}`, details: null, hint: null } });
+    }
+    return route.fallback();
+  });
+  const dialog = await openSettings(page);
+  await expect(dialog.getByText(/^Saved to your account · /)).toBeVisible(SLOW);
+  await page.clock.install();
+
+  net.down = true;
+  await page.evaluate((key) => {
+    const s = JSON.parse(localStorage.getItem(key));
+    s.expires_at = Math.floor(Date.now() / 1000) - 30;
+    localStorage.setItem(key, JSON.stringify(s));
+    window.dispatchEvent(new Event('offline'));
+  }, `sb-${REF}-auth-token`);
+  await dialog.getByRole('button', { name: /^Hard/ }).click();
+  // Long enough for the refresh to give up and its failure to be held.
+  for (let i = 0; i < 16; i += 1) {
+    await page.clock.runFor(2_500);
+    expect(await dialog.getByText('Saved on this device only').count()).toBe(0);
+  }
+  // Said as what it is: a failure it will retry.
+  await expect(dialog.getByText('Couldn’t reach the server — saved on this device, will retry')).toBeVisible();
+  expect(calls.filter((c) => c.fn === 'put_player_save')).toHaveLength(0);
+
+  // The network comes back (inside the minute the failure is held), and the
+  // browser says so.
+  net.down = false;
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  const puts = () => calls.filter((c) => c.fn === 'put_player_save');
+  await expect(async () => {
+    await page.clock.runFor(5_000);
+    expect(await dialog.getByText('Saved on this device only').count()).toBe(0);
+    expect(puts().length).toBeGreaterThan(0);
+  }).toPass({ timeout: 60_000, intervals: [0] });
+
+  expect(anon).toEqual([]);
+  expect(puts().every((c) => c.headers.authorization === `Bearer ${SESSION.access_token}`)).toBe(true);
+  await expect.poll(() => row().save.difficulty).toBe('hard');
+  await expect(dialog.getByText(/^Saved to your account · /)).toBeVisible();
+});

@@ -134,11 +134,28 @@ export const syncPlayerLevel = async (level, xp, userId = null) => {
 // A request that never answers would hold the cloud save's queue forever.
 const RPC_TIMEOUT_MS = 15_000;
 
+// The answer for a call made with no session to make it with: an ordinary
+// failure, retried with back-off like a dropped connection.
+export const NO_SESSION = { data: null, error: { code: 'NO_SESSION', message: 'No session to send with' }, status: 0 };
+
 const callRpc = async (fn, args = {}) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), RPC_TIMEOUT_MS);
   try {
-    const { data, error, status } = await supabase.rpc(fn, args).abortSignal(controller.signal);
+    // With the user's own token, or not at all. Once a token has expired and
+    // its refresh has failed, auth-js holds that failure for a minute and
+    // getSession() reads no session; supabase-js then sends the anon key as
+    // the bearer, the migration refuses anon (insufficient_privilege), and
+    // that refusal turned the cloud save off for the rest of the session,
+    // with Settings saying "Saved on this device only". A phone unlocked
+    // after an hour on a weak signal is enough. The header is set here, so
+    // the token checked is the token sent (fetchWithAuth keeps it).
+    const { data: { session } = {} } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return NO_SESSION;
+    const { data, error, status } = await supabase.rpc(fn, args)
+      .setHeader('Authorization', `Bearer ${token}`)
+      .abortSignal(controller.signal);
     return { data, error, status };
   } catch (err) {
     // supabase-js resolves network failures as an error with status 0; this

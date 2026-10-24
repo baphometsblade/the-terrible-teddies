@@ -281,6 +281,69 @@ describe('what goes to the account', () => {
     expect(classifyRpc({ data: null, error: { code: '' }, status: 503 }, ok).kind).toBe('error');
     expect(classifyRpc({ data: {}, error: null, status: 200 }, ok).kind).toBe('ok');
   });
+
+  // A request that went out with the anon key (no usable session: an expired
+  // token whose refresh is failing) is refused with 42501 too, as 401. That
+  // read as "no cloud saves here" and turned them off for the session; only
+  // a refusal of the user's own token (403) means that.
+  it('retries a refusal of the anon key, and a call with no session, rather than switching off', () => {
+    const ok = (d) => (d ? { ok: true } : null);
+    expect(classifyRpc({ data: null, error: { code: '42501' }, status: 401 }, ok).kind).toBe('error');
+    expect(classifyRpc({ data: null, error: { code: 'NO_SESSION' }, status: 0 }, ok).kind).toBe('error');
+  });
+
+  it('carries the gems a reversed payment left owed with the save', () => {
+    expect(CLOUD_FIELDS).toContain('gemDebt');
+  });
+});
+
+describe('a return to the game', () => {
+  // Desktop windows: one beside another, or on a second monitor, gets focus
+  // back without its tab ever hiding, so no visibilitychange. The laptop kept
+  // the save the phone had moved on from, and the next change here was met
+  // as "Two saves didn't match".
+  it('re-reads the account on window focus, and takes a save another device moved on', async () => {
+    useGameStore.setState({ ownerUserId: A, level: 2 });
+    await signIn(A);
+    server.write(A, played({ level: 9 }));
+    toasts.length = 0;
+    await vi.advanceTimersByTimeAsync(RECHECK_MIN_MS);
+    server.calls = [];
+    window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(server.calls.filter((c) => c.fn === 'get')).toHaveLength(1);
+    expect(get().level).toBe(9);
+    expect(toasts.map((t) => t.title)).toEqual(['Save loaded from your account']);
+  });
+
+  it('reads once for a return that brings focus and visibilitychange together', async () => {
+    useGameStore.setState({ ownerUserId: A });
+    await signIn(A);
+    await vi.advanceTimersByTimeAsync(RECHECK_MIN_MS);
+    server.calls = [];
+    setVisibility('visible');
+    window.dispatchEvent(new Event('focus'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(server.calls.filter((c) => c.fn === 'get')).toHaveLength(1);
+  });
+
+  // Every return re-reads the save from localStorage (useRehydrateOnFocus),
+  // and persist hands back new arrays for the same save: "Saving…" for three
+  // seconds, and nothing sent.
+  it('does not call a re-read of the same save a change', async () => {
+    useGameStore.setState({ ownerUserId: A, ownedCards: [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42, 7] });
+    await signIn(A);
+    expect(phase()).toBe('saved');
+    server.calls = [];
+    await useGameStore.persist.rehydrate();
+    expect(get().ownedCards).toHaveLength(12);
+    expect(phase()).toBe('saved');
+    await vi.advanceTimersByTimeAsync(PUSH_DEBOUNCE_MS * 2);
+    expect(server.calls).toHaveLength(0);
+    // A real change still is one.
+    get().addCoins(1);
+    expect(phase()).toBe('pending');
+  });
 });
 
 describe('what Settings says', () => {

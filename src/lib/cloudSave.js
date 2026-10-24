@@ -213,11 +213,18 @@ const validPut = (d) => (
 /**
  * supabase-js's { data, error, status } as one of:
  *   ok          — the function answered as the migration defines it
- *   unavailable — the function is not there (PostgREST's 404 / PGRST202), this
- *                 role may not call it, or it answered something else: this
- *                 backend has no cloud saves, and asking again will not help
+ *   unavailable — the function is not there (PostgREST's 404 / PGRST202), the
+ *                 signed-in user's role may not call it, or it answered
+ *                 something else: this backend has no cloud saves, and
+ *                 asking again will not help
  *   too-large   — the server's size cap (PT413, HTTP 413)
- *   error       — anything else (offline, a 5xx, an expired token): try again
+ *   error       — anything else (offline, a 5xx, an expired token, no
+ *                 session to send with): try again
+ *
+ * insufficient_privilege (42501) means "no cloud saves here" only when it
+ * refuses the user's own token, which PostgREST answers with 403. With 401
+ * it is the anon role being refused: the request went without a usable
+ * session, which a later one will have.
  */
 export const classifyRpc = (raw, validate) => {
   const { data, error, status } = raw || {};
@@ -225,7 +232,7 @@ export const classifyRpc = (raw, validate) => {
     const code = String(error.code || '');
     if (code === 'PT413' || status === 413) return { kind: 'too-large' };
     if (status === 404 || ['PGRST202', 'PGRST205', '42883', '42P01'].includes(code)) return { kind: 'unavailable' };
-    if (code === '42501') return { kind: 'unavailable' };
+    if (code === '42501') return { kind: status === 401 ? 'error' : 'unavailable' };
     return { kind: 'error' };
   }
   const valid = validate(data);
@@ -687,6 +694,11 @@ function onStoreChange(state, prev) {
   if (!c || !c.available || applyingRemote) return;
   if (state.ownerUserId !== c.uid) return;
   if (!CLOUD_FIELDS.some((k) => state[k] !== prev[k])) return;
+  // New references to the same save are not a change. Every return to the
+  // tab re-reads the save from localStorage (useRehydrateOnFocus), and
+  // persist's merge hands back fresh arrays, so the reference check alone
+  // showed "Saving…" for three seconds over nothing, and sent nothing.
+  if (saveHash(cloudPayload(state)) === saveHash(cloudPayload(prev))) return;
   // A change while hidden, or while the page goes, is sent at once: there
   // will be no three seconds. This is how an abandoned battle's loss, written
   // by GameBoard's pagehide listener after ours, still reaches the account.
@@ -798,13 +810,23 @@ export function startCloudSync({ userId, accessToken = null, onSettled = null })
   };
   ctx = c;
   const unsubscribe = useGameStore.subscribe(onStoreChange);
+  // A return to the game re-reads the account, as useRehydrateOnFocus
+  // re-reads the tabs: visibilitychange for a tab switch within a window,
+  // focus for a switch between windows or back from another app, where the
+  // tab never hides (a desktop window beside another one, a second monitor).
+  // On visibilitychange alone, a laptop left beside the phone it was handed
+  // to kept its stale save, and the player's next change met the phone's as
+  // "Two saves didn't match". RECHECK_MIN_MS and enqueueDecision keep the
+  // two events of one return to one read.
   document.addEventListener('visibilitychange', onVisibility);
+  window.addEventListener('focus', onVisibility);
   window.addEventListener('pagehide', onPageHide);
   window.addEventListener('pageshow', onPageShow);
   window.addEventListener('online', onOnline);
   c.detach = () => {
     unsubscribe();
     document.removeEventListener('visibilitychange', onVisibility);
+    window.removeEventListener('focus', onVisibility);
     window.removeEventListener('pagehide', onPageHide);
     window.removeEventListener('pageshow', onPageShow);
     window.removeEventListener('online', onOnline);
