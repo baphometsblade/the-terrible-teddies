@@ -625,6 +625,32 @@ test.describe('announcements', () => {
   });
 });
 
+// On a phone the toast list runs along the top, over each screen's "← Menu".
+// A tap meant for the button landed on the toast and focused it, and Radix
+// pauses a toast's timer while the focus is in it: the toast stayed up, and
+// "← Menu" stayed dead, for as long as the player kept tapping.
+test.describe('a toast on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test('lets a tap through to the "← Menu" under it', async ({ page }) => {
+    await bootToMainMenu(page);
+    await page.getByRole('button', { name: 'Deck Builder', exact: true }).tap();
+    await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible(SLOW);
+    // The seeded deck is full, so an add raises "Deck Full!".
+    await page.getByRole('button', { name: /^Add .+ to deck$/ }).first().tap();
+    const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Deck Full!' });
+    await expect(toast).toBeVisible(SLOW);
+    await expect(toast).toHaveCSS('pointer-events', 'none');
+    const menu = await page.getByRole('button', { name: '← Menu' }).boundingBox();
+    const t = await toast.boundingBox();
+    // The case in point: the button is under the toast.
+    expect(t.y + t.height > menu.y + menu.height / 2 && t.x < menu.x + menu.width / 2, 'the toast is not over "← Menu"').toBe(true);
+    await page.touchscreen.tap(menu.x + menu.width / 2, menu.y + menu.height / 2);
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    await expect(page.getByRole('heading', { name: 'Deck Builder' })).toHaveCount(0);
+  });
+});
+
 // The empty Card Packs table names where packs come from, with a way to each.
 // Daily Rewards waits for a tap now, so on a pack day the table offers it.
 test('the empty Card Packs table opens Daily Rewards on a pack day', async ({ page }) => {

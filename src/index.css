@@ -687,7 +687,8 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
    From sm the default toast corner is bottom-right, and below lg that is
    where the deck bar's Set as Current Deck sits; a "Deck Full!" toast landed
    on it at the moment the player reached for it. Lifted clear of the bar. On
-   a phone toasts are at the top, and from lg there is no bar. */
+   a phone toasts are at the top, over "← Menu", and let taps through to it
+   (below); from lg there is no bar. */
 @media (min-width: 640px) and (max-width: 1023.98px) {
   [data-screen="deck"] .toast-viewport {
     bottom: calc(5rem + env(safe-area-inset-bottom));
@@ -723,6 +724,19 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 :root[data-dialog]:not([data-screen="battle"]) .toast-viewport > li {
   pointer-events: none;
   padding: 0.5rem 1.75rem 0.5rem 0.875rem;
+}
+/* On a phone no toast takes a tap, on any screen. The list runs along the
+   top, over each screen's "← Menu" and the menu's profile chip, and a tap
+   meant for those landed on the toast instead and focused it, and Radix
+   pauses a toast's timer while the focus is in it. So the toast stayed up,
+   and the control under it stayed dead, for as long as the player kept
+   tapping (a "Deck Set!" over "← Menu", the commonest way off the Deck
+   Builder). Now the tap goes through, the toast still times out, and F8
+   still reaches it, as on the battle board and over a dialog; swipe-away
+   goes, as it already had there. (0,1,1) beats the li's pointer-events-auto
+   (0,1,0), although utilities load after this layer. */
+@media (max-width: 639.98px) {
+  .toast-viewport > li { pointer-events: none; }
 }
 /* On a phone the type steps down a little, so the toast ends above the first
    control under a dialog's header: the tutorial's step bar, 77px down at 320,

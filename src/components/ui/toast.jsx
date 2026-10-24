@@ -12,10 +12,13 @@ const ToastViewport = React.forwardRef(({ className, ...props }, ref) => (
     ref={ref}
     // pointer-events-none on the list, auto on each toast (below): the list's
     // padded box spans the screen edge, and while a toast was open it blocked
-    // taps on whatever sat around it. toast-viewport is the hook the
-    // placement rules in index.css target (the battle board's, the deck
-    // builder's, and the one for a toast over a dialog), and toast-title /
-    // toast-description let the dialog rule set the type tighter on a phone.
+    // taps on whatever sat around it. On a phone, over a dialog and on the
+    // battle board the toasts themselves let taps through too (index.css): a
+    // tapped toast took the focus, which pauses its timer, and stayed over
+    // the "← Menu" under it. toast-viewport is the hook the placement rules
+    // in index.css target (the battle board's, the deck builder's, and the
+    // one for a toast over a dialog), and toast-title / toast-description let
+    // the dialog rule set the type tighter on a phone.
     // Inset by the safe area, top on a phone and bottom from sm, so on a
     // home-screen install it clears the status bar and the home indicator.
     className={cn(
