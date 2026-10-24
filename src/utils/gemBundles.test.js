@@ -22,7 +22,10 @@ function parseServerTable(source) {
 const checkout = parseServerTable(read('supabase/functions/create-checkout-session/index.ts'));
 const webhook = parseServerTable(read('supabase/functions/stripe-webhook/index.ts'));
 const shopSrc = read('src/components/Shop.jsx');
-const purchaseSrc = read('src/components/PurchaseSuccess.jsx');
+// The revenue event's price table. It moved out of PurchaseSuccess.jsx when
+// payments confirmed after that screen closed began to be counted too
+// (settlePendingPurchase), so both read the one table.
+const purchaseSrc = read('src/utils/purchaseAnalytics.js');
 
 // Shop gem-bundle tiles: { id, gems, price (dollars), bonus }
 function parseShopBundles() {
@@ -46,7 +49,7 @@ function parseShopOffers() {
   return out;
 }
 
-// PurchaseSuccess analytics prices: { id: dollars }
+// The revenue event's prices (purchaseAnalytics.js): { id: dollars }
 function parseAnalyticsPrices() {
   const block = purchaseSrc.match(/const BUNDLE_PRICES = \{([\s\S]*?)\};/)[1];
   const out = {};
@@ -87,7 +90,7 @@ describe('gem bundle price tables stay in sync', () => {
   });
 
   it('every server bundle is present in analytics BUNDLE_PRICES', () => {
-    // The reverse of the check above. PurchaseSuccess looks each completed
+    // The reverse of the check above. trackPurchaseOnce looks each completed
     // purchase up in BUNDLE_PRICES for its revenue event; a server bundle
     // missing from that table logs `?? 0` for a real sale — silent under-
     // reporting that only this direction catches.

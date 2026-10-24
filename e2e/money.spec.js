@@ -307,6 +307,30 @@ test('a second Starter Gem Pack payment says it was refunded because the account
   await expectNoAxeViolations(page, 'refunded duplicate purchase');
 });
 
+// The screen's own refund phases only reach a buyer who stays on it. One who
+// left early (a second Starter pack paid in another tab, refunded by the
+// webhook) had the marker dropped in silence on the next return.
+test('a payment refunded after the screen is closed is announced on the next return to the tab', async ({ page }) => {
+  const stub = await stubPurchase(page, null);
+  const dialog = await returnFromCheckout(page, 'cs_test_late_refund');
+  await runClockUntil(page, dialog.getByRole('heading', { name: 'Waiting for Payment Confirmation' }));
+  await dialog.getByRole('button', { name: 'Return to Game' }).click();
+  await expect(dialog).toHaveCount(0, SLOW);
+  const gemsBefore = (await saved(page)).gems;
+
+  stub.row = { ...ROW, bundle_id: 'starter_bundle', gems_granted: 300, status: 'refunded_duplicate' };
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+
+  await expect(page.getByText('Payment refunded').first()).toBeVisible(SLOW);
+  await expect(page.getByText(/one per account, and this account already has it, so the payment was refunded in full/).first()).toBeVisible();
+  expect((await saved(page)).gems).toBe(gemsBefore);
+  // Settled: told once, and the next return reads nothing.
+  const reads = stub.reads;
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await page.clock.runFor(1_000);
+  expect(stub.reads).toBe(reads);
+});
+
 test('gems from a payment that confirms after the screen is closed land on the next return to the tab', async ({ page }) => {
   const stub = await stubPurchase(page, null);
   const dialog = await returnFromCheckout(page, 'cs_test_late');

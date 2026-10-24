@@ -7,18 +7,12 @@ import {
 } from '../utils/pendingPurchase';
 import { SUPPORT_EMAIL, supportMailto } from '@/lib/support';
 import { fetchServerGemBalance } from '../utils/supabaseClient';
-import analytics from '../utils/analytics';
+import { trackPurchaseOnce } from '../utils/purchaseAnalytics';
 import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
 import { celebrate } from '@/lib/celebrate';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
-
-// Gem bundle prices for analytics (mirrors server-side definitions)
-const BUNDLE_PRICES = {
-  gems_small: 0.99, gems_medium: 2.99, gems_large: 9.99,
-  gems_huge: 19.99, gems_mega: 49.99, starter_bundle: 4.99, weekly_gem_pass: 5.99,
-};
 
 // Reads of the post-purchase gem balance before giving up on showing it here.
 // The gems are already credited server-side; this only decides whether this
@@ -184,12 +178,10 @@ const PurchaseSuccess = ({ sessionId, onDone }) => {
           colors: ['#9333EA', '#A855F7', '#C084FC', '#E879F9', '#fbbf24'],
         });
 
-        analytics.trackPurchase({
-          itemId: purchase.bundle_id,
-          itemName: `${purchase.gems_granted} Gems`,
-          price: BUNDLE_PRICES[purchase.bundle_id] ?? 0,
-          currency: 'USD',
-        });
+        // Once per payment, however many places see it complete: if the
+        // balance could not be read, settlePendingPurchase finishes the
+        // credit later and would otherwise count the sale again.
+        trackPurchaseOnce(sessionId, purchase);
       } else if (purchase && (purchase.status === 'refunded' || purchase.status === 'disputed')) {
         // Reversed at Stripe: there is nothing to wait for, and "gems will
         // appear" (what any non-completed row used to be told) is false.

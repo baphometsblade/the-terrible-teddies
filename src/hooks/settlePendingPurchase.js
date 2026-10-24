@@ -3,9 +3,32 @@ import {
   verifyPurchaseSession, pendingPurchase, forgetPendingPurchase, purchaseOnScreen,
 } from '../utils/pendingPurchase';
 import { useGameStore } from '../stores/gameStore';
+import { trackPurchaseOnce } from '../utils/purchaseAnalytics';
 import { toast } from '@/components/ui/use-toast';
 
 let inFlight = null;
+
+// What a payment that will not be credited says, worded as the purchase
+// screen's own phases are (PurchaseSuccess). The buyer left that screen
+// before Stripe answered, so this is the only place they hear it: the marker
+// used to be dropped in silence, and the duplicate-refund case (a second
+// Starter Gem Pack paid in another tab) is exactly a buyer who left early.
+// The purchases row is the buyer's own (purchases_select_own), so whoever
+// reads it here is the account that paid.
+export const SETTLED_NOTICE = {
+  refunded: {
+    title: 'Payment refunded',
+    description: 'That payment was refunded, so its gems aren’t on your account.',
+  },
+  refunded_duplicate: {
+    title: 'Payment refunded',
+    description: 'That offer is one per account, and this account already has it, so the payment was refunded in full. No gems were added for it.',
+  },
+  disputed: {
+    title: 'Payment disputed',
+    description: 'That payment is being disputed with the card issuer, so its gems aren’t on your account for now. If the dispute is settled in its favour, they come back automatically.',
+  },
+};
 
 /**
  * Settle a payment the player came back from before Stripe confirmed it.
@@ -16,8 +39,9 @@ let inFlight = null;
  * them "within a minute". Now one check runs per return to the tab while a
  * payment is pending (never otherwise: no marker, no request). Once the row
  * says completed, the server balance is read and reconciled for the account
- * that is signed in, and the marker is dropped; a refunded or disputed row
- * drops it too, since there is nothing to credit.
+ * that is signed in, the sale is counted, and the marker is dropped; a
+ * refunded or disputed row drops it too, since there is nothing to credit,
+ * and says why (SETTLED_NOTICE).
  *
  * The reconcile keeps its two guarantees: it credits only the rise above the
  * high-water mark (so a second settle, or the purchase screen doing the same,
@@ -49,6 +73,9 @@ async function settle() {
 
   if (purchase.status !== 'completed') {
     forgetPendingPurchase(pending.sessionId);
+    // An announcement, queued: it arrives with the return to the tab, as the
+    // cloud save's own notices do, and neither should cut the other short.
+    toast({ queue: true, ...SETTLED_NOTICE[purchase.status] });
     return purchase.status;
   }
 
@@ -65,7 +92,11 @@ async function settle() {
   if (owner !== null && owner !== uid) return 'other-account';
   useGameStore.getState().reconcileServerGems(balance, uid);
   forgetPendingPurchase(pending.sessionId);
+  // The sale, counted once per payment: the purchase screen may already have
+  // counted it while leaving the credit to this (its balance read failed).
+  trackPurchaseOnce(pending.sessionId, purchase);
   toast({
+    queue: true,
     title: 'Payment confirmed',
     description: `${purchase.gems_granted.toLocaleString()} gems from your purchase are on your account.`,
   });

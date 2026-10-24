@@ -13,8 +13,11 @@ vi.mock('../utils/pendingPurchase', async (importOriginal) => ({
 }));
 const toast = vi.fn();
 vi.mock('@/components/ui/use-toast', () => ({ toast: (...a) => toast(...a), useToast: () => ({ toast }) }));
+const trackPurchase = vi.fn();
+vi.mock('../utils/analytics', () => ({ default: { trackPurchase: (...a) => trackPurchase(...a) } }));
 
-const { settlePendingPurchase } = await import('./settlePendingPurchase');
+const { settlePendingPurchase, SETTLED_NOTICE } = await import('./settlePendingPurchase');
+const { trackPurchaseOnce } = await import('../utils/purchaseAnalytics');
 const { rememberPendingPurchase, pendingPurchase, watchPurchaseOnScreen } = await import('../utils/pendingPurchase');
 const { useGameStore } = await import('../stores/gameStore');
 const get = () => useGameStore.getState();
@@ -26,6 +29,7 @@ beforeEach(() => {
   useGameStore.setState({ ownerUserId: 'u-1' });
   Object.assign(net, { uid: 'u-1', row: null, balance: 510, verifyCalls: 0, balanceCalls: [] });
   toast.mockClear();
+  trackPurchase.mockClear();
 });
 
 describe('settling a payment the player left before it confirmed', () => {
@@ -57,15 +61,52 @@ describe('settling a payment the player left before it confirmed', () => {
   // refunded_duplicate: a second paid Starter Gem Pack, refunded by the
   // webhook. It used to read as "not confirmed yet" and was checked on every
   // return to the tab for a day.
-  it('drops a refunded, refunded-duplicate or disputed payment without crediting it', async () => {
+  // ...and says so: the marker used to go in silence, so a buyer whose second
+  // Starter Gem Pack was refunded after they left the screen never heard.
+  it('drops a refunded, refunded-duplicate or disputed payment without crediting it, and tells the buyer', async () => {
+    const titles = { refunded: 'Payment refunded', refunded_duplicate: 'Payment refunded', disputed: 'Payment disputed' };
     for (const status of ['refunded', 'refunded_duplicate', 'disputed']) {
+      toast.mockClear();
       rememberPendingPurchase('cs_back');
       net.row = { status, gems_granted: 500, bundle_id: 'gems_large' };
       expect(await settlePendingPurchase()).toBe(status);
       expect(pendingPurchase()).toBeNull();
+      expect(toast).toHaveBeenCalledTimes(1);
+      expect(toast).toHaveBeenCalledWith({ queue: true, ...SETTLED_NOTICE[status] });
+      expect(toast.mock.calls[0][0].title).toBe(titles[status]);
     }
+    expect(SETTLED_NOTICE.refunded_duplicate.description).toContain('refunded in full');
     expect(net.balanceCalls).toEqual([]);
     expect(get().gems).toBe(10);
+    // Nothing was sold.
+    expect(trackPurchase).not.toHaveBeenCalled();
+  });
+
+  // The revenue event fired only from the purchase screen, so a payment that
+  // confirmed after it was closed was never counted.
+  it('counts a payment it credits, once, however many settles see it', async () => {
+    rememberPendingPurchase('cs_counted');
+    net.row = { status: 'completed', gems_granted: 500, bundle_id: 'gems_large' };
+    net.balance = 500;
+    expect(await settlePendingPurchase()).toBe('credited');
+    expect(trackPurchase).toHaveBeenCalledTimes(1);
+    expect(trackPurchase).toHaveBeenCalledWith({ itemId: 'gems_large', itemName: '500 Gems', price: 9.99, currency: 'USD' });
+    // The same payment again (another tab's marker, say): not a second sale.
+    rememberPendingPurchase('cs_counted');
+    expect(await settlePendingPurchase()).toBe('credited');
+    expect(trackPurchase).toHaveBeenCalledTimes(1);
+  });
+
+  // The purchase screen counts a completed payment even when it could not
+  // read the balance and leaves the credit to the settle: one sale, not two.
+  it('does not count a payment the purchase screen already counted', async () => {
+    const row = { status: 'completed', gems_granted: 500, bundle_id: 'gems_large' };
+    expect(trackPurchaseOnce('cs_both', row)).toBe(true);
+    rememberPendingPurchase('cs_both');
+    net.row = row;
+    net.balance = 500;
+    expect(await settlePendingPurchase()).toBe('credited');
+    expect(trackPurchase).toHaveBeenCalledTimes(1);
   });
 
   it('sends nothing when no payment is pending: not a reconcile on every focus', async () => {
