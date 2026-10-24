@@ -82,9 +82,13 @@ How the client uses it (`src/lib/cloudSave.js`): at sign-in it reads the
 account's save before the gem reconcile, then either sends this device's save,
 takes the account's, or — when both have moved on — keeps the one with more
 progress and keeps the other on the device, where Settings offers to switch to
-it. Changes are sent a few seconds after the last one and when the tab is
-hidden. Every write is a compare-and-swap, so a device that is behind is
-refused rather than overwriting another device's progress.
+it. A device that has only fallen behind takes the account's save: the
+calendar's own changes (a new day's challenge counters, a new season's pass)
+do not count as moving on. Changes are sent a few seconds after the last one,
+and at once when the tab is hidden or the page is closed (a battle abandoned
+by closing it included). Every write is a compare-and-swap, so a device that
+is behind is refused, reads the account's save again and decides again,
+rather than overwriting another device's progress.
 
 Two limits worth knowing:
 
