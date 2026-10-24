@@ -45,7 +45,7 @@ const ACTION =
 // The deck bar's narrower button: at 320 the bar holds its summary and
 // "Set as Current Deck" on one line only at this size.
 const COMPACT_ACTION =
-  'inline-flex h-11 shrink-0 items-center justify-center rounded-xl px-3 font-display text-sm font-bold ' +
+  'inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 font-display text-sm font-bold ' +
   `whitespace-nowrap ${FOCUS_OUTLINE}`;
 
 // Segmented type filter — the same .seg-well / .seg-on / .seg-off control as
@@ -375,17 +375,26 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
   const deckFull = deck.length === DECK_SIZE;
 
   // The screen's one brass action, in the deck panel and (below lg) the deck
-  // bar. Short of a full deck it is a readable, recessed slot saying how many
-  // cards are missing. `compact` is the bar's: no icon, a smaller face.
+  // bar, lit only when there is something to do: a full deck that is not the
+  // battle deck yet. Brass is "do this now" here as on the board (End Turn
+  // turns brass once no move is left); lit on an untouched deck, it asked the
+  // player to re-set the deck they already fight with, and pressing it
+  // toasted "Deck Set!" for a change that had not happened. Otherwise it is a
+  // readable, recessed slot saying where the deck stands: how many cards are
+  // missing, or that this is the battle deck. `compact` is the bar's: a
+  // smaller face, and no icon but the battle deck's tick.
+  const canSet = deckFull && dirty;
   const primaryAction = (compact = false) => (
     <button
       type="button"
       onClick={handleSaveDeck}
-      disabled={!deckFull}
-      className={`${compact ? COMPACT_ACTION : `${ACTION} w-full`} ${deckFull ? 'btn-brass' : `cursor-not-allowed text-plush-300 ${WELL}`}`}
+      disabled={!canSet}
+      data-deck-primary=""
+      className={`${compact ? COMPACT_ACTION : `${ACTION} w-full`} ${canSet ? 'btn-brass' : `cursor-not-allowed text-plush-300 ${WELL}`}`}
     >
-      {deckFull && !compact && <Check aria-hidden="true" className="h-5 w-5" strokeWidth={2.6} />}
-      {deckFull ? 'Set as Current Deck' : `Need ${DECK_SIZE - deck.length} more`}
+      {canSet && !compact && <Check aria-hidden="true" className="h-5 w-5" strokeWidth={2.6} />}
+      {deckFull && !dirty && <Check aria-hidden="true" className={`text-emerald-300 ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} strokeWidth={2.6} />}
+      {canSet ? 'Set as Current Deck' : deckFull ? 'Battle deck' : `Need ${DECK_SIZE - deck.length} more`}
     </button>
   );
 

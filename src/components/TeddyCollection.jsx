@@ -238,7 +238,9 @@ const CardDetailDialog = ({ cards, index, onIndex, onClose }) => {
             {card.type === 'action' && (
               <>
                 <Stat label="Attack"><span className="tabular-nums text-red-300">{card.attack}</span></Stat>
-                <Stat label="Defense"><span className="tabular-nums text-sky-300">{card.defense}</span></Stat>
+                {/* HP, as the card's own badge, the tutorial and the battle
+                    log call it. (`defense` is only the data field's name.) */}
+                <Stat label="HP"><span className="tabular-nums text-sky-300">{card.defense}</span></Stat>
               </>
             )}
             {ability && (

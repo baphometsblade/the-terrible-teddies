@@ -226,6 +226,12 @@ test.describe('card detail', () => {
     await expect(hero).toContainText('Shit-Talk Sally');
     expect((await hero.boundingBox()).width).toBeGreaterThan(150);
 
+    // The blue stat is HP, as the card's own badge names it (and the
+    // tutorial and the battle log); the stat sheet called it Defense.
+    const hp = d.locator('dt', { hasText: /^HP$/ }).locator('..').locator('dd > span').first();
+    await expect(hp).toHaveText(await hero.locator('[title="HP"]').innerText());
+    await expect(d.locator('dt', { hasText: /Defense/i })).toHaveCount(0);
+
     // The ability's rules text, not just its keyword.
     const ability = await statParts(d, 'Ability');
     expect(ability.note).not.toBe('');
@@ -478,10 +484,32 @@ test.describe('deck builder toasts between sm and lg', () => {
 test.describe('deck builder on a desktop', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
+  // Located by data-deck-primary, not by its words: on an untouched deck it
+  // reads "Battle deck" now (it is lit only when there is a deck to set).
   test('has no deck bar, so each deck control exists once', async ({ page }) => {
     await openDeckBuilder(page);
     await expect(page.locator('[data-deck-bar]')).toBeHidden();
-    await expect(page.getByRole('button', { name: 'Set as Current Deck' })).toHaveCount(1);
+    await expect(page.locator('[data-deck-primary]:visible')).toHaveCount(1);
+  });
+
+  // The screen's one brass action is lit only when there is something to
+  // set. On the deck already fought with it asked to set it again, and the
+  // press toasted "Deck Set!" for a change that had not happened.
+  test('lights Set as Current Deck only for a deck that is not the battle deck', async ({ page }) => {
+    await openDeckBuilder(page);
+    const primary = page.locator('[data-deck-primary]:visible');
+    await expect(primary).toHaveText('Battle deck');
+    await expect(primary).toBeDisabled();
+    await expect(primary).not.toHaveClass(/\bbtn-brass\b/);
+    await removeFirstCard(page);
+    await expect(primary).toHaveText('Need 1 more');
+    await addable(page).last().click();
+    await expect(primary).toHaveText('Set as Current Deck');
+    await expect(primary).toBeEnabled();
+    await expect(primary).toHaveClass(/\bbtn-brass\b/);
+    await primary.click();
+    await expect(primary).toHaveText('Battle deck');
+    await expect(primary).toBeDisabled();
   });
 
   test('keeps the whole deck panel on screen while a long pool scrolls past it', async ({ page }) => {
@@ -499,7 +527,7 @@ test.describe('deck builder on a desktop', () => {
     await expect.poll(async () => Math.round((await panel.boundingBox()).y)).toBeLessThanOrEqual(16);
     const p = await panel.boundingBox();
     expect(p.y + p.height, 'deck panel runs off the bottom of the screen').toBeLessThanOrEqual(800);
-    const set = await page.getByRole('button', { name: 'Set as Current Deck' }).boundingBox();
+    const set = await page.locator('[data-deck-primary]:visible').boundingBox();
     expect(set.y + set.height).toBeLessThanOrEqual(800);
   });
 });
