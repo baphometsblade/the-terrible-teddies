@@ -56,7 +56,11 @@ export function useDialog(onClose) {
     const focusable = () => Array.from(node.querySelectorAll(FOCUSABLE))
       .filter((el) => !el.disabled && el.offsetParent !== null && !el.closest('[inert]'));
 
-    const first = focusable()[0];
+    // The first control, unless the dialog marks the one it should open on
+    // with data-autofocus: the battle's result panel has an upsell above Play
+    // Again, and the first control took Enter to the Shop.
+    const items = focusable();
+    const first = items.find((el) => el.hasAttribute('data-autofocus')) ?? items[0];
     if (first) {
       first.focus();
     } else {
