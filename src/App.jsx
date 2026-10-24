@@ -121,7 +121,8 @@ const announceAll = (toast, items) => {
 
 // The longest the game waits for the account's save (cloudSave's first
 // decision) before going on without it, counted while the tab is in view: a
-// hidden tab's decision waits for it to come back. The decision settles on
+// hidden tab's decision waits for it to come back, and the count starts over
+// when it does. The decision settles on
 // its own when the backend refuses or cannot be reached; this covers a
 // request that simply hangs. Under BootScreen's "still trying" hint
 // (HINT_AFTER_MS, 6 s), so the hint never flashes up just as the menu
@@ -469,13 +470,24 @@ function App() {
     // settles with the one the tab's return brings (onSettled). And after
     // SAVE_WAIT_MS in view the game goes on regardless, so a backend that
     // never answers never keeps the player out.
-    const ready = () => { if (current) setReadyUid(uid); };
-    let fallback = null;
-    const startFallback = () => {
-      if (fallback === null && document.visibilityState !== 'hidden') fallback = setTimeout(ready, SAVE_WAIT_MS);
+    let settled = false;
+    const ready = () => {
+      settled = true;
+      if (current) setReadyUid(uid);
     };
-    startFallback();
-    document.addEventListener('visibilitychange', startFallback);
+    // The fallback counts only time in view. It stops when the tab hides,
+    // and starts again in full when the tab comes back, which is when the
+    // decision put off meanwhile asks for the save afresh. Left running in
+    // the background it went ahead without the save, and the player came back
+    // to Daily Rewards open on the wiped one (Day 1, Lv 1).
+    let fallback = null;
+    const countWait = () => {
+      if (settled) return;
+      clearTimeout(fallback);
+      fallback = document.visibilityState === 'hidden' ? null : setTimeout(ready, SAVE_WAIT_MS);
+    };
+    countWait();
+    document.addEventListener('visibilitychange', countWait);
     loadCloudSave()
       .then(({ startCloudSync, whenFirstDecision }) => {
         if (!current) return;
@@ -495,7 +507,7 @@ function App() {
     return () => {
       current = false;
       clearTimeout(fallback);
-      document.removeEventListener('visibilitychange', startFallback);
+      document.removeEventListener('visibilitychange', countWait);
     };
   }, [session, reconcileServerGems]);
 

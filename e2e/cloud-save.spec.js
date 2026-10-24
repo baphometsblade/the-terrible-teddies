@@ -50,10 +50,10 @@ const missing = (fn) => ({
  * none yet), or 'missing' for a backend without the functions, or 'offline'.
  * `store`: this device's save (null: a fresh browser). `balance`: the
  * account's purchased gems. `delay`: how long the account's save takes to
- * arrive (ms), or `hang` for a request that is never answered. Returns the
- * RPC calls made, as they are made.
+ * arrive (ms), or `hang` for a request that is never answered. `wait`:
+ * whether to wait for the menu. Returns the RPC calls made, as they are made.
  */
-async function boot(page, { account = null, store = null, balance = null, rest = {}, rank = null, delay = 0, hang = false } = {}) {
+async function boot(page, { account = null, store = null, balance = null, rest = {}, rank = null, delay = 0, hang = false, wait = true } = {}) {
   const calls = [];
   let row = account && typeof account === 'object'
     ? { rev: 5, save: account, updated_at: new Date().toISOString() }
@@ -108,7 +108,7 @@ async function boot(page, { account = null, store = null, balance = null, rest =
   }, [`sb-${REF}-auth-token`, SESSION, STORAGE_KEY, store]);
 
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+  if (wait) await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
   // `write`: another device sending the next rev.
   const write = (save) => {
     row = { rev: (row?.rev ?? 0) + 1, save, updated_at: new Date().toISOString() };
@@ -217,6 +217,45 @@ test('a save request that never answers holds the game up for a few seconds at m
   expect(waited, 'it did not wait for the account\'s save').toBeGreaterThan(4500);
   expect(waited).toBeLessThan(15000);
   expect(await page.evaluate(() => window.__hinted)).toBe(false);
+});
+
+// The wait is counted only while the tab is in view. A tab hidden during it
+// puts the decision off until it is back, and a count that ran on in the
+// background went ahead without the save: the player came back to Daily
+// Rewards open on the wiped save (Day 1, Lv 1), which then flipped to the
+// account's Day 4 under them.
+test('a tab hidden while the account\'s save is on its way waits for it, however long it is away', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.addInitScript(() => {
+    let hidden = false;
+    Object.defineProperty(document, 'visibilityState', { get: () => (hidden ? 'hidden' : 'visible'), configurable: true });
+    Object.defineProperty(document, 'hidden', { get: () => hidden, configurable: true });
+    window.__setHidden = (h) => {
+      hidden = h;
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+  });
+  await watchBoot(page);
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  await boot(page, {
+    account: accountSave({ lastLoginDate: yesterday.toDateString(), consecutiveLogins: 3 }),
+    store: null, balance: 500, delay: 3000, wait: false,
+  });
+  // Hidden while the save is still on its way.
+  await expect(page.getByRole('heading', { name: /Loading Terrible Teddies/ })).toBeVisible(SLOW);
+  await page.waitForTimeout(1000);
+  await page.evaluate(() => window.__setHidden(true));
+  // Away for longer than the whole wait, and the save comes in meanwhile.
+  await page.waitForTimeout(7000);
+  expect(await page.evaluate(() => window.__seen)).toEqual({ dialogs: [], firstToday: null, lv1: false });
+  await expect(page.locator('[data-screen-root="menu"]')).toHaveCount(0);
+  // Back: the save is taken, and Daily Rewards opens on the account's day.
+  await page.evaluate(() => window.__setHidden(false));
+  const daily = page.getByRole('dialog', { name: 'Daily Rewards' });
+  await expect(daily).toBeVisible(SLOW);
+  await expect(daily.locator('[data-day="4"]')).toHaveAttribute('data-look', 'today');
+  expect(await page.evaluate(() => window.__seen)).toEqual({ dialogs: ['Daily Rewards'], firstToday: '4', lv1: false });
 });
 
 // Past that wait the game goes on with the wiped save, and the first-run
