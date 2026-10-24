@@ -224,14 +224,45 @@ test.describe('signing in and signing up', () => {
     await expect(page.getByLabel('Email')).toHaveValue('new@example.com');
   });
 
+  // From the keyboard, as a player who pressed Enter on Sign Up: the button
+  // is disabled while the request runs, so unless the failure puts the focus
+  // somewhere it is left on the page itself.
   test('a sign-up that gets no answer says so in the reset form\'s words', async ({ page }) => {
     await stubBackend(page, { signup: (route) => route.abort('internetdisconnected') });
     await signInScreen(page);
     await page.getByLabel('Email').fill('new@example.com');
-    await page.getByLabel('Password', { exact: true }).fill('honeypot-9');
-    await page.getByRole('button', { name: 'Sign Up' }).click();
+    const password = page.getByLabel('Password', { exact: true });
+    await password.fill('honeypot-9');
+    await page.getByRole('button', { name: 'Sign Up' }).focus();
+    await page.keyboard.press('Enter');
     await expect(page.getByRole('alert')).toHaveText("Couldn't reach the server. Check your connection and try again.");
     await expect(page.locator('.toast-viewport > li')).toHaveCount(0);
+    // Back in the password, as after a failed sign-in, tied to the message.
+    await expect(password).toBeFocused();
+    await expect(password).toHaveAccessibleDescription(/Couldn't reach the server/);
+  });
+
+  test('a sign-up refused for its address puts the focus on the address', async ({ page }) => {
+    await stubBackend(page, {
+      signup: (route) => route.fulfill({ status: 422, headers: GOTRUE_2024, json: { code: 'user_already_exists', msg: 'User already registered' } }),
+    });
+    await signInScreen(page);
+    const email = page.getByLabel('Email');
+    await email.fill('taken@example.com');
+    const password = page.getByLabel('Password', { exact: true });
+    await password.fill('honeypot-9');
+    await page.getByRole('button', { name: 'Sign Up' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('alert')).toHaveText('User already registered');
+    await expect(email).toBeFocused();
+    // The message is the address's, not the password's.
+    await expect(email).toHaveAccessibleDescription('User already registered');
+    await expect(password).toHaveAccessibleDescription('At least 6 characters');
+    await expectNoAxeViolations(page, 'sign-up refused');
+    // Selected, so typing replaces it (and clears the message).
+    await page.keyboard.type('other@example.com');
+    await expect(email).toHaveValue('other@example.com');
+    await expect(page.getByRole('alert')).toHaveCount(0);
   });
 });
 

@@ -37,14 +37,26 @@ const KEY_ART = ['Mama Mauls', 'The Godfluffer', 'Duke of Dumpsterfire']
 // "Failed to fetch".
 const OFFLINE = "Couldn't reach the server. Check your connection and try again.";
 const requestErrorText = (error) => (error?.name === 'AuthRetryableFetchError' || !error?.message ? OFFLINE : error.message);
+// Which field a failure is about, and so where the focus goes after it: the
+// address for a refusal of the address itself (taken already, or not one
+// the server accepts), the password for anything else, as sign-in always
+// did. The button that was pressed was disabled while the request ran, so
+// the focus had fallen to the page; left there, a keyboard player had to
+// tab back from the top to try again.
+const ADDRESS_CODES = new Set(['user_already_exists', 'email_exists', 'email_address_invalid', 'email_address_not_authorized']);
+const failure = (error) => ({
+  text: requestErrorText(error),
+  field: ADDRESS_CODES.has(error?.code) ? 'email' : 'password',
+});
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loadingAction, setLoadingAction] = useState(null); // 'signin' | 'signup' | null
-  // What sign-in or sign-up came back with, said under the buttons until the
-  // player types again. These were toasts, gone in five seconds: a player
-  // who looked away from a failed sign-in saw an unchanged form.
+  // What sign-in or sign-up came back with ({ text, field }), said under the
+  // buttons until the player types again. These were toasts, gone in five
+  // seconds: a player who looked away from a failed sign-in saw an unchanged
+  // form.
   const [formError, setFormError] = useState(null);
   // The address a sign-up is waiting on a confirmation for. The form gives
   // way to "Check your email" (the reset form's panel), which stays until
@@ -60,6 +72,7 @@ const Auth = () => {
   // control that opened it.
   const forgotRef = useRef(null);
   const signUpRef = useRef(null);
+  const emailRef = useRef(null);
   const passwordRef = useRef(null);
   const returning = useRef(null); // the ref to focus on the way back
   useEffect(() => {
@@ -75,6 +88,18 @@ const Auth = () => {
     setter(e.target.value);
     setFormError(null);
   };
+  // Say what went wrong, and put the focus in the field it is about, its
+  // text selected so it can be typed again at once. A frame later, because
+  // the field is focused after the buttons are enabled again.
+  const fail = (outcome) => {
+    setFormError(outcome);
+    const ref = outcome.field === 'email' ? emailRef : passwordRef;
+    requestAnimationFrame(() => {
+      ref.current?.focus();
+      ref.current?.select();
+    });
+  };
+  const describedBy = (field, own) => [own, formError?.field === field && 'auth-error'].filter(Boolean).join(' ') || undefined;
   // Only where there is room beside the form: the fan and the form side by
   // side need about 800px. On a phone the form already runs most of the
   // screen's height, and art above it would push Sign In below the fold.
@@ -91,10 +116,11 @@ const Auth = () => {
     if (!email || !password) return;
     setLoadingAction('signup');
     setFormError(null);
+    let outcome = null;
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
-        setFormError(requestErrorText(error));
+        outcome = failure(error);
       } else if (!data?.session) {
         // The server wants the address confirmed first. (With confirmation
         // off it signs the player straight in, and the auth listener takes
@@ -102,10 +128,11 @@ const Auth = () => {
         setSignedUpAs(email.trim());
       }
     } catch {
-      setFormError(OFFLINE);
+      outcome = failure(null);
     } finally {
       setLoadingAction(null);
     }
+    if (outcome) fail(outcome);
   };
 
   const handleSignIn = async (e) => {
@@ -113,27 +140,16 @@ const Auth = () => {
     if (!email || !password) return;
     setLoadingAction('signin');
     setFormError(null);
-    let failed = false;
+    let outcome = null;
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setFormError(requestErrorText(error));
-        failed = true;
-      }
+      if (error) outcome = failure(error);
     } catch {
-      setFormError(OFFLINE);
-      failed = true;
+      outcome = failure(null);
     } finally {
       setLoadingAction(null);
     }
-    // Into the password, selected, so it can be typed again at once (the
-    // button had the focus, and was disabled while the request ran).
-    if (failed) {
-      requestAnimationFrame(() => {
-        passwordRef.current?.focus();
-        passwordRef.current?.select();
-      });
-    }
+    if (outcome) fail(outcome);
   };
 
   return (
@@ -211,6 +227,8 @@ const Auth = () => {
               type="email"
               autoComplete="email"
               placeholder="you@example.com"
+              inputRef={emailRef}
+              aria-describedby={describedBy('email')}
               value={email}
               onChange={changeField(setEmail)}
               required
@@ -224,7 +242,7 @@ const Auth = () => {
               className=""
               type="password"
               autoComplete="current-password"
-              aria-describedby={formError ? 'auth-password-rule auth-error' : 'auth-password-rule'}
+              aria-describedby={describedBy('password', 'auth-password-rule')}
               value={password}
               onChange={changeField(setPassword)}
               minLength={PASSWORD_MIN_LENGTH}
@@ -288,7 +306,7 @@ const Auth = () => {
             </div>
             {/* Under the buttons, where the reset form says its own, so the
                 buttons do not move under the player's finger when it comes. */}
-            {formError && <AuthAlert id="auth-error">{formError}</AuthAlert>}
+            {formError && <AuthAlert id="auth-error">{formError.text}</AuthAlert>}
           </form>
           )}
           {/* Where progress is kept, worded to be true before sign-in can
