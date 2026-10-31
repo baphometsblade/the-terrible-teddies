@@ -19,6 +19,9 @@ const YEAR = new Date().getFullYear();
 const ADULT = String(YEAR - 30);
 const MINOR = String(YEAR - 12);
 const TURNING_18 = String(YEAR - 18);
+// The one error line (DOOR_COPY.error, in a .jsx the node-side runner cannot
+// import): true of every year it is shown for, 2099 and 1850 included.
+const ERROR = 'Enter a year, 1900 to this year.';
 const DECLINED = 'Sorry, this room is 18+. Terrible Teddies is for players 18 and over. Thanks for being honest.';
 
 test.use({ doorPassed: false });
@@ -134,7 +137,7 @@ test.describe('a new device', () => {
     await expect(other.getByRole('heading', { name: 'ID.' })).toHaveCount(0);
   });
 
-  test('is turned away under 18: one plain line, nothing to press, and the game never loads', async ({ page }) => {
+  test('is turned away under 18: one plain line, nothing to press, and none of the game mounts', async ({ page }) => {
     const requests = [];
     page.on('request', (r) => requests.push(r.url()));
     await meetTheDoor(page);
@@ -146,8 +149,10 @@ test.describe('a new device', () => {
     await expect(page).toHaveTitle(/Sorry/);
     // No retry, no way back, no joke, no scene: not one control on the page.
     await expect(page.locator('button, a[href], input, form, img, .neon, .steel-door')).toHaveCount(0);
-    // The game is not there, and was never asked for: no sign-in, no menu,
-    // and nothing sent to the analytics.
+    // None of the game is mounted: no sign-in, no menu, and nothing sent to
+    // the analytics. (The game's modules still load with the page, and
+    // supabase-js may still refresh a stored session; the door holds back
+    // what mounts, runs for the player or sends.)
     await expect(theGame(page)).toHaveCount(0);
     expect(requests.filter((u) => /posthog/.test(u))).toEqual([]);
     expect(await record(page)).toMatchObject({ v: 1, state: 'declined' });
@@ -262,17 +267,17 @@ test.describe('the year the player turns 18', () => {
 });
 
 test.describe('a year that is not one', () => {
-  for (const [what, text] of [['nothing', ''], ['three digits', '199'], ['letters', 'abcd'], ['before 1900', '1899'], ['next year', String(YEAR + 1)]]) {
+  for (const [what, text] of [['nothing', ''], ['three digits', '199'], ['letters', 'abcd'], ['before 1900', '1899'], ['next year', String(YEAR + 1)], ['four digits, far ahead', '2099']]) {
     test(`says so, in place, for ${what}, and lets nobody in`, async ({ page }) => {
       await meetTheDoor(page);
       await armed(page);
       await yearField(page).fill(text);
       await comeIn(page).click();
       const alert = page.getByRole('alert');
-      await expect(alert).toHaveText('Enter the year as four digits.');
+      await expect(alert).toHaveText(ERROR);
       await expect(yearField(page)).toHaveAttribute('aria-invalid', 'true');
       await expect(yearField(page)).toBeFocused();
-      await expect(yearField(page)).toHaveAccessibleDescription(/Only used to check.*Enter the year as four digits\./);
+      await expect(yearField(page)).toHaveAccessibleDescription(/Only used to check.*Enter a year, 1900 to this year\./);
       expect(await page.evaluate((k) => localStorage.getItem(k), DOOR_KEY)).toBeNull();
       await expect(theGame(page)).toHaveCount(0);
       // Typing again takes the message away.
@@ -282,14 +287,34 @@ test.describe('a year that is not one', () => {
     });
   }
 
-  // At the narrowest phone, where a line is the most likely to wrap.
+  // At the narrowest phone, where a line is the most likely to wrap: the
+  // error and the sign are each one line in a slot that is pixels, not a
+  // character count.
+  test('keeps the error and the sign to one line each at 320', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await meetTheDoor(page);
+    await armed(page);
+    await comeIn(page).click();
+    await expect(page.getByRole('alert')).toHaveText(ERROR);
+    const lines = await page.evaluate(() => {
+      const count = (el) => Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight));
+      const sign = document.querySelector('.neon');
+      const r = sign.getBoundingClientRect();
+      return { error: count(document.querySelector('#door-error span')), signLeft: r.left, signRight: r.right, signHeight: r.height, signFont: parseFloat(getComputedStyle(sign).fontSize), vw: window.innerWidth };
+    });
+    expect(lines.error, 'the error line wraps').toBe(1);
+    expect(lines.signLeft, 'the sign runs off the left').toBeGreaterThanOrEqual(0);
+    expect(lines.signRight, 'the sign runs off the right').toBeLessThanOrEqual(lines.vw);
+    expect(lines.signHeight, 'the sign wraps').toBeLessThan(lines.signFont * 2);
+  });
+
   test('does not move the button under the finger when it appears', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await meetTheDoor(page);
     await armed(page);
     const before = await comeIn(page).boundingBox();
     await comeIn(page).click();
-    await expect(page.getByRole('alert')).toHaveText('Enter the year as four digits.');
+    await expect(page.getByRole('alert')).toHaveText(ERROR);
     expect(await comeIn(page).boundingBox()).toEqual(before);
   });
 });
@@ -460,6 +485,21 @@ test.describe('a device that has passed', () => {
   });
 });
 
+test.describe('a device that was turned away', () => {
+  // The turning away is drawn by the static gate: a declined device fetches
+  // neither the door's chunk nor Bruno's art, and a chunk that cannot arrive
+  // cannot strand it on the crash screen.
+  test('is told so without the door\'s chunk or art', async ({ page }) => {
+    const requests = [];
+    page.on('request', (r) => requests.push(r.url()));
+    await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [DOOR_KEY, doorRecord('declined', 1)]);
+    await page.goto('/');
+    await expect(declined(page)).toBeVisible(SLOW);
+    expect(requests.filter((u) => /TheDoor/.test(u))).toEqual([]);
+    expect(requests.filter((u) => u.endsWith('/cards/56.webp'))).toEqual([]);
+  });
+});
+
 for (const viewport of [{ width: 320, height: 568 }, { width: 1280, height: 800 }]) {
   test.describe(`at ${viewport.width}x${viewport.height}`, () => {
     test.use({ viewport });
@@ -490,7 +530,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 1280, height: 800 
       await meetTheDoor(page);
       await armed(page);
       await comeIn(page).click();
-      await expect(page.getByRole('alert')).toHaveText('Enter the year as four digits.');
+      await expect(page.getByRole('alert')).toHaveText(ERROR);
       await expectNoViolations(page, 'the door with its error');
     });
 
@@ -542,7 +582,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 375, height: 553 }
       await yearField(page).focus();
       await fits(page, 'the door, field focused');
       await comeIn(page).click();
-      await expect(page.getByRole('alert')).toHaveText('Enter the year as four digits.');
+      await expect(page.getByRole('alert')).toHaveText(ERROR);
       await fits(page, 'the door with its error');
       await yearField(page).fill(TURNING_18);
       await comeIn(page).click();

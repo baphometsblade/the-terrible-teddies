@@ -284,16 +284,13 @@ const MainMenu = ({
       <section className="relative flex-1 flex flex-col items-center justify-center py-6 md:py-8 [@media(max-height:700px)]:py-3">
         {/* The bar's sign, hung in the hero's top-right corner: decoration,
             absolutely placed, so it takes no layout and Battle's place above
-            the fold on a phone cannot move (responsive.spec.js). From md up;
-            on a phone the clock is the Battle button's line instead. From
-            768 to 1023 the 72px title spans most of the width and leaves the
-            corner nothing but the strip above it, so there the sign is the
-            tube alone, small, flush with the header's right edge, and only
-            where the hero has that strip (a screen over 700px tall; the
-            hero's own padding drops to 12px at 700 and below). From lg the
-            title leaves the corner free and it is the full sign, note and
-            all. Keyed by the part of the night, so a sign that changes while
-            the menu is open switches on afresh. */}
+            the fold on a phone cannot move (responsive.spec.js). From lg only:
+            below it the 72px title spans nearly the whole width and leaves the
+            corner nothing but a strip that made the sign read as a label on
+            the settings gear, so a phone or a tablet in portrait has the clock
+            as the Battle button's line instead. Keyed by the part of the
+            night, so a sign that changes while the menu is open switches on
+            afresh. */}
         <NeonSign
           key={sign.state}
           text={sign.text}
@@ -301,8 +298,7 @@ const MainMenu = ({
           lit={sign.lit}
           flicker={sign.flicker}
           note={sign.note}
-          noteClassName="max-lg:hidden"
-          className="hidden md:block [@media(max-height:700px)]:max-lg:hidden absolute right-0 top-1 -rotate-3 text-sm lg:right-[5%] lg:top-3 lg:text-xl xl:text-2xl"
+          className="hidden lg:block absolute right-[3%] top-3 -rotate-3 text-xl xl:right-[5%] xl:text-2xl"
         />
         <motion.div
           initial={{ y: -16, opacity: 0 }}
@@ -365,7 +361,7 @@ const MainMenu = ({
                         button can grow no wider than the screen (a 152px
                         column at 320), a step smaller, so the longest lines
                         still fit it in the widest font a device falls back
-                        to (e2e/responsive.spec.js measures every hour). */}
+                        to (e2e/responsive.spec.js measures every row of the clock table). */}
                     <div id="menu-battle-line" className="text-[13px] min-[360px]:text-sm font-semibold mt-1 text-night-950/75">{subtitleFor(clock)}</div>
                   </div>
                   <ChevronRight aria-hidden="true" className="w-6 h-6 shrink-0" strokeWidth={2.6} />
