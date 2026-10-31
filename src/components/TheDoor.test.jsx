@@ -76,7 +76,7 @@ describe('DOOR_COPY', () => {
     label: 20, // small caps, one line
     placeholder: 6,
     smallPrint: 80, // two lines at 12px
-    error: 36, // one line at 14px
+    error: 32, // one line at 13px beside its icon, in the widest fallback font
     submit: 14,
     birthdayHeading: 44, // two lines at 20px
     birthdayYes: 12,
@@ -105,6 +105,12 @@ describe('DOOR_COPY', () => {
   // everyone (lead-decisions.md section 4): pinned word for word.
   it('tells a player under 18 exactly this, and no joke', () => {
     expect(DOOR_COPY.declined).toBe('Sorry, this room is 18+. Terrible Teddies is for players 18 and over. Thanks for being honest.');
+  });
+
+  // A courtesy gate in the fiction, not age verification: it takes the
+  // player's word, and nothing it says may claim more.
+  it('does not claim to verify anyone', () => {
+    expect(Object.values(DOOR_COPY).join(' ')).not.toMatch(/verif|complian|certif|legal|official|checked by|guarantee/i);
   });
 
   it('asks for the year in the neutral words, and says what becomes of it', () => {
@@ -396,10 +402,10 @@ describe('the door, turning someone away', () => {
     expect(document.title).toBe(DOOR_COPY.declinedTitle);
   });
 
-  it('is in the page the way the scene is, for the shell\'s sake', () => {
+  it('is in the page the way the scene is, for the shell\'s sake, and hands the loader off too', () => {
     const { host } = render({ state: 'declined' });
     expect(host.querySelector('main[data-screen-root="door"]')).not.toBeNull();
-    expect(document.getElementById('initial-loader')).not.toBeNull();
+    expect(document.getElementById('initial-loader').classList.contains('to-app')).toBe(true);
   });
 });
 

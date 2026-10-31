@@ -282,7 +282,9 @@ test.describe('a year that is not one', () => {
     });
   }
 
+  // At the narrowest phone, where a line is the most likely to wrap.
   test('does not move the button under the finger when it appears', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
     await meetTheDoor(page);
     await armed(page);
     const before = await comeIn(page).boundingBox();

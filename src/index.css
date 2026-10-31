@@ -617,7 +617,7 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   animation: neon-on-soft 450ms ease-out both;
 }
 .neon[data-lit="half"] {
-  --neon-halo: 0.45;
+  --neon-halo: 0.62;
   --neon-rest: 0.75;
 }
 .neon[data-flicker] {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useReducedMotionConfig } from 'framer-motion';
+import { CircleAlert } from 'lucide-react';
 import { CONTENT_NOTICE } from '@/lib/contentNotice';
 import { checkAge, DOOR_ART, openingMs } from '@/lib/door';
 import { FOCUS_OUTLINE } from '@/lib/focus';
@@ -69,11 +70,22 @@ const ASK_FIRST = { fetchpriority: 'high' };
 const ROOM =
   `relative min-h-screen supports-[height:100dvh]:min-h-dvh bar-backdrop flex items-center justify-center overflow-x-clip ${SCREEN_PAD}`;
 
+// The loader painted before the app's JS (index.html) fades out over whatever
+// React draws first. BootScreen, which the door's chunk waits behind, matches
+// it; the door and the turning away do not, so the loader's medallion and
+// wordmark go at once, as App does past BootScreen. A no-op once it is gone.
+const useHandedOffLoader = () => {
+  useEffect(() => {
+    document.getElementById('initial-loader')?.classList.add('to-app');
+  }, []);
+};
+
 // What a player under 18 is told. Plain: no sign, no bouncer, no joke, no
 // retry and no way back. The answer is the device's (src/lib/door.js keeps
 // it), so a reload, another tab or a deep link all land here.
 const Declined = () => {
   useEffect(() => { document.title = DOOR_COPY.declinedTitle; }, []);
+  useHandedOffLoader();
   // The status takes the focus (it is a landing point, not a control): the
   // form the player was in has gone, and a screen reader starts here.
   useEffect(() => focusWhenReady('[data-screen-root="door"] [role="status"]'), []);
@@ -180,8 +192,9 @@ const YearForm = ({ onVerdict }) => {
         {/* Always in the page, so the line is there to be filled and a screen
             reader announces it as it is, and always as tall as one line, so
             the button never moves under a finger when it appears. */}
-        <p id="door-error" role="alert" className="mt-1 mb-1 min-h-[1.25rem] text-sm leading-5 text-red-200">
-          {invalid ? DOOR_COPY.error : ''}
+        <p id="door-error" role="alert" className="mt-2 mb-1 flex min-h-[1.25rem] items-start gap-1.5 text-[13px] font-medium leading-5 text-red-200">
+          {invalid && <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-red-300" strokeWidth={2.4} />}
+          {invalid ? <span>{DOOR_COPY.error}</span> : null}
         </p>
         <button
           type="submit"
@@ -215,13 +228,7 @@ const Scene = ({ phase, onVerdict, onOpened }) => {
   // The h1 takes the focus, as a screen's heading does (screenFocus.js), so
   // a screen reader starts at "ID." and the keyboard at the form below it.
   useEffect(() => focusWhenReady('[data-screen-root="door"] h1'), []);
-  // The loader painted before the app's JS (index.html) fades out over
-  // whatever React draws first. BootScreen, which the door's chunk waits
-  // behind, matches it; the door does not, so the loader's medallion and
-  // wordmark go at once, as App does past BootScreen. A no-op once it is gone.
-  useEffect(() => {
-    document.getElementById('initial-loader')?.classList.add('to-app');
-  }, []);
+  useHandedOffLoader();
 
   // Once a pass is in, wait out the opening (as long as the player's motion
   // settings leave it) and hand over to the game. Nothing in the room is
