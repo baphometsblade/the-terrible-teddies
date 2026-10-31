@@ -20,10 +20,10 @@
 // and a rank called VIP or Gold would be taken for something bought.
 export const HOUSE_RANKS = Object.freeze([
   { min: 1, name: 'Walk-In', promoted: 'You came in. Noted.' },
-  { min: 5, name: 'Regular', promoted: "You're a regular now." },
-  { min: 10, name: 'Has a Usual', promoted: 'The usual. Tell no one.' },
-  { min: 15, name: 'Barfly', promoted: 'Your stool has a dent.' },
-  { min: 20, name: 'Fixture', promoted: 'Nobody saw you arrive.' },
+  { min: 5, name: 'Regular', promoted: 'Third time this week.' },
+  { min: 10, name: 'Has a Usual', promoted: 'Usual: bad decisions.' },
+  { min: 15, name: 'Barfly', promoted: "Stool's got your ass." },
+  { min: 20, name: 'Fixture', promoted: 'Sober? Not lately.' },
   { min: 25, name: 'Part of the Furniture', promoted: 'Comes with the lease.' },
 ].map((row) => Object.freeze(row)));
 
