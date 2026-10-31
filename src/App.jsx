@@ -3,9 +3,7 @@ import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import Auth from './components/Auth';
 import MainMenu from './components/MainMenu';
 import { Toaster } from "@/components/ui/toaster";
-import { useToast, readingTime } from "@/components/ui/use-toast";
-import { Medallion } from "@/components/ui/medallion";
-import { Coins } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import ErrorBoundary from './components/ErrorBoundary';
 import DialogErrorBoundary from './components/DialogErrorBoundary';
 // Static, not lazy: this IS the boot path, so a chunk for it would be a
@@ -34,6 +32,7 @@ import { SCREEN_PAD } from './lib/safeArea';
 import { holdBack } from './lib/historyGuard';
 import { focusWhenReady } from './lib/screenFocus';
 import { achievementToasts } from './lib/achievementAnnouncements';
+import { levelUpToast } from './lib/levelUpToast';
 
 // GameBoard is lazy for the same reason the dialogs are: it is only reachable
 // after tapping Battle, but a static import put it — and its dependency tail,
@@ -335,9 +334,8 @@ function App() {
   // bonus coins itself, and takes the entry off the queue as it does, so the
   // player is never told twice. Deduped by id, like the achievements above,
   // so StrictMode's second effect pass (which still sees the old queue)
-  // schedules nothing. Drawn as the result panel draws it (LevelUpRow): the
-  // level struck on a medallion and a coin icon, not ⭐ and 🪙, which render
-  // differently on every platform and read as stickers next to the UI.
+  // schedules nothing. Drawn by lib/levelUpToast, as the result panel draws
+  // it (LevelUpRow), with the new house rank's line when the level reaches one.
   const pendingLevelUps = useGameStore((s) => s.pendingLevelUps);
   const shownLevelUpIds = useRef(new Set());
   useEffect(() => {
@@ -345,31 +343,7 @@ function App() {
     const fresh = pendingLevelUps.filter((l) => !shownLevelUpIds.current.has(l.id));
     useGameStore.setState({ pendingLevelUps: [] });
     fresh.forEach((levelUp) => shownLevelUpIds.current.add(levelUp.id));
-    announceAll(toast, fresh.map((levelUp) => {
-      const title = `Level ${levelUp.level}!`;
-      const bonus = `+${levelUp.bonusCoins.toLocaleString()}`;
-      return {
-        title,
-        icon: (
-          <Medallion size="sm">
-            <span className="font-display text-lg font-extrabold leading-none text-brass-200">{levelUp.level}</span>
-          </Medallion>
-        ),
-        // Inline text, with the amount and its coin bound together: as two
-        // flex items, a wrap at 320 left the coin alone at the far edge.
-        description: (
-          <>
-            Level-up bonus:{' '}
-            <span className="whitespace-nowrap">
-              {bonus}
-              <Coins className="ml-0.5 inline h-4 w-4 align-[-3px] text-brass-300" aria-hidden="true" strokeWidth={2.4} />
-              <span className="sr-only"> coins</span>
-            </span>
-          </>
-        ),
-        duration: readingTime(title, `Level-up bonus: ${bonus} coins`),
-      };
-    }));
+    announceAll(toast, fresh.map((levelUp) => levelUpToast(levelUp)));
   }, [pendingLevelUps, currentScreen, toast]);
 
   // What a season's end delivered (syncSeason hands over every Battle Pass

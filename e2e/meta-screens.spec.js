@@ -2,6 +2,7 @@ import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { getDailyChallenges } from '../src/stores/challenges.js';
+import { HOUSE_RANKS } from '../src/lib/houseRank.js';
 
 // The progression and information screens around the menu: the tutorial,
 // Challenges, the leaderboard, Daily Rewards and Player Stats.
@@ -457,6 +458,61 @@ test.describe('a toast over a dialog', () => {
       // a loaded machine the first visible frame can still be moving. An
       // overlap that persists still fails, after the poll's few seconds.
       await expect.poll(async () => controlsUnder(dialog, await toast.boundingBox()), { message: 'the toast covers dialog controls', timeout: 5000 }).toEqual([]);
+    });
+  }
+
+  // A level-up that reaches a house rank adds the rank's line under the bonus
+  // (lib/levelUpToast). Over a dialog the toast holds a one-line title and two
+  // lines of description, and the narrowest case is a 360px phone: the
+  // medallion is back and the description is 162px wide, where the bonus under
+  // its longer label took two lines and the rank's line made three, over the
+  // tutorial's step bar and Player Stats' pencil. So every rung's line is
+  // measured in the real toast, with the bonus the level pays (100 a level,
+  // four digits from level 10) and, for the top rung, the five digits a jump
+  // over every rung pays. Raised through the store's own addXP, so it is the
+  // entry App really queues.
+  const LAST_RUNG = HOUSE_RANKS[HOUSE_RANKS.length - 1];
+  const REACHES = [
+    ...HOUSE_RANKS.slice(1).map((row) => ({ from: row.min - 1, to: row.min, row })),
+    { from: 1, to: LAST_RUNG.min, row: LAST_RUNG },
+  ];
+  for (const viewport of [{ width: 320, height: 568 }, { width: 360, height: 740 }, { width: 390, height: 844 }, { width: 1280, height: 800 }]) {
+    test(`a level-up's rank line is one line under the bonus and clears the dialogs' controls at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await bootToMainMenu(page);
+      for (const [opener, name] of [['How to play', 'How to play'], ['View player stats', 'Player stats']]) {
+        await page.getByRole('button', { name: opener, exact: true }).click();
+        const dialog = page.getByRole('dialog', { name });
+        await expect(dialog).toBeVisible(SLOW);
+        for (const { from, to, row } of REACHES) {
+          await page.evaluate(async ([fromLevel, toLevel]) => {
+            const { useGameStore, getXPForLevel } = await import('/src/stores/gameStore.js');
+            let xp = 0;
+            for (let l = fromLevel; l < toLevel; l += 1) xp += getXPForLevel(l);
+            // The achievements for these levels are earned already: their own
+            // toasts would queue ahead of this one.
+            useGameStore.setState({ level: fromLevel, xp: 0, completedAchievements: ['level_10', 'level_25'] });
+            useGameStore.getState().addXP(xp);
+          }, [from, to]);
+          const toast = page.locator('.toast-viewport > li').filter({ hasText: `Level ${to}!` });
+          await expect(toast).toBeVisible(SLOW);
+          await expect(toast.locator('[data-rank-up]')).toHaveText(row.promoted);
+          // The settled layout, as above: not a frame of the slide-in. A line
+          // is counted by the height it takes over its line-height.
+          await expect.poll(() => toast.evaluate((li) => {
+            const lines = (el) => Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight));
+            return {
+              title: lines(li.querySelector('.toast-title')),
+              description: lines(li.querySelector('.toast-description')),
+              rankLine: lines(li.querySelector('[data-rank-up]')),
+            };
+          }), { message: `${row.name}'s toast over ${name}`, timeout: 5000 }).toEqual({ title: 1, description: 2, rankLine: 1 });
+          await expect.poll(async () => controlsUnder(dialog, await toast.boundingBox()), { message: `the ${row.name} toast covers ${name}'s controls`, timeout: 5000 }).toEqual([]);
+          await page.evaluate(async () => (await import('/src/components/ui/use-toast.js')).resetToasts());
+        }
+        await page.keyboard.press('Escape');
+        await expect(dialog).toHaveCount(0, SLOW);
+      }
     });
   }
 

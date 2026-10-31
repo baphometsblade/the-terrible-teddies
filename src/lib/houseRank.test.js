@@ -38,10 +38,6 @@ describe('the table', () => {
       expect(row.name).toBe(row.name.trim());
       expect(row.promoted).toBe(row.promoted.trim());
     }
-    // The slots are as wide as the widest line in them: a slot with room to
-    // spare is a budget nobody has measured.
-    expect(Math.max(...HOUSE_RANKS.map((r) => r.name.length))).toBe(RANK_NAME_MAX);
-    expect(Math.max(...HOUSE_RANKS.map((r) => r.promoted.length))).toBe(RANK_PROMOTED_MAX);
   });
 
   it('names no rank twice', () => {

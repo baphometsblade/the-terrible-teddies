@@ -3,6 +3,7 @@
 // from the pre-JS loader.
 import AxeBuilder from '@axe-core/playwright';
 import { test, expect, bootToMainMenu, SESSION, SLOW } from './helpers/session.js';
+import { HOUSE_RANKS } from '../src/lib/houseRank.js';
 
 test.describe('the main menu', () => {
   test.beforeEach(async ({ page }) => {
@@ -705,6 +706,9 @@ test.describe('announcements', () => {
     const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Level 2!' });
     await expect(toast).toBeVisible(SLOW);
     await expect(toast).toContainText('Level-up bonus: +200');
+    // Level 1 to 2 stays on the first rung: no promotion, so no rank line and
+    // the bonus keeps its own label.
+    await expect(toast.locator('[data-rank-up]')).toHaveCount(0);
     await expect(toast).not.toContainText('⭐');
     await expect(toast).not.toContainText('🪙');
     await expect(toast.locator('[aria-hidden="true"]').first()).toHaveText('2');
@@ -725,6 +729,31 @@ test.describe('announcements', () => {
     expect(gap.sameLine, 'the coin is on the amount\'s line').toBe(true);
     expect(gap.across, 'the coin sits beside the amount').toBeLessThan(6);
     expect(gap.across).toBeGreaterThanOrEqual(0);
+  });
+
+  // The level that reaches a house rank says so once, in its own line under
+  // the bonus. The rank is derived from the level (houseRank.js), so this is
+  // the real path: the save is one conceded battle short of the rung, and the
+  // toast is the one App raises for a level-up earned away from the result
+  // panel. The title stays "Level N!".
+  test('a level-up that reaches a house rank says so under the bonus', async ({ page }) => {
+    const rung = HOUSE_RANKS[1];
+    await page.setViewportSize({ width: 320, height: 640 });
+    await bootToMainMenu(page);
+    // The level before the rung: a conceded battle's 20 XP is the last 20 of it.
+    await seedSave(page, { level: rung.min - 1, xp: Math.floor(100 * 1.5 ** (rung.min - 2)) - 20 });
+    await page.reload();
+    await page.getByRole('button', { name: 'Battle', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    await page.getByRole('button', { name: '← Menu' }).click();
+    await page.getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    const toast = page.locator('.toast-viewport > li').filter({ hasText: `Level ${rung.min}!` });
+    await expect(toast).toBeVisible(SLOW);
+    await expect(toast.locator('.toast-title')).toHaveText(`Level ${rung.min}!`);
+    await expect(toast.locator('.toast-description')).toContainText(`Bonus: +${(100 * rung.min).toLocaleString('en-US')}`);
+    await expect(toast.locator('[data-rank-up]')).toHaveText(rung.promoted);
+    // The line is part of what a screen reader is handed, after the bonus.
+    await expect(toast.locator('.toast-description')).toContainText(`coins. ${rung.promoted}`);
   });
 
   // The same for an achievement: its badge on a medallion and the coin icon,

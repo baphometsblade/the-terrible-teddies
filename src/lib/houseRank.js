@@ -19,9 +19,9 @@
 // Nothing here may read like a paid membership: the game sells a Premium Pass,
 // and a rank called VIP or Gold would be taken for something bought.
 export const HOUSE_RANKS = Object.freeze([
-  { min: 1, name: 'Walk-In', promoted: 'You came in. That counts.' },
+  { min: 1, name: 'Walk-In', promoted: 'You came in. Noted.' },
   { min: 5, name: 'Regular', promoted: "You're a regular now." },
-  { min: 10, name: 'Has a Usual', promoted: 'Your usual. No questions.' },
+  { min: 10, name: 'Has a Usual', promoted: 'The usual. Tell no one.' },
   { min: 15, name: 'Barfly', promoted: 'Your stool has a dent.' },
   { min: 20, name: 'Fixture', promoted: 'Nobody saw you arrive.' },
   { min: 25, name: 'Part of the Furniture', promoted: 'Comes with the lease.' },
@@ -31,9 +31,13 @@ export const HOUSE_RANKS = Object.freeze([
 // Furniture") in Player Stats' header. The promotion line is a toast's: over a
 // dialog on a phone the toast holds a one-line title and two lines of
 // description, and the bonus takes the first of them, so the line has to fit
-// the second whole (e2e/shell.spec.js measures the longest at every width).
+// the second whole. The narrowest case is a 360px phone, where the medallion is
+// back and the description is 162px wide: the lines written for it measure
+// 135-153px at 13px. Characters are only a first check on that (a 24-character
+// line of wide letters is 179px), so e2e/meta-screens.spec.js measures every
+// line in the real toast at every phone width.
 export const RANK_NAME_MAX = 21;
-export const RANK_PROMOTED_MAX = 25;
+export const RANK_PROMOTED_MAX = 24;
 
 const rowAt = (level) => {
   const n = Math.floor(Number(level));
