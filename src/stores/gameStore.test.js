@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import { useGameStore, ALL_CARDS, SHOP_ITEMS, PACK_ODDS, PACK_SLOTS, rollRarity, DAILY_REWARDS, dailyClaimDay, keptThroughReset, STARTING_GEMS, SAVE_FIELDS, normalizeSave, serverCreditAt } from './gameStore';
+import { useGameStore, ALL_CARDS, ACHIEVEMENTS, LAST_CALL_HP, SHOP_ITEMS, PACK_ODDS, PACK_SLOTS, rollRarity, DAILY_REWARDS, dailyClaimDay, keptThroughReset, STARTING_GEMS, SAVE_FIELDS, normalizeSave, serverCreditAt } from './gameStore';
 import { getCurrentSeason, getSeason } from '@/utils/season';
 import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
 
@@ -1314,6 +1314,38 @@ describe("'Flawless' keys off damage taken, not final HP", () => {
     useGameStore.setState({ completedAchievements: [] });
     get().recordBattleResult(false, 0, 0, 30, 1, 0);
     expect(get().completedAchievements).not.toContain('perfect_win');
+  });
+});
+
+// The board's "last call" (the house lights come up the first time either side
+// is this low), the comeback achievement's rule and the words that advertise
+// that rule were three copies of the number 5. They read one constant now, and
+// these pin the three together so that they cannot drift apart again. The
+// board's own side of it is in src/components/GameBoard/lastCall.test.js.
+describe('LAST_CALL_HP is the one number for last call and the comeback', () => {
+  it('is 5, the figure the comeback achievement has always advertised', () => {
+    // Changing it changes a rule players were promised and when the lights
+    // come up: a deliberate edit of this line, never a side effect.
+    expect(LAST_CALL_HP).toBe(5);
+  });
+
+  it('is the figure the comeback achievement advertises', () => {
+    const comeback = ACHIEVEMENTS.find((a) => a.id === 'comeback');
+    expect(comeback.description).toBe(`Win with ${LAST_CALL_HP} or less HP`);
+  });
+
+  it('is the line recordBattleResult draws for the comeback: at it earns it, one above does not', () => {
+    useGameStore.setState({ completedAchievements: [] });
+    get().recordBattleResult(true, 10, 0, LAST_CALL_HP + 1, 3, 10);
+    expect(get().completedAchievements).not.toContain('comeback');
+    get().recordBattleResult(true, 10, 0, LAST_CALL_HP, 3, 10);
+    expect(get().completedAchievements).toContain('comeback');
+  });
+
+  it('is never a comeback on a loss, however low the finish', () => {
+    useGameStore.setState({ completedAchievements: [] });
+    get().recordBattleResult(false, 10, 0, 1, 3, 10);
+    expect(get().completedAchievements).not.toContain('comeback');
   });
 });
 
