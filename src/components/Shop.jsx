@@ -548,7 +548,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                         <h4 className="font-display text-lg font-extrabold leading-tight text-white">Coin Doubler</h4>
                         <p className="mt-0.5 text-plush-300 text-sm">
                           {doublerActive
-                            ? `Active — every battle pays double for ${doublerHoursLeft} more hour${doublerHoursLeft === 1 ? '' : 's'}. Last call is a long way off.`
+                            ? `Active — every battle pays double for ${doublerHoursLeft} more hour${doublerHoursLeft === 1 ? '' : 's'}. Spend it badly.`
                             : `Double coins from every battle for ${doubler.durationHours}h. Don’t peak early.`}
                         </p>
                       </div>

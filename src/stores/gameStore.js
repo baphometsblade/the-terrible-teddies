@@ -152,11 +152,11 @@ export const dailyClaimDay = ({ lastLoginDate = null, consecutiveLogins = 0 }, n
 // table: `description` on the Shop's tiles, `short` on the compact Card Packs
 // tiles. shopCopy.test.js checks the claims in both against the prices.
 export const SHOP_ITEMS = [
-  { id: 'pack_1', name: 'Card Pack', description: '5 random cards. Open in private.', short: '5 cards. Open in private.', icon: '📦', price: 200, currency: 'coins', type: 'pack', quantity: 1 },
+  { id: 'pack_1', name: 'Card Pack', description: '5 random cards. Open in the toilets.', short: '5 cards. Open in the toilets.', icon: '📦', price: 200, currency: 'coins', type: 'pack', quantity: 1 },
   { id: 'pack_5', name: '5 Card Packs', description: '25 random cards (10% off). Hide your keys.', short: '25 cards · 10% off. Hide your keys.', icon: '📦', price: 900, currency: 'coins', type: 'pack', quantity: 5 },
   { id: 'pack_10', name: '10 Card Packs', description: '50 random cards (20% off). Cancel Sunday.', short: '50 cards · 20% off. Cancel Sunday.', icon: '📦📦', price: 1600, currency: 'coins', type: 'pack', quantity: 10 },
   { id: 'premium_pack', name: 'Premium Pack', description: 'Guaranteed rare or better. Pure, uncut.', short: 'Rare or better. Pure, uncut.', icon: '💎', price: 50, currency: 'gems', type: 'premium', quantity: 1 },
-  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards, guaranteed legendary. Finally.', short: '10 cards · 1 legendary. Finally.', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
+  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards, guaranteed legendary. Finally.', short: '10 cards · 1 legendary. Tell no one.', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
   { id: 'coins_small', name: 'Small Coin Bag', description: '+500 coins. Singles, mostly.', icon: '💰', price: 10, currency: 'gems', type: 'coins', quantity: 500 },
   { id: 'coins_large', name: 'Large Coin Bag', description: '+3,000 coins. Hundreds, unmarked.', icon: '💰', price: 50, currency: 'gems', type: 'coins', quantity: 3000 },
   // Timed booster rather than a lump sum: pays out only as you play, so it

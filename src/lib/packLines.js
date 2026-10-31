@@ -9,9 +9,9 @@ export const PACK_REVEAL_NEW = [
   '{n} new. Don’t make a scene.',
   '{n} new. None of them sober.',
   '{n} new. The regulars are staring.',
-  '{n} new. They found the bar.',
+  '{n} new. Nobody’s leaving alone.',
   '{n} new. Mind the broken glass.',
-  '{n} new. Open a window.',
+  '{n} new. Crying in the toilets.',
   '{n} new. Someone’s going to puke.',
 ];
 
@@ -20,7 +20,7 @@ export const PACK_REVEAL_DUPES = [
   '+{coins} coins. We know that face.',
   '+{coins} coins. Back for seconds.',
   '+{coins} coins for the usuals.',
-  '+{coins} coins. Same stink.',
+  '+{coins} coins. You’ve got a type.',
 ];
 
 // The slot is a chip that wraps inside itself; the deck's budget for each line.
