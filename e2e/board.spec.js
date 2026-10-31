@@ -973,6 +973,95 @@ test.describe('XP and level-ups', () => {
   });
 });
 
+// The best jokes on the card, shown where it is read: the enlarged card under
+// the mouse, the finger and the keyboard shows the flavor line (the card's
+// description) with its rules, which the table has no room for. The caption's
+// height is a model (previewPlacement.js captionHeight); previewPlacement.test.js
+// holds it to measured heights, and this holds the rendered preview to its box.
+test.describe('the preview\'s flavor line', () => {
+  test.skip(!!process.env.E2E_PREVIEW, 'reads the card catalog from /src');
+  // Cards whose flavor lines are the longest, so the caption is at its tallest.
+  const LONG = [54, 52, 46, 59, 78, 17];
+  const bootWithDeck = async (page) => {
+    await bootToMainMenu(page);
+    await seed(page, { currentDeck: LONG });
+    await page.reload();
+    await toBattle(page);
+  };
+  const catalog = (page, ids) => page.evaluate(async (wanted) => {
+    const { ALL_CARDS } = await import('/src/stores/gameStore.js');
+    return Object.fromEntries(wanted.map((id) => [id, ALL_CARDS.find((c) => c.id === id)]));
+  }, ids);
+
+  test('shows the card\'s own words under its rules, aria-hidden like the rest of the preview', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await bootWithDeck(page);
+    const cards = await catalog(page, LONG);
+    const hand = page.locator('[data-hand-id]').first();
+    const name = await hand.getAttribute('aria-label');
+    await hand.hover();
+    await expect(preview(page)).toBeVisible();
+    await expect(preview(page)).toHaveAttribute('aria-hidden', 'true');
+    const flavor = preview(page).locator('[data-preview-flavor]');
+    await expect(flavor).toBeVisible();
+    const said = (await flavor.textContent()).replace(/^“|”$/g, '');
+    expect(Object.values(cards).map((c) => c.description), `${name}: "${said}" is a card's own line`).toContain(said);
+    // The words are the card's flavor, set apart from its rules by a hairline,
+    // and a screen reader still meets the card as it always did.
+    const style = await flavor.evaluate((el) => getComputedStyle(el).fontStyle);
+    expect(style).toBe('italic');
+  });
+
+  // Each long-flavored card, at a small phone and a big one: the rendered
+  // preview is no taller than the box the placement reserved, stays on the
+  // felt and clear of the row it was opened from, and the rules always show.
+  for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }, { width: 1280, height: 800 }]) {
+    test(`at ${viewport.width}x${viewport.height} every long-flavored card's preview stays inside its box, clear of its row`, async ({ page }) => {
+      test.setTimeout(90_000);
+      await page.setViewportSize(viewport);
+      await bootWithDeck(page);
+      const felt = await page.locator('.felt-table').boundingBox();
+      const hands = page.locator('[data-hand-id]');
+      const count = await hands.count();
+      expect(count).toBeGreaterThanOrEqual(5);
+      let sawFlavor = 0;
+      for (let i = 0; i < count; i += 1) {
+        await page.mouse.move(0, 0);
+        await expect(preview(page)).toHaveCount(0);
+        await hands.nth(i).hover();
+        await expect(preview(page)).toBeVisible();
+        const outer = await preview(page).boundingBox();
+        const inner = await preview(page).locator(':scope > div').boundingBox();
+        const label = `card ${i} of the hand`;
+        expect(inner.x, `${label}: out of its box on the left`).toBeGreaterThanOrEqual(outer.x - 1);
+        expect(inner.y, `${label}: out of its box at the top`).toBeGreaterThanOrEqual(outer.y - 1);
+        expect(inner.x + inner.width, `${label}: out of its box on the right`).toBeLessThanOrEqual(outer.x + outer.width + 1);
+        expect(inner.y + inner.height, `${label}: out of its box at the bottom`).toBeLessThanOrEqual(outer.y + outer.height + 1);
+        expect(inner.x, `${label}: off the felt`).toBeGreaterThanOrEqual(felt.x - 1);
+        expect(inner.x + inner.width).toBeLessThanOrEqual(felt.x + felt.width + 1);
+        expect(inner.y).toBeGreaterThanOrEqual(felt.y - 1);
+        expect(inner.y + inner.height).toBeLessThanOrEqual(felt.y + felt.height + 1);
+        if (await preview(page).locator('[data-preview-flavor]').count()) sawFlavor += 1;
+        if (viewport.width >= 390) expect(await preview(page).locator('[data-preview-flavor]').count(), `${label}: the flavor is missing`).toBe(1);
+      }
+      expect(sawFlavor, 'at no size was any flavor line shown').toBeGreaterThan(0);
+    });
+  }
+
+  test('a keyboard-opened preview carries the flavor and the keys, and stays clear of the focused card\'s row', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await bootWithDeck(page);
+    const first = page.getByRole('button', { name: /^Play / }).first();
+    await first.focus();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
+    await expect(preview(page)).toBeVisible();
+    await expect(preview(page).locator('[data-preview-flavor]')).toBeVisible();
+    await expect(preview(page)).toContainText('next card');
+    await expect(preview(page).locator('[data-preview-keys]')).toBeVisible();
+  });
+});
+
 // The Tab: the result panel's rewards, printed as a bar tab on thermal paper.
 // The rows, the print, the footer's budget and what a screen reader hears are
 // pinned here; what the panel says when it is a win, and that each game picks

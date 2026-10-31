@@ -313,16 +313,20 @@ const Kbd = ({ children }) => (
  * keyboard — the keys that drive it.
  *
  * `placement` (previewPlacement.js) is the box on the felt to centre it in,
- * clear of the row it was opened from, and the zoom and layout that fit.
+ * clear of the row it was opened from, and the zoom and layout that fit. Its
+ * caption holds the ability's rules, the card's flavor line (`flavor`: the
+ * best joke on the card, which the table has no room for) and, when a
+ * keyboard opened it, the keys that drive it; the placement says whether the
+ * flavor fit, and the caller hands it down only if it did.
  *
  * Decorative — aria-hidden — because what it shows a screen reader already
- * has: the card in words (CardWords, in every card's slot) and the battle
- * log. Transparent to the pointer except when a mouse opened it: then the
- * pointer can move onto it without it closing (`onKeep`), and leaving it or
- * clicking it closes it (`onDismiss`).
+ * has: the card in words (CardWords, in every card's slot; the flavor line is
+ * a joke, not a rule) and the battle log. Transparent to the pointer except
+ * when a mouse opened it: then the pointer can move onto it without it
+ * closing (`onKeep`), and leaving it or clicking it closes it (`onDismiss`).
  */
 const CardPreview = ({
-  card, placement, rules, keys, hoverable, onKeep, onDismiss, costDelta = 0, attackDelta = 0, cosmeticBorder = null,
+  card, placement, rules, flavor = '', keys, hoverable, onKeep, onDismiss, costDelta = 0, attackDelta = 0, cosmeticBorder = null,
 }) => {
   const { place, x, y, w, h, zoom, layout } = placement;
   const beside = layout === 'row';
@@ -342,7 +346,7 @@ const CardPreview = ({
         <div className="rounded-[10px] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.9)]" style={{ zoom }}>
           <TeddyCard teddy={card} lift={false} cosmeticBorder={cosmeticBorder} costDelta={costDelta} attackDelta={attackDelta} artVariant="responsive" artLoading="eager" />
         </div>
-        {(rules || keys) && (
+        {(rules || flavor || keys) && (
           <div
             className="rounded-lg bg-night-950/95 px-3 py-2 text-center ring-1 ring-white/10 shadow-[0_10px_24px_-8px_rgba(0,0,0,0.8)]"
             style={{ width: beside ? CAPTION_ROW_W : Math.max(CAPTION_W, Math.round(CARD_W * zoom)) }}
@@ -353,12 +357,23 @@ const CardPreview = ({
                 <div className="mt-0.5 text-xs leading-snug text-plush-100">{rules}</div>
               </>
             )}
+            {/* The flavor line, quoted, under the rules (or alone, for a card
+                with none). Its height is counted by captionHeight, which the
+                placement reserves it by. */}
+            {flavor && (
+              <p
+                data-preview-flavor=""
+                className={`text-[11px] italic leading-[15px] text-plush-200 ${rules ? 'mt-1.5 border-t border-white/10 pt-1.5' : ''}`}
+              >
+                {`“${flavor}”`}
+              </p>
+            )}
             {/* Each key with its action, unbroken; the pairs wrap onto two
                 lines in the narrow caption beside the card. */}
             {keys && (
               <div
                 data-preview-keys=""
-                className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] leading-4 text-plush-300 ${rules ? 'mt-1.5 border-t border-white/10 pt-1.5' : ''}`}
+                className={`flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] leading-4 text-plush-300 ${rules || flavor ? 'mt-1.5 border-t border-white/10 pt-1.5' : ''}`}
               >
                 <span className="whitespace-nowrap"><Kbd>I</Kbd> next card</span>
                 <span className="whitespace-nowrap"><Kbd>Esc</Kbd> close</span>
@@ -2200,8 +2215,18 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const previewRules = previewCard?.ability && previewCard.ability !== 'none' ? abilityRules(previewCard.ability) : '';
   // A preview the keyboard opened says which keys drive it.
   const previewKeys = previewTarget?.via === 'focus' || previewTarget?.via === 'key';
+  // What goes with the card, in words, so the placement can count the room it
+  // takes (previewPlacement.captionHeight): its rules, its flavor line and the
+  // keys. The flavor line is shown only where the placement found the room.
+  const previewCaption = previewCard
+    ? { rules: previewRules, flavor: previewCard.description ?? '', keys: previewKeys }
+    : null;
   const previewPlacement = previewCard && feltGeom
-    ? placePreview(feltGeom, previewTarget.anchor ?? previewTarget.from, Boolean(previewRules) || previewKeys)
+    ? placePreview(
+      feltGeom,
+      previewTarget.anchor ?? previewTarget.from,
+      previewCaption.rules || previewCaption.flavor || previewCaption.keys ? previewCaption : false,
+    )
     : null;
   const previewShown = Boolean(previewPlacement && previewPlacement.zoom > 0);
   previewShownRef.current = previewShown;
@@ -2843,8 +2868,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 <CardPreview
                   card={previewCard}
                   placement={previewPlacement}
-                  rules={previewRules}
-                  keys={previewKeys}
+                  rules={previewPlacement.kept.rules ? previewRules : ''}
+                  flavor={previewPlacement.kept.flavor ? previewCaption.flavor : ''}
+                  keys={previewPlacement.kept.keys && previewKeys}
                   hoverable={previewTarget.via === 'hover'}
                   onKeep={keepPreview}
                   onDismiss={() => hidePreview()}
