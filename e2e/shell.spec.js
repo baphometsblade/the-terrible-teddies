@@ -678,8 +678,12 @@ test.describe('announcements', () => {
     await concede(page);
     const first = page.locator('.toast-viewport > li').filter({ hasText: ACHIEVEMENTS[0] });
     await expect(first).toBeVisible(SLOW);
-    await page.getByRole('button', { name: 'Play Again' }).click();
+    // Stamped BEFORE the click: the turn banner starts after the press, so the
+    // gap to the first returning toast is at least 1.3 s however long the click
+    // takes to return. Stamped after it, a loaded machine ate the margin (the
+    // click returned ~70 ms late and 1.23 s read as "too early").
     const playAgainAt = await page.evaluate(() => performance.now());
+    await page.getByRole('button', { name: 'Play Again' }).click();
     await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
     await expect.poll(async () => (await achievementLog(page)).filter((t) => t.goneAt).length, { timeout: 30_000 }).toBe(4);
     const log = await achievementLog(page);
