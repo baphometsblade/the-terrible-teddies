@@ -273,7 +273,7 @@ const Settings = ({ onClose }) => {
           <section>
             <SectionHeading>Audio</SectionHeading>
             <div className="panel-glass rounded-xl">
-              <SettingRow icon={Volume2} label="Sound Effects" description="Card plays, attacks, and abilities" htmlFor="setting-sound">
+              <SettingRow icon={Volume2} label="Sound Effects" description="Slaps, thuds, and noises you’ll deny." htmlFor="setting-sound">
                 <Switch
                   checked={soundEnabled}
                   onCheckedChange={setSoundEnabled}
@@ -294,7 +294,7 @@ const Settings = ({ onClose }) => {
           <section>
             <SectionHeading>Visual</SectionHeading>
             <div className="panel-glass rounded-xl">
-              <SettingRow icon={Sparkles} label="Animations" description="Card animations and effects" htmlFor="setting-animations">
+              <SettingRow icon={Sparkles} label="Animations" description="Shakes, bounces and flashes. Off if you’re hungover." htmlFor="setting-animations">
                 <Switch
                   checked={animationsEnabled}
                   onCheckedChange={setAnimationsEnabled}
@@ -312,9 +312,9 @@ const Settings = ({ onClose }) => {
             {/* One recessed well, the chosen key raised out of it. Each key is
                 still its own aria-pressed button. */}
             <div className="seg-well grid grid-cols-3 gap-1">
-              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="easy" label="Easy" description="Relaxed" icon={Smile} />
-              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="normal" label="Normal" description="Balanced" icon={Meh} />
-              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="hard" label="Hard" description="Challenge" icon={Angry} />
+              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="easy" label="Easy" description="Chuck’s facedown" icon={Smile} />
+              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="normal" label="Normal" description="Chuck’s had two" icon={Meh} />
+              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="hard" label="Hard" description="Chuck’s sober. Run." icon={Angry} />
             </div>
           </section>
 
@@ -435,7 +435,7 @@ const Settings = ({ onClose }) => {
         </div>
 
         <div className="relative border-t border-white/[0.06] px-4 py-3 text-center sm:px-6">
-          <p className="label-caps text-plush-400">Terrible Teddies v1.0</p>
+          <p className="label-caps text-plush-400">v1.0 · Know your limit</p>
         </div>
       </motion.div>
     </div>

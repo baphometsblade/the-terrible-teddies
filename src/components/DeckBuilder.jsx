@@ -166,7 +166,7 @@ const SaveDeckDialog = ({ deckName, setDeckName, onSave, onClose }) => {
         type="text"
         value={deckName}
         onChange={(e) => setDeckName(e.target.value)}
-        placeholder="Enter deck name..."
+        placeholder="Name this bad idea..."
         aria-label="Deck name"
         className={`h-11 w-full rounded-xl border border-white/10 bg-night-950/60 px-4 text-plush-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] placeholder:text-plush-400 ${FOCUS_RING}`}
         maxLength={20}
@@ -280,12 +280,12 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
 
   const addToDeck = (card) => {
     if (deck.length >= DECK_SIZE) {
-      toast({ title: "Deck Full!", description: `Max ${DECK_SIZE} cards.`, variant: "destructive" });
+      toast({ title: "Fire code violation", description: `Max ${DECK_SIZE} cards.`, variant: "destructive" });
       return;
     }
     const copies = deck.filter(c => c.id === card.id).length;
     if (copies >= MAX_COPIES) {
-      toast({ title: "Max Copies!", description: `Max ${MAX_COPIES} copies per card.`, variant: "destructive" });
+      toast({ title: "Two’s company", description: `Max ${MAX_COPIES} copies per card.`, variant: "destructive" });
       return;
     }
     setDeck([...deck, { ...card, deckId: `${card.id}-${Date.now()}` }]);
@@ -335,7 +335,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
 
   const handleSaveDeck = () => {
     if (deck.length !== DECK_SIZE) {
-      toast({ title: "Invalid Deck", description: `Need ${DECK_SIZE} cards!`, variant: "destructive" });
+      toast({ title: "Not enough bodies", description: `Need ${DECK_SIZE} cards.`, variant: "destructive" });
       return;
     }
     const cardIds = deck.map(c => c.id);
@@ -348,9 +348,9 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
       saveDeck(deckName.trim(), cardIds);
       setShowSaveDialog(false);
       setDeckName('');
-      toast({ title: "Deck Saved!", description: `"${deckName.trim()}" saved.` });
+      toast({ title: "Got their number", description: `"${deckName.trim()}" saved.` });
     } else {
-      toast({ title: "Deck Set!", description: "Current deck updated." });
+      toast({ title: "Stories straight", description: "Current deck updated." });
     }
   };
 
@@ -397,7 +397,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
   // battle deck yet. Brass is "do this now" here as on the board (End Turn
   // turns brass once no move is left); lit on an untouched deck, it asked the
   // player to re-set the deck they already fight with, and pressing it
-  // toasted "Deck Set!" for a change that had not happened. Otherwise it is a
+  // toasted "Stories straight" for a change that had not happened. Otherwise it is a
   // readable, recessed slot saying where the deck stands: how many cards are
   // missing, or that this is the battle deck. `compact` is the bar's: a
   // smaller face, and no icon but the battle deck's tick.
@@ -425,7 +425,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
     <div className="max-w-7xl mx-auto">
       <div className="mb-6 text-center">
         <h1 className="font-display text-4xl font-extrabold leading-none tracking-tight text-brass-gradient md:text-5xl">Deck Builder</h1>
-        <p className="label-caps mt-3 text-plush-300">Assemble your goon squad</p>
+        <p className="label-caps mt-3 text-plush-300">Your crew. No witnesses.</p>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
@@ -505,7 +505,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
             </div>
 
             {filteredCards.length === 0 && (
-              <div className="py-8 text-center text-plush-300">No cards available. Open packs!</div>
+              <div className="py-8 text-center text-plush-300">No cards available. Open a pack and find out what you’re into.</div>
             )}
           </section>
 
@@ -706,7 +706,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
               </AnimatePresence>
 
               {deck.length === 0 && (
-                <div className="rounded-xl border border-dashed border-white/10 py-6 text-center text-sm text-plush-300">Click cards to add</div>
+                <div className="rounded-xl border border-dashed border-white/10 py-6 text-center text-sm text-plush-300">Empty. Click cards to start stuffing.</div>
               )}
             </div>
 

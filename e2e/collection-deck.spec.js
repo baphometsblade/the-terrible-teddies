@@ -573,7 +573,7 @@ test.describe('deck builder toasts between sm and lg', () => {
 
   test('sit clear of the deck bar', async ({ page }) => {
     await openDeckBuilder(page);
-    // The seeded deck is full, so an add raises "Deck Full!".
+    // The seeded deck is full, so an add raises "Fire code violation".
     await addable(page).first().click();
     const toast = page.locator('.toast-viewport > li').first();
     await expect(toast).toBeVisible(SLOW);
@@ -596,7 +596,7 @@ test.describe('deck builder on a desktop', () => {
 
   // The screen's one brass action is lit only when there is something to
   // set. On the deck already fought with it asked to set it again, and the
-  // press toasted "Deck Set!" for a change that had not happened.
+  // press toasted "Stories straight" for a change that had not happened.
   test('lights Set as Current Deck only for a deck that is not the battle deck', async ({ page }) => {
     await openDeckBuilder(page);
     const primary = page.locator('[data-deck-primary]:visible');
@@ -616,7 +616,7 @@ test.describe('deck builder on a desktop', () => {
 
   // Setting the deck turns the button off under the press. Natively disabled,
   // it dropped the keyboard focus to the page; it keeps it now, and a second
-  // press does nothing (no second "Deck Set!").
+  // press does nothing (no second "Stories straight").
   test('keeps the focus on Set as Current Deck once it has set the deck', async ({ page }) => {
     await openDeckBuilder(page);
     const before = await storedDeck(page);
@@ -629,10 +629,10 @@ test.describe('deck builder on a desktop', () => {
     await expect(primary).toBeFocused();
     await expect.poll(() => storedDeck(page)).not.toEqual(before);
     // One toast shows at a time, a new one replacing the last, so mark the
-    // one up: a second "Deck Set!" would be a new element.
+    // one up: a second "Stories straight" would be a new element.
     const toast = page.locator('.toast-viewport > li');
     await expect(toast).toHaveCount(1);
-    await expect(toast).toContainText('Deck Set!');
+    await expect(toast).toContainText('Stories straight');
     await toast.evaluate((el) => { el.dataset.first = ''; });
     await page.keyboard.press('Enter');
     await page.waitForTimeout(300);

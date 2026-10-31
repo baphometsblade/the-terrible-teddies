@@ -45,6 +45,25 @@ describe('Shop initialTab', () => {
 // The gems a bundle brings pay any gems owed after a reversed payment first,
 // so the balance rises by less than the bundle. The tab says so before the
 // buyer pays, rather than the counter seeming short after.
+// Each gem tier carries a caption (the order ladder, small to mega). It is the
+// tile's description, spoken after BEST VALUE / bonus / total; the tile's name
+// and price are untouched.
+describe('gem tier captions', () => {
+  it('every tile has a caption within its 24-character slot, wired as a description', () => {
+    render({ initialTab: 'gems' });
+    const tiles = [...host.querySelectorAll('[aria-describedby]')].filter((t) => /^Buy \d+ gems/.test(t.getAttribute('aria-label') || ''));
+    expect(tiles).toHaveLength(5);
+    const captions = tiles.map((t) => {
+      const ids = t.getAttribute('aria-describedby').split(' ');
+      const el = host.querySelector(`[id="${ids.find((i) => i.endsWith('-caption'))}"]`);
+      expect(el).not.toBeNull();
+      return el.textContent;
+    });
+    expect(captions).toEqual(['A quick one.', 'A shot, no chaser.', 'A round for the table.', 'Bottle service.', 'Buy the bar.']);
+    captions.forEach((c) => expect(c.length).toBeLessThanOrEqual(24));
+  });
+});
+
 describe('the Buy Gems tab with gems owed', () => {
   afterEach(() => useGameStore.setState(useGameStore.getInitialState(), true));
 

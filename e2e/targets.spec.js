@@ -157,9 +157,9 @@ test('a Settings row toggles its switch from anywhere on it', async ({ page }) =
   await bootToMainMenu(page);
   const dialog = await open(page, 'Settings', 'Settings');
   const sound = dialog.getByRole('switch', { name: 'Sound Effects' });
-  await expect(sound).toHaveAccessibleDescription('Card plays, attacks, and abilities');
+  await expect(sound).toHaveAccessibleDescription('Slaps, thuds, and noises you’ll deny.');
   const before = await sound.getAttribute('aria-checked');
-  await dialog.getByText('Card plays, attacks, and abilities').click();
+  await dialog.getByText('Slaps, thuds, and noises you’ll deny.').click();
   await expect(sound).not.toHaveAttribute('aria-checked', before);
   // The switch itself still toggles once per tap: the label does not pass a
   // tap on its own control on a second time.

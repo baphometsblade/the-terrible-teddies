@@ -24,6 +24,17 @@ const GEM_BUNDLES = [
   { id: 'gems_mega', gems: 3000, price: 49.99, bonus: 750, popular: true },
 ];
 
+// A one-line caption under each gem tier, small to mega
+// (the order ladder). Beside GEM_BUNDLES, not in it: gemBundles.test.js
+// regex-parses that array. The tile's name and price are untouched.
+const GEM_CAPTIONS = {
+  gems_small: 'A quick one.',
+  gems_medium: 'A shot, no chaser.',
+  gems_large: 'A round for the table.',
+  gems_huge: 'Bottle service.',
+  gems_mega: 'Buy the bar.',
+};
+
 // Shared shape of every focusable control here. Plain <button>s rather than
 // the shadcn Button: its bg-primary is a utility and would beat the
 // component-layer btn-brass / btn-glass materials.
@@ -51,6 +62,7 @@ const GemBundle = ({ bundle, tier, processing, onBuy }) => {
     bundle.popular && `${id}-best`,
     bundle.bonus > 0 && `${id}-bonus`,
     bundle.bonus > 0 && `${id}-total`,
+    GEM_CAPTIONS[bundle.id] && `${id}-caption`,
   ].filter(Boolean).join(' ');
   return (
     <div
@@ -87,6 +99,7 @@ const GemBundle = ({ bundle, tier, processing, onBuy }) => {
       </span>
       {bundle.bonus > 0 && <span id={`${id}-bonus`} className="relative mt-2 text-emerald-300 text-xs font-bold tracking-wide">+{bundle.bonus.toLocaleString()} BONUS</span>}
       {bundle.bonus > 0 && <span id={`${id}-total`} className="relative text-plush-300 text-[11px] mt-0.5">{(bundle.gems + bundle.bonus).toLocaleString()} total</span>}
+      {GEM_CAPTIONS[bundle.id] && <span id={`${id}-caption`} className="relative mt-2 text-balance text-plush-300 text-xs leading-snug">{GEM_CAPTIONS[bundle.id]}</span>}
       <span className="relative mt-auto pt-4">
         <span className="btn-brass inline-flex items-center h-9 px-5 rounded-full font-display font-extrabold text-base tabular-nums">
           ${bundle.price.toFixed(2)}
@@ -218,7 +231,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
     if (!session?.user) {
       toast({
         title: "Sign In Required",
-        description: "Please sign in to purchase gems.",
+        description: "Sign in to buy gems. The bar doesn’t serve strangers.",
         variant: "destructive",
       });
       return;
@@ -406,7 +419,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
               <motion.div key="gems" {...TAB_MOTION} className="flex-1 flex flex-col">
                 <div className="text-center mb-5">
                   <h3 className="font-display text-2xl font-extrabold text-white leading-tight">Get More Gems</h3>
-                  <p className="mt-1 text-sm text-plush-300">Use gems to buy premium packs with guaranteed rare cards!</p>
+                  <p className="mt-1 text-sm text-plush-300">Gems buy the top shelf. First card guaranteed rare or better.</p>
                   {/* Said before the buyer pays, not after: the gems a bundle
                       brings pay what is owed first (creditGems), so the
                       balance rises by less than the bundle. */}
@@ -449,7 +462,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                       {/* True now: the checkout function sells it once per account. */}
                       <div className="label-caps text-brass-300 mb-1.5">NEW PLAYER BOOST</div>
                       <h3 className="font-display text-3xl font-extrabold leading-tight text-brass-gradient">Starter Gem Pack</h3>
-                      <p className="mt-1 text-plush-200">A big gem boost to get you started.</p>
+                      <p className="mt-1 text-plush-200">Enough gems to get into trouble.</p>
                       <ul className="mt-4 space-y-2 text-sm text-plush-100">
                         {[
                           { icon: Gem, tone: 'text-fuchsia-300', text: '300 Gems' },
@@ -504,7 +517,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                       <Medallion icon={Gem} metal={RARITY_METAL.epic} iconClassName="text-fuchsia-300" />
                       <div className="min-w-0">
                         <h4 className="font-display text-lg font-extrabold leading-tight text-white">Mega Gem Pack</h4>
-                        <p className="mt-0.5 text-plush-300 text-sm">A one-time gem boost — credited as soon as your payment confirms.</p>
+                        <p className="mt-0.5 text-plush-300 text-sm">Bail money. A one-time gem boost, credited as soon as your payment confirms.</p>
                       </div>
                     </div>
                     <div className="relative mt-4 pt-3 border-t border-white/5 flex justify-between items-center gap-3">
@@ -535,8 +548,8 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                         <h4 className="font-display text-lg font-extrabold leading-tight text-white">Coin Doubler</h4>
                         <p className="mt-0.5 text-plush-300 text-sm">
                           {doublerActive
-                            ? `Active — every battle pays double for ${doublerHoursLeft} more hour${doublerHoursLeft === 1 ? '' : 's'}.`
-                            : `Double coins from every battle for ${doubler.durationHours}h!`}
+                            ? `Active — every battle pays double for ${doublerHoursLeft} more hour${doublerHoursLeft === 1 ? '' : 's'}. Last call is a long way off.`
+                            : `Double coins from every battle for ${doubler.durationHours}h. Don’t peak early.`}
                         </p>
                       </div>
                     </div>

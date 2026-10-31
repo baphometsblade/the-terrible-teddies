@@ -831,9 +831,9 @@ test.describe('a toast on a phone', () => {
     await bootToMainMenu(page);
     await page.getByRole('button', { name: 'Deck Builder', exact: true }).tap();
     await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible(SLOW);
-    // The seeded deck is full, so an add raises "Deck Full!".
+    // The seeded deck is full, so an add raises "Fire code violation".
     await page.getByRole('button', { name: /^Add .+ to deck$/ }).first().tap();
-    const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Deck Full!' });
+    const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Fire code violation' });
     await expect(toast).toBeVisible(SLOW);
     await expect(toast).toHaveCSS('pointer-events', 'none');
     const menu = await page.getByRole('button', { name: '← Menu' }).boundingBox();

@@ -152,13 +152,13 @@ export const dailyClaimDay = ({ lastLoginDate = null, consecutiveLogins = 0 }, n
 // table: `description` on the Shop's tiles, `short` on the compact Card Packs
 // tiles. shopCopy.test.js checks the claims in both against the prices.
 export const SHOP_ITEMS = [
-  { id: 'pack_1', name: 'Card Pack', description: '5 random cards', short: '5 cards', icon: '📦', price: 200, currency: 'coins', type: 'pack', quantity: 1 },
-  { id: 'pack_5', name: '5 Card Packs', description: '25 random cards (10% off)', short: '25 cards · 10% off', icon: '📦', price: 900, currency: 'coins', type: 'pack', quantity: 5 },
-  { id: 'pack_10', name: '10 Card Packs', description: '50 random cards (20% off)', short: '50 cards · 20% off', icon: '📦📦', price: 1600, currency: 'coins', type: 'pack', quantity: 10 },
-  { id: 'premium_pack', name: 'Premium Pack', description: 'Guaranteed rare or better!', short: 'Rare or better', icon: '💎', price: 50, currency: 'gems', type: 'premium', quantity: 1 },
-  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards, guaranteed legendary!', short: '10 cards · 1 legendary', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
-  { id: 'coins_small', name: 'Small Coin Bag', description: '+500 coins', icon: '💰', price: 10, currency: 'gems', type: 'coins', quantity: 500 },
-  { id: 'coins_large', name: 'Large Coin Bag', description: '+3,000 coins', icon: '💰', price: 50, currency: 'gems', type: 'coins', quantity: 3000 },
+  { id: 'pack_1', name: 'Card Pack', description: '5 random cards. Open in private.', short: '5 cards. Open in private.', icon: '📦', price: 200, currency: 'coins', type: 'pack', quantity: 1 },
+  { id: 'pack_5', name: '5 Card Packs', description: '25 random cards (10% off). Hide your keys.', short: '25 cards · 10% off. Hide your keys.', icon: '📦', price: 900, currency: 'coins', type: 'pack', quantity: 5 },
+  { id: 'pack_10', name: '10 Card Packs', description: '50 random cards (20% off). Cancel Sunday.', short: '50 cards · 20% off. Cancel Sunday.', icon: '📦📦', price: 1600, currency: 'coins', type: 'pack', quantity: 10 },
+  { id: 'premium_pack', name: 'Premium Pack', description: 'Guaranteed rare or better. Pure, uncut.', short: 'Rare or better. Pure, uncut.', icon: '💎', price: 50, currency: 'gems', type: 'premium', quantity: 1 },
+  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards, guaranteed legendary. Finally.', short: '10 cards · 1 legendary. Finally.', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
+  { id: 'coins_small', name: 'Small Coin Bag', description: '+500 coins. Singles, mostly.', icon: '💰', price: 10, currency: 'gems', type: 'coins', quantity: 500 },
+  { id: 'coins_large', name: 'Large Coin Bag', description: '+3,000 coins. Hundreds, unmarked.', icon: '💰', price: 50, currency: 'gems', type: 'coins', quantity: 3000 },
   // Timed booster rather than a lump sum: pays out only as you play, so it
   // rewards an active day instead of being a flat coin bag (those already
   // exist above at a guaranteed rate). Priced between the two bags — it beats
@@ -1284,19 +1284,19 @@ export const useGameStore = create(
 
         if (item.type === 'pack') {
           set((s) => ({ cardPacks: s.cardPacks + item.quantity }));
-          return { success: true, message: `Got ${item.quantity} pack(s)!`, type: item.type };
+          return { success: true, message: `Got ${item.quantity} ${item.quantity === 1 ? 'pack' : 'packs'}.`, type: item.type };
         }
         if (item.type === 'premium') {
           set((s) => ({ premiumPacks: s.premiumPacks + item.quantity }));
-          return { success: true, message: `Got ${item.quantity} premium pack(s)!`, type: item.type };
+          return { success: true, message: `Got ${item.quantity} premium ${item.quantity === 1 ? 'pack' : 'packs'}.`, type: item.type };
         }
         if (item.type === 'legendary') {
           set((s) => ({ legendaryPacks: s.legendaryPacks + item.quantity }));
-          return { success: true, message: `Got ${item.quantity} legendary pack(s)!`, type: item.type };
+          return { success: true, message: `Got ${item.quantity} legendary ${item.quantity === 1 ? 'pack' : 'packs'}.`, type: item.type };
         }
         if (item.type === 'coins') {
           set((s) => ({ coins: s.coins + item.quantity }));
-          return { success: true, message: `Got ${item.quantity} coins!` };
+          return { success: true, message: `Got ${item.quantity.toLocaleString()} coins.` };
         }
         if (item.type === 'booster') {
           // Re-buying while one is already running EXTENDS it rather than
@@ -1305,7 +1305,7 @@ export const useGameStore = create(
           const current = typeof state.coinDoublerExpiresAt === 'number' ? state.coinDoublerExpiresAt : 0;
           const from = Math.max(Date.now(), current);
           set({ coinDoublerExpiresAt: from + item.durationHours * 60 * 60 * 1000 });
-          return { success: true, message: `${item.name} active for ${item.durationHours}h!`, type: item.type };
+          return { success: true, message: `${item.name} active for ${item.durationHours}h.`, type: item.type };
         }
 
         return { success: false, message: "Unknown item type" };

@@ -259,7 +259,7 @@ const CardDetailDialog = ({ cards, index, onIndex, onClose }) => {
           {!card.owned && (
             <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-night-950/50 px-3 py-2.5 text-sm font-semibold text-plush-200 ring-1 ring-inset ring-white/10">
               <Lock aria-hidden="true" className="h-4 w-4 text-plush-300" strokeWidth={2.4} />
-              Not yet collected
+              <span className="text-balance">Not yet collected. Last seen leaving.</span>
             </div>
           )}
         </div>
@@ -360,7 +360,7 @@ const TeddyCollection = () => {
     <div className="max-w-7xl mx-auto">
       <div className="mb-4 text-center sm:mb-6">
         <h1 className="font-display text-4xl font-extrabold leading-none tracking-tight text-brass-gradient md:text-5xl">Card Collection</h1>
-        <p className="label-caps mt-3 text-plush-300">Your emotional support army</p>
+        <p className="label-caps mt-3 text-plush-300">Regulars and one-night stands</p>
       </div>
 
       {/* The album's cover sheet: how far along the set is, and by tier. On a
@@ -557,7 +557,13 @@ const TeddyCollection = () => {
           <span aria-hidden="true" className="grid h-12 w-12 place-items-center rounded-full bg-white/5 ring-1 ring-white/10">
             <SearchX className="h-6 w-6 text-plush-300" strokeWidth={2} />
           </span>
-          <p className="text-plush-200">No cards match your filters.</p>
+          <p className="text-balance text-plush-200">
+            {/* Everything owned with the Missing view open: the empty table
+                is the completionist's, not a filter that found nothing. */}
+            {filter === 'all' && rarityFilter === 'all' && !showOwned && totalOwned === totalCards
+              ? 'Nothing missing. Impressive. Concerning.'
+              : 'No cards match your filters. Even this shithole has lower standards.'}
+          </p>
         </div>
       )}
 

@@ -14,6 +14,7 @@ import { PACK_LOOK, HeroPack } from './PackArt';
 import { ignoreKeyRepeat } from '@/lib/keyRepeat';
 import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
 import { PackOddsGuide } from './PackOdds';
+import { pickRevealLines, freshLine, dupesLine } from '@/lib/packLines';
 import { RARITY, RARITY_ORDER } from '@/lib/rarity';
 import { revealOrder, waveRanges, tableLayout } from '@/lib/packReveal';
 import { nextCoinPack, nextGemPack, nextPassPack, nextDailyPack } from '@/lib/packSources';
@@ -119,6 +120,9 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
   // The reveal runs on timers and taps, so its live state is mirrored in refs
   // the callbacks read (state in a timer's closure is a stale snapshot).
   const pullRef = useRef(null);
+  // Which summary lines this reveal wears (packLines.js): picked with the
+  // pull, never on render, and remembered so the next reveal differs.
+  const linesRef = useRef({ fresh: 0, dupes: 0 });
   const revealedRef = useRef([]);
   const chargingRef = useRef(new Set());
   const waveRef = useRef(0);
@@ -364,6 +368,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
       setChargingNow();
       setPullId((n) => n + 1);
       setOpenedType(packType);
+      linesRef.current = pickRevealLines(linesRef.current);
       setPulledCards(shown);
       setDupeCoins(result.dupeCoins);
 
@@ -689,13 +694,13 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
                           {newCardsCount > 0 && (
                             <span className="inline-flex items-center gap-2 text-emerald-300">
                               <PartyPopper aria-hidden="true" className="w-5 h-5 shrink-0" strokeWidth={2.2} />
-                              {newCardsCount} new card{newCardsCount > 1 ? 's' : ''} for your collection
+                              {freshLine(linesRef.current.fresh, newCardsCount)}
                             </span>
                           )}
                           {dupeCoins > 0 && (
                             <span className="inline-flex items-center gap-2 text-brass-300">
                               <Coins aria-hidden="true" className="w-5 h-5 shrink-0" strokeWidth={2.2} />
-                              +{dupeCoins} coins for duplicates
+                              {dupesLine(linesRef.current.dupes, dupeCoins)}
                             </span>
                           )}
                         </div>
@@ -879,7 +884,7 @@ const PackSources = ({ onBuy, routes = {} }) => {
   return (
     <div className="panel-glass w-full max-w-md rounded-xl p-4 text-left">
       <h2 className="font-display text-lg font-extrabold leading-tight text-white">No packs to open</h2>
-      <p className="mt-0.5 text-sm text-plush-300">This is where the next ones come from.</p>
+      <p className="mt-0.5 text-sm text-plush-300">Everyone’s gone home with someone. Here’s where the next ones come from.</p>
       <ul className="mt-3.5 space-y-3.5">
         {coin && (
           <li className="flex gap-3">
@@ -895,7 +900,7 @@ const PackSources = ({ onBuy, routes = {} }) => {
               />
               <p className="mt-1 text-xs text-plush-300">
                 {coin.short > 0
-                  ? `${coin.short.toLocaleString()} more coins — win battles to earn them.`
+                  ? `${coin.short.toLocaleString()} more coins — win battles. Don’t ask Chuck.`
                   : 'You have enough for one now.'}
               </p>
               {coin.short === 0 && (
