@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  HOUSE_RANKS, RANK_NAME_MAX, RANK_PROMOTED_MAX, houseRank, rankUp, rankSpan,
+  HOUSE_RANKS, RANK_NAME_MAX, RANK_PROMOTED_MAX, houseRank, rankUp, rankSpan, rankLevels,
 } from './houseRank';
 import { SAVE_FIELDS } from '@/stores/gameStore';
 
@@ -138,6 +138,34 @@ describe('rankSpan', () => {
 
   it('has no end on the top rung', () => {
     expect(rankSpan(500).to).toBeNull();
+  });
+});
+
+describe('rankLevels', () => {
+  it('words each rung from its span: a range, or a level and up for the top', () => {
+    HOUSE_RANKS.forEach((row, i) => {
+      const next = HOUSE_RANKS[i + 1];
+      const words = rankLevels(row.min);
+      if (!next) {
+        expect(words).toEqual({ label: `Level ${row.min}+`, spoken: `level ${row.min} and up` });
+      } else if (next.min - 1 === row.min) {
+        expect(words).toEqual({ label: `Level ${row.min}`, spoken: `level ${row.min}` });
+      } else {
+        expect(words).toEqual({ label: `Levels ${row.min}–${next.min - 1}`, spoken: `levels ${row.min} to ${next.min - 1}` });
+      }
+    });
+  });
+
+  it('is the same for every level on a rung', () => {
+    const [first, second] = HOUSE_RANKS;
+    for (let level = first.min; level < second.min; level++) expect(rankLevels(level)).toEqual(rankLevels(first.min));
+  });
+
+  // The label sits beside a rank name that is at most RANK_NAME_MAX long, on
+  // one small-caps line in a 264px header at 320. Kept short enough that the
+  // longest pair is a line (the label wraps below it if it ever is not).
+  it('stays short', () => {
+    for (const row of HOUSE_RANKS) expect(rankLevels(row.min).label.length).toBeLessThanOrEqual(14);
   });
 });
 

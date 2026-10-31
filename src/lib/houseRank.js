@@ -76,3 +76,15 @@ export const rankSpan = (level) => {
   const next = HOUSE_RANKS[HOUSE_RANKS.indexOf(row) + 1];
   return { from: row.min, to: next ? next.min - 1 : null };
 };
+
+/**
+ * The levels a rank covers, in words: `label` is what Player Stats draws beside
+ * the rank ("Levels 10–14", "Level 25+") and `spoken` is the same for a screen
+ * reader, which would say "10 dash 14" and "25 plus".
+ */
+export const rankLevels = (level) => {
+  const { from, to } = rankSpan(level);
+  if (to === null) return { label: `Level ${from}+`, spoken: `level ${from} and up` };
+  if (to === from) return { label: `Level ${from}`, spoken: `level ${from}` };
+  return { label: `Levels ${from}–${to}`, spoken: `levels ${from} to ${to}` };
+};

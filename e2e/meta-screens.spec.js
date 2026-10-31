@@ -2,7 +2,7 @@ import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { getDailyChallenges } from '../src/stores/challenges.js';
-import { HOUSE_RANKS } from '../src/lib/houseRank.js';
+import { HOUSE_RANKS, houseRank, rankLevels } from '../src/lib/houseRank.js';
 
 // The progression and information screens around the menu: the tutorial,
 // Challenges, the leaderboard, Daily Rewards and Player Stats.
@@ -587,6 +587,40 @@ test.describe('player stats', () => {
     for (const reward of rewards) expect(reward).toMatch(/^\+\d{1,3}(?:,\d{3})*coins$/);
     expect(rewards.some((r) => r.includes(',')), 'no achievement pays a thousand or more').toBe(true);
   });
+
+  // The house rank for the level sits under the name, in small caps: the rank,
+  // then the levels it covers. Worked out from the level, so a save from before
+  // ranks shows one. Checked on the shortest rank and the longest (the longest
+  // name with the longest label wraps to a second line at 320), against the
+  // name above it, the level row below, and the panel's edges.
+  for (const width of [320, 390, 1280]) {
+    for (const row of [HOUSE_RANKS[0], HOUSE_RANKS[HOUSE_RANKS.length - 1]]) {
+      test(`shows the ${row.name} rank under the name, inside the header, at ${width}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 800 });
+        await bootToMainMenu(page);
+        await seed(page, { level: row.min, xp: 40, playerName: 'Twenty Characters Bear' });
+        await page.getByLabel('View player stats').click();
+        const dialog = page.getByRole('dialog', { name: 'Player stats' });
+        await expect(dialog).toBeVisible(SLOW);
+        const line = dialog.locator('[data-house-rank]');
+        await expect(line).toBeVisible();
+        await expect(line).toContainText(houseRank(row.min).name);
+        await expect(line).toContainText(rankLevels(row.min).label);
+        const box = await line.boundingBox();
+        const name = await dialog.getByRole('heading', { name: 'Twenty Characters Bear' }).boundingBox();
+        const chip = await dialog.getByText(`Lv. ${row.min}`, { exact: true }).boundingBox();
+        const panel = await dialog.locator(':scope > div').boundingBox();
+        expect(box.y, 'the rank is above the name').toBeGreaterThanOrEqual(name.y + name.height - 1);
+        expect(box.y + box.height, 'the rank runs into the level row').toBeLessThanOrEqual(chip.y + 1);
+        expect(box.x, 'the rank leaves the panel on the left').toBeGreaterThanOrEqual(panel.x);
+        expect(box.x + box.width, 'the rank leaves the panel on the right').toBeLessThanOrEqual(panel.x + panel.width);
+        // Small print, not smaller than the floor the screens hold (8px).
+        expect(parseFloat(await line.evaluate((p) => getComputedStyle(p).fontSize))).toBeGreaterThanOrEqual(11);
+        // It is print: nothing to Tab to.
+        expect(await line.evaluate((p) => p.querySelectorAll('button, a, [tabindex]').length)).toBe(0);
+      });
+    }
+  }
 
   // Escape in the rename field reached the dialog's own Escape and closed
   // Player Stats, dropping the typed name. It cancels the edit now, the way

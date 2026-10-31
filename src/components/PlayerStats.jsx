@@ -13,6 +13,7 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { BalanceChip, DialogClose } from '@/components/ui/game-chrome';
 import { achievementIcon } from '@/lib/achievementIcons';
+import { houseRank, rankLevels } from '@/lib/houseRank';
 
 // An achievement's badge: brass once unlocked, a dimmed outline before.
 const AchievementBadge = ({ achievement, unlocked }) => {
@@ -99,6 +100,8 @@ const PlayerStats = ({ onClose }) => {
 
   const xpForNext = getXPForNextLevel();
   const xpProgress = (xp / xpForNext) * 100;
+  const rank = houseRank(level);
+  const levels = rankLevels(level);
   const winRate = totalBattles > 0 ? ((totalWins / totalBattles) * 100).toFixed(1) : 0;
   const completion = (ownedCards.length / ALL_CARDS.length) * 100;
 
@@ -251,6 +254,16 @@ const PlayerStats = ({ onClose }) => {
               {nameError && (
                 <p role="alert" className="mx-auto mt-1.5 max-w-xs text-xs text-amber-300 md:mx-0">{nameError}</p>
               )}
+              {/* The house rank for the level, under the name: the rank in
+                  brass, then the levels it covers. Worked out from the level
+                  (lib/houseRank), so it follows a level-up with nothing to
+                  save. A line of small print, never a control. The levels
+                  are drawn with the en dash and read out in words. */}
+              <p data-house-rank="" className="label-caps mt-1 flex flex-wrap items-baseline justify-center gap-x-2 md:justify-start">
+                <span className="text-brass-200">{rank.name}</span>
+                <span aria-hidden="true" className="text-plush-300">{levels.label}</span>
+                <span className="sr-only">, {levels.spoken}</span>
+              </p>
               <div className="mx-auto mt-2 w-full max-w-[16rem] md:mx-0">
                 <div className="flex items-center justify-center gap-2 text-xs text-plush-200 md:justify-start">
                   <span className="btn-brass whitespace-nowrap rounded-md px-1.5 py-[3px] text-[11px] font-extrabold leading-none">Lv. {level}</span>
