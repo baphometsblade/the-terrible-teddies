@@ -129,7 +129,7 @@ const announceAll = (toast, items) => {
 // replaces it.
 const SAVE_WAIT_MS = 5000;
 
-// "Season 4" out of a season's name ("Season 4: Hibernation Havoc", as
+// "Season 4" out of a season's name ("Season 4: Damp January", as
 // src/utils/season.js writes it), or the whole name if it is ever written
 // another way.
 const seasonNumber = (name) => /^Season \d+/.exec(name)?.[0] ?? name;
@@ -354,7 +354,7 @@ function App() {
   //
   // Short, because it can land over a dialog, where the toast sits in the
   // corner above the dialog's controls with room for a one-line title and
-  // two lines of description. The whole name ("Season 4: Hibernation Havoc
+  // two lines of description. The whole name ("Season 4: Damp January
   // rewards delivered") took the title to two lines on any phone, and the
   // preamble the description had ("Unclaimed when the season ended:") said
   // again what the title says; with both, the toast covered Challenges' tabs
@@ -362,7 +362,7 @@ function App() {
   // too, once the dialogs' Close grew to 44px and the corner narrowed by
   // 12px: at 320 it took two lines and the toast ended 3px into the step
   // bar. So the title is the season's number and "rewards", one line at any
-  // width, and "Delivered:" leads the list.
+  // width, and "Sent over:" leads the list.
   const pendingSeasonDeliveries = useGameStore((s) => s.pendingSeasonDeliveries);
   const shownDeliveryIds = useRef(new Set());
   useEffect(() => {
@@ -372,7 +372,7 @@ function App() {
     fresh.forEach((delivery) => shownDeliveryIds.current.add(delivery.id));
     announceAll(toast, fresh.map((delivery) => ({
       title: `${seasonNumber(delivery.season)} rewards`,
-      description: `Delivered: ${delivery.summary}.`,
+      description: `Sent over: ${delivery.summary}.`,
       // Over a dialog the list stops at two lines (index.css), which every
       // dialog's controls clear; the whole of it is still read out.
       className: 'toast-clamp',

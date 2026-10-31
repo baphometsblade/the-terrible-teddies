@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  HOUSE_RANKS, RANK_NAME_MAX, RANK_PROMOTED_MAX, houseRank, rankUp, rankSpan, rankLevels,
+  HOUSE_RANKS, RANK_NAME_MAX, RANK_PROMOTED_MAX, RANK_PROMOTED_LONG_MAX, houseRank, rankUp, rankSpan, rankLevels,
 } from './houseRank';
 import { SAVE_FIELDS } from '@/stores/gameStore';
 
@@ -22,9 +22,14 @@ describe('the table', () => {
   });
 
   // The one pin on the shipped numbers. Retune the ladder, change this.
-  it('is the ladder that ships: a rung every five levels from 5', () => {
+  // Changed on purpose when the after-dark copy deck replaced the six-rung
+  // provisional ladder with ten rungs: early ones close together (a first
+  // promotion inside the first session), the last two for whoever finds them.
+  it('is the ladder that ships: ten rungs, from Walk-In to Why There Are Rules', () => {
     expect(HOUSE_RANKS.map((r) => [r.min, r.name])).toEqual([
-      [1, 'Walk-In'], [5, 'Regular'], [10, 'Has a Usual'], [15, 'Barfly'], [20, 'Fixture'], [25, 'Part of the Furniture'],
+      [1, 'Walk-In'], [3, 'Regular'], [5, 'Known to Staff'], [7, 'Runs a Tab'], [9, 'Cut Off Once'],
+      [11, 'Number in the Stall'], [13, 'Has a Key'], [16, 'Mail Comes Here'], [25, 'Part of the Furniture'],
+      [50, 'Why There Are Rules'],
     ]);
   });
 
@@ -34,6 +39,9 @@ describe('the table', () => {
       expect(row.promoted.trim(), `${row.name} has no promotion line`).not.toBe('');
       expect(row.name.length, `${row.name} is over its label`).toBeLessThanOrEqual(RANK_NAME_MAX);
       expect(row.promoted.length, `"${row.promoted}" is over its line`).toBeLessThanOrEqual(RANK_PROMOTED_MAX);
+      expect(row.promotedLong.trim(), `${row.name} has no roomy line`).not.toBe('');
+      expect(row.promotedLong.length, `"${row.promotedLong}" is over its roomy line`).toBeLessThanOrEqual(RANK_PROMOTED_LONG_MAX);
+      expect(row.promotedLong).toBe(row.promotedLong.trim());
       // Trimmed, so the toast's join and the label's separator add the only spaces.
       expect(row.name).toBe(row.name.trim());
       expect(row.promoted).toBe(row.promoted.trim());
@@ -43,13 +51,14 @@ describe('the table', () => {
   it('names no rank twice', () => {
     expect(new Set(HOUSE_RANKS.map((r) => r.name)).size).toBe(HOUSE_RANKS.length);
     expect(new Set(HOUSE_RANKS.map((r) => r.promoted)).size).toBe(HOUSE_RANKS.length);
+    expect(new Set(HOUSE_RANKS.map((r) => r.promotedLong)).size).toBe(HOUSE_RANKS.length);
   });
 
   // The game sells a Premium Pass; a rank that sounds like a tier you can buy
   // would be taken for one.
   it('reads like nothing a player can pay for', () => {
     for (const row of HOUSE_RANKS) {
-      expect(`${row.name} ${row.promoted}`).not.toMatch(/\b(vip|member(ship)?|premium|gold|silver|platinum|elite|pass|club|pro)\b/i);
+      expect(`${row.name} ${row.promoted} ${row.promotedLong}`).not.toMatch(/\b(vip|member(ship)?|premium|gold|silver|platinum|elite|pass|club|pro)\b/i);
     }
   });
 

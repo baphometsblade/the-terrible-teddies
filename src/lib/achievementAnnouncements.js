@@ -5,7 +5,10 @@
 // (offline, a stale deploy), the same words go out without the drawing:
 // the coins are already credited, and the player still hears about it.
 
-export const ACHIEVEMENT_TOAST_TITLE = 'Achievement Unlocked!';
+// The House entering the unlock in the file. One line over a dialog at 320px
+// (e2e/meta-screens.spec.js measures it); every achievement name reads as an
+// entry on a record, so one constant serves them all.
+export const ACHIEVEMENT_TOAST_TITLE = 'Behavior noted';
 
 export const plainAchievementToast = (achievement) => ({
   title: ACHIEVEMENT_TOAST_TITLE,

@@ -105,23 +105,26 @@ export const LAST_CALL_HP = 5;
 // Stats: src/lib/achievementIcons.js maps the name to a line icon. A name,
 // not the component, so the store stays plain data. They were emoji, which
 // every platform draws differently.
+//
+// `locked` is the House's caption under the criterion, drawn by Player Stats
+// only while the row is locked (single-quoted, after `icon`).
 export const ACHIEVEMENTS = [
-  { id: 'first_win', name: 'First Victory', description: 'Win your first battle', reward: 100, icon: 'Trophy' },
-  { id: 'win_10', name: 'Rising Champion', description: 'Win 10 battles', reward: 500, icon: 'Award' },
-  { id: 'win_50', name: 'Teddy Master', description: 'Win 50 battles', reward: 2000, icon: 'Crown' },
-  { id: 'win_streak_5', name: 'On Fire', description: 'Win 5 battles in a row', reward: 300, icon: 'Flame' },
-  { id: 'collect_20', name: 'Collector', description: 'Collect 20 unique cards', reward: 400, icon: 'Library' },
-  { id: 'collect_40', name: 'Hoarder', description: 'Collect 40 unique cards', reward: 1000, icon: 'Archive' },
-  { id: 'collect_55', name: 'Problem Collector', description: 'Collect 55 unique cards', reward: 2500, icon: 'Warehouse' },
-  { id: 'collect_all', name: 'Complete Collection', description: 'Collect all cards', reward: 10000, icon: 'BadgeCheck' },
-  { id: 'play_100', name: 'Dedicated Player', description: 'Play 100 battles', reward: 1000, icon: 'Gamepad2' },
-  { id: 'deal_1000_damage', name: 'Damage Dealer', description: 'Deal 1000 total damage', reward: 500, icon: 'Bomb' },
-  { id: 'heal_500', name: 'Medic Bear', description: 'Heal 500 total HP', reward: 300, icon: 'HeartPulse' },
-  { id: 'perfect_win', name: 'Flawless', description: 'Win without losing HP', reward: 1000, icon: 'ShieldCheck' },
-  { id: 'comeback', name: 'Comeback King', description: `Win with ${LAST_CALL_HP} or less HP`, reward: 500, icon: 'Swords' },
-  { id: 'level_10', name: 'Leveling Up', description: 'Reach level 10', reward: 500, icon: 'ChevronsUp' },
-  { id: 'level_25', name: 'Veteran', description: 'Reach level 25', reward: 1500, icon: 'Medal' },
-  { id: 'daily_7', name: 'Weekly Warrior', description: 'Log in 7 days in a row', reward: 700, icon: 'CalendarCheck' },
+  { id: 'first_win', name: 'Someone Got Lucky', description: 'Win your first battle', reward: 100, icon: 'Trophy', locked: 'Zero. Fucking embarrassing.' },
+  { id: 'win_10', name: 'Ten Priors', description: 'Win 10 battles', reward: 500, icon: 'Award', locked: 'Squeaky clean. Disgusting.' },
+  { id: 'win_50', name: 'Chuck Has a Lawyer', description: 'Win 50 battles', reward: 2000, icon: 'Crown', locked: 'Chuck sleeps fine.' },
+  { id: 'win_streak_5', name: 'Burns When You Win', description: 'Win 5 battles in a row', reward: 300, icon: 'Flame', locked: 'Haven’t caught anything yet.' },
+  { id: 'collect_20', name: 'Five-Finger Discount', description: 'Collect 20 unique cards', reward: 400, icon: 'Library', locked: 'Hands visible at all times.' },
+  { id: 'collect_40', name: 'Keeps Every Hoodie', description: 'Collect 40 unique cards', reward: 1000, icon: 'Archive', locked: 'Gave the hoodie back.' },
+  { id: 'collect_55', name: 'Problem Collector', description: 'Collect 55 unique cards', reward: 2500, icon: 'Warehouse', locked: 'No problem. Yet.' },
+  { id: 'collect_all', name: 'Has a Guy for That', description: 'Collect all cards', reward: 10000, icon: 'BadgeCheck', locked: 'Your guy is still looking.' },
+  { id: 'play_100', name: 'Called in Sick', description: 'Play 100 battles', reward: 1000, icon: 'Gamepad2', locked: 'Your boss still trusts you.' },
+  { id: 'deal_1000_damage', name: 'Walks Funny Now', description: 'Deal 1000 total damage', reward: 500, icon: 'Bomb', locked: 'Everybody walks fine.' },
+  { id: 'heal_500', name: 'Fluffer on Call', description: 'Heal 500 total HP', reward: 300, icon: 'HeartPulse', locked: 'Still self-service.' },
+  { id: 'perfect_win', name: 'Didn’t Spill a Drop', description: 'Win without losing HP', reward: 1000, icon: 'ShieldCheck', locked: 'Spilled plenty so far.' },
+  { id: 'comeback', name: 'Crawled Home Smiling', description: `Win with ${LAST_CALL_HP} or less HP`, reward: 500, icon: 'Swords', locked: 'Never been that desperate.' },
+  { id: 'level_10', name: 'Sunk Cost', description: 'Reach level 10', reward: 500, icon: 'ChevronsUp', locked: 'Still free to walk away.' },
+  { id: 'level_25', name: 'Too Old for This Shit', description: 'Reach level 25', reward: 1500, icon: 'Medal', locked: 'Nobody lives that long.' },
+  { id: 'daily_7', name: 'Seven-Night Stand', description: 'Log in 7 days in a row', reward: 700, icon: 'CalendarCheck', locked: 'Commitment issues.' },
 ];
 
 export const DAILY_REWARDS = [

@@ -14,17 +14,23 @@
 //             "You're a {name}", which does not read for every name. The
 //             first rung is nobody's promotion, so its line is never shown;
 //             it is written anyway so the table has no hole.
+//   promotedLong  the same promotion in a roomier line (RANK_PROMOTED_LONG_MAX),
+//             for a slot with room: Player Stats' header. Not for the phone toast.
 //   min       the first level that holds the rank.
 //
 // Nothing here may read like a paid membership: the game sells a Premium Pass,
 // and a rank called VIP or Gold would be taken for something bought.
 export const HOUSE_RANKS = Object.freeze([
-  { min: 1, name: 'Walk-In', promoted: 'You came in. Noted.' },
-  { min: 5, name: 'Regular', promoted: 'Third time this week.' },
-  { min: 10, name: 'Has a Usual', promoted: 'Usual: bad decisions.' },
-  { min: 15, name: 'Barfly', promoted: "Stool's got your ass." },
-  { min: 20, name: 'Fixture', promoted: 'Sober? Not lately.' },
-  { min: 25, name: 'Part of the Furniture', promoted: 'Comes with the lease.' },
+  { min: 1, name: 'Walk-In', promoted: 'Somebody let you in.', promotedLong: 'You walked in. Nobody looked up.' },
+  { min: 3, name: 'Regular', promoted: 'You’re a regular. Sorry.', promotedLong: 'Your drink, not your name.' },
+  { min: 5, name: 'Known to Staff', promoted: 'Staff talk. Not kindly.', promotedLong: 'Staff have a name for you.' },
+  { min: 7, name: 'Runs a Tab', promoted: 'A tab. Bold of them.', promotedLong: 'Tab opened. Bold of them.' },
+  { min: 9, name: 'Cut Off Once', promoted: 'Cut off once. Fair call.', promotedLong: 'Cut off once. It was a fair call.' },
+  { min: 11, name: 'Number in the Stall', promoted: 'The stall says call you.', promotedLong: 'For a good time, call you.' },
+  { min: 13, name: 'Has a Key', promoted: 'Nobody gave you a key.', promotedLong: 'A key. Nobody gave it to you.' },
+  { min: 16, name: 'Mail Comes Here', promoted: 'Mail’s here. Warrants.', promotedLong: 'Mail comes here. Mostly warrants.' },
+  { min: 25, name: 'Part of the Furniture', promoted: 'Comes with the lease.', promotedLong: 'People set their drinks on you.' },
+  { min: 50, name: 'Why There Are Rules', promoted: 'A rule has your name.', promotedLong: 'A rule is named after you.' },
 ].map((row) => Object.freeze(row)));
 
 // The slots the lines go in. The name is a 21-character label ("Part of the
@@ -38,6 +44,7 @@ export const HOUSE_RANKS = Object.freeze([
 // line in the real toast at every phone width.
 export const RANK_NAME_MAX = 21;
 export const RANK_PROMOTED_MAX = 24;
+export const RANK_PROMOTED_LONG_MAX = 44;
 
 const rowAt = (level) => {
   const n = Math.floor(Number(level));

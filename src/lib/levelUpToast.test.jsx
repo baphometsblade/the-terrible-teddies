@@ -84,10 +84,11 @@ describe('a level-up that reaches a rung', () => {
   // level it ends on alone would not say so.
   it('promotes a jump that crosses a threshold and ends inside the rung', () => {
     const rung = HOUSE_RANKS[1];
-    const toast = levelUpToast({ level: rung.min + 2, levelsGained: 3, bonusCoins: 2100 });
+    // (The deck's rungs are two levels apart, so "inside" is one level past the threshold.)
+    const toast = levelUpToast({ level: rung.min + 1, levelsGained: 2, bonusCoins: 2100 });
     expect(dom(toast.description).querySelector('[data-rank-up]').textContent).toBe(rung.promoted);
     // ...and the same level reached from inside the rung does not.
-    const inside = levelUpToast({ level: rung.min + 2, levelsGained: 1, bonusCoins: 700 });
+    const inside = levelUpToast({ level: rung.min + 1, levelsGained: 1, bonusCoins: 700 });
     expect(dom(inside.description).querySelector('[data-rank-up]')).toBeNull();
   });
 

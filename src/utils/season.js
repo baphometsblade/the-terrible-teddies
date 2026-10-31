@@ -11,8 +11,35 @@ export const SEASON_NAMES = [
   'Teddy Rampage',
   'Fluffpocalypse',
   'Stuffing Storm',
-  'Hibernation Havoc',
+  // Season 4 (Jan-Mar 2027) on: the after-dark copy deck's names, one a
+  // quarter (cold or new year, weddings and brunch, summer, the holidays).
+  // Seasons 1-3 are LIVE or past and are never renamed; Season 3 (Oct-Dec
+  // 2026) is the one running now. 'Hibernation Havoc', the placeholder that sat
+  // at index 3, was never shown: Season 4 starts on 1 Jan 2027. Used as
+  // "Season N: <name>" in the pass header, the Premium confirm and the Shop's
+  // money line, so each stays a short noun phrase (SEASON_NAME_MAX); the list
+  // wraps to the first after Season 19.
+  'Damp January',
+  'Bottomless Brunch',
+  'Summer Body Count',
+  'Incident Report',
+  'Cuffing Season',
+  'Open Bar Wedding',
+  'Pants Optional',
+  'Mistletoe Regrets',
+  'Audit Season',
+  'Sticky Floors',
+  'No Lifeguard',
+  'Eggnog Regret',
+  'Resolution Failed',
+  'Karaoke Massacre',
+  'Skinny Dipping',
+  'Holiday Blackout',
 ];
+
+// The longest a name may be: two lines in the pass header at 320, where the
+// column is 208px, never truncated (season.test.js holds every name to it).
+export const SEASON_NAME_MAX = 17;
 
 /** A season's display name, e.g. "Season 3: Stuffing Storm". */
 export const seasonName = (number) => {

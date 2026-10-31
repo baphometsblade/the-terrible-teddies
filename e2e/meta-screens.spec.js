@@ -379,7 +379,7 @@ test.describe('challenge claims', () => {
   // to the top-left corner, clear of every control, and lets taps through.
   for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 800 }, { width: 320, height: 640 }]) {
     test(`a claim pays out in place, and the toast that follows keeps off the controls at ${viewport.width}`, async ({ page }) => {
-      // A day whose four include the one XP challenge ("Play 5 Games") and no
+      // A day whose four include the one XP challenge ("Learning Experience") and no
       // other game-count challenge, as board.spec.js picks it.
       const day = [...Array(60).keys()]
         .map((i) => new Date(Date.UTC(2027, 0, 1 + i, 12)))
@@ -398,7 +398,7 @@ test.describe('challenge claims', () => {
       await expect(dialog).toBeVisible(SLOW);
       await dialog.getByRole('button', { name: 'Claim', exact: true }).click();
 
-      await expect(dialog.getByRole('status')).toHaveText('Play 5 Games claimed: 100 XP.');
+      await expect(dialog.getByRole('status')).toHaveText('Learning Experience claimed: 100 XP.');
       await expect(dialog.locator('[data-claim-float]')).toHaveText('+100');
       // The float is decoration, and it goes.
       await expect(dialog.locator('[data-claim-float]')).toHaveCount(0, { timeout: 3000 });
@@ -452,7 +452,7 @@ test.describe('a toast over a dialog', () => {
         const { achievementToast } = await import('/src/lib/achievementToast.jsx');
         toast({ ...achievementToast(a), duration: 60000 });
       }, LONGEST_ACHIEVEMENT);
-      const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Achievement Unlocked!' });
+      const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Behavior noted' });
       await expect(toast).toBeVisible();
       // Measured once the slide-in and the dialog's entrance have settled: on
       // a loaded machine the first visible frame can still be moving. An
@@ -544,14 +544,14 @@ test.describe('a toast over a dialog', () => {
           useGameStore.setState({ pendingSeasonDeliveries: [{ id: Math.random(), season, receipts, summary: describeGrants(receipts) }] });
           return describeGrants(receipts);
         });
-        const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Delivered:' });
+        const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Sent over:' });
         await expect(toast).toBeVisible(SLOW);
         // The settled layout, as above: not a frame of the slide-in.
         await expect.poll(async () => controlsUnder(dialog, await toast.boundingBox()), { message: `the toast covers ${name}'s controls`, timeout: 5000 }).toEqual([]);
         await expect(toast.locator('.toast-title')).toHaveText('Season 12 rewards');
         // Cut short on screen only: the whole list is still the toast's text,
         // which is what Radix reads out.
-        await expect(toast.locator('.toast-description')).toHaveText(`Delivered: ${summary}.`);
+        await expect(toast.locator('.toast-description')).toHaveText(`Sent over: ${summary}.`);
         await page.evaluate(async () => (await import('/src/components/ui/use-toast.js')).resetToasts());
         await page.keyboard.press('Escape');
         await expect(dialog).toHaveCount(0, SLOW);

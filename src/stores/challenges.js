@@ -37,38 +37,38 @@ export const STAT_TO_STORE_FIELD = {
 // --- Daily pool (12 candidates, 3 per tracked daily stat) -----------------
 export const DAILY_POOL = [
   // dailyWins (todayWins)
-  { id: 'd1', name: "Ruin Chuck's Evening", description: 'Win 1 battle', target: 1, reward: { type: 'coins', amount: 60 }, icon: '🥊', stat: 'dailyWins' },
-  { id: 'd2', name: 'Win 3 Battles', description: 'Achieve victory in 3 battles', target: 3, reward: { type: 'coins', amount: 150 }, icon: '⚔️', stat: 'dailyWins' },
+  { id: 'd1', name: 'Cockblock Chuck', description: 'Win 1 battle', target: 1, reward: { type: 'coins', amount: 60 }, icon: '🥊', stat: 'dailyWins' },
+  { id: 'd2', name: 'Three In One Night', description: 'Achieve victory in 3 battles', target: 3, reward: { type: 'coins', amount: 150 }, icon: '⚔️', stat: 'dailyWins' },
   { id: 'd3', name: 'Absolute Menace', description: 'Achieve victory in 5 battles', target: 5, reward: { type: 'pack', amount: 1 }, icon: '👑', stat: 'dailyWins' },
   // dailyGames (todayBattles)
-  { id: 'd4', name: 'Punch The Clock', description: 'Complete 3 battles (win or lose)', target: 3, reward: { type: 'coins', amount: 80 }, icon: '🕒', stat: 'dailyGames' },
-  { id: 'd5', name: 'Play 5 Games', description: 'Complete 5 battles (win or lose)', target: 5, reward: { type: 'xp', amount: 100 }, icon: '🎮', stat: 'dailyGames' },
-  { id: 'd6', name: 'Grind It Out', description: 'Complete 8 battles (win or lose)', target: 8, reward: { type: 'pack', amount: 1 }, icon: '🛠️', stat: 'dailyGames' },
+  { id: 'd4', name: 'Win Or Walk Of Shame', description: 'Complete 3 battles (win or lose)', target: 3, reward: { type: 'coins', amount: 80 }, icon: '🕒', stat: 'dailyGames' },
+  { id: 'd5', name: 'Learning Experience', description: 'Complete 5 battles (win or lose)', target: 5, reward: { type: 'xp', amount: 100 }, icon: '🎮', stat: 'dailyGames' },
+  { id: 'd6', name: 'Grinding With Strangers', description: 'Complete 8 battles (win or lose)', target: 8, reward: { type: 'pack', amount: 1 }, icon: '🛠️', stat: 'dailyGames' },
   // dailyDamage (todayDamageDealt)
-  { id: 'd7', name: 'Draw First Blood', description: 'Deal a total of 25 damage', target: 25, reward: { type: 'coins', amount: 60 }, icon: '🩸', stat: 'dailyDamage' },
-  { id: 'd8', name: 'Deal 50 Damage', description: 'Deal a total of 50 damage', target: 50, reward: { type: 'coins', amount: 100 }, icon: '💥', stat: 'dailyDamage' },
-  { id: 'd9', name: 'Scorched Earth Policy', description: 'Deal a total of 100 damage', target: 100, reward: { type: 'gems', amount: 20 }, icon: '🔥', stat: 'dailyDamage' },
+  { id: 'd7', name: 'Slap And Tickle', description: 'Deal a total of 25 damage', target: 25, reward: { type: 'coins', amount: 60 }, icon: '🩸', stat: 'dailyDamage' },
+  { id: 'd8', name: 'Broke A Chair', description: 'Deal a total of 50 damage', target: 50, reward: { type: 'coins', amount: 100 }, icon: '💥', stat: 'dailyDamage' },
+  { id: 'd9', name: 'Allegedly Arson', description: 'Deal a total of 100 damage', target: 100, reward: { type: 'gems', amount: 20 }, icon: '🔥', stat: 'dailyDamage' },
   // dailyCardsPlayed (todayCardsPlayed)
-  { id: 'd10', name: 'Warm Up The Deck', description: 'Play 5 cards in battles', target: 5, reward: { type: 'coins', amount: 50 }, icon: '🎴', stat: 'dailyCardsPlayed' },
-  { id: 'd11', name: 'Use 10 Cards', description: 'Play 10 cards in battles', target: 10, reward: { type: 'pack', amount: 1 }, icon: '🃏', stat: 'dailyCardsPlayed' },
+  { id: 'd10', name: 'Strip Poker', description: 'Play 5 cards in battles', target: 5, reward: { type: 'coins', amount: 50 }, icon: '🎴', stat: 'dailyCardsPlayed' },
+  { id: 'd11', name: 'Dealing Dirty', description: 'Play 10 cards in battles', target: 10, reward: { type: 'pack', amount: 1 }, icon: '🃏', stat: 'dailyCardsPlayed' },
   { id: 'd12', name: 'Card Shark Behavior', description: 'Play 20 cards in battles', target: 20, reward: { type: 'gems', amount: 25 }, icon: '🦈', stat: 'dailyCardsPlayed' },
 ];
 
 // --- Weekly pool (10 candidates across the 4 tracked weekly stats) -------
 export const WEEKLY_POOL = [
   // weeklyWins (weekWins)
-  { id: 'w1', name: 'Five-Fight Friday (Any Day)', description: 'Achieve 5 victories this week', target: 5, reward: { type: 'coins', amount: 300 }, icon: '🥃', stat: 'weeklyWins' },
-  { id: 'w2', name: 'Win 15 Battles', description: 'Achieve 15 victories this week', target: 15, reward: { type: 'gems', amount: 50 }, icon: '🏆', stat: 'weeklyWins' },
-  { id: 'w3', name: "Clear The Bar's Tab", description: 'Achieve 25 victories this week', target: 25, reward: { type: 'legendaryPack', amount: 1 }, icon: '🍾', stat: 'weeklyWins' },
+  { id: 'w1', name: 'Five Wins And A Cab Home', description: 'Achieve 5 victories this week', target: 5, reward: { type: 'coins', amount: 300 }, icon: '🥃', stat: 'weeklyWins' },
+  { id: 'w2', name: 'Fifteen Is A Pattern', description: 'Achieve 15 victories this week', target: 15, reward: { type: 'gems', amount: 50 }, icon: '🏆', stat: 'weeklyWins' },
+  { id: 'w3', name: 'Unemployable', description: 'Achieve 25 victories this week', target: 25, reward: { type: 'legendaryPack', amount: 1 }, icon: '🍾', stat: 'weeklyWins' },
   // weeklyBestStreak (weekBestStreak)
-  { id: 'w4', name: 'On A Roll', description: 'Achieve a 3 game win streak this week', target: 3, reward: { type: 'pack', amount: 2 }, icon: '🎲', stat: 'weeklyBestStreak' },
-  { id: 'w5', name: 'Win Streak of 5', description: 'Achieve a 5 game win streak this week', target: 5, reward: { type: 'pack', amount: 3 }, icon: '🔥', stat: 'weeklyBestStreak' },
+  { id: 'w4', name: 'Back To Back To Back', description: 'Achieve a 3 game win streak this week', target: 3, reward: { type: 'pack', amount: 2 }, icon: '🎲', stat: 'weeklyBestStreak' },
+  { id: 'w5', name: 'Won’t Shut The Fuck Up', description: 'Achieve a 5 game win streak this week', target: 5, reward: { type: 'pack', amount: 3 }, icon: '🔥', stat: 'weeklyBestStreak' },
   // weeklyNewCards (weekNewCards)
   { id: 'w6', name: 'Fresh Meat For The Deck', description: 'Add 3 new cards to your collection', target: 3, reward: { type: 'gems', amount: 20 }, icon: '🆕', stat: 'weeklyNewCards' },
-  { id: 'w7', name: 'Collect 5 New Cards', description: 'Add 5 new cards to your collection', target: 5, reward: { type: 'gems', amount: 30 }, icon: '📚', stat: 'weeklyNewCards' },
+  { id: 'w7', name: 'Take Five Strangers Home', description: 'Add 5 new cards to your collection', target: 5, reward: { type: 'gems', amount: 30 }, icon: '📚', stat: 'weeklyNewCards' },
   // weeklyCoinsEarned (weekCoinsEarned)
   { id: 'w8', name: "Rattle The Tip Jar", description: 'Earn 250 coins from battles', target: 250, reward: { type: 'pack', amount: 1 }, icon: '💸', stat: 'weeklyCoinsEarned' },
-  { id: 'w9', name: 'Earn 500 Coins', description: 'Earn 500 coins from battles', target: 500, reward: { type: 'legendaryPack', amount: 1 }, icon: '🤑', stat: 'weeklyCoinsEarned' },
+  { id: 'w9', name: 'Chuck Paid Cash', description: 'Earn 500 coins from battles', target: 500, reward: { type: 'legendaryPack', amount: 1 }, icon: '🤑', stat: 'weeklyCoinsEarned' },
   { id: 'w10', name: 'Rob The Whole Register', description: 'Earn 1,000 coins from battles', target: 1000, reward: { type: 'gems', amount: 75 }, icon: '💰', stat: 'weeklyCoinsEarned' },
 ];
 

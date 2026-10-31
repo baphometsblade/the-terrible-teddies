@@ -264,6 +264,9 @@ const PlayerStats = ({ onClose }) => {
                 <span aria-hidden="true" className="text-plush-300">{levels.label}</span>
                 <span className="sr-only">, {levels.spoken}</span>
               </p>
+              {/* The rank's roomy line (promotedLong): the House's remark on
+                  where the player now stands. Plain small print. */}
+              <p data-house-rank-line="" className="mx-auto mt-0.5 max-w-xs text-xs text-plush-300 md:mx-0">{rank.promotedLong}</p>
               <div className="mx-auto mt-2 w-full max-w-[16rem] md:mx-0">
                 <div className="flex items-center justify-center gap-2 text-xs text-plush-200 md:justify-start">
                   <span className="btn-brass whitespace-nowrap rounded-md px-1.5 py-[3px] text-[11px] font-extrabold leading-none">Lv. {level}</span>
@@ -353,7 +356,8 @@ const PlayerStats = ({ onClose }) => {
         >
           {activeTab === 'stats' && (
             <div className="space-y-6">
-              <Section title="Battle Statistics">
+              <Section title="Rap Sheet">
+                {totalBattles === 0 && <p data-stats-empty="" className="-mt-1 mb-3 text-sm text-plush-300">No priors. Give it a night.</p>}
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                   <StatTile icon={Gamepad2} label="Battles" value={totalBattles.toLocaleString()} />
                   <StatTile icon={Trophy} label="Victories" value={totalWins.toLocaleString()} tone="text-emerald-300" />
@@ -362,7 +366,7 @@ const PlayerStats = ({ onClose }) => {
                 </div>
               </Section>
 
-              <Section title="Streaks">
+              <Section title="Bad Habits">
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                   <StatTile icon={Flame} label="Current" value={currentWinStreak.toLocaleString()} tone="text-orange-300" />
                   <StatTile icon={Star} label="Best Streak" value={bestWinStreak.toLocaleString()} tone="text-brass-300" />
@@ -371,7 +375,7 @@ const PlayerStats = ({ onClose }) => {
                 </div>
               </Section>
 
-              <Section title="Combat Performance">
+              <Section title="Performance Review">
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                   <StatTile icon={Bomb} label="Total Damage" value={totalDamageDealt.toLocaleString()} tone="text-red-300" />
                   <StatTile icon={HeartPulse} label="Total Healing" value={totalHealingDone.toLocaleString()} tone="text-emerald-300" />
@@ -389,6 +393,16 @@ const PlayerStats = ({ onClose }) => {
           )}
 
           {activeTab === 'achievements' && (
+            <Section title="The Little Black Book">
+              {/* The House's line under the heading: while the book is empty,
+                  and once every page is used. In between the pill already
+                  counts. */}
+              {completedAchievements.length === 0 && (
+                <p data-book-line="" className="-mt-1 mb-3 text-sm text-plush-300">Blank pages. Go make some mistakes.</p>
+              )}
+              {completedAchievements.length >= ACHIEVEMENTS.length && (
+                <p data-book-line="" className="-mt-1 mb-3 text-sm text-plush-300">Every page used. We’re worried.</p>
+              )}
             <ul className="space-y-2">
               {ACHIEVEMENTS.map((achievement, i) => {
                 const isCompleted = completedAchievements.includes(achievement.id);
@@ -437,6 +451,10 @@ const PlayerStats = ({ onClose }) => {
                         )}
                       </div>
                       <div className="mt-0.5 text-sm text-plush-300">{achievement.description}</div>
+                      {/* The House's caption, only while the row is locked. */}
+                      {!isCompleted && achievement.locked && (
+                        <div data-locked-caption="" className="mt-0.5 text-sm italic text-plush-300">{achievement.locked}</div>
+                      )}
                     </div>
                     <div
                       className={`col-start-2 inline-flex items-center gap-1 justify-self-start rounded-full px-2.5 py-1 font-display text-sm font-extrabold tabular-nums ring-1 ring-inset sm:col-start-3 sm:row-start-1 sm:justify-self-end ${
@@ -451,6 +469,7 @@ const PlayerStats = ({ onClose }) => {
                 );
               })}
             </ul>
+            </Section>
           )}
         </div>
       </motion.div>

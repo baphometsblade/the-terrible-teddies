@@ -611,7 +611,7 @@ test.describe('announcements', () => {
   // either order. That clear used to empty the line, so not one of them was
   // ever seen. This save is one battle, one point of damage and one of
   // healing short of three achievements, all earned by conceding.
-  const ACHIEVEMENTS = ['Dedicated Player', 'Damage Dealer', 'Medic Bear'];
+  const ACHIEVEMENTS = ['Called in Sick', 'Walks Funny Now', 'Fluffer on Call'];
   const threeShort = { totalBattles: 99, totalDamageDealt: 1000, totalHealingDone: 500, completedAchievements: [] };
   // Each toast as it comes and goes: its text, when, and the dialog it sat on.
   const watchToasts = (page) => page.addInitScript(() => {
@@ -639,7 +639,7 @@ test.describe('announcements', () => {
       }
     }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] });
   });
-  const achievementLog = (page) => page.evaluate(() => window.__toastLog.filter((t) => t.text.includes('Achievement Unlocked!')));
+  const achievementLog = (page) => page.evaluate(() => window.__toastLog.filter((t) => t.text.includes('Behavior noted')));
   const concede = async (page) => {
     await page.getByRole('button', { name: 'Battle', exact: true }).click();
     await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
@@ -769,11 +769,11 @@ test.describe('announcements', () => {
     await seedSave(page, { totalBattles: 99, completedAchievements: [] });
     await page.reload();
     await concede(page);
-    const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Achievement Unlocked!' });
+    const toast = page.locator('.toast-viewport > li').filter({ hasText: 'Behavior noted' });
     await expect(toast).toBeVisible(SLOW);
-    await expect(toast).toContainText('Dedicated Player — +1,000');
+    await expect(toast).toContainText('Called in Sick — +1,000');
     expect(await toast.textContent()).not.toMatch(/\p{Extended_Pictographic}/u);
-    // Gamepad2 is Dedicated Player's badge, the one Player Stats draws for battles.
+    // Gamepad2 is Called in Sick's badge, the one Player Stats draws for battles.
     await expect(toast.locator('[aria-hidden="true"] svg.lucide-gamepad2')).toHaveCount(1);
     await expect(toast.locator('.toast-description .sr-only')).toHaveText('coins');
     const gap = await toast.locator('.toast-description svg').evaluate((coin) => {

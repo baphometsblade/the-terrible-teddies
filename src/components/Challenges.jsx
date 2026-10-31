@@ -439,7 +439,7 @@ const Challenges = ({ onClose }) => {
         {/* Reset Timer */}
         <div className="relative flex items-center gap-3 px-4 pt-4 pb-1 sm:px-6">
           <span className="label-caps shrink-0 text-plush-300">
-            {activeTab === 'daily' ? 'Daily' : 'Weekly'} Reset In
+            Slate wipes in
           </span>
           <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
           <span className="inline-flex shrink-0 items-center gap-1.5 font-display text-sm font-bold tabular-nums text-brass-200">
@@ -447,6 +447,13 @@ const Challenges = ({ onClose }) => {
             {activeTab === 'daily' ? dailyResetTime : weeklyResetTime}
           </span>
         </div>
+
+        {/* The House notices an empty slate. Only while nothing on this tab has
+            been started, so it greets each morning and goes with the first
+            point of progress. */}
+        {(activeTab === 'daily' ? DAILY_CHALLENGES : WEEKLY_CHALLENGES).every((c) => getChallengeProgress(c) <= 0) && (
+          <p data-nothing-started="" className="relative px-4 pt-1 text-xs text-plush-300 sm:px-6">Nothing started. We noticed.</p>
+        )}
 
         {/* Content */}
         <div
@@ -496,9 +503,18 @@ const Challenges = ({ onClose }) => {
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="min-w-0 flex-1">
               <div className="font-display text-[15px] font-bold leading-tight text-white sm:text-base">
-                Complete All {activeTab === 'daily' ? 'Daily' : 'Weekly'} Challenges
+                Don’t Stop Now
               </div>
-              <div className="mt-0.5 text-xs leading-snug text-plush-300 sm:text-sm">Bonus reward for completing all challenges</div>
+              {/* The rule stays on the line until the bonus is ready, then the
+                  House speaks (the Claim button is the action) and, once it
+                  is claimed, answers the heading. */}
+              <div data-bonus-line="" className="mt-0.5 text-xs leading-snug text-plush-300 sm:text-sm">
+                {(claimedChallenges ?? []).includes(BONUS[activeTab].key)
+                  ? (activeTab === 'daily' ? 'Okay, stop. Back tomorrow.' : 'Okay, stop. Back Monday.')
+                  : BONUS[activeTab].allDone
+                    ? 'All done. Take it before Chuck does.'
+                    : 'Bonus reward for completing all challenges'}
+              </div>
               <div className="mt-2 flex flex-wrap gap-2">
                 <RewardChip type="gems" amount={BONUS[activeTab].gems} />
                 <RewardChip type="coins" amount={BONUS[activeTab].coins} />

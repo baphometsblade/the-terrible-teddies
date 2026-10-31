@@ -903,7 +903,7 @@ test.describe('XP and level-ups', () => {
 
   // Challenge XP levelled players up silently too. Daily picks rotate by date,
   // so the clock is set to a day whose four include the one XP challenge
-  // ("Play 5 Games") and no other game-count challenge.
+  // ("Learning Experience") and no other game-count challenge.
   test('claiming a challenge\'s XP that levels up is toasted', async ({ page }) => {
     const day = [...Array(60).keys()]
       .map((i) => new Date(Date.UTC(2027, 0, 1 + i, 12)))

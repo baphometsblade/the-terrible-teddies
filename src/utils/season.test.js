@@ -1,4 +1,4 @@
-import { SEASON_NAMES, getCurrentSeason, getSeasonDaysLeft, getSeason, seasonFromKey, formatSeasonEnd } from './season';
+import { SEASON_NAMES, SEASON_NAME_MAX, getCurrentSeason, getSeasonDaysLeft, getSeason, seasonFromKey, formatSeasonEnd } from './season';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -31,10 +31,35 @@ describe('getCurrentSeason (rolling quarterly seasons)', () => {
   });
 
   it('season names cycle after the list is exhausted', () => {
-    // Season 5 starts 4 quarters after Season 1 → Apr 2027, name wraps to index 0.
-    const s = getCurrentSeason(new Date('2027-05-01T00:00:00Z'));
-    expect(s.number).toBe(5);
-    expect(s.name).toBe(`Season 5: ${SEASON_NAMES[0]}`);
+    // The list holds one name per quarter from Season 1; the season after the
+    // last name starts that many quarters after Season 1 and wraps to index 0.
+    const n = SEASON_NAMES.length;
+    const s = getSeason(n + 1);
+    expect(s.number).toBe(n + 1);
+    expect(s.name).toBe(`Season ${n + 1}: ${SEASON_NAMES[0]}`);
+    expect(getSeason(n + 2).name).toBe(`Season ${n + 2}: ${SEASON_NAMES[1]}`);
+    // And the clock agrees with the number: Season 5 starts in April 2027.
+    expect(getCurrentSeason(new Date('2027-05-01T00:00:00Z')).number).toBe(5);
+  });
+
+  // Seasons 1-3 are past or live and keep their names. Season 3 (Oct-Dec
+  // 2026) is running now and must never be renamed; the deck's names start at
+  // Season 4 (1 Jan 2027).
+  it('never renames Seasons 1 to 3, and names Season 4 onwards from the deck', () => {
+    expect(getSeason(1).name).toBe('Season 1: Teddy Rampage');
+    expect(getSeason(2).name).toBe('Season 2: Fluffpocalypse');
+    expect(getSeason(3).name).toBe('Season 3: Stuffing Storm');
+    expect(getSeason(4).name).toBe('Season 4: Damp January');
+    expect(getSeason(19).name).toBe('Season 19: Holiday Blackout');
+  });
+
+  it('holds every name to its slot and names no season twice', () => {
+    for (const name of SEASON_NAMES) {
+      expect(name.length, name).toBeLessThanOrEqual(SEASON_NAME_MAX);
+      expect(name, name).toBe(name.trim());
+      expect(name, `${name} carries an exclamation mark`).not.toMatch(/!/);
+    }
+    expect(new Set(SEASON_NAMES).size).toBe(SEASON_NAMES.length);
   });
 
   it('daysLeft counts whole days, rounding partial days up', () => {
@@ -74,7 +99,7 @@ describe('getSeason / seasonFromKey', () => {
   // whose rewards it delivers from that key.
   it('reads a store key back to its season, and nothing else', () => {
     expect(seasonFromKey('season-1').name).toBe('Season 1: Teddy Rampage');
-    expect(seasonFromKey('season-6').name).toBe(`Season 6: ${SEASON_NAMES[1]}`);
+    expect(seasonFromKey('season-6').name).toBe(`Season 6: ${SEASON_NAMES[5]}`);
     for (const key of [null, undefined, '', 'season-0', 'season-x', 'winter']) expect(seasonFromKey(key)).toBeNull();
   });
 });
