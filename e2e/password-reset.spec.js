@@ -482,6 +482,23 @@ test.describe('landing from a reset link on a device that has not passed the doo
     await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
   });
 
+  test('still shows the panel after a reload at the door', async ({ page }) => {
+    // supabase-js takes the tokens out of the address as soon as it has used
+    // them, so a reload while the door is up has nothing left in the address
+    // to go on; auth.jsx notes the reset at module load for exactly this.
+    // Without it the player ended in the game, signed in by the link, never
+    // offered the panel.
+    await stubBackend(page);
+    await page.goto(`/${recoveryHash()}`);
+    await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
+    expect(new URL(page.url()).hash).not.toContain('type=recovery');
+    await answer(page, YEAR - 30);
+    await expect(page.getByRole('heading', { name: 'Set a New Password' })).toBeVisible(SLOW);
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toHaveCount(0);
+  });
+
   test('is never shown to a player the door turned away', async ({ page }) => {
     const auth = await stubBackend(page);
     await page.goto(`/${recoveryHash()}`);

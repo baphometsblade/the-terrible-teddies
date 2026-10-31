@@ -3,6 +3,7 @@ import { HeartCrack, RotateCcw, RotateCw, Trash2, ChevronRight } from 'lucide-re
 import analytics from '../utils/analytics';
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { DOOR_KEY } from '@/lib/door';
 
 // Plain <button>s on the materials. Focus is an outline: a Tailwind ring is a
 // box-shadow, and on btn-brass / btn-glass it would replace the material's own
@@ -58,7 +59,12 @@ class ErrorBoundary extends React.Component {
 
   handleClearData = () => {
     if (confirm('This will clear all your game data and reload. Continue?')) {
+      // The door's answer is the device's, not game data: a decline is for
+      // good, and a button on a crash screen is not a way back in.
+      let door = null;
+      try { door = localStorage.getItem(DOOR_KEY); } catch { /* blocked: nothing to keep */ }
       localStorage.clear();
+      try { if (door !== null) localStorage.setItem(DOOR_KEY, door); } catch { /* as above */ }
       sessionStorage.clear();
       window.location.reload();
     }

@@ -4,6 +4,7 @@ import { initializePostHog } from '@/utils/analytics';
 // Static, as App imports it: BootScreen covers the door's chunk, and a chunk
 // for the thing that covers a round-trip would be a round-trip.
 import BootScreen from './BootScreen';
+import DoorDeclined from './DoorDeclined';
 
 // The door in front of the game (main.jsx mounts it between the motion
 // setting and the Supabase provider). It gates everything: the game, the
@@ -26,15 +27,16 @@ import BootScreen from './BootScreen';
 // door that cannot load is left to the app-wide error screen, which has no
 // way past it.
 //
-// Nothing of the game mounts until the pass is in: no session restore, no
-// Daily Rewards, no tutorial, and no analytics (below). The game's modules
-// are still in the entry chunk (they were before, and a returning player must
-// not wait on a second request), and the store hydrates from localStorage as
-// it always did; what the door holds back is everything that mounts, runs or
-// sends. The recovery landing needs nothing from the provider while the door
-// is up: authLanding.js and supabase-js read the address when they load, and
-// the provider's reset panel starts from that, so the link is still there to
-// be acted on once the door has opened (e2e/password-reset.spec.js).
+// Nothing of the game mounts until the pass is in: no Daily Rewards, no
+// tutorial, no sign-in screen and no analytics (below). The game's modules
+// still load and run, in the entry chunk as they always did (a returning
+// player must not wait on a second request), so the store hydrates from
+// localStorage and supabase-js still restores, and refreshes, a stored
+// session at import; none of it reaches the player. The recovery landing
+// needs nothing from the provider while the door is up: authLanding.js and
+// supabase-js read the address when they load, and auth.jsx notes the reset
+// at module load, so the link is still there to be acted on once the door
+// has opened, even after a reload at the door (e2e/password-reset.spec.js).
 // The query string is never touched, so ?action= is still in the address for
 // App to find once the game is up.
 const loadDoor = () => import('./TheDoor');
@@ -59,15 +61,23 @@ const warmTheDoor = () => {
 };
 
 const DoorGate = ({ children }) => {
-  const [state, setState] = useState(() => door.read());
-
   // Analytics start once the door has let the player in, and not before: a
   // player turned away never loads the SDK or sends a thing (analytics.js
   // queues what is raised before it starts, in memory, and sends nothing
   // until initializePostHog runs). A returning player is a pass from the
-  // first render, so for them it starts as it did before the door existed.
-  // Once: opening and then pass are both "in".
+  // first render, so theirs starts before the first commit, as it did before
+  // the door existed: a crash while the game first renders is still reported
+  // (a start in an effect would never run for it). A first-ever pass starts
+  // in the effect below. Once: opening and then pass are both "in".
   const analyticsStarted = useRef(false);
+  const [state, setState] = useState(() => {
+    const answer = door.read();
+    if (answer === 'pass' && !analyticsStarted.current) {
+      analyticsStarted.current = true;
+      initializePostHog();
+    }
+    return answer;
+  });
   useEffect(() => {
     if ((state === 'opening' || state === 'pass') && !analyticsStarted.current) {
       analyticsStarted.current = true;
@@ -98,6 +108,8 @@ const DoorGate = ({ children }) => {
   const onOpened = useCallback(() => setState('pass'), []);
 
   if (state === 'pass') return children;
+  // Drawn here, not by the door's chunk: a turned-away device fetches nothing.
+  if (state === 'declined') return <DoorDeclined />;
   return (
     <Suspense fallback={<BootScreen />}>
       <TheDoor state={state} onPass={onPass} onDecline={onDecline} onOpened={onOpened} />

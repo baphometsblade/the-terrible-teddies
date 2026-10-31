@@ -136,7 +136,7 @@ describe('signFor', () => {
 describe('subtitleFor', () => {
   it('follows the same clock as the sign', () => {
     expect(subtitleFor(at(9))).toBe("Chuck's still here.");
-    expect(subtitleFor(at(14))).toBe("Chuck's still here.");
+    expect(subtitleFor(at(14))).toBe("Go make Chuck cry");
     expect(subtitleFor(at(17))).toBe('Happy hour. Ruin it.');
     expect(subtitleFor(at(21))).toBe("Chuck's three deep.");
     expect(subtitleFor(at(1))).toBe('Chuck never left.');

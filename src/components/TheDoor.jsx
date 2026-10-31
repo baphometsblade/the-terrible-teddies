@@ -5,8 +5,8 @@ import { CONTENT_NOTICE } from '@/lib/contentNotice';
 import { checkAge, DOOR_ART, openingMs } from '@/lib/door';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { ignoreKeyRepeat, useArmedAfterOpen } from '@/lib/keyRepeat';
-import { SCREEN_PAD } from '@/lib/safeArea';
 import { focusWhenReady } from '@/lib/screenFocus';
+import { DECLINED_COPY, DOOR_ROOM as ROOM, useHandedOffLoader } from './DoorDeclined';
 import NeonSign from './NeonSign';
 import { AUTH_ACTION } from './AuthField';
 
@@ -22,13 +22,14 @@ import { AUTH_ACTION } from './AuthField';
 //   intro / notice          under it; the notice is the shared content line
 //   label / placeholder     the year field
 //   smallPrint              the plain fact about the year, tied to the field
-//   error                   a year that is not four digits in range
+//   error                   a year the check refuses: letters, too few digits,
+//                           before 1900 or after this year (true of each)
 //   submit                  the year form's one button
 //   birthday*               the follow-up for a player turning 18 this year
 //   declined                what a player under 18 is told, and all they are
 export const DOOR_COPY = {
   title: 'ID, please · Terrible Teddies',
-  declinedTitle: 'Sorry · Terrible Teddies',
+  declinedTitle: DECLINED_COPY.title,
   sign: 'ID REQUIRED',
   heading: 'ID.',
   intro: 'Grown-ups only. Show me you are one.',
@@ -36,12 +37,12 @@ export const DOOR_COPY = {
   label: 'Year you were born',
   placeholder: 'YYYY',
   smallPrint: "Only used to check you're 18 or over. It never leaves this device.",
-  error: 'Enter the year as four digits.',
+  error: 'Enter a year, 1900 to this year.',
   submit: 'Come in',
   birthdayHeading: 'Had your birthday yet this year?',
   birthdayYes: 'Yes',
   birthdayNo: 'Not yet',
-  declined: 'Sorry, this room is 18+. Terrible Teddies is for players 18 and over. Thanks for being honest.',
+  declined: DECLINED_COPY.text,
 };
 
 // The year field: a well set into the steel, the way the account screens'
@@ -62,47 +63,6 @@ const FIELD =
 // and the lint rule knows only the camelCase one, so it goes in as a spread,
 // before the src that starts the request.
 const ASK_FIRST = { fetchpriority: 'high' };
-
-// The full screen the door stands on: the room's backdrop and grain, padded
-// clear of an installed phone's status bar and home indicator like the other
-// full screens (SCREEN_PAD). dvh where it is supported, because a phone's
-// browser toolbars take their share of 100vh.
-const ROOM =
-  `relative min-h-screen supports-[height:100dvh]:min-h-dvh bar-backdrop flex items-center justify-center overflow-x-clip ${SCREEN_PAD}`;
-
-// The loader painted before the app's JS (index.html) fades out over whatever
-// React draws first. BootScreen, which the door's chunk waits behind, matches
-// it; the door and the turning away do not, so the loader's medallion and
-// wordmark go at once, as App does past BootScreen. A no-op once it is gone.
-const useHandedOffLoader = () => {
-  useEffect(() => {
-    document.getElementById('initial-loader')?.classList.add('to-app');
-  }, []);
-};
-
-// What a player under 18 is told. Plain: no sign, no bouncer, no joke, no
-// retry and no way back. The answer is the device's (src/lib/door.js keeps
-// it), so a reload, another tab or a deep link all land here.
-const Declined = () => {
-  useEffect(() => { document.title = DOOR_COPY.declinedTitle; }, []);
-  useHandedOffLoader();
-  // The status takes the focus (it is a landing point, not a control): the
-  // form the player was in has gone, and a screen reader starts here.
-  useEffect(() => focusWhenReady('[data-screen-root="door"] [role="status"]'), []);
-  return (
-    <div className={ROOM}>
-      <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
-      <main data-screen-root="door" className="relative z-10 w-full max-w-md">
-        <p
-          role="status"
-          className="panel-glass rounded-2xl px-6 py-8 text-center font-display text-xl font-bold leading-snug text-plush-100 focus:outline-none"
-        >
-          {DOOR_COPY.declined}
-        </p>
-      </main>
-    </div>
-  );
-};
 
 // "Had your birthday yet this year?" for the one birth year that cannot be
 // told from the year alone. It takes the form's place, so its heading takes
@@ -143,7 +103,13 @@ const YearForm = ({ onVerdict }) => {
   const [asking, setAsking] = useState(false);
   const { armed, whenArmed } = useArmedAfterOpen();
 
+  // An answer is given once. Where `inert` is not honoured (older engines) a
+  // second tap on Yes could land after the year was cleared, and a cleared
+  // year reads as no answer at all; the first answer is the only one.
+  const answered = useRef(false);
   const decide = (verdict) => {
+    if (answered.current) return;
+    answered.current = true;
     setYear('');
     onVerdict(verdict);
   };
@@ -277,7 +243,7 @@ const Scene = ({ phase, onVerdict, onOpened }) => {
               {DOOR_COPY.heading}
             </h1>
             <p className="mt-2 text-center font-display text-base min-[400px]:text-lg font-semibold leading-snug text-balance text-plush-100">{DOOR_COPY.intro}</p>
-            <p className="mt-2 text-center text-xs leading-relaxed text-plush-200">{DOOR_COPY.notice}</p>
+            <p className="mt-2 text-center text-xs leading-relaxed text-balance text-plush-200">{DOOR_COPY.notice}</p>
             <YearForm onVerdict={onVerdict} />
           </div>
         </div>
@@ -288,20 +254,23 @@ const Scene = ({ phase, onVerdict, onOpened }) => {
 
 /**
  * The door (src/components/DoorGate.jsx mounts it, as a lazy chunk, in front
- * of everything): `state` is the gate's, 'ask' or 'opening' (a pass is in) or
- * 'declined'. A year answers it ('in' passes, 'under' declines) through
- * onPass / onDecline, and onOpened says the door is open and the game may be
- * mounted.
+ * of everything): `state` is the gate's, 'ask' or 'opening' (a pass is in).
+ * A year answers it ('in' passes, 'under' declines) through onPass /
+ * onDecline, and onOpened says the door is open and the game may be mounted.
+ * The turning away is not here: the gate draws it itself (DoorDeclined.jsx).
  */
-const TheDoor = ({ state, onPass, onDecline, onOpened }) => {
-  if (state === 'declined') return <Declined />;
-  return (
-    <Scene
-      phase={state === 'opening' ? 'opening' : 'ask'}
-      onVerdict={(verdict) => (verdict === 'in' ? onPass() : onDecline())}
-      onOpened={onOpened}
-    />
-  );
-};
+const TheDoor = ({ state, onPass, onDecline, onOpened }) => (
+  <Scene
+    phase={state === 'opening' ? 'opening' : 'ask'}
+    onVerdict={(verdict) => {
+      // Only an explicit answer moves the door. Anything else (a stale
+      // 'invalid' reaching here) is nothing, never a decline: a decline is
+      // for good on this device.
+      if (verdict === 'in') onPass();
+      else if (verdict === 'under') onDecline();
+    }}
+    onOpened={onOpened}
+  />
+);
 
 export default TheDoor;

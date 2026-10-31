@@ -5,6 +5,7 @@ import { MotionConfig } from 'framer-motion';
 import { CONTENT_NOTICE } from '@/lib/contentNotice';
 import { DOOR_ART, OPENING_MS } from '@/lib/door';
 import TheDoor, { DOOR_COPY } from './TheDoor';
+import DoorDeclined from './DoorDeclined';
 
 // The door's scene, rendered. The gate that decides who sees it is
 // DoorGate.test.jsx, the pure rules are door.test.js, and what a real browser
@@ -109,6 +110,12 @@ describe('DOOR_COPY', () => {
 
   // A courtesy gate in the fiction, not age verification: it takes the
   // player's word, and nothing it says may claim more.
+  // The one line serves every refusal, so it must be true of each: a year
+  // four digits long but out of range is refused too (it once said "four digits").
+  it('words the error so that it is true of every year it is shown for', () => {
+    expect(DOOR_COPY.error).toBe('Enter a year, 1900 to this year.');
+  });
+
   it('does not claim to verify anyone', () => {
     expect(Object.values(DOOR_COPY).join(' ')).not.toMatch(/verif|complian|certif|legal|official|checked by|guarantee/i);
   });
@@ -182,7 +189,7 @@ describe('the door, asking', () => {
   });
 
   describe('a year that is not one', () => {
-    it.each(['', '  ', '19', '1990 5', 'abcd', '1899', String(YEAR + 1)])('says so, in place, for "%s"', (text) => {
+    it.each(['', '  ', '19', '1990 5', 'abcd', '1899', '2099', String(YEAR + 1)])('says so, in place, for "%s"', (text) => {
       const { host, calls } = render();
       armed();
       type(field(host), text);
@@ -346,6 +353,30 @@ describe('the door, asking', () => {
       expect(calls.pass).toHaveBeenCalledTimes(1);
     });
 
+    // `inert` on the open door is what stops a second tap in a modern engine;
+    // jsdom (like Safari before 15.5) has none, so this is the answer's own
+    // guard: the year was cleared at the first answer, a second one reads as
+    // no year at all, and that must never become a decline (it is for good).
+    it('takes one answer only: a second tap on Yes does not turn an adult away', () => {
+      const { host, calls } = toTheQuestion();
+      armed();
+      const yes = buttons(host).find((b) => b.textContent === 'Yes');
+      click(yes);
+      click(yes);
+      click(buttons(host).find((b) => b.textContent === 'Not yet'));
+      expect(calls.pass).toHaveBeenCalledTimes(1);
+      expect(calls.decline).not.toHaveBeenCalled();
+    });
+
+    it('takes one answer only: Not yet then Yes stays turned away, and lets nobody in', () => {
+      const { host, calls } = toTheQuestion();
+      armed();
+      click(buttons(host).find((b) => b.textContent === 'Not yet'));
+      click(buttons(host).find((b) => b.textContent === 'Yes'));
+      expect(calls.decline).toHaveBeenCalledTimes(1);
+      expect(calls.pass).not.toHaveBeenCalled();
+    });
+
     it('does not take a held Enter for an answer', () => {
       const { host } = toTheQuestion();
       for (const button of buttons(host)) expect(heldEnter(button), button.textContent).toBe(true);
@@ -385,9 +416,21 @@ describe('the door, asking', () => {
   });
 });
 
+// Drawn by the static gate (DoorGate.jsx), not the door's chunk, so a turned-away
+// device fetches nothing: rendered here on its own.
+const renderDeclined = () => {
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div');
+  document.body.appendChild(host);
+  const root = createRoot(host);
+  act(() => root.render(createElement(DoorDeclined)));
+  mounted.push({ host, root });
+  return { host };
+};
+
 describe('the door, turning someone away', () => {
   it('is plain: one status line, the words, and nothing to press', () => {
-    const { host } = render({ state: 'declined' });
+    const { host } = renderDeclined();
     const status = host.querySelector('[role="status"]');
     expect(status.textContent).toBe(DOOR_COPY.declined);
     // No retry, no way back, no joke, no scene.
@@ -396,14 +439,14 @@ describe('the door, turning someone away', () => {
   });
 
   it('takes the focus and sets its own title', () => {
-    const { host } = render({ state: 'declined' });
+    const { host } = renderDeclined();
     act(() => { vi.advanceTimersByTime(50); });
     expect(document.activeElement).toBe(host.querySelector('[role="status"]'));
     expect(document.title).toBe(DOOR_COPY.declinedTitle);
   });
 
   it('is in the page the way the scene is, for the shell\'s sake, and hands the loader off too', () => {
-    const { host } = render({ state: 'declined' });
+    const { host } = renderDeclined();
     expect(host.querySelector('main[data-screen-root="door"]')).not.toBeNull();
     expect(document.getElementById('initial-loader').classList.contains('to-app')).toBe(true);
   });

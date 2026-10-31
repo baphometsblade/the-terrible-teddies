@@ -38,12 +38,13 @@ const loadGate = async () => {
   });
   ({ default: DoorGate } = await import('./DoorGate'));
 };
-const render = (children = createElement('div', { 'data-testid': 'game' }, 'the game')) => {
+const render = (children = createElement('div', { 'data-testid': 'game' }, 'the game'), Wrap = null) => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement('div');
   document.body.appendChild(host);
   const root = createRoot(host);
-  act(() => root.render(createElement(DoorGate, null, children)));
+  const gate = createElement(DoorGate, null, children);
+  act(() => root.render(Wrap ? createElement(Wrap, null, gate) : gate));
   mounted.push({ host, root });
   return host;
 };
@@ -61,6 +62,9 @@ const press = (host, label) => act(() => {
 });
 const game = (host) => host.querySelector('[data-testid="game"]');
 const theDoor = (host) => host.querySelector('[data-testid="door"]');
+// The turning away is drawn by the gate itself (DoorDeclined), not by the door.
+const turnedAway = (host) => host.querySelector('[role="status"]')?.textContent.startsWith('Sorry, this room is 18+.') === true
+  && theDoor(host) === null;
 const quiet = (ms = 30) => new Promise((r) => setTimeout(r, ms));
 
 beforeEach(async () => {
@@ -113,6 +117,33 @@ describe('a device that has been let in', () => {
     await flush();
     expect(init).toHaveBeenCalledTimes(1);
   });
+
+  // The old order: analytics before the first commit, so a crash while the
+  // game first renders reaches the crash report. A start in an effect never
+  // runs when a child throws on the first render.
+  it('starts the analytics before the first commit, so a boot crash is still reported', async () => {
+    const init = await withAnalytics();
+    const seen = [];
+    class Catch extends Component {
+      state = { failed: false };
+      static getDerivedStateFromError() { return { failed: true }; }
+      componentDidCatch() { seen.push(init.mock.calls.length); }
+      render() { return this.state.failed ? createElement('p', null, 'crashed') : this.props.children; }
+    }
+    const Boom = () => { throw new Error('first render'); };
+    const quietErrors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const host = render(createElement(Boom), Catch);
+      expect(host.textContent).toBe('crashed');
+    } finally {
+      quietErrors.mockRestore();
+    }
+    // (React retries a throwing first render once, so the start may be asked
+    // for twice; initializePostHog itself is idempotent.)
+    expect(init).toHaveBeenCalled();
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toBeGreaterThan(0);
+  });
 });
 
 describe('a device with no answer', () => {
@@ -134,11 +165,15 @@ describe('a device with no answer', () => {
     expect(init).not.toHaveBeenCalled();
   });
 
-  it('shows the boot screen while the door\'s chunk arrives', () => {
+  it('shows the boot screen while the door\'s chunk arrives', async () => {
     const host = render();
     // Synchronously after the first render, before the chunk has resolved.
     expect(host.textContent).toContain('Loading');
     expect(theDoor(host)).toBeNull();
+    // And let the import in flight land before the test ends: left running,
+    // it outlived this test's mock and loaded the real door into the next
+    // one, which timed out on a loaded machine.
+    await flush();
   });
 
   it('warms the door and its art together', async () => {
@@ -195,7 +230,7 @@ describe('a device with no answer', () => {
       const host = render();
       await flush();
       press(host, 'minor');
-      expect(theDoor(host).getAttribute('data-state')).toBe('declined');
+      expect(turnedAway(host)).toBe(true);
       expect(game(host)).toBeNull();
       expect(JSON.parse(localStorage.getItem(DOOR_KEY))).toMatchObject({ v: 1, state: 'declined' });
     });
@@ -218,9 +253,17 @@ describe('a device with no answer', () => {
       const init = await withAnalytics();
       const again = render();
       await flush();
-      expect(theDoor(again).getAttribute('data-state')).toBe('declined');
+      expect(turnedAway(again)).toBe(true);
       expect(game(again)).toBeNull();
       expect(init).not.toHaveBeenCalled();
+    });
+
+    it('is told so by the gate itself: the door\'s chunk is never fetched', async () => {
+      localStorage.setItem(DOOR_KEY, doorRecord('declined', 1));
+      const host = render();
+      await flush();
+      expect(turnedAway(host)).toBe(true);
+      expect(door.imported).toBe(0);
     });
 
     it('does not fetch the art for a device that will never see it', async () => {
@@ -241,7 +284,7 @@ describe('a device with no answer', () => {
       expect(theDoor(host).getAttribute('data-state')).toBe('ask');
       localStorage.setItem(DOOR_KEY, doorRecord('declined', 5));
       act(() => { window.dispatchEvent(new StorageEvent('storage', { key: DOOR_KEY })); });
-      expect(theDoor(host).getAttribute('data-state')).toBe('declined');
+      expect(turnedAway(host)).toBe(true);
     });
 
     it('ignores another key, and a pass elsewhere', async () => {
@@ -272,7 +315,7 @@ describe('a device with no answer', () => {
       // The other tab declines; this tab has not heard (no storage event).
       localStorage.setItem(DOOR_KEY, doorRecord('declined', 5));
       press(host, 'adult');
-      expect(theDoor(host).getAttribute('data-state')).toBe('declined');
+      expect(turnedAway(host)).toBe(true);
       expect(game(host)).toBeNull();
       expect(JSON.parse(localStorage.getItem(DOOR_KEY))).toMatchObject({ state: 'declined', at: 5 });
       expect(init).not.toHaveBeenCalled();
@@ -311,14 +354,14 @@ describe('a device with no answer', () => {
       const host = render();
       await flush();
       press(host, 'minor');
-      expect(theDoor(host).getAttribute('data-state')).toBe('declined');
+      expect(turnedAway(host)).toBe(true);
       // The page's door remembers it: a remount of the gate (the crash
       // screen's Try Again) does not ask again.
       act(() => { mounted.pop().root.unmount(); });
       host.remove();
       const again = render();
       await flush();
-      expect(theDoor(again).getAttribute('data-state')).toBe('declined');
+      expect(turnedAway(again)).toBe(true);
     });
   });
 });
@@ -405,7 +448,7 @@ describe('the analytics, for real', () => {
     const again = render();
     await flush();
     await quiet();
-    expect(theDoor(again).getAttribute('data-state')).toBe('declined');
+    expect(turnedAway(again)).toBe(true);
     expect(sdkLoaded).not.toHaveBeenCalled();
     expect(posthog.init).not.toHaveBeenCalled();
     expect(posthog.capture).not.toHaveBeenCalled();

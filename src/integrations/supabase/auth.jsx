@@ -50,6 +50,14 @@ const clearResume = () => {
   try { sessionStorage.removeItem(RESUME_KEY); } catch { /* as above */ }
 };
 
+// A recovery landing is noted at module load, before anything has mounted:
+// the age door (src/components/DoorGate.jsx) can stand in front of the
+// provider for as long as the player takes to answer, supabase-js has already
+// consumed the address, and a reload at the door would otherwise lose the link
+// and leave the player signed in by it without ever being offered the panel.
+// The provider fills in the account once it knows it.
+if (LANDING.landing?.kind === 'recovery' && !readResume()) writeResume({ at: Date.now(), uid: null });
+
 // The reset panel's state:
 //   null                                  the game (or the sign-in screen)
 //   { stage: 'checking' }                 a recovery link is being checked
@@ -134,6 +142,7 @@ export const SupabaseProvider = ({ children }) => {
           // A dead token has no use in the address; one that could not be
           // checked stays, so a reload can try it again.
           if (reason === 'invalid') {
+            clearResume();
             window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
           }
           setRecovery((r) => {

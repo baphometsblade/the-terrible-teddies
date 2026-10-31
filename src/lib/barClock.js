@@ -21,8 +21,10 @@
 //   flicker   the one sign that idles with a slow flicker (last call, and
 //             only on the menu)
 //   note      a note taped under the sign, or null: 28 characters at most
-//   subtitle  the Battle button's line: 20 characters at most, the width the
-//             button's text column holds at its 260px minimum
+//   subtitle  the Battle button's line: 20 characters at most. That is an upper
+//             bound on count, not a promise of fit: the column is pixels, and
+//             wide capitals fill it sooner. e2e/responsive.spec.js measures
+//             every row's rendered line at 320px, so a line that wraps fails.
 export const BAR_CLOCK = Object.freeze([
   {
     id: 'early', from: 6, until: 12,
@@ -32,7 +34,8 @@ export const BAR_CLOCK = Object.freeze([
   {
     id: 'afternoon', from: 12, until: 16,
     sign: 'OPEN', tone: 'amber', lit: 'full', flicker: false, note: null,
-    subtitle: "Chuck's still here.",
+    // The Battle button's original line, kept: nothing already shipped goes.
+    subtitle: 'Go make Chuck cry',
   },
   {
     id: 'happyHour', from: 16, until: 19,

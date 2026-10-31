@@ -118,7 +118,7 @@ describe('the bar clock on the menu', () => {
 
   const NIGHT = [
     [10, 'OPEN EARLY', 'amber', "Chuck's still here."],
-    [13, 'OPEN', 'amber', "Chuck's still here."],
+    [13, 'OPEN', 'amber', "Go make Chuck cry"],
     [17, 'HAPPY HOUR', 'pink', 'Happy hour. Ruin it.'],
     [22, 'OPEN LATE', 'teal', "Chuck's three deep."],
     [1, 'LAST CALL', 'pink', 'Chuck never left.'],
