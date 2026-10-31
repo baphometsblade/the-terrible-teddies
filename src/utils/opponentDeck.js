@@ -3,7 +3,7 @@
 // forever — and so the composition logic is pure and unit-testable.
 import { ALL_CARDS } from '@/stores/gameStore';
 
-// Chuck's 8 named regulars — the recognisable core of his crew. Ids/stats/
+// Chuck's 7 named regulars — the recognisable core of his crew. Ids/stats/
 // abilities are moved here verbatim from the array GameBoard.jsx used to
 // hardcode; these are the pre-difficulty-modifier baselines (see
 // DIFFICULTY_CONFIG below for the attack/defense deltas applied on top).
@@ -14,14 +14,13 @@ export const OPPONENT_GOONS = [
   { id: 104, name: "Unhinged Cuddles", attack: 3, defense: 3, type: 'action', cost: 3, ability: 'fury', rarity: 'epic', description: "Smiles when it hurts. Smiles when it doesn't. The padded room has his name on it." },
   { id: 105, name: "Whiskey Whiskers", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Nursing the same drink since before the jukebox had songs." },
   { id: 106, name: "Landlord Lucifur", attack: 4, defense: 4, type: 'action', cost: 4, ability: 'shield', rarity: 'legendary', description: "Rent's due. Souls accepted. No pets, no exceptions, no mercy." },
-  { id: 107, name: "Custody-Battle Cub", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'stealth', rarity: 'rare', description: "Filed the custody papers himself. Brings his own suitcase. Wins by default." },
   { id: 108, name: "Void Where Prohibited", attack: 5, defense: 3, type: 'action', cost: 4, ability: 'piercing', rarity: 'epic', description: "Terms and conditions apply. Nobody has ever read them. He's in all of them." },
 ].map((card) => Object.freeze({ ...card }));
 
 const DECK_SIZE = 8;
 
 // Difficulty shapes the DRAW, not just the stat mods:
-//  - goonCount: how many of Chuck's 8 named regulars make the cut. Easy leans
+//  - goonCount: how many of Chuck's 7 named regulars make the cut. Easy leans
 //    on the (weaker, familiar) regulars; hard thins them out in favor of the
 //    catalog's scarier rarities.
 //  - rarities: the rarity band the catalog fill is drawn from.
@@ -65,6 +64,11 @@ export const CREW_NAMES = [
   "the Tequila Tribunal",
   "the Cab-Fare Dodgers",
   "the Free-Pretzel Mob",
+  "the Walk-of-Shame Brigade",
+  "the Little-Black-Book Gang",
+  "the Sloppy-Seconds Club",
+  "the Third-Date Regrets",
+  "the Booty-Call Bureau",
 ];
 
 // Fisher-Yates using an injectable rng so callers can seed determinism.
@@ -84,7 +88,7 @@ const sample = (pool, n, rng) => shuffle(pool, rng).slice(0, Math.max(0, n));
  * `() => number` in [0,1)) for deterministic tests; defaults to `Math.random`
  * for real play. Never imports React or touches app state.
  *
- * Deck = `goonCount` of Chuck's 8 named regulars (random subset) + the rest
+ * Deck = `goonCount` of Chuck's 7 named regulars (random subset) + the rest
  * drawn from the catalog (`ALL_CARDS`, `type === 'action'`, filtered to the
  * difficulty's rarity band) = 8 cards total. Catalog cards are reused as-is —
  * their art already exists — just copied (never mutating ALL_CARDS) and

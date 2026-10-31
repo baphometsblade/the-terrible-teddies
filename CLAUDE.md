@@ -940,14 +940,13 @@ owner's rule is that **shipped adult content stays, and new copy goes at least
 as far**. Nothing already shipped is removed, renamed or softened (a rewrite is
 accepted only where it is clearly funnier and at least as naughty). The few
 hard floors, which reviewers hold and nothing else: nothing sexual involving
-children or child-coded characters (so Chuck's three **card-attached** pools,
-`oppPlays`, `oppKills` and `oppLosesCreature`, spoken straight after a specific
-card, are profane and savage but never sexual: `teddyTalk.test.js` pins it for
-the explicit-word list), no sexual line wrapped around a random card name, no
-non-consent punchline, no slurs or punching at protected groups, no real
-people, scandals or brands, and **plain, accurate rules, prices, odds,
-confirmations, refunds, errors and the under-18 screen** (the funny lives around
-them, never in them). Two voices, never mixed: the House (the deadpan
+children or child-coded characters (the game has none: the Custody-Battle Cub,
+a small cub in Chuck's crew, was removed at the owner's request, and with it the
+restraint it had put on Chuck's card-attached lines and his crew names, which
+are as filthy as the rest again), no non-consent punchline, no slurs or
+punching at protected groups, no real people, scandals or brands, and **plain,
+accurate rules, prices, odds, confirmations, refunds, errors and the under-18
+screen** (the funny lives around them, never in them). Two voices, never mixed: the House (the deadpan
 bartender: menus, receipts, achievements, no exclamation marks) and Chuck
 (loud, the only voice with CAPS).
 

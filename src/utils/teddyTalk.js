@@ -27,6 +27,9 @@ export const QUIPS = {
     "I'm on a HOT STREAK! Ask anyone. Not the bartender.",
     "Name's Chuck. It's the last true thing I'll say tonight.",
     "Took something this morning. Label said 'may cause fighting.'",
+    "One of us gets a number. The other gets a restraining order.",
+    "Tonight's special: shots, regret, and your ass handed to you.",
+    "I'm told I have a type: anyone within punching distance.",
   ],
   // The same opener when the battle begins between midnight and five in the
   // morning, local time (startPoolFor). Card-agnostic, like gameStart.
@@ -104,7 +107,7 @@ export const QUIPS = {
     "Say hi to my cousin. Out on a technicality.",
     "This one owes me money. I'm collecting in violence.",
     "Nine hours sober and feral. Don't make eye contact.",
-    "DON'T make me look bad. I've got a reputation. A bad one.",
+    "DON'T fuck this up. I've got a reputation. A bad one.",
   ],
   oppKills: [
     "Aww, was that your favorite? Tragic.",
@@ -122,7 +125,7 @@ export const QUIPS = {
     "Call it. Time of death: whenever I said so.",
     "Down for the count. The count was one.",
     "Add it to the list of things I've broken. Page two.",
-    "Dead. Beautiful. Somebody frame it.",
+    "Dead. Fucking. Gorgeous.",
   ],
   oppHitsFace: [
     "Right in the beans!",
@@ -140,6 +143,10 @@ export const QUIPS = {
     "I've hit worse: a parked car, a mailbox, my own reflection.",
     "Nothing personal. Your face just keeps getting in the way.",
     "Have fun explaining that at work. Then at home. Then court.",
+    "Nice mark. Wear a scarf. Tell 'em it's a hickey.",
+    "That's not a bruise, that's a hickey with anger issues.",
+    "Complimentary facial. Mostly exfoliation.",
+    "Right in the face, no foreplay. That's romance.",
   ],
   oppLosesCreature: [
     "You MONSTER. He had a family. Of decorative pillows.",
@@ -156,7 +163,7 @@ export const QUIPS = {
     "I bailed that one out an hour ago! AN HOUR!",
     "Shit. Shit shit shit. Okay. Shit.",
     "That one had a tab! Now it's MINE! I hate this!",
-    "You bastard! I had a whole scheme built around that one.",
+    "You bastard! I had plans for that one. Bad ones.",
   ],
   oppTakesFaceHit: [
     "OW. Okay. OKAY. Now I'm cranky.",
@@ -193,6 +200,7 @@ export const QUIPS = {
     "I took something for the pain. Several somethings. Hi!",
     "Tell my liver I'm sorry. Tell the bar I'm not.",
     "Beaten by someone who tips. I've never been so ashamed.",
+    "Safe word! SAFE WORD! ...We never picked one.",
   ],
   playerRally: [
     "Oh COME ON. That's cheating-adjacent!",
@@ -209,6 +217,7 @@ export const QUIPS = {
     "That's not a rally. That's doping. I'm telling the bartender.",
     "Great. A seminar. In a bar. With bears. I hate it here.",
     "All fluffed up and nowhere to go. I know the feeling.",
+    "Pace yourselves! Some of us can't.",
   ],
   oppWins: [
     "Get stuffed, kid. Literally.",
@@ -226,6 +235,7 @@ export const QUIPS = {
     "That was fun. Call me. ...Don't call me. ...Call me.",
     "I get the booth, the last pretzel, and your respect.",
     "I WON! Somebody write this down! ...Got a pen?",
+    "Save my number. I'll call when I'm lonely and need to win.",
   ],
   oppLoses: [
     "This is rigged. I want a rematch and a juice box.",
@@ -264,6 +274,8 @@ export const QUIPS = {
     "You're not the villain. You're why people leave early.",
     "I'd call you a clown, but clowns get paid.",
     "You smell like a bar floor that gave up and moved in.",
+    "Your deck is like your love life: over by turn five.",
+    "You fight like you flirt: loud, desperate, over in a minute.",
   ],
 };
 

@@ -130,13 +130,13 @@ export const BOARD_LINES = {
     'Ending turn. Passing the bottle.',
   ],
   // {card} stays early in each line so the phone ticker's single-line cut
-  // keeps the name. Chuck's side only: every card he plays can be the
-  // Custody-Battle Cub, so none of these is anything but plain about it.
+  // keeps the name. Chuck's side only.
   chuckPlays: [
     `${OPPONENT_NAME} slammed down {card}`,
     `${OPPONENT_NAME} dragged in {card}`,
     `${OPPONENT_NAME} threw {card} on the felt`,
     `${OPPONENT_NAME} wheeled in {card}`,
+    `${OPPONENT_NAME} pulled {card} out of his coat`,
     `${OPPONENT_NAME} sent in {card}. Nobody asked.`,
   ],
   // Chuck's creature hitting yours / your face. Only the verb is voiced.

@@ -1,7 +1,7 @@
 # Card art
 
 Drop card illustrations here as `<cardId>.webp` (player cards use their
-`ALL_CARDS` ids; Chuck's goons use their opponent ids 101–108).
+`ALL_CARDS` ids; Chuck's goons use their opponent ids 101–106 and 108).
 `TeddyCard`'s `ArtOrEmoji` slot picks them up automatically — any card
 without a file here (or whose image fails to load) falls back to the emoji
 cast, so partial art is safe to ship.
@@ -262,6 +262,6 @@ script, which never reads that variable. That script always sends the negative
 prompt, and lets the endpoint choose its own guidance (A1111 runs at cfg 7).
 
 If you want to test whether guidance helps, render the same cards on the same
-machine twice, changing only `SD_GUIDANCE` on the diffusers runner. The eight
-that already match — 20, 45, 46, 52, 101, 103, 105, 107 — are the reference for
+machine twice, changing only `SD_GUIDANCE` on the diffusers runner. The seven
+that already match — 20, 45, 46, 52, 101, 103, 105 — are the reference for
 what "right" looks like.

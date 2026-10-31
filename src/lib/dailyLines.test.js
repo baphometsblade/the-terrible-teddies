@@ -65,8 +65,8 @@ describe('the line under "claimed"', () => {
 });
 
 describe('the card-day lead-in and the ready heading', () => {
-  // Any card can land on a card day, the Custody-Battle Cub included: the
-  // lead-in is fixed, says deck, and wraps no card.
+  // Any card can land on a card day: the lead-in is fixed, says deck, and
+  // wraps no card.
   it('is the plain deck line', () => {
     expect(CARD_DAY_LEAD_IN).toBe('From the deck behind the bar:');
   });

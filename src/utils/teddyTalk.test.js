@@ -115,64 +115,6 @@ describe('startPoolFor', () => {
   });
 });
 
-// Chuck's card-attached pools are spoken right after "Chuck slammed down
-// {card}" (oppPlays), when his creature kills yours (oppKills) and when yours
-// kills his (oppLosesCreature). The card in question can be the Custody-Battle
-// Cub, a small cub in Chuck's crew, so these three stay profane and savage
-// but are never sexual: no line in them may use a word from this list. The
-// pools that follow no card (gameStart, lastCall, oppWins and the rest) have
-// no such limit, and nothing here scans for any other kind of word.
-describe('the card-attached pools are never sexual', () => {
-  const CARD_ATTACHED = ['oppPlays', 'oppKills', 'oppLosesCreature'];
-  // Stems, not whole words: a plural or an -ing form ("boners", "sexting",
-  // "hookups") is the same word, and wave B writes in exactly those forms. The
-  // lookaheads keep the false friends (cocktail, sextant, cumin, Dickens) out.
-  const SEXUAL = /\b(?:sex(?!tant|tet|ton|ism)|naked|nude|horny|arous|boner|erection|orgasm|cum(?!in|ulus|ber|quat)|dick(?!ens|ering)|cock(?!tail|pit|roach|ney|eyed)|pussy|pussies|tits?\b|titties|boob|nipple|kink|fetish|foreplay|hook ?up|booty|strip(?:pers?|ped|ping)?\b|blowjob|handjob|lap dance|spank|grope|fondl|molest|thrust|moan|bondage|dildo|slut|whore)/i;
-  const SEXUAL_WORDS = [
-    'sex', 'sexy', 'sexual', 'naked', 'nude', 'horny', 'aroused', 'boner', 'erection', 'orgasm',
-    'cum', 'dick', 'cock', 'pussy', 'tits', 'boobs', 'kinky', 'fetish', 'foreplay', 'hookup',
-    'booty', 'stripper', 'blowjob', 'handjob', 'lap dance',
-  ];
-  const sexualWordIn = (line) => line.match(SEXUAL)?.[0] ?? null;
-
-  it('has all three pools, so a rename cannot take them out from under the check', () => {
-    for (const pool of CARD_ATTACHED) {
-      expect(Array.isArray(QUIPS[pool]), pool).toBe(true);
-      expect(QUIPS[pool].length, pool).toBeGreaterThan(0);
-    }
-  });
-
-  it('holds no sexual word in any of them', () => {
-    for (const pool of CARD_ATTACHED) {
-      for (const line of QUIPS[pool]) {
-        expect(sexualWordIn(line), `${pool}: "${line}"`).toBeNull();
-      }
-    }
-  });
-
-  // The check must be able to fail: without this, a broken pattern would pass
-  // every line and the guard above would guard nothing.
-  it('catches each word on the list, and its plural, and the -ing forms spelled out', () => {
-    for (const word of SEXUAL_WORDS) {
-      for (const form of [word, word.endsWith('s') ? word : `${word}s`]) {
-        expect(sexualWordIn(`Chuck says ${form.toUpperCase()}, loudly.`), form).not.toBeNull();
-      }
-    }
-    for (const line of [
-      'Dicks out for Chuck.', 'Two cocks walk into a bar.', 'The strippers are leaving.',
-      'Hookups ruin everything.', 'Sexting is a crime.', 'Nudes at dawn.', 'Cumming soon.',
-      'Chuck is spanking this one.', 'Time to grope the competition.', 'Fetishes galore',
-    ]) expect(sexualWordIn(line), line).not.toBeNull();
-  });
-
-  it('leaves the false friends alone', () => {
-    for (const line of [
-      'A cocktail of sextants and cumin.', 'Dickens would approve.', 'Brass knuckles and a glass jaw.',
-      'Sussex, cockpit, cucumber.',
-    ]) expect(sexualWordIn(line), line).toBeNull();
-  });
-});
-
 // The copy deck's lines are in every pool, next to the ones that shipped.
 describe('the after-dark deck', () => {
   it('grew every pool, and kept what shipped', () => {

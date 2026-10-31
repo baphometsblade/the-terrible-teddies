@@ -60,7 +60,6 @@ const GOONS = [
   { id: 104, name: 'Unhinged Cuddles', type: 'action', fur: 'bubblegum pink', visual: 'bear with a too-wide stitched grin, popped seams leaking stuffing', scene: 'Extreme close-up in a padded room under harsh white strip light, grinning directly into the lens.' },
   { id: 105, name: 'Whiskey Whiskers', type: 'action', fur: 'russet ginger', visual: 'grizzled bear, greying muzzle, half-moon glasses, tiny tumbler', scene: 'Tight profile at the far end of the bar under amber lamplight, staring into his last drink.' },
   { id: 106, name: 'Landlord Lucifur', type: 'action', fur: 'crimson black', visual: 'horned bear, velvet smoking jacket, eviction notice, ring of keys', scene: 'Low hero angle in a condemned stairwell under a red exit-sign glow, nailing a notice to a door.' },
-  { id: 107, name: 'Custody-Battle Cub', type: 'action', fur: 'pale cream', visual: 'small cub, one drooping eye, oversized coat, battered suitcase', scene: 'Wide shot in an empty courthouse corridor at dawn, dragging a suitcase toward the doors.' },
   { id: 108, name: 'Void Where Prohibited', type: 'action', fur: 'matte void black', visual: 'bear dissolving into static at the edges, hollow glowing eye sockets', scene: 'Dutch tilt in a pitch-dark room lit only by a buzzing broken TV, half-eaten by static.' },
 ];
 
