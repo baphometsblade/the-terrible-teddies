@@ -38,7 +38,7 @@ import GameBoard from './GameBoard';
 import { useGameStore, LAST_CALL_HP } from '../../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
 import { QUIPS } from '../../utils/teddyTalk';
-import { lastCallLog, RECEIPT_FOOTERS } from '@/lib/houseLines';
+import { lastCallLog, RECEIPT_FOOTERS, BOARD_LINES } from '@/lib/houseLines';
 import { RESULT_TITLES, RESULT_SUBLINES } from '../../utils/resultLines';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -402,7 +402,8 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
     expect(container.querySelector('[data-banner="last-call"]'), 'Your turn must not cut it short').not.toBeNull();
     await advance(700); // past last call's 1.3 s
     expect(bannerKind()).toBe('turn');
-    expect(container.querySelector('[data-banner="turn"]').textContent).toBe('Your turn');
+    // The banner's words are one of the House's (picked once per banner).
+    expect(BOARD_LINES.bannerPlayer).toContain(container.querySelector('[data-banner="turn"]').textContent);
     await advance(1500);
     expect(bannerKind()).toBeNull();
   });
@@ -482,7 +483,9 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
     expect(bannerKind(), 'last call follows it').toBe('last-call');
     const said = logLines().find((line) => QUIPS.lastCallChuckDown.some((q) => line === `🧸 Chuck: "${q}"`));
     expect(said, 'Chuck bluffs from his own pool').toBeTruthy();
-    expect(logLines().some((line) => QUIPS.lastCall.some((q) => line === `🧸 Chuck: "${q}"`))).toBe(false);
+    // The deck's last-call lines read right for either side, so Chuck's own
+    // pool carries them too: nothing he says here is outside it.
+    for (const q of QUIPS.lastCall) expect(QUIPS.lastCallChuckDown).toContain(q);
     fixedCrew.opponentHp = null;
   });
 

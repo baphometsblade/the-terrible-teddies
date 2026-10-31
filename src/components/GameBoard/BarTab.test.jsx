@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import BarTab, { REWARD_BEATS } from './BarTab';
 import { useGameStore } from '@/stores/gameStore';
 import { TAB_COPY } from '@/lib/houseLines';
+import { rankUp } from '@/lib/houseRank';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -125,6 +126,18 @@ describe('BarTab', () => {
     expect(container.querySelector('[data-level-up]').textContent).toContain('Level 2');
     expect(container.querySelector('[data-level-up]').textContent).toContain('+200');
     expect(container.querySelector('[data-pass-tier]').textContent).toBe('Battle Pass tier 2 unlocked');
+
+    // Level 1 to 2 stays on the first rung: no promotion line.
+    expect(container.querySelector('[data-rank-up]')).toBeNull();
+
+    // A level-up that crosses a house rank prints the promotion, once, under the bonus.
+    await renderTab({
+      ...baseRewards, progress: { ...levelProgress, levelBefore: 4, levelAfter: 5 }, tierBefore: 1, tierAfter: 1,
+    });
+    const promoted = container.querySelectorAll('[data-rank-up]');
+    expect(promoted).toHaveLength(1);
+    expect(promoted[0].textContent).toBe(rankUp(4, 5).promoted);
+    expect(container.querySelector('[data-level-up]').contains(promoted[0])).toBe(true);
 
     // A battle that gained XP but no level and opened no tier: the bar, and nothing else.
     await renderTab({ ...baseRewards, progress: { ...levelProgress, levelsGained: 0 }, tierBefore: 2, tierAfter: 2 });

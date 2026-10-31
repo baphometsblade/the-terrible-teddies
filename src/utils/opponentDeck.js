@@ -42,7 +42,7 @@ export const OPPONENT_HEALTH_MOD_BY_DIFFICULTY = Object.fromEntries(
 
 // Flavour names for the crew Chuck brings this fight — shown to the player so
 // each battle reads as a distinct lineup, not just "the opponent" again.
-const CREW_NAMES = [
+export const CREW_NAMES = [
   "the Last-Call Crew",
   "the Dumpster Cartel",
   "the Repo Regulars",

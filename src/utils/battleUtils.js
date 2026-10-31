@@ -234,7 +234,7 @@ export const describeBlockedTarget = (target, defenderField) => {
   const taunt = creatures.find((c) => c.ability === 'taunt');
   if (taunt) {
     return {
-      title: 'Must attack taunt!',
+      title: 'Slap the taunt first',
       description: `${taunt.name} is taunting you — nobody else until it's down.`,
     };
   }
@@ -242,7 +242,7 @@ export const describeBlockedTarget = (target, defenderField) => {
   const protector = creatures.find((c) => c.ability === 'protect');
   if (protector) {
     return {
-      title: 'Protected!',
+      title: 'Protection racket',
       description: `${protector.name} is shielding the rest. Go through it first.`,
     };
   }

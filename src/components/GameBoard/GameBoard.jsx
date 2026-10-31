@@ -13,7 +13,7 @@ import { celebrate } from '@/lib/celebrate';
 import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures, gainedFuryStack, getValidTargets, describeBlockedTarget } from '../../utils/battleUtils';
 import { pickQuip, startPoolFor, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { pickResultCopy, RESULT_TITLES, RESULT_SUBLINES } from '../../utils/resultLines';
-import { LAST_CALL_BANNER, lastCallLog } from '@/lib/houseLines';
+import { LAST_CALL_BANNER, lastCallLog, BOARD_LINES, fillLine, pickLine } from '@/lib/houseLines';
 import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
@@ -22,11 +22,12 @@ import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder, ownedEmotes } from '@/lib/cosmetics';
 import { abilityRules, describeCard } from '@/lib/abilities';
 import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, canRally, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
+import FlavorLine from '../FlavorLine';
 import LeaveBattleDialog from './LeaveBattleDialog';
 import BarTab, { REWARD_BEATS } from './BarTab';
 import { battlePassTier } from './battlePassTiers';
 import { placePreview, CARD_W, CAPTION_W, CAPTION_ROW_W } from './previewPlacement';
-import { lastCallDue } from './lastCall';
+import { lastCallDue, nearDeathDue } from './lastCall';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 
@@ -357,16 +358,19 @@ const CardPreview = ({
                 <div className="mt-0.5 text-xs leading-snug text-plush-100">{rules}</div>
               </>
             )}
-            {/* The flavor line, quoted, under the rules (or alone, for a card
-                with none). Its height is counted by captionHeight, which the
-                placement reserves it by. */}
+            {/* The flavor line, under the rules (or alone, for a card with
+                none), drawn by FlavorLine like every other screen's: the
+                caption only sets it smaller and italic (the ! utilities beat
+                FLAVOR_LINE's own size and leading), the 11px / 15px that
+                captionHeight counts the room by. The placement counted it
+                with quotation marks round it, which FlavorLine does not
+                add, so it can only take less room than reserved. */}
             {flavor && (
-              <p
+              <FlavorLine
+                card={card}
                 data-preview-flavor=""
-                className={`text-[11px] italic leading-[15px] text-plush-200 ${rules ? 'mt-1.5 border-t border-white/10 pt-1.5' : ''}`}
-              >
-                {`“${flavor}”`}
-              </p>
+                className={`!text-[11px] !leading-[15px] italic ${rules ? 'mt-1.5 border-t border-white/10 pt-1.5' : ''}`}
+              />
             )}
             {/* Each key with its action, unbroken; the pairs wrap onto two
                 lines in the narrow caption beside the card. */}
@@ -670,6 +674,17 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const refocusRef = useRef(null);
   const endTurnRef = useRef(null);
 
+  // A line from one of the House's lists (BOARD_LINES), never the same one
+  // twice running. Picked where the line is written or the banner raised,
+  // never while rendering: the panel re-renders and a pick made there would
+  // change under the player.
+  const lastLinesRef = useRef({});
+  const boardLine = useCallback((key) => {
+    const line = pickLine(BOARD_LINES[key], lastLinesRef.current[key]);
+    lastLinesRef.current[key] = line;
+    return line;
+  }, []);
+
   // Add to battle log. Ids must be unique — several entries are appended in
   // the same millisecond during the opponent's turn, so Date.now() collides
   // and duplicate React keys corrupt the rendered list.
@@ -693,6 +708,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // shot on the game-over screen. Decorative flavor — aria-hidden, the battle
   // log stays the accessible record.
   const [oppQuip, setOppQuip] = useState(null);
+  // The line under the table on Chuck's turn, picked as the turn starts.
+  const [thinkingLine, setThinkingLine] = useState(BOARD_LINES.thinking[0]);
   const [endQuip, setEndQuip] = useState(null);
   const quipIdRef = useRef(0);
   // One counter across both mouths, so the centre line can show whichever
@@ -818,7 +835,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
 
     if (emote.effect === 'confetti') {
       celebrate({ particleCount: 90, spread: 75, origin: { y: 0.75 } });
-      addToBattleLog('🎉 You fire the confetti cannon. Chuck is unimpressed but covered in glitter.');
+      addToBattleLog(`You fire the confetti cannon. ${OPPONENT_NAME} is unimpressed, and covered in glitter. He'll be finding it for weeks. In places.`);
       return;
     }
     const text = pickQuip('playerEmote', playerQuip?.text ?? null);
@@ -953,7 +970,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     dismissToasts();
     const timers = [];
     const show = () => {
-      setBanner({ id, turn: currentTurn });
+      setBanner({
+        id,
+        turn: currentTurn,
+        text: boardLine(currentTurn === 'player' ? 'bannerPlayer' : 'bannerChuck'),
+      });
       turnBannerEndsRef.current = Date.now() + BANNER_MS;
       timers.push(setTimeout(() => setBanner((b) => (b?.id === id ? null : b)), BANNER_MS));
     };
@@ -968,7 +989,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       turnBannerEndsRef.current = 0;
       setBanner((b) => (b?.id === id ? null : b));
     };
-  }, [currentTurn, deckReady, gameOver, dismissToasts]);
+  }, [currentTurn, deckReady, gameOver, dismissToasts, boardLine]);
 
   // Last call. The first time either side is down to LAST_CALL_HP or fewer
   // (lastCall.js), once a game: the room lights up (data-last-call on the
@@ -979,6 +1000,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // game (gameId) is a new night.
   const [lastCall, setLastCall] = useState(false);
   const lastCallRef = useRef(null);
+  const lastCallSpokeRef = useRef(null);
   const raiseLastCallBanner = useCallback(() => {
     // After a turn banner that is up, never over it.
     const wait = Math.max(0, turnBannerEndsRef.current - Date.now());
@@ -997,6 +1019,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     });
     if (!due) return;
     lastCallRef.current = gameId;
+    // The commit it spoke in, so oppNearDeath (below, the later effect, which
+    // would otherwise replace this bubble) can stand aside for it.
+    lastCallSpokeRef.current = { gameId, playerHealth, opponentHealth };
     setLastCall(true);
     addToBattleLog(lastCallLog(due.side, due.hp));
     raiseLastCallBanner();
@@ -1198,11 +1223,15 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // Chuck starts sweating when he's nearly unstuffed — once per game.
   useEffect(() => {
     if (gameOver) return;
-    if (opponentHealth > 0 && opponentHealth <= 8 && !nearDeathQuippedRef.current) {
+    if (nearDeathDue({
+      gameId, quipped: nearDeathQuippedRef.current, gameOver, playerHealth, opponentHealth,
+      lastCallSpoke: lastCallSpokeRef.current,
+    })) {
+      // Last call, spoken in this commit, wins (see nearDeathDue).
       nearDeathQuippedRef.current = true;
       speak('oppNearDeath');
     }
-  }, [opponentHealth, gameOver, speak]);
+  }, [opponentHealth, playerHealth, gameId, gameOver, speak]);
 
   // Handle draw phase. The draw mutates playerDeck/playerHand — this effect's
   // own dependencies — so without a per-turn guard it re-fires during the
@@ -1219,9 +1248,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     lastDrawRef.current = drawKey;
 
     if (playerDeck.length === 0) {
-      addToBattleLog("Deck is empty!");
+      addToBattleLog("Deck is empty. The bartender won't pour another.");
     } else if (playerHand.length >= MAX_HAND_SIZE) {
-      addToBattleLog(`Hand is full (${MAX_HAND_SIZE}) — skipped draw`);
+      addToBattleLog(`Hand is full (${MAX_HAND_SIZE}) — skipped draw. Put something down.`);
     } else {
       const drawnCard = playerDeck[0];
       setPlayerHand(prev => [...prev, drawnCard]);
@@ -1262,7 +1291,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
 
     if (playerEnergy < cost) {
       toast({
-        title: "Not enough energy!",
+        title: "Tapped out",
         description: `${card.name} costs ${cost} energy`,
         variant: "destructive",
       });
@@ -1288,7 +1317,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     if (playerField.length >= MAX_FIELD_SIZE) {
       // Nothing removes a teddy by hand, so the copy cannot say "remove one".
       toast({
-        title: "Field is full!",
+        title: "Standing room only",
         description: `${MAX_FIELD_SIZE} teddies is the limit. One has to go down before ${card.name} can join.`,
         variant: "destructive",
       });
@@ -1373,7 +1402,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
           addToBattleLog(`${card.name}: drew ${cardsToDraw} — the dealer likes you`);
         } else {
           addToBattleLog(`${card.name} drew nothing — your deck is empty.`);
-          toast({ title: 'Nothing to draw', description: `${card.name} came up empty — your deck is out of cards.` });
+          toast({ title: "Keg's empty", description: `${card.name} came up empty — your deck is out of cards.` });
         }
         break;
       }
@@ -1400,7 +1429,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const selectCardForAttack = (card) => {
     if (currentTurn !== 'player' || phase !== 'main' || gameOver) return;
     if (card.type === 'trap') {
-      toast({ title: "Traps can't attack", description: `${card.name} springs automatically when an enemy strikes it.`, variant: "destructive" });
+      toast({ title: "Let it come to you", description: `${card.name} springs automatically when an enemy strikes it.`, variant: "destructive" });
       return;
     }
     if (card.summoningSick) {
@@ -1412,7 +1441,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       return;
     }
     if (card.hasAttacked) {
-      toast({ title: "Already attacked", description: `${card.name} has already attacked this turn`, variant: "destructive" });
+      toast({ title: "Needs a minute", description: `${card.name} has already attacked this turn`, variant: "destructive" });
       return;
     }
 
@@ -1515,7 +1544,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     const validTargets = getValidTargets(playerField, opponentField);
     if (validTargets.length > 0) {
       toast({
-        title: "Blocked!",
+        title: "Not on the list",
         description: `${OPPONENT_NAME}'s goons are in the way. Deal with them first.`,
         variant: "destructive"
       });
@@ -1581,7 +1610,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setTargetingMode(false);
     setCurrentTurn('opponent');
     setPhase('end');
-    addToBattleLog("Ending turn...");
+    addToBattleLog(boardLine('endTurn'));
     safeTimeout(executeOpponentTurn, 1000);
   };
 
@@ -1599,13 +1628,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       particleCount: 120, spread: 90, origin: { y: 0.7 },
       colors: ['#fbbf24', '#f59e0b', '#f97316', '#fde68a'],
     });
-    addToBattleLog('⚡ RALLY! Your teddies scream something unprintable — +1 attack, fully restuffed!');
+    addToBattleLog('RALLY! Your teddies scream something unprintable — +1 attack, fully restuffed!');
     speak('playerRally');
   };
 
   // Opponent AI turn
   const executeOpponentTurn = () => {
-    addToBattleLog(`${OPPONENT_NAME}'s turn. Brace your beans.`);
+    setThinkingLine(boardLine('thinking'));
+    addToBattleLog(boardLine('chuckTurn'));
 
     // Remove stealth from opponent cards. Compute the cleared field once and
     // use it for BOTH the state update and the attack loop below — the loop
@@ -1638,7 +1668,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       playedThisTurn = played;
       setOpponentField(prev => [...prev, ...played]);
       playSound('cardPlay');
-      plays.forEach(c => addToBattleLog(`${OPPONENT_NAME} slammed down ${c.name}`));
+      plays.forEach(c => addToBattleLog(fillLine(boardLine('chuckPlays'), { card: c.name })));
       speak('oppPlays');
     }
 
@@ -1695,7 +1725,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 ? `${target.name} is FURIOUS now! +1 attack`
                 : `${target.name} is capped out at +3 fury — poke away.`);
             }
-            logs.push(`${card.name} roughed up ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
+            logs.push(fillLine(boardLine('oppHit'), { attacker: card.name, target: target.name, dmg, hp: survivor.currentHp }));
           } else {
             livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
             faceDamage += overkill;
@@ -1725,7 +1755,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
           playSound('attack');
           waveFx.push({ card: card.instanceId, strike: true });
           if (oppFaceDamage > 0) waveFx.push({ face: 'player', hit: true, tone: 'damage', text: `−${oppFaceDamage}` });
-          logs.push(`${card.name} socked you right in the face for ${oppFaceDamage}!`);
+          logs.push(fillLine(boardLine('oppFace'), { attacker: card.name, dmg: oppFaceDamage }));
         }
       });
 
@@ -1756,7 +1786,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
         // so energy tracks the turn the player is about to take.
         setPlayerEnergy(energyForTurn(turnCount + 1));
         setPhase('draw');
-        addToBattleLog("Your turn. Get him.");
+        addToBattleLog(boardLine('yourTurn'));
       }, 500);
     }, 1000);
   };
@@ -1788,7 +1818,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     }
     if (liveRef.current.gameOver) return;
     clearAllTimeouts(); // cancel any in-flight opponent-turn steps
-    addToBattleLog(`You conceded. ${OPPONENT_NAME} is doing a little dance.`);
+    addToBattleLog(boardLine('conceded'));
     setPlayerHealth(0); // routes through the existing defeat flow
   };
 
@@ -2319,7 +2349,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       <div className="rotate-hint" aria-hidden="true">
         <Smartphone className="h-10 w-10 text-brass-300" strokeWidth={1.75} />
         <p className="font-display text-xl font-extrabold text-white">Turn your phone upright</p>
-        <p className="text-sm text-plush-200 max-w-xs">The table needs more height than a sideways phone has.</p>
+        <p className="text-sm text-plush-200 max-w-xs">The table needs more height than a sideways phone has. {OPPONENT_NAME} will wait.</p>
       </div>
 
       {/* The board's own way out, in the slot Chuck's rail leaves for it
@@ -2403,10 +2433,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               {/* The headline and the line under it come from the tables in
                   resultLines.js, picked once when the game ended (resultCopy).
                   The first of each stands in for the instant before that. */}
-              <h2 className={`relative font-display text-3xl sm:text-4xl font-extrabold leading-tight mb-2 ${won ? 'text-brass-gradient' : 'text-plush-100'}`}>
+              <h2 className={`relative text-balance font-display text-3xl sm:text-4xl font-extrabold leading-tight mb-2 ${won ? 'text-brass-gradient' : 'text-plush-100'}`}>
                 {resultCopy?.title ?? RESULT_TITLES[won ? 'win' : 'loss'][0]}
               </h2>
-              <p className="relative mb-2 text-plush-200">
+              <p className="relative mb-2 text-balance text-plush-200">
                 {resultCopy?.subline ?? RESULT_SUBLINES[won ? 'win' : 'loss'][0]}
               </p>
               {endQuip && (
@@ -2432,7 +2462,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   className="relative mb-5 rounded-xl bg-black/25 ring-1 ring-white/5 p-3"
                 >
                   <p className="text-sm mb-2 text-plush-200">
-                    {cardPacks === 0 ? '📦 Out of packs? Your squad isn’t going to recruit itself.' : '💎 Low on gems? Chuck says being broke is a personality flaw.'}
+                    {cardPacks === 0 ? 'Out of packs. The Shop keeps a few behind the bar.' : 'Low on gems. The Shop is open all night. Nobody\'s judging.'}
                   </p>
                   <button
                     type="button"
@@ -2801,8 +2831,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                     {banner.lastCall
                       ? <span className="text-plush-100">{LAST_CALL_BANNER}</span>
                       : banner.turn === 'player'
-                        ? <span className="text-brass-gradient">Your turn</span>
-                        : <span className="text-red-300">{OPPONENT_NAME}&apos;s turn</span>}
+                        ? <span className="text-brass-gradient">{banner.text}</span>
+                        : <span className="text-red-300">{banner.text}</span>}
                   </div>
                 </div>
               )}
@@ -2952,7 +2982,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
             <div className="flex min-h-11 flex-row flex-wrap items-center justify-center gap-2 md:flex-col md:items-stretch">
               {!gameOver && !playerTurn && (
                 <span className="text-xs italic text-plush-300" aria-hidden="true">
-                  {OPPONENT_NAME} is making his move…
+                  {thinkingLine}
                 </span>
               )}
               {targetingMode && (

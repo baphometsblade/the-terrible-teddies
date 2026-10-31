@@ -78,3 +78,100 @@ export const TAB_COPY = {
   // so the two cannot drift apart.
   chuckSpoken: (figure) => `${figure} damage, ${TAB_COPY_STATUS.toLowerCase()}`,
 };
+
+// The board's recurring lines, in the House's voice, as lists the board picks
+// from (pickLine) when the moment comes: a turn banner is picked once per
+// banner, the thinking line once per Chuck turn, a log line once as it is
+// written, never while rendering. The first line of each list is the one the
+// board shipped with; the rest are the copy deck's. Every variant keeps the
+// facts of the shipped line (whose turn it is, which card, the damage and the
+// HP left): only the voice around them varies.
+//
+// `{card}`, `{attacker}`, `{target}`, `{dmg}` and `{hp}` are filled by
+// fillLine. Chuck's pools are in teddyTalk.js; the result panel's in
+// resultLines.js.
+export const BOARD_LINES = {
+  // Decorative, 1.3 s, aria-hidden. 13 characters is what the banner holds on
+  // the felt at 320px (houseLines.test.js).
+  bannerPlayer: ['Your turn', "You're up", 'Your shot', 'Your swing'],
+  bannerChuck: [`${OPPONENT_NAME}'s turn`, `${OPPONENT_NAME}'s up`, `${OPPONENT_NAME} swings`, `${OPPONENT_NAME}'s shot`],
+  // The row under the table on Chuck's turn (text-xs italic, aria-hidden).
+  thinking: [
+    `${OPPONENT_NAME} is making his move…`,
+    `${OPPONENT_NAME} is making a terrible decision…`,
+    `${OPPONENT_NAME} is finishing his drink first…`,
+    `${OPPONENT_NAME} is reading his cards upside down…`,
+    `${OPPONENT_NAME} is consulting his liver…`,
+    `${OPPONENT_NAME} is cheating, probably…`,
+    `${OPPONENT_NAME} is checking his pockets for a plan…`,
+    `${OPPONENT_NAME} is trying to remember the rules…`,
+  ],
+  // The log, which a screen reader reads out. The first turn's "Your turn.
+  // Make it hurt." is not in these: it is pinned and it opens the game.
+  yourTurn: [
+    'Your turn. Get him.',
+    `Your turn. ${OPPONENT_NAME} is still talking.`,
+    'Your turn. The bar is on your side. Quietly.',
+    'Your turn. The bartender is pretending not to watch.',
+    "Your turn. He's still standing. Fix that.",
+  ],
+  chuckTurn: [
+    `${OPPONENT_NAME}'s turn. Brace your beans.`,
+    `${OPPONENT_NAME}'s turn. Hide your drink.`,
+    `${OPPONENT_NAME}'s turn. He's had four. He says two.`,
+    `${OPPONENT_NAME}'s turn. He has a plan. It's a bad one.`,
+    `${OPPONENT_NAME}'s turn. Don't make eye contact.`,
+    `${OPPONENT_NAME}'s turn. Somebody hide the good bottles.`,
+  ],
+  endTurn: [
+    'Ending turn...',
+    `Ending turn. Your move, ${OPPONENT_NAME}.`,
+    'Ending turn. Hands to yourself.',
+    'Ending turn. Passing the bottle.',
+  ],
+  // {card} stays early in each line so the phone ticker's single-line cut
+  // keeps the name. Chuck's side only: every card he plays can be the
+  // Custody-Battle Cub, so none of these is anything but plain about it.
+  chuckPlays: [
+    `${OPPONENT_NAME} slammed down {card}`,
+    `${OPPONENT_NAME} dragged in {card}`,
+    `${OPPONENT_NAME} threw {card} on the felt`,
+    `${OPPONENT_NAME} pulled {card} out of his coat`,
+    `${OPPONENT_NAME} sent in {card}. Nobody asked.`,
+  ],
+  // Chuck's creature hitting yours / your face. Only the verb is voiced.
+  oppHit: [
+    '{attacker} roughed up {target} for {dmg} ({hp} HP left)',
+    '{attacker} worked {target} over for {dmg} ({hp} HP left)',
+    '{attacker} slapped {target} around for {dmg} ({hp} HP left)',
+    '{attacker} leaned on {target} for {dmg} ({hp} HP left)',
+  ],
+  oppFace: [
+    '{attacker} socked you right in the face for {dmg}!',
+    '{attacker} clocked you right in the face for {dmg}!',
+    '{attacker} popped you right in the face for {dmg}!',
+  ],
+  // Every variant keeps the "You conceded" prefix the specs find it by.
+  conceded: [
+    `You conceded. ${OPPONENT_NAME} is doing a little dance.`,
+    `You conceded. ${OPPONENT_NAME} is dancing on the pool table. Pants optional.`,
+    `You conceded. ${OPPONENT_NAME} is doing a little dance. Nobody asked for the hips.`,
+    `You conceded. ${OPPONENT_NAME} is accepting congratulations from a plant.`,
+  ],
+};
+
+/** Fill a board line's `{name}` slots. A slot with no value stays as written. */
+export const fillLine = (template, values = {}) =>
+  template.replace(/\{(\w+)\}/g, (whole, key) => (key in values ? String(values[key]) : whole));
+
+// The unplayable-move toasts' titles are in battleUtils.js and GameBoard.jsx
+// beside the rule they answer; the result panel's upsell sits above its button.
+
+// A line of the House's under the plain question in the leave dialog: one for
+// the menu's "Leave this battle?" and one for Concede. Decorative and
+// aria-hidden, a sibling of the dialog's body (the body, the title and both
+// buttons stay literal). Cut first if the dialog gets tall on a short phone.
+export const LEAVE_ASIDE = {
+  leave: `Your seat stays warm. ${OPPONENT_NAME} will sit in it.`,
+  concede: `${OPPONENT_NAME} will tell everyone he won. He'll be right.`,
+};

@@ -172,3 +172,29 @@ describe('the card-attached pools are never sexual', () => {
     ]) expect(sexualWordIn(line), line).toBeNull();
   });
 });
+
+// The copy deck's lines are in every pool, next to the ones that shipped.
+describe('the after-dark deck', () => {
+  it('grew every pool, and kept what shipped', () => {
+    for (const pool of ['gameStart', 'oppPlays', 'oppKills', 'oppHitsFace', 'oppLosesCreature', 'oppTakesFaceHit',
+      'oppNearDeath', 'playerRally', 'oppWins', 'oppLoses', 'playerEmote']) {
+      expect(QUIPS[pool].length, pool).toBeGreaterThanOrEqual(14);
+    }
+    expect(QUIPS.gameStartLate.length).toBeGreaterThanOrEqual(10);
+    expect(QUIPS.lastCall.length).toBeGreaterThanOrEqual(12);
+    expect(QUIPS.oppPlays).toContain('Clock in, buddy. Daddy needs a win.');
+    expect(QUIPS.oppLoses).toContain('This is rigged. I want a rematch and a juice box.');
+  });
+
+  it('has no line twice in a pool', () => {
+    for (const [pool, lines] of Object.entries(QUIPS)) {
+      expect(new Set(lines).size, pool).toBe(lines.length);
+    }
+  });
+
+  // The last-call lines read right whichever side is on the ropes, so Chuck's
+  // own pool, used when he is the one down, carries them as well.
+  it('says the side-agnostic last call lines when Chuck is the one down too', () => {
+    for (const line of QUIPS.lastCall) expect(QUIPS.lastCallChuckDown).toContain(line);
+  });
+});

@@ -65,15 +65,18 @@ describe("every card's line", () => {
 // FlavorLine and never restate its classes or reach for card.description
 // themselves, which is how the three would drift apart.
 describe('the screens that show a flavor line', () => {
-  const SCREENS = ['TeddyCollection.jsx', 'CardPackOpening.jsx', 'DeckBuilder.jsx'];
+  // GameBoard's CardPreview (the enlarged card on the felt) is the fourth.
+  const SCREENS = ['TeddyCollection.jsx', 'CardPackOpening.jsx', 'DeckBuilder.jsx', 'GameBoard/GameBoard.jsx'];
   const source = (file) => readFileSync(join(process.cwd(), 'src/components', file), 'utf8');
 
   it.each(SCREENS)('%s draws it through FlavorLine', (file) => {
     const text = source(file);
-    expect(text).toMatch(/import FlavorLine from '\.\/FlavorLine'/);
+    expect(text).toMatch(/import FlavorLine from '\.\.?\/FlavorLine'/);
     expect(text).toMatch(/<FlavorLine\b/);
   });
 
+  // The preview sets the line smaller and italic for its caption, with ! utilities
+  // that beat FLAVOR_LINE's own size and leading; it never repeats FLAVOR_LINE.
   it.each(SCREENS)('%s restates neither its classes nor the card\'s description', (file) => {
     const text = source(file);
     expect(text).not.toContain('text-sm leading-relaxed text-plush-200');

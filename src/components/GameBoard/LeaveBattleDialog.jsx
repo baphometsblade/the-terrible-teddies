@@ -4,6 +4,7 @@ import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion } from '@/components/ui/game-chrome';
+import { LEAVE_ASIDE } from '@/lib/houseLines';
 
 const BUTTON = 'h-11 w-full rounded-xl px-4 font-display font-bold';
 
@@ -51,6 +52,9 @@ export default function LeaveBattleDialog({ mode, streak, onKeepPlaying, onConce
             ? <>It counts as a loss, and your <span className="font-bold text-brass-200">{streak}-win streak</span> ends here.</>
             : 'It counts as a loss.'}
           {leaving && ' You’ll go back to the menu.'}
+        </p>
+        <p aria-hidden="true" data-leave-aside="" className="mt-2 text-sm italic text-plush-300">
+          {leaving ? LEAVE_ASIDE.leave : LEAVE_ASIDE.concede}
         </p>
         <div className="mt-6 flex flex-col gap-2.5">
           <button type="button" onClick={onKeepPlaying} className={`btn-brass ${BUTTON} ${FOCUS_OUTLINE}`}>

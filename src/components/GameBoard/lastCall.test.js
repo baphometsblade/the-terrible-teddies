@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { lastCallSide, lastCallDue } from './lastCall';
+import { lastCallSide, lastCallDue, nearDeathDue } from './lastCall';
 import { LAST_CALL_HP, ACHIEVEMENTS } from '@/stores/gameStore';
 
 // The board's side of the number the comeback achievement shares (the store
@@ -71,5 +71,41 @@ describe('lastCallDue', () => {
   it('waits for the deal, and stops at game over', () => {
     expect(lastCallDue({ ...live, deckReady: false, playerHealth: 3 })).toBeNull();
     expect(lastCallDue({ ...live, gameOver: true, playerHealth: 3 })).toBeNull();
+  });
+});
+
+// Chuck's near-death line and last call can arrive in the same commit (one hit
+// from above 8 to 5 or less); a bubble keeps only the later line, so last call,
+// the bigger moment, is the one that gets said.
+describe('nearDeathDue', () => {
+  const base = { gameId: 1, quipped: false, gameOver: false, playerHealth: 30, opponentHealth: 7, lastCallSpoke: null };
+
+  it('is due once Chuck is at 8 or fewer and still standing, and only once', () => {
+    expect(nearDeathDue({ ...base, opponentHealth: 9 })).toBe(false);
+    expect(nearDeathDue({ ...base, opponentHealth: 8 })).toBe(true);
+    expect(nearDeathDue({ ...base, opponentHealth: 0 })).toBe(false);
+    expect(nearDeathDue({ ...base, quipped: true })).toBe(false);
+    expect(nearDeathDue({ ...base, gameOver: true })).toBe(false);
+  });
+
+  it('stands aside for the last call said in the same commit', () => {
+    // One hit from 9 to LAST_CALL_HP: both lines are due, last call wins.
+    const arrived = { ...base, opponentHealth: LAST_CALL_HP };
+    expect(nearDeathDue(arrived)).toBe(true);
+    const spoke = { gameId: 1, playerHealth: 30, opponentHealth: LAST_CALL_HP };
+    expect(nearDeathDue({ ...arrived, lastCallSpoke: spoke })).toBe(false);
+  });
+
+  it('is due again at the next change, so he still sweats later', () => {
+    const spoke = { gameId: 1, playerHealth: 30, opponentHealth: LAST_CALL_HP };
+    expect(nearDeathDue({ ...base, opponentHealth: LAST_CALL_HP - 1, lastCallSpoke: spoke })).toBe(true);
+    expect(nearDeathDue({ ...base, opponentHealth: LAST_CALL_HP, playerHealth: 25, lastCallSpoke: spoke })).toBe(true);
+  });
+
+  it('is not held back by a last call from another game, or one said for the player earlier', () => {
+    const elsewhere = { gameId: 0, playerHealth: 30, opponentHealth: LAST_CALL_HP };
+    expect(nearDeathDue({ ...base, opponentHealth: LAST_CALL_HP, lastCallSpoke: elsewhere })).toBe(true);
+    const earlier = { gameId: 1, playerHealth: 4, opponentHealth: 20 };
+    expect(nearDeathDue({ ...base, playerHealth: 4, opponentHealth: 8, lastCallSpoke: earlier })).toBe(true);
   });
 });

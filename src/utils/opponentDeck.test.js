@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildOpponentDeck, OPPONENT_GOONS, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from './opponentDeck';
+import { buildOpponentDeck, OPPONENT_GOONS, OPPONENT_HEALTH_MOD_BY_DIFFICULTY, CREW_NAMES } from './opponentDeck';
 import { ALL_CARDS } from '../stores/gameStore';
 import { RARITY_ORDER } from '../lib/rarity';
 
@@ -151,5 +151,24 @@ describe('buildOpponentDeck', () => {
   it('falls back to normal config for an unknown difficulty', () => {
     const { cards } = buildOpponentDeck('nightmare', mulberry32(9));
     expect(cards).toHaveLength(8);
+  });
+});
+
+// Chuck's crew is named in the battle intro: "Chuck slams his deck on the
+// table with {crew} at his back." The name reads after "with" and has to fit
+// that log line on a phone, so each is a short noun phrase of its own.
+describe('the crew names', () => {
+  it('are distinct noun phrases that read after "with", at most 28 characters', () => {
+    expect(CREW_NAMES.length).toBeGreaterThanOrEqual(20);
+    expect(new Set(CREW_NAMES).size).toBe(CREW_NAMES.length);
+    for (const name of CREW_NAMES) {
+      expect(name, name).toMatch(/^the /);
+      expect(name.length, name).toBeLessThanOrEqual(28);
+    }
+  });
+
+  it('keep the ones the game shipped with', () => {
+    expect(CREW_NAMES).toContain('the Last-Call Crew');
+    expect(CREW_NAMES).toContain('the Drunk-Uncle Militia');
   });
 });

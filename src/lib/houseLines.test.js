@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  RECEIPT_FOOTERS, pickLine, LAST_CALL_BANNER, lastCallLog, TAB_COPY,
+  RECEIPT_FOOTERS, pickLine, LAST_CALL_BANNER, lastCallLog, TAB_COPY, BOARD_LINES, fillLine, LEAVE_ASIDE,
 } from './houseLines';
 import { OPPONENT_NAME } from '@/utils/teddyTalk';
 
@@ -138,5 +138,89 @@ describe('TAB_COPY', () => {
     expect(TAB_COPY.chuck).toBe('CHUCK\'S TAB');
     expect(TAB_COPY.chuck).toBe(`${OPPONENT_NAME.toUpperCase()}'S TAB`);
     expect(TAB_COPY.chuckStatus).toBe('STILL OPEN');
+  });
+});
+
+// The board's recurring lines. The first of each list is what the board
+// shipped with; the budgets are the slots (written here, not exported).
+describe('BOARD_LINES', () => {
+  const BANNER = 13; // a turn banner across the felt at 320px
+  const THINKING = 44; // the italic row under the table
+  const LOG = 90; // a log entry is read aloud, and wraps on a phone
+
+  it('keeps the line each slot shipped with as its first', () => {
+    expect(BOARD_LINES.bannerPlayer[0]).toBe('Your turn');
+    expect(BOARD_LINES.bannerChuck[0]).toBe(`${OPPONENT_NAME}'s turn`);
+    expect(BOARD_LINES.thinking[0]).toBe(`${OPPONENT_NAME} is making his move…`);
+    expect(BOARD_LINES.yourTurn[0]).toBe('Your turn. Get him.');
+    expect(BOARD_LINES.chuckTurn[0]).toBe(`${OPPONENT_NAME}'s turn. Brace your beans.`);
+    expect(BOARD_LINES.endTurn[0]).toBe('Ending turn...');
+  });
+
+  it('has every list distinct, with enough to rotate', () => {
+    for (const [key, list] of Object.entries(BOARD_LINES)) {
+      expect(list.length, key).toBeGreaterThanOrEqual(3);
+      expect(new Set(list).size, key).toBe(list.length);
+    }
+  });
+
+  it('fits the slots: banners 13 characters, the thinking row 44, a log entry 90', () => {
+    for (const key of ['bannerPlayer', 'bannerChuck']) {
+      for (const line of BOARD_LINES[key]) expect(line.length, line).toBeLessThanOrEqual(BANNER);
+    }
+    for (const line of BOARD_LINES.thinking) expect(line.length, line).toBeLessThanOrEqual(THINKING);
+    for (const key of ['yourTurn', 'chuckTurn', 'endTurn', 'chuckPlays', 'oppHit', 'oppFace', 'conceded']) {
+      for (const line of BOARD_LINES[key]) expect(line.length, line).toBeLessThanOrEqual(LOG);
+    }
+  });
+
+  it('keeps the facts: whose turn it is, and the "Ending turn" and "You conceded" the specs find', () => {
+    for (const line of BOARD_LINES.chuckTurn) expect(line).toMatch(new RegExp(`^${OPPONENT_NAME}'s turn`));
+    for (const line of BOARD_LINES.yourTurn) expect(line).toMatch(/^Your turn/);
+    for (const line of BOARD_LINES.endTurn) expect(line).toMatch(/^Ending turn/);
+    for (const line of BOARD_LINES.conceded) expect(line).toMatch(/^You conceded\./);
+    // The first-turn line is the one the specs pin, and is not rotated.
+    expect(BOARD_LINES.yourTurn).not.toContain('Your turn. Make it hurt.');
+  });
+
+  it('puts every number and name a hit reports into the line, and the card early in a play', () => {
+    for (const line of BOARD_LINES.oppHit) {
+      for (const slot of ['{attacker}', '{target}', '{dmg}', '{hp}']) expect(line, line).toContain(slot);
+    }
+    for (const line of BOARD_LINES.oppFace) {
+      for (const slot of ['{attacker}', '{dmg}']) expect(line, line).toContain(slot);
+    }
+    // The phone ticker cuts a log line to one, so the card's name has to be in
+    // the part that survives the cut.
+    for (const line of BOARD_LINES.chuckPlays) expect(line.indexOf('{card}'), line).toBeGreaterThan(-1);
+    for (const line of BOARD_LINES.chuckPlays) expect(line.indexOf('{card}'), line).toBeLessThanOrEqual(32);
+  });
+});
+
+describe('fillLine', () => {
+  it('fills each slot, every time it appears', () => {
+    expect(fillLine('{a} hit {b} for {n} ({a})', { a: 'Barry', b: 'Pete', n: 4 })).toBe('Barry hit Pete for 4 (Barry)');
+  });
+
+  it('keeps a number of zero and leaves a slot with no value as written', () => {
+    expect(fillLine('{n} damage', { n: 0 })).toBe('0 damage');
+    expect(fillLine('{x} damage', {})).toBe('{x} damage');
+    expect(fillLine('no slots')).toBe('no slots');
+  });
+
+  it('turns every deck line into a sentence with no slot left over', () => {
+    const values = { card: 'Bar-Fight Barry', attacker: 'Barry', target: 'Pete', dmg: 3, hp: 2 };
+    for (const key of ['chuckPlays', 'oppHit', 'oppFace']) {
+      for (const line of BOARD_LINES[key]) expect(fillLine(line, values), line).not.toMatch(/[{}]/);
+    }
+  });
+});
+
+describe('LEAVE_ASIDE', () => {
+  it('has a line for the menu and one for Concede, each short enough for the dialog', () => {
+    for (const key of ['leave', 'concede']) {
+      expect(LEAVE_ASIDE[key].length, key).toBeLessThanOrEqual(48);
+    }
+    expect(LEAVE_ASIDE.leave).not.toBe(LEAVE_ASIDE.concede);
   });
 });

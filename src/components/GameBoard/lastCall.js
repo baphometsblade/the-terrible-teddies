@@ -40,3 +40,26 @@ export function lastCallDue({ gameId, firedIn, deckReady, gameOver, playerHealth
   if (!side) return null;
   return { side, hp: side === 'player' ? playerHealth : opponentHealth };
 }
+
+// Chuck "starts sweating" once a game when he is down to this many HP or fewer
+// (oppNearDeath), and it is the same moment last call can arrive for him: one
+// hit that takes him from above 8 to LAST_CALL_HP or fewer raises both in a
+// commit, and a bubble keeps only the later line.
+export const NEAR_DEATH_HP = 8;
+
+/**
+ * Whether Chuck says an oppNearDeath line now. `quipped` is whether he has
+ * already, this game. `lastCallSpoke` is what the last call effect last said
+ * in `{ gameId, playerHealth, opponentHealth }`, or null: when it spoke in
+ * this very commit (the same game and the same two healths) it is the bigger
+ * moment and wins, and he is not counted as having sweated, so the next change
+ * to either health still earns him his line.
+ */
+export function nearDeathDue({ gameId, quipped, gameOver, playerHealth, opponentHealth, lastCallSpoke }) {
+  if (gameOver || quipped) return false;
+  if (!(opponentHealth > 0 && opponentHealth <= NEAR_DEATH_HP)) return false;
+  const spoke = lastCallSpoke;
+  if (spoke && spoke.gameId === gameId
+    && spoke.opponentHealth === opponentHealth && spoke.playerHealth === playerHealth) return false;
+  return true;
+}

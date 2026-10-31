@@ -4,6 +4,7 @@ import { motion, useReducedMotionConfig } from 'framer-motion';
 import { Medallion } from '@/components/ui/medallion';
 import { useGameStore } from '@/stores/gameStore';
 import { TAB_COPY } from '@/lib/houseLines';
+import { rankUp } from '@/lib/houseRank';
 
 // The Tab: the result panel's rewards, printed as a bar tab. A strip of thermal
 // paper comes out of a slit and itemizes the night (cards played, damage dealt,
@@ -105,7 +106,7 @@ const XpBar = ({ progress }) => {
 // anywhere until the result panel did. With reduced motion it is simply there:
 // Framer Motion's reduced motion stops transforms but still runs an opacity
 // fade, delay and all, which held the row invisible for 1.6s.
-const LevelUpRow = ({ level, bonusCoins }) => {
+const LevelUpRow = ({ level, bonusCoins, promotion }) => {
   const reduced = useReducedMotionConfig();
   return (
     <motion.div
@@ -127,6 +128,12 @@ const LevelUpRow = ({ level, bonusCoins }) => {
         <span className="font-display text-base font-extrabold tabular-nums">+{bonusCoins.toLocaleString()}</span>
         <span className="sr-only">bonus coins</span>
       </div>
+      {/* The house rank this level-up arrived at, when it crossed a rung: the
+          same line the level-up toast carries (houseRank.js), once, under
+          the bonus. Real content, so a screen reader reads it where it sits. */}
+      {promotion && (
+        <p data-rank-up="" className={`w-full text-center text-sm italic ${FADED}`}>{promotion}</p>
+      )}
     </motion.div>
   );
 };
@@ -220,7 +227,7 @@ const BarTab = ({ rewards, footer }) => {
         </dl>
         {progress && <XpBar progress={progress} />}
         {progress?.levelsGained > 0 && (
-          <LevelUpRow level={progress.levelAfter} bonusCoins={progress.bonusCoins} />
+          <LevelUpRow level={progress.levelAfter} bonusCoins={progress.bonusCoins} promotion={rankUp(progress.levelBefore, progress.levelAfter)?.promoted} />
         )}
         {tierAfter > tierBefore && <TierLine tier={tierAfter} />}
 
