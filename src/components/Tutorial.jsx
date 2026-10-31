@@ -12,6 +12,7 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { BrassCoin } from '@/components/ui/coin';
 import { DialogClose } from '@/components/ui/game-chrome';
+import { CONTENT_NOTICE } from '@/lib/contentNotice';
 
 // Presentation only — every `content` string is the copy as written, and
 // Tutorial.test.js reads it from this file.
@@ -35,7 +36,7 @@ import { DialogClose } from '@/components/ui/game-chrome';
 const TUTORIAL_STEPS = [
   {
     title: "Welcome to Terrible Teddies",
-    content: "Somewhere between the toy chest and the bar, these teddies went bad. Now they settle everything with cards, fists, and language you can't repeat at work.\n\n(18+ — crude humor, cartoon fluff violence, and bears with substance-abuse issues.)",
+    content: `Somewhere between the toy chest and the bar, these teddies went bad. Now they settle everything with cards, fists, and language you can't repeat at work.\n\n(18+ — ${CONTENT_NOTICE}.)`,
     mascot: true,
   },
   {

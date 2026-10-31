@@ -7,6 +7,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useAuthIntent } from '@/integrations/supabase/auth';
 import { PASSWORD_MIN_LENGTH } from '@/lib/authLanding';
 import { ALL_CARDS } from '../stores/gameStore';
+import { CONTENT_NOTICE } from '@/lib/contentNotice';
 import CardFan from './CardFan';
 import DialogErrorBoundary from './DialogErrorBoundary';
 import { AuthAlert, AuthField, AUTH_ACTION, busyLook, CheckEmailPanel } from './AuthField';
@@ -194,7 +195,7 @@ const Auth = () => {
               read (and on a short screen, seen) before anyone signs up. */}
           <p className="mt-4 max-w-sm text-xs leading-relaxed text-plush-300">
             <span className="inline-block rounded-[5px] border border-brass-300/50 px-1.5 py-px font-display text-[11px] font-extrabold leading-[1.1rem] text-brass-200 align-[1px]">18+</span>
-            {' '}— contains profanity, cartoon fluff violence, and bears with substance-abuse issues.
+            {' '}— contains {CONTENT_NOTICE}.
           </p>
         </header>
 
