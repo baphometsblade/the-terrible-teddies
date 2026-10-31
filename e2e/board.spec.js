@@ -973,6 +973,168 @@ test.describe('XP and level-ups', () => {
   });
 });
 
+// The Tab: the result panel's rewards, printed as a bar tab on thermal paper.
+// The rows, the print, the footer's budget and what a screen reader hears are
+// pinned here; what the panel says when it is a win, and that each game picks
+// its own words, is in src/components/GameBoard/GameBoard.test.jsx.
+test.describe('the Tab', () => {
+  const concedeToTab = async (page) => {
+    await toBattle(page);
+    await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
+    await expect(page.locator('[data-field="player"]')).toHaveCount(1, SLOW);
+    await page.getByRole('button', { name: 'Concede', exact: true }).click();
+    await page.getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    const panel = page.getByRole('dialog', { name: 'Defeat' });
+    await expect(panel).toBeVisible(SLOW);
+    return panel;
+  };
+  const bootWith = async (page, state = {}) => {
+    await bootToMainMenu(page);
+    await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4], totalDamageDealt: 4811, ...state });
+    await page.reload();
+  };
+
+  test('prints the night as a list a screen reader reads row by row, and keeps "Battle Rewards"', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await bootWith(page);
+    const panel = await concedeToTab(page);
+    await expect(panel.getByText('Battle Rewards', { exact: true })).toBeVisible();
+    // The big title is for the eye alone.
+    await expect(panel.getByText('THE TAB', { exact: true })).toHaveAttribute('aria-hidden', 'true');
+    // Each row is a term and its figure ("Damage dealt, 0"), the leaders drawn
+    // between them are not in the tree, and the figures say what they are.
+    await expect(panel.getByRole('group', { name: 'Battle Rewards' })).toMatchAriaSnapshot(`
+      - term: Cards played
+      - definition: "1"
+      - term: Damage dealt
+      - definition: "0"
+      - term: Healed
+      - definition: "0"
+      - term: Damage taken
+      - definition: "0"
+      - term: XP
+      - definition: 20 XP
+      - term: Coins
+      - definition: 5 coins
+    `);
+    await expect(panel.getByRole('term').filter({ hasText: "CHUCK'S TAB" })).toBeVisible();
+    await expect(panel.getByRole('definition').filter({ hasText: '4,81' })).toContainText('damage, still open');
+    // And the figures are on the paper to the eye: four rows, then what it paid.
+    for (const label of ['Cards played', 'Damage dealt', 'Healed', 'Damage taken', 'XP', 'Coins']) {
+      const box = await panel.getByRole('term').filter({ hasText: new RegExp(`^${label}$`) }).boundingBox();
+      expect(box.height, `${label} is on the paper`).toBeGreaterThan(10);
+    }
+  });
+
+  // Below 700px tall the four itemized rows leave the screen so Play Again
+  // stays within reach, and stay in the tree: the same receipt is read.
+  test('hands the four itemized rows to screen readers alone on a short screen', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 640 });
+    await bootWith(page);
+    const panel = await concedeToTab(page);
+    for (const label of ['Cards played', 'Damage dealt', 'Healed', 'Damage taken']) {
+      const term = panel.getByRole('term').filter({ hasText: new RegExp(`^${label}$`) });
+      await expect(term, `${label} is still in the tree`).toBeAttached();
+      // The row is the 1px clipped box; its term inside is clipped by it.
+      const box = await term.locator('..').boundingBox();
+      expect(box.width * box.height, `${label} is off the paper`).toBeLessThanOrEqual(4);
+    }
+    for (const label of ['XP', 'Coins', "CHUCK'S TAB"]) {
+      const box = await panel.getByRole('term').filter({ hasText: new RegExp(`^${label}$`) }).boundingBox();
+      expect(box.height, `${label} stays on the paper`).toBeGreaterThan(10);
+    }
+    // 700 on the dot is still short; 701 is not.
+    await page.setViewportSize({ width: 390, height: 701 });
+    const box = await panel.getByRole('term').filter({ hasText: /^Healed$/ }).boundingBox();
+    expect(box.height, 'at 701px tall the rows are back').toBeGreaterThan(10);
+  });
+
+  test('prints in over 900 ms in 14 steps, with the slot already its full height; reduced motion simply shows it', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await bootWith(page);
+    const panel = await concedeToTab(page);
+    const paper = panel.locator('.receipt');
+    const feed = panel.locator('[data-bar-tab]');
+    const css = await paper.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { name: cs.animationName, duration: cs.animationDuration, timing: cs.animationTimingFunction };
+    });
+    expect(css).toEqual({ name: 'receipt-print', duration: '0.9s', timing: 'steps(14)' });
+    // Sampled a frame at a time from here to the end of the print: it moves
+    // (a transform, on the compositor), ends at rest, and the slot it prints
+    // in is the same height throughout, so nothing below it jumps.
+    const frames = await feed.evaluate((slot) => new Promise((resolve) => {
+      const sheet = slot.querySelector('.receipt');
+      const seen = [];
+      const stop = performance.now() + 1300;
+      const tick = () => {
+        seen.push({ height: slot.getBoundingClientRect().height, transform: getComputedStyle(sheet).transform });
+        if (performance.now() < stop) requestAnimationFrame(tick); else resolve(seen);
+      };
+      tick();
+    }));
+    expect(new Set(frames.map((f) => f.height)).size, 'the slot changed height while it printed').toBe(1);
+    expect(frames[0].height).toBeGreaterThan(200);
+    // (At rest it holds the last keyframe, an identity matrix, rather than none.)
+    const atRest = (transform) => transform === 'none' || transform === 'matrix(1, 0, 0, 1, 0, 0)';
+    expect(frames.some((f) => !atRest(f.transform)), 'it never moved').toBe(true);
+    expect(atRest(frames[frames.length - 1].transform), 'it did not come to rest').toBe(true);
+    // The steps: a printer's chatter, not a slide (14 distinct places at most).
+    expect(new Set(frames.map((f) => f.transform)).size).toBeLessThanOrEqual(15);
+  });
+
+  for (const how of [
+    { name: 'reduced motion', media: 'reduce', animationsEnabled: true },
+    { name: 'the Animations switch off', media: 'no-preference', animationsEnabled: false },
+  ]) {
+    test(`appears at once with ${how.name}`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: how.media });
+      await bootWith(page, { animationsEnabled: how.animationsEnabled });
+      const panel = await concedeToTab(page);
+      const paper = await panel.locator('.receipt').evaluate((el) => {
+        const cs = getComputedStyle(el);
+        return { name: cs.animationName, transform: cs.transform };
+      });
+      expect(paper).toEqual({ name: 'none', transform: 'none' });
+    });
+  }
+
+  // 320px: the narrowest the receipt is drawn for. A row is one line (the
+  // widest is Chuck's, bold, with an eight-digit bill), and the longest footer
+  // the budget allows (44 characters, of long words) takes two.
+  test('at 320px no row wraps, and the longest footer takes two lines', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await bootWith(page, { totalDamageDealt: 12_345_678 });
+    const panel = await concedeToTab(page);
+    const rows = await panel.locator('[data-bar-tab] dl > div').evaluateAll((els) => els.map((el) => ({
+      label: el.querySelector('dt').textContent, height: Math.round(el.getBoundingClientRect().height),
+    })));
+    for (const row of rows) expect(row.height, `${row.label} wraps`).toBeLessThanOrEqual(24);
+    const footer = panel.locator('[data-bar-tab] p').last();
+    await footer.evaluate((el) => { el.textContent = 'Thank you for your business. Not you, Chuck.'; });
+    const lines = await footer.evaluate((el) => Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight)));
+    expect(lines, 'a 44-character footer needs more than two receipt lines at 320px').toBeLessThanOrEqual(2);
+    // Nothing on the paper runs past it.
+    const spill = await panel.locator('.receipt').evaluate((paper) => {
+      const box = paper.getBoundingClientRect();
+      return [...paper.querySelectorAll('*')]
+        .map((el) => el.getBoundingClientRect())
+        .filter((r) => r.width > 1 && r.height > 1)
+        .map((r) => Math.max(0, box.left - r.left, r.right - box.right));
+    });
+    expect(Math.max(0, ...spill), 'something on the receipt runs past the paper').toBeLessThanOrEqual(1);
+  });
+
+  test('has no axe violations printed in full: the level bar, a level-up, a tier and the shop nudge too', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await bootWith(page, { level: 1, xp: 95, seasonXP: 90, seasonKey: getCurrentSeason().key, gems: 0, cardPacks: 0 });
+    const panel = await concedeToTab(page);
+    await expect(panel.locator('[data-level-up]')).toBeVisible();
+    await expect(panel.locator('[data-pass-tier]')).toBeVisible();
+    await expectNoAxeViolations(page, 'the Tab with a level-up, a Battle Pass tier and the shop nudge');
+  });
+});
+
 // Last call: the first time either side is down to LAST_CALL_HP, the house
 // lights come up. The rule itself (once a game, who, the banner's order) is
 // pinned against the real board in src/components/GameBoard/GameBoard.test.jsx;

@@ -854,6 +854,60 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   transition: opacity 800ms ease-out;
 }
 
+/* The Tab: the result panel's rewards, printed on thermal paper (BarTab.jsx).
+   .receipt-feed is the slot it comes out of, which clips it and seats it with a
+   soft shadow (a drop-shadow, so it follows the torn edge); .receipt is the
+   paper, and .receipt-stain the ring a glass left on it. No pseudo-element on
+   any of them: the zigzag along the bottom is a static mask of 10px teeth cut
+   from a conic gradient, and the stain is a child layer (below). The paper is a
+   plain colour and the stain only darkens it, so the colours the ink is
+   measured on are the paper's own:
+     ink       #2a2219 on #f6f0e3  13.8:1
+     faded ink #6b5a49 on #f6f0e3   5.8:1 (the small print; 5.4:1 under the stain, 5.1:1 where its two rings cross)
+     rule      #cbbfa9              decorative, carries no text
+   They are custom properties of the material, so BarTab names no colour of
+   its own on the paper and there is no Tailwind token. It prints in over 900
+   ms, in 14 steps (a printer's chatter), and with the Animations switch off or
+   reduced motion it simply appears (rules after the layer). */
+.receipt-feed {
+  overflow: hidden;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.45));
+}
+.receipt {
+  --receipt-paper: #f6f0e3;
+  --receipt-ink: #2a2219;
+  --receipt-faded: #6b5a49;
+  --receipt-faded-soft: rgba(107, 90, 73, 0.6);
+  --receipt-faded-line: rgba(107, 90, 73, 0.4);
+  --receipt-rule: #cbbfa9;
+  position: relative;
+  isolation: isolate;
+  color: var(--receipt-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  background-color: var(--receipt-paper);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 10px 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 10px 100%;
+}
+/* The beer-ring stain, a layer of its own (a child element, not a background
+   image on the paper): axe cannot work out a text colour's contrast over an
+   element that carries a background image, and answers "needs review" instead
+   of passing or failing it, so the paper stays a plain colour and the stain
+   sits over it, pointer-events none, where axe does not look. It only
+   darkens, 6% amber, and under the ink (z -1 in the paper's own stacking
+   context). */
+.receipt-stain {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 83% 19%, transparent 0 17px, rgba(180, 83, 9, 0.06) 18px 20px, transparent 21px),
+    radial-gradient(circle at 78% 24%, transparent 0 13px, rgba(180, 83, 9, 0.04) 14px 15px, transparent 16px);
+  background-repeat: no-repeat;
+}
+.receipt-print { animation: receipt-print 900ms steps(14, end) both; }
+
 /* A card on its way out (FieldSlot's data-exiting) was drawn with its last
    state, which may include the valid-target ring and crosshair, or the
    selected/ready glow: it is not any of those any more. */
@@ -1132,6 +1186,14 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   0% { opacity: 0; }
   12%, 75% { opacity: 1; }
   100% { opacity: 0; }
+}
+@keyframes receipt-print {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+[data-motion="off"] .receipt-print { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .receipt-print { animation: none; }
 }
 /* Last call's lights, with the Animations switch off or reduced motion: no
    fade, they are simply on (or off). The @layer above is Tailwind's, which

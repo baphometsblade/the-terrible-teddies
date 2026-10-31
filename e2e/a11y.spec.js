@@ -7,6 +7,7 @@
 // this spec never touches a real backend.
 import AxeBuilder from '@axe-core/playwright';
 import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
+import { getCurrentSeason } from '../src/utils/season.js';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
@@ -92,6 +93,34 @@ test('leave-battle dialog has no WCAG 2.1 A/AA violations', async ({ page }) => 
   await expect(page.getByRole('dialog', { name: 'Leave this battle?' })).toBeVisible();
   await expectNoViolations(page, 'leave-battle dialog');
 });
+
+// The result panel and the Tab it prints. The receipt is cream paper under dark
+// ink in a dark panel: its own contrast is only checked if axe can work out
+// the paper (a plain colour, with the ring stain as a layer of its own), and
+// the panel is audited with the most on it, a level-up, a Battle Pass tier and
+// the shop nudge, and again short, where the itemized rows are screen-reader
+// only.
+for (const viewport of [{ width: 390, height: 844 }, { width: 390, height: 640 }]) {
+  test(`result panel (the Tab) has no WCAG 2.1 A/AA violations at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.addInitScript((extra) => {
+      const raw = localStorage.getItem('terrible-teddies-storage');
+      const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+      Object.assign(stored.state, extra);
+      localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+    }, { level: 1, xp: 95, seasonXP: 90, seasonKey: getCurrentSeason().key, gems: 0, cardPacks: 0 });
+    await page.reload();
+    await page.getByRole('button', { name: 'Battle', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    await page.getByRole('button', { name: 'Concede', exact: true }).click();
+    await page.getByRole('button', { name: 'Concede — counts as a loss' }).click();
+    const panel = page.getByRole('dialog', { name: 'Defeat' });
+    await expect(panel).toBeVisible(SLOW);
+    await expect(panel.locator('[data-level-up]')).toBeVisible();
+    await expect(panel.locator('[data-pass-tier]')).toBeVisible();
+    await expectNoViolations(page, 'result panel');
+  });
+}
 
 // Every stop in the tab order must be a real control. axe checks the controls
 // it can recognise; it cannot see a stop that is NOT a control, because a

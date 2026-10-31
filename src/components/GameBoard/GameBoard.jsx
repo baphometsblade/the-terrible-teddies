@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext, forwardRef, useImperativeHandle } from 'react';
 import {
-  Coins, Crosshair, Crown, Flag, Ghost, Hand, Heart, HeartCrack, Layers, ScrollText, Smartphone, Star, Trophy, Volume2, VolumeX, Zap,
+  Crosshair, Flag, Ghost, Hand, Heart, HeartCrack, Layers, ScrollText, Smartphone, Trophy, Volume2, VolumeX, Zap,
 } from 'lucide-react';
 import TeddyCard, { CardBack, legibleSize } from '../TeddyCard';
 import { Progress } from "@/components/ui/progress";
@@ -12,6 +12,7 @@ import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
 import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures, gainedFuryStack, getValidTargets, describeBlockedTarget } from '../../utils/battleUtils';
 import { pickQuip, startPoolFor, OPPONENT_NAME } from '../../utils/teddyTalk';
+import { pickResultCopy, RESULT_TITLES, RESULT_SUBLINES } from '../../utils/resultLines';
 import { LAST_CALL_BANNER, lastCallLog } from '@/lib/houseLines';
 import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
@@ -22,10 +23,10 @@ import { bestOwnedBorder, ownedEmotes } from '@/lib/cosmetics';
 import { abilityRules, describeCard } from '@/lib/abilities';
 import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, canRally, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
 import LeaveBattleDialog from './LeaveBattleDialog';
+import BarTab, { REWARD_BEATS } from './BarTab';
 import { battlePassTier } from './battlePassTiers';
 import { placePreview, CARD_W, CAPTION_W, CAPTION_ROW_W } from './previewPlacement';
 import { lastCallDue } from './lastCall';
-import { Medallion } from '@/components/ui/game-chrome';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 
@@ -463,118 +464,12 @@ function syncLevelToServer() {
     .catch(err => console.error('Level sync failed:', err));
 }
 
-// A reward figure that counts up from zero as the result panel opens. With
-// reduced motion — the OS setting, or the Animations switch through
-// MotionConfig — it shows the figure at once. Visual only: the caller puts
-// the final figure in sr-only text, so a screen reader never hears a count.
-const CountUp = ({ value, delay = 0, duration = 700 }) => {
-  const reduced = useReducedMotionConfig();
-  const [shown, setShown] = useState(reduced ? value : 0);
-  useEffect(() => {
-    if (reduced) {
-      setShown(value);
-      return undefined;
-    }
-    let frame = 0;
-    let start = null;
-    const tick = (now) => {
-      start ??= now;
-      const t = Math.min(1, (now - start) / duration);
-      setShown(Math.round(value * (1 - (1 - t) ** 3)));
-      if (t < 1) frame = requestAnimationFrame(tick);
-    };
-    const timer = setTimeout(() => { frame = requestAnimationFrame(tick); }, delay);
-    return () => {
-      clearTimeout(timer);
-      cancelAnimationFrame(frame);
-    };
-  }, [value, delay, duration, reduced]);
-  return <span aria-hidden="true" data-count-up="">{shown.toLocaleString()}</span>;
-};
-
-// When the result panel's beats land, in seconds: the chips pop, the XP bar
-// fills, then the level-up (if any) arrives as the bar tops out.
-const REWARD_BEATS = { xp: 0.3, coins: 0.5, bar: 0.7, levelUp: 1.6 };
-
-/**
- * The XP bar under the result's reward chips: the level's progress from where
- * the battle started to where it ended. On a level-up it fills to the end,
- * empties and fills again into the new level. The fill is a transform
- * (scaleX from its left edge), which Framer Motion owns and the compositor
- * runs, never a width; with reduced motion it simply shows where it ended.
- */
-const XpBar = ({ progress }) => {
-  const { xpBefore, xpNeededBefore, xpAfter, xpNeededAfter, levelAfter, levelsGained } = progress;
-  const from = Math.min(1, xpBefore / xpNeededBefore);
-  const to = Math.min(1, xpAfter / xpNeededAfter);
-  const levelled = levelsGained > 0;
-  return (
-    <div className="mx-auto mt-3 max-w-[16rem]">
-      <div
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={xpNeededAfter}
-        aria-valuenow={xpAfter}
-        aria-label={`Level ${levelAfter}: ${xpAfter} of ${xpNeededAfter} XP`}
-        className="panel-glass h-2.5 overflow-hidden rounded-full"
-      >
-        <motion.div
-          data-xp-fill=""
-          className="h-full rounded-full bg-gradient-to-r from-brass-500 to-brass-300 shadow-[0_0_8px_rgba(251,191,36,0.6)]"
-          style={{ originX: 0 }}
-          initial={{ scaleX: from }}
-          animate={{ scaleX: levelled ? [from, 1, 0, to] : to }}
-          transition={{
-            delay: REWARD_BEATS.bar,
-            duration: levelled ? 1.3 : 0.8,
-            ease: 'easeOut',
-            ...(levelled ? { times: [0, 0.6, 0.61, 1] } : {}),
-          }}
-        />
-      </div>
-      <div aria-hidden="true" className="mt-1 flex justify-between text-[11px] font-semibold tabular-nums text-plush-300">
-        <span>Lv {levelAfter}</span>
-        <span>{xpAfter.toLocaleString()} / {xpNeededAfter.toLocaleString()} XP</span>
-      </div>
-    </div>
-  );
-};
-
-// The level-up beat on the result panel: the new level on a brass medallion,
-// and the coins the level-up paid — credited all along, and never shown
-// anywhere until now. With reduced motion it is simply there: Framer Motion's
-// reduced motion stops transforms but still runs an opacity fade, delay and
-// all, which held the row invisible for 1.6s.
-const LevelUpRow = ({ level, bonusCoins }) => {
-  const reduced = useReducedMotionConfig();
-  return (
-    <motion.div
-      data-level-up=""
-      initial={reduced ? false : { opacity: 0, scale: 0.85 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: REWARD_BEATS.levelUp, type: 'spring', stiffness: 320, damping: 18 }}
-      className="mt-3 flex items-center justify-center gap-3"
-    >
-      <Medallion size="sm">
-        <span className="font-display text-lg font-extrabold leading-none text-brass-200">{level}</span>
-      </Medallion>
-      <div className="text-left">
-        <div className="label-caps text-brass-300">Level up</div>
-        <div className="font-display text-xl font-extrabold leading-tight text-white">Level {level}</div>
-      </div>
-      <div className="panel-glass flex items-center gap-1.5 rounded-xl px-3 py-2">
-        <Coins className="h-4 w-4 text-brass-300" aria-hidden="true" />
-        <span className="font-display text-base font-extrabold tabular-nums text-white">+{bonusCoins.toLocaleString()}</span>
-        <span className="sr-only">bonus coins</span>
-      </div>
-    </motion.div>
-  );
-};
-
 // The result panel's figures, from what recordBattleResult reported (or
 // nothing yet): the battle's XP and coins, addXP's account of the level, and
-// the Battle Pass tier either side of the XP.
-const rewardsFrom = (result) => {
+// the Battle Pass tier either side of the XP. `stats` is the battle's own
+// account of itself (battleStatsRef at the moment it ended), copied, because
+// the ref is replaced for the next game while this panel is still leaving.
+const rewardsFrom = (result, stats = null) => {
   const progress = result?.progress ?? null;
   return {
     xp: result?.xpGain ?? 0,
@@ -582,6 +477,7 @@ const rewardsFrom = (result) => {
     progress,
     tierBefore: progress ? battlePassTier(progress.seasonXPBefore) : 0,
     tierAfter: progress ? battlePassTier(progress.seasonXPAfter) : 0,
+    stats: stats ? { ...stats } : { damageDealt: 0, healingDone: 0, cardsPlayed: 0, damageTaken: 0 },
   };
 };
 
@@ -734,6 +630,19 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const [showAbilityPopup, setShowAbilityPopup] = useState(null);
   const abilityTimerRef = useRef(null);
   const [battleRewards, setBattleRewards] = useState(() => rewardsFrom(null));
+  // What the result panel says that varies (the headline, the line under it,
+  // the receipt's footer), picked once when the game ends and kept: the panel
+  // re-renders, and a pick made while rendering would change under the player.
+  // `lastResultCopyRef` is the previous game's, so Play Again never answers
+  // with the line it has just shown.
+  const [resultCopy, setResultCopy] = useState(null);
+  const lastResultCopyRef = useRef(null);
+  const resultPanelRef = useRef(null);
+  const settleResultCopy = useCallback((won) => {
+    const copy = pickResultCopy(won, lastResultCopyRef.current);
+    lastResultCopyRef.current = copy;
+    setResultCopy(copy);
+  }, []);
 
   // Where the keyboard focus goes after a keyboard move takes its control
   // away. A played hand card goes inert on its way out, a target stops being
@@ -834,8 +743,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       setOppQuip(null);
       setPlayerQuip(null);
       setEndQuip(pickQuip('oppWins'));
+      settleResultCopy(false);
       if (abandonRewardsRef.current) {
-        setBattleRewards(rewardsFrom(abandonRewardsRef.current));
+        setBattleRewards(rewardsFrom(abandonRewardsRef.current, battleStatsRef.current));
         showLevelUp(abandonRewardsRef.current.progress);
       }
       setWinner('opponent');
@@ -854,9 +764,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       window.removeEventListener('pageshow', onPageShow);
       recordAbandonment();
     };
-    // clearAllTimeouts and showLevelUp are stable useCallbacks (their own
-    // dependencies never change), so this still runs once.
-  }, [clearAllTimeouts, showLevelUp]);
+    // clearAllTimeouts, showLevelUp and settleResultCopy are stable
+    // useCallbacks (their own dependencies never change), so this still runs
+    // once.
+  }, [clearAllTimeouts, showLevelUp, settleResultCopy]);
 
   // Giving up a live battle asks first (LeaveBattleDialog). `leaveMode` is
   // which control asked — 'leave' ("← Menu") or 'concede' — or null.
@@ -1204,6 +1115,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       setOppQuip(null);
       setPlayerQuip(null); // its dismiss timer was just cancelled by clearAllTimeouts
       setEndQuip(pickQuip('oppLoses'));
+      settleResultCopy(true);
       playSound('victory');
 
       // Record victory — store handles XP and coin rewards
@@ -1216,7 +1128,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
         battleStatsRef.current.damageTaken
       );
       const { coinsGain } = result;
-      setBattleRewards(rewardsFrom(result));
+      setBattleRewards(rewardsFrom(result, battleStatsRef.current));
       showLevelUp(result.progress);
 
       // Sync to server (fire and forget - don't block UI)
@@ -1244,6 +1156,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       setOppQuip(null);
       setPlayerQuip(null); // its dismiss timer was just cancelled by clearAllTimeouts
       setEndQuip(pickQuip('oppWins'));
+      settleResultCopy(false);
       playSound('defeat');
 
       // Record defeat — store now handles consolation coins internally
@@ -1255,7 +1168,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
         battleStatsRef.current.cardsPlayed
       );
       const { coinsGain } = result;
-      setBattleRewards(rewardsFrom(result));
+      setBattleRewards(rewardsFrom(result, battleStatsRef.current));
       showLevelUp(result.progress);
 
       // Sync to server (fire and forget - don't block UI)
@@ -1264,7 +1177,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       // Keep the server level/xp current even on a loss (a loss still grants XP).
       syncLevelToServer();
     }
-  }, [playerHealth, opponentHealth, gameOver, playSound, recordBattleResult, clearAllTimeouts, showLevelUp]);
+  }, [playerHealth, opponentHealth, gameOver, playSound, recordBattleResult, clearAllTimeouts, showLevelUp, settleResultCopy]);
 
   // Chuck starts sweating when he's nearly unstuffed — once per game.
   useEffect(() => {
@@ -1904,6 +1817,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setWinner(null);
     setShowAbilityPopup(null);
     setBattleRewards(rewardsFrom(null));
+    setResultCopy(null);
 
     // Reset both mouths
     setOppQuip(null);
@@ -2423,9 +2337,21 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
             onEscape={() => onBackToMenu && onBackToMenu()}
           >
             <motion.div
+              ref={resultPanelRef}
               initial={{ scale: 0.85, y: 30 }}
               animate={{ scale: 1, y: 0 }}
-              className={`relative my-auto rounded-2xl px-6 py-7 sm:px-8 text-center max-w-md w-full overflow-hidden dialog-panel ${won ? 'trim-brass' : ''}`}
+              // useDialog focused Play Again as the panel arrived at 85% of its
+              // size, and the scroll that focus did was for a panel that is
+              // shorter than the one that has just settled: on a screen the
+              // Tab makes it taller than, the button was left half below the
+              // fold. Once the panel is its own size, bring it back into view
+              // (a no-op where it already is). A frame on, because with
+              // reduced motion the panel reaches its size on the frame after
+              // this callback.
+              onAnimationComplete={() => requestAnimationFrame(() => {
+                resultPanelRef.current?.querySelector('[data-autofocus]')?.scrollIntoView?.({ block: 'nearest' });
+              })}
+              className={`relative my-auto rounded-2xl px-6 py-7 [@media(max-height:880px)]:py-5 sm:px-8 text-center max-w-md w-full overflow-hidden dialog-panel ${won ? 'trim-brass' : ''}`}
             >
               {/* The light the medallion sits in: amber for a win, a cold
                   wash for a loss. */}
@@ -2438,7 +2364,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               <motion.div
                 animate={{ scale: [1, 1.15, 1], rotate: [0, 8, -8, 0] }}
                 transition={{ duration: 0.6 }}
-                className="relative mx-auto mb-4 h-20 w-20 rounded-full p-[3px]"
+                className="relative mx-auto mb-4 h-20 w-20 rounded-full p-[3px] [@media(max-height:880px)]:mb-3 [@media(max-height:880px)]:h-16 [@media(max-height:880px)]:w-16"
                 style={{ background: won ? RARITY_METAL.legendary : RARITY_METAL.common }}
                 aria-hidden="true"
               >
@@ -2448,13 +2374,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                     : <HeartCrack className="h-9 w-9 text-plush-300" strokeWidth={1.75} />}
                 </div>
               </motion.div>
+              {/* The headline and the line under it come from the tables in
+                  resultLines.js, picked once when the game ended (resultCopy).
+                  The first of each stands in for the instant before that. */}
               <h2 className={`relative font-display text-3xl sm:text-4xl font-extrabold leading-tight mb-2 ${won ? 'text-brass-gradient' : 'text-plush-100'}`}>
-                {won ? 'TOTAL FLUFFING VICTORY!' : 'ABSOLUTELY UNSTUFFED!'}
+                {resultCopy?.title ?? RESULT_TITLES[won ? 'win' : 'loss'][0]}
               </h2>
               <p className="relative mb-2 text-plush-200">
-                {won
-                  ? `${OPPONENT_NAME} rage-quit into the toy chest.`
-                  : `${OPPONENT_NAME} is doing a victory lap. It's insufferable.`}
+                {resultCopy?.subline ?? RESULT_SUBLINES[won ? 'win' : 'loss'][0]}
               </p>
               {endQuip && (
                 <p className="relative mb-5 text-sm italic text-plush-300">
@@ -2462,57 +2389,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 </p>
               )}
 
-              {/* Rewards: what the battle paid, then the level's progress, a
+              {/* The Tab: what the battle paid, printed as a bar tab. The
+                  night itemized, then XP and coins, the level's progress, a
                   level-up and its bonus coins when there is one, and a Battle
-                  Pass tier the XP opened. It used to be the two chips alone,
+                  Pass tier the XP opened, then Chuck's running bill and a
+                  footer (BarTab.jsx). It used to be two chips and a bar,
                   while a level-up paid 100 x the new level in coins without a
                   word. */}
-              <div className="relative mb-5">
-                <div className="label-caps text-plush-300 mb-2">Battle Rewards</div>
-                <div className="flex justify-center gap-3">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: REWARD_BEATS.xp }}
-                    className="panel-glass rounded-xl px-4 py-2.5 flex items-center gap-2"
-                  >
-                    <Star className="h-5 w-5 text-brass-300" fill="currentColor" aria-hidden="true" />
-                    <span className="font-display text-lg font-extrabold text-white tabular-nums">
-                      +<CountUp value={battleRewards.xp} delay={REWARD_BEATS.xp * 1000} /><span aria-hidden="true"> XP</span>
-                      <span className="sr-only">{battleRewards.xp} XP</span>
-                    </span>
-                  </motion.div>
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: REWARD_BEATS.coins }}
-                    className="panel-glass rounded-xl px-4 py-2.5 flex items-center gap-2"
-                  >
-                    <Coins className="h-5 w-5 text-brass-300" aria-hidden="true" />
-                    <span className="font-display text-lg font-extrabold text-white tabular-nums">
-                      +<CountUp value={battleRewards.coins} delay={REWARD_BEATS.coins * 1000} />
-                    </span>
-                    <span className="sr-only">{battleRewards.coins} coins</span>
-                  </motion.div>
-                </div>
-                {battleRewards.progress && <XpBar progress={battleRewards.progress} />}
-                {battleRewards.progress?.levelsGained > 0 && (
-                  <LevelUpRow level={battleRewards.progress.levelAfter} bonusCoins={battleRewards.progress.bonusCoins} />
-                )}
-                {battleRewards.tierAfter > battleRewards.tierBefore && (
-                  <motion.p
-                    data-pass-tier=""
-                    initial={reducedMotion ? false : { opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: REWARD_BEATS.levelUp + 0.3 }}
-                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-brass-200"
-                  >
-                    <Crown className="h-4 w-4 text-brass-300" aria-hidden="true" />
-                    Battle Pass tier {battleRewards.tierAfter} unlocked
-                  </motion.p>
-                )}
-              </div>
-
+              <BarTab rewards={battleRewards} footer={resultCopy?.footer} />
               {/* Upsell nudge — only shown when player is low on resources */}
               {(cardPacks === 0 || gems < 50) && (onOpenShop || onBackToMenu) && (
                 <motion.div

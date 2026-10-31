@@ -13,6 +13,7 @@ import { test, expect, bootToMainMenu, stubSupabase, SLOW } from './helpers/sess
 // Pure, as door.js is: the rows the menu's clock is drawn from, so a line
 // dropped into any of them is measured here, not just the shipped ones.
 import { BAR_CLOCK } from '../src/lib/barClock.js';
+import { getCurrentSeason } from '../src/utils/season.js';
 
 const PHONE = { width: 390, height: 844 };
 
@@ -496,3 +497,78 @@ test.describe('the door', () => {
     expect((await extent()).bottom, 'a control is under the home indicator').toBeLessThanOrEqual(height - INSETS.bottom);
   });
 });
+
+// The result panel, and the Tab it prints, on the phones that are shortest: an
+// iPhone SE with Safari's toolbars out (320x568), a short 375 (553), and a
+// phone on its side. The receipt makes the panel taller than the two chips it
+// replaced, so on these it scrolls, and what matters is that nothing runs
+// sideways, nothing on the paper wraps or spills, and Play Again is still on
+// screen once the panel has settled (useDialog focused it while the panel was
+// still arriving at 85% of its size, so the scroll it did was for a shorter
+// panel). The four itemized rows are dropped from sight below 700px tall.
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 375, height: 553 },
+  { width: 667, height: 375 },
+  { width: 390, height: 844 },
+]) {
+  for (const { name, state } of [
+    { name: 'a plain result', state: {} },
+    {
+      // The most it carries: a level-up, a Battle Pass tier and the shop nudge.
+      name: 'a level-up, a Battle Pass tier and the shop nudge',
+      state: { level: 1, xp: 95, seasonXP: 90, seasonKey: getCurrentSeason().key, gems: 0, cardPacks: 0 },
+    },
+  ]) {
+    test.describe(`the result panel at ${viewport.width}x${viewport.height}`, () => {
+      test.use({ viewport });
+
+      test(`${name}: nothing runs sideways or off the paper, and Play Again is on screen`, async ({ page }) => {
+        await page.addInitScript((extra) => {
+          const raw = localStorage.getItem('terrible-teddies-storage');
+          const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
+          Object.assign(stored.state, extra);
+          localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+        }, state);
+        await page.reload();
+        await page.getByRole('button', { name: 'Battle', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+        await page.getByRole('button', { name: 'Concede', exact: true }).click();
+        await page.getByRole('button', { name: 'Concede — counts as a loss' }).click();
+        const panel = page.getByRole('dialog', { name: 'Defeat' });
+        await expect(panel).toBeVisible(SLOW);
+        await expect(panel.getByRole('button', { name: 'Play Again' })).toBeFocused();
+        await page.waitForTimeout(1200); // the panel arrives, then Play Again is scrolled back into view
+
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(overflow, 'the page scrolls sideways').toBeLessThanOrEqual(1);
+
+        const play = await panel.getByRole('button', { name: 'Play Again' }).boundingBox();
+        expect(play.y, 'Play Again is above the top of the screen').toBeGreaterThanOrEqual(0);
+        expect(play.y + play.height, 'Play Again is below the fold').toBeLessThanOrEqual(viewport.height);
+        expect(play.x + play.width, 'Play Again runs off the right edge').toBeLessThanOrEqual(viewport.width);
+
+        const paper = await panel.locator('.receipt').evaluate((sheet) => {
+          const box = sheet.getBoundingClientRect();
+          const spill = [...sheet.querySelectorAll('*')]
+            .map((el) => el.getBoundingClientRect())
+            .filter((r) => r.width > 1 && r.height > 1)
+            .map((r) => Math.max(0, box.left - r.left, r.right - box.right));
+          const rows = [...sheet.querySelectorAll('dl > div')]
+            .filter((row) => getComputedStyle(row).position !== 'absolute')
+            .map((row) => ({ label: row.querySelector('dt').textContent, h: Math.round(row.getBoundingClientRect().height) }));
+          return { left: box.left, right: box.right, spill: Math.max(0, ...spill), rows };
+        });
+        expect(paper.left, 'the receipt starts off the left edge').toBeGreaterThanOrEqual(0);
+        expect(paper.right, 'the receipt runs off the right edge').toBeLessThanOrEqual(viewport.width);
+        expect(paper.spill, 'something on the receipt runs past the paper').toBeLessThanOrEqual(1);
+        for (const row of paper.rows) expect(row.h, `${row.label} wraps`).toBeLessThanOrEqual(24);
+
+        // The itemized rows are on the paper from 701px tall, and off it below.
+        const cards = await panel.getByRole('term').filter({ hasText: /^Cards played$/ }).locator('..').boundingBox();
+        if (viewport.height > 700) expect(cards.height, 'the rows are missing on a tall screen').toBeGreaterThan(10);
+        else expect(cards.width * cards.height, 'the rows are on a short screen').toBeLessThanOrEqual(4);
+      });
+    });
+  }
+}

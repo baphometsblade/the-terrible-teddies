@@ -781,6 +781,10 @@ test('concede shows the defeat dialog and Play Again deals a fresh game', async 
   const defeat = page.getByRole('dialog', { name: 'Defeat' });
   await expect(defeat).toBeVisible(SLOW);
   await expect(defeat.getByText('Battle Rewards')).toBeVisible();
+  // The rewards are printed as a bar tab: the night itemized (on a screen tall
+  // enough for the rows) and Chuck's running bill, under the same header.
+  await expect(defeat.getByText('Damage dealt', { exact: true })).toBeVisible();
+  await expect(defeat.getByText("CHUCK'S TAB", { exact: true })).toBeVisible();
   await expect(defeat.getByRole('button', { name: 'Menu' })).toBeVisible();
 
   await defeat.getByRole('button', { name: 'Play Again' }).click();

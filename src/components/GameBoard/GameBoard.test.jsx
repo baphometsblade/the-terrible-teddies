@@ -15,7 +15,8 @@ vi.mock('@/lib/celebrate', () => ({ celebrate: vi.fn() }));
 // Chuck's crew is random every fight. A test that needs his damage to be
 // countable sets `fixedCrew.cards` to the crew it wants, and gets exactly
 // that; with none set, the real builder deals as it always does.
-const fixedCrew = vi.hoisted(() => ({ cards: null }));
+// (and `opponentHp`, Chuck's health for a fight that has to end quickly).
+const fixedCrew = vi.hoisted(() => ({ cards: null, opponentHp: null }));
 vi.mock('../../utils/opponentDeck', async (importOriginal) => {
   const real = await importOriginal();
   return {
@@ -23,6 +24,13 @@ vi.mock('../../utils/opponentDeck', async (importOriginal) => {
     buildOpponentDeck: (...args) => (fixedCrew.cards
       ? { cards: fixedCrew.cards, crewName: 'the Test Crew' }
       : real.buildOpponentDeck(...args)),
+    // The deal adds this to Chuck's 30, whatever the difficulty. Read when
+    // the board deals, so a test sets `opponentHp` just before it renders.
+    get OPPONENT_HEALTH_MOD_BY_DIFFICULTY() {
+      return fixedCrew.opponentHp === null
+        ? real.OPPONENT_HEALTH_MOD_BY_DIFFICULTY
+        : new Proxy({}, { get: () => fixedCrew.opponentHp - 30 });
+    },
   };
 });
 
@@ -30,7 +38,8 @@ import GameBoard from './GameBoard';
 import { useGameStore, LAST_CALL_HP } from '../../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
 import { QUIPS } from '../../utils/teddyTalk';
-import { lastCallLog } from '@/lib/houseLines';
+import { lastCallLog, RECEIPT_FOOTERS } from '@/lib/houseLines';
+import { RESULT_TITLES, RESULT_SUBLINES } from '../../utils/resultLines';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -205,6 +214,94 @@ describe('GameBoard result panel', () => {
     const panel = await concede();
     expect(panel.querySelector('[data-pass-tier]')?.textContent).toBe('Battle Pass tier 2 unlocked');
   });
+
+  // The rewards are a bar tab now (BarTab.jsx). Its rows are the battle's own
+  // account of itself, copied when the game ended, and Chuck's bill is the
+  // store's all-time damage, which recordBattleResult has already added this
+  // game's to by the time the panel draws.
+  it('prints the Tab with this battle\'s figures and Chuck\'s running bill', async () => {
+    useGameStore.setState({ currentDeck: [4, 4, 4, 4, 4, 4], totalDamageDealt: 4800 });
+    await renderBoard({ onBackToMenu: () => {} });
+    await act(() => new Promise((resolve) => { setTimeout(resolve, 700); })); // the draw phase
+    await act(async () => container.querySelector('[aria-label="Play Bar-Fight Barry"]').click());
+    const panel = await concede();
+    const tab = panel.querySelector('[data-bar-tab]');
+    expect(tab).not.toBeNull();
+    const row = (label) => [...tab.querySelectorAll('dl > div')]
+      .find((el) => el.querySelector('dt').textContent === label)?.querySelector('dd').textContent.trim();
+    expect(row('Cards played')).toBe('1');
+    expect(row('Damage dealt')).toBe('0');
+    expect(row('Damage taken')).toBe('0');
+    expect(row("CHUCK'S TAB")).toContain('4,800 damage, still open');
+    // The header the e2e finds the rewards by, still visible text.
+    expect([...tab.querySelectorAll('div')].some((el) => el.textContent === 'Battle Rewards')).toBe(true);
+  });
+
+  it('does not carry one game\'s figures into the next', async () => {
+    useGameStore.setState({ currentDeck: [4, 4, 4, 4, 4, 4] });
+    await renderBoard({ onBackToMenu: () => {} });
+    await act(() => new Promise((resolve) => { setTimeout(resolve, 700); }));
+    await act(async () => container.querySelector('[aria-label="Play Bar-Fight Barry"]').click());
+    let panel = await concede();
+    const cardsPlayed = () => [...panel.querySelectorAll('dl > div')]
+      .find((el) => el.querySelector('dt').textContent === 'Cards played').querySelector('dd').textContent.trim();
+    expect(cardsPlayed()).toBe('1');
+    await act(async () => button('Play Again').click());
+    panel = await concede();
+    expect(cardsPlayed()).toBe('0');
+  });
+
+  // Picked once when the game ends, and kept: the panel re-renders (the store
+  // changes under it, the count-up ticks), and a pick made while rendering
+  // would change under the player's eyes. Play Again picks again, and never
+  // the line it has just shown.
+  describe('what it says', () => {
+    let panel;
+    const said = () => ({
+      title: panel.querySelector('h2').textContent,
+      subline: panel.querySelector('h2 + p').textContent,
+      footer: panel.querySelector('[data-bar-tab] p:last-of-type').textContent,
+    });
+
+    it('is picked from the tables, once, and kept while the panel re-renders', async () => {
+      // A source of randomness that never gives the same answer twice running
+      // (0.37 apart: a different line of any list each time it is asked), so
+      // a pick made again while rendering shows as different words.
+      let asked = 0;
+      vi.spyOn(Math, 'random').mockImplementation(() => ((asked += 1) * 0.37) % 1);
+      await renderBoard({ onBackToMenu: () => {} });
+      panel = await concede();
+      const first = said();
+      expect(RESULT_TITLES.loss).toContain(first.title);
+      expect(RESULT_SUBLINES.loss).toContain(first.subline);
+      expect(RECEIPT_FOOTERS).toContain(first.footer);
+
+      // The panel re-renders as the store moves under it: the same words each time.
+      for (let i = 0; i < 4; i += 1) {
+        await act(async () => { useGameStore.setState({ coins: useGameStore.getState().coins + 1 }); });
+        await act(() => new Promise((resolve) => { setTimeout(resolve, 50); }));
+        expect(said(), `after re-render ${i + 1}`).toEqual(first);
+      }
+    });
+
+    // Play Again picks again, and never the line it has just shown. With the
+    // dice pinned to the first of whatever is left, a board that forgot the
+    // last game would answer with the same line every time.
+    it('is picked anew, and never the same twice running, across games', async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0);
+      await renderBoard({ onBackToMenu: () => {} });
+      panel = await concede();
+      let last = said();
+      for (let game = 2; game <= 4; game += 1) {
+        await act(async () => button('Play Again').click());
+        panel = await concede();
+        const next = said();
+        expect(next.subline, `game ${game}'s line`).not.toBe(last.subline);
+        expect(next.footer, `game ${game}'s footer`).not.toBe(last.footer);
+        last = next;
+      }
+    });
+  });
 });
 
 // The first time either side is down to LAST_CALL_HP the house lights come up,
@@ -365,6 +462,57 @@ describe('GameBoard last call', () => {
 
 // Between midnight and five in the morning, by the player's own clock, Chuck
 // opens with his late line. The hour is read once, at the deal.
+// A win draws the same Tab as a loss: Chuck is left with one HP and one
+// pushover of a creature, so the player's first swing kills it and tramples
+// into his face for the win.
+describe('GameBoard victory', () => {
+  const advance = (ms) => act(async () => { vi.advanceTimersByTime(ms); });
+  const advanceUntil = async (done) => {
+    for (let waited = 0; !done() && waited < 8000; waited += 100) await advance(100);
+    expect(done(), 'the board never got there').toBeTruthy();
+  };
+
+  beforeEach(() => {
+    useGameStore.setState(useGameStore.getInitialState(), true);
+    useGameStore.setState({ currentDeck: [4, 4, 4, 4, 4, 4], totalDamageDealt: 100 });
+    fixedCrew.cards = [{
+      id: 998, name: 'Test Pushover', attack: 0, defense: 1, type: 'action', cost: 1,
+      ability: 'none', rarity: 'common', instanceId: 'o-998-0',
+    }];
+    fixedCrew.opponentHp = 1;
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    fixedCrew.cards = null;
+    fixedCrew.opponentHp = null;
+  });
+
+  it('prints the Tab with Victory, the win lines and the battle\'s own figures', async () => {
+    await renderBoard({ onBackToMenu: () => {} });
+    await advanceUntil(() => button('End Turn'));
+    await act(async () => container.querySelector('[aria-label="Play Bar-Fight Barry"]').click());
+    await act(async () => button('End Turn').click());
+    // Chuck's turn (his pushover is warming up and does nothing), then ours.
+    await advanceUntil(() => !button('End Turn'));
+    await advanceUntil(() => button('End Turn'));
+    await act(async () => container.querySelector('[aria-label="Select Bar-Fight Barry to attack"]').click());
+    await act(async () => container.querySelector('[data-field="opponent"]').click());
+    await advanceUntil(() => container.querySelector('[role="dialog"][aria-label="Victory"]'));
+
+    const panel = container.querySelector('[role="dialog"][aria-label="Victory"]');
+    expect(RESULT_TITLES.win).toContain(panel.querySelector('h2').textContent);
+    expect(RESULT_SUBLINES.win).toContain(panel.querySelector('h2 + p').textContent);
+    const row = (label) => [...panel.querySelectorAll('dl > div')]
+      .find((el) => el.querySelector('dt').textContent === label)?.querySelector('dd').textContent.trim();
+    expect(row('Cards played')).toBe('1');
+    expect(row('Damage dealt')).toBe('2');
+    // The all-time damage already holds this battle's 2.
+    expect(row("CHUCK'S TAB")).toContain('102 damage, still open');
+    expect(RECEIPT_FOOTERS).toContain(panel.querySelector('[data-bar-tab] p:last-of-type').textContent);
+  });
+});
+
 describe('GameBoard opening line', () => {
   const opener = () => {
     const line = [...container.querySelectorAll('[role="log"] > div')]
