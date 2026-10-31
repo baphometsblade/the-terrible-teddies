@@ -239,6 +239,24 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
       expect(line.y + line.height, 'the line runs into the buttons').toBeLessThanOrEqual(actions.y + 1);
       expect(line.x).toBeGreaterThanOrEqual(0);
       expect(line.x + line.width).toBeLessThanOrEqual(viewport.width);
+
+      // However long the line: the longest of all the cards, put in the
+      // caption, still leaves the way on on screen (the room holds two lines
+      // and a long one grows it by a third, which the shortest phone must
+      // absorb). Layout only, so the text is swapped in place.
+      if (viewport.height <= 620) {
+        const way = dialog.getByRole('button', { name: /^(Reveal all|Done)$/ }).first();
+        const longestBottom = await page.evaluate(async () => {
+          const { ALL_CARDS } = await import('/src/stores/gameStore.js');
+          const longest = [...ALL_CARDS].sort((a, b) => b.description.length - a.description.length)[0].description;
+          document.querySelector('[data-reveal-flavor] p').textContent = longest;
+          const dlg = document.querySelector('[role="dialog"][aria-label="Card packs"]');
+          const button = [...dlg.querySelectorAll('button')].find((b) => /^(Reveal all|Done)$/.test(b.textContent.trim()));
+          return button.getBoundingClientRect().bottom;
+        });
+        expect(longestBottom, 'the longest line pushes the way on off the screen').toBeLessThanOrEqual(viewport.height);
+        await expect(way).toBeVisible();
+      }
     });
 
     test('ends on the best card\'s line, with the way on in reach', async ({ page }) => {

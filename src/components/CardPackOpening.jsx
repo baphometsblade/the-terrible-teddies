@@ -719,7 +719,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
                       key={shownCard.id}
                       card={shownCard}
                       data-flavor-of={shownCard.id}
-                      className="text-balance max-sm:[@media(max-height:620px)]:text-xs max-sm:[@media(max-height:620px)]:leading-snug"
+                      className="text-balance max-sm:[@media(max-height:620px)]:text-xs max-sm:[@media(max-height:620px)]:leading-[1.3]"
                     />
                   </>
                 )}
@@ -727,7 +727,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
             )}
 
             {/* Actions */}
-            <div ref={actionsRef} className={`flex flex-wrap justify-center gap-3 min-h-11 scroll-mb-3 ${pulledCards ? 'mt-4 max-sm:[@media(max-height:620px)]:mt-3' : 'mt-7'}`}>
+            <div ref={actionsRef} className={`flex flex-wrap justify-center gap-3 min-h-11 scroll-mb-3 ${pulledCards ? 'mt-4 max-sm:[@media(max-height:620px)]:mt-2' : 'mt-7'}`}>
               {!pulledCards && !isOpening && totalPacks > 0 && (
                 // Below sm it sheds the icon and some padding: at 320 the
                 // Legendary label alone is wider than the case at text-lg.
