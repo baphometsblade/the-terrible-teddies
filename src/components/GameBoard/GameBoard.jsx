@@ -1544,7 +1544,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     const validTargets = getValidTargets(playerField, opponentField);
     if (validTargets.length > 0) {
       toast({
-        title: "Not on the list",
+        title: "Goons first",
         description: `${OPPONENT_NAME}'s goons are in the way. Deal with them first.`,
         variant: "destructive"
       });
@@ -2462,7 +2462,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   className="relative mb-5 rounded-xl bg-black/25 ring-1 ring-white/5 p-3"
                 >
                   <p className="text-sm mb-2 text-plush-200">
-                    {cardPacks === 0 ? 'Out of packs. The Shop keeps a few behind the bar.' : 'Low on gems. The Shop is open all night. Nobody\'s judging.'}
+                    {cardPacks === 0 ? 'Out of packs. The Shop keeps a few under the counter. Ask nicely.' : 'Low on gems. The Shop is open all night. Chuck says broke is a personality. Chuck would know.'}
                   </p>
                   <button
                     type="button"

@@ -31,6 +31,10 @@ export const QUIPS = {
   // The same opener when the battle begins between midnight and five in the
   // morning, local time (startPoolFor). Card-agnostic, like gameStart.
   gameStartLate: [
+    "It's past midnight and you chose me. I'm flattered.",
+    "Nobody good is awake. So here we are.",
+    "Bold of you to fight me at this hour. I respect it.",
+    "Midnight. The bar is empty. Just us and our decisions.",
     "Everyone's lonely this late. Let's be lonely at each other.",
     "A booty call with fists, at this hour? My favorite kind.",
     "Sun's up soon. We'll both pretend this never happened.",
@@ -46,6 +50,18 @@ export const QUIPS = {
   // up): Chuck gloats. When it is Chuck who is down, he says a line from
   // lastCallChuckDown instead. Card-agnostic, like gameStart.
   lastCall: [
+    "Last call, sweetheart. Drink up.",
+    "Lights up, goggles off. You were never that cute.",
+    "One leaves on a stretcher. The other, with whoever's left.",
+    "Lights up. Nobody looks good. Especially you.",
+    "Last call! Get a good look at what you lost.",
+    "House lights are on, and you're going home alone. Again.",
+    "Somebody call you a cab. A hearse. Whatever.",
+    "I've got a bottle, a bad idea and no standards. Pick two.",
+    "Lights up! Find someone to go home with before they see you.",
+    "Jukebox dead, lights up, someone crying in the bathroom. Me.",
+    "Lights up. Start the walk of shame. I'll hold the door.",
+    "Last call. Last chance to get lucky. Judging by you, no.",
     "LAST CALL?! I just got here! ...Four hours ago!",
     "Why are there LIGHTS? I can see your face. Oh no.",
     "One of us is going home alone tonight. Statistically, me.",
@@ -111,7 +127,7 @@ export const QUIPS = {
     "That's one less witness.",
     "Somebody call a cab. And a coroner. And a mop.",
     "Guess they weren't on the list.",
-    "Pour one out. Not THAT one. That one's mine.",
+    "Pour one out. Actually, pour it in me. I've had a day.",
     "Call it. Time of death: whenever I said so.",
     "Down for the count. The count was one.",
     "Add it to the list of things I've broken. Page two.",

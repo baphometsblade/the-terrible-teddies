@@ -120,7 +120,7 @@ export const BOARD_LINES = {
     `${OPPONENT_NAME}'s turn. Hide your drink.`,
     `${OPPONENT_NAME}'s turn. He's had four. He says two.`,
     `${OPPONENT_NAME}'s turn. He has a plan. It's a bad one.`,
-    `${OPPONENT_NAME}'s turn. Don't make eye contact.`,
+    `${OPPONENT_NAME}'s turn. Somebody count the exits.`,
     `${OPPONENT_NAME}'s turn. Somebody hide the good bottles.`,
   ],
   endTurn: [

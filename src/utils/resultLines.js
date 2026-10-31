@@ -30,7 +30,7 @@ export const RESULT_TITLES = {
     'ABSOLUTELY UNSTUFFED!',
     "Closed casket. Open bar.",
     "Rough night. Worse morning.",
-    "You lost to Chuck.",
+    "You lost to Chuck. Sit.",
     "That went fucking poorly.",
     "Shown the door.",
     "The floor won.",
@@ -43,6 +43,8 @@ export const RESULT_TITLES = {
 export const RESULT_SUBLINES = {
   win: [
     `${OPPONENT_NAME} rage-quit into the toy chest.`,
+    `${OPPONENT_NAME} is crying in the walk-in cooler. Give him a minute.`,
+    `${OPPONENT_NAME} is in the bathroom, texting his ex. It's going badly.`,
     `${OPPONENT_NAME} went to scream at a parked car. It isn't his.`,
     `${OPPONENT_NAME} says he's fine. He is eating the garnish.`,
     `${OPPONENT_NAME} is crying in someone's coat. Nobody knows whose.`,
@@ -56,6 +58,8 @@ export const RESULT_SUBLINES = {
   ],
   loss: [
     `${OPPONENT_NAME} is doing a victory lap. It's insufferable.`,
+    `${OPPONENT_NAME}'s buying a round to celebrate. On your tab.`,
+    `${OPPONENT_NAME} is telling the whole bar. In detail. With gestures.`,
     `${OPPONENT_NAME} is already telling the story. You had a sword.`,
     `${OPPONENT_NAME} is dancing on the bar. The bartender has the hose.`,
     `${OPPONENT_NAME} is holding a trophy. It's a ketchup bottle.`,

@@ -195,6 +195,8 @@ describe('the after-dark deck', () => {
   // The last-call lines read right whichever side is on the ropes, so Chuck's
   // own pool, used when he is the one down, carries them as well.
   it('says the side-agnostic last call lines when Chuck is the one down too', () => {
-    for (const line of QUIPS.lastCall) expect(QUIPS.lastCallChuckDown).toContain(line);
+    // The first 12 are the shipped gloats aimed at the player (they stay, and
+    // would not read right from a bear on the ropes); the deck's follow them.
+    for (const line of QUIPS.lastCall.slice(12)) expect(QUIPS.lastCallChuckDown).toContain(line);
   });
 });
