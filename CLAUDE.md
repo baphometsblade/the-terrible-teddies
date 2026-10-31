@@ -71,7 +71,9 @@ Splitting).
 End-to-end tests (`npm run test:e2e`, Playwright, `e2e/`) boot the real app
 hermetically (fake session seeded in localStorage, the fake Supabase project
 and PostHog stubbed or aborted; the shared boot lives in
-`e2e/helpers/session.js`). Fourteen specs: `smoke` (boot, a full battle turn
+`e2e/helpers/session.js`, whose context fixture also seeds the age door's pass in
+every spec: the `doorPassed` option, default true, is turned off by
+`door.spec.js` and the door blocks of the others). Fifteen specs: `smoke` (boot, a full battle turn
 including an attack/exhaustion cycle, game over → Play Again,
 shop/deck-builder/challenges, nested-dialog Escape, the cross-tab pickup),
 `a11y` (axe-core, WCAG 2.1 A/AA, against every screen and dialog; fails on any
@@ -82,8 +84,9 @@ phone's width; the menu, toasts and the board's "← Menu" clear of an
 installed iPhone's status bar), `targets` (every control a finger can meet is
 44px either way, measured by what a finger meets rather than the box), `boot`
 (BootScreen's escalation and recovery), `board`, `packs`, `battlepass`,
-`collection-deck`, `meta-screens`, `money`, `cloud-save`, `password-reset` and
-`shell` (Back, titles, focus between screens, the loader hand-off).
+`collection-deck`, `meta-screens`, `money`, `cloud-save`, `password-reset`,
+`door` (the first-launch age check, below) and `shell` (Back, titles, focus
+between screens, the loader hand-off).
 
 Two rules for writing them. **Motion is off by default**: playwright.config.js
 sets `contextOptions: { reducedMotion: 'reduce' }`. A bare
@@ -315,6 +318,62 @@ boots underneath with Daily Rewards and the menu wanting the keyboard; the
 panel survives a reload of its tab (sessionStorage, for the hour the link's
 session lasts). Supabase's Site URL, redirect allow-list and SMTP must be set
 for any of it to work: DEPLOYMENT.md §1.
+
+### The door: the first-launch age check
+
+A device with no answer yet meets Bouncer Bruno before anything else: a steel
+door, a slot framing his shades, an amber "ID REQUIRED" sign and a labelled
+"Year you were born" field. It is a **courtesy gate in the fiction, not age
+verification**, and no copy claims otherwise. `main.jsx` is
+`ErrorBoundary > MotionPreference > DoorGate > SupabaseProvider > App`.
+
+- **`src/lib/door.js`** is pure (no imports, no React, so the e2e helper can
+  import its key). One localStorage record per device,
+  `terrible-teddies-door = {"v":1,"state":"pass"|"declined","at":<ms>}`; anything
+  it cannot read, another version, or a throwing storage means "ask", never a
+  free pass. **A decline wins wherever it is found** (storage or memory), a pass
+  re-reads before it writes so it cannot overwrite one, and a second tab
+  showing the door turns itself away when another declines. With storage
+  blocked the answer lives in memory for the page. The year of birth is typed,
+  compared and dropped: never stored, logged or sent (`checkAge`: a four-digit
+  year from 1900 to this year; over 18 is in, under is out, the year someone
+  turns 18 asks "Had your birthday yet this year?").
+- **`DoorGate.jsx`** (static, on the boot path) has four states: ask, opening,
+  pass, declined. A pass renders its children and nothing else, and only a
+  device with no answer fetches the lazy `TheDoor` chunk (BootScreen is its
+  Suspense fallback). The declined screen is drawn by the gate itself
+  (`DoorDeclined.jsx`: plain, `role="status"`, verbatim, nothing to press, no
+  retry), so a declined device never fetches the door and a failed chunk cannot
+  strand it on the crash screen. The door is deliberately not inside a
+  DialogErrorBoundary: a dismissible notice would be a way in.
+- **What it holds back**: nothing of the game mounts (no sign-in, no Daily
+  Rewards, no tutorial) and **PostHog starts only after a pass**: in the
+  `useState` initializer for a stored pass (so a first-render crash is still
+  reported) and in an effect for a first-ever one. What it does *not* hold
+  back: the game's modules are in the entry chunk and still load, so
+  supabase-js restores or refreshes a stored session at import. Making that
+  strict would mean lazy-loading App, costing every returning player a request;
+  it was decided against. `?action=` and a password-recovery link survive the
+  door (authLanding and supabase-js read the address at module load; a
+  recovery landing also writes its resume marker then, so a reload at the door
+  still shows the set-password panel). The crash screen's "Clear Data" keeps
+  the door record (`ErrorBoundary.handleClearData`).
+- **No brass on any answer**: every control on the door is `.btn-glass`, so it
+  does not light the answer it wants; every control is 44px, takes
+  `ignoreKeyRepeat` and `useArmedAfterOpen` (the double-tap that launched the
+  app cannot answer), and a second tap on an answer is ignored; only an
+  explicit "under" verdict declines. All its copy is `DOOR_COPY` (budgets in
+  `TheDoor.test.jsx`); the content line is `CONTENT_NOTICE`
+  (`src/lib/contentNotice.js`), which the door, the sign-in screen and the
+  tutorial all print: `contentNotice.test.js` fails if any other source file
+  spells the descriptor out.
+- **The bar clock**: `src/lib/barClock.js` is a pure table (`BAR_CLOCK`, six
+  parts of the night keyed on `getHours()`, so DST cannot skew it) that drives
+  the Battle button's subtitle (on every screen size) and `NeonSign`, a
+  decorative hung sign on the menu (aria-hidden, drawn from lg up; below lg the
+  Battle line is the clock). Read on mount and on `visibilitychange`, no timer;
+  only the last-call sign idles with a flicker. `e2e/responsive.spec.js` loops
+  over the table itself at 320px, so any line dropped into a row is measured.
 
 ### The shell: Back, focus, safe areas
 
@@ -553,6 +612,15 @@ Rules on the client side of the money:
 - **Cosmetics are permanent**: `unlockedCosmetics` survives the season change
   and the reset; only the pass's progress, claims and Premium are per season.
 
+- **House ranks** (`src/lib/houseRank.js`) are derived from the level and
+  stored nowhere (`houseRank`, `rankUp`, `rankSpan`, `rankLevels`). The level-up
+  toast (`src/lib/levelUpToast.jsx`) keeps "Level N!" as its title and adds the
+  rung's line under the bonus when a level crosses one (its label is "Bonus:"
+  then, measured: the 162px description column at 360 cannot hold both the
+  long label and a four-digit bonus); Player Stats shows the rank and the level
+  band; the menu chip reads "<rank> · N wins"; the result panel shows the
+  promotion line too, because that is where most level-ups happen.
+
 ### Battle System
 
 `src/components/GameBoard/GameBoard.jsx` handles the full battle loop:
@@ -659,6 +727,28 @@ a live battle (which books a loss), and holds the cloud save's decisions
 recent entries, not one line of text — Chuck's turn writes several entries in
 a single render.
 
+**Last call, the Tab and the words on the board.** `LAST_CALL_HP` (5, exported
+from gameStore) is the one number for last call and the comeback achievement.
+The first time either side is at or below it (and alive; a concede is not a last
+call), once per game, GameBoard writes a log line (the accessible record), shows
+a "Last call" banner (it and the turn banner take turns, 1.3 s each), has Chuck
+speak a `lastCall` line (when one hit takes him from above 8 HP to last call, it
+wins over his near-death line) and sets `data-last-call` on the board, which
+fades `.house-lights` and `.felt-lamp` in under all content (a cold-white wash:
+no text's contrast moves, no new colour signal on the board). The result
+panel's rewards are printed as a bar tab (`GameBoard/BarTab.jsx`): a `<dl>` with
+dotted leaders (a screen reader hears "Damage dealt, 31"), "Battle Rewards" kept as
+visible text under an aria-hidden "THE TAB", Chuck's running bill read from the
+store's `totalDamageDealt` (no new field), the level bar, level-up row (with the
+house-rank promotion line) and Battle Pass tier line as before, and one footer;
+the four stat rows go sr-only below 700px tall so Play Again stays in reach.
+Result copy is picked **once when the game ends** and kept in a ref
+(`pickResultCopy`), never re-rolled by a render. The enlarged `CardPreview`
+shows the card's flavor line through `FlavorLine` (aria-hidden like the rest of
+the preview; `previewPlacement.captionHeight` counts it and degrades flavor,
+then key hints, then rules, in that order). The emote buttons are named as the
+pass sells them (`cosmeticLong`), not by their save keys.
+
 Leaving a live battle — the board's own "← Menu", Concede, or the system Back
 — asks first in `LeaveBattleDialog` (Keep playing is the focused default and
 Escape). App's game screen renders no BackButton; GameBoard's ref exposes the
@@ -732,16 +822,18 @@ anywhere — navigation is the `currentScreen` state in `App`) and
 Removing both took the entry chunk from 273.19 kB / 78.07 kB gzip to
 243.30 kB / 69.19 kB gzip. Don't re-add either without a consumer.
 
-Where it stands (`npm run build` with the checked-in `.env`, 2026-10-24): the
-entry chunk is 286.60 kB / 87.07 kB gzip, and first-paint JS — the entry plus
-the three chunks index.html modulepreloads (`animations`, `ui`, `state`) — is
-574.15 kB / 181.46 kB gzip; CSS is 132.72 kB / 22.70 kB gzip. The GameBoard
-chunk, Howler inside, is 104.59 kB / 33.02 kB gzip and `effects` 10.67 kB /
-4.28 kB gzip. The entry inlines the Supabase URL and anon key, so the build
-CI's `e2e-prod` job makes (the e2e test keys) reads about 0.4 kB smaller
-(286.19 kB / 86.86 kB); compare like with like. Re-measure and read the gzip
-column; a new chunk in index.html's modulepreload list, or a lazy module's
-code turning up in `index-*.js`, is the thing to look for.
+Where it stands (`npm run build` with the e2e test keys, 2026-10-31, after the
+after-dark pass): the entry chunk is 298.61 kB / 91.68 kB gzip (286.19 kB /
+86.86 kB before it: the door's pure check and gate, the clock table, the rank
+table and the menu's and level-up toast's copy tables are on the boot path),
+CSS is 143.60 kB / 25.09 kB gzip, the GameBoard chunk (Howler inside, and now the
+result, banner and receipt tables) is 126.15 kB / 41.75 kB gzip, `TheDoor` is a
+5.74 kB / 2.54 kB gzip chunk that only a device with no answer fetches, and
+`animations`, `ui`, `state` and `effects` are unchanged. The checked-in `.env`
+inlines a longer Supabase URL and key, so that build reads about 0.4 kB bigger;
+compare like with like. Re-measure and read the gzip column; a new chunk in
+index.html's modulepreload list, or a lazy module's code turning up in
+`index-*.js`, is the thing to look for.
 
 **Dependency advisories.** As of October 2026 `npm audit` reports 4 moderate,
 all one advisory: postcss-selector-parser's quadratic parsing of flat
@@ -809,11 +901,23 @@ Rules that are easy to break:
   whose default `bg-primary` replaces it. Use a plain `<button type="button">`.
 - **Pseudo-elements are claimed.** `.grain`, `.foil`, `.sheen`, `.worn`,
   `.felt-print`, `.end-turn-ready` and `.deck-slot-new` use `::after`;
-  `.trim-brass`, `.stitched` and `.stitched-plush` use `::before`. Two
+  `.trim-brass`, `.neon`, `.stitched` and `.stitched-plush` use `::before`. Two
   claimants on one element silently lose one. (`.foil-epic` only retunes
   `.foil`'s own `::after`; `.game-surface`, `.tile-glass` and the zooms use
   none.) The same list heads the materials section of index.css; keep the two
   identical.
+- **After-dark materials, used only where the night peaks** (the door, the
+  menu's sign, the result tab, last call; never on a money panel, never as a
+  colour signal on the board): `.neon` (+ `data-tone`; bent-tube lettering, the
+  only new `::before` claim; opacity-only power-on, one flicker for last call),
+  `.steel-door` + `.peep-slot` and `.note-taped` (the door and the closed sign's
+  note; no pseudo-element, their parts are child elements), and `.receipt`
+  (+ `-feed`, `-stain`, `-print`: thermal paper with a mask for its torn edge, a
+  plain colour so axe can read it) plus `.house-lights` and `.felt-lamp` (real
+  elements under all content). Every pairing on them was measured on its real
+  background and recorded in a CSS comment; texture layers may only darken,
+  because axe reads `background-color`, not the texture, so `src/neon.test.js`
+  recomputes the neon and steel ratios from the live tokens.
 - **No `backdrop-filter`, anywhere.** What sits behind a panel or a dialog
   keeps moving (the drifting menu teddies, rare-card foil), and a blur over
   moving content is recomputed every frame. Darker fills do the separating.
@@ -828,6 +932,42 @@ Rules that are easy to break:
   `a11y.spec.js` now fails on any tab stop that is not a real control.
 - **Every control is 44px** either way, the smallest comfortable touch target
   (`e2e/targets.spec.js`).
+
+### The voice: adult comedy, written once and kept in tables
+
+The game is 18+ and the crude, sexual-innuendo comedy is the product: the
+owner's rule is that **shipped adult content stays, and new copy goes at least
+as far**. Nothing already shipped is removed, renamed or softened (a rewrite is
+accepted only where it is clearly funnier and at least as naughty). The few
+hard floors, which reviewers hold and nothing else: nothing sexual involving
+children or child-coded characters (so Chuck's three **card-attached** pools,
+`oppPlays`, `oppKills` and `oppLosesCreature`, spoken straight after a specific
+card, are profane and savage but never sexual: `teddyTalk.test.js` pins it for
+the explicit-word list), no sexual line wrapped around a random card name, no
+non-consent punchline, no slurs or punching at protected groups, no real
+people, scandals or brands, and **plain, accurate rules, prices, odds,
+confirmations, refunds, errors and the under-18 screen** (the funny lives around
+them, never in them). Two voices, never mixed: the House (the deadpan
+bartender: menus, receipts, achievements, no exclamation marks) and Chuck
+(loud, the only voice with CAPS).
+
+All of it lives in small data tables with **budget tests that measure every
+line against its slot**, so copy is changed in one place and a line that does
+not fit fails loudly: `teddyTalk.js` (Chuck's pools), `resultLines.js` and
+`houseLines.js` (result variants, receipt footers, banners, log variants, leave
+asides), `menuLines.js` and `mgmtNotes.js` (the menu), `dailyLines.js`,
+`leaderboardLines.js`, `packLines.js`, `barClock.js`, `DOOR_COPY`,
+`houseRank.js` (ten ranks derived from level, stored nowhere), `ACHIEVEMENTS`
+(each with a `locked` caption), `challenges.js`, `season.js` (Season 3 is never
+renamed; names apply from Season 4) and `cosmetics.js`'s `COSMETIC_LABELS`
+(display labels only: the keys are save data). Fit tests for fixed-width slots
+loop over the table itself, at 320px, in e2e. Existing claims-against-reality
+guards (Tutorial, shopCopy, supportCopy, cosmetics) win over any line.
+`FlavorLine.jsx` is the one style for a card's flavor line, shown in the
+Collection, the pack reveal, the Deck Builder's rows and the battle preview
+(`FLAVOR_MAX` is 100). Not built, on purpose: a Language (Uncut/Bleeped)
+control, a randomised default player name (it would touch the cloud save's
+fresh-save detection), and any rename of a live season.
 
 ### Card Art
 
