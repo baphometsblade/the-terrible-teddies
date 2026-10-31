@@ -81,6 +81,26 @@ describe('challenge pool shape', () => {
     }
   });
 
+  // The name is slotted into "{name} claimed: N XP." and, for the XP challenge,
+  // into the Battle Pass footer (“{name}” pays +N XP), so it carries no comma
+  // and no terminal punctuation; and it is the longest string in the card's
+  // title line (28 characters, the measured one-line-or-two budget).
+  it('keeps every name usable in the sentences it is slotted into', () => {
+    const names = [...DAILY_POOL, ...WEEKLY_POOL].map((c) => c.name);
+    for (const name of names) {
+      expect(name.length, name).toBeLessThanOrEqual(28);
+      expect(name, name).not.toMatch(/[,.!?:;]/);
+      expect(name, name).toBe(name.trim());
+      expect(name, name).not.toMatch(/\p{Extended_Pictographic}/u);
+    }
+    expect(new Set(names).size, 'two challenges share a name').toBe(names.length);
+  });
+
+  // The slate is the dialog's own word (the reset label); no name may use it.
+  it('does not use the word slate in a name', () => {
+    for (const c of [...DAILY_POOL, ...WEEKLY_POOL]) expect(c.name, c.id).not.toMatch(/\bslate\b/i);
+  });
+
   // A count in copy takes a separator, as every number on screen does.
   it('writes its numbers with thousands separators', () => {
     for (const challenge of [...DAILY_POOL, ...WEEKLY_POOL]) {

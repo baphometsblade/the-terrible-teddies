@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createElement, act } from 'react';
 import { createRoot } from 'react-dom/client';
 import PlayerStats from './PlayerStats';
-import { useGameStore } from '@/stores/gameStore';
+import { useGameStore, ACHIEVEMENTS } from '@/stores/gameStore';
 import { HOUSE_RANKS, houseRank, rankLevels } from '@/lib/houseRank';
 
 // The header's house rank: derived from the level, drawn under the name.
@@ -87,5 +87,63 @@ describe("Player Stats' house rank", () => {
     useGameStore.setState({ level: HOUSE_RANKS[1].min });
     render();
     expect(label().classList.contains('label-caps')).toBe(true);
+  });
+});
+
+// The House keeps a file on the player: headings and empty states that pay them
+// off, and a caption under each locked achievement.
+describe("Player Stats' file", () => {
+  const tab = (name) => act(() => host.querySelector(`[data-tab="${name}"]`).click());
+
+  it('heads the stats tab Rap Sheet / Bad Habits / Performance Review, and the book The Little Black Book', () => {
+    render();
+    const headings = () => [...host.querySelectorAll('h3')].map((h) => h.textContent);
+    expect(headings()).toEqual(['Rap Sheet', 'Bad Habits', 'Performance Review']);
+    tab('achievements');
+    expect(headings()).toEqual(['The Little Black Book']);
+    // The tab's own accessible name stays plain.
+    expect(host.querySelector('[data-tab="achievements"]').textContent).toMatch(/^Achievements/);
+  });
+
+  it('pays the headings off while the file is empty, and not after', () => {
+    render();
+    expect(host.querySelector('[data-stats-empty]').textContent).toBe('No priors. Give it a night.');
+    act(() => root.unmount());
+    host.remove();
+    useGameStore.setState({ totalBattles: 1 });
+    render();
+    expect(host.querySelector('[data-stats-empty]')).toBeNull();
+  });
+
+  it('says blank pages with none unlocked, nothing in between, and worried when all are', () => {
+    render();
+    tab('achievements');
+    expect(host.querySelector('[data-book-line]').textContent).toBe('Blank pages. Go make some mistakes.');
+    act(() => root.unmount());
+    host.remove();
+    useGameStore.setState({ completedAchievements: [ACHIEVEMENTS[0].id] });
+    render();
+    tab('achievements');
+    expect(host.querySelector('[data-book-line]')).toBeNull();
+    act(() => root.unmount());
+    host.remove();
+    useGameStore.setState({ completedAchievements: ACHIEVEMENTS.map((a) => a.id) });
+    render();
+    tab('achievements');
+    expect(host.querySelector('[data-book-line]').textContent).toBe('Every page used. We’re worried.');
+  });
+
+  it('captions a locked achievement, and only while it is locked', () => {
+    useGameStore.setState({ completedAchievements: [ACHIEVEMENTS[0].id] });
+    render();
+    tab('achievements');
+    const captions = [...host.querySelectorAll('[data-locked-caption]')].map((c) => c.textContent);
+    expect(captions).toEqual(ACHIEVEMENTS.slice(1).map((a) => a.locked));
+  });
+
+  it('shows the rank\'s roomy line under the rank', () => {
+    useGameStore.setState({ level: HOUSE_RANKS[2].min });
+    render();
+    expect(host.querySelector('[data-house-rank-line]').textContent).toBe(HOUSE_RANKS[2].promotedLong);
   });
 });
