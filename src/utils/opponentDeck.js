@@ -8,14 +8,14 @@ import { ALL_CARDS } from '@/stores/gameStore';
 // hardcode; these are the pre-difficulty-modifier baselines (see
 // DIFFICULTY_CONFIG below for the attack/defense deltas applied on top).
 export const OPPONENT_GOONS = [
-  { id: 101, name: "Repo Ted", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
-  { id: 102, name: "Loan-Shark Larry", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'common' },
-  { id: 103, name: "Off-the-Grid Greg", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'piercing', rarity: 'rare' },
-  { id: 104, name: "Unhinged Cuddles", attack: 3, defense: 3, type: 'action', cost: 3, ability: 'fury', rarity: 'epic' },
-  { id: 105, name: "Whiskey Whiskers", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common' },
-  { id: 106, name: "Landlord Lucifur", attack: 4, defense: 4, type: 'action', cost: 4, ability: 'shield', rarity: 'legendary' },
-  { id: 107, name: "Custody-Battle Cub", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'stealth', rarity: 'rare' },
-  { id: 108, name: "Void Where Prohibited", attack: 5, defense: 3, type: 'action', cost: 4, ability: 'piercing', rarity: 'epic' },
+  { id: 101, name: "Repo Ted", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Repossesses cars, couches and, once, a wedding cake. Mid-reception." },
+  { id: 102, name: "Loan-Shark Larry", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'common', description: "Four percent a week. The gold tooth is also collateral." },
+  { id: 103, name: "Off-the-Grid Greg", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'piercing', rarity: 'rare', description: "Knows who's behind everything. Is wrong about who. Has a map." },
+  { id: 104, name: "Unhinged Cuddles", attack: 3, defense: 3, type: 'action', cost: 3, ability: 'fury', rarity: 'epic', description: "Smiles when it hurts. Smiles when it doesn't. The padded room has his name on it." },
+  { id: 105, name: "Whiskey Whiskers", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Nursing the same drink since before the jukebox had songs." },
+  { id: 106, name: "Landlord Lucifur", attack: 4, defense: 4, type: 'action', cost: 4, ability: 'shield', rarity: 'legendary', description: "Rent's due. Souls accepted. No pets, no exceptions, no mercy." },
+  { id: 107, name: "Custody-Battle Cub", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'stealth', rarity: 'rare', description: "Filed the custody papers himself. Brings his own suitcase. Wins by default." },
+  { id: 108, name: "Void Where Prohibited", attack: 5, defense: 3, type: 'action', cost: 4, ability: 'piercing', rarity: 'epic', description: "Terms and conditions apply. Nobody has ever read them. He's in all of them." },
 ].map((card) => Object.freeze({ ...card }));
 
 const DECK_SIZE = 8;

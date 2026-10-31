@@ -18,31 +18,31 @@ export const ALL_CARDS = [
   { id: 6, name: "Shit-Talk Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'uncommon', description: "Runs her mouth until you HAVE to hit her. That's the plan." },
   { id: 7, name: "Peeping Pete", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'stealth', rarity: 'uncommon', description: "You can't target what's hiding in your hamper." },
   { id: 8, name: "Chokehold Cuddles", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'shield', rarity: 'uncommon', description: "His hugs are technically a submission move." },
-  { id: 9, name: "Shiv-in-a-Pillow", attack: 4, defense: 1, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon', description: "Soft on the outside. Very much not on the inside." },
+  { id: 9, name: "Shiv-in-a-Pillow", attack: 4, defense: 1, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon', description: "Soft on the outside. Very much not on the inside. Nobody sleeps with him twice." },
   { id: 10, name: "Anger-Management Gus", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'uncommon', description: "Dropped out of the program. The program was relieved." },
 
   // Rare
   { id: 11, name: "Restraining-Order Randy", attack: 1, defense: 5, type: 'action', cost: 3, ability: 'protect', rarity: 'rare', description: "You legally cannot get within 50 feet of his friends." },
   { id: 12, name: "'Roid-Rage Reggie", attack: 2, defense: 3, type: 'action', cost: 3, ability: 'fury', rarity: 'rare', description: "The stuffing is 90% pre-workout." },
   { id: 13, name: "The F-Bomb", attack: 5, defense: 1, type: 'action', cost: 4, ability: 'none', rarity: 'rare', description: "Drops hard. Offends everyone. No survivors." },
-  { id: 14, name: "Slumlord Cotton", attack: 3, defense: 3, type: 'action', cost: 4, ability: 'royal', rarity: 'rare', description: "Owns half the toy chest. Fixes none of it." },
+  { id: 14, name: "Slumlord Cotton", attack: 3, defense: 3, type: 'action', cost: 4, ability: 'royal', rarity: 'rare', description: "Owns half the block. Rents it by the hour. Bills by the stain." },
   { id: 15, name: "Tax-Fraud Teddy", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'stealth', rarity: 'rare', description: "Officially, he doesn't exist. Ask his accountant." },
 
   // Epic
-  { id: 16, name: "Lord Fluffington, Disgraced", attack: 4, defense: 4, type: 'action', cost: 5, ability: 'shield', rarity: 'epic', description: "Lost the estate. Kept the attitude and the armor." },
+  { id: 16, name: "Lord Fluffington, Disgraced", attack: 4, defense: 4, type: 'action', cost: 5, ability: 'shield', rarity: 'epic', description: "Lost the estate to a lap dancer. She's technically a duchess now." },
   { id: 17, name: "Blackout Bjorn", attack: 6, defense: 1, type: 'action', cost: 4, ability: 'fury', rarity: 'epic', description: "Remembers nothing. Regrets everything. Hits like a truck." },
   { id: 18, name: "Grandpa Warcrimes", attack: 2, defense: 6, type: 'action', cost: 5, ability: 'protect', rarity: 'epic', description: "Don't ask what he did in the Pillow Wars. He'll tell you." },
-  { id: 19, name: "The Seam Reaper", attack: 5, defense: 3, type: 'action', cost: 5, ability: 'piercing', rarity: 'epic', description: "Comes for every bear's thread eventually." },
+  { id: 19, name: "The Seam Reaper", attack: 5, defense: 3, type: 'action', cost: 5, ability: 'piercing', rarity: 'epic', description: "Every bear's last date. Brings his own scissors, never calls." },
 
   // Legendary
-  { id: 20, name: "The Godfluffer", attack: 5, defense: 5, type: 'action', cost: 6, ability: 'taunt', rarity: 'legendary', description: "He'll make you an offer you can't refuse. Or ignore." },
+  { id: 20, name: "The Godfluffer", attack: 5, defense: 5, type: 'action', cost: 6, ability: 'taunt', rarity: 'legendary', description: "Leave the gun. Take the lube." },
   { id: 21, name: "Fluffpocalypse Now", attack: 7, defense: 3, type: 'action', cost: 6, ability: 'fury', rarity: 'legendary', description: "Loves the smell of stuffing in the morning." },
 
   // Trap Cards
-  { id: 30, name: "Honey Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common', description: "Sweet, seductive, and absolutely a setup." },
+  { id: 30, name: "Honey Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common', description: "He only came up for a nightcap. The nightstand had teeth." },
   { id: 31, name: "Hug With Consequences", attack: 0, defense: 0, type: 'trap', cost: 1, effect: 'damage', amount: 2, rarity: 'common', description: "It felt nice for exactly one second." },
   { id: 32, name: "Premature Detonation", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "It happens to lots of traps. Don't make it weird." },
-  { id: 33, name: "Full Metal Buttons", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'uncommon', description: "What is your major malfunction, fluffball?" },
+  { id: 33, name: "Full Metal Buttons", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'uncommon', description: "A quarter buys a shock. Not the kind you came for." },
   { id: 34, name: "Cuddle Homicide", attack: 0, defense: 0, type: 'trap', cost: 4, effect: 'damage', amount: 6, rarity: 'rare', description: "The coroner ruled it 'death by affection.'" },
 
   // Special Cards
@@ -50,10 +50,10 @@ export const ALL_CARDS = [
   { id: 41, name: "Honey on the Rocks", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'draw', amount: 2, rarity: 'common', description: "Bartender knows the order. Draw two, tell no one." },
   { id: 42, name: "Bloodshot Button Eyes", attack: 0, defense: 0, type: 'special', cost: 1, effect: 'draw', amount: 1, rarity: 'common', description: "Haven't slept since the divorce. See everything." },
   { id: 43, name: "Back-Alley Surgery", attack: 0, defense: 0, type: 'special', cost: 4, effect: 'heal', amount: 8, rarity: 'uncommon', description: "No license, no anesthesia, no questions." },
-  { id: 44, name: "Profanity Pep Talk", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'buff', amount: 1, rarity: 'uncommon', description: "Every third word is bleeped. All teddies +1 attack." },
+  { id: 44, name: "Profanity Pep Talk", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'buff', amount: 1, rarity: 'uncommon', description: "Every third word is bleeped. The rest is mostly 'fuck' and 'proud of you.'" },
   { id: 45, name: "Fluffing Bender", attack: 0, defense: 0, type: 'special', cost: 4, effect: 'draw', amount: 3, rarity: 'rare', description: "Three cards deep and still going. Tomorrow's problem." },
   { id: 46, name: "The Full Refluff", attack: 0, defense: 0, type: 'special', cost: 6, effect: 'heal', amount: 15, rarity: 'epic', description: "Head-to-toe restuffing. You didn't hear about the clinic from us." },
-  { id: 47, name: "Last Call Blessing", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'buff', amount: 2, rarity: 'legendary', description: "One more round for everybody. All teddies +2 attack." },
+  { id: 47, name: "Last Call Blessing", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'buff', amount: 2, rarity: 'legendary', description: "One more round for everybody. Including the two under the pool table." },
 
   // ——— The Barfly Expansion ———
   // Twenty new bears (ids 50-69). Abilities are restricted to the ones the
@@ -64,29 +64,29 @@ export const ALL_CARDS = [
   { id: 52, name: "Two-Beer Tina", attack: 2, defense: 1, type: 'action', cost: 2, ability: 'fury', rarity: 'common', description: "Two beers in and she's everyone's problem. Three beers in and she's unstoppable." },
   { id: 53, name: "Coupon Carl", attack: 1, defense: 2, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Fights dirty. Tips worse." },
   { id: 54, name: "Sticky Mickey", attack: 1, defense: 2, type: 'action', cost: 2, ability: 'protect', rarity: 'common', description: "Nobody asks why he's sticky. He's not going anywhere, and neither is whoever's behind him." },
-  { id: 55, name: "Ashtray Annie", attack: 1, defense: 2, type: 'action', cost: 1, ability: 'shield', rarity: 'common', description: "Smells like 1987 and menthols. Hits like a smoke screen." },
+  { id: 55, name: "Ashtray Annie", attack: 1, defense: 2, type: 'action', cost: 1, ability: 'shield', rarity: 'common', description: "Smells like 1987 and menthols. Burned through three husbands and a mattress." },
   { id: 56, name: "Bouncer Bruno", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'taunt', rarity: 'uncommon', description: "You're not on the list. Nobody is on the list." },
-  { id: 57, name: "Hairball Harriet", attack: 3, defense: 2, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon', description: "Coughs up more than hairballs." },
+  { id: 57, name: "Hairball Harriet", attack: 3, defense: 2, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon', description: "Swallows anything once. Returns most of it." },
   { id: 58, name: "Prison-Wine Pierre", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'uncommon', description: "Ferments grudges in a toilet. Delicious." },
   { id: 59, name: "Glitter Lungs", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'stealth', rarity: 'uncommon', description: "Inhaled a craft store in '09. Still sparkles when he coughs." },
   { id: 60, name: "Beargaritaville", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'shield', rarity: 'uncommon', description: "Wastes away. Aggressively." },
-  { id: 61, name: "Snitchslap Sue", attack: 3, defense: 3, type: 'action', cost: 3, ability: 'none', rarity: 'uncommon', description: "Court-ordered to stay 50 feet from Stitches." },
+  { id: 61, name: "Snitchslap Sue", attack: 3, defense: 3, type: 'action', cost: 3, ability: 'none', rarity: 'uncommon', description: "Slapped the groom, slept with the best man, wore a wire to both." },
   { id: 62, name: "Chainsmoke Chad", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'fury', rarity: 'rare', description: "Lights the next one off your burning deck." },
   { id: 63, name: "Bail-Money Bonnie", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'protect', rarity: 'rare', description: "She knows a guy. She IS the guy." },
-  { id: 64, name: "Sgt. Snuggles, Dishonorable", attack: 4, defense: 3, type: 'action', cost: 4, ability: 'shield', rarity: 'rare', description: "Discharged for conduct unbearable." },
+  { id: 64, name: "Sgt. Snuggles, Dishonorable", attack: 4, defense: 3, type: 'action', cost: 4, ability: 'shield', rarity: 'rare', description: "Court-martialed for fraternizing. With the entire tribunal." },
   { id: 65, name: "The Debt Collector", attack: 5, defense: 1, type: 'action', cost: 4, ability: 'piercing', rarity: 'rare', description: "Your kneecaps called. They're nervous." },
   { id: 66, name: "Mama Mauls", attack: 5, defense: 3, type: 'action', cost: 5, ability: 'taunt', rarity: 'epic', description: "Ask about her cubs. Go ahead. Ask." },
   { id: 67, name: "Whiskey Priest", attack: 3, defense: 5, type: 'action', cost: 5, ability: 'protect', rarity: 'epic', description: "Absolves everything but his own tab." },
-  { id: 68, name: "Duke of Dumpsterfire", attack: 6, defense: 2, type: 'action', cost: 5, ability: 'fury', rarity: 'epic', description: "Royalty of the alley. Arsonist of the heart." },
+  { id: 68, name: "Duke of Dumpsterfire", attack: 6, defense: 2, type: 'action', cost: 5, ability: 'fury', rarity: 'epic', description: "Royalty of the alley. Exes report a burning sensation. So does the fire marshal." },
   { id: 69, name: "Big Spoon, Last Warning", attack: 6, defense: 4, type: 'action', cost: 6, ability: 'shield', rarity: 'legendary', description: "The cuddle is mandatory. The survival is optional." },
 
   // Five new traps (ids 70-74) and five new specials (ids 75-79). Specials
   // only use effects applySpecialEffect implements: heal / draw / buff.
   { id: 70, name: "Glass in the Gummy Bears", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common', description: "Chewy, with consequences." },
-  { id: 71, name: "Wet Floor, No Sign", attack: 0, defense: 0, type: 'trap', cost: 1, effect: 'damage', amount: 2, rarity: 'common', description: "OSHA has entered the chat. And slipped." },
-  { id: 72, name: "Loaded Claw Machine", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Rigged? Obviously. Deadly? Also yes." },
-  { id: 73, name: "Last Call Stampede", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Four words: two-for-one tequila night." },
-  { id: 74, name: "The Ol' Honey Bucket", attack: 0, defense: 0, type: 'trap', cost: 4, effect: 'damage', amount: 6, rarity: 'rare', description: "Classic. Disgusting. Effective." },
+  { id: 71, name: "Wet Floor, No Sign", attack: 0, defense: 0, type: 'trap', cost: 1, effect: 'damage', amount: 2, rarity: 'common', description: "Beer, glitter and a third liquid. The mop quit rather than ask." },
+  { id: 72, name: "Loaded Claw Machine", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Grabs hard, drops fast. Everybody leaves in pieces." },
+  { id: 73, name: "Last Call Stampede", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Five words: two for one tequila night." },
+  { id: 74, name: "The Ol' Honey Bucket", attack: 0, defense: 0, type: 'trap', cost: 4, effect: 'damage', amount: 6, rarity: 'rare', description: "Honey, bent nails and a groom's necktie. Nobody's checked on the groom." },
   { id: 75, name: "Hair of the Bear", attack: 0, defense: 0, type: 'special', cost: 2, effect: 'heal', amount: 3, rarity: 'common', description: "Cures what the bar did. Causes what the bar will." },
   { id: 76, name: "Minibar Raid", attack: 0, defense: 0, type: 'special', cost: 1, effect: 'heal', amount: 2, rarity: 'common', description: "Tiny bottles. Tiny crimes. Tiny recovery." },
   { id: 77, name: "The Group Chat Leaks", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'draw', amount: 4, rarity: 'rare', description: "Everyone's secrets, face up. Draw four, lose friends." },
