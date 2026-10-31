@@ -74,6 +74,21 @@ test('collection has no WCAG 2.1 A/AA violations', async ({ page }) => {
 test('battle board has no WCAG 2.1 A/AA violations', async ({ page }) => {
   await page.getByRole('button', { name: 'Battle', exact: true }).click();
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  // Chuck's opening quip fades in; axe composites colours, so a bubble caught
+  // mid-fade reports a blended colour (it did, under a loaded full run). Audit
+  // the settled page, as CLAUDE.md asks.
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [...document.querySelectorAll('.bg-plush-100')].every((el) => {
+          for (let n = el; n && n !== document.body; n = n.parentElement) {
+            if (Number(getComputedStyle(n).opacity) < 1) return false;
+          }
+          return true;
+        })
+      )
+    )
+    .toBe(true);
   await expectNoViolations(page, 'battle board');
 });
 
