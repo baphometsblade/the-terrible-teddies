@@ -313,7 +313,7 @@ test('owned Battle Pass cosmetics render in battle: gold frames and working emot
   await expect(page.locator('[data-cosmetic="gold"]').first()).toBeVisible(SLOW);
 
   // The Teddy Emote is a usable table emote: click → crude line in the log.
-  const emoteBtn = page.getByRole('button', { name: 'Teddy Emote' });
+  const emoteBtn = page.getByRole('button', { name: 'Trash Talk emote' });
   await expect(emoteBtn).toBeVisible();
   await emoteBtn.click();
   await expect(
@@ -352,7 +352,7 @@ test('emote buttons stay fully tappable on a 390px phone', async ({ page }) => {
   await page.getByRole('button', { name: 'Battle', exact: true }).click();
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
 
-  for (const name of ['Teddy Emote', 'Confetti Cannon Emote', 'End Turn']) {
+  for (const name of ['Trash Talk emote', 'Premature Confetti emote', 'End Turn']) {
     const box = await page.getByRole('button', { name, exact: true }).boundingBox();
     expect(box, `${name} has no box`).not.toBeNull();
     expect(box.x, `${name} clipped at the left edge`).toBeGreaterThanOrEqual(0);
@@ -917,7 +917,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 
 
     await page.getByRole('button', { name: /^Play / }).first().click();
     await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2);
-    await page.getByRole('button', { name: 'Teddy Emote' }).click();
+    await page.getByRole('button', { name: 'Trash Talk emote' }).click();
     await expect(page.locator('[data-speech="player"]:visible')).toHaveCount(1, SLOW);
     const placed = await speechOverCards(page);
     expect(placed.length).toBeGreaterThan(0);
@@ -1038,7 +1038,7 @@ test('battle and result controls are at least 44px to tap on a phone', async ({ 
       if (!box || box.width < 44 || box.height < 44) small.push(`${name} ${box ? `${Math.round(box.width)}x${Math.round(box.height)}` : 'missing'}`);
     }
   };
-  await measure(page, ['End Turn', 'Concede', 'Teddy Emote', '← Menu', 'Sound effects']);
+  await measure(page, ['End Turn', 'Concede', 'Trash Talk emote', '← Menu', 'Sound effects']);
 
   await page.getByRole('button', { name: 'Concede' }).click();
   await page.getByRole('dialog', { name: 'Concede this battle?' })

@@ -19,7 +19,7 @@ import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY 
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
 import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
-import { bestOwnedBorder, ownedEmotes } from '@/lib/cosmetics';
+import { bestOwnedBorder, ownedEmotes, cosmeticLong } from '@/lib/cosmetics';
 import { abilityRules, describeCard } from '@/lib/abilities';
 import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, canRally, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
 import FlavorLine from '../FlavorLine';
@@ -2964,8 +2964,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                     type="button"
                     key={emote.name}
                     onClick={() => sendEmote(emote)}
-                    aria-label={emote.name}
-                    title={emote.name}
+                    // Named as the pass sells it ("Trash Talk emote"), not by its save key.
+                    aria-label={cosmeticLong(emote.name)}
+                    title={cosmeticLong(emote.name)}
                     className={`btn-glass flex-none grid place-items-center h-11 w-11 rounded-xl text-lg ${FOCUS_OUTLINE}`}
                   >
                     {emote.icon}
