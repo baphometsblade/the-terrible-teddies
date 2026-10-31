@@ -282,12 +282,14 @@ const MainMenu = ({
       <main className="relative z-10 flex-1 flex flex-col">
       {/* Hero: title, the player's own cards, and the one big button. */}
       <section className="relative flex-1 flex flex-col items-center justify-center py-6 md:py-8 [@media(max-height:700px)]:py-3">
-        {/* The bar's sign, hung in the hero's corner: decoration, drawn from
-            md up and absolutely placed, so it takes no layout and Battle's
-            place above the fold on a phone cannot move (responsive.spec.js).
-            Below md the clock is the Battle button's line instead. Keyed by
-            the part of the night, so a sign that changes while the menu is
-            open switches on afresh. */}
+        {/* The bar's sign, hung in the hero's top-right corner: decoration,
+            absolutely placed, so it takes no layout and Battle's place above
+            the fold on a phone cannot move (responsive.spec.js). Drawn from
+            lg, where the title leaves the corner free: from 768 to 1023 the
+            72px title spans most of the width, and the sign, measured there,
+            sat on its last letter at 900x700. Below that the clock is the
+            Battle button's line. Keyed by the part of the night, so a sign
+            that changes while the menu is open switches on afresh. */}
         <NeonSign
           key={sign.state}
           text={sign.text}
@@ -295,7 +297,7 @@ const MainMenu = ({
           lit={sign.lit}
           flicker={sign.flicker}
           note={sign.note}
-          className="hidden md:block absolute right-[3%] top-1 -rotate-3 text-xl lg:right-[5%] lg:top-3 lg:text-2xl"
+          className="hidden lg:block absolute right-[5%] top-3 -rotate-3 text-xl xl:text-2xl"
         />
         <motion.div
           initial={{ y: -16, opacity: 0 }}
@@ -354,9 +356,12 @@ const MainMenu = ({
                   <div className="flex-1 text-left">
                     <div className="font-display font-extrabold text-3xl leading-none">Battle</div>
                     {/* The bar's clock again (src/lib/barClock.js): 20
-                        characters at most, which is what the column holds
-                        beside the icons at the button's 260px minimum. */}
-                    <div id="menu-battle-line" className="text-sm font-semibold mt-1 text-night-950/75">{subtitleFor(clock)}</div>
+                        characters at most, one line. Below 360px, where the
+                        button can grow no wider than the screen (a 152px
+                        column at 320), a step smaller, so the longest lines
+                        still fit it in the widest font a device falls back
+                        to (e2e/responsive.spec.js measures every hour). */}
+                    <div id="menu-battle-line" className="text-[13px] min-[360px]:text-sm font-semibold mt-1 text-night-950/75">{subtitleFor(clock)}</div>
                   </div>
                   <ChevronRight aria-hidden="true" className="w-6 h-6 shrink-0" strokeWidth={2.6} />
                 </div>

@@ -653,8 +653,9 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
    of a 768x1024 original, the shades-and-snout band of Bouncer Bruno's
    card, fills it. Its parts are children, since the material claims no
    pseudo-element: img, [data-rim] (the inset shadow, over the art) and
-   [data-shutter] (the plate that slides up to open it and down to shut it,
-   resting open). */
+   [data-shutter] (the plate that slides up to open it and down to shut it).
+   The shutter rests open as an invisible plate, not as a plate moved out of
+   the way, so a door that does not animate has no transform on it at all. */
 .peep-slot {
   position: relative;
   overflow: hidden;
@@ -687,7 +688,7 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   inset: 0;
   background: linear-gradient(180deg, theme("colors.steel.700"), theme("colors.steel.800"));
   box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.45);
-  transform: translateY(-101%);
+  opacity: 0;
   animation: peep-open 220ms ease-out 180ms backwards;
 }
 
@@ -729,7 +730,10 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   font-weight: 600;
   font-size: 0.75rem;
   line-height: 1.25;
-  white-space: nowrap;
+  /* A note that runs long wraps instead of widening whatever it hangs
+     from: the sign it is taped under stays the width it was drawn at. */
+  max-width: 11rem;
+  text-align: center;
   transform: rotate(var(--note-tilt, 2deg));
 }
 .note-taped [data-tape] {
@@ -1122,12 +1126,12 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   92.8% { opacity: var(--neon-rest, 1); }
 }
 @keyframes peep-open {
-  from { transform: translateY(0); }
-  to { transform: translateY(-101%); }
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: translateY(-101%); }
 }
 @keyframes peep-shut {
-  from { transform: translateY(-101%); }
-  to { transform: translateY(0); }
+  from { opacity: 1; transform: translateY(-101%); }
+  to { opacity: 1; transform: translateY(0); }
 }
 @keyframes door-swing {
   from { transform: rotateY(0deg); }
