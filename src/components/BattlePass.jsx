@@ -17,7 +17,7 @@ import { ignoreKeyRepeat, useArmedAfterOpen } from '@/lib/keyRepeat';
 import { Medallion, WalletChips, DialogClose } from '@/components/ui/game-chrome';
 import { ArtOrEmoji } from './TeddyCard';
 import { PACK_LOOK, PackStack } from './PackArt';
-import { frameFor, EMOTES } from '@/lib/cosmetics';
+import { frameFor, EMOTES, cosmeticLabel, cosmeticLong } from '@/lib/cosmetics';
 import {
   BATTLE_PASS_REWARDS, PREMIUM_PASS_PRICE, currentTier as tierFor, canClaim, readyRewards, countReadyRewards,
   premiumTotals, listOf,
@@ -52,6 +52,8 @@ const describeReward = (reward, owned = null) => {
       case 'gems': return `${n} gems`;
       case 'pack': return `${n} card pack${n === 1 ? '' : 's'}`;
       case 'card': return `${reward.name}, ${reward.rarity} card`;
+      // An exclusive reads as what it is ("Gold Tooth card frame"): the long form never hides a frame or an emote behind its joke.
+      case 'exclusive': return cosmeticLong(reward.name);
       default: return reward.name ?? `${n ?? ''} ${reward.type}`.trim();
     }
   })();
@@ -147,9 +149,11 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
     if (!canClaim) tileRef.current?.focus({ preventScroll: true });
   });
 
-  const label = reward.type === 'card' || reward.type === 'exclusive'
+  const label = reward.type === 'card'
     ? reward.name
-    : `${reward.amount ? '+' + reward.amount : ''}`;
+    : reward.type === 'exclusive'
+      ? cosmeticLabel(reward.name)
+      : `${reward.amount ? '+' + reward.amount : ''}`;
   const state = isClaimed ? 'claimed'
     : canClaim ? 'claim'
     : !isUnlocked ? 'locked'
@@ -394,7 +398,7 @@ const PurchaseConfirmDialog = ({
             {`+${totals.gems.toLocaleString()} gems, +${totals.coins.toLocaleString()} coins and ${plural(totals.packs, 'card pack')}`}
           </Includes>
           <Includes note={ownedExclusives.length > 0 ? `You already have ${listOf(ownedExclusives)}.` : null}>
-            {`${listOf(borders)} card frames and ${plural(emotes.length, 'emote')}, yours to keep`}
+            {`${listOf(borders.map(cosmeticLabel))} card frames and ${plural(emotes.length, 'emote')}, yours to keep`}
           </Includes>
         </ul>
       </div>
@@ -609,7 +613,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
       // owned is not granted twice. No confetti for either.
       toast({
         title: 'Already owned',
-        description: out.card ? `${out.card.name} → +${out.coins} coins` : `You already have ${out.cosmetic}.`,
+        description: out.card ? `${out.card.name} → +${out.coins} coins` : `You already have ${cosmeticLabel(out.cosmetic)}.`,
       });
       return;
     }
@@ -617,7 +621,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
       celebrate({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
       toast(out.card
         ? { title: 'Card Unlocked!', description: `You got ${out.card.name}!` }
-        : { title: 'Exclusive Unlocked!', description: `You got ${out.cosmetic}! It stays yours after the season.` });
+        : { title: 'Exclusive Unlocked!', description: `You got ${cosmeticLabel(out.cosmetic)}! It stays yours after the season.` });
       return;
     }
     if (out.coins) toast({ title: 'Coins Claimed!', description: `+${out.coins} coins` });
@@ -803,7 +807,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
                 ) : (
                   <>
                     <span className="font-display text-lg font-bold leading-tight text-white">Tier {currentTier}</span>
-                    <span className="text-sm font-semibold text-brass-200">Max tier reached</span>
+                    <span className="text-sm font-semibold text-brass-200">Top tier. Go the fuck home.</span>
                   </>
                 )}
               </div>
@@ -824,7 +828,7 @@ const BattlePass = ({ onClose, onGetGems }) => {
         {/* Rewards track */}
         <div className="px-4 pt-5 sm:px-6">
           <div className="mb-2.5 flex items-center justify-between gap-3">
-            <h3 className="label-caps text-plush-300">Season Rewards</h3>
+            <h3 className="label-caps text-plush-300">The Haul</h3>
             {readyCount > 0 && (
               <span className="rounded-full bg-brass-400 px-2 py-[2px] text-[11px] font-extrabold leading-tight text-night-950">
                 {readyCount} ready

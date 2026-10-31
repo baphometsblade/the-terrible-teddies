@@ -34,6 +34,29 @@ export const EMOTES = [
   { name: 'Confetti Cannon Emote', icon: '🎉', effect: 'confetti' },
 ];
 
+// What a cosmetic is CALLED where a player reads it: the pass's reward tile, its
+// claim toast, the Premium confirm's list and a season's delivery. DISPLAY
+// only. The key (the name above, 'Gold Border') is save data (unlockedCosmetics),
+// the reward's identity in battlePass.js and the render lookup here, and never
+// changes. `long` says what the thing is (a frame or an emote), for a sentence or
+// a screen-reader name that must not hide a purchase behind a joke; it is
+// literal, never templated from the label.
+export const COSMETIC_LABELS = Object.freeze({
+  'Gold Border': { label: 'Gold Tooth', long: 'Gold Tooth card frame' },
+  'Diamond Border': { label: 'Diamond Pinky Ring', long: 'Diamond Pinky Ring card frame' },
+  'Teddy Emote': { label: 'Trash Talk', long: 'Trash Talk emote' },
+  'Confetti Cannon Emote': { label: 'Premature Confetti', long: 'Premature Confetti emote' },
+});
+
+// The longest a label may be: the reward tile is 80px wide and clamps to two lines.
+export const COSMETIC_LABEL_MAX = 21;
+
+/** The display label for a cosmetic key; an unknown key reads as itself. */
+export const cosmeticLabel = (key) => COSMETIC_LABELS[key]?.label ?? key;
+
+/** The label with its type ("Gold Tooth card frame"); an unknown key reads as itself. */
+export const cosmeticLong = (key) => COSMETIC_LABELS[key]?.long ?? key;
+
 /** The highest-ranked owned border key ('diamond' | 'gold'), or null. */
 export const bestOwnedBorder = (owned = []) => {
   for (const name of BORDER_RANK) {

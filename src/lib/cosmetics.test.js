@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
-import { bestOwnedBorder, ownedEmotes, RENDERABLE_COSMETICS, COSMETIC_FRAMES, frameFor } from './cosmetics';
+import {
+  bestOwnedBorder, ownedEmotes, RENDERABLE_COSMETICS, COSMETIC_FRAMES, frameFor,
+  COSMETIC_LABELS, COSMETIC_LABEL_MAX, cosmeticLabel, cosmeticLong,
+} from './cosmetics';
 
 describe('cosmetic entitlement rendering', () => {
   it('picks the highest-ranked owned border and ignores unknowns', () => {
@@ -28,6 +31,28 @@ describe('cosmetic entitlement rendering', () => {
     expect(ownedEmotes([])).toEqual([]);
     expect(ownedEmotes(['Confetti Cannon Emote']).map((e) => e.effect)).toEqual(['confetti']);
     expect(ownedEmotes(['Teddy Emote', 'Confetti Cannon Emote'])).toHaveLength(2);
+  });
+
+  // The keys are save data and the render lookup: they never change. Only the
+  // words a player reads do, so every key has a label and a long form.
+  it('labels every cosmetic it can render, and keeps the keys as they were saved', () => {
+    expect(RENDERABLE_COSMETICS).toEqual(['Diamond Border', 'Gold Border', 'Teddy Emote', 'Confetti Cannon Emote']);
+    expect(Object.keys(COSMETIC_LABELS).sort()).toEqual([...RENDERABLE_COSMETICS].sort());
+    for (const key of RENDERABLE_COSMETICS) {
+      const { label, long } = COSMETIC_LABELS[key];
+      expect(label.length, label).toBeLessThanOrEqual(COSMETIC_LABEL_MAX);
+      expect(label, label).not.toMatch(/!/);
+      // The long form starts with the label and names what the thing is, so a
+      // joke can never hide whether the player is buying a frame or an emote.
+      expect(long.startsWith(label), long).toBe(true);
+      expect(long, long).toMatch(/\b(card frame|emote)$/);
+      expect(long.endsWith(frameFor(key) ? 'card frame' : 'emote'), long).toBe(true);
+      expect(cosmeticLabel(key)).toBe(label);
+      expect(cosmeticLong(key)).toBe(long);
+    }
+    // Something this table does not know reads as itself.
+    expect(cosmeticLabel('Something Else')).toBe('Something Else');
+    expect(cosmeticLong('Something Else')).toBe('Something Else');
   });
 
   it("every 'exclusive' the Battle Pass sells is renderable (no paid no-op rewards)", () => {

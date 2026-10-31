@@ -7,6 +7,7 @@ import { getDailyChallenges, getWeeklyChallenges } from '@/stores/challenges';
 import { BATTLE_PASS_REWARDS, premiumTotals, countReadyRewards } from '@/lib/battlePass';
 import { getCurrentSeason, formatSeasonEnd } from '@/utils/season';
 import { DOUBLE_PRESS_MS } from '@/lib/keyRepeat';
+import { cosmeticLabel } from '@/lib/cosmetics';
 
 // What the Battle Pass promises, against what the store and the tables do.
 // Each expectation is derived from the live tables, not restated.
@@ -189,6 +190,16 @@ describe('the Premium confirmation', () => {
     expect(t).toContain(`Across all ${premiumTiers} premium tiers:`);
     expect(t).not.toMatch(/every premium tier/i);
     expect(t).toContain(`You have reached ${reached} already: they are ready to claim the moment you unlock.`);
+  });
+
+  // The frames are named by their display labels (cosmetics.js COSMETIC_LABELS),
+  // not the saved keys; the sentence still says they are card frames and emotes.
+  it("lists the card frames by their display labels, and says what they are", () => {
+    const totals = premiumTotals();
+    const frames = totals.exclusives.filter((n) => /Border$/.test(n)).map(cosmeticLabel);
+    const t = open().textContent.replace(/\s+/g, ' ');
+    expect(t).toContain(`${frames[0]} and ${frames[1]} card frames and`);
+    for (const key of totals.exclusives) expect(t, key).not.toContain(key);
   });
 
   it('counts the reached tiers from the table at the start and the end of the track', () => {

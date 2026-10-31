@@ -8,6 +8,7 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 import { getTimeUntilReset } from '@/lib/resetTimer';
+import { pickKicker, pickPaidSub, dayReadyTitle, CARD_DAY_LEAD_IN } from '@/lib/dailyLines';
 
 // The pack opening's own card reveal, loaded only when a claim draws cards.
 // Its module is the whole Card Packs dialog (with its store tiles, pack art and
@@ -204,6 +205,10 @@ const DailyRewards = ({ onClose }) => {
     return () => clearInterval(t);
   }, []);
   const dialogRef = useDialog(onClose);
+  // The House's lines, each picked once (a lazy initial state, not per render):
+  // the kicker when the dialog opens, the line under "claimed" when the tap lands.
+  const [kicker] = useState(() => pickKicker());
+  const [paidSub, setPaidSub] = useState(null);
 
   const claimedToday = lastLoginDate === now.toDateString();
   // ready: today's reward waits for the tap. paid: the tap just collected it.
@@ -240,6 +245,7 @@ const DailyRewards = ({ onClose }) => {
     // the panel now shows as done.
     if (!paid) return;
     setReward(paid);
+    setPaidSub(pickPaidSub());
     setHolding(true);
     holdTimer.current = setTimeout(() => setHolding(false), holdFor(paid.cardIds?.length ?? 0));
     // A beat after the stamp starts to land.
@@ -335,12 +341,14 @@ const DailyRewards = ({ onClose }) => {
           <Medallion size="lg" className="mx-auto flex">
             <Gift className="h-7 w-7 text-brass-300" strokeWidth={1.75} />
           </Medallion>
-          <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight text-brass-gradient sm:text-4xl">
+          <p data-daily-kicker="" className="label-caps mt-3 text-plush-300">{kicker}</p>
+          <h2 className="mt-1 font-display text-3xl font-extrabold leading-tight text-brass-gradient sm:text-4xl">
             Daily Rewards
           </h2>
           <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-black/30 px-3 py-1 text-sm font-semibold text-plush-100 ring-1 ring-white/10">
             <Flame aria-hidden="true" className="h-4 w-4 text-orange-300" strokeWidth={2.2} />
-            Login streak: {streak} day{streak !== 1 ? 's' : ''}
+            <span className="sr-only">Login streak: </span>
+            {streak > 0 ? `On a ${streak}-day bender` : 'Between benders'}
           </p>
         </div>
 
@@ -381,12 +389,12 @@ const DailyRewards = ({ onClose }) => {
               <>
                 <h3 className="inline-flex items-center gap-2 font-display text-lg font-extrabold text-white sm:text-xl">
                   <Gift aria-hidden="true" className="h-4 w-4 shrink-0 text-brass-300 sm:h-5 sm:w-5" strokeWidth={2.2} />
-                  Day {currentDay} is ready
+                  {dayReadyTitle(currentDay)}
                 </h3>
                 <p className="mt-1 text-sm text-plush-300">
                   {streak > 0
                     ? <>Claim it within <span className="font-semibold tabular-nums text-plush-100">{getTimeUntilReset(false, now)}</span> to keep your streak.</>
-                    : 'Claim it to start a streak.'}
+                    : 'Claim it to start a streak. Habits form fast.'}
                 </p>
               </>
             )}
@@ -398,8 +406,9 @@ const DailyRewards = ({ onClose }) => {
                     beside a two-line block. */}
                 <h3 className="inline-flex items-center gap-2 whitespace-nowrap font-display text-base font-extrabold text-white min-[360px]:text-lg sm:text-xl">
                   <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0 text-brass-300 sm:h-5 sm:w-5" strokeWidth={2.2} />
-                  Day {reward.day} claimed!
+                  Day {reward.day} claimed
                 </h3>
+                {paidSub && <p data-paid-sub="" className="mt-1 text-sm text-plush-300">{paidSub}</p>}
                 <div aria-hidden="true" className="mt-4 flex flex-wrap items-center justify-center gap-2 min-[360px]:gap-3">
                   {PRIZES.filter((p) => reward[p.key] > 0 && !(p.key === 'cards' && cards.length > 0)).map(({ key, Icon, tone }, i) => (
                     <motion.div
@@ -413,13 +422,16 @@ const DailyRewards = ({ onClose }) => {
                       <span className="font-display text-lg font-extrabold tabular-nums text-white">+{reward[key]}</span>
                     </motion.div>
                   ))}
+                  {cards.length > 0 && (
+                    <p data-card-lead-in="" className="w-full text-sm text-plush-300">{CARD_DAY_LEAD_IN}</p>
+                  )}
                   {cards.map((card, i) => (
                     <GrantedCard key={card.id} card={card} index={i} dealt={dealt} turned={i < turned} settled={settled} />
                   ))}
                 </div>
                 {reward.substitutedCards > 0 && (
                   <p className="mt-3 text-sm text-plush-300">
-                    You already own every card, so {reward.substitutedCards === 1 ? 'the card was' : 'the cards were'} paid in coins.
+                    You already own every card, so {reward.substitutedCards === 1 ? 'the card was' : 'the cards were'} paid in coins. Nobody likes a completionist.
                   </p>
                 )}
                 <div><NextReward now={now} /></div>
@@ -431,7 +443,7 @@ const DailyRewards = ({ onClose }) => {
                 <div aria-hidden="true" className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-400/10 ring-1 ring-emerald-300/30">
                   <Check className="h-6 w-6 text-emerald-300" strokeWidth={2.6} />
                 </div>
-                <h3 className="mt-3 font-display text-xl font-extrabold text-white">Today&apos;s reward is in</h3>
+                <h3 className="mt-3 font-display text-xl font-extrabold text-white">You already got yours.</h3>
                 <NextReward now={now} />
               </>
             )}

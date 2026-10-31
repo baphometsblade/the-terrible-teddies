@@ -8,7 +8,9 @@
 // opening Card Packs downloaded the whole Battle Pass chunk to read it, and the
 // board kept a hand-copied column of it so as not to do the same.
 //
-// No store import, so the store can import this.
+// No store import, so the store can import this. (cosmetics.js is a leaf with no
+// imports of its own: it only supplies the display labels describeGrants prints.)
+import { cosmeticLabel } from './cosmetics';
 
 // Each tier's two rewards. A reward is drawn from its `type` (and, for a card,
 // from the card's own art), so there is no icon here.
@@ -124,7 +126,7 @@ export const describeGrants = (receipts) => {
     gems += r.gems ?? 0;
     packs += r.packs ?? 0;
     if (r.card && !r.alreadyOwned) cards.push(r.card.name);
-    if (r.cosmetic && !r.alreadyOwned) cosmetics.push(r.cosmetic);
+    if (r.cosmetic && !r.alreadyOwned) cosmetics.push(cosmeticLabel(r.cosmetic));
   }
   const parts = [];
   if (coins) parts.push(`+${plural(coins, 'coin')}`);

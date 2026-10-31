@@ -10,6 +10,7 @@ import DailyRewards from './DailyRewards';
 import { useGameStore, ALL_CARDS } from '@/stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
 import { getTimeUntilReset } from '@/lib/resetTimer';
+import { DAILY_KICKERS, DAILY_PAID_SUBS, CARD_DAY_LEAD_IN } from '@/lib/dailyLines';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -66,7 +67,31 @@ describe('Daily Rewards', () => {
     expect(button('Claim')).toBeTruthy();
     expect(look(2)).toBe('today');
     expect(look(1)).toBe('past');
-    expect(host.textContent).toContain('Day 2 is ready');
+    // The deck's line ("is on the house"): the day is still said.
+    expect(host.textContent).toContain('Day 2 is on the house');
+  });
+
+  // The House's lines around the plain parts. The kicker follows the bar clock
+  // (10:00 is the 'early' band), the streak chip keeps the number and an sr-only
+  // prefix, and the card-day lead-in sits above the cards without wrapping one.
+  it('says the House lines: a kicker for the hour, the bender chip, a line under "claimed"', async () => {
+    render();
+    expect(DAILY_KICKERS.early).toContain(host.querySelector('[data-daily-kicker]').textContent);
+    const chip = host.querySelector('.sr-only').parentElement;
+    expect(chip.textContent).toBe('Login streak: On a 1-day bender');
+    expect(host.querySelector('[data-paid-sub]')).toBeNull();
+    act(() => button('Claim').click());
+    expect(DAILY_PAID_SUBS).toContain(host.querySelector('[data-paid-sub]').textContent);
+    expect(host.querySelector('[data-card-lead-in]').textContent).toBe(CARD_DAY_LEAD_IN);
+    expect(host.querySelector('[role="status"]').textContent).toContain('Day 2 claimed: 75 coins and 1 card.');
+    await act(async () => { await import('./CardPackOpening'); });
+  });
+
+  it('calls a lapsed or new streak what it is', () => {
+    useGameStore.setState({ lastLoginDate: null, consecutiveLogins: 0 });
+    render();
+    expect(host.textContent).toContain('Login streak: Between benders');
+    expect(host.textContent).toContain('Claim it to start a streak. Habits form fast.');
   });
 
   it('collects on Claim: stamps today, names the card, and turns the button into Continue', async () => {

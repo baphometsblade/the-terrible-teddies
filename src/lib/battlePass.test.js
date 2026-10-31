@@ -113,7 +113,8 @@ describe('describeGrants', () => {
       { card: { name: 'Mama Mauls' }, alreadyOwned: true, coins: 75 },
       { cosmetic: 'Gold Border' },
       { cosmetic: 'Teddy Emote', alreadyOwned: true },
-    ])).toBe('+175 coins, +10 gems, 1 card pack, Peeping Pete and Gold Border');
+    // A cosmetic is named by its display label (cosmetics.js): 'Gold Border' is the saved key, 'Gold Tooth' what a player reads.
+    ])).toBe('+175 coins, +10 gems, 1 card pack, Peeping Pete and Gold Tooth');
   });
 
   it('stops naming cards past three', () => {
