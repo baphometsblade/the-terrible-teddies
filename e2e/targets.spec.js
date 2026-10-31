@@ -5,7 +5,7 @@
 // a run of points down and across its middle that land on it, so a hit area
 // drawn larger than the control (the Settings switch's) counts, and one that
 // a neighbour covers does not.
-import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
+import { test, expect, bootToMainMenu, stubSupabase, SLOW } from './helpers/session.js';
 
 const MIN = 44;
 
@@ -237,5 +237,62 @@ test.describe('a toast over a dialog on a phone', () => {
     await raise();
     await expect(page.locator('.toast-viewport > li')).toHaveCount(1);
     expect(await gap(save), "the toast reaches Save deck's Close").toBeGreaterThan(0);
+  });
+});
+
+// The door, for a device that has not passed it (the specs above start past
+// it): its year field and its one button, and the birthday question's two,
+// are each a 44px target by what a finger meets, at the two phone sizes the
+// rest of this file measures. The menu's bar-clock sign adds no target: it is
+// decoration that takes no tap, so a finger on it reaches what is under it.
+for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
+  test.describe(`the door at ${viewport.width}x${viewport.height}`, () => {
+    test.use({ viewport, doorPassed: false });
+
+    test('every control is a 44px target: the year form and the birthday question', async ({ page }) => {
+      await stubSupabase(page);
+      await page.goto('/');
+      await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
+      await expect(page.locator('form[data-armed="true"]')).toBeVisible();
+      expect(await shortTargets(page.locator('main')), 'short targets on the door').toEqual([]);
+      await page.getByLabel('Year you were born').fill(String(new Date().getFullYear() - 18));
+      await page.getByRole('button', { name: 'Come in' }).click();
+      await expect(page.getByRole('heading', { name: 'Had your birthday yet this year?' })).toBeVisible();
+      const question = page.locator('div[data-armed="true"]').filter({ has: page.getByRole('button', { name: 'Yes', exact: true }) });
+      await question.waitFor();
+      // The question's own box: the form it replaced is still in the page
+      // (hidden, to hold the door's height) and takes no tap.
+      expect(await shortTargets(question), 'short targets on the birthday question').toEqual([]);
+    });
+  });
+}
+
+test.describe('the menu sign', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('takes no tap: a finger on it reaches what is under it, and it is no tab stop', async ({ page }) => {
+    await bootToMainMenu(page);
+    await page.clock.setFixedTime(new Date(2026, 9, 31, 3, 30));
+    await page.reload();
+    await expect(page.locator('.neon')).toBeVisible(SLOW);
+    await page.waitForTimeout(800);
+    const probe = await page.evaluate(() => {
+      const sign = document.querySelector('.neon').closest('[aria-hidden="true"]');
+      const r = sign.getBoundingClientRect();
+      // The middle of the tube, and of the note.
+      const points = [document.querySelector('.neon'), document.querySelector('.note-taped')].map((el) => {
+        const b = el.getBoundingClientRect();
+        return document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+      });
+      return {
+        pointerEvents: getComputedStyle(sign).pointerEvents,
+        hitsTheSign: points.map((el) => !!el?.closest('[aria-hidden="true"]') && sign.contains(el)),
+        focusable: sign.querySelectorAll('a[href], button, input, select, textarea, [tabindex]').length,
+        size: [Math.round(r.width), Math.round(r.height)],
+      };
+    });
+    expect(probe.pointerEvents).toBe('none');
+    expect(probe.hitsTheSign, 'a tap lands on the sign').toEqual([false, false]);
+    expect(probe.focusable).toBe(0);
   });
 });

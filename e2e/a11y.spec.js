@@ -54,8 +54,10 @@ async function expectNoViolations(page, label) {
   ).toHaveLength(0);
 }
 
-test.beforeEach(async ({ page }) => {
-  await bootToMainMenu(page);
+test.beforeEach(async ({ page, doorPassed }) => {
+  // The door's own audit (at the end of this file) is of a device that has
+  // not passed it yet, and boots itself.
+  if (doorPassed) await bootToMainMenu(page);
 });
 
 test('main menu has no WCAG 2.1 A/AA violations', async ({ page }) => {
@@ -449,4 +451,48 @@ test('the empty Card Packs table has no WCAG 2.1 A/AA violations', async ({ page
   await expect(dialog.getByRole('heading', { name: 'No packs to open' })).toBeVisible(SLOW);
   await expect(dialog.getByRole('button', { name: 'Buy a Card Pack' })).toBeVisible();
   await expectNoViolations(page, 'empty card packs table');
+});
+
+// The menu's bar-clock sign hangs in the hero from md up (and the Battle
+// button's line follows the same clock): audited in each part of the night,
+// since each is a different tone, and CLOSED a half-lit one with a note.
+// The sign is decoration (aria-hidden), but its colours are measured anyway.
+const NIGHT = [
+  ['early', 10], ['afternoon', 13], ['happy hour', 17], ['late', 22], ['last call', 1], ['closed', 3],
+];
+for (const [part, hour] of NIGHT) {
+  test(`the menu has no WCAG 2.1 A/AA violations at ${part}, with its sign lit`, async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 9, 31, hour, 30));
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+    await expect(page.locator('.neon')).toBeVisible();
+    await expectNoViolations(page, `main menu at ${part}`);
+  });
+}
+
+// The door: what a device that has never answered it sees (the specs above
+// start past it). Its scene, its birthday question and its plain turning
+// away are each audited, here as at the other widths in e2e/door.spec.js.
+test.describe('the door', () => {
+  test.use({ doorPassed: false });
+
+  test('has no WCAG 2.1 A/AA violations, and no dead tab stops', async ({ page }) => {
+    await page.route('**testproject.supabase.co/**', (route) => route.fulfill({ json: {} }));
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
+    await expect(page.locator('form[data-armed="true"]')).toBeVisible();
+    await expectNoViolations(page, 'the door');
+    expect(await deadTabStops(page), 'the door').toEqual([]);
+
+    await page.getByLabel('Year you were born').fill(String(new Date().getFullYear() - 18));
+    await page.getByRole('button', { name: 'Come in' }).click();
+    await expect(page.getByRole('heading', { name: 'Had your birthday yet this year?' })).toBeVisible();
+    await expectNoViolations(page, 'the birthday question');
+    expect(await deadTabStops(page), 'the birthday question').toEqual([]);
+
+    await page.locator('[data-armed="true"]').filter({ has: page.getByRole('button', { name: 'Not yet', exact: true }) }).waitFor();
+    await page.getByRole('button', { name: 'Not yet', exact: true }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Sorry, this room is 18+.' })).toBeVisible();
+    await expectNoViolations(page, 'the turning away');
+  });
 });

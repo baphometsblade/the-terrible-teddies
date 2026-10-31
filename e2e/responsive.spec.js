@@ -9,7 +9,7 @@
 // non-wrapping `flex` row of six buttons totalling 494px. Its parent wrapped,
 // but the row is a single flex item, so it pushed the whole document 52px
 // sideways and every screen below it scrolled horizontally.
-import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
+import { test, expect, bootToMainMenu, stubSupabase, SLOW } from './helpers/session.js';
 
 const PHONE = { width: 390, height: 844 };
 
@@ -25,8 +25,10 @@ async function expectNoHorizontalOverflow(page, label) {
   expect(overflow, `"${label}" scrolls ${overflow}px sideways at ${PHONE.width}px wide`).toBeLessThanOrEqual(1);
 }
 
-test.beforeEach(async ({ page }) => {
-  await bootToMainMenu(page);
+test.beforeEach(async ({ page, doorPassed }) => {
+  // The door's own checks (at the end of this file) are of a device that has
+  // not passed it yet, and boot themselves.
+  if (doorPassed) await bootToMainMenu(page);
 });
 
 test('main menu does not scroll sideways on a phone', async ({ page }) => {
@@ -88,6 +90,114 @@ for (const viewport of [
       const cta = await battle.boundingBox();
       expect(cta.y + cta.height, 'Battle is below the fold').toBeLessThanOrEqual(viewport.height);
     });
+  });
+}
+
+// The menu's bar-clock sign (src/lib/barClock.js) and the Battle button's line.
+// On a phone there is no sign: it is hung in the hero from md up, so it can
+// take no room that Battle's place above the fold depends on, and the clock
+// is the button's line instead, which has to fit its column at every hour
+// (20 characters at the longest) without wrapping or pushing Battle down.
+const atHour = (hour) => new Date(2026, 9, 31, hour, 30);
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 360, height: 640 },
+  { width: 375, height: 553 },
+]) {
+  test.describe(`the bar clock at ${viewport.width}x${viewport.height}`, () => {
+    test.use({ viewport });
+
+    for (const [part, hour] of [['happy hour, the longest line', 17], ['last call', 1], ['closed, with its note', 3]]) {
+      test(`draws no sign, and Battle's line fits its column above the fold at ${part}`, async ({ page }) => {
+        await page.clock.setFixedTime(atHour(hour));
+        await page.reload();
+        const battle = page.getByRole('button', { name: 'Battle', exact: true });
+        await expect(battle).toBeVisible(SLOW);
+        await page.waitForTimeout(800); // entrance animations
+        // The sign is not drawn below md (not just out of sight: display none).
+        await expect(page.locator('.neon')).toBeHidden();
+        expect(await page.locator('.neon').evaluate((el) => getComputedStyle(el.closest('[aria-hidden="true"]')).display)).toBe('none');
+        // The line is one line, inside its column and inside the button.
+        const line = await page.locator('#menu-battle-line').evaluate((el) => {
+          const button = el.closest('[role="button"]').getBoundingClientRect();
+          const r = el.getBoundingClientRect();
+          return { text: el.textContent, lines: Math.round(r.height / parseFloat(getComputedStyle(el).lineHeight)), clipped: el.scrollWidth - el.clientWidth, inside: r.right <= button.right && r.left >= button.left };
+        });
+        expect(line.lines, `"${line.text}" wraps`).toBe(1);
+        expect(line.clipped, `"${line.text}" is clipped`).toBeLessThanOrEqual(0);
+        expect(line.inside, `"${line.text}" runs out of the button`).toBe(true);
+        const cta = await battle.boundingBox();
+        expect(cta.y + cta.height, 'Battle is below the fold').toBeLessThanOrEqual(viewport.height);
+      });
+    }
+  });
+}
+
+// From lg the sign is hung in the hero's corner. It must sit clear of the
+// header, the title, the card fan and the Battle button at every width the
+// hero lays out at, and never push the page sideways. Each corner case: a
+// plain sign, the flickering one, and the one with a note taped under it.
+// Below lg it is not drawn at all: from 768 to 1023 the 72px title spans most
+// of the width and, measured, the sign sat on its last letter at 900x700.
+for (const viewport of [
+  { width: 768, height: 1024 },
+  { width: 900, height: 700 },
+]) {
+  test.describe(`the bar clock's sign below lg, at ${viewport.width}x${viewport.height}`, () => {
+    test.use({ viewport });
+
+    test('is not drawn, and the clock is the Battle line', async ({ page }) => {
+      await page.clock.setFixedTime(atHour(3));
+      await page.reload();
+      await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+      await expect(page.locator('.neon')).toBeHidden();
+      await expect(page.locator('#menu-battle-line')).toHaveText('Chuck never left.');
+      await expectNoHorizontalOverflow(page, 'the menu below lg');
+    });
+  });
+}
+for (const viewport of [
+  { width: 1024, height: 768 },
+  { width: 1024, height: 600 },
+  { width: 1280, height: 800 },
+  { width: 1440, height: 900 },
+]) {
+  test.describe(`the bar clock's sign at ${viewport.width}x${viewport.height}`, () => {
+    test.use({ viewport });
+
+    for (const [part, hour] of [['happy hour', 17], ['last call', 1], ['closed, with its note', 3]]) {
+      test(`hangs clear of the header, the title and Battle at ${part}`, async ({ page }) => {
+        await page.clock.setFixedTime(atHour(hour));
+        await page.reload();
+        await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+        await page.waitForTimeout(1200); // entrances, and the sign's switching on
+        await expect(page.locator('.neon')).toBeVisible();
+        await expectNoHorizontalOverflow(page, `the menu with the ${part} sign`);
+        const boxes = await page.evaluate(() => {
+          const rect = (el) => { const r = el.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }; };
+          // The whole sign: the tube and its note, as the viewer sees them (the
+          // sign is turned a few degrees, which the bounding box covers).
+          const sign = rect(document.querySelector('.neon').closest('[aria-hidden="true"]'));
+          return {
+            sign,
+            others: {
+              header: rect(document.querySelector('header')),
+              title: rect(document.querySelector('h1')),
+              tagline: rect(document.querySelector('h1').nextElementSibling),
+              // The card fan and the Battle button, side by side.
+              'fan and Battle': rect(document.querySelector('[data-dest="game"]').closest('[class*="md:flex-row"]')),
+            },
+            vw: window.innerWidth,
+          };
+        });
+        const hits = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        expect(boxes.sign.right, 'the sign runs off the right edge').toBeLessThanOrEqual(boxes.vw);
+        expect(boxes.sign.left, 'the sign runs off the left edge').toBeGreaterThanOrEqual(0);
+        for (const [name, box] of Object.entries(boxes.others)) {
+          expect(hits(boxes.sign, box), `the sign overlaps the ${name}`).toBe(false);
+        }
+      });
+    }
   });
 }
 
@@ -317,5 +427,58 @@ test.describe('under an installed iPhone\'s status bar and home indicator', () =
     await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
     const back = await page.getByRole('button', { name: '← Menu' }).boundingBox();
     expect(back.y).toBeGreaterThanOrEqual(INSETS.top);
+  });
+});
+
+// The door, for a device that has not passed it (the tests above start past
+// it). Its own widths and the smallest phones are e2e/door.spec.js's; here it
+// is held to the same two rules as every other screen: it never scrolls
+// sideways at 390px, and under an installed iPhone's status bar and home
+// indicator it keeps its content clear of both.
+test.describe('the door', () => {
+  test.use({ doorPassed: false });
+  const YEAR = new Date().getFullYear();
+
+  const atTheDoor = async (page) => {
+    await stubSupabase(page);
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
+    await expect(page.locator('form[data-armed="true"]')).toBeVisible();
+  };
+
+  test('does not scroll sideways on a phone: the form, the question and the turning away', async ({ page }) => {
+    await atTheDoor(page);
+    await expectNoHorizontalOverflow(page, 'the door');
+    await page.getByLabel('Year you were born').fill(String(YEAR - 18));
+    await page.getByRole('button', { name: 'Come in' }).click();
+    await expect(page.getByRole('heading', { name: 'Had your birthday yet this year?' })).toBeVisible();
+    await expectNoHorizontalOverflow(page, 'the birthday question');
+    await page.locator('[data-armed="true"]').filter({ has: page.getByRole('button', { name: 'Not yet', exact: true }) }).waitFor();
+    await page.getByRole('button', { name: 'Not yet', exact: true }).click();
+    await expect(page.getByRole('status')).toBeVisible();
+    await expectNoHorizontalOverflow(page, 'the turning away');
+  });
+
+  // On a screen as short as the door is tall, so the content reaches both
+  // edges and only the padding keeps it off the clock and the home indicator
+  // (on a tall phone it would be centred clear of both whatever it did).
+  test("keeps its sign and its controls clear of an installed iPhone's status bar and home indicator", async ({ page }) => {
+    const height = 600;
+    await page.setViewportSize({ width: PHONE.width, height });
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: INSETS });
+    await atTheDoor(page);
+    await page.waitForTimeout(900); // the sign's switching on
+    const extent = () => page.evaluate(() => {
+      const boxes = [...document.querySelectorAll('[data-door-stage] .neon, [data-door-stage] h1, [data-door-stage] button, [data-door-stage] input')]
+        .filter((el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden')
+        .map((el) => el.getBoundingClientRect());
+      return { top: Math.min(...boxes.map((b) => b.top)), bottom: Math.max(...boxes.map((b) => b.bottom)) };
+    });
+    // At the top of the page, the sign is below the clock...
+    expect((await extent()).top, 'the sign is under the clock').toBeGreaterThanOrEqual(INSETS.top);
+    // ...and scrolled to its end, the controls stop short of the home indicator.
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    expect((await extent()).bottom, 'a control is under the home indicator').toBeLessThanOrEqual(height - INSETS.bottom);
   });
 });

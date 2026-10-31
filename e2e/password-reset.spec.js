@@ -439,6 +439,63 @@ test.describe('landing from a reset link', () => {
   });
 });
 
+// The adults-only door stands in front of everything, the reset panel
+// included. A reset link opened on a device that has not been through it
+// meets the door first, and the panel the link was for is behind it: the
+// address is read when the page loads (authLanding.js, supabase-js), long
+// before anyone has answered, and is still acted on once they have.
+test.describe('landing from a reset link on a device that has not passed the door', () => {
+  test.use({ doorPassed: false });
+  const YEAR = new Date().getFullYear();
+  const answer = async (page, year) => {
+    await expect(page.locator('form[data-armed="true"]')).toBeVisible();
+    await page.getByLabel('Year you were born').fill(String(year));
+    await page.getByRole('button', { name: 'Come in' }).click();
+  };
+
+  test('shows the door first, then the set-new-password panel, and the reset still works', async ({ page }) => {
+    const auth = await stubBackend(page);
+    await page.goto(`/${recoveryHash()}`);
+    // The door, and nothing of the reset or the game behind it.
+    await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
+    await expect(page.getByRole('heading', { name: 'Set a New Password' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Sign In' })).toHaveCount(0);
+    await expectNoAxeViolations(page, 'the door in front of a reset link');
+
+    await answer(page, YEAR - 30);
+    // Behind it, in place of the game, the panel the link was for.
+    const heading = page.getByRole('heading', { name: 'Set a New Password' });
+    await expect(heading).toBeVisible(SLOW);
+    await expect(page.getByLabel('New password', { exact: true })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toHaveCount(0);
+    await expect(page).toHaveTitle(/Reset Password/);
+    await expectNoAxeViolations(page, 'set new password, after the door');
+
+    // And it does what it always did.
+    await page.getByLabel('New password', { exact: true }).fill('honeypot-9');
+    await page.getByLabel('Confirm new password').fill('honeypot-9');
+    await page.getByRole('button', { name: 'Save new password' }).click();
+    await expect(page.getByRole('heading', { name: 'Password Changed' })).toBeVisible();
+    expect(auth.updates.map((u) => u.password)).toEqual(['honeypot-9']);
+    await page.getByRole('button', { name: 'Continue to the game' }).click();
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+  });
+
+  test('is never shown to a player the door turned away', async ({ page }) => {
+    const auth = await stubBackend(page);
+    await page.goto(`/${recoveryHash()}`);
+    await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
+    await answer(page, YEAR - 12);
+    await expect(page.getByRole('status').filter({ hasText: 'Sorry, this room is 18+.' })).toBeVisible();
+    // No panel, no game, no password changed, however long it is left.
+    await page.waitForTimeout(500);
+    await expect(page.getByRole('heading', { name: 'Set a New Password' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Battle', exact: true })).toHaveCount(0);
+    expect(auth.updates).toEqual([]);
+  });
+});
+
 test.describe('a reset link that cannot be used', () => {
   // Supabase refuses the token (too old, revoked): nothing to set a password
   // with, and nothing worth keeping in the address.
