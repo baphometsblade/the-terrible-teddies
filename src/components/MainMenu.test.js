@@ -171,12 +171,11 @@ describe('the bar clock on the menu', () => {
     expect(root.contains(host.querySelector('.note-taped'))).toBe(true);
     expect(root.querySelector('button, a[href], input, [tabindex]')).toBeNull();
     const classes = root.className.split(/\s+/);
-    expect(classes).toEqual(expect.arrayContaining(['hidden', 'md:block', 'absolute', 'pointer-events-none']));
-    // Below lg and on a screen 700px tall or less, the strip above the title
-    // is gone: the sign is not drawn there.
-    expect(classes).toContain('[@media(max-height:700px)]:max-lg:hidden');
-    // The note only hangs where there is room for it: from lg.
-    expect(host.querySelector('.note-taped').className).toContain('max-lg:hidden');
+    expect(classes).toEqual(expect.arrayContaining(['hidden', 'lg:block', 'absolute', 'pointer-events-none']));
+    // Changed on purpose: the sign is drawn from lg only (a tube under the gear
+    // at tablet width read as a label, not a sign; e2e/responsive.spec.js), so
+    // the old md/short-screen rules and the note's own max-lg rule are gone.
+    expect(classes).not.toContain('md:block');
     // Inside the hero, which is what it is positioned against.
     expect(root.parentElement.className).toContain('relative');
     expect(root.parentElement.querySelector('h1').textContent).toBe('Terrible Teddies');
