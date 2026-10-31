@@ -11,7 +11,8 @@ import { playSound as playSoundEffect } from '@/utils/sounds';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
 import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures, gainedFuryStack, getValidTargets, describeBlockedTarget } from '../../utils/battleUtils';
-import { pickQuip, OPPONENT_NAME } from '../../utils/teddyTalk';
+import { pickQuip, startPoolFor, OPPONENT_NAME } from '../../utils/teddyTalk';
+import { LAST_CALL_BANNER, lastCallLog } from '@/lib/houseLines';
 import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
@@ -23,6 +24,7 @@ import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, canRally, energyForTurn, h
 import LeaveBattleDialog from './LeaveBattleDialog';
 import { battlePassTier } from './battlePassTiers';
 import { placePreview, CARD_W, CAPTION_W, CAPTION_ROW_W } from './previewPlacement';
+import { lastCallDue } from './lastCall';
 import { Medallion } from '@/components/ui/game-chrome';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
@@ -62,6 +64,10 @@ const Avatar = ({ ring }) => (
 
 // How long a combat effect (a floating number, a shake, a flash) lives.
 const FX_MS = 1150;
+
+// How long the banner across the felt (a turn's, or last call's) stays up: the
+// length of the .fx-banner animation in index.css.
+const BANNER_MS = 1300;
 
 // The board's live combat events (see pushFx), for the cards and meters that
 // draw them. Context rather than props on purpose: a card that has just died
@@ -991,26 +997,85 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     return () => observer.disconnect();
   }, []);
 
-  // The turn banner: "Your turn" / "Chuck's turn" across the felt at each turn
-  // boundary and at the start of a game, so the hand-over reads at a glance.
-  // Decorative (the log announces whose turn it is) and never in the way of a
-  // tap. Cleared at game over, when the result dialog takes the table.
+  // The banner across the felt: "Your turn" / "Chuck's turn" at each turn
+  // boundary and at the start of a game, so the hand-over reads at a glance,
+  // and "Last call" the once a game the house lights come up. Decorative (the
+  // log announces both) and never in the way of a tap. Cleared at game over,
+  // when the result dialog takes the table.
+  //
+  // One banner at a time. Last call outranks a turn banner it meets: the
+  // wave that takes a side to its last points is followed 500 ms later by the
+  // next turn's "Your turn", which used to be the only thing on the felt, so
+  // each waits for the other's 1.3 s to end instead of cutting it short. A
+  // turn banner is still replaced by the next turn's at once.
   const [banner, setBanner] = useState(null);
   const bannerIdRef = useRef(0);
+  // When the turn banner, and the last-call banner (up or waiting), end.
+  const turnBannerEndsRef = useRef(0);
+  const lastCallBannerEndsRef = useRef(0);
   useEffect(() => {
     if (gameOver) {
+      turnBannerEndsRef.current = 0;
+      lastCallBannerEndsRef.current = 0;
       setBanner(null);
       return undefined;
     }
     if (!deckReady) return undefined;
     const id = ++bannerIdRef.current;
-    setBanner({ id, turn: currentTurn });
     // A turn boundary retires the last turn's callouts: on phones a toast
     // shares the centre line with the banner and would sit on top of it.
     dismissToasts();
-    const timer = setTimeout(() => setBanner((b) => (b?.id === id ? null : b)), 1300);
-    return () => clearTimeout(timer);
+    const timers = [];
+    const show = () => {
+      setBanner({ id, turn: currentTurn });
+      turnBannerEndsRef.current = Date.now() + BANNER_MS;
+      timers.push(setTimeout(() => setBanner((b) => (b?.id === id ? null : b)), BANNER_MS));
+    };
+    const wait = lastCallBannerEndsRef.current - Date.now();
+    if (wait > 0) timers.push(setTimeout(show, wait));
+    else show();
+    return () => {
+      timers.forEach(clearTimeout);
+      // Gone with its run, so a banner waiting out a last call is not left
+      // standing from the run before, and a replaced one does not hold up
+      // the next.
+      turnBannerEndsRef.current = 0;
+      setBanner((b) => (b?.id === id ? null : b));
+    };
   }, [currentTurn, deckReady, gameOver, dismissToasts]);
+
+  // Last call. The first time either side is down to LAST_CALL_HP or fewer
+  // (lastCall.js), once a game: the room lights up (data-last-call on the
+  // board, which index.css answers with .house-lights and the lamp over the
+  // felt), the log says so (it is the accessible record: every light and the
+  // banner are aria-hidden), the banner comes up, and Chuck says a line
+  // from his lastCall pool. `lastCallRef` is the game it fired in, so a new
+  // game (gameId) is a new night.
+  const [lastCall, setLastCall] = useState(false);
+  const lastCallRef = useRef(null);
+  const raiseLastCallBanner = useCallback(() => {
+    // After a turn banner that is up, never over it.
+    const wait = Math.max(0, turnBannerEndsRef.current - Date.now());
+    const id = ++bannerIdRef.current;
+    lastCallBannerEndsRef.current = Date.now() + wait + BANNER_MS;
+    const show = () => {
+      setBanner({ id, lastCall: true });
+      safeTimeout(() => setBanner((b) => (b?.id === id ? null : b)), BANNER_MS);
+    };
+    if (wait > 0) safeTimeout(show, wait);
+    else show();
+  }, [safeTimeout]);
+  useEffect(() => {
+    const due = lastCallDue({
+      gameId, firedIn: lastCallRef.current, deckReady, gameOver, playerHealth, opponentHealth,
+    });
+    if (!due) return;
+    lastCallRef.current = gameId;
+    setLastCall(true);
+    addToBattleLog(lastCallLog(due.side, due.hp));
+    raiseLastCallBanner();
+    speak('lastCall');
+  }, [gameId, deckReady, gameOver, playerHealth, opponentHealth, addToBattleLog, raiseLastCallBanner, speak]);
 
   // While a battle is in play, notifications move off the turn controls (see
   // index.css): in their usual corner they covered the controls on desktop
@@ -1117,7 +1182,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     startBattleLog([
       `${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`,
     ]);
-    speak('gameStart');
+    // The clock is read here, once, at the deal: a battle begun between
+    // midnight and five in the morning opens differently, and one that runs
+    // past the hour does not change its mind.
+    speak(startPoolFor(new Date()));
     addToBattleLog('Your turn. Make it hurt.');
     setDeckReady(true);
     // startBattleLog, addToBattleLog and speak are stable useCallbacks, so
@@ -1844,6 +1912,12 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     lastQuipRef.current = null;
     nearDeathQuippedRef.current = false;
 
+    // The lights go down: a new game is a new night (see lastCallRef).
+    setLastCall(false);
+    lastCallRef.current = null;
+    lastCallBannerEndsRef.current = 0;
+    turnBannerEndsRef.current = 0;
+
     // Re-arm abandonment tracking: after a bfcache-settled defeat, Play Again
     // keeps this component mounted, so the latch must reset or the NEW
     // battle's abandonment would silently never record.
@@ -2279,6 +2353,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // from it.)
     <div
       className="game-surface relative w-full h-[100dvh] [@media(pointer:fine)]:h-[max(100dvh,40rem)] bar-backdrop overflow-hidden"
+      data-last-call={lastCall ? '' : undefined}
       onKeyDown={onBoardKeyDown}
       onFocus={onBoardFocus}
     >
@@ -2288,6 +2363,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
           gone by then). The table says it visually. */}
       <h1 className="sr-only">Battle against {OPPONENT_NAME}</h1>
       <div className="absolute inset-0 grain pointer-events-none" aria-hidden="true" />
+      {/* The house lights: last call's cold wash over the room, under all
+          the content beside the grain, so no text sits under it (index.css,
+          .house-lights; the lamp over the felt is a layer of the felt's own).
+          Unlit until data-last-call is set on the board. */}
+      <div className="house-lights absolute inset-0 z-0 pointer-events-none" aria-hidden="true" />
       {/* A hit to your face reddens the edges of the screen for a moment. */}
       {lastPlayerHit && <div key={lastPlayerHit.id} className="fx-vignette" aria-hidden="true" />}
 
@@ -2520,6 +2600,12 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               ref={feltRef}
               className="felt-table felt-print stitched relative h-full rounded-[15px] grid grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-3 px-2 py-3 sm:p-4"
             >
+              {/* The lamp over the felt, brightened by last call. Absolute,
+                  so it takes no place in the grid (and fitField's
+                  measurement of the felt is untouched), and under the cards
+                  and text like the print on the cloth (z -1 in the felt's own
+                  stacking context). */}
+              <div className="felt-lamp" aria-hidden="true" />
               {/* Chuck's trash talk — decorative speech bubble in the felt's
                   corner on his side; the battle log is the accessible record,
                   so this is hidden from assistive tech. From xl up only: the
@@ -2787,19 +2873,26 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 </AnimatePresence>
               </div>
 
-              {/* The turn banner (see its effect). Over the centre line, which
-                  is empty of controls at a turn boundary. */}
+              {/* The banner (see its effect): a turn's, or last call's. Over
+                  the centre line, which is empty of controls at a turn
+                  boundary. Last call's is plain cold white: no colour of
+                  the board's (brass for you, red for Chuck) is its. */}
               {banner && (
                 <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-1/2 z-30 flex -translate-y-1/2 justify-center">
                   <div
                     key={banner.id}
-                    className={`fx-banner rounded-xl px-8 py-2.5 font-display text-3xl font-extrabold tracking-tight shadow-[0_18px_40px_-14px_rgba(0,0,0,0.9)] sm:text-4xl ${banner.turn === 'player'
-                      ? 'bg-night-950/90 ring-1 ring-brass-300/50'
-                      : 'bg-night-950/90 ring-1 ring-red-400/50'}`}
+                    data-banner={banner.lastCall ? 'last-call' : 'turn'}
+                    className={`fx-banner rounded-xl px-8 py-2.5 font-display text-3xl font-extrabold tracking-tight shadow-[0_18px_40px_-14px_rgba(0,0,0,0.9)] sm:text-4xl ${banner.lastCall
+                      ? 'bg-night-950/90 ring-1 ring-plush-100/40'
+                      : banner.turn === 'player'
+                        ? 'bg-night-950/90 ring-1 ring-brass-300/50'
+                        : 'bg-night-950/90 ring-1 ring-red-400/50'}`}
                   >
-                    {banner.turn === 'player'
-                      ? <span className="text-brass-gradient">Your turn</span>
-                      : <span className="text-red-300">{OPPONENT_NAME}&apos;s turn</span>}
+                    {banner.lastCall
+                      ? <span className="text-plush-100">{LAST_CALL_BANNER}</span>
+                      : banner.turn === 'player'
+                        ? <span className="text-brass-gradient">Your turn</span>
+                        : <span className="text-red-300">{OPPONENT_NAME}&apos;s turn</span>}
                   </div>
                 </div>
               )}

@@ -5,6 +5,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
 import { getDailyChallenges } from '../src/stores/challenges.js';
 import { getCurrentSeason } from '../src/utils/season.js';
+import { QUIPS } from '../src/utils/teddyTalk.js';
 
 // axe against what this spec adds that the a11y spec never opens: the result
 // panel's level-up beat and the card preview. Sampled once everything has
@@ -969,5 +970,246 @@ test.describe('XP and level-ups', () => {
     await expect(panel).toBeVisible(SLOW);
     expect(await xpFigure(panel).textContent()).toBe('20');
     await levelsUpAtOnce(panel);
+  });
+});
+
+// Last call: the first time either side is down to LAST_CALL_HP, the house
+// lights come up. The rule itself (once a game, who, the banner's order) is
+// pinned against the real board in src/components/GameBoard/GameBoard.test.jsx;
+// what only a browser can say is here: that it happens for real, that the
+// room and the felt light without anything moving, how the stylesheet fades
+// them, and that no line Chuck can say is cut off in his bubble.
+test.describe('last call', () => {
+  // The number the comeback achievement is advertised at. The store cannot be
+  // imported here (Node has no "@/" alias), and gameStore.test.js pins the
+  // constant, so this is the same figure written out.
+  const LAST_CALL_HP = 5;
+  const T0 = new Date('2027-01-15T22:00:00-05:00');
+  test.use({ timezoneId: 'America/New_York', viewport: { width: 1280, height: 800 } });
+
+  const lit = (page) => page.locator('.game-surface[data-last-call]').count().then((n) => n > 0);
+  const healthNow = async (page) => Number((await page.locator('[aria-label^="Your health"]').getAttribute('aria-label')).match(/: (\d+) of/)[1]);
+  // The page clock is faked, and jumped forward by hand so a round of the
+  // fight takes no real time. It is stepped by 100 ms so the page renders (and
+  // sets its next timer) between steps, as it would running for real. (It is
+  // not paused: a paused clock also stalls the menu's own hand-off to the board.)
+  const runClock = async (page, ms) => { for (let t = 0; t < ms; t += 100) await page.clock.runFor(100); };
+  // Steps the page clock until the player has their turn back (End Turn is
+  // there to press), or the game is lost.
+  const untilMyTurn = async (page) => {
+    for (let step = 0; step < 60; step += 1) {
+      if (await page.getByRole('dialog', { name: 'Defeat' }).count()) return 'defeat';
+      if (await page.getByRole('button', { name: 'End Turn' }).count()) return 'turn';
+      await page.clock.runFor(100);
+    }
+    return 'timeout';
+  };
+  // End Turn, then step until the round is over, or the lights come up (when
+  // they are not up already) or the game is lost, whichever comes first: the
+  // banner is up for 1.3 s of page time, so the stepping stops while it is.
+  const endTurnAndWatch = async (page, { stopAtLights = true } = {}) => {
+    await page.getByRole('button', { name: 'End Turn' }).click();
+    for (let step = 0; step < 40; step += 1) {
+      await page.clock.runFor(100);
+      if (stopAtLights && await lit(page)) return 'lit';
+      if (await page.getByRole('dialog', { name: 'Defeat' }).count()) return 'defeat';
+      if (step > 3 && await page.getByRole('button', { name: 'End Turn' }).count()) return 'turn';
+    }
+    return 'timeout';
+  };
+
+  // The player does nothing but end turns. With Math.random pinned, Chuck's
+  // crew is fixed, and it hits for a few points a round, so the health walks
+  // down 30, 30, 26, 22 ... and lands in the last-call range (1-5) before it
+  // reaches 0. (A crew that skipped the range would fail the test by name.)
+  const startFight = async (page) => {
+    await page.addInitScript(() => { Math.random = () => 0.5; });
+    await page.clock.install({ time: T0 });
+    await bootToMainMenu(page);
+    await page.getByRole('button', { name: 'Battle', exact: true }).click();
+    // The board is a lazy chunk, which arrives on real time; then the draw
+    // takes half a second of the page's.
+    await expect(page.getByRole('heading', { name: /^Battle against/ })).toBeAttached(SLOW);
+    await runClock(page, 1200);
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+  };
+
+  test('the lights come up once, at the HP the comeback is advertised at, and the room is lit without a card moving', async ({ page }) => {
+    test.setTimeout(120_000);
+    await startFight(page);
+    // Every last-call line the log is ever given, counted as it is written.
+    await page.evaluate(() => {
+      window.__lastCalls = [];
+      new MutationObserver((records) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node.textContent?.startsWith('Last call.')) window.__lastCalls.push(node.textContent);
+          }
+        }
+      }).observe(document.querySelector('[role="log"]'), { childList: true, subtree: true });
+    });
+    const felt = await page.locator('.felt-table').boundingBox();
+
+    const trail = [await healthNow(page)];
+    let outcome = 'turn';
+    for (let round = 0; round < 20 && outcome === 'turn'; round += 1) {
+      expect(await lit(page), `the room was lit with ${trail[trail.length - 1]} HP`).toBe(false);
+      outcome = await endTurnAndWatch(page);
+      trail.push(await healthNow(page));
+    }
+    const hp = trail[trail.length - 1];
+    expect(outcome, `the health went ${trail.join(', ')}: the lights never came up before the defeat`).toBe('lit');
+    expect(hp, 'it came up with the player in range').toBeGreaterThan(0);
+    expect(hp).toBeLessThanOrEqual(LAST_CALL_HP);
+    expect(trail[trail.length - 2], 'and not a round sooner than it had to').toBeGreaterThan(LAST_CALL_HP);
+
+    // The log says so (it is the accessible record), once, and Chuck says a
+    // line of his own after it.
+    const entries = page.locator('[role="log"] > div');
+    await expect(entries.filter({ hasText: /^Last call\./ })).toHaveText(`Last call. House lights up — you're down to ${hp} HP.`);
+    const spoken = (await entries.allTextContents()).filter((text) => QUIPS.lastCall.some((line) => text === `\u{1F9F8} Chuck: "${line}"`));
+    expect(spoken, 'Chuck says a lastCall line').toHaveLength(1);
+    // The banner is the turn banner's place, and aria-hidden.
+    const banner = page.locator('[data-banner="last-call"]');
+    await expect(banner).toHaveText('Last call');
+    expect(await banner.evaluate((el) => Boolean(el.closest('[aria-hidden="true"]')))).toBe(true);
+
+    // The room and the lamp over the felt are lit, under the content, and the
+    // felt is the size it was.
+    const layers = await page.evaluate(() => {
+      const style = (selector) => getComputedStyle(document.querySelector(selector));
+      return {
+        room: { opacity: style('.house-lights').opacity, z: style('.house-lights').zIndex, hidden: document.querySelector('.house-lights').getAttribute('aria-hidden') },
+        lamp: { opacity: style('.felt-lamp').opacity, z: style('.felt-lamp').zIndex, hidden: document.querySelector('.felt-lamp').getAttribute('aria-hidden') },
+        content: style('.game-surface > .relative.z-10').zIndex,
+      };
+    });
+    expect(layers.room).toEqual({ opacity: '1', z: '0', hidden: 'true' });
+    expect(layers.lamp).toEqual({ opacity: '1', z: '-1', hidden: 'true' });
+    expect(Number(layers.content), 'the room is under all the content').toBeGreaterThan(Number(layers.room.z));
+    const feltNow = await page.locator('.felt-table').boundingBox();
+    for (const key of ['x', 'y', 'width', 'height']) expect(feltNow[key], `the felt's ${key}`).toBeCloseTo(felt[key], 0);
+    await expectNoAxeViolations(page, 'the board with the house lights up');
+
+    // On to the defeat: the same game does not call last call again, and the
+    // lights stay up under the result.
+    outcome = await untilMyTurn(page);
+    for (let round = 0; round < 20 && outcome === 'turn'; round += 1) {
+      outcome = await endTurnAndWatch(page, { stopAtLights: false });
+    }
+    const defeat = page.getByRole('dialog', { name: 'Defeat' });
+    await expect(defeat).toBeVisible(SLOW);
+    expect(await page.evaluate(() => window.__lastCalls)).toHaveLength(1);
+    expect(await lit(page)).toBe(true);
+
+    // Play Again is a new night.
+    await defeat.getByRole('button', { name: 'Play Again' }).click();
+    await runClock(page, 1200);
+    await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
+    expect(await lit(page)).toBe(false);
+    expect(await page.evaluate(() => getComputedStyle(document.querySelector('.house-lights')).opacity)).toBe('0');
+  });
+
+  // The stylesheet's half: nothing in the board's layout is the lights'. Set by
+  // hand, the same board, the same moment, before and after.
+  test('lighting the room moves nothing: the felt, both rows and the hand keep their boxes', async ({ page }) => {
+    await bootToMainMenu(page);
+    await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4] });
+    await page.reload();
+    await toBattle(page);
+    await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
+    await expect(page.locator('[data-field="player"]')).toHaveCount(1, SLOW);
+    await page.waitForTimeout(600);
+    const geometry = () => page.evaluate(() => {
+      const box = (el) => { const r = el.getBoundingClientRect(); return [r.x, r.y, r.width, r.height].map((n) => Math.round(n * 100) / 100); };
+      return {
+        felt: box(document.querySelector('.felt-table')),
+        rows: [...document.querySelectorAll('[data-field]')].map(box),
+        hand: [...document.querySelectorAll('[data-hand-id]')].map(box),
+        centre: document.documentElement.style.getPropertyValue('--battle-centre-y'),
+        zoom: getComputedStyle(document.querySelector('[data-field="player"]').parentElement).zoom,
+      };
+    });
+    const dark = await geometry();
+    await page.evaluate(() => document.querySelector('.game-surface').setAttribute('data-last-call', ''));
+    await page.waitForTimeout(300);
+    expect(await geometry()).toEqual(dark);
+    // The lamp is a layer of the felt itself, out of the grid's flow.
+    const lamp = await page.locator('.felt-lamp').evaluate((el) => ({ position: getComputedStyle(el).position, inFelt: el.parentElement.classList.contains('felt-table') }));
+    expect(lamp).toEqual({ position: 'absolute', inFelt: true });
+    await expectNoAxeViolations(page, 'the board with the lights up and a creature on the table');
+  });
+
+  // 800 ms in, with motion allowed. With the Animations switch off, or reduced
+  // motion, the lights are simply on: the fade rules sit outside Tailwind's
+  // layer, and a rule that merely ties the lit state's specificity once left
+  // reduced motion fading anyway.
+  const FADES = [
+    { name: 'with motion allowed', media: 'no-preference', animationsEnabled: true, duration: '0.8s', atOnce: false },
+    { name: 'with the Animations switch off', media: 'no-preference', animationsEnabled: false, duration: '0s', atOnce: true },
+    { name: 'with reduced motion', media: 'reduce', animationsEnabled: true, duration: '0s', atOnce: true },
+  ];
+  for (const fade of FADES) {
+    test(`the house lights ${fade.atOnce ? 'are simply on' : 'fade in over 800 ms'} ${fade.name}`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: fade.media });
+      await bootToMainMenu(page);
+      await seed(page, { animationsEnabled: fade.animationsEnabled });
+      await page.reload();
+      await toBattle(page);
+      const opacities = () => page.evaluate(() => ({
+        room: getComputedStyle(document.querySelector('.house-lights')).opacity,
+        lamp: getComputedStyle(document.querySelector('.felt-lamp')).opacity,
+      }));
+      expect(await opacities()).toEqual({ room: '0', lamp: '0' });
+      await page.evaluate(() => document.querySelector('.game-surface').setAttribute('data-last-call', ''));
+      const first = await page.evaluate(() => ({
+        duration: getComputedStyle(document.querySelector('.house-lights')).transitionDuration,
+        lampDuration: getComputedStyle(document.querySelector('.felt-lamp')).transitionDuration,
+      }));
+      expect(first).toEqual({ duration: fade.duration, lampDuration: fade.duration });
+      if (fade.atOnce) {
+        expect(await opacities()).toEqual({ room: '1', lamp: '1' });
+      } else {
+        const early = await opacities();
+        expect(Number(early.room), 'it is still coming up').toBeLessThan(1);
+        await expect.poll(async () => (await opacities()).room, { timeout: 3000 }).toBe('1');
+        expect(await opacities()).toEqual({ room: '1', lamp: '1' });
+      }
+    });
+  }
+
+  // Past midnight and before five, by the player's own clock, Chuck opens late.
+  for (const { name, at, pool } of [
+    { name: 'at 2:30 in the morning', at: '2027-01-15T02:30:00-05:00', pool: 'gameStartLate' },
+    { name: 'in the afternoon', at: '2027-01-15T14:00:00-05:00', pool: 'gameStart' },
+  ]) {
+    test(`Chuck opens from the ${pool} pool ${name}`, async ({ page }) => {
+      await page.clock.setFixedTime(new Date(at));
+      await bootToMainMenu(page);
+      await toBattle(page);
+      const opener = page.locator('[role="log"] > div').filter({ hasText: /^\u{1F9F8} Chuck: /u }).first();
+      await expect(opener).toBeAttached();
+      const said = (await opener.textContent()).replace(/^\u{1F9F8} Chuck: "/u, '').slice(0, -1);
+      expect(QUIPS[pool], `"${said}"`).toContain(said);
+    });
+  }
+
+  // Chuck's bubble on the centre line holds two lines at 320px and clips the
+  // rest. Characters are only a coarse guard (src/utils/teddyTalk.test.js); the
+  // bubble is the measure: every line of every pool, set into the real one.
+  test('every line Chuck can say fits his bubble at 320px, none cut off', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await bootToMainMenu(page);
+    await toBattle(page);
+    const lines = Object.entries(QUIPS).flatMap(([pool, list]) => list.map((text) => ({ pool, text })));
+    const bubble = page.locator('[data-speech="opponent"]:visible').first();
+    await expect(bubble).toBeVisible(SLOW);
+    const cut = await bubble.evaluate((el, all) => {
+      const words = [...el.childNodes].find((node) => node.nodeType === 3);
+      return all
+        .filter(({ text }) => { words.textContent = text; return el.scrollHeight > el.clientHeight + 1; })
+        .map(({ pool, text }) => `${pool}: ${text}`);
+    }, lines);
+    expect(cut, 'lines the bubble cuts off at 320px').toEqual([]);
   });
 });

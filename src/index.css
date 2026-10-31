@@ -811,6 +811,49 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 /* The turn banner: in, hold, out. */
 .fx-banner { animation: fx-banner 1300ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
+/* ---- After dark, on the battle board: last call (and, below it, the Tab) ----
+
+   Last call: the first time either side is down to LAST_CALL_HP the house
+   lights come up. GameBoard sets data-last-call on the board; these answer it.
+   Two layers, neither with a pseudo-element, both pure opacity, and both UNDER
+   the content: laid over text, a cold white at this strength takes plush-300
+   from 8.15:1 to 6.01:1, so the wash only ever tints the room behind it.
+   .house-lights is the room (it sits beside .grain, z-0, under the z-10
+   content); .felt-lamp is the lamp over the cloth, inside .felt-table at z -1
+   like .felt-print. The fade in is 800 ms; going out (a new game) is quicker.
+   With the Animations switch off, or reduced motion, the lights are simply on
+   (rules after the layer). */
+.house-lights {
+  opacity: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(226, 236, 255, 0.18) 0%,
+    rgba(226, 236, 255, 0.15) 55%,
+    rgba(226, 236, 255, 0.11) 100%
+  );
+  transition: opacity 400ms ease-in;
+}
+.felt-lamp {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse 42% 58% at 50% 46%,
+    rgba(226, 236, 255, 0.16),
+    rgba(226, 236, 255, 0.06) 55%,
+    transparent 100%
+  );
+  transition: opacity 400ms ease-in;
+}
+[data-last-call] .house-lights,
+[data-last-call] .felt-lamp {
+  opacity: 1;
+  transition: opacity 800ms ease-out;
+}
+
 /* A card on its way out (FieldSlot's data-exiting) was drawn with its last
    state, which may include the valid-target ring and crosshair, or the
    selected/ready glow: it is not any of those any more. */
@@ -1089,6 +1132,19 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   0% { opacity: 0; }
   12%, 75% { opacity: 1; }
   100% { opacity: 0; }
+}
+/* Last call's lights, with the Animations switch off or reduced motion: no
+   fade, they are simply on (or off). The @layer above is Tailwind's, which
+   only places the rules: in the stylesheet these are ordinary rules, and so
+   they have to tie the lit state's (0,2,0) and come after it, not rely on
+   being outside a layer. */
+[data-motion="off"] .house-lights,
+[data-motion="off"] .felt-lamp { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  [data-last-call] .house-lights,
+  [data-last-call] .felt-lamp,
+  .house-lights,
+  .felt-lamp { transition: none; }
 }
 @keyframes end-turn-glow {
   0%, 100% { opacity: 0.35; }

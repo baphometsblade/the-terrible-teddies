@@ -12,10 +12,25 @@ vi.mock('../../utils/supabaseClient', () => ({
 // jsdom has no canvas to throw confetti on; the tests only need to know it
 // was asked for.
 vi.mock('@/lib/celebrate', () => ({ celebrate: vi.fn() }));
+// Chuck's crew is random every fight. A test that needs his damage to be
+// countable sets `fixedCrew.cards` to the crew it wants, and gets exactly
+// that; with none set, the real builder deals as it always does.
+const fixedCrew = vi.hoisted(() => ({ cards: null }));
+vi.mock('../../utils/opponentDeck', async (importOriginal) => {
+  const real = await importOriginal();
+  return {
+    ...real,
+    buildOpponentDeck: (...args) => (fixedCrew.cards
+      ? { cards: fixedCrew.cards, crewName: 'the Test Crew' }
+      : real.buildOpponentDeck(...args)),
+  };
+});
 
 import GameBoard from './GameBoard';
-import { useGameStore } from '../../stores/gameStore';
+import { useGameStore, LAST_CALL_HP } from '../../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
+import { QUIPS } from '../../utils/teddyTalk';
+import { lastCallLog } from '@/lib/houseLines';
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -189,5 +204,194 @@ describe('GameBoard result panel', () => {
     await renderBoard({ onBackToMenu: () => {} });
     const panel = await concede();
     expect(panel.querySelector('[data-pass-tier]')?.textContent).toBe('Battle Pass tier 2 unlocked');
+  });
+});
+
+// The first time either side is down to LAST_CALL_HP the house lights come up,
+// once a game, for whoever gets there first. Chuck has to be countable for
+// that, so his crew here is one bruiser and nothing else: once he is out of
+// summoning sickness he hits the player's face for his attack each round, and
+// the player (who does nothing) goes down a round at a time: with an attack of
+// 5, 30, 30, 25, 20, 15, 10, 5 and out. The timers are faked so a round is
+// instant; the board is the real one, under StrictMode, with the real store.
+describe('GameBoard last call', () => {
+  // Chuck's whole crew for the next deal: one hitter with this attack.
+  const facing = (attack) => {
+    fixedCrew.cards = [{
+      id: 999, name: 'Test Bruiser', attack, defense: 9, type: 'action', cost: 1,
+      ability: 'none', rarity: 'common', instanceId: 'o-999-0',
+    }];
+  };
+
+  const board = () => container.querySelector('.game-surface');
+  const lit = () => board().hasAttribute('data-last-call');
+  const logLines = () => [...container.querySelectorAll('[role="log"] > div')].map((e) => e.textContent);
+  const lastCallLines = () => logLines().filter((line) => line.startsWith('Last call.'));
+  const bannerKind = () => container.querySelector('[data-banner]')?.getAttribute('data-banner') ?? null;
+  const health = () => Number(container.querySelector('[aria-label^="Your health"]').getAttribute('aria-label').match(/: (\d+) of/)[1]);
+
+  const advance = (ms) => act(async () => { vi.advanceTimersByTime(ms); });
+  // Steps the faked clock in small bites, so React renders (and schedules the
+  // next timer) between them as it would in a browser.
+  const advanceUntil = async (done, limitMs = 8000) => {
+    for (let waited = 0; !done() && waited < limitMs; waited += 100) await advance(100);
+    expect(done(), 'the board never got there').toBeTruthy();
+  };
+  // Waits for the player's turn (a round may have been left mid-way through
+  // Chuck's), then ends it.
+  const endTurn = async () => {
+    await advanceUntil(() => button('End Turn'));
+    await act(async () => button('End Turn').click());
+  };
+  const defeated = () => container.querySelector('[role="dialog"][aria-label="Defeat"]');
+  // Deals the game and waits out the draw phase, when End Turn appears.
+  const startGame = async () => {
+    await renderBoard({ onBackToMenu: () => {} });
+    await advanceUntil(() => button('End Turn'));
+  };
+  // Rounds until the player's health reads `hp`, stopping the moment it does.
+  const playUntilHealth = async (hp) => {
+    for (let round = 0; round < 20 && health() > hp; round += 1) {
+      await endTurn();
+      await advanceUntil(() => health() <= hp || (button('End Turn') && health() > hp));
+    }
+    expect(health()).toBe(hp);
+  };
+
+  beforeEach(() => {
+    useGameStore.setState(useGameStore.getInitialState(), true);
+    facing(LAST_CALL_HP);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    fixedCrew.cards = null;
+  });
+
+  it('comes up at exactly LAST_CALL_HP: the room, the log, the banner and Chuck', async () => {
+    await startGame();
+    expect(container.querySelector('.house-lights'), 'the lights are in the room from the start').not.toBeNull();
+    expect(container.querySelector('.felt-table .felt-lamp'), 'and the lamp over the felt').not.toBeNull();
+
+    // Above the line, nothing: at 10 (one hit away) the room is still dark.
+    await playUntilHealth(LAST_CALL_HP * 2);
+    expect(lit()).toBe(false);
+    expect(lastCallLines()).toEqual([]);
+    expect(bannerKind()).not.toBe('last-call');
+
+    await playUntilHealth(LAST_CALL_HP);
+    expect(lit()).toBe(true);
+    expect(lastCallLines()).toEqual([lastCallLog('player', LAST_CALL_HP)]);
+    expect(bannerKind()).toBe('last-call');
+    expect(container.querySelector('[data-banner="last-call"]').textContent).toBe('Last call');
+    // Chuck says a line from his lastCall pool, after the log has said it.
+    const lines = logLines();
+    const said = lines.find((line) => QUIPS.lastCall.some((q) => line === `🧸 Chuck: "${q}"`));
+    expect(said, `Chuck's line is from the lastCall pool: ${lines.join(' | ')}`).toBeTruthy();
+    expect(lines.indexOf(said)).toBeGreaterThan(lines.indexOf(lastCallLog('player', LAST_CALL_HP)));
+    // Everything drawn is for the eye alone: the log is the record.
+    expect(container.querySelector('.house-lights').getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelector('[data-banner]').closest('[aria-hidden="true"]')).not.toBeNull();
+  });
+
+  // The wave that takes the player to 5 is followed half a second later by
+  // "Your turn", which used to be alone on the felt. Last call keeps it for
+  // its 1.3 s and the turn's banner follows, whole.
+  it('keeps its banner for its full time, and the next turn\'s banner follows it', async () => {
+    await startGame();
+    await playUntilHealth(LAST_CALL_HP);
+    expect(bannerKind()).toBe('last-call');
+    await advance(700); // the turn has changed hands (500 ms after the wave)
+    expect(container.querySelector('[data-banner="last-call"]'), 'Your turn must not cut it short').not.toBeNull();
+    await advance(700); // past last call's 1.3 s
+    expect(bannerKind()).toBe('turn');
+    expect(container.querySelector('[data-banner="turn"]').textContent).toBe('Your turn');
+    await advance(1500);
+    expect(bannerKind()).toBeNull();
+  });
+
+  it('fires once a game however the health goes on, and again in the next game after Play Again', async () => {
+    // 2 a round: the player is in range at 4, and again at 2, and the second
+    // visit to the range must not call it a second time.
+    facing(2);
+    await startGame();
+    // Every last-call line that is ever added to the log, counted as it comes.
+    const seen = [];
+    const watcher = new MutationObserver((records) => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node.textContent?.startsWith('Last call.')) seen.push(node.textContent);
+        }
+      }
+    });
+    watcher.observe(container.querySelector('[role="log"]'), { childList: true, subtree: true });
+
+    await playUntilHealth(LAST_CALL_HP + 1);
+    expect(seen).toHaveLength(0);
+    await playUntilHealth(LAST_CALL_HP - 1);
+    expect(seen).toEqual([lastCallLog('player', LAST_CALL_HP - 1)]);
+    await playUntilHealth(LAST_CALL_HP - 3);
+    expect(seen, 'in range again, but it is the same game').toHaveLength(1);
+    // On to the end: down to 0, game over. No second call for the same game.
+    await playUntilHealth(0);
+    await advanceUntil(defeated);
+    expect(seen).toHaveLength(1);
+    // The lights stay up under the result panel.
+    expect(lit()).toBe(true);
+
+    // Play Again is a new night: the room goes dark, and the next game's
+    // last call lights it again.
+    facing(LAST_CALL_HP);
+    await act(async () => button('Play Again').click());
+    await advanceUntil(() => button('End Turn'));
+    expect(lit()).toBe(false);
+    expect(health()).toBe(30);
+    expect(lastCallLines()).toEqual([]);
+    await playUntilHealth(LAST_CALL_HP);
+    expect(lit()).toBe(true);
+    expect(seen).toHaveLength(2);
+    watcher.disconnect();
+  });
+
+  it('does not fire for a side that is down to nothing: a concede is not a last call', async () => {
+    await renderBoard({ onBackToMenu: () => {} });
+    await act(async () => container.querySelector('button[title="Concede"]').click());
+    await act(async () => button('Concede — counts as a loss').click());
+    await advanceUntil(defeated);
+    expect(lit()).toBe(false);
+    expect(lastCallLines()).toEqual([]);
+  });
+});
+
+// Between midnight and five in the morning, by the player's own clock, Chuck
+// opens with his late line. The hour is read once, at the deal.
+describe('GameBoard opening line', () => {
+  const opener = () => {
+    const line = [...container.querySelectorAll('[role="log"] > div')]
+      .map((e) => e.textContent).find((text) => text.startsWith('🧸 Chuck: "'));
+    return line?.slice('🧸 Chuck: "'.length, -1) ?? null;
+  };
+
+  beforeEach(() => {
+    useGameStore.setState(useGameStore.getInitialState(), true);
+    vi.useFakeTimers({ toFake: ['Date'] });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('is a late line at 2:30 in the morning', async () => {
+    vi.setSystemTime(new Date(2027, 0, 15, 2, 30));
+    await renderBoard({ onBackToMenu: () => {} });
+    expect(QUIPS.gameStartLate).toContain(opener());
+  });
+
+  it('is the usual line in the afternoon, and at five sharp', async () => {
+    vi.setSystemTime(new Date(2027, 0, 15, 14, 0));
+    await renderBoard({ onBackToMenu: () => {} });
+    expect(QUIPS.gameStart).toContain(opener());
+    await act(async () => root.unmount());
+    root = createRoot(container);
+    vi.setSystemTime(new Date(2027, 0, 15, 5, 0));
+    await renderBoard({ onBackToMenu: () => {} });
+    expect(QUIPS.gameStart).toContain(opener());
   });
 });
