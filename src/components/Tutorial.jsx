@@ -36,7 +36,7 @@ import { CONTENT_NOTICE } from '@/lib/contentNotice';
 const TUTORIAL_STEPS = [
   {
     title: "Welcome to Terrible Teddies",
-    content: `The bears were regulars before the bar had a license, or a fire exit. Now they settle everything with cards, fists, and language you can't repeat at work. Pull up a stool. Try not to get banned on night one.\n\n(18+ — contains ${CONTENT_NOTICE}.)`,
+    content: `The bears were regulars before the bar had a license, or a fire exit. Now they settle everything with cards, fists, and language you can't repeat at work. Try not to get banned on night one.\n\n(18+ — contains ${CONTENT_NOTICE}.)`,
     mascot: true,
   },
   {

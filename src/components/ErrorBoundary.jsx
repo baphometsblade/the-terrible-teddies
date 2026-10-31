@@ -106,7 +106,7 @@ class ErrorBoundary extends React.Component {
                 We dropped a tray.
               </h1>
               <p id="crash-screen-detail" className="text-plush-200 leading-relaxed">
-                Something went wrong, but your progress is safe. Nobody saw anything.
+                Something went wrong, but your progress is safe. Chuck did it. Probably.
               </p>
             </div>
 

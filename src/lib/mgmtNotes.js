@@ -11,7 +11,7 @@
 //            line already has him)
 //   empty    an empty state that wants a note
 //   chuck    names Chuck: for the Battle side and empty states, never the menu
-export const MGMT_SIGNOFF = ' - Mgmt.';
+export const MGMT_SIGNOFF = ' — Mgmt.';
 export const MGMT_NOTE_MAX = 44;
 
 const note = (body, use) => Object.freeze({ text: `${body}${MGMT_SIGNOFF}`, use });

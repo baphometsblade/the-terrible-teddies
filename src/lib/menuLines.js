@@ -34,8 +34,8 @@ export const TILE_MAX = 42;
 export const TILE_LINES = Object.freeze({
   challenges: 'Prove you have a problem',
   battlepass: 'A punch card for bad behavior',
-  shop: 'The machine by the restrooms',
-  packs: 'Blind dates, sealed in foil',
+  shop: 'Spend money you don’t have',
+  packs: 'Gambling, but cuter',
   deck: 'Assemble your goon squad',
   collection: 'Everyone you’ve ever pulled',
   leaderboard: 'Who’s on top. Allegedly.',

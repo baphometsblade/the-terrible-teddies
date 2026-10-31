@@ -12,7 +12,7 @@ describe('the notes from management', () => {
   });
 
   it('signs every note with the one constant, and fits the slot with the sign-off in it', () => {
-    expect(MGMT_SIGNOFF).toBe(' - Mgmt.');
+    expect(MGMT_SIGNOFF).toBe(' — Mgmt.');
     for (const { text } of MGMT_NOTES) {
       expect(text.endsWith(MGMT_SIGNOFF), text).toBe(true);
       expect(text.length, text).toBeLessThanOrEqual(MGMT_NOTE_MAX);
