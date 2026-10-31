@@ -330,6 +330,18 @@ describe('the flavor line under the table', () => {
       expect(line().textContent).toBe(card(BEST).description);
     });
 
+    // Two cards of the best rarity: the line is the one the turns would have
+    // ended on, the last, not the first of them.
+    it("ends on the last card's line when the best rarity is shared", async () => {
+      stubPack([1, 6, 8]);
+      render();
+      await openAndDeal();
+      act(() => buttonNamed('Reveal all').click());
+      expect(card(6).rarity).toBe(card(8).rarity);
+      expect(line().getAttribute('data-flavor-of')).toBe('8');
+      expect(line().textContent).toBe(card(8).description);
+    });
+
     it('starts the next pack with no line, until one of its cards turns', async () => {
       stubPack(FIVE, 2);
       render();

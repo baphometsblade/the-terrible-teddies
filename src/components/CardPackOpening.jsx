@@ -299,10 +299,11 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
     setWaveDone(false);
     setReady(true);
     const best = fresh.reduce((b, c) => (!b || rankOf(c) > rankOf(b) ? c : b), null);
-    if (best) {
-      celebrateFor(best);
-      setSpotlight(cards.indexOf(best));
-    }
+    if (best) celebrateFor(best);
+    // The line is the one the turns would have ended on: the last card, a best
+    // card of the pull (the order never steps down), and in the wave that is on
+    // the table now. Among cards of the best rarity, the first would not be.
+    setSpotlight(cards.length - 1);
     pendingFocusRef.current = true;
     idleRef.current = later(() => setIsOpening(false), END_MS);
   };
