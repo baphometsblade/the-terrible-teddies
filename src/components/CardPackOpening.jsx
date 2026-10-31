@@ -77,7 +77,9 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
   // dealt and can be turned, and whether it is all face up with more to come.
   const [wave, setWave] = useState(0);
   // The card whose flavor line is under the table: the one turned last, or the
-  // best of the pull once everything turns at once (an index into pulledCards).
+  // last of the pull (a best card) once everything turns at once or the pack
+  // opens face up; the best of the wave put back on the table after. An index
+  // into pulledCards.
   const [spotlight, setSpotlight] = useState(null);
   const [ready, setReady] = useState(false);
   const [waveDone, setWaveDone] = useState(false);
