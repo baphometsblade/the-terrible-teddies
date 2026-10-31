@@ -19,6 +19,8 @@ import { CLEARANCE, isKeyboardFocus, revealBetween } from '@/lib/keepClear';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 
 const DECK_SIZE = 10;
+// The "Two’s company" toast title is the unfinished proverb for a third copy:
+// it only reads right while this is 2.
 const MAX_COPIES = 2;
 
 // The editor's deck: the card objects for a list of ids, each with an id of
