@@ -91,6 +91,10 @@ test('leave-battle dialog has no WCAG 2.1 A/AA violations', async ({ page }) => 
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
   await page.getByRole('button', { name: '← Menu' }).click();
   await expect(page.getByRole('dialog', { name: 'Leave this battle?' })).toBeVisible();
+  // Chuck's opening line is still fading out behind the scrim for a few
+  // seconds, and axe composites a half-faded bubble into a colour it never
+  // rests at; audit the settled page.
+  await expect(page.locator('[data-speech="opponent"]:visible')).toHaveCount(0, SLOW);
   await expectNoViolations(page, 'leave-battle dialog');
 });
 
