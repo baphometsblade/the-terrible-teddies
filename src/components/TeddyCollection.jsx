@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Lock, SearchX, Zap } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 import TeddyCard from './TeddyCard';
+import FlavorLine from './FlavorLine';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 import { FOCUS_OUTLINE, FOCUS_RING } from '@/lib/focus';
@@ -227,7 +228,7 @@ const CardDetailDialog = ({ cards, index, onIndex, onClose }) => {
         </div>
 
         <div className="w-full min-w-0 flex-1">
-          <p className="text-sm leading-relaxed text-plush-200">{card.description}</p>
+          <FlavorLine card={card} />
 
           <dl className="mt-4 grid grid-cols-2 gap-2">
             <Stat label="Type"><span className="capitalize text-white">{card.type}</span></Stat>

@@ -190,6 +190,124 @@ test('Reveal all turns the rest at once, and both waves can be looked at after',
   await expect(page.locator('[data-reveal-card="up"]')).toHaveCount(5);
 });
 
+// The flavor line of the card turned last sits under the table: the card's
+// joke, in the Collection's own style, where the card is met. What a card says
+// is read from the live table by the id the caption carries, so a rewrite of
+// the copy cannot make these vacuous, and whatever the pack rolls they hold.
+// The line takes room under the table, so the controls are checked where the
+// smallest phones put them: at 320x568 Reveal all stays on screen.
+const cardById = (page, id) => page.evaluate(async (cardId) => {
+  const { ALL_CARDS } = await import('/src/stores/gameStore.js');
+  const { name, description, rarity } = ALL_CARDS.find((c) => c.id === Number(cardId));
+  return { name, description, rarity };
+}, id);
+const flavorLine = (page) => page.locator('[data-reveal-flavor] p');
+
+for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
+  test.describe(`the flavor line under the table at ${viewport.width}x${viewport.height}`, () => {
+    test.use({ viewport });
+
+    test('shows the turned card\'s line as the data has it, between the table and the way on', async ({ page }) => {
+      await seed(page, { cardPacks: 1, premiumPacks: 0, legendaryPacks: 0 });
+      const dialog = await openCardPacks(page);
+      await dialog.getByRole('button', { name: /^Open Pack/ }).click();
+      await expect(dialog.getByRole('button', { name: 'Reveal all' })).toBeVisible(SLOW);
+      // The table in its two rows (it is one until the field has been measured).
+      await expect.poll(async () => (await tableRows(page)).length, SLOW).toBe(2);
+
+      // Dealt, nothing turned yet: the room for the line is already held, and
+      // Reveal all is on screen even on the shortest phone. Counted now rather
+      // than polled for: polled, it would pass once the idle fallback turned a
+      // card, whether or not the room was held before.
+      expect(await page.locator('[data-reveal-flavor]').count(), 'the line\'s room is not held from the deal').toBe(1);
+      const revealAll = await dialog.getByRole('button', { name: 'Reveal all' }).boundingBox();
+      expect(revealAll.y + revealAll.height, 'Reveal all is below the fold').toBeLessThanOrEqual(viewport.height);
+
+      await tap(dialog, 1);
+      await expect(flavorLine(page)).toBeVisible(SLOW);
+      const id = await flavorLine(page).getAttribute('data-flavor-of');
+      const card = await cardById(page, id);
+      await expect(flavorLine(page)).toHaveText(card.description);
+      // It is a card that is face up on the table.
+      await expect(page.locator('[data-reveal-card="up"]').filter({ hasText: card.name }), `${card.name} is not face up`).not.toHaveCount(0, SLOW);
+
+      // Under the table, above the way on, inside the dialog.
+      const line = await flavorLine(page).boundingBox();
+      const table = await page.locator('[data-reveal-table]').boundingBox();
+      const actions = await dialog.getByRole('button', { name: /^(Reveal all|Done)$/ }).first().boundingBox();
+      expect(line.y, 'the line starts above the end of the table').toBeGreaterThanOrEqual(table.y + table.height - 1);
+      expect(line.y + line.height, 'the line runs into the buttons').toBeLessThanOrEqual(actions.y + 1);
+      expect(line.x).toBeGreaterThanOrEqual(0);
+      expect(line.x + line.width).toBeLessThanOrEqual(viewport.width);
+    });
+
+    test('ends on the best card\'s line, with the way on in reach', async ({ page }) => {
+      await seed(page, { cardPacks: 1, premiumPacks: 0, legendaryPacks: 0 });
+      const dialog = await openCardPacks(page);
+      await dialog.getByRole('button', { name: /^Open Pack/ }).click();
+      await expect(dialog.getByRole('button', { name: 'Reveal all' })).toBeVisible(SLOW);
+      await dialog.getByRole('button', { name: 'Reveal all' }).click();
+      const done = dialog.getByRole('button', { name: 'Done' });
+      await expect(done).toBeVisible(SLOW);
+
+      // The best card is the one the table turned last: the display order
+      // never steps down in rarity, so the line is the rarest card's.
+      const id = await flavorLine(page).getAttribute('data-flavor-of');
+      const card = await cardById(page, id);
+      await expect(flavorLine(page)).toHaveText(card.description);
+      const captions = await page.locator('[data-reveal-card]').evaluateAll(
+        (cards) => cards.map((c) => c.parentElement.querySelector(':scope > .label-caps')?.textContent?.trim())
+      );
+      const best = captions.reduce((top, r) => (RANK.indexOf(r) > RANK.indexOf(top) ? r : top), captions[0]);
+      expect(card.rarity, 'the line is not the best card\'s').toBe(best);
+
+      await expect.poll(async () => {
+        const b = await done.boundingBox();
+        return b && b.y + b.height <= viewport.height;
+      }, SLOW).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the page scrolls sideways').toBeLessThanOrEqual(viewport.width);
+    });
+  });
+}
+
+// A ten-card pack is two waves; put back on the table, each shows the line of
+// its own best card.
+test('the line follows the wave put back on the table', async ({ page }) => {
+  await seed(page, { cardPacks: 0, premiumPacks: 0, legendaryPacks: 1 });
+  const dialog = await openCardPacks(page);
+  await dialog.getByRole('button', { name: /^Open Legendary Pack/ }).click();
+  await expect(dialog.getByRole('button', { name: 'Reveal all' })).toBeVisible(SLOW);
+  await dialog.getByRole('button', { name: 'Reveal all' }).click();
+  await expect(dialog.getByRole('button', { name: 'Done' })).toBeVisible(SLOW);
+
+  // Everything turned at once: the pack's best, the legendary, is the line.
+  const last = await cardById(page, await flavorLine(page).getAttribute('data-flavor-of'));
+  expect(last.rarity).toBe('legendary');
+  await expect(flavorLine(page)).toHaveText(last.description);
+
+  await dialog.getByRole('button', { name: 'Cards 1–5' }).click();
+  await expect(flavorLine(page)).not.toHaveText(last.description);
+  const first = await cardById(page, await flavorLine(page).getAttribute('data-flavor-of'));
+  await expect(flavorLine(page)).toHaveText(first.description);
+  // The table changes waves a moment after the line does (its exit plays first).
+  await expect(page.locator('[data-reveal-card="up"]').filter({ hasText: first.name }), `${first.name} is not on the table`).not.toHaveCount(0, SLOW);
+
+  await dialog.getByRole('button', { name: 'Cards 6–10' }).click();
+  await expect(flavorLine(page)).toHaveText(last.description);
+});
+
+// With Animations off the cards are face up at once, and so is the line.
+test('with Animations off the line is there with the cards', async ({ page }) => {
+  await seed(page, { cardPacks: 1, premiumPacks: 0, legendaryPacks: 0, animationsEnabled: false });
+  const dialog = await openCardPacks(page);
+  await dialog.getByRole('button', { name: /^Open Pack/ }).click();
+  await expect(dialog.getByRole('button', { name: 'Done' })).toBeFocused({ timeout: 1_500 });
+  const card = await cardById(page, await flavorLine(page).getAttribute('data-flavor-of'));
+  await expect(flavorLine(page)).toHaveText(card.description);
+  // Nothing moves it in: no fade, no transform.
+  expect(await flavorLine(page).evaluate((p) => getComputedStyle(p).animationName)).toBe('none');
+});
+
 // The open button counts the tier it opens, not every tier ("Open Legendary
 // Pack (3)" over one legendary and two others), and the way on after a reveal
 // names the pack it opens next: "Open Another" did not say it was a Premium.

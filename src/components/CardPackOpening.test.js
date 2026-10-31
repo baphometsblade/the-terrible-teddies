@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import CardPackOpening, { openPackLabel } from './CardPackOpening';
 import { REPEAT_BUY_MS } from './StoreTile';
 import { BATTLE_PASS_REWARDS } from '@/lib/battlePass';
-import { useGameStore, SHOP_ITEMS, DAILY_REWARDS } from '@/stores/gameStore';
+import { useGameStore, SHOP_ITEMS, DAILY_REWARDS, ALL_CARDS } from '@/stores/gameStore';
 import { getCurrentSeason } from '@/utils/season';
 
 // The empty table used to say "No packs available. Buy some below!" over a
@@ -16,6 +16,10 @@ const cheapest = SHOP_ITEMS.filter((i) => i.type === 'pack' && i.currency === 'c
 const firstPassPack = BATTLE_PASS_REWARDS.find((r) => r.free?.type === 'pack');
 const firstDailyPack = DAILY_REWARDS.findIndex((r) => r.packs > 0) + 1;
 
+// The timed reveal (Animations on) bursts confetti for a rare card, and jsdom
+// has no canvas to draw it on.
+vi.mock('@/lib/celebrate', () => ({ celebrate: vi.fn() }));
+
 let host;
 let root;
 const render = (props = {}) => {
@@ -26,7 +30,7 @@ const render = (props = {}) => {
   act(() => root.render(createElement(CardPackOpening, { onClose() {}, ...props })));
   return host;
 };
-const buttonNamed = (name) => [...host.querySelectorAll('button')].find((b) => b.textContent === name);
+const buttonNamed = (name) => [...host.querySelectorAll('button')].find((b) => (name instanceof RegExp ? name.test(b.textContent) : b.textContent === name));
 const text = () => host.textContent.replace(/\s+/g, ' ');
 
 beforeEach(() => {
@@ -207,5 +211,138 @@ describe('the open button', () => {
     useGameStore.setState({ cardPacks: 2, premiumPacks: 0, legendaryPacks: 0 });
     render();
     expect(buttonNamed('Open Pack (2)')).toBeTruthy();
+  });
+});
+
+// The flavor line of the card turned last sits under the table, drawn as the
+// Collection draws it (FlavorLine): the card's joke where the card is met. The
+// store's pack roll is random, so the pull is stood in for with cards picked by
+// id, and every expectation is read from ALL_CARDS by that id.
+describe('the flavor line under the table', () => {
+  const card = (id) => ALL_CARDS.find((c) => c.id === id);
+  // Four commons and a rare: revealOrder keeps the commons in this order and
+  // turns the rare, the best card, last.
+  const FIVE = [1, 2, 31, 40, 13];
+  const BEST = 13;
+  // Ten commons: two waves of five, the best (last) in the second.
+  const TEN = [1, 2, 3, 4, 5, 30, 31, 40, 41, 42];
+
+  const stubPack = (ids, packs = 1) => useGameStore.setState({
+    cardPacks: packs,
+    openCardPack: () => {
+      useGameStore.setState((s) => ({ cardPacks: s.cardPacks - 1 }));
+      return { cards: ids.map((id, i) => ({ ...card(id), isNew: i === 0 })), dupeCoins: 0 };
+    },
+  });
+  const zone = () => host.querySelector('[data-reveal-flavor]');
+  const line = () => zone()?.querySelector('p') ?? null;
+  const turnButton = (n) => host.querySelector(`button[aria-label^="Turn over card ${n}"]`);
+
+  // Animations off: a pack opens straight to its cards, face up.
+  const openFaceUp = async () => {
+    useGameStore.setState({ animationsEnabled: false });
+    render();
+    act(() => buttonNamed(/^Open /).click());
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 5)); });
+  };
+
+  describe('with the pack opening face up', () => {
+    it("shows the best card's line, exactly as the data has it", async () => {
+      stubPack(FIVE);
+      await openFaceUp();
+      expect(line().textContent).toBe(card(BEST).description);
+      expect(line().getAttribute('data-flavor-of')).toBe(String(BEST));
+      // Beside the line, for a screen reader: whose it is.
+      expect(zone().querySelector('.sr-only').textContent).toBe(card(BEST).name);
+    });
+
+    it('is real content under the table, not a control, a live region or hidden', async () => {
+      stubPack(FIVE);
+      await openFaceUp();
+      expect(line().closest('[aria-hidden="true"]')).toBeNull();
+      expect(zone().closest('[aria-live], [role="status"]')).toBeNull();
+      expect(zone().querySelector('button, a, [tabindex]')).toBeNull();
+      // After the table, before the way on.
+      const table = host.querySelector('[data-reveal-table]');
+      const done = buttonNamed('Done');
+      expect(table.compareDocumentPosition(zone()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(zone().compareDocumentPosition(done) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('follows the wave on the table: the best of it, and back', async () => {
+      stubPack(TEN);
+      await openFaceUp();
+      expect(line().getAttribute('data-flavor-of')).toBe('42');
+      act(() => buttonNamed('Cards 1–5').click());
+      expect(line().textContent).toBe(card(5).description);
+      act(() => buttonNamed('Cards 6–10').click());
+      expect(line().textContent).toBe(card(42).description);
+    });
+  });
+
+  describe('as the cards are turned', () => {
+    beforeEach(() => {
+      // Only the reveal's timers: framer-motion's frames stay real.
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      useGameStore.setState({ animationsEnabled: true });
+    });
+    afterEach(() => { vi.useRealTimers(); });
+
+    const advance = (ms) => act(async () => { vi.advanceTimersByTime(ms); });
+    // Press Open, let the pack tear and the cards be dealt.
+    const openAndDeal = async () => {
+      act(() => buttonNamed(/^Open /).click());
+      await advance(1200);
+      await advance(1000);
+    };
+
+    it("keeps the line's room from the deal, and shows nothing of a card before it turns", async () => {
+      stubPack(FIVE);
+      render();
+      await openAndDeal();
+      expect(turnButton(1)).toBeTruthy();
+      // Room reserved, nothing in it: no card's line is on the page face down.
+      expect(zone()).not.toBeNull();
+      expect(line()).toBeNull();
+      for (const id of FIVE) {
+        expect(host.textContent, `card ${id}'s line before it turns`).not.toContain(card(id).description);
+      }
+    });
+
+    it("shows each card's line as it turns, and only the last turned", async () => {
+      stubPack(FIVE);
+      render();
+      await openAndDeal();
+      act(() => turnButton(1).click());
+      expect(line().textContent).toBe(card(1).description);
+      expect(line().getAttribute('data-flavor-of')).toBe('1');
+      act(() => turnButton(2).click());
+      expect(line().textContent).toBe(card(2).description);
+      expect(host.textContent).not.toContain(card(1).description);
+    });
+
+    it("shows the best card's line when everything is turned at once", async () => {
+      stubPack(FIVE);
+      render();
+      await openAndDeal();
+      act(() => turnButton(1).click());
+      act(() => buttonNamed('Reveal all').click());
+      expect(line().textContent).toBe(card(BEST).description);
+    });
+
+    it('starts the next pack with no line, until one of its cards turns', async () => {
+      stubPack(FIVE, 2);
+      render();
+      await openAndDeal();
+      act(() => buttonNamed('Reveal all').click());
+      // The reveal ends on its own timer; then the way on is Open Another.
+      await advance(2000);
+      expect(line()).not.toBeNull();
+      act(() => buttonNamed(/^Open /).click());
+      await advance(1200);
+      await advance(1000);
+      expect(zone()).not.toBeNull();
+      expect(line()).toBeNull();
+    });
   });
 });

@@ -226,6 +226,12 @@ test.describe('card detail', () => {
     await expect(hero).toContainText('Shit-Talk Sally');
     expect((await hero.boundingBox()).width).toBeGreaterThan(150);
 
+    // Its flavor line, as the data has it: the line the pack reveal and the
+    // Deck Builder draw too, in this style (FlavorLine). Read from the live
+    // table, so a rewrite of the copy cannot make this vacuous.
+    const flavor = await page.evaluate(async () => (await import('/src/stores/gameStore.js')).ALL_CARDS.find((c) => c.name === 'Shit-Talk Sally').description);
+    await expect(d.locator('p', { hasText: flavor })).toHaveText(flavor);
+
     // The blue stat is HP, as the card's own badge names it (and the
     // tutorial and the battle log); the stat sheet called it Defense.
     const hp = d.locator('dt', { hasText: /^HP$/ }).locator('..').locator('dd > span').first();

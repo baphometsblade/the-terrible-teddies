@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Package, PackageOpen, Crown, Coins, Gem, Sparkles, PartyPopper, Trophy, CalendarDays } from 'lucide-react';
 import TeddyCard, { CardBack } from './TeddyCard';
+import FlavorLine from './FlavorLine';
 import { useGameStore } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
 import { celebrate } from '@/lib/celebrate';
@@ -75,6 +76,9 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
   // Which wave of (at most five) cards is on the table, whether it has been
   // dealt and can be turned, and whether it is all face up with more to come.
   const [wave, setWave] = useState(0);
+  // The card whose flavor line is under the table: the one turned last, or the
+  // best of the pull once everything turns at once (an index into pulledCards).
+  const [spotlight, setSpotlight] = useState(null);
   const [ready, setReady] = useState(false);
   const [waveDone, setWaveDone] = useState(false);
   const [pullId, setPullId] = useState(0);
@@ -234,6 +238,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
     chargingRef.current.delete(i);
     setChargingNow();
     setRevealedNow(revealedRef.current.map((v, k) => v || k === i));
+    setSpotlight(i);
     announcedRef.current.add(i);
     setAnnouncement(`${card.name}, ${card.rarity}${card.isNew ? ', new' : ''}. Card ${i + 1} of ${cards.length}.`);
     celebrateFor(card);
@@ -294,7 +299,10 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
     setWaveDone(false);
     setReady(true);
     const best = fresh.reduce((b, c) => (!b || rankOf(c) > rankOf(b) ? c : b), null);
-    if (best) celebrateFor(best);
+    if (best) {
+      celebrateFor(best);
+      setSpotlight(cards.indexOf(best));
+    }
     pendingFocusRef.current = true;
     idleRef.current = later(() => setIsOpening(false), END_MS);
   };
@@ -311,6 +319,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
     setIsOpening(true);
     setPackAnimation(!instant);
     setPulledCards(null);
+    setSpotlight(null);
     setRevealedNow([]);
     setOpenedType(opening);
     setAnnouncement(`Opening ${opening === 'legendary' ? 'Legendary ' : opening === 'premium' ? 'Premium ' : ''}pack…`);
@@ -357,6 +366,8 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
         const last = waveRanges(shown.length).length - 1;
         waveRef.current = last;
         setWave(last);
+        // Everything is face up at once: the best card, which is last.
+        setSpotlight(shown.length - 1);
         setReady(true);
         setIsOpening(false);
         return;
@@ -431,6 +442,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
     setRevealedNow([]);
     setCharging([]);
     setWave(0);
+    setSpotlight(null);
     waveRef.current = 0;
     setReady(false);
     setWaveDone(false);
@@ -455,6 +467,8 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
   for (let r = 0, i = waveStart; r < layout.rows.length; i += layout.rows[r], r++) {
     tableRows.push(Array.from({ length: layout.rows[r] }, (_, k) => i + k));
   }
+  // The spotlit card's line shows once the card is face up.
+  const shownCard = pulledCards && spotlight != null && revealed[spotlight] ? pulledCards[spotlight] : null;
   const allRevealed = !!pulledCards && revealed.length === pulledCards.length && revealed.every(Boolean);
   const faceDown = !!pulledCards && !allRevealed;
 
@@ -526,7 +540,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
             role="group"
             aria-label="Pack table"
             onKeyDown={onStageKeyDown}
-            className={`game-surface relative isolate rounded-2xl border border-white/5 bg-night-950/55 shadow-[inset_0_2px_24px_rgba(0,0,0,0.65)] px-3 max-[359px]:px-2 py-6 sm:p-8 outline-none ${
+            className={`game-surface relative isolate rounded-2xl border border-white/5 bg-night-950/55 shadow-[inset_0_2px_24px_rgba(0,0,0,0.65)] px-3 max-[359px]:px-2 py-6 max-sm:[@media(max-height:620px)]:py-3 sm:p-8 outline-none ${
               tearing ? 'overflow-hidden' : ''
             }`}
           >
@@ -645,7 +659,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
                               key={start}
                               type="button"
                               aria-pressed={wave === w}
-                              onClick={() => { waveRef.current = w; setWave(w); }}
+                              onClick={() => { waveRef.current = w; setWave(w); setSpotlight(end - 1); }}
                               className={`rounded-lg px-3 py-1.5 font-display font-bold text-sm tabular-nums ${FOCUS_OUTLINE} ${
                                 wave === w ? 'seg-on' : 'seg-off'
                               }`}
@@ -686,8 +700,34 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
               </AnimatePresence>
             </div>
 
+            {/* The flavor line of the card turned last: its joke, under the
+                table it came from, drawn as the Collection draws it. Its room
+                is kept from the deal (two lines; a long line grows it by one),
+                so the first turn moves nothing. Plain content, not live: the
+                status line above already says which card turned. */}
+            {pulledCards && (
+              <div
+                data-reveal-flavor=""
+                className="mx-auto mt-3 flex min-h-[2.85rem] max-w-md items-center justify-center text-center max-sm:[@media(max-height:620px)]:mt-2 max-sm:[@media(max-height:620px)]:min-h-[2.1rem]"
+              >
+                {shownCard && (
+                  <>
+                    {/* Whose line it is, for a screen reader: beside the
+                        line, not wrapped round it. */}
+                    <span className="sr-only">{shownCard.name}</span>
+                    <FlavorLine
+                      key={shownCard.id}
+                      card={shownCard}
+                      data-flavor-of={shownCard.id}
+                      className="text-balance max-sm:[@media(max-height:620px)]:text-xs max-sm:[@media(max-height:620px)]:leading-snug"
+                    />
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Actions */}
-            <div ref={actionsRef} className="flex flex-wrap justify-center gap-3 mt-7 min-h-11 scroll-mb-3">
+            <div ref={actionsRef} className={`flex flex-wrap justify-center gap-3 min-h-11 scroll-mb-3 ${pulledCards ? 'mt-4 max-sm:[@media(max-height:620px)]:mt-3' : 'mt-7'}`}>
               {!pulledCards && !isOpening && totalPacks > 0 && (
                 // Below sm it sheds the icon and some padding: at 320 the
                 // Legendary label alone is wider than the case at text-lg.
