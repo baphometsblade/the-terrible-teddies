@@ -218,6 +218,9 @@ describe('the open button', () => {
 // Collection draws it (FlavorLine): the card's joke where the card is met. The
 // store's pack roll is random, so the pull is stood in for with cards picked by
 // id, and every expectation is read from ALL_CARDS by that id.
+// The real timer, kept before a test fakes the clock.
+const realSetTimeout = globalThis.setTimeout;
+
 describe('the flavor line under the table', () => {
   const card = (id) => ALL_CARDS.find((c) => c.id === id);
   // Four commons and a rare: revealOrder keeps the commons in this order and
@@ -253,7 +256,7 @@ describe('the flavor line under the table', () => {
       expect(line().textContent).toBe(card(BEST).description);
       expect(line().getAttribute('data-flavor-of')).toBe(String(BEST));
       // Beside the line, for a screen reader: whose it is.
-      expect(zone().querySelector('.sr-only').textContent).toBe(card(BEST).name);
+      expect(zone().querySelector('[data-flavor-name]').textContent).toBe(card(BEST).name);
     });
 
     it('is real content under the table, not a control, a live region or hidden', async () => {
@@ -340,6 +343,33 @@ describe('the flavor line under the table', () => {
       expect(card(6).rarity).toBe(card(8).rarity);
       expect(line().getAttribute('data-flavor-of')).toBe('8');
       expect(line().textContent).toBe(card(8).description);
+    });
+
+    // The table is the new wave's, so a line from the wave just left would
+    // caption cards that are not there.
+    it('empties the line when the next wave is dealt, until one of its cards turns', async () => {
+      stubPack(TEN);
+      render();
+      await openAndDeal();
+      for (let n = 1; n <= 5; n++) act(() => turnButton(n).click());
+      expect(line().getAttribute('data-flavor-of')).toBe(String(TEN[4]));
+      await advance(100);
+      act(() => buttonNamed(/^Next /).click());
+      // The old wave leaves and the new one arrives through framer-motion,
+      // which runs on real frames: step the fake clock in small beats against
+      // real time until the new wave can be turned (the idle turn is 900ms of
+      // fake time after that).
+      for (let t = 0; t < 120 && !turnButton(1); t++) {
+        await advance(10);
+        await act(async () => { await new Promise((resolve) => realSetTimeout(resolve, 25)); });
+      }
+      expect(turnButton(1)).toBeTruthy();
+      expect(zone()).not.toBeNull();
+      expect(line()).toBeNull();
+      act(() => turnButton(1).click());
+      // Some card of the second wave (the pull's order is the reveal's, not
+      // the table's), never the first wave's.
+      expect(TEN.slice(5).map(String)).toContain(line().getAttribute('data-flavor-of'));
     });
 
     it('starts the next pack with no line, until one of its cards turns', async () => {

@@ -314,6 +314,11 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
 
   const removeFromDeck = (deckCard) => {
     setDeck(deck.filter(c => c.deckId !== deckCard.deckId));
+    setInspected((open) => {
+      const next = new Set(open);
+      next.delete(deckCard.deckId);
+      return next;
+    });
     setPulse(null);
   };
 
@@ -354,6 +359,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
   const loadSavedDeck = (savedDeckData) => {
     const loadedDeck = toEditorDeck(savedDeckData.cards);
     setDeck(loadedDeck);
+    setInspected(new Set());
     setPulse(null);
     const already = sameDeck(loadedDeck.map((c) => c.id), currentDeck);
     toast({
@@ -366,6 +372,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
 
   const clearDeck = () => {
     setDeck([]);
+    setInspected(new Set());
     setPulse(null);
   };
 
@@ -671,7 +678,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                           <span className="min-w-0 truncate">{card.name}</span>
                           <ChevronDown
                             aria-hidden="true"
-                            className={`h-4 w-4 shrink-0 text-plush-300 transition-transform motion-reduce:transition-none [[data-motion=off]_&]:transition-none ${open ? 'rotate-180' : ''}`}
+                            className={`h-5 w-5 shrink-0 text-plush-200 transition-transform motion-reduce:transition-none [[data-motion=off]_&]:transition-none ${open ? 'rotate-180' : ''}`}
                             strokeWidth={2.4}
                           />
                         </button>
@@ -689,7 +696,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                         </button>
                       </div>
                       {open && (
-                        <div id={flavorId} data-flavor-panel="" className="pb-2.5 pl-3.5 pr-3 pt-0.5">
+                        <div id={flavorId} data-flavor-panel="" className="mb-2.5 ml-3.5 mr-3 mt-0.5 border-l-2 border-brass-400/60 py-0.5 pl-2.5">
                           <FlavorLine card={card} />
                         </div>
                       )}

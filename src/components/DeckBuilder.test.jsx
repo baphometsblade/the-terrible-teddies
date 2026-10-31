@@ -83,6 +83,22 @@ describe("a deck card's flavor line", () => {
     expect(panel().textContent).not.toContain(card(6).description);
   });
 
+  // Loaded decks name their rows by card and place, so a flag left behind by a
+  // removed row would open the same card in the same place when it came back.
+  it('does not come back open when the removed card is loaded again', async () => {
+    useGameStore.setState({ savedDecks: [{ name: 'Back again', cards: DECK }] });
+    render();
+    act(() => toggleFor(6).click());
+    const remove = panel().querySelector(`button[aria-label="Remove ${card(6).name} from deck"]`);
+    act(() => remove.click());
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 700)); });
+    const load = [...panel().querySelectorAll('button')].find((b) => b.textContent === 'Back again');
+    act(() => load.click());
+    expect(toggleFor(6)).not.toBeNull();
+    expect(toggleFor(6).getAttribute('aria-expanded')).toBe('false');
+    expect(panels()).toHaveLength(0);
+  });
+
   it('is named for the card, and the name the screen shows is in it', () => {
     render();
     for (const id of DECK) {

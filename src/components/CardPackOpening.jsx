@@ -258,6 +258,9 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
     const cards = pullRef.current;
     waveRef.current = w;
     setWave(w);
+    // The line under the table belongs to a card of the wave just left; it
+    // stays empty (its room held) until a card of this wave turns.
+    setSpotlight(null);
     setReady(false);
     setWaveDone(false);
     const gen = genRef.current;
@@ -711,13 +714,21 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
             {pulledCards && (
               <div
                 data-reveal-flavor=""
-                className="mx-auto mt-3 flex min-h-[2.85rem] max-w-md items-center justify-center text-center max-sm:[@media(max-height:620px)]:mt-2 max-sm:[@media(max-height:620px)]:min-h-[2.1rem]"
+                className="mx-auto mt-3 flex min-h-[2.85rem] max-w-md flex-col items-center justify-center text-center [@media(min-height:700px)]:min-h-[4rem] max-sm:[@media(max-height:620px)]:mt-2 max-sm:[@media(max-height:620px)]:min-h-[2.1rem]"
               >
                 {shownCard && (
                   <>
-                    {/* Whose line it is, for a screen reader: beside the
-                        line, not wrapped round it. */}
-                    <span className="sr-only">{shownCard.name}</span>
+                    {/* Whose line it is, beside the line and not wrapped round
+                        it: a small label on screens tall enough to spare the
+                        row (the zone reserves it from 700px up), and for a
+                        screen reader only below that, where the stage has no
+                        spare height. */}
+                    <span
+                      data-flavor-name=""
+                      className="label-caps mb-0.5 text-plush-300 [@media(max-height:699px)]:sr-only"
+                    >
+                      {shownCard.name}
+                    </span>
                     <FlavorLine
                       key={shownCard.id}
                       card={shownCard}
