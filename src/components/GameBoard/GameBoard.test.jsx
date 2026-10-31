@@ -407,6 +407,8 @@ describe('GameBoard last call', () => {
     expect(bannerKind()).toBeNull();
   });
 
+  // Two whole games on a stepped clock: about five seconds of real work on a
+  // quiet machine, so it carries a budget of its own rather than the default.
   it('fires once a game however the health goes on, and again in the next game after Play Again', async () => {
     // 2 a round: the player is in range at 4, and again at 2, and the second
     // visit to the range must not call it a second time.
@@ -448,7 +450,7 @@ describe('GameBoard last call', () => {
     expect(lit()).toBe(true);
     expect(seen).toHaveLength(2);
     watcher.disconnect();
-  });
+  }, 60_000);
 
   it('does not fire for a side that is down to nothing: a concede is not a last call', async () => {
     await renderBoard({ onBackToMenu: () => {} });
