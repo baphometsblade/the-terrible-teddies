@@ -331,19 +331,30 @@ test.describe('with only a keyboard', () => {
 });
 
 // The double-tap that launched the app lands on whatever the door has drawn:
-// for its first 400ms nothing on it answers (and nothing complains).
+// for its first 400ms nothing on it answers (and nothing complains). The
+// window is measured on the page's clock, so the test holds that clock still:
+// however long the machine takes to get to the tap, no time has passed on it,
+// and the tap is as early as a tap can be. (The window's own length, and the
+// pointer-events guard that covers it, are TheDoor.test.jsx's, under fake
+// timers; this is the same guard through a real browser and a real click.)
 test.describe('the first moments', () => {
-  test('ignore a tap, and listen once the door has settled', async ({ page }) => {
-    await page.clock.install();
+  test('ignore a tap however long the machine takes to reach it, and listen once the door has settled', async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 9, 31, 12, 0, 0));
     await meetTheDoor(page);
-    await expect(page.locator('form[data-armed="false"]')).toBeVisible();
-    // A tap that arrives at once is not an answer and not an error.
-    await comeIn(page).click({ force: true });
-    await expect(page.getByRole('alert')).toHaveText('');
-    await page.clock.runFor(500);
+    // The form's timers still run, so it is "armed" (its buttons take
+    // pointers) before long; the answer-side guard is the clock.
     await armed(page);
+    // A tap that arrives with no time passed is not an answer and not an error.
+    await yearField(page).fill(ADULT);
     await comeIn(page).click();
-    await expect(page.getByRole('alert')).toHaveText('Enter the year as four digits.');
+    await page.waitForTimeout(300);
+    await expect(page.getByRole('alert')).toHaveText('');
+    await expect(theGame(page)).toHaveCount(0);
+    expect(await page.evaluate((k) => localStorage.getItem(k), DOOR_KEY)).toBeNull();
+    // 400ms later, the same tap answers.
+    await page.clock.setFixedTime(new Date(2026, 9, 31, 12, 0, 0, 400));
+    await comeIn(page).click();
+    await expect(theGame(page)).toBeVisible(SLOW);
   });
 });
 
