@@ -57,6 +57,26 @@ module.exports = {
           700: "#1d442e",
           600: "#275a3d",
         },
+        // The bar's neon (the .neon material in index.css reads these through
+        // theme(), so this is the one place a tone is defined). Each tone is a
+        // core and a glow: the core is the hot glass and carries the text
+        // contrast (15.99, 18.00, 17.28 and 13.20 to 1 on night-950), the glow
+        // is the gas colour and is only ever the halo around it.
+        neon: {
+          pink: { core: "#FFE3F1", glow: "#FF4FA3" },
+          teal: { core: "#DBFFFB", glow: "#2DE2D0" },
+          amber: { core: "#FFF2D6", glow: "#FFB23F" },
+          red: { core: "#FFC9C9", glow: "#FF4D4D" },
+        },
+        // Brushed steel, for the door: 700 to 800 is the plate's gradient (text
+        // is measured on 700, its lightest stop), 400 the rivet highlight and
+        // 950 the inside of the peep slot.
+        steel: {
+          950: "#07060a",
+          800: "#262a31",
+          700: "#3b4049",
+          400: "#6b7280",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

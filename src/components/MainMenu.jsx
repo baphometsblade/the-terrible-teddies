@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Swords, Target, Trophy, Store, Package, Medal, Layers, LibraryBig,
@@ -13,7 +13,9 @@ import { MENU_PAD } from '@/lib/safeArea';
 import { RARITY_ORDER } from '@/lib/rarity';
 import { bestOwnedBorder } from '@/lib/cosmetics';
 import { countReadyRewards, passOf } from '@/lib/battlePass';
+import { signFor, subtitleFor, partOfDay } from '@/lib/barClock';
 import CardFan from './CardFan';
+import NeonSign from './NeonSign';
 
 // Scatter/timing for the drifting background teddies. Hoisted to module scope
 // and made deterministic: these were Math.random() calls inside the render
@@ -60,6 +62,28 @@ const Currency = ({ icon: Icon, value, tone, noun }) => (
 const LIFT_2 = { lift: { y: -2 } };
 const LIFT_3 = { lift: { y: -3 } };
 
+// The time of day the bar's sign and the Battle button's line go by (see
+// src/lib/barClock.js): the player's own clock, read when the menu opens and
+// again each time the tab comes back into view, and never on a timer. A menu
+// left open is a menu nobody is looking at, and a timer on it would be work
+// for nothing; the one that matters is the player who left it open overnight,
+// and they return through a visibility change. The clock is kept as the time
+// it was read, and only replaced when that moves the bar into another part of
+// the night, so a tab that comes back at the same hour re-renders nothing.
+const useBarClock = () => {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const reread = () => {
+      if (document.visibilityState === 'hidden') return;
+      const next = new Date();
+      setNow((prev) => (partOfDay(prev) === partOfDay(next) ? prev : next));
+    };
+    document.addEventListener('visibilitychange', reread);
+    return () => document.removeEventListener('visibilitychange', reread);
+  }, []);
+  return now;
+};
+
 const MainMenu = ({
   onStartGame,
   onDeckBuilder,
@@ -87,6 +111,9 @@ const MainMenu = ({
 
   const today = new Date().toDateString();
   const dailyAvailable = lastLoginDate !== today;
+
+  const clock = useBarClock();
+  const sign = signFor(clock);
 
   // How many challenges are finished and waiting to be claimed.
   //
@@ -255,6 +282,21 @@ const MainMenu = ({
       <main className="relative z-10 flex-1 flex flex-col">
       {/* Hero: title, the player's own cards, and the one big button. */}
       <section className="relative flex-1 flex flex-col items-center justify-center py-6 md:py-8 [@media(max-height:700px)]:py-3">
+        {/* The bar's sign, hung in the hero's corner: decoration, drawn from
+            md up and absolutely placed, so it takes no layout and Battle's
+            place above the fold on a phone cannot move (responsive.spec.js).
+            Below md the clock is the Battle button's line instead. Keyed by
+            the part of the night, so a sign that changes while the menu is
+            open switches on afresh. */}
+        <NeonSign
+          key={sign.state}
+          text={sign.text}
+          tone={sign.tone}
+          lit={sign.lit}
+          flicker={sign.flicker}
+          note={sign.note}
+          className="hidden md:block absolute right-[3%] top-1 -rotate-3 text-xl lg:right-[5%] lg:top-3 lg:text-2xl"
+        />
         <motion.div
           initial={{ y: -16, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -302,13 +344,19 @@ const MainMenu = ({
               <motion.div variants={LIFT_2} className="rounded-2xl">
                 <div
                   {...pressable(onStartGame, 'Battle')}
+                  // The name stays "Battle"; the clock's line under it is its
+                  // description, so a screen reader hears it too.
+                  aria-describedby="menu-battle-line"
                   data-dest="game"
                   className="btn-brass sheen relative cursor-pointer rounded-2xl pl-6 pr-5 py-4 flex items-center gap-4 min-w-[260px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brass-200"
                 >
                   <Swords aria-hidden="true" className="w-9 h-9 shrink-0" strokeWidth={2.2} />
                   <div className="flex-1 text-left">
                     <div className="font-display font-extrabold text-3xl leading-none">Battle</div>
-                    <div className="text-sm font-semibold mt-1 text-night-950/75">Go make Chuck cry</div>
+                    {/* The bar's clock again (src/lib/barClock.js): 20
+                        characters at most, which is what the column holds
+                        beside the icons at the button's 260px minimum. */}
+                    <div id="menu-battle-line" className="text-sm font-semibold mt-1 text-night-950/75">{subtitleFor(clock)}</div>
                   </div>
                   <ChevronRight aria-hidden="true" className="w-6 h-6 shrink-0" strokeWidth={2.6} />
                 </div>

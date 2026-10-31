@@ -163,9 +163,10 @@
    refinable by a utility, never the other way round.
 
    The pseudo-elements are claimed: .grain, .foil, .sheen, .worn, .felt-print,
-   .end-turn-ready and .deck-slot-new use ::after; .trim-brass, .stitched and
-   .stitched-plush use ::before. Never put two classes that claim the same
-   pseudo-element on one element.
+   .end-turn-ready and .deck-slot-new use ::after; .trim-brass, .neon,
+   .stitched and .stitched-plush use ::before. Never put two classes that
+   claim the same pseudo-element on one element. (.steel-door, .peep-slot and
+   .note-taped use none: their parts are child elements.)
    ========================================================================== */
 
 @layer components {
@@ -532,6 +533,217 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 }
 .seg-off:hover { background-color: rgba(255, 255, 255, 0.04); color: #ffffff; }
 
+/* ---- After dark: the door and the bar-clock sign (package door-clock) -----
+   Four materials for the two places the night peaks: the age door a device
+   meets once, on its first launch, and the sign in the menu's hero that
+   reads the player's own clock. Nothing else uses them, and none goes on a
+   money screen. Their keyframes and their motion-off rules are after the
+   layer, below @keyframes end-turn-glow.
+
+   Contrast, WCAG 2.x, measured on the lightest stop of each real background
+   (a texture or a glow may only darken, never sit under text lighter than
+   the stop it was measured on):
+     neon cores on night-950 (#120c1c): pink 15.99, teal 18.00, amber 17.28,
+       red 13.20 to 1. The dimmest a core is ever drawn: last call's flicker
+       dips to 0.8 (pink: 10.36 on night-950, 7.21 on .bar-backdrop's lightest
+       stop, the amber pool at its top, #452f2e) and CLOSED rests at 0.75
+       (red: 7.71 on night-950, 7.43 on night-900). All above 7:1.
+     on the door's steel at its lightest stop (#3b4049): plush-100 8.52,
+       plush-200 6.55 (the smallest print uses nothing fainter), red-200
+       7.20, brass-300 focus outline 6.24; the year field's text on its well
+       13.72 and a .btn-glass key's 9.21.
+     the taped note: ink #2a2219 on paper #f3e9c8, 12.90. */
+
+/* .neon: bent-tube lettering. Baloo 2's rounded strokes already read as
+   tubing, so there is no new face. The text is the tone's core, the hot
+   glass, under a static halo of its glow, the gas; the tone comes from
+   data-tone="amber|pink|teal|red" (amber when unset), tailwind.config.js's
+   neon palette being the one place the colours live. Optional:
+   data-lit="half" for a sign only half switched on (a weaker halo, the core
+   a little dimmer), data-flicker for the one sign that idles with a slow
+   flicker. It switches on once when it appears. Opacity is the only thing
+   that ever moves, so a sign costs the compositor nothing.
+
+   It claims ::before: the soft wash the sign throws on the wall behind it.
+   Never put it on an element that also carries .trim-brass, .stitched or
+   .stitched-plush. isolate keeps the wash behind the lettering and in front
+   of whatever the sign hangs on. A sign is decoration: aria-hidden, with its
+   words said somewhere a screen reader reads (NeonSign.jsx). */
+.neon {
+  --neon-core: theme("colors.neon.amber.core");
+  --neon-glow: theme("colors.neon.amber.glow");
+  --neon-halo: 1;
+  --neon-rest: 1;
+  position: relative;
+  isolation: isolate;
+  display: inline-block;
+  font-family: "Baloo 2", ui-rounded, system-ui, -apple-system, sans-serif;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--neon-core);
+  opacity: var(--neon-rest);
+  text-shadow:
+    0 0 2px var(--neon-core),
+    0 0 6px color-mix(in srgb, var(--neon-glow) calc(90% * var(--neon-halo)), transparent),
+    0 0 16px color-mix(in srgb, var(--neon-glow) calc(55% * var(--neon-halo)), transparent),
+    0 0 34px color-mix(in srgb, var(--neon-glow) calc(30% * var(--neon-halo)), transparent);
+  animation: neon-on 650ms steps(1, end) both;
+}
+.neon::before {
+  content: "";
+  position: absolute;
+  inset: -0.8em -1.1em;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--neon-glow) calc(30% * var(--neon-halo)), transparent), transparent);
+}
+.neon[data-tone="pink"] {
+  --neon-core: theme("colors.neon.pink.core");
+  --neon-glow: theme("colors.neon.pink.glow");
+}
+.neon[data-tone="teal"] {
+  --neon-core: theme("colors.neon.teal.core");
+  --neon-glow: theme("colors.neon.teal.glow");
+}
+/* Red never flashes on: a saturated red flicker is the one colour the flash
+   thresholds are strictest about, so it fades up instead. */
+.neon[data-tone="red"] {
+  --neon-core: theme("colors.neon.red.core");
+  --neon-glow: theme("colors.neon.red.glow");
+  animation: neon-on-soft 450ms ease-out both;
+}
+.neon[data-lit="half"] {
+  --neon-halo: 0.45;
+  --neon-rest: 0.75;
+}
+.neon[data-flicker] {
+  animation: neon-on 650ms steps(1, end) both, neon-flicker 11s linear 650ms infinite;
+}
+
+/* .steel-door: the bar's back door, brushed steel with a rivet in each
+   corner. The brushing is fine dark lines and a darker sweep, the rivets are
+   radial-gradient layers: all of it sits on the plate's lightest stop or
+   under it, and the content is padded clear of the rivets. The room it stands
+   in is [data-door-room] (TheDoor.jsx), which carries data-phase="opening"
+   while the door swings. The arch is the consumer's border-radius. */
+.steel-door {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(circle at 14px 14px, theme("colors.steel.400") 0 1.5px, #14161a 2.6px, transparent 3.6px) top left / 28px 28px no-repeat,
+    radial-gradient(circle at 14px 14px, theme("colors.steel.400") 0 1.5px, #14161a 2.6px, transparent 3.6px) top right / 28px 28px no-repeat,
+    radial-gradient(circle at 14px 14px, theme("colors.steel.400") 0 1.5px, #14161a 2.6px, transparent 3.6px) bottom left / 28px 28px no-repeat,
+    radial-gradient(circle at 14px 14px, theme("colors.steel.400") 0 1.5px, #14161a 2.6px, transparent 3.6px) bottom right / 28px 28px no-repeat,
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.06) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 7px),
+    linear-gradient(100deg, transparent 0%, rgba(0, 0, 0, 0.16) 58%, transparent 82%),
+    linear-gradient(180deg, theme("colors.steel.700") 0%, theme("colors.steel.800") 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.35),
+    0 30px 60px -20px rgba(0, 0, 0, 0.85);
+}
+
+/* .peep-slot: the recessed window in the door, 549:137 (4:1), showing a crop
+   of a card's art: the child img is placed so the 549x137 region at 136,151
+   of a 768x1024 original, the shades-and-snout band of Bouncer Bruno's
+   card, fills it. Its parts are children, since the material claims no
+   pseudo-element: img, [data-rim] (the inset shadow, over the art) and
+   [data-shutter] (the plate that slides up to open it and down to shut it,
+   resting open). */
+.peep-slot {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  aspect-ratio: 549 / 137;
+  border-radius: 0.5rem;
+  background-color: theme("colors.steel.950");
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.09), 0 0 0 2px rgba(0, 0, 0, 0.55);
+}
+.peep-slot > img {
+  position: absolute;
+  left: -24.77%;
+  top: -110.22%;
+  width: 139.89%;
+  max-width: none;
+  height: auto;
+}
+.peep-slot [data-rim] {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 7px 12px rgba(0, 0, 0, 0.9),
+    inset 0 -3px 7px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.7);
+}
+.peep-slot [data-shutter] {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, theme("colors.steel.700"), theme("colors.steel.800"));
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.45);
+  transform: translateY(-101%);
+  animation: peep-open 220ms ease-out 180ms backwards;
+}
+
+/* The door's opening (TheDoor sets data-phase="opening" on its room when a
+   pass is in): the slot slides shut in 220ms, then the door swings in on its
+   right-hand hinge over 700ms while an amber light fades up behind it
+   ([data-spill], a doorway-shaped glow), and the room's content fades in the
+   last 180ms so the cut to the game lands on the plain backdrop. 920ms in
+   all: OPENING_MS.full in src/lib/door.js, which door.test.js holds to this.
+   Reduced motion and the Animations switch replace it (after the layer). */
+[data-door-room][data-phase="opening"] .peep-slot [data-shutter] {
+  animation: peep-shut 220ms ease-out 0ms both;
+}
+[data-door-room][data-phase="opening"] .steel-door {
+  transform-origin: 100% 50%;
+  animation: door-swing 700ms cubic-bezier(0.55, 0, 0.25, 1) 220ms both;
+}
+[data-door-room][data-phase="opening"] [data-spill] {
+  animation: door-spill 700ms ease-out 220ms both;
+}
+[data-door-room][data-phase="opening"] [data-door-stage] {
+  animation: door-leave 180ms linear 740ms both;
+}
+
+/* .note-taped: a small paper note held up with two strips of tape (the
+   [data-tape="l"] and [data-tape="r"] children), crooked by --note-tilt. The
+   colours are its own properties: paper and ink, 12.90 to 1. */
+.note-taped {
+  --note-paper: #f3e9c8;
+  --note-ink: #2a2219;
+  position: relative;
+  display: inline-block;
+  padding: 0.4rem 0.75rem 0.45rem;
+  border-radius: 2px;
+  color: var(--note-ink);
+  background: linear-gradient(180deg, var(--note-paper), #ebdfba);
+  box-shadow: 0 8px 12px -8px rgba(0, 0, 0, 0.75), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  font-family: "Baloo 2", ui-rounded, system-ui, -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  transform: rotate(var(--note-tilt, 2deg));
+}
+.note-taped [data-tape] {
+  position: absolute;
+  top: -7px;
+  width: 26px;
+  height: 11px;
+  background: rgba(232, 224, 190, 0.72);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+}
+.note-taped [data-tape="l"] { left: -9px; transform: rotate(-38deg); }
+.note-taped [data-tape="r"] { right: -9px; transform: rotate(38deg); }
+/* ---- end: the door and the bar-clock sign ---- */
+
 /* Combat feedback on the battle board (GameBoard's fx events). All of it is
    decoration over information the battle log already carries, all of it is
    transform/opacity, and all of it stops with the Animations switch or
@@ -882,6 +1094,74 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 @media (prefers-reduced-motion: reduce) {
   .end-turn-ready::after { animation: none; opacity: 0.75; }
 }
+
+/* ---- After dark: the door and the bar-clock sign, their keyframes and what
+   stops them (package door-clock; the materials are above, in the layer) ----
+   Opacity and transform only. A sign switches on once, with two dips (a
+   flash is a rise and a fall; this is two on one small sign in 650ms, nowhere
+   near three in a second over any large area), and rests lit at --neon-rest.
+   Only last call idles with a flicker, two dips to 0.8 in an 11 second loop.
+   Reduced motion and the Animations switch leave every one of them in the
+   state it would end in: signs lit, the slot open, the door simply there
+   (and, on a pass, handed to the game at once or after a 200ms crossfade). */
+@keyframes neon-on {
+  0% { opacity: 0; }
+  17% { opacity: 0.5; }
+  34% { opacity: 0.1; }
+  51% { opacity: 0.9; }
+  68% { opacity: 0.3; }
+  85%, 100% { opacity: var(--neon-rest, 1); }
+}
+@keyframes neon-on-soft {
+  from { opacity: 0; }
+  to { opacity: var(--neon-rest, 1); }
+}
+@keyframes neon-flicker {
+  0%, 91.5%, 94.4%, 100% { opacity: var(--neon-rest, 1); }
+  92%, 93.6% { opacity: 0.8; }
+  92.8% { opacity: var(--neon-rest, 1); }
+}
+@keyframes peep-open {
+  from { transform: translateY(0); }
+  to { transform: translateY(-101%); }
+}
+@keyframes peep-shut {
+  from { transform: translateY(-101%); }
+  to { transform: translateY(0); }
+}
+@keyframes door-swing {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(-78deg); }
+}
+@keyframes door-spill {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes door-leave {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes door-fade {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+[data-motion="off"] .neon,
+[data-motion="off"] .peep-slot [data-shutter],
+[data-motion="off"] [data-door-room][data-phase="opening"] .peep-slot [data-shutter],
+[data-motion="off"] [data-door-room][data-phase="opening"] .steel-door,
+[data-motion="off"] [data-door-room][data-phase="opening"] [data-spill],
+[data-motion="off"] [data-door-room][data-phase="opening"] [data-door-stage] { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .neon,
+  .peep-slot [data-shutter],
+  [data-door-room][data-phase="opening"] .peep-slot [data-shutter],
+  [data-door-room][data-phase="opening"] .steel-door,
+  [data-door-room][data-phase="opening"] [data-spill] { animation: none; }
+  /* The one thing that moves: the room fades out in 200ms, with nothing
+     swinging (OPENING_MS.reduced). */
+  [data-door-room][data-phase="opening"] [data-door-stage] { animation: door-fade 200ms linear both; }
+}
+/* ---- end: the door and the bar-clock sign, keyframes ---- */
 
 /* Motion off (the in-game switch): nothing moves. The numbers and the banner
    still appear — they are information, read in place — and go when their
