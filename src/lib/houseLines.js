@@ -28,6 +28,11 @@ export const RECEIPT_FOOTERS = [
   'Keep this receipt. Evidence is evidence.',
   'Not valid as proof you were here. Or sober.',
   'Cards were harmed. Nobody is sorry.',
+  'Blood is not a tip. - Mgmt.',
+  'We saw everything. We said nothing. - Mgmt.',
+  'The mop bucket is not a throne. - Mgmt.',
+  'Please stop bleeding on the felt. - Mgmt.',
+  'Stuffing in the sink again. Really. - Mgmt.',
 ];
 
 /**

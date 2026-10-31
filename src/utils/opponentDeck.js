@@ -53,6 +53,23 @@ const CREW_NAMES = [
   "the Closing-Time Gang",
   "the Sunday Scaries",
   "the Drunk-Uncle Militia",
+  "the Walk-of-Shame Brigade",
+  "the Two-Drink Minimum",
+  "the Overserved",
+  "the 3 a.m. Philosophers",
+  "the Dry-January Defectors",
+  "the Karaoke Casualties",
+  "the Little-Black-Book Gang",
+  "the Sloppy-Seconds Club",
+  "the Wrong-Number Wingmen",
+  "the Bad-Tippers' Union",
+  "the Hair-of-the-Dog Posse",
+  "the Regrettable Tattoo Club",
+  "the Tequila Tribunal",
+  "the Cab-Fare Dodgers",
+  "the Free-Pretzel Mob",
+  "the Third-Date Regrets",
+  "the Booty-Call Bureau",
 ];
 
 // Fisher-Yates using an injectable rng so callers can seed determinism.
