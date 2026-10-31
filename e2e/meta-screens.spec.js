@@ -692,3 +692,123 @@ test.describe('player stats', () => {
     }
   }
 });
+
+// The House's lines are measured in the real dialogs, line by line, from the
+// tables: a character count is only a first check (a 24-character line of wide
+// capitals is wider than a 24-character line of narrow ones). Dev server only:
+// the tables are imported from their source paths.
+test.describe('the House lines fit their slots', () => {
+  test.skip(!!process.env.E2E_PREVIEW, 'imports the line tables from /src');
+  // Yesterday's claim on record, so today's is waiting: the ready heading and
+  // the Claim button are on screen.
+  const claimWaiting = async (page, streak) => {
+    const yesterday = await page.evaluate(() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toDateString(); });
+    await seed(page, { lastLoginDate: yesterday, consecutiveLogins: streak });
+  };
+  for (const width of [320, 390]) {
+    test(`every Daily kicker is one line inside the header, and the heading and chip fit, at ${width}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 700 });
+      await bootToMainMenu(page);
+      await claimWaiting(page, 3);
+      const dialog = page.getByRole('dialog', { name: 'Daily Rewards' });
+      await expect(dialog).toBeVisible(SLOW);
+      const bad = await page.evaluate(async () => {
+        const { DAILY_KICKERS, dayReadyTitle } = await import('/src/lib/dailyLines.js');
+        const root = document.querySelector('[role="dialog"][aria-label="Daily Rewards"]');
+        const panel = root.firstElementChild.getBoundingClientRect();
+        const out = [];
+        const oneLine = (el, text, label) => {
+          const before = el.textContent;
+          el.textContent = text;
+          const r = el.getBoundingClientRect();
+          const lh = parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.3;
+          if (r.height > lh * 1.5) out.push(`${label}: "${text}" wraps (${Math.round(r.height)}px)`);
+          if (r.left < panel.left || r.right > panel.right) out.push(`${label}: "${text}" leaves the panel`);
+          el.textContent = before;
+        };
+        const kicker = root.querySelector('[data-daily-kicker]');
+        for (const [band, lines] of Object.entries(DAILY_KICKERS)) for (const line of lines) oneLine(kicker, line, `kicker ${band}`);
+        const heading = [...root.querySelectorAll('h3')].find((h) => /Day \d is/.test(h.textContent));
+        if (!heading) out.push('the ready heading is not on screen');
+        else for (let d = 1; d <= 7; d += 1) oneLine(heading, dayReadyTitle(d), 'heading');
+        return out;
+      });
+      expect(bad).toEqual([]);
+    });
+  }
+
+  test('the longest bender chip and the claimed lines fit the panel at 320', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await bootToMainMenu(page);
+    await claimWaiting(page, 364);
+    const dialog = page.getByRole('dialog', { name: 'Daily Rewards' });
+    await expect(dialog).toBeVisible(SLOW);
+    await dialog.getByRole('button', { name: 'Claim', exact: true }).click();
+    const bad = await page.evaluate(async () => {
+      const { DAILY_PAID_SUBS } = await import('/src/lib/dailyLines.js');
+      const root = document.querySelector('[role="dialog"][aria-label="Daily Rewards"]');
+      const panel = root.firstElementChild.getBoundingClientRect();
+      const out = [];
+      const chip = root.querySelector('.sr-only').parentElement;
+      chip.lastChild.textContent = 'On a 365-day bender';
+      const c = chip.getBoundingClientRect();
+      if (c.right > panel.right || c.left < panel.left || c.height > 36) out.push(`chip ${Math.round(c.width)}x${Math.round(c.height)}`);
+      const sub = root.querySelector('[data-paid-sub]');
+      for (const line of DAILY_PAID_SUBS) {
+        sub.textContent = line;
+        const r = sub.getBoundingClientRect();
+        if (r.height > 40 || r.right > panel.right) out.push(`paid sub "${line}" ${Math.round(r.height)}px`);
+      }
+      return out;
+    });
+    expect(bad).toEqual([]);
+  });
+
+  test('every locked caption and the Little Black Book fit Player Stats at 320 with no sideways scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await bootToMainMenu(page);
+    await page.getByLabel('View player stats').click();
+    const dialog = page.getByRole('dialog', { name: 'Player stats' });
+    await expect(dialog).toBeVisible(SLOW);
+    await dialog.locator('[data-tab="achievements"]').click();
+    await expect(dialog.getByRole('heading', { name: 'The Little Black Book' })).toBeVisible();
+    const bad = await page.evaluate(() => {
+      const region = document.querySelector('[role="region"][aria-label="Achievements"]');
+      const out = [];
+      if (region.scrollWidth > region.clientWidth) out.push(`region scrolls sideways (${region.scrollWidth} > ${region.clientWidth})`);
+      const r = region.getBoundingClientRect();
+      for (const el of region.querySelectorAll('[data-locked-caption], [data-book-line], h3')) {
+        const b = el.getBoundingClientRect();
+        if (b.right > r.right + 0.5 || b.left < r.left - 0.5) out.push(`"${el.textContent}" leaves the panel`);
+        const lh = parseFloat(getComputedStyle(el).lineHeight) || 20;
+        if (el.matches('[data-locked-caption]') && b.height > lh * 2.5) out.push(`"${el.textContent}" takes ${Math.round(b.height)}px`);
+      }
+      return out;
+    });
+    expect(bad).toEqual([]);
+  });
+
+  test('the challenge dialog reads on the slate and the bonus line states fit at 320', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await bootToMainMenu(page);
+    await page.getByRole('button', { name: 'Challenges', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Challenges' });
+    await expect(dialog).toBeVisible(SLOW);
+    await expect(dialog).toContainText('Slate wipes in');
+    await expect(dialog).toContainText('Nothing started. We noticed.');
+    await expect(dialog).toContainText('Don’t Stop Now');
+    expect((await dialog.textContent()).match(/slate/gi)).toHaveLength(1);
+    const bad = await page.evaluate(() => {
+      const line = document.querySelector('[data-bonus-line]');
+      const panel = document.querySelector('[role="dialog"][aria-label="Challenges"]').firstElementChild.getBoundingClientRect();
+      const out = [];
+      for (const text of ['All done. Take it before Chuck does.', 'Okay, stop. Back tomorrow.', 'Okay, stop. Back Monday.']) {
+        line.textContent = text;
+        const b = line.getBoundingClientRect();
+        if (b.right > panel.right || b.height > 60) out.push(`"${text}" ${Math.round(b.width)}x${Math.round(b.height)}`);
+      }
+      return out;
+    });
+    expect(bad).toEqual([]);
+  });
+});
