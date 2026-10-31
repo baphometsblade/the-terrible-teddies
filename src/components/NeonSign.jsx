@@ -17,7 +17,8 @@
 //   lit      'full', or 'half' for a sign only half switched on
 //   flicker  the idle flicker (the menu's last call, and nothing else)
 //   note     a line on a paper note taped under the sign, or none
-const NeonSign = ({ text, tone = 'amber', lit = 'full', flicker = false, note = null, className = '' }) => (
+//   noteClassName  for a note that only shows at some sizes (max-lg:hidden)
+const NeonSign = ({ text, tone = 'amber', lit = 'full', flicker = false, note = null, className = '', noteClassName = '' }) => (
   <div aria-hidden="true" className={`pointer-events-none select-none ${className}`}>
     <div className="flex flex-col items-center gap-3">
       <span
@@ -29,7 +30,7 @@ const NeonSign = ({ text, tone = 'amber', lit = 'full', flicker = false, note = 
         {text}
       </span>
       {note ? (
-        <span className="note-taped">
+        <span className={`note-taped ${noteClassName}`}>
           <span data-tape="l" />
           <span data-tape="r" />
           {note}

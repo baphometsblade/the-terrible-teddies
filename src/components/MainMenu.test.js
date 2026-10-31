@@ -159,9 +159,10 @@ describe('the bar clock on the menu', () => {
   });
 
   // The sign is a decoration: nothing about it is read or reached, it is only
-  // drawn from lg up (below that the title leaves no corner free), and it is
-  // placed absolutely, so it takes no layout (e2e/responsive.spec.js measures
-  // the Battle button staying above the fold).
+  // drawn from md up (the tube alone, and only on a tall screen, below lg,
+  // where the title leaves little of the corner free), and it is placed
+  // absolutely, so it takes no layout (e2e/responsive.spec.js measures the
+  // Battle button staying above the fold).
   it('is decoration: hidden from assistive tech, not a control, and out of the layout', () => {
     setHour(3);
     const host = render(MainMenu);
@@ -170,7 +171,12 @@ describe('the bar clock on the menu', () => {
     expect(root.contains(host.querySelector('.note-taped'))).toBe(true);
     expect(root.querySelector('button, a[href], input, [tabindex]')).toBeNull();
     const classes = root.className.split(/\s+/);
-    expect(classes).toEqual(expect.arrayContaining(['hidden', 'lg:block', 'absolute', 'pointer-events-none']));
+    expect(classes).toEqual(expect.arrayContaining(['hidden', 'md:block', 'absolute', 'pointer-events-none']));
+    // Below lg and on a screen 700px tall or less, the strip above the title
+    // is gone: the sign is not drawn there.
+    expect(classes).toContain('[@media(max-height:700px)]:max-lg:hidden');
+    // The note only hangs where there is room for it: from lg.
+    expect(host.querySelector('.note-taped').className).toContain('max-lg:hidden');
     // Inside the hero, which is what it is positioned against.
     expect(root.parentElement.className).toContain('relative');
     expect(root.parentElement.querySelector('h1').textContent).toBe('Terrible Teddies');

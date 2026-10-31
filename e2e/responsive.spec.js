@@ -133,39 +133,46 @@ for (const viewport of [
   });
 }
 
-// From lg the sign is hung in the hero's corner. It must sit clear of the
+// From md the sign is hung in the hero's corner. It must sit clear of the
 // header, the title, the card fan and the Battle button at every width the
 // hero lays out at, and never push the page sideways. Each corner case: a
 // plain sign, the flickering one, and the one with a note taped under it.
-// Below lg it is not drawn at all: from 768 to 1023 the 72px title spans most
-// of the width and, measured, the sign sat on its last letter at 900x700.
+// From 768 to 1023 the 72px title spans most of the width and, measured, the
+// full sign sat on its last letter at 900x700: so below lg it is the tube
+// alone, small, and the note (which is what makes the sign wide and tall)
+// hangs from lg. And at 700px tall or less the hero has no strip above its
+// title (its padding drops to 12px), so there, below lg, there is no sign.
 for (const viewport of [
   { width: 768, height: 1024 },
+  { width: 768, height: 701 },
+  { width: 768, height: 600 },
   { width: 900, height: 700 },
-]) {
-  test.describe(`the bar clock's sign below lg, at ${viewport.width}x${viewport.height}`, () => {
-    test.use({ viewport });
-
-    test('is not drawn, and the clock is the Battle line', async ({ page }) => {
-      await page.clock.setFixedTime(atHour(3));
-      await page.reload();
-      await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
-      await expect(page.locator('.neon')).toBeHidden();
-      await expect(page.locator('#menu-battle-line')).toHaveText('Chuck never left.');
-      await expectNoHorizontalOverflow(page, 'the menu below lg');
-    });
-  });
-}
-for (const viewport of [
+  { width: 1023, height: 700 },
+  { width: 1023, height: 800 },
   { width: 1024, height: 768 },
   { width: 1024, height: 600 },
   { width: 1280, height: 800 },
   { width: 1440, height: 900 },
 ]) {
+  const drawn = viewport.width >= 1024 || viewport.height > 700;
   test.describe(`the bar clock's sign at ${viewport.width}x${viewport.height}`, () => {
     test.use({ viewport });
 
-    for (const [part, hour] of [['happy hour', 17], ['last call', 1], ['closed, with its note', 3]]) {
+    test(`is ${drawn ? 'drawn' : 'not drawn'}, with its note ${viewport.width >= 1024 ? 'hanging under it' : 'left off'}`, async ({ page }) => {
+      await page.clock.setFixedTime(atHour(3));
+      await page.reload();
+      await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+      await page.waitForTimeout(300);
+      if (drawn) await expect(page.locator('.neon')).toBeVisible();
+      else await expect(page.locator('.neon')).toBeHidden();
+      if (viewport.width >= 1024) await expect(page.locator('.note-taped')).toBeVisible();
+      else await expect(page.locator('.note-taped')).toBeHidden();
+      // Whatever is drawn, the clock is also the Battle line.
+      await expect(page.locator('#menu-battle-line')).toHaveText('Chuck never left.');
+      await expectNoHorizontalOverflow(page, 'the menu');
+    });
+
+    for (const [part, hour] of drawn ? [['happy hour', 17], ['last call', 1], ['closed, with its note', 3]] : []) {
       test(`hangs clear of the header, the title and Battle at ${part}`, async ({ page }) => {
         await page.clock.setFixedTime(atHour(hour));
         await page.reload();
