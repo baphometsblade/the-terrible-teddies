@@ -545,7 +545,7 @@ test.describe('the door', () => {
     expect(await deadTabStops(page), 'the door').toEqual([]);
 
     await page.getByLabel('Year you were born').fill(String(new Date().getFullYear() - 18));
-    await page.getByRole('button', { name: 'Come in' }).click();
+    await page.getByRole('button', { name: 'Check my year' }).click();
     await expect(page.getByRole('heading', { name: 'Had your birthday yet this year?' })).toBeVisible();
     await expectNoViolations(page, 'the birthday question');
     expect(await deadTabStops(page), 'the birthday question').toEqual([]);

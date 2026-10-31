@@ -38,7 +38,7 @@ const meetTheDoor = async (page, url = '/') => {
 // app must not answer), so wait for it to be armed before using it.
 const armed = (page) => expect(page.locator('form[data-armed="true"]')).toBeVisible();
 const yearField = (page) => page.getByLabel('Year you were born');
-const comeIn = (page) => page.getByRole('button', { name: 'Come in' });
+const comeIn = (page) => page.getByRole('button', { name: 'Check my year' });
 
 const answer = async (page, year) => {
   await armed(page);
@@ -67,9 +67,9 @@ test.describe('a new device', () => {
     await expect(page).toHaveTitle(/ID, please/);
 
     // The scene: the amber sign, the shades in the slot, the shared content line.
-    await expect(page.getByText('ID REQUIRED')).toBeVisible();
+    await expect(page.getByText('THE SEAMY SIDE')).toBeVisible();
     await expect(page.getByText(`Contains ${CONTENT_NOTICE}.`)).toBeVisible();
-    await expect(page.getByText("Only used to check you're 18 or over. It never leaves this device.")).toBeVisible();
+    await expect(page.getByText("Only used to check you're 18 or over. The year is never saved or sent.")).toBeVisible();
     // Bruno's card at full size, not the thumbnail, drawn and decoration only.
     const art = page.locator('.peep-slot img');
     await expect(art).toHaveJSProperty('naturalWidth', 768);

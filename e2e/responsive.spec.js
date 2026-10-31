@@ -465,7 +465,7 @@ test.describe('the door', () => {
     await atTheDoor(page);
     await expectNoHorizontalOverflow(page, 'the door');
     await page.getByLabel('Year you were born').fill(String(YEAR - 18));
-    await page.getByRole('button', { name: 'Come in' }).click();
+    await page.getByRole('button', { name: 'Check my year' }).click();
     await expect(page.getByRole('heading', { name: 'Had your birthday yet this year?' })).toBeVisible();
     await expectNoHorizontalOverflow(page, 'the birthday question');
     await page.locator('[data-armed="true"]').filter({ has: page.getByRole('button', { name: 'Not yet', exact: true }) }).waitFor();

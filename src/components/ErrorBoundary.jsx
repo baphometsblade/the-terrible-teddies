@@ -38,7 +38,7 @@ class ErrorBoundary extends React.Component {
 
   // A crash replaces the whole tree, so whatever had focus is destroyed and
   // focus falls to <body>: a screen-reader user was told nothing. Focus moves
-  // to the heading instead, so "Oh no!" is announced, with the message under
+  // to the heading instead, so "We dropped a tray." is announced, with the message under
   // it as the heading's description, and Try Again is the next Tab. The
   // heading rather than Try Again so the announcement says what happened, not
   // just what to press, and so a repeat of the Enter that crashed it cannot
@@ -101,12 +101,12 @@ class ErrorBoundary extends React.Component {
                 ref={this.focusOnMount}
                 tabIndex={-1}
                 aria-describedby="crash-screen-detail"
-                className="font-display text-4xl font-extrabold leading-tight text-plush-100 mb-2 focus:outline-none"
+                className="font-display text-4xl font-extrabold leading-tight text-balance text-plush-100 mb-2 focus:outline-none"
               >
-                Oh no!
+                We dropped a tray.
               </h1>
               <p id="crash-screen-detail" className="text-plush-200 leading-relaxed">
-                Something went wrong with the teddies. Don&apos;t worry — your progress is safe.
+                Something went wrong, but your progress is safe. Nobody saw anything.
               </p>
             </div>
 

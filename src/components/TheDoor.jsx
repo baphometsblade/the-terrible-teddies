@@ -30,15 +30,15 @@ import { AUTH_ACTION } from './AuthField';
 export const DOOR_COPY = {
   title: 'ID, please · Terrible Teddies',
   declinedTitle: DECLINED_COPY.title,
-  sign: 'ID REQUIRED',
+  sign: 'THE SEAMY SIDE',
   heading: 'ID.',
-  intro: 'Grown-ups only. Show me you are one.',
+  intro: 'Grown-ups only. Chuck is already inside.',
   notice: `Contains ${CONTENT_NOTICE}.`,
   label: 'Year you were born',
   placeholder: 'YYYY',
-  smallPrint: "Only used to check you're 18 or over. It never leaves this device.",
+  smallPrint: "Only used to check you're 18 or over. The year is never saved or sent.",
   error: 'Enter a year, 1900 to this year.',
-  submit: 'Come in',
+  submit: 'Check my year',
   birthdayHeading: 'Had your birthday yet this year?',
   birthdayYes: 'Yes',
   birthdayNo: 'Not yet',
@@ -68,7 +68,7 @@ const ASK_FIRST = { fetchpriority: 'high' };
 // told from the year alone. It takes the form's place, so its heading takes
 // the focus, and the two answers are the same glass: neither is lit, because
 // the door does not nudge. Its own mount is its own opening (a fresh
-// useArmedAfterOpen): the second tap of a double-tap on "Come in" lands
+// useArmedAfterOpen): the second tap of a double-tap on "Check my year" lands
 // where Yes or Not yet now is, and must not answer it.
 const BirthdayQuestion = ({ onAnswer }) => {
   const headingRef = useRef(null);

@@ -122,7 +122,8 @@ describe('DOOR_COPY', () => {
 
   it('asks for the year in the neutral words, and says what becomes of it', () => {
     expect(DOOR_COPY.label).toBe('Year you were born');
-    expect(DOOR_COPY.smallPrint).toBe("Only used to check you're 18 or over. It never leaves this device.");
+    // Moved with the after-dark deck: the same plain fact (the year is not kept), said once and shorter.
+    expect(DOOR_COPY.smallPrint).toBe("Only used to check you're 18 or over. The year is never saved or sent.");
     expect(DOOR_COPY.birthdayHeading).toBe('Had your birthday yet this year?');
     expect([DOOR_COPY.birthdayYes, DOOR_COPY.birthdayNo]).toEqual(['Yes', 'Not yet']);
   });
@@ -136,7 +137,7 @@ describe('the door, asking', () => {
     expect(host.querySelector('h1').getAttribute('tabindex')).toBe('-1');
     // The sign is decoration; the heading says it in words.
     const sign = host.querySelector('.neon');
-    expect(sign.textContent).toBe('ID REQUIRED');
+    expect(sign.textContent).toBe(DOOR_COPY.sign);
     expect(sign.getAttribute('data-tone')).toBe('amber');
     expect(sign.closest('[aria-hidden="true"]')).not.toBeNull();
     // Bruno's art at full size, asked for first, with no alt (decoration).
@@ -167,7 +168,7 @@ describe('the door, asking', () => {
   it('has one button, and it is glass: no brass anywhere on the door', () => {
     const { host } = render();
     expect(buttons(host)).toHaveLength(1);
-    expect(buttons(host)[0].textContent).toBe('Come in');
+    expect(buttons(host)[0].textContent).toBe(DOOR_COPY.submit);
     expect(buttons(host)[0].type).toBe('submit');
     expect(host.querySelector('.btn-glass')).not.toBeNull();
     expect(host.innerHTML).not.toContain('btn-brass');
@@ -338,7 +339,7 @@ describe('the door, asking', () => {
       expect(calls.pass).not.toHaveBeenCalled();
     });
 
-    // The second tap of a double-tap on "Come in" lands where an answer now
+    // The second tap of a double-tap on the year button lands where an answer now
     // is: it must not give one.
     it('does not take an answer from the tap that brought it up', () => {
       const { host, calls } = toTheQuestion();

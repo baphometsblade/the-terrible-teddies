@@ -87,7 +87,7 @@ test.describe('tutorial', () => {
         }
         if (step < 9) await dialog.getByRole('button', { name: 'Next' }).click();
       }
-      // The Cast overflows at every one of these sizes, so the cue was seen.
+      // The Regulars overflows at every one of these sizes, so the cue was seen.
       expect(overflowing).toBeGreaterThan(0);
     });
   }

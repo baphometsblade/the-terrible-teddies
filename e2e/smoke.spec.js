@@ -1229,9 +1229,9 @@ test('a dialog chunk that fails to load degrades gracefully, not a full-app cras
   await expect(notice).toBeVisible(SLOW);
 
   // ...and crucially the app itself survived: the menu's Battle button is still
-  // there, and the app-level crash screen ("Oh no!") is NOT shown.
+  // there, and the app-level crash screen ("We dropped a tray.") is NOT shown.
   await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible();
-  await expect(page.getByText('Oh no!')).toHaveCount(0);
+  await expect(page.getByText('We dropped a tray.')).toHaveCount(0);
 
   // Focus moves into the notice. An alertdialog is announced when focus
   // enters it; this one used to render without taking focus, so it could
@@ -1257,7 +1257,7 @@ test('a failed battle chunk keeps the app alive too, not just dialogs', async ({
   const notice = page.getByRole('alertdialog', { name: /failed to load/i });
   await expect(notice).toBeVisible(SLOW);
   // The app-level crash screen must NOT have taken over.
-  await expect(page.getByText('Oh no!')).toHaveCount(0);
+  await expect(page.getByText('We dropped a tray.')).toHaveCount(0);
   await expect(notice.getByRole('button', { name: 'OK' })).toBeFocused();
 
   // Escape dismisses it too — the same key every other dialog closes on — and

@@ -8,6 +8,16 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 export const HINT_AFTER_MS = 6000;
 export const RETRY_AFTER_MS = 20000;
 
+// What the wait says. Both start with the plain fact, which e2e finds by its
+// first sentence; the bouncer is the joke (the session check is the door
+// check), and, like everything a device can see before it has answered the
+// door, says nothing a minor should not read. The second replaces the first
+// when Reload arrives. PasswordRecovery keeps its own plain copy.
+export const BOOT_HINT_SLOW =
+  'Still trying to reach the server. Check your connection. The bouncer is checking the list. Upside down.';
+export const BOOT_HINT_STUCK =
+  'Still trying to reach the server. Check your connection or reload. The bouncer lost the list.';
+
 // The pre-JS loader in index.html draws this same medallion and wordmark, at
 // the same size and in the same place, and fades out over this screen once
 // React has rendered. Its arc and glow have been moving since first paint,
@@ -142,10 +152,7 @@ const BootScreen = () => {
           {slow && (
             <p className={`panel-glass w-full rounded-xl px-4 py-3 flex items-start gap-3 text-left text-sm leading-snug text-plush-200 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-500 [[data-motion=off]_&]:animate-none ${BESIDE_PANEL}`}>
               <WifiOff aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-brass-300" strokeWidth={2.2} />
-              <span>
-                Still trying to reach the server. Check your connection — we&apos;ll keep
-                retrying.
-              </span>
+              <span>{stuck ? BOOT_HINT_STUCK : BOOT_HINT_SLOW}</span>
             </p>
           )}
           {stuck && (

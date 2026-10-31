@@ -119,7 +119,7 @@ class DialogErrorBoundary extends React.Component {
             </div>
             <h2 className="relative font-display text-2xl font-extrabold leading-tight text-plush-100 mb-2">Couldn&apos;t open that</h2>
             <p id="dialog-load-failure-detail" className="relative text-plush-200 text-sm leading-relaxed mb-6">
-              That screen failed to load — usually a network hiccup. Your game is fine; give it another try.
+              That screen failed to load — usually a network hiccup. Your game is fine; give it another try. Probably Chuck.
             </p>
             <button
               type="button"

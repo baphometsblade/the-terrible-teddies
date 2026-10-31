@@ -450,7 +450,7 @@ test.describe('landing from a reset link on a device that has not passed the doo
   const answer = async (page, year) => {
     await expect(page.locator('form[data-armed="true"]')).toBeVisible();
     await page.getByLabel('Year you were born').fill(String(year));
-    await page.getByRole('button', { name: 'Come in' }).click();
+    await page.getByRole('button', { name: 'Check my year' }).click();
   };
 
   test('shows the door first, then the set-new-password panel, and the reset still works', async ({ page }) => {

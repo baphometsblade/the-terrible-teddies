@@ -1,5 +1,5 @@
 // A neon sign: the .neon material (index.css) on a piece of text, with an
-// optional paper note taped under it. The door's amber ID REQUIRED and the
+// optional paper note taped under it. The door's amber THE SEAMY SIDE and the
 // menu's bar-clock sign are this.
 //
 // It is decoration, always: aria-hidden, with no tab stop and no pointer, so

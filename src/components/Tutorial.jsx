@@ -36,22 +36,22 @@ import { CONTENT_NOTICE } from '@/lib/contentNotice';
 const TUTORIAL_STEPS = [
   {
     title: "Welcome to Terrible Teddies",
-    content: `Somewhere between the toy chest and the bar, these teddies went bad. Now they settle everything with cards, fists, and language you can't repeat at work.\n\n(18+ — ${CONTENT_NOTICE}.)`,
+    content: `The bears were regulars before the bar had a license, or a fire exit. Now they settle everything with cards, fists, and language you can't repeat at work. Pull up a stool. Try not to get banned on night one.\n\n(18+ — contains ${CONTENT_NOTICE}.)`,
     mascot: true,
   },
   {
     title: "The Job",
-    content: "Beat the stuffing out of Chuck — the smuggest teddy alive — by getting his HP to 0 before your 30 hits the floor — he brings more of it on higher difficulty, because of course he does. He WILL talk trash the entire time. Ignore him. Or don't. He hates both.",
+    content: "Beat the stuffing out of Chuck, the smuggest teddy alive, by getting his HP to 0 before your 30 hits the floor. He brings more HP on higher difficulty, because of course he does. He also owes the bar money, and nobody mentions it. He WILL talk trash the entire time. Ignore him. Or don't. He hates both.",
     icon: Target,
   },
   {
     title: "How a Turn Works",
-    content: "1. Draw — take a card. It's probably a bad one. Play it anyway.\n2. Your move — play teddies, traps and specials, and send ready teddies swinging, in any order, for as long as your energy lasts\n3. End Turn — Chuck's turn to embarrass himself",
+    content: "1. Draw — take a card. It's probably a bad one. Play it anyway.\n2. Your move — play teddies, traps and specials, and send ready teddies swinging, in any order, for as long as your energy lasts. Nobody is judging your stamina. Chuck is.\n3. End Turn — Chuck's turn to embarrass himself",
     icon: RefreshCw,
     list: true,
   },
   {
-    title: "The Cast",
+    title: "The Regulars",
     content: "Action Cards — your goons. Attack {attack} is the red badge, bottom left; HP {hp} is the blue one, bottom right (it goes red once they're hurt), and it's how many beatings they can absorb before going back to fluff. Fresh off the barstool they're Warming Up — no swinging until your next turn. Same rule for Chuck's lot.\nTrap Cards — spring-loaded regret for whoever swings at you\nSpecial Cards — back-alley healing and questionable card advantage",
     icon: Layers,
     list: true,
@@ -65,7 +65,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Rap Sheets (Abilities)",
-    content: "Taunt — talks so much shit, enemies HAVE to hit them first\nPiercing — cuts straight through Shield\nShield — takes 50% less damage, the coward\nStealth — untargetable for a turn (currently hiding in your hamper)\nFury — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nProtect — while they're upright, nothing else on their side can be touched\nSwarm — costs 1 less once you've already got someone on the table, and its cost disc turns green to say so\nRoyal — struts around giving everyone ELSE +1 Attack. Never itself.",
+    content: "Taunt — talks so much shit, enemies HAVE to hit them first\nPiercing — cuts straight through Shield. No foreplay.\nShield — takes 50% less damage, the coward\nStealth — untargetable for a turn (currently hiding in your hamper)\nFury — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nProtect — while they're upright, nothing else on their side can be touched. Getting them horizontal comes first.\nSwarm — costs 1 less once you've already got someone on the table, and its cost disc turns green to say so. Bad decisions are cheaper in groups.\nRoyal — struts around giving everyone ELSE +1 Attack. Never itself.",
     icon: ScrollText,
     list: true,
     icons: [Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown],
@@ -83,7 +83,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Go Ruin Chuck's Day",
-    content: "That's everything. Get out there, talk your talk, and remember the house rule: no biting. (Biting is fine.)",
+    content: "That's everything. Get out there, say something unforgivable, and remember the house rule: no biting. (Biting is fine.)",
     icon: Trophy,
   },
 ];
@@ -99,7 +99,7 @@ const parseLine = (line) => {
 const exampleCards = ['Shit-Talk Sally', 'Honey Trap', 'Emergency Fluff Job']
   .map((name) => ALL_CARDS.find((c) => c.name === name))
   .filter(Boolean);
-// The creature shown under The Cast: the twins in the copy carry her numbers,
+// The creature shown under The Regulars: the twins in the copy carry her numbers,
 // so the words and the card below them agree.
 const SAMPLE = exampleCards.find((c) => c.type === 'action');
 
@@ -195,7 +195,7 @@ const Tutorial = ({ onClose, onStartGame }) => {
     if (dialogRef.current) dialogRef.current.scrollTop = 0;
   }, [currentStep, dialogRef]);
 
-  // Whether the step runs on below the frame. The densest steps (The Cast,
+  // Whether the step runs on below the frame. The densest steps (The Regulars,
   // the abilities) are taller than the frame on most screens, and the body
   // used to stop at its edge with nothing to say there was more: three of the
   // eight abilities sat below the fold on a phone. While there is more, the
