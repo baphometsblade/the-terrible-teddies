@@ -10,7 +10,7 @@
 // tab, a deep link, a second tab), a year that is never stored or sent, the
 // keyboard and the double-tap, and a layout that fits a 320px phone.
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, stubSupabase, seedSignedIn, SLOW } from './helpers/session.js';
+import { test, expect, stubSupabase, seedSignedIn, SESSION, SLOW } from './helpers/session.js';
 import { DOOR_KEY, doorRecord } from '../src/lib/door.js';
 import { CONTENT_NOTICE } from '../src/lib/contentNotice.js';
 
@@ -373,6 +373,37 @@ test.describe('the address', () => {
     await expect(page.getByText('QA Bear')).toBeVisible();
     await page.reload();
     await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+  });
+});
+
+// The door stands in front of the password-reset panel too (the reset flow
+// itself is e2e/password-reset.spec.js's): a link opened on a new device meets
+// the door first, and the address it carried is still acted on afterwards.
+test.describe('a reset link', () => {
+  const recoveryHash = () => {
+    const now = Math.floor(Date.now() / 1000);
+    return `#access_token=${SESSION.access_token}&expires_at=${now + 3600}&expires_in=3600`
+      + `&refresh_token=fake-refresh&token_type=bearer&type=recovery`;
+  };
+
+  test('opened on a new device meets the door, then the panel it was for', async ({ page }) => {
+    await stubSupabase(page);
+    await page.goto(`/${recoveryHash()}`);
+    await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
+    await expect(page.getByRole('heading', { name: 'Set a New Password' })).toHaveCount(0);
+    await answer(page, ADULT);
+    await expect(page.getByRole('heading', { name: 'Set a New Password' })).toBeVisible(SLOW);
+    await expect(theGame(page)).toHaveCount(0);
+  });
+
+  test('never reaches a player the door turned away', async ({ page }) => {
+    await stubSupabase(page);
+    await page.goto(`/${recoveryHash()}`);
+    await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
+    await answer(page, MINOR);
+    await expect(declined(page)).toBeVisible();
+    await page.waitForTimeout(400);
+    await expect(page.getByRole('heading', { name: 'Set a New Password' })).toHaveCount(0);
   });
 });
 
