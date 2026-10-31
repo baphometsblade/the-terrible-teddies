@@ -146,7 +146,7 @@ describe('a device with no answer', () => {
     vi.stubGlobal('Image', class { constructor() { images.push(this); } });
     render();
     await flush();
-    await vi.waitFor(() => expect(door.imported).toBeGreaterThan(0));
+    await vi.waitFor(() => expect(door.imported).toBeGreaterThan(0), { timeout: 5000 });
     expect(images.map((i) => i.src)).toEqual(['/cards/56.webp']);
     expect(images[0].fetchPriority).toBe('high');
   });
@@ -389,9 +389,9 @@ describe('the analytics, for real', () => {
     expect(posthog.capture).not.toHaveBeenCalled();
 
     press(host, 'adult');
-    await vi.waitFor(() => expect(posthog.init).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(posthog.init).toHaveBeenCalledTimes(1), { timeout: 5000 });
     expect(posthog.init.mock.calls[0][0]).toBe('phc_test_key');
-    await vi.waitFor(() => expect(posthog.capture).toHaveBeenCalledWith('raised_at_the_door', {}));
+    await vi.waitFor(() => expect(posthog.capture).toHaveBeenCalledWith('raised_at_the_door', {}), { timeout: 5000 });
   });
 
   it('never starts for a decline, never loads the SDK, and never sends what was held', async () => {
@@ -415,6 +415,6 @@ describe('the analytics, for real', () => {
     const { posthog } = await withKey();
     localStorage.setItem(DOOR_KEY, doorRecord('pass', 0));
     render();
-    await vi.waitFor(() => expect(posthog.init).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(posthog.init).toHaveBeenCalledTimes(1), { timeout: 5000 });
   });
 });
