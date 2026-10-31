@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   HERO_LINES, HERO_MAX, FOOTER_LINES, FOOTER_MAX, SHIPPED_FOOTER, TILE_LINES, TILE_MAX, STREAK_MAX,
-  streakLine, nextHeroLine, nextFooterLine, resetMenuVisits,
+  streakLine, heroLineForVisit, footerLineForVisit, recordMenuVisit, resetMenuVisits,
 } from './menuLines';
 
 const allLines = [
@@ -54,25 +54,30 @@ describe('every line fits the slot it is written for', () => {
 describe('what a visit shows', () => {
   beforeEach(resetMenuVisits);
 
-  it('shows the brand line first, then never the same line twice in a row', () => {
-    expect(nextHeroLine()).toBe(HERO_LINES[0]);
+  it('shows the brand line first, however often it is asked before the menu is up, then never the same line twice in a row', () => {
+    // StrictMode asks twice (or more) before anything is on screen.
+    expect(heroLineForVisit()).toBe(HERO_LINES[0]);
+    expect(heroLineForVisit()).toBe(HERO_LINES[0]);
     let last = HERO_LINES[0];
+    recordMenuVisit(last, null);
     for (let i = 0; i < 50; i += 1) {
-      const line = nextHeroLine();
+      const line = heroLineForVisit();
       expect(HERO_LINES).toContain(line);
       expect(line).not.toBe(last);
       expect(line).not.toBe(HERO_LINES[0]);
+      recordMenuVisit(line, null);
       last = line;
     }
   });
 
   it('shows the shipped footer when the closed sign has its own note, and never the same one twice otherwise', () => {
-    expect(nextFooterLine({ closed: true })).toBe(SHIPPED_FOOTER);
+    expect(footerLineForVisit({ closed: true })).toBe(SHIPPED_FOOTER);
     let last = null;
     for (let i = 0; i < 50; i += 1) {
-      const line = nextFooterLine();
+      const line = footerLineForVisit();
       expect(FOOTER_LINES).toContain(line);
       expect(line).not.toBe(last);
+      recordMenuVisit(HERO_LINES[0], line);
       last = line;
     }
   });

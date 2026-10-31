@@ -16,7 +16,7 @@ import { countReadyRewards, passOf } from '@/lib/battlePass';
 import { signFor, subtitleFor, partOfDay, CLOSED_NOTES } from '@/lib/barClock';
 import { houseRank } from '@/lib/houseRank';
 import { pickLine } from '@/lib/mgmtNotes';
-import { TILE_LINES, streakLine, nextHeroLine, nextFooterLine, SHIPPED_FOOTER } from '@/lib/menuLines';
+import { TILE_LINES, streakLine, heroLineForVisit, footerLineForVisit, recordMenuVisit, SHIPPED_FOOTER } from '@/lib/menuLines';
 import CardFan from './CardFan';
 import NeonSign from './NeonSign';
 
@@ -123,10 +123,12 @@ const MainMenu = ({
   // once per visit, in an initializer, never per render. The closed sign's
   // note is a pick of its own; while that note is up the footer is the shipped
   // one, so there is only one note from management in view.
-  const [heroLine] = useState(() => nextHeroLine());
-  const [footerPick] = useState(() => nextFooterLine({ closed }));
+  const [heroLine] = useState(() => heroLineForVisit());
+  const [footerPick] = useState(() => footerLineForVisit({ closed }));
   const [closedNote] = useState(() => pickLine(CLOSED_NOTES));
   const footerLine = closed ? SHIPPED_FOOTER : footerPick;
+  // Recorded once the menu is up (not while choosing: see menuLines.js).
+  useEffect(() => { recordMenuVisit(heroLine, footerPick); }, [heroLine, footerPick]);
 
   // How many challenges are finished and waiting to be claimed.
   //

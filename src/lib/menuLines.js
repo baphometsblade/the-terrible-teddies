@@ -56,29 +56,31 @@ export const streakLine = (n) => {
 // battle, a screen, a dialog) pick another, never the same one twice in a row.
 // Picked in a useState initializer, once per mount, never per render. The
 // counter is module state on purpose: it is "this page load", not the save.
+//
+// Choosing and recording are two steps. StrictMode (the dev server) renders a
+// component twice, and a counter that moved while choosing would have the
+// second pass take the "later visit" branch, so a cold launch would never show
+// variant 0 in development. Choosing only reads; the menu records what it
+// showed from an effect, which runs once it is on screen.
 let visits = 0;
 let lastHero = null;
 let lastFooter = null;
 
-export const nextHeroLine = (random = Math.random) => {
-  visits += 1;
-  if (visits === 1) {
-    lastHero = HERO_LINES[0];
-    return lastHero;
-  }
-  lastHero = pickLine(HERO_LINES.slice(1), lastHero, random);
-  return lastHero;
-};
+export const heroLineForVisit = (random = Math.random) => (
+  visits === 0 ? HERO_LINES[0] : pickLine(HERO_LINES.slice(1), lastHero, random)
+);
 
 // The shipped footer whenever the closed sign's own note is on screen (2-6
 // a.m.): two notes from management in one view is one too many.
-export const nextFooterLine = ({ closed = false, random = Math.random } = {}) => {
-  if (closed) {
-    lastFooter = SHIPPED_FOOTER;
-    return lastFooter;
-  }
-  lastFooter = pickLine(FOOTER_LINES, lastFooter, random);
-  return lastFooter;
+export const footerLineForVisit = ({ closed = false, random = Math.random } = {}) => (
+  closed ? SHIPPED_FOOTER : pickLine(FOOTER_LINES, lastFooter, random)
+);
+
+/** The menu is on screen showing these: the next visit shows others. */
+export const recordMenuVisit = (hero, footer) => {
+  visits += 1;
+  lastHero = hero;
+  lastFooter = footer;
 };
 
 // For tests: back to a cold launch.
