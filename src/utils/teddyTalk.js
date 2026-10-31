@@ -13,6 +13,34 @@ export const QUIPS = {
     "I'm gonna unstuff you and sell the fluff.",
     "My therapist says I need this. Don't take it personally.",
   ],
+  // The same opener when the battle begins between midnight and five in the
+  // morning, local time (startPoolFor). Card-agnostic, like gameStart.
+  gameStartLate: [
+    "It's past midnight and you chose me. I'm flattered.",
+    "Nobody good is awake. So here we are.",
+    "Bold of you to fight me at this hour. I respect it.",
+    "Midnight. The bar is empty. Just us and our decisions.",
+    "A booty call with fists, at this hour? My favorite kind.",
+    "Sun's up soon. We'll both pretend this never happened.",
+  ],
+  // The first time either side is down to LAST_CALL_HP (the house lights come
+  // up). Card-agnostic, and said whichever side is the one in trouble, so none
+  // of them states whose HP it is: they are Chuck's bluster either way.
+  lastCall: [
+    "Last call, sweetheart. Drink up.",
+    "Lights up, goggles off. You were never that cute.",
+    "One leaves on a stretcher. The other, with whoever's left.",
+    "Lights up. Nobody looks good. Especially you.",
+    "Last call! Get a good look at what you lost.",
+    "House lights are on, and you're going home alone. Again.",
+    "Somebody call you a cab. A hearse. Whatever.",
+    "I've got a bottle, a bad idea and no standards. Pick two.",
+    "Lights up! Find someone to go home with before they see you.",
+    "Last call for booze. Last call for dignity. I'm taking both.",
+    "Jukebox dead, lights up, someone crying in the bathroom. Me.",
+    "Lights up. Start the walk of shame. I'll hold the door.",
+    "Last call. Last chance to get lucky. Judging by you, no.",
+  ],
   oppPlays: [
     "Say hello to my fluffy little friend.",
     "Fresh outta the toy box and full of bad intentions.",
@@ -85,6 +113,14 @@ export const QUIPS = {
     "You play like your stitching's loose.",
   ],
 };
+
+// Which opening pool a battle starts with: past midnight and before five in
+// the morning, by the player's own clock, Chuck opens with 'gameStartLate'.
+// getHours() is the local hour, so a daylight-saving change cannot skew it,
+// and the caller reads the clock once, at the deal.
+export const LATE_UNTIL_HOUR = 5;
+export const startPoolFor = (now = new Date()) =>
+  (now.getHours() < LATE_UNTIL_HOUR ? 'gameStartLate' : 'gameStart');
 
 /**
  * Pick a random quip from a pool, never repeating the previous line back to

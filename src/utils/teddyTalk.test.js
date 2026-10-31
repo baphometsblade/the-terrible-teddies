@@ -1,4 +1,4 @@
-import { QUIPS, pickQuip, OPPONENT_NAME } from './teddyTalk';
+import { QUIPS, pickQuip, OPPONENT_NAME, startPoolFor, LATE_UNTIL_HOUR } from './teddyTalk';
 
 describe('teddyTalk', () => {
   it('has a named opponent persona', () => {
@@ -34,5 +34,124 @@ describe('teddyTalk', () => {
 
   it('returns null for an unknown pool instead of crashing', () => {
     expect(pickQuip('nonexistent')).toBeNull();
+  });
+});
+
+// The two pools the after-dark pass adds. Both are card-agnostic (they never
+// follow a card's name), so they carry no more restriction than gameStart.
+describe('lastCall and gameStartLate', () => {
+  it('have enough lines to rotate without a pattern', () => {
+    expect(QUIPS.lastCall.length).toBeGreaterThanOrEqual(8);
+    expect(QUIPS.gameStartLate.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('are picked from their own pool, and never repeat back to back', () => {
+    for (const pool of ['lastCall', 'gameStartLate']) {
+      let last = pickQuip(pool);
+      expect(QUIPS[pool]).toContain(last);
+      for (let i = 0; i < 40; i++) {
+        const next = pickQuip(pool, last);
+        expect(QUIPS[pool]).toContain(next);
+        expect(next).not.toBe(last);
+        last = next;
+      }
+    }
+  });
+
+  // The centre-line bubble shows two lines at 320px and clips the rest. The
+  // longest line that shipped (63 characters) fits there, and a 62-character
+  // line of long words did not, so characters are only a coarse guard: no
+  // pool's line runs past the longest that fits, and the lines this pass adds
+  // stay a few under it, for a phone font wider than the one they were
+  // measured in. e2e/board.spec.js measures every line in the real bubble.
+  it('keep every line inside the bubble: 64 characters in any pool, 60 in the new ones', () => {
+    for (const [pool, lines] of Object.entries(QUIPS)) {
+      for (const line of lines) {
+        expect(line.length, `${pool}: "${line}"`).toBeLessThanOrEqual(64);
+      }
+    }
+    for (const pool of ['lastCall', 'gameStartLate']) {
+      for (const line of QUIPS[pool]) {
+        expect(line.length, `${pool}: "${line}"`).toBeLessThanOrEqual(60);
+      }
+    }
+  });
+
+  it('keep every line the game shipped with before them', () => {
+    // The pools that existed are not touched by this pass; one line of each is
+    // enough to catch a file that was regenerated instead of extended.
+    expect(QUIPS.gameStart).toContain("Fresh meat! I LOVE fresh meat.");
+    expect(QUIPS.oppKills).toContain("Someone grab a dustpan.");
+    expect(QUIPS.oppWins).toContain("Get stuffed, kid. Literally.");
+  });
+});
+
+// The hour Chuck's opener is chosen by is the player's local hour, read at the
+// deal: past midnight and before five he opens late.
+describe('startPoolFor', () => {
+  const at = (h, m = 0) => new Date(2027, 0, 15, h, m, 0);
+
+  it('opens late from midnight to five in the morning, and normally otherwise', () => {
+    expect(LATE_UNTIL_HOUR).toBe(5);
+    expect(startPoolFor(at(23, 59))).toBe('gameStart');
+    expect(startPoolFor(at(0, 0))).toBe('gameStartLate');
+    expect(startPoolFor(at(2, 30))).toBe('gameStartLate');
+    expect(startPoolFor(at(4, 59))).toBe('gameStartLate');
+    expect(startPoolFor(at(5, 0))).toBe('gameStart');
+    expect(startPoolFor(at(12, 0))).toBe('gameStart');
+  });
+
+  it('reads the clock when no time is given, and names a pool that exists', () => {
+    expect(Object.keys(QUIPS)).toContain(startPoolFor());
+    for (let h = 0; h < 24; h++) expect(Object.keys(QUIPS)).toContain(startPoolFor(at(h)));
+  });
+
+  it('is the local hour, so a daylight-saving jump cannot skew it', () => {
+    // 2027-03-14 02:30 does not exist in New York; whichever instant the
+    // runtime picks, the answer follows the hour the date reports.
+    const d = new Date(2027, 2, 14, 2, 30);
+    expect(startPoolFor(d)).toBe(d.getHours() < LATE_UNTIL_HOUR ? 'gameStartLate' : 'gameStart');
+  });
+});
+
+// Chuck's card-attached pools are spoken right after "Chuck slammed down
+// {card}" (oppPlays), when his creature kills yours (oppKills) and when yours
+// kills his (oppLosesCreature). The card in question can be the Custody-Battle
+// Cub, a small cub in Chuck's crew, so these three stay profane and savage
+// but are never sexual: no line in them may use a word from this list. The
+// pools that follow no card (gameStart, lastCall, oppWins and the rest) have
+// no such limit, and nothing here scans for any other kind of word.
+describe('the card-attached pools are never sexual', () => {
+  const CARD_ATTACHED = ['oppPlays', 'oppKills', 'oppLosesCreature'];
+  const SEXUAL_WORDS = [
+    'sex', 'sexy', 'sexual', 'naked', 'nude', 'horny', 'aroused', 'boner', 'erection', 'orgasm',
+    'cum', 'dick', 'cock', 'pussy', 'tits', 'boobs', 'kinky', 'fetish', 'foreplay', 'hookup',
+    'booty', 'stripper', 'blowjob', 'handjob', 'lap dance',
+  ];
+  const SEXUAL = new RegExp(`\\b(${SEXUAL_WORDS.join('|')})\\b`, 'i');
+  const sexualWordIn = (line) => line.match(SEXUAL)?.[1] ?? null;
+
+  it('has all three pools, so a rename cannot take them out from under the check', () => {
+    for (const pool of CARD_ATTACHED) {
+      expect(Array.isArray(QUIPS[pool]), pool).toBe(true);
+      expect(QUIPS[pool].length, pool).toBeGreaterThan(0);
+    }
+  });
+
+  it('holds no sexual word in any of them', () => {
+    for (const pool of CARD_ATTACHED) {
+      for (const line of QUIPS[pool]) {
+        expect(sexualWordIn(line), `${pool}: "${line}"`).toBeNull();
+      }
+    }
+  });
+
+  // The check must be able to fail: without this, a broken pattern would pass
+  // every line and the guard above would guard nothing.
+  it('catches each word on the list, whole words only', () => {
+    for (const word of SEXUAL_WORDS) {
+      expect(sexualWordIn(`Chuck says ${word.toUpperCase()}, loudly.`), word).toBe(word.toUpperCase());
+    }
+    expect(sexualWordIn('A cocktail of sextants and cumin.')).toBeNull();
   });
 });
