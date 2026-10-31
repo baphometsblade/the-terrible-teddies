@@ -2,6 +2,7 @@ import { forwardRef, useState, useEffect, useId, useImperativeHandle, useRef } f
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bomb, Check, ChevronDown, Eraser, FolderOpen, Layers, PawPrint, Save, Sparkles, Trash2, X, Zap } from 'lucide-react';
 import TeddyCard, { ArtOrEmoji } from './TeddyCard';
+import FlavorLine from './FlavorLine';
 import { BrassCoin, Medallion, DialogClose } from '@/components/ui/game-chrome';
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
@@ -211,6 +212,16 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
   // The slot the last added card filled, and a count that replays its glow
   // (never reused, so every add is a fresh key).
   const [pulse, setPulse] = useState(null);
+  // The deck rows whose flavor line is open (by deckId: each row its own
+  // disclosure). A row that leaves takes its flag with it, and a deck loaded
+  // over it names its rows by card and place, so a flag left behind could only
+  // open the same card in the same place.
+  const [inspected, setInspected] = useState(() => new Set());
+  const toggleInspected = (deckId) => setInspected((open) => {
+    const next = new Set(open);
+    if (!next.delete(deckId)) next.add(deckId);
+    return next;
+  });
   const addCount = useRef(0);
   const { toast } = useToast();
   const copiesIdBase = useId();
@@ -621,39 +632,70 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                 scrolling page hid half the deck in it. */}
             <div data-deck-list="" className="-mx-1 mb-4 mt-4 space-y-1.5 overflow-x-hidden px-1 [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin] lg:min-h-[7.5rem] lg:overflow-y-auto">
               <AnimatePresence>
-                {deck.map((card) => (
-                  <motion.div
-                    key={card.deckId}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className={`relative flex items-center gap-2.5 overflow-hidden rounded-xl py-0.5 pl-3 pr-0.5 ${WELL}`}
-                  >
-                    {/* The card's tier, as a sliver of its frame metal. */}
-                    <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px]" style={{ background: RARITY_METAL[card.rarity] }} />
-                    {/* The brass coin a card's cost is struck on — TeddyCard's, at list size. */}
-                    <BrassCoin size="sm">{card.cost}</BrassCoin>
-                    <span
-                      aria-hidden="true"
-                      className={`relative grid h-9 w-7 shrink-0 place-items-center overflow-hidden rounded-[5px] bg-gradient-to-b ring-1 ring-white/10 ${RARITY[card.rarity].bg}`}
+                {deck.map((card) => {
+                  const open = inspected.has(card.deckId);
+                  const flavorId = `${copiesIdBase}-flavor-${card.deckId}`;
+                  return (
+                    <motion.div
+                      key={card.deckId}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className={`relative overflow-hidden rounded-xl ${WELL}`}
                     >
-                      <ArtOrEmoji teddy={card} emojiClassName="text-sm" imgClassName="absolute inset-0 h-full w-full object-cover" />
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-semibold text-plush-100">{card.name}</span>
-                    {/* 44px, filling the row's height bar 2px each side, so
-                        the row stays 48px. Its focus ring is inset: the row
-                        clips (overflow-hidden), and a ring drawn outside the
-                        button would be cut off. A plain button, so a ring. */}
-                    <button
-                      type="button"
-                      onClick={() => removeFromDeck(card)}
-                      className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300"
-                      aria-label={`Remove ${card.name} from deck`}
-                    >
-                      <X aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
-                    </button>
-                  </motion.div>
-                ))}
+                      {/* The card's tier, as a sliver of its frame metal. */}
+                      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px]" style={{ background: RARITY_METAL[card.rarity] }} />
+                      <div className="flex items-center gap-2.5 py-0.5 pl-3 pr-0.5 max-[359px]:gap-2 max-[359px]:pl-2.5">
+                        {/* The brass coin a card's cost is struck on — TeddyCard's, at list size. */}
+                        <BrassCoin size="sm">{card.cost}</BrassCoin>
+                        <span
+                          aria-hidden="true"
+                          className={`relative grid h-9 w-7 shrink-0 place-items-center overflow-hidden rounded-[5px] bg-gradient-to-b ring-1 ring-white/10 ${RARITY[card.rarity].bg}`}
+                        >
+                          <ArtOrEmoji teddy={card} emojiClassName="text-sm" imgClassName="absolute inset-0 h-full w-full object-cover" />
+                        </span>
+                        {/* The Deck Builder has no card page, so a deck card's
+                            name opens its flavor line under it: the card's
+                            joke, as the Collection and the pack reveal draw
+                            it. 44px tall like the row's X, with the same inset
+                            ring (the row clips); the chevron says it opens. */}
+                        <button
+                          type="button"
+                          onClick={() => toggleInspected(card.deckId)}
+                          aria-expanded={open}
+                          aria-controls={open ? flavorId : undefined}
+                          aria-label={`Flavor line for ${card.name}`}
+                          data-flavor-toggle=""
+                          className="flex h-11 min-w-0 flex-1 items-center gap-1.5 rounded-lg text-left max-[359px]:gap-1 text-sm font-semibold text-plush-100 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300"
+                        >
+                          <span className="min-w-0 truncate">{card.name}</span>
+                          <ChevronDown
+                            aria-hidden="true"
+                            className={`h-4 w-4 shrink-0 text-plush-300 transition-transform motion-reduce:transition-none [[data-motion=off]_&]:transition-none ${open ? 'rotate-180' : ''}`}
+                            strokeWidth={2.4}
+                          />
+                        </button>
+                        {/* 44px, filling the row's height bar 2px each side, so
+                            the row stays 48px. Its focus ring is inset: the row
+                            clips (overflow-hidden), and a ring drawn outside the
+                            button would be cut off. A plain button, so a ring. */}
+                        <button
+                          type="button"
+                          onClick={() => removeFromDeck(card)}
+                          className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-plush-300 transition-colors hover:bg-red-500/15 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300"
+                          aria-label={`Remove ${card.name} from deck`}
+                        >
+                          <X aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
+                        </button>
+                      </div>
+                      {open && (
+                        <div id={flavorId} data-flavor-panel="" className="pb-2.5 pl-3.5 pr-3 pt-0.5">
+                          <FlavorLine card={card} />
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
 
               {deck.length === 0 && (

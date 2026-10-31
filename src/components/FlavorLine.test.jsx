@@ -65,7 +65,7 @@ describe("every card's line", () => {
 // FlavorLine and never restate its classes or reach for card.description
 // themselves, which is how the three would drift apart.
 describe('the screens that show a flavor line', () => {
-  const SCREENS = ['TeddyCollection.jsx', 'CardPackOpening.jsx'];
+  const SCREENS = ['TeddyCollection.jsx', 'CardPackOpening.jsx', 'DeckBuilder.jsx'];
   const source = (file) => readFileSync(join(process.cwd(), 'src/components', file), 'utf8');
 
   it.each(SCREENS)('%s draws it through FlavorLine', (file) => {

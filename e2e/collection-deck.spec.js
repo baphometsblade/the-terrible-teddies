@@ -346,6 +346,89 @@ const innerScrollers = (page, selector) => page.locator(selector).evaluate((root
     return (oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1;
   }).length);
 
+// The Deck Builder has no card page, so a card in the deck opens its flavor
+// line under its row (FlavorLine: the same line the Collection's detail and the
+// pack reveal draw). A card's words are read from the live table by name, so a
+// rewrite of the copy cannot make these vacuous.
+for (const viewport of [{ width: 320, height: 640 }, { width: 1280, height: 800 }]) {
+  test.describe(`a deck card's flavor line at ${viewport.width}x${viewport.height}`, () => {
+    test.use({ viewport });
+
+    const firstToggle = (page) => page.locator('[data-deck-panel] [data-flavor-toggle]').first();
+    const flavorOf = async (page, toggle) => {
+      const name = (await toggle.getAttribute('aria-label')).replace(/^Flavor line for /, '');
+      const description = await page.evaluate(async (n) => (await import('/src/stores/gameStore.js')).ALL_CARDS.find((c) => c.name === n).description, name);
+      return { name, description };
+    };
+
+    test('opens under its row as the data has it, inside the panel, and closes by the same control', async ({ page }) => {
+      await openDeckBuilder(page);
+      const panel = page.locator('[data-deck-panel]');
+      const toggle = firstToggle(page);
+      const { name, description } = await flavorOf(page, toggle);
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await expect(panel.locator('[data-flavor-panel]')).toHaveCount(0);
+      // The collapsed row is the row it always was: 48px, a 44px control.
+      const row = toggle.locator('xpath=ancestor::div[contains(@class, "overflow-hidden")][1]');
+      expect(Math.round((await row.boundingBox()).height)).toBe(48);
+      const closed = await toggle.boundingBox();
+      expect(closed.height).toBeGreaterThanOrEqual(44);
+      expect(closed.width).toBeGreaterThanOrEqual(44);
+
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      const line = panel.locator('[data-flavor-panel] p').first();
+      await expect(line).toHaveText(description);
+      // Under the row's own line of controls, within the row, inside the page.
+      // Measured together, after the click: the page scrolls the panel into
+      // view on a phone, which moves every box taken before it.
+      const controls = await toggle.boundingBox();
+      const open = await row.boundingBox();
+      const text = await line.boundingBox();
+      expect(text.y, `${name}'s line is above its row's controls`).toBeGreaterThanOrEqual(controls.y + controls.height - 1);
+      expect(text.y + text.height, `${name}'s line runs out of its row`).toBeLessThanOrEqual(open.y + open.height + 1);
+      expect(text.x).toBeGreaterThanOrEqual(open.x);
+      expect(text.x + text.width).toBeLessThanOrEqual(open.x + open.width + 1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), 'the page scrolls sideways').toBeLessThanOrEqual(viewport.width);
+
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await expect(panel.locator('[data-flavor-panel]')).toHaveCount(0);
+    });
+
+    test('is reached from the keyboard, which keeps the focus where it was', async ({ page }) => {
+      await openDeckBuilder(page);
+      const panel = page.locator('[data-deck-panel]');
+      const toggle = firstToggle(page);
+      const { description } = await flavorOf(page, toggle);
+      await toggle.focus();
+      await page.keyboard.press('Enter');
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      await expect(toggle).toBeFocused();
+      await expect(panel.locator('[data-flavor-panel] p').first()).toHaveText(description);
+      await page.keyboard.press(' ');
+      await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await expect(toggle).toBeFocused();
+      // Next on the Tab is the row's own X, not a stop inside the line.
+      await page.keyboard.press('Tab');
+      await expect(panel.getByRole('button', { name: /^Remove .+ from deck$/ }).first()).toBeFocused();
+    });
+
+    test('goes with its card when the card is taken out, and changes nothing about the deck', async ({ page }) => {
+      await openDeckBuilder(page);
+      const before = await storedDeck(page);
+      await firstToggle(page).click();
+      await expect(page.locator('[data-deck-panel] [data-flavor-panel]')).toHaveCount(1);
+      // Opening a line is not an edit.
+      await expect(page.locator('[data-unsaved], [data-unset]')).toHaveCount(0);
+      expect(await storedDeck(page)).toEqual(before);
+      await removeFirstCard(page);
+      await expect(page.locator('[data-deck-panel] [data-flavor-panel]')).toHaveCount(0);
+      await expect(deckCount(page)).toContainText('9/10');
+    });
+  });
+}
+
 test.describe('deck builder on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 

@@ -171,6 +171,18 @@ test('deck builder Save-deck dialog has no WCAG 2.1 A/AA violations', async ({ p
 
 // The question "← Menu" asks when the deck has edits that are not the battle
 // deck yet, with the "Unsaved changes" line showing behind it.
+// A deck card's flavor line open under its row: the toggle's name and
+// expanded state, the line's contrast on the row's recessed well.
+test('deck builder with a flavor line open has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible(SLOW);
+  const toggle = page.locator('[data-deck-panel] [data-flavor-toggle]').first();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('[data-flavor-panel] p')).toBeVisible();
+  await expectNoViolations(page, 'deck builder, a flavor line open');
+});
+
 test('deck builder leave-without-saving dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
   await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible(SLOW);
