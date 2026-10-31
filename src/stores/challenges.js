@@ -42,7 +42,7 @@ export const DAILY_POOL = [
   { id: 'd3', name: 'Absolute Menace', description: 'Achieve victory in 5 battles', target: 5, reward: { type: 'pack', amount: 1 }, icon: '👑', stat: 'dailyWins' },
   // dailyGames (todayBattles)
   { id: 'd4', name: 'Win Or Walk Of Shame', description: 'Complete 3 battles (win or lose)', target: 3, reward: { type: 'coins', amount: 80 }, icon: '🕒', stat: 'dailyGames' },
-  { id: 'd5', name: 'Learning Experience', description: 'Complete 5 battles (win or lose)', target: 5, reward: { type: 'xp', amount: 100 }, icon: '🎮', stat: 'dailyGames' },
+  { id: 'd5', name: 'Walk Of Shame Round Five', description: 'Complete 5 battles (win or lose)', target: 5, reward: { type: 'xp', amount: 100 }, icon: '🎮', stat: 'dailyGames' },
   { id: 'd6', name: 'Grinding With Strangers', description: 'Complete 8 battles (win or lose)', target: 8, reward: { type: 'pack', amount: 1 }, icon: '🛠️', stat: 'dailyGames' },
   // dailyDamage (todayDamageDealt)
   { id: 'd7', name: 'Slap And Tickle', description: 'Deal a total of 25 damage', target: 25, reward: { type: 'coins', amount: 60 }, icon: '🩸', stat: 'dailyDamage' },
@@ -58,7 +58,7 @@ export const DAILY_POOL = [
 export const WEEKLY_POOL = [
   // weeklyWins (weekWins)
   { id: 'w1', name: 'Five Wins And A Cab Home', description: 'Achieve 5 victories this week', target: 5, reward: { type: 'coins', amount: 300 }, icon: '🥃', stat: 'weeklyWins' },
-  { id: 'w2', name: 'Fifteen Is A Pattern', description: 'Achieve 15 victories this week', target: 15, reward: { type: 'gems', amount: 50 }, icon: '🏆', stat: 'weeklyWins' },
+  { id: 'w2', name: 'Fifteen Is A Lifestyle', description: 'Achieve 15 victories this week', target: 15, reward: { type: 'gems', amount: 50 }, icon: '🏆', stat: 'weeklyWins' },
   { id: 'w3', name: 'Unemployable', description: 'Achieve 25 victories this week', target: 25, reward: { type: 'legendaryPack', amount: 1 }, icon: '🍾', stat: 'weeklyWins' },
   // weeklyBestStreak (weekBestStreak)
   { id: 'w4', name: 'Back To Back To Back', description: 'Achieve a 3 game win streak this week', target: 3, reward: { type: 'pack', amount: 2 }, icon: '🎲', stat: 'weeklyBestStreak' },

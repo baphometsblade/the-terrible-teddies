@@ -122,7 +122,7 @@ export const ACHIEVEMENTS = [
   { id: 'heal_500', name: 'Fluffer on Call', description: 'Heal 500 total HP', reward: 300, icon: 'HeartPulse', locked: 'Still self-service.' },
   { id: 'perfect_win', name: 'Didn’t Spill a Drop', description: 'Win without losing HP', reward: 1000, icon: 'ShieldCheck', locked: 'Spilled plenty so far.' },
   { id: 'comeback', name: 'Crawled Home Smiling', description: `Win with ${LAST_CALL_HP} or less HP`, reward: 500, icon: 'Swords', locked: 'Never been that desperate.' },
-  { id: 'level_10', name: 'Sunk Cost', description: 'Reach level 10', reward: 500, icon: 'ChevronsUp', locked: 'Still free to walk away.' },
+  { id: 'level_10', name: 'Third Date Energy', description: 'Reach level 10', reward: 500, icon: 'ChevronsUp', locked: 'Still free to walk away.' },
   { id: 'level_25', name: 'Too Old for This Shit', description: 'Reach level 25', reward: 1500, icon: 'Medal', locked: 'Nobody lives that long.' },
   { id: 'daily_7', name: 'Seven-Night Stand', description: 'Log in 7 days in a row', reward: 700, icon: 'CalendarCheck', locked: 'Commitment issues.' },
 ];

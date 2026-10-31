@@ -379,7 +379,7 @@ test.describe('challenge claims', () => {
   // to the top-left corner, clear of every control, and lets taps through.
   for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 800 }, { width: 320, height: 640 }]) {
     test(`a claim pays out in place, and the toast that follows keeps off the controls at ${viewport.width}`, async ({ page }) => {
-      // A day whose four include the one XP challenge ("Learning Experience") and no
+      // A day whose four include the one XP challenge ("Walk Of Shame Round Five") and no
       // other game-count challenge, as board.spec.js picks it.
       const day = [...Array(60).keys()]
         .map((i) => new Date(Date.UTC(2027, 0, 1 + i, 12)))
@@ -398,7 +398,7 @@ test.describe('challenge claims', () => {
       await expect(dialog).toBeVisible(SLOW);
       await dialog.getByRole('button', { name: 'Claim', exact: true }).click();
 
-      await expect(dialog.getByRole('status')).toHaveText('Learning Experience claimed: 100 XP.');
+      await expect(dialog.getByRole('status')).toHaveText('Walk Of Shame Round Five claimed: 100 XP.');
       await expect(dialog.locator('[data-claim-float]')).toHaveText('+100');
       // The float is decoration, and it goes.
       await expect(dialog.locator('[data-claim-float]')).toHaveCount(0, { timeout: 3000 });

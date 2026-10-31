@@ -16,7 +16,7 @@ import { partOfDay } from './barClock';
 export const KICKER_MAX = 24;
 export const DAILY_KICKERS = Object.freeze({
   early: Object.freeze(['You look like shit', 'Hungover but present', 'The sun has opinions']),
-  afternoon: Object.freeze(['Afternoon delight', 'Calling it lunch', 'Day drinking, defensible']),
+  afternoon: Object.freeze(['Lunch is a liquid', 'Calling it lunch', 'Day drinking, defensible']),
   happyHour: Object.freeze(['Standards half off', 'Two-for-one regrets', 'Someone’s already crying']),
   late: Object.freeze(['You said one drink', 'Don’t text your ex', 'Tequila was a choice']),
   lastCall: Object.freeze(['Last call. Last chances', 'Everyone’s a ten now']),
