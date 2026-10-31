@@ -10,6 +10,8 @@
 // Factored out of e2e/smoke.spec.js so e2e/a11y.spec.js (and any future spec)
 // can reuse the exact same boot without duplicating it or drifting from it.
 import { test as base, expect } from '@playwright/test';
+// The door's storage contract, from the same pure module the app reads it with.
+import { DOOR_KEY, doorRecord } from '../../src/lib/door.js';
 
 export const REF = 'testproject'; // first host label of VITE_SUPABASE_URL
 
@@ -43,7 +45,30 @@ export const SLOW = { timeout: 30_000 };
 
 // `test` extended with the same auto-collected page-error fixture the smoke
 // suite asserts against, so any spec importing this can reuse it too.
+//
+// And with the door. A device that has never answered the adults-only door
+// (src/components/TheDoor.jsx) sees nothing else, so every spec's context is
+// seeded with a pass before any page loads (a context-level init script: it
+// reaches the specs that boot themselves, and the pages they open, which
+// bootToMainMenu alone would not). It is written only where there is no
+// record yet, so an answer the app has stored since is never overwritten by a
+// reload. e2e/door.spec.js turns it off with `test.use({ doorPassed: false })`
+// to meet the door as a new device does. Contexts a spec makes for itself
+// with browser.newContext() are not seeded: they are new devices.
 export const test = base.extend({
+  doorPassed: [true, { option: true }],
+  context: async ({ context, doorPassed }, use) => {
+    if (doorPassed) {
+      await context.addInitScript(([key, value]) => {
+        try {
+          if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+        } catch {
+          // No storage to write to (about:blank, blocked): the page is not one that reads it.
+        }
+      }, [DOOR_KEY, doorRecord('pass', 0)]);
+    }
+    await use(context);
+  },
   pageErrors: [
     async ({ page }, use) => {
       const errors = [];
@@ -54,10 +79,9 @@ export const test = base.extend({
   ],
 });
 
-// Stubs the fake Supabase project + analytics, seeds the fake
-// auth session and a deterministic game store, then boots the app and waits
-// for the main menu. Call from a `test.beforeEach`.
-export async function bootToMainMenu(page) {
+// Stubs every request to the fake Supabase project (answering as a signed-in
+// player's backend would) and aborts PostHog's.
+export async function stubSupabase(page) {
   await page.route('**testproject.supabase.co/**', (route) => {
     const url = route.request().url();
     if (url.includes('/auth/v1/user')) return route.fulfill({ json: SESSION.user });
@@ -67,9 +91,12 @@ export async function bootToMainMenu(page) {
     return route.fulfill({ json: {} });
   });
   await page.route('https://*.posthog.com/**', (r) => r.abort());
+}
 
-  // lastLoginDate=today and tutorialCompleted=true suppress the first-run
-  // Daily Rewards / Tutorial modals so tests land on the main menu.
+// Seeds the fake auth session and a deterministic game store for the next
+// load. lastLoginDate=today and tutorialCompleted=true suppress the first-run
+// Daily Rewards / Tutorial modals so tests land on the main menu.
+export async function seedSignedIn(page) {
   await page.addInitScript(
     ([authKey, session]) => {
       localStorage.setItem(authKey, JSON.stringify(session));
@@ -89,6 +116,14 @@ export async function bootToMainMenu(page) {
     },
     [`sb-${REF}-auth-token`, SESSION]
   );
+}
+
+// Stubs the fake Supabase project + analytics, seeds the fake
+// auth session and a deterministic game store, then boots the app and waits
+// for the main menu. Call from a `test.beforeEach`.
+export async function bootToMainMenu(page) {
+  await stubSupabase(page);
+  await seedSignedIn(page);
 
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);

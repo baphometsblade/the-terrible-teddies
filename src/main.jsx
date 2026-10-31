@@ -5,9 +5,9 @@ import App from './App.jsx'
 import '@fontsource/baloo-2/latin-600.css'
 import '@fontsource/baloo-2/latin-800.css'
 import './index.css'
-import { initializePostHog } from './utils/analytics.js'
 import { useGameStore } from './stores/gameStore'
 import ErrorBoundary from './components/ErrorBoundary'
+import DoorGate from './components/DoorGate'
 import { SupabaseProvider } from './integrations/supabase/auth'
 
 // Honors BOTH the OS "reduce motion" preference and the in-game Animations
@@ -37,8 +37,9 @@ function MotionPreference({ children }) {
 }
 
 try {
-  initializePostHog();
-
+  // Analytics start in the door (DoorGate), once a device has been let in: a
+  // player under 18 never loads the SDK. They used to start here, before
+  // anything was drawn.
   const root = ReactDOM.createRoot(document.getElementById('root'));
 
   root.render(
@@ -50,10 +51,17 @@ try {
               anywhere — navigation is the `currentScreen` state in App — and
               no useQuery either, so the query client existed only so auth.jsx
               could invalidate a key nothing had ever registered. Two runtime
-              dependencies on the boot path, doing nothing. */}
-          <SupabaseProvider>
-            <App />
-          </SupabaseProvider>
+              dependencies on the boot path, doing nothing.
+
+              The door gates all of it, the password-reset landing included
+              (see DoorGate). For a device that has been let in it renders
+              its children and nothing else, so what follows is the game as
+              it always was. */}
+          <DoorGate>
+            <SupabaseProvider>
+              <App />
+            </SupabaseProvider>
+          </DoorGate>
         </MotionPreference>
       </ErrorBoundary>
     </React.StrictMode>
