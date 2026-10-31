@@ -138,6 +138,41 @@ describe('the contrast the block\'s comment records', () => {
   });
 });
 
+// axe cannot judge text on the steel either: the plate is a gradient, which it
+// reports as "needs review" and never as a failure (tried: the small print
+// set in plush-400, 3:1 on the plate, passed the a11y run). So the door's text
+// colours are held here, against the plate's lightest stop.
+describe('the text on the door\'s steel', () => {
+  const door = readFileSync(resolve(root, 'src/components/TheDoor.jsx'), 'utf8');
+  // The Tailwind text colours the door uses, resolved: the game's own palettes
+  // from the config, red and white from Tailwind's.
+  const PALETTE = { white: '#ffffff', 'red-200': '#fecaca', 'red-300': '#fca5a5' };
+  const named = (name) => {
+    const m = /^(plush|brass|night)-(\d+)$/.exec(name);
+    return m ? colors[m[1]][m[2]] : PALETTE[name];
+  };
+  // The scene is everything above the declined screen, which is on the night.
+  const scene = door.slice(door.indexOf('const BirthdayQuestion'), door.indexOf('const TheDoor = '));
+  const used = [...new Set([...scene.matchAll(/(?<![\w:-])text-(white|(?:plush|red|brass)-\d+)(?![\w-])/g)].map((m) => m[1]))];
+
+  it('finds the colours the door sets its text in (the extraction still matches)', () => {
+    expect(used).toEqual(expect.arrayContaining(['white', 'plush-100', 'plush-200', 'red-200']));
+  });
+
+  it.each(used)('text-%s is 4.5:1 or better on the plate\'s lightest stop', (name) => {
+    expect(named(name), `${name} is a colour this test knows`).toBeTruthy();
+    expect(ratio(rgb(named(name)), STEEL)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // The field's placeholder is on the well it is set in, not on the plate.
+  it('keeps the placeholder 4.5:1 or better on the field\'s well', () => {
+    const alpha = Number(/bg-night-950\/(\d+)/.exec(door)[1]) / 100;
+    const well = over(NIGHT_950, STEEL, alpha);
+    const placeholder = /placeholder:text-(plush-\d+)/.exec(door)[1];
+    expect(ratio(rgb(named(placeholder)), well)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
 // The things the project's rules ask of every material, held for these four.
 describe('the materials follow the rules', () => {
   const code = stripComments(materials);
