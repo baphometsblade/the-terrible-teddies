@@ -1349,12 +1349,14 @@ test.describe('last call', () => {
     // line of his own after it.
     const entries = page.locator('[role="log"] > div');
     await expect(entries.filter({ hasText: /^Last call\./ })).toHaveText(`Last call. House lights up — you're down to ${hp} HP.`);
-    const spoken = (await entries.allTextContents()).filter((text) => QUIPS.lastCall.some((line) => text === `\u{1F9F8} Chuck: "${line}"`));
-    expect(spoken, 'Chuck says a lastCall line').toHaveLength(1);
     // The banner is the turn banner's place, and aria-hidden.
     const banner = page.locator('[data-banner="last-call"]');
     await expect(banner).toHaveText('Last call');
     expect(await banner.evaluate((el) => Boolean(el.closest('[aria-hidden="true"]')))).toBe(true);
+    // Chuck waits for the banner to clear (it sits where his bubble does), so his
+    // line follows the log's by about 1.3 s: poll for it instead of reading once.
+    const lastCallSpoken = async () => (await entries.allTextContents()).filter((text) => QUIPS.lastCall.some((line) => text === `\u{1F9F8} Chuck: "${line}"`));
+    await expect.poll(lastCallSpoken, { message: 'Chuck says a lastCall line', timeout: 5000 }).toHaveLength(1);
 
     // The room and the lamp over the felt are lit, under the content, and the
     // felt is the size it was.
