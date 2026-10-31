@@ -311,7 +311,7 @@ describe('GameBoard result panel', () => {
 // the player (who does nothing) goes down a round at a time: with an attack of
 // 5, 30, 30, 25, 20, 15, 10, 5 and out. The timers are faked so a round is
 // instant; the board is the real one, under StrictMode, with the real store.
-describe('GameBoard last call', () => {
+describe('GameBoard last call', { timeout: 60_000 }, () => {
   // Chuck's whole crew for the next deal: one hitter with this attack.
   const facing = (attack) => {
     fixedCrew.cards = [{
@@ -450,7 +450,41 @@ describe('GameBoard last call', () => {
     expect(lit()).toBe(true);
     expect(seen).toHaveLength(2);
     watcher.disconnect();
-  }, 60_000);
+  });
+
+  // Chuck's side of it: he starts on 6 behind one pushover, and the player's
+  // first swing tramples him into the range. The log names Chuck, the room
+  // lights, and he bluffs from his own pool rather than gloating. The swing
+  // is made the instant the player's turn opens, while its "Your turn" banner
+  // is still up, so last call has to wait for that banner and not sit on it.
+  it('also fires when Chuck is the one down, waits for a turn banner that is up, and he bluffs', async () => {
+    fixedCrew.cards = [{
+      id: 998, name: 'Test Pushover', attack: 0, defense: 1, type: 'action', cost: 1,
+      ability: 'none', rarity: 'common', instanceId: 'o-998-0',
+    }];
+    fixedCrew.opponentHp = 6;
+    useGameStore.setState({ currentDeck: [4, 4, 4, 4, 4, 4] });
+    await startGame();
+    await act(async () => container.querySelector('[aria-label="Play Bar-Fight Barry"]').click());
+    await act(async () => button('End Turn').click());
+    await advanceUntil(() => !button('End Turn'));
+    await advanceUntil(() => button('End Turn'));
+    expect(bannerKind(), 'the swing lands inside "Your turn"').toBe('turn');
+    await act(async () => container.querySelector('[aria-label="Select Bar-Fight Barry to attack"]').click());
+    await act(async () => container.querySelector('[data-field="opponent"]').click());
+
+    expect(lit()).toBe(true);
+    const lines = lastCallLines();
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(/^Last call\. House lights up — Chuck's down to [1-5] HP\.$/);
+    expect(bannerKind(), 'the turn banner is not cut short').toBe('turn');
+    await advance(1400);
+    expect(bannerKind(), 'last call follows it').toBe('last-call');
+    const said = logLines().find((line) => QUIPS.lastCallChuckDown.some((q) => line === `🧸 Chuck: "${q}"`));
+    expect(said, 'Chuck bluffs from his own pool').toBeTruthy();
+    expect(logLines().some((line) => QUIPS.lastCall.some((q) => line === `🧸 Chuck: "${q}"`))).toBe(false);
+    fixedCrew.opponentHp = null;
+  });
 
   it('does not fire for a side that is down to nothing: a concede is not a last call', async () => {
     await renderBoard({ onBackToMenu: () => {} });
@@ -462,8 +496,6 @@ describe('GameBoard last call', () => {
   });
 });
 
-// Between midnight and five in the morning, by the player's own clock, Chuck
-// opens with his late line. The hour is read once, at the deal.
 // A win draws the same Tab as a loss: Chuck is left with one HP and one
 // pushover of a creature, so the player's first swing kills it and tramples
 // into his face for the win.
@@ -515,6 +547,8 @@ describe('GameBoard victory', () => {
   });
 });
 
+// Between midnight and five in the morning, by the player's own clock, Chuck
+// opens with his late line. The hour is read once, at the deal.
 describe('GameBoard opening line', () => {
   const opener = () => {
     const line = [...container.querySelectorAll('[role="log"] > div')]

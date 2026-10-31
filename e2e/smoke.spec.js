@@ -939,7 +939,9 @@ test("at 320px a quip shows whole on the centre line, and Chuck's are logged", a
   const pill = page.locator('[data-speech="opponent"]:visible');
   await expect(pill).toHaveCount(1, SLOW);
   const said = (await pill.textContent()).replace('🧸', '').trim();
-  expect(QUIPS.gameStart).toContain(said);
+  // The opener follows the player's clock: between midnight and five Chuck
+  // opens from the late pool, so the suite passes at any hour.
+  expect([...QUIPS.gameStart, ...QUIPS.gameStartLate]).toContain(said);
   await expect(page.locator('[role="log"][aria-live="polite"] > *')
     .filter({ hasText: `🧸 Chuck: "${said}"` })).toHaveCount(1);
 

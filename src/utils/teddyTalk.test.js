@@ -39,14 +39,15 @@ describe('teddyTalk', () => {
 
 // The two pools the after-dark pass adds. Both are card-agnostic (they never
 // follow a card's name), so they carry no more restriction than gameStart.
-describe('lastCall and gameStartLate', () => {
+describe('lastCall, lastCallChuckDown and gameStartLate', () => {
   it('have enough lines to rotate without a pattern', () => {
     expect(QUIPS.lastCall.length).toBeGreaterThanOrEqual(8);
+    expect(QUIPS.lastCallChuckDown.length).toBeGreaterThanOrEqual(6);
     expect(QUIPS.gameStartLate.length).toBeGreaterThanOrEqual(4);
   });
 
   it('are picked from their own pool, and never repeat back to back', () => {
-    for (const pool of ['lastCall', 'gameStartLate']) {
+    for (const pool of ['lastCall', 'lastCallChuckDown', 'gameStartLate']) {
       let last = pickQuip(pool);
       expect(QUIPS[pool]).toContain(last);
       for (let i = 0; i < 40; i++) {
@@ -70,7 +71,7 @@ describe('lastCall and gameStartLate', () => {
         expect(line.length, `${pool}: "${line}"`).toBeLessThanOrEqual(64);
       }
     }
-    for (const pool of ['lastCall', 'gameStartLate']) {
+    for (const pool of ['lastCall', 'lastCallChuckDown', 'gameStartLate']) {
       for (const line of QUIPS[pool]) {
         expect(line.length, `${pool}: "${line}"`).toBeLessThanOrEqual(60);
       }
@@ -123,13 +124,16 @@ describe('startPoolFor', () => {
 // no such limit, and nothing here scans for any other kind of word.
 describe('the card-attached pools are never sexual', () => {
   const CARD_ATTACHED = ['oppPlays', 'oppKills', 'oppLosesCreature'];
+  // Stems, not whole words: a plural or an -ing form ("boners", "sexting",
+  // "hookups") is the same word, and wave B writes in exactly those forms. The
+  // lookaheads keep the false friends (cocktail, sextant, cumin, Dickens) out.
+  const SEXUAL = /\b(?:sex(?!tant|tet|ton|ism)|naked|nude|horny|arous|boner|erection|orgasm|cum(?!in|ulus|ber|quat)|dick(?!ens|ering)|cock(?!tail|pit|roach|ney|eyed)|pussy|pussies|tits?\b|titties|boob|nipple|kink|fetish|foreplay|hook ?up|booty|strip(?:pers?|ped|ping)?\b|blowjob|handjob|lap dance|spank|grope|fondl|molest|thrust|moan|bondage|dildo|slut|whore)/i;
   const SEXUAL_WORDS = [
     'sex', 'sexy', 'sexual', 'naked', 'nude', 'horny', 'aroused', 'boner', 'erection', 'orgasm',
     'cum', 'dick', 'cock', 'pussy', 'tits', 'boobs', 'kinky', 'fetish', 'foreplay', 'hookup',
     'booty', 'stripper', 'blowjob', 'handjob', 'lap dance',
   ];
-  const SEXUAL = new RegExp(`\\b(${SEXUAL_WORDS.join('|')})\\b`, 'i');
-  const sexualWordIn = (line) => line.match(SEXUAL)?.[1] ?? null;
+  const sexualWordIn = (line) => line.match(SEXUAL)?.[0] ?? null;
 
   it('has all three pools, so a rename cannot take them out from under the check', () => {
     for (const pool of CARD_ATTACHED) {
@@ -148,10 +152,23 @@ describe('the card-attached pools are never sexual', () => {
 
   // The check must be able to fail: without this, a broken pattern would pass
   // every line and the guard above would guard nothing.
-  it('catches each word on the list, whole words only', () => {
+  it('catches each word on the list, and its plural, and the -ing forms spelled out', () => {
     for (const word of SEXUAL_WORDS) {
-      expect(sexualWordIn(`Chuck says ${word.toUpperCase()}, loudly.`), word).toBe(word.toUpperCase());
+      for (const form of [word, word.endsWith('s') ? word : `${word}s`]) {
+        expect(sexualWordIn(`Chuck says ${form.toUpperCase()}, loudly.`), form).not.toBeNull();
+      }
     }
-    expect(sexualWordIn('A cocktail of sextants and cumin.')).toBeNull();
+    for (const line of [
+      'Dicks out for Chuck.', 'Two cocks walk into a bar.', 'The strippers are leaving.',
+      'Hookups ruin everything.', 'Sexting is a crime.', 'Nudes at dawn.', 'Cumming soon.',
+      'Chuck is spanking this one.', 'Time to grope the competition.', 'Fetishes galore',
+    ]) expect(sexualWordIn(line), line).not.toBeNull();
+  });
+
+  it('leaves the false friends alone', () => {
+    for (const line of [
+      'A cocktail of sextants and cumin.', 'Dickens would approve.', 'Brass knuckles and a glass jaw.',
+      'Sussex, cockpit, cucumber.',
+    ]) expect(sexualWordIn(line), line).toBeNull();
   });
 });

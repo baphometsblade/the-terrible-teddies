@@ -6,6 +6,8 @@ import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
 import { getDailyChallenges } from '../src/stores/challenges.js';
 import { getCurrentSeason } from '../src/utils/season.js';
 import { QUIPS } from '../src/utils/teddyTalk.js';
+import { RESULT_TITLES, RESULT_SUBLINES } from '../src/utils/resultLines.js';
+import { RECEIPT_FOOTERS } from '../src/lib/houseLines.js';
 
 // axe against what this spec adds that the a11y spec never opens: the result
 // panel's level-up beat and the card preview. Sampled once everything has
@@ -1143,33 +1145,27 @@ test.describe('the Tab', () => {
     await bootWith(page);
     const panel = await concedeToTab(page);
     const paper = panel.locator('.receipt');
-    const feed = panel.locator('[data-bar-tab]');
-    const css = await paper.evaluate((el) => {
-      const cs = getComputedStyle(el);
-      return { name: cs.animationName, duration: cs.animationDuration, timing: cs.animationTimingFunction };
-    });
-    expect(css).toEqual({ name: 'receipt-print', duration: '0.9s', timing: 'steps(14)' });
-    // Sampled a frame at a time from here to the end of the print: it moves
-    // (a transform, on the compositor), ends at rest, and the slot it prints
-    // in is the same height throughout, so nothing below it jumps.
-    const frames = await feed.evaluate((slot) => new Promise((resolve) => {
-      const sheet = slot.querySelector('.receipt');
-      const seen = [];
-      const stop = performance.now() + 1300;
-      const tick = () => {
-        seen.push({ height: slot.getBoundingClientRect().height, transform: getComputedStyle(sheet).transform });
-        if (performance.now() < stop) requestAnimationFrame(tick); else resolve(seen);
-      };
-      tick();
-    }));
-    expect(new Set(frames.map((f) => f.height)).size, 'the slot changed height while it printed').toBe(1);
-    expect(frames[0].height).toBeGreaterThan(200);
+    const slot = panel.locator('[data-bar-tab]');
+    // Asked of the browser's own animation list, not raced frame by frame: the
+    // paper runs receipt-print for 900 ms in 14 steps, and comes to rest.
+    const timing = await paper.evaluate((el) => el.getAnimations()
+      .filter((a) => a.animationName === 'receipt-print')
+      .map((a) => a.effect.getTiming().duration));
+    expect(timing).toEqual([900]);
+    // (The step count lives on the animation's timing function, not its effect.)
+    expect(await paper.evaluate((el) => getComputedStyle(el).animationTimingFunction)).toBe('steps(14)');
+    // The slot is laid out at its full height from the first frame (layout
+    // height, not the bounding box: the panel's own entrance scales it), so
+    // nothing below it jumps while the paper prints.
+    const height = () => slot.evaluate((el) => el.offsetHeight);
+    const first = await height();
+    expect(first).toBeGreaterThan(200);
+    await paper.evaluate((el) => Promise.all(el.getAnimations()
+      .filter((a) => a.animationName === 'receipt-print').map((a) => a.finished)));
+    expect(await height(), 'the slot changed height while it printed').toBe(first);
     // (At rest it holds the last keyframe, an identity matrix, rather than none.)
-    const atRest = (transform) => transform === 'none' || transform === 'matrix(1, 0, 0, 1, 0, 0)';
-    expect(frames.some((f) => !atRest(f.transform)), 'it never moved').toBe(true);
-    expect(atRest(frames[frames.length - 1].transform), 'it did not come to rest').toBe(true);
-    // The steps: a printer's chatter, not a slide (14 distinct places at most).
-    expect(new Set(frames.map((f) => f.transform)).size).toBeLessThanOrEqual(15);
+    const transform = await paper.evaluate((el) => getComputedStyle(el).transform);
+    expect(['none', 'matrix(1, 0, 0, 1, 0, 0)'], 'it did not come to rest').toContain(transform);
   });
 
   for (const how of [
@@ -1200,7 +1196,7 @@ test.describe('the Tab', () => {
     })));
     for (const row of rows) expect(row.height, `${row.label} wraps`).toBeLessThanOrEqual(24);
     const footer = panel.locator('[data-bar-tab] p').last();
-    await footer.evaluate((el) => { el.textContent = 'Thank you for your business. Not you, Chuck.'; });
+    await footer.evaluate((el) => { el.textContent = 'Not valid as proof you were here. Or sober.'; });
     const lines = await footer.evaluate((el) => Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight)));
     expect(lines, 'a 44-character footer needs more than two receipt lines at 320px').toBeLessThanOrEqual(2);
     // Nothing on the paper runs past it.
@@ -1212,6 +1208,41 @@ test.describe('the Tab', () => {
         .map((r) => Math.max(0, box.left - r.left, r.right - box.right));
     });
     expect(Math.max(0, ...spill), 'something on the receipt runs past the paper').toBeLessThanOrEqual(1);
+  });
+
+  // Every string the result tables hold is set into the real slot it will be
+  // printed in, at the narrowest phone, so the copy deck cannot ship a headline
+  // that wraps to a third line, a word wider than the panel, or a footer that
+  // pushes Play Again off a panel that already scrolls. Character caps in the
+  // unit tests are only the coarse guard.
+  test('every headline, line and footer the tables hold fits its slot at 320px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await bootWith(page);
+    const panel = await concedeToTab(page);
+    const slots = {
+      title: panel.locator('h2'),
+      subline: panel.locator('h2 + p'),
+      footer: panel.locator('[data-bar-tab] p').last(),
+    };
+    const lists = {
+      title: [...RESULT_TITLES.win, ...RESULT_TITLES.loss],
+      subline: [...RESULT_SUBLINES.win, ...RESULT_SUBLINES.loss],
+      footer: RECEIPT_FOOTERS,
+    };
+    for (const [slot, texts] of Object.entries(lists)) {
+      for (const text of texts) {
+        const m = await slots[slot].evaluate((el, t) => {
+          el.textContent = t;
+          const cs = getComputedStyle(el);
+          return {
+            lines: Math.round(el.getBoundingClientRect().height / parseFloat(cs.lineHeight)),
+            overflow: el.scrollWidth - el.clientWidth,
+          };
+        }, text);
+        expect(m.lines, `${slot} "${text}" runs to ${m.lines} lines`).toBeLessThanOrEqual(2);
+        expect(m.overflow, `${slot} "${text}" is wider than its slot`).toBeLessThanOrEqual(1);
+      }
+    }
   });
 
   test('has no axe violations printed in full: the level bar, a level-up, a tier and the shop nudge too', async ({ page }) => {

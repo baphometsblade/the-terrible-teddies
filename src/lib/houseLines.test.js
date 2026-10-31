@@ -29,14 +29,15 @@ describe('RECEIPT_FOOTERS', () => {
     }
   });
 
-  it('keeps the five lines the Tab opened with', () => {
-    expect(RECEIPT_FOOTERS).toEqual(expect.arrayContaining([
-      'Gratuity not included. Neither is dignity.',
-      'Tip your bartender. She saw everything.',
-      'Leave quietly. The neighbors have lawyers.',
-      'Last one out kicks Chuck.',
-      'Your server: nobody. Get it yourself.',
-    ]));
+  // The copy deck replaces the provisional footers, so nothing pins a
+  // particular one; what is pinned is that there is variety to rotate through
+  // and that the footer does not repeat the panel around it (Chuck is already
+  // on the result panel three times over, and "dignity" is the loss line's).
+  it('has enough footers to rotate, and leaves Chuck and dignity to the rest of the panel', () => {
+    expect(RECEIPT_FOOTERS.length).toBeGreaterThanOrEqual(8);
+    for (const line of RECEIPT_FOOTERS) {
+      expect(line, line).not.toMatch(/chuck|dignity/i);
+    }
   });
 
   // The footer sits under the coins the battle paid: it jokes about the night,

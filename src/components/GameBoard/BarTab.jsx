@@ -228,7 +228,7 @@ const BarTab = ({ rewards, footer }) => {
         <dl>
           <Row label={TAB_COPY.chuck} figureClassName="text-[15px] font-extrabold">
             <span aria-hidden="true">{n(chuckTab)}</span>
-            <span className="sr-only">{n(chuckTab)} damage, still open</span>
+            <span className="sr-only">{TAB_COPY.chuckSpoken(n(chuckTab))}</span>
           </Row>
         </dl>
         <p aria-hidden="true" className={`label-caps mt-0.5 text-right ${FADED}`}>{TAB_COPY.chuckStatus}</p>

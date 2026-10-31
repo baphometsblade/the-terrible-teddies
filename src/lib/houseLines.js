@@ -12,20 +12,21 @@ import { OPPONENT_NAME } from '@/utils/teddyTalk';
 // One rotating line at the foot of the receipt. At 320px a receipt line holds
 // about 32 characters of the receipt's type, so a footer runs to a second line
 // there; the test caps each so it never needs a third.
-// Plain jokes about the night, never about the player's wallet: the footer
+// Chuck and dignity stay out of the footers: the panel above already carries
+// him, and the lost-dignity joke is the result lines'. Plain jokes about the night, never about the player's wallet: the footer
 // sits right under the coins the battle paid.
 export const RECEIPT_FOOTERS = [
-  'Gratuity not included. Neither is dignity.',
+  'Tip the bartender. She heard the stall.',
   'Tip your bartender. She saw everything.',
   'Leave quietly. The neighbors have lawyers.',
-  'Last one out kicks Chuck.',
+  'Your Uber driver knows. He will not say.',
   'Your server: nobody. Get it yourself.',
-  'Walk of shame sold separately.',
+  'Hickeys sold separately. Regrets are free.',
   'Memories not guaranteed. Neither is the cab.',
   'Please do not text your ex from the table.',
   'Stains on this receipt are not our fault.',
   'Keep this receipt. Evidence is evidence.',
-  'Thank you for your business. Not you, Chuck.',
+  'Not valid as proof you were here. Or sober.',
   'Cards were harmed. Nobody is sorry.',
 ];
 
@@ -56,6 +57,7 @@ export const lastCallLog = (side, hp) =>
 // and a dotted leader between; "title" is decoration (aria-hidden) and
 // "header" is the receipt's header line, the name the result panel's rewards
 // have always had.
+const TAB_COPY_STATUS = 'STILL OPEN';
 export const TAB_COPY = {
   title: 'THE TAB',
   header: 'Battle Rewards',
@@ -66,5 +68,8 @@ export const TAB_COPY = {
   xp: 'XP',
   coins: 'Coins',
   chuck: `${OPPONENT_NAME.toUpperCase()}'S TAB`,
-  chuckStatus: 'STILL OPEN',
+  chuckStatus: TAB_COPY_STATUS,
+  // What a screen reader hears for Chuck's bill: built from the visible status
+  // so the two cannot drift apart.
+  chuckSpoken: (figure) => `${figure} damage, ${TAB_COPY_STATUS.toLowerCase()}`,
 };

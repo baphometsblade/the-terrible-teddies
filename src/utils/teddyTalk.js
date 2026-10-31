@@ -23,9 +23,9 @@ export const QUIPS = {
     "A booty call with fists, at this hour? My favorite kind.",
     "Sun's up soon. We'll both pretend this never happened.",
   ],
-  // The first time either side is down to LAST_CALL_HP (the house lights come
-  // up). Card-agnostic, and said whichever side is the one in trouble, so none
-  // of them states whose HP it is: they are Chuck's bluster either way.
+  // The first time the PLAYER is down to LAST_CALL_HP (the house lights come
+  // up): Chuck gloats. When it is Chuck who is down, he says a line from
+  // lastCallChuckDown instead. Card-agnostic, like gameStart.
   lastCall: [
     "Last call, sweetheart. Drink up.",
     "Lights up, goggles off. You were never that cute.",
@@ -40,6 +40,17 @@ export const QUIPS = {
     "Jukebox dead, lights up, someone crying in the bathroom. Me.",
     "Lights up. Start the walk of shame. I'll hold the door.",
     "Last call. Last chance to get lucky. Judging by you, no.",
+  ],
+  // The first time CHUCK is down to LAST_CALL_HP: he bluffs and sulks.
+  lastCallChuckDown: [
+    "Lights up. That's not fear, that's the lighting.",
+    "Don't look at me. I look like this every last call.",
+    "Bears have gone home with less. I have. Twice. Recently.",
+    "I'm bleeding fluff and I've still pulled better than you.",
+    "Go on, finish it. I've been finished by worse.",
+    "Lucky shot. You'd know. You've never had any other kind.",
+    "Fine. Take the bar. Take the stool. Leave me the flask.",
+    "Not done. Just warming up. Ask anyone I've left in a bed.",
   ],
   oppPlays: [
     "Say hello to my fluffy little friend.",

@@ -5,8 +5,9 @@ import { OPPONENT_NAME } from './teddyTalk';
 
 // What a headline and its line under it can run to in the result panel at
 // 320px: the headline is title-sized capitals, the line is body text, and the
-// panel has to leave Play Again within reach on a short phone, so neither may
-// run to a third line.
+// panel has to leave Play Again within reach on a short phone. These character
+// caps are coarse guards; e2e/board.spec.js sets every line into the real
+// panel at 320px and measures it.
 const TITLE_MAX = 32;
 const SUBLINE_MAX = 60;
 
@@ -16,11 +17,6 @@ describe('the result panel\'s lines', () => {
     expect(RESULT_TITLES.loss).toContain('ABSOLUTELY UNSTUFFED!');
     expect(RESULT_SUBLINES.win).toContain(`${OPPONENT_NAME} rage-quit into the toy chest.`);
     expect(RESULT_SUBLINES.loss).toContain(`${OPPONENT_NAME} is doing a victory lap. It's insufferable.`);
-  });
-
-  it('adds the two sub-lines the Tab opened with', () => {
-    expect(RESULT_SUBLINES.win).toContain('Chuck is crying in the walk-in cooler. Give him a minute.');
-    expect(RESULT_SUBLINES.loss).toContain("Chuck's buying a round to celebrate. On your tab.");
   });
 
   it('has a list for a win and a loss of each, none empty, none repeating itself', () => {

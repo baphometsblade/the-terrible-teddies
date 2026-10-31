@@ -12,6 +12,14 @@ const FELTS = {
   // wide one in the same browser (e2e/responsive.spec.js's sizes).
   '375x553': { width: 345, height: 327, pad: { top: 12, right: 8, bottom: 12, left: 8 }, gap: 12, centre: { top: 130, bottom: 196 }, zoom: 0.73 },
   '390x664': { width: 360, height: 325, pad: { top: 12, right: 8, bottom: 12, left: 8 }, gap: 12, centre: { top: 130, bottom: 196 }, zoom: 0.73 },
+  // The same phones with a touch screen: there the board does not hold the
+  // desktop 640px minimum, so the felt is far shorter and the rows sit at
+  // 0.45. (Measured with hasTouch and isMobile; the centre band is 66px, in
+  // the middle.) The shorter touch viewports (320x480, 360x500) are left out: their
+  // felt is too short for any centre band to be modelled from here, and
+  // e2e/board.spec.js is where a real board of that size is held.
+  'touch 375x553': { width: 345, height: 240, pad: { top: 12, right: 8, bottom: 12, left: 8 }, gap: 12, centre: { top: 87, bottom: 153 }, zoom: 0.45 },
+  'touch 320x568': { width: 290, height: 255, pad: { top: 12, right: 8, bottom: 12, left: 8 }, gap: 12, centre: { top: 95, bottom: 161 }, zoom: 0.48 },
   '390x844': { width: 360, height: 446, pad: { top: 12, right: 8, bottom: 12, left: 8 }, gap: 12, centre: { top: 190, bottom: 256 }, zoom: 1 },
   '768x1024': { width: 482, height: 658, pad: { top: 16, right: 16, bottom: 16, left: 16 }, gap: 12, centre: { top: 294, bottom: 364 }, zoom: 1 },
   '1024x768': { width: 722, height: 402, pad: { top: 16, right: 16, bottom: 16, left: 16 }, gap: 12, centre: { top: 166, bottom: 236 }, zoom: 0.95 },
@@ -154,6 +162,18 @@ describe('captionHeight', () => {
   // cards' own words into it at the three widths a caption is drawn at. A model
   // under any of them would reserve too little and let the caption run out of
   // its box; one far over wastes the card's room.
+  // Frozen with the words they were measured with, so a punched-up flavor line
+  // in the catalog (the copy deck rewrites them) cannot drift the heights and
+  // the words apart; e2e/board.spec.js holds the live cards to the real page.
+  const WORDS = {
+    'Sticky Mickey': { rules: "While it's on the field, its allies can't be targeted", flavor: "Nobody asks why he's sticky. He's not going anywhere, and neither is whoever's behind him." },
+    'Two-Beer Tina': { rules: 'Gains +1 attack each time it survives a hit, up to +3', flavor: "Two beers in and she's everyone's problem. Three beers in and she's unstoppable." },
+    'Bar-Top Baptism': { rules: '', flavor: 'Fully submerged in the good stuff. Born again, smells worse.' },
+    'Blackout Bjorn': { rules: 'Gains +1 attack each time it survives a hit, up to +3', flavor: 'Remembers nothing. Regrets everything. Hits like a truck.' },
+    'Shitstarter Ted': { rules: '', flavor: 'Every bar fight in this town starts with Ted.' },
+    'Mama Mauls': { rules: 'Enemies must attack this card first', flavor: 'Ask about her cubs. Go ahead. Ask.' },
+    'Minibar Raid': { rules: '', flavor: 'Tiny bottles. Tiny crimes. Tiny recovery.' },
+  };
   const MEASURED = [
     ['Sticky Mickey', 140, false, 172], ['Sticky Mickey', 140, true, 221], ['Sticky Mickey', 160, false, 172],
     ['Sticky Mickey', 160, true, 221], ['Sticky Mickey', 192, false, 140.5], ['Sticky Mickey', 192, true, 169.5],
@@ -168,8 +188,7 @@ describe('captionHeight', () => {
     ['Minibar Raid', 140, true, 110], ['Minibar Raid', 192, false, 46],
   ];
   it.each(MEASURED)('reserves at least what %s\'s caption takes at %ipx (keys %s: measured %f)', (name, width, keys, real) => {
-    const card = ALL_CARDS.find((c) => c.name === name);
-    const modelled = captionHeight(captionOf(card, keys), width);
+    const modelled = captionHeight({ ...WORDS[name], keys }, width);
     expect(modelled).toBeGreaterThanOrEqual(real);
     expect(modelled - real, 'the model reserves far more than the page uses').toBeLessThanOrEqual(50);
   });

@@ -1000,7 +1000,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setLastCall(true);
     addToBattleLog(lastCallLog(due.side, due.hp));
     raiseLastCallBanner();
-    speak('lastCall');
+    // Chuck gloats when the player is the one down, and bluffs when he is.
+    speak(due.side === 'opponent' ? 'lastCallChuckDown' : 'lastCall');
   }, [gameId, deckReady, gameOver, playerHealth, opponentHealth, addToBattleLog, raiseLastCallBanner, speak]);
 
   // While a battle is in play, notifications move off the turn controls (see
