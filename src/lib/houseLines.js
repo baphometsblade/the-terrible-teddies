@@ -160,7 +160,7 @@ export const BOARD_LINES = {
   ],
 };
 
-/** Fill a board line's `{name}` slots. A slot with no value stays as written. */
+/** Fill a board line's slots ({card}, {attacker}, {target}). A slot with no value stays as written. */
 export const fillLine = (template, values = {}) =>
   template.replace(/\{(\w+)\}/g, (whole, key) => (key in values ? String(values[key]) : whole));
 

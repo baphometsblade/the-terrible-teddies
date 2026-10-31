@@ -512,8 +512,11 @@ describe('the calendar\'s own changes', () => {
     get().syncSeason();
     get().syncPeriods();
   };
-  const day1 = new Date(2026, 8, 30, 20, 0);   // Wed 30 Sep: the last day of Season 2
-  const day2 = new Date(2026, 9, 1, 9, 0);     // Thu 1 Oct: Season 3, a new day, the same week
+  // Noon UTC, not a local time: the season is worked out in UTC and the day
+  // rollover in local time, and at noon UTC the two agree on the date in every
+  // timezone (a local 20:00 / 09:00 pair broke under Pacific/Kiritimati and LA).
+  const day1 = new Date(Date.UTC(2026, 8, 30, 12, 0));   // Wed 30 Sep: the last day of Season 2
+  const day2 = new Date(Date.UTC(2026, 9, 1, 12, 0));    // Thu 1 Oct: Season 3, a new day, the same week
 
   // Yesterday: this device in step with the account at rev 1, a day's
   // challenge counters on it, and the season stamped.
