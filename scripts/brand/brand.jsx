@@ -99,7 +99,7 @@ const OpenGraph = () => (
         <p className="mt-5 font-display text-[32px] font-semibold leading-snug text-plush-200">
           Stuffed animals. Unstuffed grudges.
         </p>
-        <p className="label-caps mt-6 !text-[16px] text-plush-300">A card battler · Bad bears · Worse decisions</p>
+        <p className="label-caps mt-6 !text-[16px] text-plush-300">18+ · Bad bears · Worse decisions</p>
       </div>
     </div>
   </div>

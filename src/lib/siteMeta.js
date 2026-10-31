@@ -11,7 +11,7 @@
 
 export const OG_IMAGE = { path: '/og-image.jpg', width: 1200, height: 630, type: 'image/jpeg' };
 export const OG_IMAGE_ALT =
-  "Three Terrible Teddies cards fanned beside the game's brass wordmark on a dark bar-room backdrop.";
+  "Three Terrible Teddies cards fanned beside the brass wordmark, the line “Stuffed animals. Unstuffed grudges.” and an 18+ label, on a dark bar-room backdrop.";
 
 /**
  * The site's origin (and base path, if any), without a trailing slash:

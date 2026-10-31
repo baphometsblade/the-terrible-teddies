@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Terrible Teddies - Card Battle Game",
+  "name": "Terrible Teddies - Bad Bears, Worse Decisions",
   "short_name": "Terrible Teddies",
-  "description": "Battle with naughty teddies in this addictive card game!",
+  "description": "An 18+ card battler for teddy bears with bad habits.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -39,19 +39,19 @@
     {
       "name": "Battle",
       "short_name": "Battle",
-      "description": "Start a new battle",
+      "description": "Pick a fight with Chuck",
       "url": "/?action=battle"
     },
     {
       "name": "Shop",
       "short_name": "Shop",
-      "description": "Open the shop",
+      "description": "Open the shop. It's by the restrooms.",
       "url": "/?action=shop"
     },
     {
       "name": "Daily Rewards",
       "short_name": "Rewards",
-      "description": "Claim daily rewards",
+      "description": "Because you keep coming back",
       "url": "/?action=rewards"
     }
   ]
