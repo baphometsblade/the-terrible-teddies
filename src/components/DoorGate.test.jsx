@@ -47,7 +47,15 @@ const render = (children = createElement('div', { 'data-testid': 'game' }, 'the 
   mounted.push({ host, root });
   return host;
 };
-const flush = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+// Lets the page settle: a tick for effects, then (when a door is being asked
+// for) until its chunk has arrived and the boot screen standing in for it is
+// gone. The chunk resolves through the module runner, which takes a variable
+// number of ticks, so waiting a fixed one was flaky.
+const flush = async () => {
+  await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+  const host = mounted.at(-1)?.host;
+  if (host) await vi.waitFor(() => expect(host.textContent).not.toContain('Loading'), { timeout: 3000 });
+};
 const press = (host, label) => act(() => {
   [...host.querySelectorAll('button')].find((b) => b.textContent === label).click();
 });
@@ -138,7 +146,7 @@ describe('a device with no answer', () => {
     vi.stubGlobal('Image', class { constructor() { images.push(this); } });
     render();
     await flush();
-    expect(door.imported).toBeGreaterThan(0);
+    await vi.waitFor(() => expect(door.imported).toBeGreaterThan(0));
     expect(images.map((i) => i.src)).toEqual(['/cards/56.webp']);
     expect(images[0].fetchPriority).toBe('high');
   });
