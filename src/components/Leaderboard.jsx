@@ -7,6 +7,7 @@ import { useDialog } from '@/hooks/useDialog';
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
+import { LEADERBOARD_COPY, youLine } from '@/lib/leaderboardLines';
 import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 
 // Trophies from a player's stats. The server computes the same thing
@@ -297,7 +298,7 @@ const toRow = (player, index) => {
   return {
     place: index + 1,
     rank: typeof player.rank === 'number' ? player.rank : index + 1,
-    name: player.username || 'Unknown Player',
+    name: player.username || LEADERBOARD_COPY.fallbackName,
     level,
     wins: player.wins || 0,
     experience: player.experience || 0,
@@ -478,7 +479,7 @@ const Leaderboard = ({ onClose }) => {
             {/* One line: at 320 the globe gives way, or "All time" wrapped. */}
             <p className="label-caps mt-1.5 flex items-center gap-1.5 whitespace-nowrap text-plush-300">
               <Globe aria-hidden="true" className="h-3.5 w-3.5 shrink-0 max-[359px]:hidden" strokeWidth={2.2} />
-              Global · All time
+              {LEADERBOARD_COPY.caption}
             </p>
           </div>
           <DialogClose label="Close leaderboard" onClick={onClose} />
@@ -504,6 +505,11 @@ const Leaderboard = ({ onClose }) => {
         <div className="relative px-4 pb-4 sm:px-6">
           <h3 className="label-caps mb-2 text-brass-300">Your Ranking</h3>
           <LeaderboardRow player={me} isPlayer={true} />
+          {/* The House's remark, after the row (the pinned h3 + div selector
+              stays intact). Nothing while the rank is unknown. */}
+          {youLine(me.rank, BOARD_SIZE) && (
+            <p data-you-line="" className="mt-1.5 text-xs text-plush-300">{youLine(me.rank, BOARD_SIZE)}</p>
+          )}
         </div>
 
         {/* Content. Focusable, because its rows hold no controls: without a
@@ -519,7 +525,7 @@ const Leaderboard = ({ onClose }) => {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 {/* Top Players */}
                 <div className="mb-3 flex items-center gap-3">
-                  <h3 id="leaderboard-top-players" className="label-caps shrink-0 text-plush-300">Top Players</h3>
+                  <h3 id="leaderboard-top-players" className="label-caps shrink-0 text-plush-300">{LEADERBOARD_COPY.top}</h3>
                   <span aria-hidden="true" className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
                 </div>
 
@@ -539,7 +545,7 @@ const Leaderboard = ({ onClose }) => {
                         <div className="absolute inset-0 rounded-full border-2 border-white/10 border-t-brass-300 motion-safe:animate-spin" />
                         <div className="absolute inset-0 grid place-items-center text-2xl">🧸</div>
                       </div>
-                      <p className="text-plush-200">Loading leaderboard...</p>
+                      <p className="text-plush-200">{LEADERBOARD_COPY.loading}</p>
                     </StatePanel>
                   )}
 
@@ -550,7 +556,7 @@ const Leaderboard = ({ onClose }) => {
                       <Medallion metal={RARITY_METAL.common} size="md" className="mb-4">
                         <Trophy className="h-6 w-6 text-plush-300" strokeWidth={1.8} />
                       </Medallion>
-                      <p className="text-plush-200">No players yet. Be the first!</p>
+                      <p className="text-plush-200">{LEADERBOARD_COPY.empty}</p>
                     </StatePanel>
                   )}
 
@@ -571,6 +577,8 @@ const Leaderboard = ({ onClose }) => {
                       <p className="font-display text-lg font-bold leading-tight text-red-300">Error loading leaderboard</p>
                       <p className="mt-1.5 max-w-sm break-words text-sm text-plush-300">{error}</p>
                     </div>
+                    {/* Outside the alert: what is announced stays the plain message. */}
+                    <p data-error-signoff="" className="mt-1 text-xs text-plush-300">{LEADERBOARD_COPY.errorSignoff}</p>
                     <button
                       type="button"
                       onClick={retry}

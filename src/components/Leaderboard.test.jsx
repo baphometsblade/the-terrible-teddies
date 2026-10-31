@@ -3,6 +3,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { LEADERBOARD_COPY, YOU_LINES } from '@/lib/leaderboardLines';
 
 // The backend. `rows`: the old leaderboard view (wins order, no rank).
 // `rankedRows`: leaderboard_trophies, or null where the migration has not
@@ -97,6 +98,18 @@ describe('with the server\'s rank (leaderboard_trophies and get_my_rank)', () =>
     const mine = host.querySelector('h3 + div');
     expect(mine.textContent).toContain('90trophies');
     expect(host.textContent).not.toContain(`${BOARD_SIZE}+`);
+  });
+
+  // The House's remark goes AFTER the Your Ranking row: the pinned `h3 + div`
+  // selector stays the heading's next element. It says nothing while the rank
+  // is unknown (an error leaves the dash).
+  it('puts the House line after the row, by rank bucket', async () => {
+    rankedRows = Array.from({ length: BOARD_SIZE }, (_, i) => ranked(i + 1));
+    rankAnswer = { data: [{ rank: 2, trophies: 300, username: 'Grizzly', wins: 30, experience: 450, best_win_streak: 0 }], error: null, status: 200 };
+    await open();
+    const row = host.querySelector('h3 + div');
+    expect(row.nextElementSibling.getAttribute('data-you-line')).toBe('');
+    expect(row.nextElementSibling.textContent).toBe(YOU_LINES.podium);
   });
 
   it('shows Your Ranking as the board records the player, not the local stats', async () => {
@@ -229,7 +242,7 @@ describe('the board\'s chrome', () => {
   it('names its one scope in a caption, with no control that does nothing', async () => {
     rows = [rival(1)];
     await open();
-    expect(host.textContent).toContain('Global · All time');
+    expect(host.textContent).toContain(LEADERBOARD_COPY.caption);
     expect(host.querySelectorAll('[aria-pressed]')).toHaveLength(0);
   });
 
