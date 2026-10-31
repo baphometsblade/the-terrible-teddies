@@ -192,11 +192,10 @@ describe('the after-dark deck', () => {
     }
   });
 
-  // The last-call lines read right whichever side is on the ropes, so Chuck's
-  // own pool, used when he is the one down, carries them as well.
-  it('says the side-agnostic last call lines when Chuck is the one down too', () => {
-    // The first 12 are the shipped gloats aimed at the player (they stay, and
-    // would not read right from a bear on the ropes); the deck's follow them.
-    for (const line of QUIPS.lastCall.slice(12)) expect(QUIPS.lastCallChuckDown).toContain(line);
+  // The two pools are opposite situations (Chuck gloating over a player at 5 HP,
+  // Chuck bluffing at 5 HP himself), so a line lives in one of them only: a
+  // sulk used as a gloat reads wrong, and the final review found 12 pasted copies.
+  it('keeps the gloats and the bluffs apart', () => {
+    for (const line of QUIPS.lastCall) expect(QUIPS.lastCallChuckDown, line).not.toContain(line);
   });
 });

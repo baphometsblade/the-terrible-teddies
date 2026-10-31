@@ -31,8 +31,8 @@ describe('the line under the player\'s own row', () => {
 });
 
 describe('the leaderboard copy', () => {
-  it('keeps the error sign-off in the house hyphen form and the caption to one line', () => {
-    expect(LEADERBOARD_COPY.errorSignoff).toBe('Not you. Probably. - Mgmt.');
+  it('signs the error off the way every other Mgmt note is signed, and keeps the caption to one line', () => {
+    expect(LEADERBOARD_COPY.errorSignoff).toBe('Not you. Probably. — Mgmt.');
     expect(LEADERBOARD_COPY.caption.length).toBeLessThanOrEqual(18);
     expect(LEADERBOARD_COPY.fallbackName.length).toBeLessThanOrEqual(20);
     for (const line of Object.values(LEADERBOARD_COPY)) expect(line).not.toMatch(/!/);

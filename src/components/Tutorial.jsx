@@ -12,7 +12,6 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { BrassCoin } from '@/components/ui/coin';
 import { DialogClose } from '@/components/ui/game-chrome';
-import { CONTENT_NOTICE } from '@/lib/contentNotice';
 
 // Presentation only — every `content` string is the copy as written, and
 // Tutorial.test.js reads it from this file.
@@ -36,7 +35,7 @@ import { CONTENT_NOTICE } from '@/lib/contentNotice';
 const TUTORIAL_STEPS = [
   {
     title: "Welcome to Terrible Teddies",
-    content: `The bears were regulars before the bar had a license, or a fire exit. Now they settle everything with cards, fists, and language you can't repeat at work. Try not to get banned on night one.\n\n(18+ — contains ${CONTENT_NOTICE}.)`,
+    content: `The bears were regulars before the bar had a license, or a fire exit. Now they settle everything with cards, fists, and language you can't repeat at work. Try not to get banned on night one.\n\n(You were carded at the door. Act like it.)`,
     mascot: true,
   },
   {

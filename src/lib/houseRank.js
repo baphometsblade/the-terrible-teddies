@@ -26,7 +26,7 @@ export const HOUSE_RANKS = Object.freeze([
   { min: 5, name: 'Known to Staff', promoted: 'Staff talk. Not kindly.', promotedLong: 'Staff have a name for you.' },
   { min: 7, name: 'Runs a Tab', promoted: 'A tab. Bold of them.', promotedLong: 'Credit, against everyone’s advice.' },
   { min: 9, name: 'Cut Off Once', promoted: 'Cut off once. Fair call.', promotedLong: 'The bartender enjoyed it.' },
-  { min: 11, name: 'Number in the Stall', promoted: 'The stall says call you.', promotedLong: 'The stool’s got your ass. So does the stall.' },
+  { min: 11, name: 'Number in the Stall', promoted: 'The stall says call you.', promotedLong: 'Your number’s on the stall. Not by you.' },
   { min: 13, name: 'Has a Key', promoted: 'Nobody gave you a key.', promotedLong: 'Nobody gave it to you. You have it.' },
   { min: 16, name: 'Mail Comes Here', promoted: 'Mail’s here. Warrants.', promotedLong: 'Mail comes here. Mostly warrants.' },
   { min: 25, name: 'Part of the Furniture', promoted: 'Comes with the lease.', promotedLong: 'People set their drinks on you.' },

@@ -21,8 +21,8 @@ describe('the content notice', () => {
     expect(CONTENT_NOTICE).not.toMatch(/[.!]$/);
   });
 
-  it('is imported by the sign-in screen and the tutorial', () => {
-    for (const file of ['src/components/Auth.jsx', 'src/components/Tutorial.jsx']) {
+  it('is imported by the sign-in screen and the door', () => {
+    for (const file of ['src/components/Auth.jsx', 'src/components/TheDoor.jsx']) {
       expect(readFileSync(join(process.cwd(), file), 'utf8'), file).toMatch(/lib\/contentNotice/);
     }
   });

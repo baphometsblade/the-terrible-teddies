@@ -17,22 +17,22 @@ import { OPPONENT_NAME } from '@/utils/teddyTalk';
 // sits right under the coins the battle paid.
 export const RECEIPT_FOOTERS = [
   'Tip the bartender. She heard the stall.',
-  'Tip your bartender. She saw everything.',
+  'Tip your bartender. She kept your shoe.',
   'Leave quietly. The neighbors have lawyers.',
-  'Your Uber driver knows. He will not say.',
-  'Your server: nobody. Get it yourself.',
+  'Your cab driver knows. He will not say.',
+  'Your server left in tears. We apologize.',
   'Hickeys sold separately. Regrets are free.',
   'Memories not guaranteed. Neither is the cab.',
   'Please do not text your ex from the table.',
   'Stains on this receipt are not our fault.',
   'Keep this receipt. Evidence is evidence.',
   'Not valid as proof you were here. Or sober.',
-  'Cards were harmed. Nobody is sorry.',
-  'Blood is not a tip. - Mgmt.',
-  'We saw everything. We said nothing. - Mgmt.',
-  'The mop bucket is not a throne. - Mgmt.',
-  'Please stop bleeding on the felt. - Mgmt.',
-  'Stuffing in the sink again. Really. - Mgmt.',
+  'Itemized for your lawyer. And your ex.',
+  'Blood is not a tip. — Mgmt.',
+  'We saw everything. We said nothing. — Mgmt.',
+  'The mop bucket is not a throne. — Mgmt.',
+  'Please stop bleeding on the felt. — Mgmt.',
+  'Stuffing in the sink again. Really. — Mgmt.',
 ];
 
 /**
@@ -136,7 +136,7 @@ export const BOARD_LINES = {
     `${OPPONENT_NAME} slammed down {card}`,
     `${OPPONENT_NAME} dragged in {card}`,
     `${OPPONENT_NAME} threw {card} on the felt`,
-    `${OPPONENT_NAME} pulled {card} out of his coat`,
+    `${OPPONENT_NAME} wheeled in {card}`,
     `${OPPONENT_NAME} sent in {card}. Nobody asked.`,
   ],
   // Chuck's creature hitting yours / your face. Only the verb is voiced.

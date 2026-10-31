@@ -27,7 +27,7 @@ export const DAILY_KICKERS = Object.freeze({
 // prize (a card day, a gem day), so none of them assumes something to spend.
 export const PAID_SUB_MAX = 40;
 export const DAILY_PAID_SUBS = Object.freeze([
-  'You earned it. Allegedly.',
+  'Earned it. Ish. Say nothing.',
   'Put it somewhere Chuck won’t look.',
   'Tell nobody where it came from.',
   'Same time tomorrow. Same mistakes.',

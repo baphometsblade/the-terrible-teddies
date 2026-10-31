@@ -381,7 +381,9 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
     expect(lastCallLines()).toEqual([lastCallLog('player', LAST_CALL_HP)]);
     expect(bannerKind()).toBe('last-call');
     expect(container.querySelector('[data-banner="last-call"]').textContent).toBe('Last call');
-    // Chuck says a line from his lastCall pool, after the log has said it.
+    // Chuck says a line from his lastCall pool, after the log has said it and
+    // after the banner has gone (it sits where his bubble does).
+    await advance(1400);
     const lines = logLines();
     const said = lines.find((line) => QUIPS.lastCall.some((q) => line === `🧸 Chuck: "${q}"`));
     expect(said, `Chuck's line is from the lastCall pool: ${lines.join(' | ')}`).toBeTruthy();
@@ -481,12 +483,11 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
     expect(bannerKind(), 'the turn banner is not cut short').toBe('turn');
     await advance(1400);
     expect(bannerKind(), 'last call follows it').toBe('last-call');
+    await advance(1400); // he waits for the last-call banner to clear
     const said = logLines().find((line) => QUIPS.lastCallChuckDown.some((q) => line === `🧸 Chuck: "${q}"`));
     expect(said, 'Chuck bluffs from his own pool').toBeTruthy();
-    // The deck's last-call lines read right for either side, so Chuck's own
-    // pool carries them too: nothing he says here is outside it.
-    // (the first 12 shipped gloats address the player and are not shared)
-    for (const q of QUIPS.lastCall.slice(12)) expect(QUIPS.lastCallChuckDown).toContain(q);
+    // A bluff is never one of the gloats (see teddyTalk.test.js).
+    for (const q of QUIPS.lastCall) expect(said, q).not.toBe(`🧸 Chuck: "${q}"`);
     fixedCrew.opponentHp = null;
   });
 

@@ -16,7 +16,7 @@ export const HERO_LINES = Object.freeze([
   'Same as last time?',
   'We were just talking about you',
   "We've seen you do worse",
-  "That's not ketchup. Sit",
+  "Avoid the sticky booth",
   "Whatever you heard, it's true",
   'Nobody judges. We take notes',
   'You smell like a bad decision',
@@ -38,7 +38,7 @@ export const TILE_LINES = Object.freeze({
   packs: 'Gambling, but cuter',
   deck: 'Assemble your goon squad',
   collection: 'Everyone you’ve ever pulled',
-  leaderboard: 'Who’s on top. Allegedly.',
+  leaderboard: 'Who’s on top. Ask their ex.',
 });
 
 // The streak line under the Battle button, by the running streak: one win, a

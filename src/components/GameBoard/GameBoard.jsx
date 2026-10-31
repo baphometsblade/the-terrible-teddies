@@ -1025,9 +1025,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setLastCall(true);
     addToBattleLog(lastCallLog(due.side, due.hp));
     raiseLastCallBanner();
-    // Chuck gloats when the player is the one down, and bluffs when he is.
-    speak(due.side === 'opponent' ? 'lastCallChuckDown' : 'lastCall');
-  }, [gameId, deckReady, gameOver, playerHealth, opponentHealth, addToBattleLog, raiseLastCallBanner, speak]);
+    // Chuck gloats when the player is the one down, and bluffs when he is. He
+    // waits for the banner to clear: it sits on the felt's centre line, where
+    // his bubble is, and covered half of what he said for a second.
+    const pool = due.side === 'opponent' ? 'lastCallChuckDown' : 'lastCall';
+    const hold = Math.max(0, lastCallBannerEndsRef.current - Date.now());
+    if (hold > 0) safeTimeout(() => speak(pool), hold);
+    else speak(pool);
+  }, [gameId, deckReady, gameOver, playerHealth, opponentHealth, addToBattleLog, raiseLastCallBanner, safeTimeout, speak]);
 
   // While a battle is in play, notifications move off the turn controls (see
   // index.css): in their usual corner they covered the controls on desktop

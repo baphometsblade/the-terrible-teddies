@@ -43,7 +43,7 @@ export const LEADERBOARD_COPY = Object.freeze({
   empty: 'Empty. Even Chuck went home, and he lives here.',
   // Under the server's raw message, never in place of it: a hedge, not a claim
   // about the cause, so it can never be wrong.
-  errorSignoff: 'Not you. Probably. - Mgmt.',
+  errorSignoff: 'Not you. Probably. — Mgmt.',
   // toRow()'s name for a row with no username (the server normally fills one).
   fallbackName: 'Name Withheld',
 });

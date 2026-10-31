@@ -133,7 +133,10 @@ const browserStorage = () => (typeof window !== 'undefined' ? window.localStorag
  * With storage blocked an answer cannot be kept, so it lives here, in memory,
  * for the page's life: a pass lets the player play this session, and a
  * decline holds until the page is closed, rather than the door asking again
- * on the next re-render. `getStorage` is a function because even reading
+ * on the next re-render. (A reload is a new page, so with storage blocked a
+ * declined device that reloads is asked again: the answer has nowhere to live.
+ * Known and accepted: this is a courtesy gate, and the store's rating is the
+ * real control.) `getStorage` is a function because even reading
  * `window.localStorage` can throw.
  *
  * Two rules keep a decline a decline:
