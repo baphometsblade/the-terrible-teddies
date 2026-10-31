@@ -10,6 +10,19 @@
 //
 // Local clock only. Nothing here is stored or sent.
 
+import { MGMT_SIGNOFF } from './mgmtNotes';
+
+// The notes that can be taped under the closed sign, signed by management
+// (NOTE_MAX characters at most, the sign-off included). The table's `note` is
+// the first; the menu picks one per visit (see pickLine in mgmtNotes.js).
+export const CLOSED_NOTES = Object.freeze([
+  `Cleaning. Don't ask.${MGMT_SIGNOFF}`,
+  `Come in, I guess.${MGMT_SIGNOFF}`,
+  `Private incident.${MGMT_SIGNOFF}`,
+  `Back at six. Maybe.${MGMT_SIGNOFF}`,
+  `Come in anyway.${MGMT_SIGNOFF}`,
+]);
+
 // A row is one part of the night:
 //   id        what the rest of the game calls it (partOfDay returns it)
 //   from      the first hour it holds (0-23)
@@ -21,6 +34,7 @@
 //   flicker   the one sign that idles with a slow flicker (last call, and
 //             only on the menu)
 //   note      a note taped under the sign, or null: 28 characters at most
+//             (the closed row's is the first of CLOSED_NOTES)
 //   subtitle  the Battle button's line: 20 characters at most. That is an upper
 //             bound on count, not a promise of fit: the column is pixels, and
 //             wide capitals fill it sooner. e2e/responsive.spec.js measures
@@ -28,35 +42,37 @@
 export const BAR_CLOCK = Object.freeze([
   {
     id: 'early', from: 6, until: 12,
-    sign: 'OPEN EARLY', tone: 'amber', lit: 'full', flicker: false, note: null,
-    subtitle: "Chuck's still here.",
+    sign: 'OPEN-ISH', tone: 'amber', lit: 'full', flicker: false, note: null,
+    subtitle: 'Kick Chuck awake',
   },
   {
     id: 'afternoon', from: 12, until: 16,
-    sign: 'OPEN', tone: 'amber', lit: 'full', flicker: false, note: null,
-    // The Battle button's original line, kept: nothing already shipped goes.
-    subtitle: 'Go make Chuck cry',
+    sign: 'BACK AT 4', tone: 'amber', lit: 'full', flicker: false, note: null,
+    subtitle: 'Chuck lost a shoe',
   },
   {
     id: 'happyHour', from: 16, until: 19,
     sign: 'HAPPY HOUR', tone: 'pink', lit: 'full', flicker: false, note: null,
-    subtitle: 'Happy hour. Ruin it.',
+    subtitle: "Chuck's buying?",
   },
   {
     id: 'late', from: 19, until: 1,
-    sign: 'OPEN LATE', tone: 'teal', lit: 'full', flicker: false, note: null,
-    subtitle: "Chuck's three deep.",
+    sign: 'KARAOKE', tone: 'teal', lit: 'full', flicker: false, note: null,
+    // The Battle button's original line, kept verbatim: nothing already
+    // shipped goes. It holds the busiest six hours of the night, and sets up
+    // 'Chuck is crying' at 1 a.m.
+    subtitle: 'Go make Chuck cry',
   },
   {
     id: 'lastCall', from: 1, until: 2,
     sign: 'LAST CALL', tone: 'pink', lit: 'full', flicker: true, note: null,
-    subtitle: 'Chuck never left.',
+    subtitle: 'Chuck is crying',
   },
   {
     id: 'closed', from: 2, until: 6,
     sign: 'CLOSED', tone: 'red', lit: 'half', flicker: false,
-    note: 'Come in anyway. — Mgmt.',
-    subtitle: 'Chuck never left.',
+    note: CLOSED_NOTES[0],
+    subtitle: 'Chuck never left',
   },
 ]);
 

@@ -1,5 +1,8 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { BAR_CLOCK, SIGN_MAX, NOTE_MAX, SUBTITLE_MAX, signFor, subtitleFor, partOfDay } from './barClock';
+import { BAR_CLOCK, CLOSED_NOTES, SIGN_MAX, NOTE_MAX, SUBTITLE_MAX, signFor, subtitleFor, partOfDay } from './barClock';
+import { MGMT_SIGNOFF } from './mgmtNotes';
+
+const row = (id) => BAR_CLOCK.find((r) => r.id === id);
 
 // A time on the player's own wall clock: local, because the sign follows the
 // hour the clock shows.
@@ -101,14 +104,16 @@ describe('the boundary hours', () => {
 });
 
 describe('signFor', () => {
+  // The expectations are read from the table, so the next rewrite of the
+  // lines moves one file; only the structure (tone, light, flicker) is pinned.
   it('answers with the sign for the hour', () => {
-    expect(signFor(at(10))).toEqual({ state: 'early', text: 'OPEN EARLY', tone: 'amber', lit: 'full', flicker: false, note: null });
-    expect(signFor(at(13))).toMatchObject({ state: 'afternoon', text: 'OPEN', tone: 'amber' });
-    expect(signFor(at(17))).toMatchObject({ state: 'happyHour', text: 'HAPPY HOUR', tone: 'pink' });
-    expect(signFor(at(22))).toMatchObject({ state: 'late', text: 'OPEN LATE', tone: 'teal' });
-    expect(signFor(at(1, 30))).toMatchObject({ state: 'lastCall', text: 'LAST CALL', tone: 'pink', flicker: true });
-    expect(signFor(at(3))).toMatchObject({ state: 'closed', text: 'CLOSED', tone: 'red', lit: 'half' });
-    expect(signFor(at(3)).note).toBe(BAR_CLOCK.find((r) => r.id === 'closed').note);
+    expect(signFor(at(10))).toEqual({ state: 'early', text: row('early').sign, tone: 'amber', lit: 'full', flicker: false, note: null });
+    expect(signFor(at(13))).toMatchObject({ state: 'afternoon', text: row('afternoon').sign, tone: 'amber' });
+    expect(signFor(at(17))).toMatchObject({ state: 'happyHour', text: row('happyHour').sign, tone: 'pink' });
+    expect(signFor(at(22))).toMatchObject({ state: 'late', text: row('late').sign, tone: 'teal' });
+    expect(signFor(at(1, 30))).toMatchObject({ state: 'lastCall', text: row('lastCall').sign, tone: 'pink', flicker: true });
+    expect(signFor(at(3))).toMatchObject({ state: 'closed', text: row('closed').sign, tone: 'red', lit: 'half' });
+    expect(signFor(at(3)).note).toBe(row('closed').note);
   });
 
   it('takes a Date or an epoch, and the clock when it is given nothing', () => {
@@ -118,7 +123,7 @@ describe('signFor', () => {
     try {
       vi.setSystemTime(at(1, 15));
       expect(signFor().state).toBe('lastCall');
-      expect(subtitleFor()).toBe('Chuck never left.');
+      expect(subtitleFor()).toBe(row('lastCall').subtitle);
       vi.setSystemTime(at(14));
       expect(signFor().state).toBe('afternoon');
     } finally {
@@ -126,29 +131,57 @@ describe('signFor', () => {
     }
   });
 
-  it('hands out its own copy, not the table\'s row', () => {
+  it("hands out its own copy, not the table's row", () => {
     const sign = signFor(at(3));
     sign.text = 'MUTATED';
-    expect(signFor(at(3)).text).toBe('CLOSED');
+    expect(signFor(at(3)).text).toBe(row('closed').sign);
   });
 });
 
 describe('subtitleFor', () => {
   it('follows the same clock as the sign', () => {
-    expect(subtitleFor(at(9))).toBe("Chuck's still here.");
-    expect(subtitleFor(at(14))).toBe("Go make Chuck cry");
-    expect(subtitleFor(at(17))).toBe('Happy hour. Ruin it.');
-    expect(subtitleFor(at(21))).toBe("Chuck's three deep.");
-    expect(subtitleFor(at(1))).toBe('Chuck never left.');
-    expect(subtitleFor(at(4))).toBe('Chuck never left.');
+    expect(subtitleFor(at(9))).toBe(row('early').subtitle);
+    expect(subtitleFor(at(14))).toBe(row('afternoon').subtitle);
+    expect(subtitleFor(at(17))).toBe(row('happyHour').subtitle);
+    expect(subtitleFor(at(21))).toBe(row('late').subtitle);
+    expect(subtitleFor(at(1))).toBe(row('lastCall').subtitle);
+    expect(subtitleFor(at(4))).toBe(row('closed').subtitle);
   });
 
-  it('is a line for every hour, within the button\'s width', () => {
+  // Nothing already shipped disappears: the Battle button's original line is
+  // the late row's, the busiest six hours of the evening.
+  it('keeps the shipped "Go make Chuck cry", for the evening', () => {
+    for (const hour of [19, 20, 21, 22, 23, 0]) expect(subtitleFor(at(hour))).toBe('Go make Chuck cry');
+  });
+
+  it("is a line for every hour, within the button's width", () => {
     for (let hour = 0; hour < 24; hour += 1) {
       const line = subtitleFor(at(hour));
       expect(line.length, `hour ${hour}`).toBeGreaterThan(0);
       expect(line.length, `hour ${hour}`).toBeLessThanOrEqual(SUBTITLE_MAX);
     }
+  });
+
+  // A single sentence carries no full stop (the deck measured 'Go make Chuck
+  // cry.' at 154px against a 152px column).
+  it('ends no single-sentence line with a full stop', () => {
+    for (const r of BAR_CLOCK) expect(r.subtitle, r.id).not.toMatch(/\.$/);
+  });
+});
+
+describe("the closed sign's notes", () => {
+  it('are signed by management, fit the slot and are all different', () => {
+    expect(CLOSED_NOTES.length).toBeGreaterThanOrEqual(5);
+    for (const n of CLOSED_NOTES) {
+      expect(n.endsWith(MGMT_SIGNOFF), n).toBe(true);
+      expect(n.length, n).toBeLessThanOrEqual(NOTE_MAX);
+      expect(n, n).toBe(n.trim());
+    }
+    expect(new Set(CLOSED_NOTES).size).toBe(CLOSED_NOTES.length);
+  });
+
+  it("start with the table's own note", () => {
+    expect(row('closed').note).toBe(CLOSED_NOTES[0]);
   });
 });
 

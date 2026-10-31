@@ -5,6 +5,9 @@ import { MotionGlobalConfig } from 'framer-motion';
 import { useGameStore } from '@/stores/gameStore';
 import { BATTLE_PASS_REWARDS, countReadyRewards } from '@/lib/battlePass';
 import { getCurrentSeason } from '@/utils/season';
+import { BAR_CLOCK, CLOSED_NOTES } from '@/lib/barClock';
+import { HERO_LINES, FOOTER_LINES, SHIPPED_FOOTER, TILE_LINES, streakLine, resetMenuVisits } from '@/lib/menuLines';
+import { houseRank } from '@/lib/houseRank';
 import MainMenu from './MainMenu';
 import BattlePass from './BattlePass';
 
@@ -28,6 +31,8 @@ const passChip = (host) => [...host.querySelectorAll('span')].find((el) => /^\d+
 
 beforeEach(() => {
   localStorage.clear();
+  // Every test is a cold launch unless it says otherwise.
+  resetMenuVisits();
   // A clean store, not resetProgress: a reset keeps gems, packs, the pass and
   // the claim ledgers, which would leak from one test into the next.
   useGameStore.setState(useGameStore.getInitialState(), true);
@@ -104,6 +109,7 @@ describe('the bar clock on the menu', () => {
   const battleLine = (host) => host.querySelector('#menu-battle-line')?.textContent;
   const sign = (host) => host.querySelector('.neon');
   const setHour = (hour, minute = 30) => vi.setSystemTime(new Date(2026, 9, 31, hour, minute));
+  const rowOf = (id) => BAR_CLOCK.find((r) => r.id === id);
   // Only Date is faked: the clock is read through it, and nothing else in the
   // menu's render should be touched.
   beforeEach(() => vi.useFakeTimers({ toFake: ['Date'] }));
@@ -116,14 +122,13 @@ describe('the bar clock on the menu', () => {
     act(() => { document.dispatchEvent(new Event('visibilitychange')); });
   };
 
-  const NIGHT = [
-    [10, 'OPEN EARLY', 'amber', "Chuck's still here."],
-    [13, 'OPEN', 'amber', "Go make Chuck cry"],
-    [17, 'HAPPY HOUR', 'pink', 'Happy hour. Ruin it.'],
-    [22, 'OPEN LATE', 'teal', "Chuck's three deep."],
-    [1, 'LAST CALL', 'pink', 'Chuck never left.'],
-    [3, 'CLOSED', 'red', 'Chuck never left.'],
-  ];
+  // Read from the table (one row per part of the night), at an hour inside
+  // each: the next rewrite of the lines moves one file, not this test.
+  const NIGHT = [[10, 'early'], [13, 'afternoon'], [17, 'happyHour'], [22, 'late'], [1, 'lastCall'], [3, 'closed']]
+    .map(([hour, id]) => {
+      const row = BAR_CLOCK.find((r) => r.id === id);
+      return [hour, row.sign, row.tone, row.subtitle];
+    });
   it.each(NIGHT)('at %i:30 the sign says %s in %s and the Battle line is "%s"', (hour, text, tone, line) => {
     setHour(hour);
     const host = render(MainMenu);
@@ -139,7 +144,8 @@ describe('the bar clock on the menu', () => {
     const closed = render(MainMenu);
     expect(sign(closed).hasAttribute('data-flicker')).toBe(false);
     expect(sign(closed).getAttribute('data-lit')).toBe('half');
-    expect(closed.querySelector('.note-taped').textContent).toBe('Come in anyway. — Mgmt.');
+    // One of the notes management leaves, picked once per visit.
+    expect(CLOSED_NOTES).toContain(closed.querySelector('.note-taped').textContent);
     for (const hour of [10, 13, 17, 22]) {
       setHour(hour);
       const host = render(MainMenu);
@@ -155,7 +161,7 @@ describe('the bar clock on the menu', () => {
     const host = render(MainMenu);
     const control = named(host);
     expect(control).toBeTruthy();
-    expect(document.getElementById(control.getAttribute('aria-describedby')).textContent).toBe("Chuck's three deep.");
+    expect(document.getElementById(control.getAttribute('aria-describedby')).textContent).toBe(rowOf('late').subtitle);
   });
 
   // The sign is a decoration: nothing about it is read or reached, it is only
@@ -185,19 +191,19 @@ describe('the bar clock on the menu', () => {
     const interval = vi.spyOn(globalThis, 'setInterval');
     setHour(17);
     const host = render(MainMenu);
-    expect(battleLine(host)).toBe('Happy hour. Ruin it.');
+    expect(battleLine(host)).toBe(rowOf('happyHour').subtitle);
 
     // Time moves on while the menu sits open: nothing is polling, so nothing
     // changes until the player looks again.
     setHour(22);
-    expect(battleLine(host)).toBe('Happy hour. Ruin it.');
-    expect(sign(host).textContent).toBe('HAPPY HOUR');
+    expect(battleLine(host)).toBe(rowOf('happyHour').subtitle);
+    expect(sign(host).textContent).toBe(rowOf('happyHour').sign);
 
     // Coming back to the tab re-reads it, and the sign is drawn afresh.
     const before = sign(host);
     visibility('visible');
-    expect(battleLine(host)).toBe("Chuck's three deep.");
-    expect(sign(host).textContent).toBe('OPEN LATE');
+    expect(battleLine(host)).toBe(rowOf('late').subtitle);
+    expect(sign(host).textContent).toBe(rowOf('late').sign);
     expect(sign(host)).not.toBe(before);
     expect(interval).not.toHaveBeenCalled();
   });
@@ -207,7 +213,7 @@ describe('the bar clock on the menu', () => {
     const host = render(MainMenu);
     setHour(22);
     visibility('hidden');
-    expect(battleLine(host)).toBe('Happy hour. Ruin it.');
+    expect(battleLine(host)).toBe(rowOf('happyHour').subtitle);
   });
 
   // Back in the same part of the night, nothing is replaced: the sign is not
@@ -219,7 +225,7 @@ describe('the bar clock on the menu', () => {
     setHour(18, 45);
     visibility('visible');
     expect(sign(host)).toBe(before);
-    expect(battleLine(host)).toBe('Happy hour. Ruin it.');
+    expect(battleLine(host)).toBe(rowOf('happyHour').subtitle);
   });
 
   it('stops listening when the menu goes', () => {
@@ -228,5 +234,64 @@ describe('the bar clock on the menu', () => {
     render(MainMenu);
     act(() => { mounted.pop().root.unmount(); });
     expect(remove.mock.calls.some(([type]) => type === 'visibilitychange')).toBe(true);
+  });
+});
+
+// What the menu says around the button (src/lib/menuLines.js).
+describe('the menu\'s lines', () => {
+  const hero = (host) => host.querySelector('h1 + p').textContent;
+  const footer = (host) => host.querySelector('p.text-plush-400').textContent;
+  const chip = (host) => host.querySelector('#menu-player-summary').lastElementChild.textContent;
+  const tileLine = (host, dest) => host.querySelector(`[data-dest="${dest}"] .text-plush-300:last-child`)?.textContent;
+  const streak = (host) => host.querySelector('.text-orange-300')?.textContent.trim() ?? null;
+
+  it('opens a cold launch on the brand line, and the first footer is the shipped one or a note', () => {
+    const host = render(MainMenu);
+    expect(hero(host)).toBe(HERO_LINES[0]);
+    expect(FOOTER_LINES).toContain(footer(host));
+  });
+
+  it('picks another hero line on a later visit, and never the same one twice running', () => {
+    render(MainMenu);
+    let last = null;
+    for (let i = 0; i < 12; i += 1) {
+      const line = hero(render(MainMenu));
+      expect(HERO_LINES.slice(1)).toContain(line);
+      expect(line).not.toBe(last);
+      last = line;
+    }
+  });
+
+  it('keeps the shipped footer while the closed sign\'s own note is up', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date(2026, 9, 31, 3, 30));
+      for (let i = 0; i < 6; i += 1) expect(footer(render(MainMenu))).toBe(SHIPPED_FOOTER);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('draws every destination\'s line from the table', () => {
+    useGameStore.setState({ animationsEnabled: false });
+    const host = render(MainMenu);
+    for (const [dest, line] of Object.entries(TILE_LINES)) expect(tileLine(host, dest), dest).toBe(line);
+  });
+
+  it('puts the house rank and the wins in the profile chip, and the login streak is gone', () => {
+    useGameStore.setState({ level: 12, totalWins: 17, consecutiveLogins: 9 });
+    expect(chip(render(MainMenu))).toBe(`${houseRank(12).name} · 17 wins`);
+    useGameStore.setState({ level: 1, totalWins: 1 });
+    expect(chip(render(MainMenu))).toBe(`${houseRank(1).name} · 1 win`);
+    useGameStore.setState({ level: 26, totalWins: 1234 });
+    expect(chip(render(MainMenu))).toBe(`${houseRank(26).name} · ${(1234).toLocaleString()} wins`);
+  });
+
+  it('says the streak in three tiers, with "N-win streak" from two up', () => {
+    useGameStore.setState({ currentWinStreak: 0 });
+    expect(streak(render(MainMenu))).toBeNull();
+    for (const n of [1, 2, 4, 5, 9]) {
+      useGameStore.setState({ currentWinStreak: n });
+      expect(streak(render(MainMenu))).toBe(streakLine(n));
+      if (n >= 2) expect(streakLine(n)).toContain(`${n}-win streak`);
+    }
   });
 });

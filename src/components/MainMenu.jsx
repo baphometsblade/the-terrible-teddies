@@ -13,7 +13,10 @@ import { MENU_PAD } from '@/lib/safeArea';
 import { RARITY_ORDER } from '@/lib/rarity';
 import { bestOwnedBorder } from '@/lib/cosmetics';
 import { countReadyRewards, passOf } from '@/lib/battlePass';
-import { signFor, subtitleFor, partOfDay } from '@/lib/barClock';
+import { signFor, subtitleFor, partOfDay, CLOSED_NOTES } from '@/lib/barClock';
+import { houseRank } from '@/lib/houseRank';
+import { pickLine } from '@/lib/mgmtNotes';
+import { TILE_LINES, streakLine, nextHeroLine, nextFooterLine, SHIPPED_FOOTER } from '@/lib/menuLines';
 import CardFan from './CardFan';
 import NeonSign from './NeonSign';
 
@@ -101,7 +104,7 @@ const MainMenu = ({
   const {
     playerName, level, xp, getXPForNextLevel,
     coins, gems, gemDebt, cardPacks, premiumPacks, legendaryPacks, unlockedCosmetics,
-    totalWins, currentWinStreak, consecutiveLogins, lastLoginDate, animationsEnabled,
+    totalWins, currentWinStreak, lastLoginDate, animationsEnabled,
     claimedChallenges,
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
@@ -114,6 +117,16 @@ const MainMenu = ({
 
   const clock = useBarClock();
   const sign = signFor(clock);
+  const closed = sign.state === 'closed';
+
+  // What the menu says around the button (src/lib/menuLines.js): each picked
+  // once per visit, in an initializer, never per render. The closed sign's
+  // note is a pick of its own; while that note is up the footer is the shipped
+  // one, so there is only one note from management in view.
+  const [heroLine] = useState(() => nextHeroLine());
+  const [footerPick] = useState(() => nextFooterLine({ closed }));
+  const [closedNote] = useState(() => pickLine(CLOSED_NOTES));
+  const footerLine = closed ? SHIPPED_FOOTER : footerPick;
 
   // How many challenges are finished and waiting to be claimed.
   //
@@ -182,13 +195,13 @@ const MainMenu = ({
   // destinations that are currently asking for attention, each with a badge
   // that says why.
   const destinations = [
-    { id: 'challenges', title: 'Challenges', description: 'Prove you have a problem', icon: Target, action: onChallenges, badge: claimableChallenges > 0 ? `${claimableChallenges} ready` : null, accent: claimableChallenges > 0 },
-    { id: 'battlepass', title: 'Battle Pass', description: 'Grind. Flex. Repeat.', icon: Trophy, action: onBattlePass, badge: passReady > 0 ? `${passReady} ready` : null, accent: passReady > 0 },
-    { id: 'shop', title: 'Shop', description: 'Spend money you don’t have', icon: Store, action: onShop },
-    { id: 'packs', title: 'Card Packs', description: 'Gambling, but cuter', icon: Package, action: onCardPacks, badge: packsToOpen > 0 ? `${packsToOpen} to open` : null, accent: packsToOpen > 0 },
-    { id: 'deck', title: 'Deck Builder', description: 'Assemble your goon squad', icon: Layers, action: onDeckBuilder },
-    { id: 'collection', title: 'Collection', description: 'Your emotional support army', icon: LibraryBig, action: onCollection },
-    { id: 'leaderboard', title: 'Rankings', description: 'See who has no life', icon: Medal, action: onLeaderboard },
+    { id: 'challenges', title: 'Challenges', description: TILE_LINES.challenges, icon: Target, action: onChallenges, badge: claimableChallenges > 0 ? `${claimableChallenges} ready` : null, accent: claimableChallenges > 0 },
+    { id: 'battlepass', title: 'Battle Pass', description: TILE_LINES.battlepass, icon: Trophy, action: onBattlePass, badge: passReady > 0 ? `${passReady} ready` : null, accent: passReady > 0 },
+    { id: 'shop', title: 'Shop', description: TILE_LINES.shop, icon: Store, action: onShop },
+    { id: 'packs', title: 'Card Packs', description: TILE_LINES.packs, icon: Package, action: onCardPacks, badge: packsToOpen > 0 ? `${packsToOpen} to open` : null, accent: packsToOpen > 0 },
+    { id: 'deck', title: 'Deck Builder', description: TILE_LINES.deck, icon: Layers, action: onDeckBuilder },
+    { id: 'collection', title: 'Collection', description: TILE_LINES.collection, icon: LibraryBig, action: onCollection },
+    { id: 'leaderboard', title: 'Rankings', description: TILE_LINES.leaderboard, icon: Medal, action: onLeaderboard },
   ];
 
   return (
@@ -237,7 +250,7 @@ const MainMenu = ({
               </div>
             </div>
             <div className="text-plush-300 text-[11px] mt-1">
-              {totalWins} wins · {consecutiveLogins} day streak
+              {houseRank(level).name} · {totalWins.toLocaleString()} {totalWins === 1 ? 'win' : 'wins'}
             </div>
           </div>
         </motion.div>
@@ -297,7 +310,7 @@ const MainMenu = ({
           tone={sign.tone}
           lit={sign.lit}
           flicker={sign.flicker}
-          note={sign.note}
+          note={closed ? closedNote : sign.note}
           className="hidden lg:block absolute right-[3%] top-3 -rotate-3 text-xl xl:right-[5%] xl:text-2xl"
         />
         <motion.div
@@ -311,7 +324,7 @@ const MainMenu = ({
           <h1 className="font-display font-extrabold text-[2.5rem] min-[375px]:text-5xl md:text-7xl leading-none tracking-tight text-brass-gradient">
             Terrible Teddies
           </h1>
-          <p className="label-caps text-plush-300 mt-3">Bad bears · Worse decisions</p>
+          <p className="label-caps text-plush-300 mt-3">{heroLine}</p>
         </motion.div>
 
         {/* On short screens (a phone with its browser toolbars, a landscape
@@ -370,7 +383,7 @@ const MainMenu = ({
             </motion.div>
             {currentWinStreak > 0 && (
               <div className="flex items-center gap-1.5 text-orange-300 text-sm font-semibold">
-                <Flame aria-hidden="true" className="w-4 h-4" /> {currentWinStreak}-win streak on the line
+                <Flame aria-hidden="true" className="w-4 h-4" /> {streakLine(currentWinStreak)}
               </div>
             )}
           </motion.div>
@@ -437,7 +450,7 @@ const MainMenu = ({
         transition={{ delay: 0.9 }}
         className="relative z-10 text-center text-plush-400 text-[11px] mt-5"
       >
-        Version 1.0 · No teddies were harmed (lie)
+        {footerLine}
       </motion.p>
     </div>
   );
