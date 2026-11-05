@@ -1,0 +1,4 @@
+# No extra strings.
+# After the verbatim copies in this folder (geminiService, the card file,
+# achievements, metadata), a scan of the rest of Terrible Teddies Studio
+# found no further NSFW string literals.

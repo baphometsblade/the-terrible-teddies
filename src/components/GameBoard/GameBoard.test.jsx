@@ -38,6 +38,7 @@ import GameBoard from './GameBoard';
 import { useGameStore, LAST_CALL_HP } from '../../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
 import { QUIPS } from '../../utils/teddyTalk';
+import { BOOTH } from '@/lib/booth';
 import { lastCallLog, RECEIPT_FOOTERS, BOARD_LINES } from '@/lib/houseLines';
 import { RESULT_TITLES, RESULT_SUBLINES } from '../../utils/resultLines';
 
@@ -80,6 +81,10 @@ describe('GameBoard', () => {
     const entries = [...container.querySelectorAll('[role="log"] > div')].map((e) => e.textContent);
     expect(entries.filter((e) => e.includes('slams his deck'))).toHaveLength(1);
     expect(entries.filter((e) => e === 'Your turn. Make it hurt.')).toHaveLength(1);
+    const booth = entries.filter((e) => e.startsWith('Booth: "'));
+    expect(booth).toHaveLength(1);
+    const said = booth[0].slice('Booth: "'.length, -1);
+    expect(BOOTH.naughty.turn).toContain(said);
   });
 
   // Every rehydrate (each focus, each return to the tab) puts a newly parsed

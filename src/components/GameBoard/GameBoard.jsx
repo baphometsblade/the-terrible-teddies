@@ -14,6 +14,7 @@ import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAtta
 import { pickQuip, startPoolFor, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { pickResultCopy, RESULT_TITLES, RESULT_SUBLINES } from '../../utils/resultLines';
 import { LAST_CALL_BANNER, lastCallLog, BOARD_LINES, fillLine, pickLine } from '@/lib/houseLines';
+import { noteBooth } from '@/lib/boothAi';
 import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
@@ -689,6 +690,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // the same millisecond during the opponent's turn, so Date.now() collides
   // and duplicate React keys corrupt the rendered list.
   const logIdRef = useRef(0);
+  // The rescued commentator. One canned line per turn; a Gemini key may add
+  // a second. The ref keeps the same line from landing twice in a row.
+  const lastBoothRef = useRef(null);
   const addToBattleLog = useCallback((message) => {
     // Capture the id now — reading the ref inside the updater would give two
     // batched updates the same (final) value and recreate the duplicate keys.
@@ -1144,6 +1148,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // past the hour does not change its mind.
     speak(startPoolFor(new Date()));
     addToBattleLog('Your turn. Make it hurt.');
+    noteBooth(addToBattleLog, lastBoothRef);
     setDeckReady(true);
     // startBattleLog, addToBattleLog and speak are stable useCallbacks, so
     // only a new game (gameId) deals.
@@ -1792,6 +1797,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
         setPlayerEnergy(energyForTurn(turnCount + 1));
         setPhase('draw');
         addToBattleLog(boardLine('yourTurn'));
+        noteBooth(addToBattleLog, lastBoothRef);
       }, 500);
     }, 1000);
   };

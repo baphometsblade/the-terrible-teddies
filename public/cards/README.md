@@ -162,15 +162,24 @@ about four tokens. That artefact once produced a convincing list of ten
 
 The tone is 18+ dive-bar comedy — squalor, booze, bad decisions and regret.
 The generator runs in the **raunchy/NSFW register by default**: `promptFor()`
-injects `raunchy adult NSFW comedy, risqué, suggestive` right after the
-medium/colour clause (early, so CLIP's 77-token cut never drops it — a
-tail-appended tag would be the first thing clipped on the busiest cards). The
-register is suggestive and innuendo-heavy, not explicit anatomy. For a tamer
-pass set `ART_SFW=1`, which omits the tag entirely:
+injects `, raunchy NSFW` right after the medium/colour clause (early, so
+CLIP's 77-token cut never drops it — a tail-appended tag would be the first
+thing clipped on the busiest cards). The register is suggestive and
+innuendo-heavy, not explicit anatomy. For a tamer pass set `ART_SFW=1`, which
+omits the tag entirely:
 
 ```bash
 ART_SFW=1 npm run art:generate -- --dry-run   # inspect the toned-down prompts
 ```
+
+`ART_HEAT=naughty` or `ART_HEAT=nasty` appends a short tail taken from the
+old mischief-mania image prompts (`seductive pose…` / `torn fabric…`) after
+the scene. `ART_SFW` wins: a tamer pass drops that tail too. Leave `ART_HEAT`
+unset for the shipped deck. The default prompts already peak at CLIP's
+77-token ceiling, so a heat tail is a deliberate regen (`npm run art:tokens`
+afterwards), not the everyday prompt. The full naughty and nasty prefixes,
+and `generateNSFWTeddyImage`, live in `src/lib/nsfwArt.js` and
+`docs/legacy-nsfw/`.
 
 ### Regenerating the raunchy set against your own Fooocus
 
