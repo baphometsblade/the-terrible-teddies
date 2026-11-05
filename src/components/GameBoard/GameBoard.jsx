@@ -15,6 +15,8 @@ import { pickQuip, startPoolFor, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { pickResultCopy, RESULT_TITLES, RESULT_SUBLINES } from '../../utils/resultLines';
 import { LAST_CALL_BANNER, lastCallLog, BOARD_LINES, fillLine, pickLine } from '@/lib/houseLines';
 import { noteBooth } from '@/lib/boothAi';
+import { FIRST_FIGHT, firstFightStep } from '@/lib/firstFight';
+import { fatigueForEmptyDraw, fatigueLine } from '@/lib/fatigue';
 import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
@@ -412,12 +414,13 @@ const RaisedHint = ({ children }) => (
 // e2e suite counts these chips by their exact text, since those words say it
 // too, in a longer line. `zoom` is the row's: the words grow to stay at 8px
 // on screen (legibleSize), onto two lines where one no longer fits.
-const StatusChip = ({ children, zoom = 1 }) => {
+const StatusChip = ({ children, zoom = 1, marked = false }) => {
   const size = legibleSize(10, zoom);
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-[37px] z-10 flex justify-center">
       <span
-        className="max-w-full rounded-full bg-night-950/90 ring-1 ring-white/15 px-2 py-0.5 text-center text-[10px] leading-[14px] font-semibold text-plush-100 shadow-[0_2px_6px_rgba(0,0,0,0.6)]"
+        data-coach-target={marked ? '' : undefined}
+        className={`max-w-full rounded-full bg-night-950/90 px-2 py-0.5 text-center text-[10px] leading-[14px] font-semibold text-plush-100 shadow-[0_2px_6px_rgba(0,0,0,0.6)] ${marked ? 'ring-2 ring-brass-300' : 'ring-1 ring-white/15'}`}
         // Grown, it gives up most of its side padding, so "Warming Up" keeps
         // to one line down to 0.64 (87px of text on a 96px card).
         style={size > 10 ? { fontSize: size, lineHeight: `${Math.round(size * 1.15)}px`, paddingInline: 3 } : undefined}
@@ -549,6 +552,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const {
     soundEnabled: storeSoundEnabled,
     setSoundEnabled,
+    markFirstFightSeen,
     currentWinStreak,
     recordBattleResult,
     playerName,
@@ -645,6 +649,15 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const [selectedCard, setSelectedCard] = useState(null);
   const [targetingMode, setTargetingMode] = useState(false);
   const [battleLog, setBattleLog] = useState([]);
+  const [logOpen, setLogOpen] = useState(false);
+  const [playerFatigue, setPlayerFatigue] = useState(0);
+  const [opponentFatigue, setOpponentFatigue] = useState(0);
+  const playerFatigueRef = useRef(0);
+  const opponentFatigueRef = useRef(0);
+  // Armed at the deal for an easy fight the player has not had the lesson
+  // for. Stays on for this battle even after the flag is saved, so both
+  // beats can finish; a later battle sees the flag and stays quiet.
+  const [coachArmed, setCoachArmed] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
   const [showAbilityPopup, setShowAbilityPopup] = useState(null);
@@ -1132,6 +1145,15 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setOpponentField([{ ...withHp(initialOpponentDeck[0]), summoningSick: true }]);
     setOpponentDeck(initialOpponentDeck.slice(1));
 
+    playerFatigueRef.current = 0;
+    opponentFatigueRef.current = 0;
+    setPlayerFatigue(0);
+    setOpponentFatigue(0);
+    setLogOpen(false);
+    // The lesson is for a first easy fight only. Read the flag here, at the
+    // deal, so a skip during this battle does not have to re-deal.
+    setCoachArmed(aiDifficulty === 'easy' && !useGameStore.getState().firstFightSeen);
+
     // A fresh log at every deal, rather than appending to whatever is there.
     // Everything above replaces state, so this effect can run twice and end
     // the same — and in development it does: StrictMode mounts, unmounts and
@@ -1243,6 +1265,12 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     }
   }, [opponentHealth, playerHealth, gameId, gameOver, speak]);
 
+  useEffect(() => {
+    if (!gameOver || !coachArmed) return;
+    setCoachArmed(false);
+    markFirstFightSeen();
+  }, [gameOver, coachArmed, markFirstFightSeen]);
+
   // Handle draw phase. The draw mutates playerDeck/playerHand — this effect's
   // own dependencies — so without a per-turn guard it re-fires during the
   // 500ms draw window and keeps drawing until the phase flips (draining the
@@ -1258,7 +1286,13 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     lastDrawRef.current = drawKey;
 
     if (playerDeck.length === 0) {
-      addToBattleLog("Deck is empty. The bartender won't pour another.");
+      const amount = fatigueForEmptyDraw(playerFatigueRef.current);
+      playerFatigueRef.current = amount;
+      setPlayerFatigue(amount);
+      setPlayerHealth((prev) => Math.max(0, prev - amount));
+      battleStatsRef.current.damageTaken += amount;
+      pushFx([{ face: 'player', hit: true, tone: 'damage', text: `−${amount}` }]);
+      addToBattleLog(fatigueLine('player', amount));
     } else if (playerHand.length >= MAX_HAND_SIZE) {
       addToBattleLog(`Hand is full (${MAX_HAND_SIZE}) — skipped draw. Put something down.`);
     } else {
@@ -1273,7 +1307,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // Remove stealth from cards that have been on field for a turn
     setPlayerField(prev => prev.map(c => ({ ...c, stealthActive: false })));
     safeTimeout(() => setPhase('main'), 500);
-  }, [deckReady, phase, currentTurn, turnCount, gameId, playerDeck, playerHand.length, gameOver, addToBattleLog, playSound, safeTimeout]);
+  }, [deckReady, phase, currentTurn, turnCount, gameId, playerDeck, playerHand.length, gameOver, addToBattleLog, playSound, safeTimeout, pushFx]);
 
   // Get valid attack targets considering abilities. Traps are excluded: they
   // are not creatures and spring on their own, so they must never gate a direct
@@ -1436,6 +1470,12 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
 
   // Pick an attacker. At any point in the player's turn: there is no separate
   // battle phase, so cards can be played before and after attacking.
+  const finishFirstFight = () => {
+    if (!coachArmed) return;
+    setCoachArmed(false);
+    markFirstFightSeen();
+  };
+
   const selectCardForAttack = (card) => {
     if (currentTurn !== 'player' || phase !== 'main' || gameOver) return;
     if (card.type === 'trap') {
@@ -1542,6 +1582,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     ));
 
     setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 2));
+    finishFirstFight();
     setSelectedCard(null);
     setTargetingMode(false);
     if (viaKeys(e)) refocusRef.current = { kind: 'attack' };
@@ -1601,6 +1642,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     ));
 
     setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 3));
+    finishFirstFight();
     setSelectedCard(null);
     setTargetingMode(false);
     if (viaKeys(e)) refocusRef.current = { kind: 'attack' };
@@ -1646,6 +1688,20 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const executeOpponentTurn = () => {
     setThinkingLine(boardLine('thinking'));
     addToBattleLog(boardLine('chuckTurn'));
+
+    // An empty deck is a draw he cannot make. Fatigue lands before he plays
+    // or swings, and a lethal one ends the turn so the corpse does not also attack.
+    if (opponentDeck.length === 0) {
+      const amount = fatigueForEmptyDraw(opponentFatigueRef.current);
+      opponentFatigueRef.current = amount;
+      setOpponentFatigue(amount);
+      const hp = Math.max(0, opponentHealth - amount);
+      setOpponentHealth(hp);
+      battleStatsRef.current.damageDealt += Math.min(opponentHealth, amount);
+      pushFx([{ face: 'opponent', hit: true, tone: 'damage', text: `−${amount}` }]);
+      addToBattleLog(fatigueLine('opponent', amount, OPPONENT_NAME));
+      if (hp <= 0) return;
+    }
 
     // Remove stealth from opponent cards. Compute the cleared field once and
     // use it for BOTH the state update and the attack loop below — the loop
@@ -1856,6 +1912,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     setPlayerHand([]);
     setPlayerField([]);
     setPlayerDeck([]);
+    playerFatigueRef.current = 0;
+    opponentFatigueRef.current = 0;
+    setPlayerFatigue(0);
+    setOpponentFatigue(0);
 
     // Reset opponent state (initializeGame re-applies the difficulty mod to
     // both of these when the fresh game deals).
@@ -1901,6 +1961,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
 
   const won = winner === 'player';
   const playerTurn = currentTurn === 'player';
+  const coachStep = firstFightStep({
+    armed: coachArmed && !gameOver,
+    readyAttacker: playerTurn && playerField.some((card) => canAttack(card)),
+  });
+  const coachCopy = coachStep ? FIRST_FIGHT[coachStep] : null;
   // The player's turn proper: their card has arrived, and they can play cards
   // and attack with ready creatures in any order until they end it.
   const playerMove = playerTurn && phase === 'main' && !gameOver;
@@ -2524,7 +2589,12 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
             <Avatar ring={OPPONENT_RING} />
             <div className="min-w-0">
               <div className="font-display font-extrabold text-white leading-tight truncate max-w-[7rem] sm:max-w-none">{OPPONENT_NAME}</div>
-              <div className="text-red-200/80 text-[11px] whitespace-nowrap">Deck: {opponentDeck.length}</div>
+              <div className="text-red-200/80 text-[11px] whitespace-nowrap">
+                Deck: {opponentDeck.length}
+                {opponentDeck.length === 0 && (
+                  <span className="text-brass-200" data-fatigue="opponent"> · next {opponentFatigue + 1}</span>
+                )}
+              </div>
             </div>
             {/* Opponent's draw pile, face down on the table */}
             {opponentDeck.length > 0 && (
@@ -2635,7 +2705,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                             actually swing at them next turn — without it,
                             summoning sickness is only legible on their own
                             half of the table. */}
-                        {card.summoningSick && <StatusChip zoom={fieldZoom}>Warming Up</StatusChip>}
+                        {card.summoningSick && <StatusChip zoom={fieldZoom} marked={coachStep === 'warming'}>Warming Up</StatusChip>}
                         <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
                           {describeCard(card, { attack: effectiveAttack(card, opponentField) })}
                         </CardWords>
@@ -2787,13 +2857,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       className={`relative rounded-[10px] ${FOCUS_OUTLINE} ${ready ? 'cursor-pointer' : ''}`}
                       press={press}
                       data-field="player"
+                      data-coach-target={coachStep === 'attack' && ready ? '' : undefined}
                       {...inspectHandlers({ id: card.instanceId, from: 'player' }, { hold: 'preview' })}
                     >
                       <div
                         data-target-ring={selected || ready ? '' : undefined}
                         className={`relative rounded-[10px] transition-shadow ${selected
                           ? 'ring-2 ring-brass-300 shadow-[0_0_24px_4px_rgba(251,191,36,0.55)]'
-                          : ready ? 'shadow-[0_0_18px_2px_rgba(52,211,153,0.5)]' : ''}`}
+                          : coachStep === 'attack' && ready
+                            ? 'ring-2 ring-brass-300 shadow-[0_0_18px_2px_rgba(251,191,36,0.55)]'
+                            : ready ? 'shadow-[0_0_18px_2px_rgba(52,211,153,0.5)]' : ''}`}
                       >
                         {/* Resting dims the art alone: the Taunt frame, the
                             name and the stats keep their strength. The face
@@ -2814,7 +2887,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                         </div>
                         {card.stealthActive && <StealthBand zoom={fieldZoom} />}
                         {card.hasAttacked && <StatusChip zoom={fieldZoom}>Exhausted</StatusChip>}
-                        {card.summoningSick && !card.hasAttacked && <StatusChip zoom={fieldZoom}>Warming Up</StatusChip>}
+                        {card.summoningSick && !card.hasAttacked && (
+                          <StatusChip zoom={fieldZoom} marked={coachStep === 'warming'}>Warming Up</StatusChip>
+                        )}
                         <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
                           {describeCard(card, { attack: effectiveAttack(card, playerField) })}
                         </CardWords>
@@ -2987,12 +3062,41 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               </div>
             )}
 
+            {/* Phone log. The centre line gives its spot to a quip, so the
+                record itself is this panel: it stays while Chuck is talking,
+                and it is one tap, not a replacement for the line. */}
+            {logOpen && (
+              <div
+                id="battle-log-phone"
+                className="md:hidden max-h-36 overflow-y-auto panel-glass rounded-xl p-2"
+              >
+                {[...battleLog].reverse().map((entry, i) => (
+                  <div
+                    key={entry.id}
+                    className={`text-xs leading-snug py-1.5 border-b border-white/[0.06] last:border-0 ${i === 0 ? 'font-semibold text-plush-100' : 'text-plush-300'}`}
+                  >
+                    {entry.message}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Game controls. The line keeps its height on Chuck's turn, when
                 the buttons are gone: below md the table's height depends on
                 it, and an empty line made the whole table grow and shrink at
                 every turn boundary. Concede is icon-only on phones, to keep
                 the line short enough not to wrap. */}
             <div className="flex min-h-11 flex-row flex-wrap items-center justify-center gap-2 md:flex-col md:items-stretch">
+              <button
+                type="button"
+                className={`${ACTION} btn-glass md:hidden h-11 w-11 !px-0`}
+                aria-expanded={logOpen}
+                aria-controls="battle-log-phone"
+                aria-label={logOpen ? 'Hide battle log' : 'Battle log'}
+                onClick={() => setLogOpen((open) => !open)}
+              >
+                <ScrollText className="h-4 w-4" aria-hidden="true" />
+              </button>
               {!gameOver && !playerTurn && (
                 <span className="text-xs italic text-plush-300" aria-hidden="true">
                   {thinkingLine}
@@ -3073,10 +3177,28 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
         <div
           ref={handScrollerRef}
           data-hand-overflow={handFit.overflow ? '' : undefined}
-          className={`board-zoom shrink-0 max-w-full overflow-x-auto overflow-y-hidden px-3 sm:px-6 pt-11 pb-6 ${handFit.overflow
+          className={`board-zoom relative shrink-0 max-w-full overflow-x-auto overflow-y-hidden px-3 sm:px-6 pt-11 pb-6 ${handFit.overflow
             ? '[mask-image:linear-gradient(90deg,transparent,#000_16px,#000_calc(100%-16px),transparent)]'
             : ''}`}
         >
+          {coachCopy && (
+            <div
+              data-first-fight={coachStep}
+              className="absolute inset-x-3 top-0 z-30 flex h-11 items-center gap-2 rounded-xl bg-night-950/95 px-2 ring-1 ring-brass-300/40 sm:inset-x-6"
+            >
+              <p className="min-w-0 flex-1 truncate text-xs font-semibold text-plush-100">
+                <span className="text-brass-200">{coachCopy.title}. </span>
+                {coachCopy.body}
+              </p>
+              <button
+                type="button"
+                className={`${ACTION} btn-glass h-11 shrink-0 px-3 text-xs`}
+                onClick={finishFirstFight}
+              >
+                Skip
+              </button>
+            </div>
+          )}
           <div className="mx-auto flex w-max gap-2">
             {/* Keyed by game, as the rows are: Play Again remounts the hand,
                 rather than playing the last game's cards out beside the new
@@ -3157,6 +3279,12 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   <Layers className="h-3 w-3 sm:hidden" aria-hidden="true" />
                   {playerDeck.length}
                   <span className="sr-only sm:hidden"> in deck</span>
+                  {playerDeck.length === 0 && (
+                    <span className="text-brass-200" data-fatigue="player">
+                      {' '}· next {playerFatigue + 1}
+                      <span className="sr-only"> fatigue</span>
+                    </span>
+                  )}
                 </span>
                 <span className="hidden sm:inline" aria-hidden="true">|</span>
                 <span className="inline-flex items-center gap-0.5">

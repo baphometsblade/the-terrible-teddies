@@ -284,11 +284,9 @@ const Settings = ({ onClose }) => {
                 />
               </SettingRow>
             </div>
-            {/* No "Music" row. It toggled a persisted musicEnabled flag that
-                nothing in the app has ever read, and there is no music to
-                control: public/sounds/ holds four effect clips and no track.
-                A switch that changes nothing is the same defect as a reward
-                table with no payout behind it — restore it with the music. */}
+            {/* No "Music" row. The switch wrote a flag nothing ever read,
+                and there is no music to control. Save version 4 drops the
+                field. Restore the row only with an actual track. */}
           </section>
 
           <section>

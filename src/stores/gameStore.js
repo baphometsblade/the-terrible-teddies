@@ -9,14 +9,14 @@ import analytics from '@/utils/analytics';
 export const ALL_CARDS = [
   // Common (Starter Cards)
   { id: 1, name: "Shitstarter Ted", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Every bar fight in this town starts with Ted." },
-  { id: 2, name: "Feral Tim", attack: 1, defense: 2, type: 'action', cost: 2, ability: 'swarm', rarity: 'common', description: "Raised by raccoons. It shows." },
+  { id: 2, name: "Feral Tim", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'swarm', rarity: 'common', description: "Raised by raccoons. It shows." },
   { id: 3, name: "Fluffy McFuckface", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Legally changed his name. Won the bet." },
   { id: 4, name: "Bar-Fight Barry", attack: 2, defense: 1, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Banned from six pubs and one build-a-workshop." },
-  { id: 5, name: "Stitches the Snitch", attack: 1, defense: 3, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Held together by thread and plea deals." },
+  { id: 5, name: "Stitches the Snitch", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Held together by thread and plea deals." },
 
   // Uncommon
   { id: 6, name: "Shit-Talk Sally", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'uncommon', description: "Runs her mouth until you HAVE to hit her. That's the plan." },
-  { id: 7, name: "Peeping Pete", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'stealth', rarity: 'uncommon', description: "You can't target what's hiding in your hamper." },
+  { id: 7, name: "Peeping Pete", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'stealth', rarity: 'uncommon', description: "You can't target what's hiding in your hamper." },
   { id: 8, name: "Chokehold Cuddles", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'shield', rarity: 'uncommon', description: "His hugs are technically a submission move." },
   { id: 9, name: "Shiv-in-a-Pillow", attack: 4, defense: 1, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon', description: "Soft on the outside. Very much not on the inside. Nobody sleeps with him twice." },
   { id: 10, name: "Anger-Management Gus", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'uncommon', description: "Dropped out of the program. The program was relieved." },
@@ -59,11 +59,11 @@ export const ALL_CARDS = [
   // Twenty new bears (ids 50-69). Abilities are restricted to the ones the
   // engine actually implements (taunt/protect/stealth targeting; shield/
   // piercing/fury combat) — see cardSchema.test.js, which enforces this.
-  { id: 50, name: "Dumpster Dave", attack: 2, defense: 1, type: 'action', cost: 2, ability: 'stealth', rarity: 'common', description: "Lives behind the bar. You won't see him coming out of it." },
-  { id: 51, name: "Mange Marvin", attack: 3, defense: 1, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "The bald patches are from stress. And mange." },
-  { id: 52, name: "Two-Beer Tina", attack: 2, defense: 1, type: 'action', cost: 2, ability: 'fury', rarity: 'common', description: "Two beers in and she's everyone's problem. Three beers in and she's unstoppable." },
+  { id: 50, name: "Dumpster Dave", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'stealth', rarity: 'common', description: "Lives behind the bar. You won't see him coming out of it." },
+  { id: 51, name: "Mange Marvin", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "The bald patches are from stress. And mange." },
+  { id: 52, name: "Two-Beer Tina", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'common', description: "Two beers in and she's everyone's problem. Three beers in and she's unstoppable." },
   { id: 53, name: "Coupon Carl", attack: 1, defense: 2, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Fights dirty. Tips worse." },
-  { id: 54, name: "Sticky Mickey", attack: 1, defense: 2, type: 'action', cost: 2, ability: 'protect', rarity: 'common', description: "Nobody asks why he's sticky. He's not going anywhere, and neither is whoever's behind him." },
+  { id: 54, name: "Sticky Mickey", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'protect', rarity: 'common', description: "Nobody asks why he's sticky. He's not going anywhere, and neither is whoever's behind him." },
   { id: 55, name: "Ashtray Annie", attack: 1, defense: 2, type: 'action', cost: 1, ability: 'shield', rarity: 'common', description: "Smells like 1987 and menthols. Burned through three husbands and a mattress." },
   { id: 56, name: "Bouncer Bruno", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'taunt', rarity: 'uncommon', description: "You're not on the list. Nobody is on the list." },
   { id: 57, name: "Hairball Harriet", attack: 3, defense: 2, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon', description: "Swallows anything once. Returns most of it." },
@@ -296,13 +296,16 @@ const initialState = {
   premiumPacks: 0,
   legendaryPacks: 0,
   soundEnabled: true,
-  musicEnabled: true,
   animationsEnabled: true,
   // New players start on 'easy' for a gentler first session (the AI is a real
   // threat under the creature-HP combat model); they can ramp up in Settings.
   // Only affects fresh saves — returning players keep their persisted choice.
   difficulty: 'easy',
   tutorialCompleted: false,
+  // The easy-mode first fight (Warming Up, then the first legal attack).
+  // False on a new save. A save from before the lesson, once it has a battle
+  // on it, is treated as already seen (normalizeSave).
+  firstFightSeen: false,
   // Battle Pass
   hasBattlePassPremium: false,
   claimedBattlePassRewards: { free: [], premium: [] },
@@ -463,6 +466,16 @@ export const normalizeSave = (persisted) => {
   // malformed means "never in step", which at worst sends the save again.
   s.cloudSyncedHash = typeof persisted?.cloudSyncedHash === 'string' ? persisted.cloudSyncedHash : null;
   s.cloudSyncedAt = Number.isFinite(persisted?.cloudSyncedAt) ? persisted.cloudSyncedAt : null;
+  // musicEnabled was a Settings switch nothing ever read. Drop it so a v3
+  // save cannot write the dead field back on the next persist.
+  delete s.musicEnabled;
+  // The first-fight lesson. Absent on an older save: anyone who has already
+  // fought has had their onboarding, and is not sat through it again.
+  if (!persisted || !Object.prototype.hasOwnProperty.call(persisted, 'firstFightSeen')) {
+    s.firstFightSeen = (Number(persisted?.totalBattles) || 0) > 0;
+  } else {
+    s.firstFightSeen = persisted.firstFightSeen === true;
+  }
   return s;
 };
 
@@ -1329,10 +1342,10 @@ export const useGameStore = create(
       },
 
       setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
-      setMusicEnabled: (enabled) => set({ musicEnabled: enabled }),
       setAnimationsEnabled: (enabled) => set({ animationsEnabled: enabled }),
       setDifficulty: (difficulty) => set({ difficulty }),
       setTutorialCompleted: (completed) => set({ tutorialCompleted: completed }),
+      markFirstFightSeen: () => set({ firstFightSeen: true }),
 
       // Wiping progress must NOT wipe the server-gem high-water mark. That mark
       // records how much purchased currency has already been credited locally;
@@ -1375,7 +1388,7 @@ export const useGameStore = create(
     })),
     {
       name: 'terrible-teddies-storage',
-      version: 3,
+      version: 4,
       // Don't persist in-flight UI state
       partialize: (state) => {
         const { pendingAchievements, pendingLevelUps, pendingSeasonDeliveries, ...rest } = state;

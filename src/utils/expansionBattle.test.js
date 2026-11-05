@@ -151,10 +151,12 @@ describe('fury bears gain +1 attack only when they survive', () => {
 
   for (const furyBear of furyBears) {
     it(`${label(furyBear)} gains exactly +1 attack when it survives a hit, and none when killed`, () => {
-      const weakAttacker = findOriginal(
-        (c) => c.attack < furyBear.defense,
-        `with attack under ${furyBear.defense} (so it can't kill ${label(furyBear)})`
-      );
+      // The original vanillas are all attack 2 or more after the 2-drop pass,
+      // so the chip that has to leave a 2-HP Fury bear standing is any
+      // ability-less bear with a smaller attack (Coupon Carl).
+      const plain = ALL_CARDS.filter((c) => c.type === 'action' && c.ability === 'none');
+      const weakAttacker = plain.find((c) => c.attack < furyBear.defense);
+      expect(weakAttacker, `a vanilla with attack under ${furyBear.defense}`).toBeDefined();
       const lethalAttacker = findOriginal(
         (c) => c.attack >= furyBear.defense,
         `with attack at least ${furyBear.defense} (so it can kill ${label(furyBear)})`

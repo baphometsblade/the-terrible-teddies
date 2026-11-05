@@ -65,6 +65,12 @@ const button = (name) => [...container.querySelectorAll('button')].find((b) => b
 
 beforeEach(() => {
   localStorage.clear();
+  const fresh = useGameStore.getInitialState();
+  useGameStore.setState({
+    difficulty: 'easy',
+    firstFightSeen: false,
+    currentDeck: fresh.currentDeck,
+  });
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -108,6 +114,29 @@ describe('GameBoard', () => {
     expect(container.querySelector('[data-banner="turn"]')).toBeNull();
     expect(centreSpeech().className).not.toMatch(/\binvisible\b/);
     expect(plaque().className).not.toMatch(/\binvisible\b/);
+  });
+
+  it('walks a first easy fight from Warming Up to the first swing, once', async () => {
+    useGameStore.setState({ difficulty: 'easy', firstFightSeen: false, totalBattles: 0 });
+    await renderBoard({ onBackToMenu: () => {} });
+    expect(container.querySelector('[data-first-fight]')?.getAttribute('data-first-fight')).toBe('warming');
+    expect(container.querySelector('[data-coach-target]')).not.toBeNull();
+    const skip = [...container.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Skip');
+    await act(async () => { skip.click(); });
+    expect(container.querySelector('[data-first-fight]')).toBeNull();
+    expect(useGameStore.getState().firstFightSeen).toBe(true);
+  });
+
+  it('charges fatigue when the opening draw finds an empty deck', async () => {
+    useGameStore.setState({
+      currentDeck: [1, 2, 3, 4, 5],
+      difficulty: 'normal',
+      firstFightSeen: true,
+    });
+    await renderBoard({ onBackToMenu: () => {} });
+    const entries = [...container.querySelectorAll('[role="log"] > div')].map((e) => e.textContent);
+    expect(entries.some((line) => line.includes('Fatigue 1') && line.includes('You take 1'))).toBe(true);
+    expect(container.querySelector('[data-fatigue="player"]')?.textContent).toContain('2');
   });
 
   // Every rehydrate (each focus, each return to the tab) puts a newly parsed
@@ -345,6 +374,9 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
     fixedCrew.cards = [{
       id: 999, name: 'Test Bruiser', attack, defense: 9, type: 'action', cost: 1,
       ability: 'none', rarity: 'common', instanceId: 'o-999-0',
+    }, {
+      id: 997, name: 'Test Spare', attack: 0, defense: 1, type: 'action', cost: 99,
+      ability: 'none', rarity: 'common', instanceId: 'o-997-0',
     }];
   };
 
@@ -384,7 +416,11 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
   };
 
   beforeEach(() => {
+    fixedCrew.opponentHp = null;
     useGameStore.setState(useGameStore.getInitialState(), true);
+    // A long deck, so the scripted face-hits land on their own. An empty deck
+    // would add fatigue and skip the exact HP this is measuring.
+    useGameStore.setState({ currentDeck: Array.from({ length: 30 }, () => 4) });
     facing(LAST_CALL_HP);
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
   });
@@ -442,7 +478,15 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
   // quiet machine, so it carries a budget of its own rather than the default.
   it('fires once a game however the health goes on, and again in the next game after Play Again', async () => {
     // 2 a round: the player is in range at 4, and again at 2, and the second
-    // visit to the range must not call it a second time.
+    // visit to the range must not call it a second time. A long deck and a
+    // seen lesson, so fatigue and the first-fight coach stay out of the clock.
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
+    useGameStore.setState({
+      currentDeck: Array.from({ length: 40 }, () => 4),
+      difficulty: 'normal',
+      firstFightSeen: true,
+    });
     facing(2);
     await startGame();
     // Every last-call line that is ever added to the log, counted as it comes.
@@ -492,6 +536,9 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
     fixedCrew.cards = [{
       id: 998, name: 'Test Pushover', attack: 0, defense: 1, type: 'action', cost: 1,
       ability: 'none', rarity: 'common', instanceId: 'o-998-0',
+    }, {
+      id: 997, name: 'Test Spare', attack: 0, defense: 1, type: 'action', cost: 99,
+      ability: 'none', rarity: 'common', instanceId: 'o-997-0',
     }];
     fixedCrew.opponentHp = 6;
     useGameStore.setState({ currentDeck: [4, 4, 4, 4, 4, 4] });
@@ -545,6 +592,9 @@ describe('GameBoard victory', () => {
     fixedCrew.cards = [{
       id: 998, name: 'Test Pushover', attack: 0, defense: 1, type: 'action', cost: 1,
       ability: 'none', rarity: 'common', instanceId: 'o-998-0',
+    }, {
+      id: 997, name: 'Test Spare', attack: 0, defense: 1, type: 'action', cost: 99,
+      ability: 'none', rarity: 'common', instanceId: 'o-997-1',
     }];
     fixedCrew.opponentHp = 1;
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });

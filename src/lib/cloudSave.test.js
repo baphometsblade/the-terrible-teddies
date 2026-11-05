@@ -256,7 +256,7 @@ describe('progress and the empty save', () => {
 
 describe('what goes to the account', () => {
   it('leaves out the device\'s own settings and the bookkeeping, and carries the gem mark', () => {
-    for (const k of ['soundEnabled', 'animationsEnabled', 'musicEnabled', 'ownerUserId', 'cloudRev', 'cloudSyncedHash', 'cloudSyncedAt']) {
+    for (const k of ['soundEnabled', 'animationsEnabled', 'ownerUserId', 'cloudRev', 'cloudSyncedHash', 'cloudSyncedAt']) {
       expect(CLOUD_FIELDS).not.toContain(k);
     }
     expect(CLOUD_FIELDS).toContain('lastSyncedServerGems');
