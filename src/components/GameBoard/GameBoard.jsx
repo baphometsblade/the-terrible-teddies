@@ -2674,7 +2674,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                   <MomentumMeter value={playerMomentum} glow={!gameOver} />
                   <span className="h-px flex-1 bg-gradient-to-r from-transparent to-brass-300/45" aria-hidden="true" />
                   <div
-                    className={`shrink-0 rounded-lg px-3 sm:px-4 py-1 font-display font-extrabold text-sm sm:text-base whitespace-nowrap shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_6px_14px_-6px_rgba(0,0,0,0.8)] ${playerTurn ? 'text-night-950' : 'text-white'}`}
+                    data-turn-plaque=""
+                    className={`shrink-0 rounded-lg px-3 sm:px-4 py-1 font-display font-extrabold text-sm sm:text-base whitespace-nowrap shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_6px_14px_-6px_rgba(0,0,0,0.8)] ${playerTurn ? 'text-night-950' : 'text-white'} ${banner ? 'invisible' : ''}`}
                     style={{ background: playerTurn ? PLAQUE_BRASS : PLAQUE_CRIMSON }}
                   >
                     Turn {turnCount}
@@ -2711,7 +2712,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}
-                      className={`xl:hidden max-w-full line-clamp-2 break-words rounded-2xl px-3 py-0.5 text-center text-xs leading-[14px] font-semibold text-night-900 pointer-events-none ${speech.who === 'opponent'
+                      className={`xl:hidden max-w-full line-clamp-2 break-words rounded-2xl px-3 py-0.5 text-center text-xs leading-[14px] font-semibold text-night-900 pointer-events-none ${banner ? 'invisible' : ''} ${speech.who === 'opponent'
                         ? 'bg-plush-100 ring-1 ring-red-300/70'
                         : 'bg-brass-200 ring-1 ring-brass-400/70'}`}
                     >
@@ -2732,7 +2733,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                        damage they took, or that it was their turn again. */
                     <div
                       aria-hidden="true"
-                      className="md:hidden max-w-full truncate rounded-full bg-night-950/80 ring-1 ring-white/5 px-3 py-1 text-xs text-plush-200 pointer-events-none"
+                      className={`md:hidden max-w-full truncate rounded-full bg-night-950/80 ring-1 ring-white/5 px-3 py-1 text-xs text-plush-200 pointer-events-none ${banner ? 'invisible' : ''}`}
                     >
                       {latestLog}
                     </div>

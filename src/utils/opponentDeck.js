@@ -138,20 +138,22 @@ export const buildOpponentDeck = (difficulty, rng = Math.random) => {
     guard += 1;
   }
 
-  // Stamp mods + instanceId (by position, before the final shuffle) so
-  // instanceIds stay unique even if a repeat goon was pushed by the guard
-  // above. Copies every card — ALL_CARDS and OPPONENT_GOONS are never mutated.
-  const withModsAndInstance = combined.map((card, idx) => ({
-    ...card,
-    // Clamp the difficulty deltas: attack floors at 0, defense at 1. defense is
-    // the creature's HP pool, so an unclamped easy-mode -1 turned any def-1 card
-    // into a 0-HP creature that enters play already dead (destroyed by any hit,
-    // including a 0-damage one) — the same "dead on arrival" state cardSchema
-    // forbids for the catalog.
-    attack: Math.max(0, card.attack + attackMod),
-    defense: Math.max(1, card.defense + defenseMod),
-    instanceId: `o-${card.id}-${idx}`,
-  }));
+    // Stamp mods + instanceId (by position, before the final shuffle) so
+    // instanceIds stay unique even if a repeat goon was pushed by the guard
+    // above. Copies every card — ALL_CARDS and OPPONENT_GOONS are never mutated.
+    const withModsAndInstance = combined.map((card, idx) => ({
+      ...card,
+      // Clamp the difficulty deltas. Defense floors at 1: it is the HP pool,
+      // and an unclamped easy-mode -1 turned any def-1 card into a 0-HP
+      // creature that entered play already dead. Attack floors at 1, not 0:
+      // easy's -1 turned every 1-attack common (Coupon Carl, Ashtray Annie,
+      // Feral Tim) into a bear that swung and changed nothing, which reads
+      // as a broken hit rather than an easier fight. The ease is the lower
+      // defense, the smaller health bar, and the softer rarity band.
+      attack: Math.max(1, card.attack + attackMod),
+      defense: Math.max(1, card.defense + defenseMod),
+      instanceId: `o-${card.id}-${idx}`,
+    }));
 
   const cards = shuffle(withModsAndInstance, rng);
   const crewName = CREW_NAMES[Math.floor(rng() * CREW_NAMES.length)];

@@ -87,6 +87,29 @@ describe('GameBoard', () => {
     expect(BOOTH.naughty.turn).toContain(said);
   });
 
+  // The turn banner is painted over the centre of the felt. On a phone that
+  // centre is already the turn plaque and Chuck's line, so the two stacked
+  // and neither could be read for the whole 1.3s the banner is up. They keep
+  // their place (the rows must not jump) but go invisible until it leaves.
+  it('clears the centre line while the turn banner is up, then brings Chuck back', async () => {
+    await renderBoard({ onBackToMenu: () => {} });
+    const centreSpeech = () => [...container.querySelectorAll('[data-speech="opponent"]')]
+      .find((el) => el.className.includes('xl:hidden'));
+    const plaque = () => container.querySelector('[data-turn-plaque]');
+    expect(container.querySelector('[data-banner="turn"]')).not.toBeNull();
+    expect(centreSpeech().className).toMatch(/\binvisible\b/);
+    expect(plaque().className).toMatch(/\binvisible\b/);
+    // The corner bubble (xl only) is not under the banner, so it stays.
+    const corner = [...container.querySelectorAll('[data-speech="opponent"]')]
+      .find((el) => el.className.includes('xl:block'));
+    expect(corner.className).not.toMatch(/\binvisible\b/);
+
+    await act(() => new Promise((resolve) => { setTimeout(resolve, 1400); }));
+    expect(container.querySelector('[data-banner="turn"]')).toBeNull();
+    expect(centreSpeech().className).not.toMatch(/\binvisible\b/);
+    expect(plaque().className).not.toMatch(/\binvisible\b/);
+  });
+
   // Every rehydrate (each focus, each return to the tab) puts a newly parsed
   // currentDeck in the store, and the deal depended on it: one alt-tab
   // re-dealt the game in progress. A game is dealt once, from a snapshot; a
