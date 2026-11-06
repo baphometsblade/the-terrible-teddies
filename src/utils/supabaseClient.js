@@ -1,26 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// The current project. A deploy that sets the Vite variables uses those; a
+// build that does not still talks to this project rather than a retired one.
+const DEFAULT_SUPABASE_URL = 'https://wqdrbywcktxgytkyqcco.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxZHJieXdja3R4Z3l0a3lxY2NvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM5NDk4ODEsImV4cCI6MjEwOTUyNTg4MX0.lAlqB-vxgoIlC3U2wl3T8f_M7Jf3Y7nAqTmCh2Aw8Zw';
+
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
 // Whether the deploy is wired up. The app gates on this and shows a clear
 // configuration screen — throwing here instead would crash the whole module
 // graph at import time and white-screen the app before React can render.
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-if (!isSupabaseConfigured) {
-  console.error(
-    'Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY — set them in your ' +
-    'environment (see .env.example). Running with a non-functional client.'
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+  console.warn(
+    'VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are not set; using the built-in project.'
   );
 }
 
-// Use a syntactically-valid placeholder when unconfigured so createClient
-// doesn't throw at import; real calls will fail and the UI gates them off.
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-anon-key'
-);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Resolve whose account we are acting on.
 //
@@ -177,7 +176,7 @@ export const putPlayerSave = (save, baseRev) =>
 // the access token in hand because a page that is unloading has no time to
 // await a session read. Browsers cap keepalive bodies at 64 KiB, so a larger
 // save goes as an ordinary request, which may not finish.
-const REST_URL = `${String(supabaseUrl || 'https://placeholder.supabase.co').replace(/\/+$/, '')}/rest/v1`;
+const REST_URL = `${supabaseUrl.replace(/\/+$/, '')}/rest/v1`;
 const KEEPALIVE_MAX_BYTES = 60_000;
 
 export const putPlayerSaveKeepalive = async (save, baseRev, accessToken) => {
@@ -187,7 +186,7 @@ export const putPlayerSaveKeepalive = async (save, baseRev, accessToken) => {
       method: 'POST',
       keepalive: body.length <= KEEPALIVE_MAX_BYTES,
       headers: {
-        apikey: supabaseAnonKey || 'placeholder-anon-key',
+        apikey: supabaseAnonKey,
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },

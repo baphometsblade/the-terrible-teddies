@@ -12,9 +12,11 @@ Supabase (Postgres + Auth + Edge Functions); payments are real Stripe Checkout.
 
 ## 1. Supabase project
 
-The repo's `supabase/config.toml` is wired to project ref `dutkgzurneffawxesgsj`.
-Use that project if it's yours; otherwise create one and update `config.toml`'s
-`id`.
+The repo's `supabase/config.toml` is wired to project ref `wqdrbywcktxgytkyqcco`.
+The client falls back to that project's URL and anon key when
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are unset. A host that still
+has a retired project in its dashboard env will keep using it until those two
+variables are updated and the site is rebuilt.
 
 The Supabase CLI is a developer tool, not a project dependency — install it
 globally (`npm i -g supabase`) or invoke it with `npx supabase` (used below).
@@ -24,19 +26,16 @@ npx supabase login
 npx supabase link --project-ref <your-project-ref>
 ```
 
-### Apply the database migrations
+### Apply the schema
 
-Migrations live in `supabase/migrations/` and are ordered by timestamp. They
-create the players/purchases/user_gems tables, RLS policies, the
-`SECURITY DEFINER` RPCs, rate limiting, atomic Stripe fulfillment with
-refund/chargeback reversal, and the search-path hardening; then cloud saves and
-the server-side rank (`20261023000000`, with its index in `20261024000000`) and
-the one-per-account Starter Gem Pack hold (`20261023000100`), each described
-below.
+A brand-new project has no tables. Run `supabase/bootstrap.sql` once in the
+SQL editor. It is idempotent: tables, indexes, the RPCs, both leaderboard
+views, row-level security, grants, and the signup trigger that creates a
+profile. It is not a migration, so do not `db push` the historical files on
+top of it.
 
-```bash
-npx supabase db push
-```
+An existing project that already applied `supabase/migrations/` in order
+should keep using `npx supabase db push` and leave `bootstrap.sql` alone.
 
 ### Cloud saves and the server-side rank (`20261023000000_cloud_saves_and_rank.sql`)
 

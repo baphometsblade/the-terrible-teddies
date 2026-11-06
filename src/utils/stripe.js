@@ -1,10 +1,10 @@
-import { supabase } from '../integrations/supabase/supabase';
+import { supabase, supabaseUrl, supabaseAnonKey } from './supabaseClient';
 // The checkout function's own rule for what uses up a one-per-account bundle,
 // so the Shop's "claimed" can never disagree with the 409 the server sends.
 import { ONE_PER_ACCOUNT_BUNDLES, holdsBundle } from '../../supabase/functions/create-checkout-session/checkoutGuards.js';
 
-const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const FUNCTIONS_URL = `${supabaseUrl}/functions/v1`;
+const ANON_KEY = supabaseAnonKey;
 
 // Generous: a cold edge function plus Stripe's session create is a few
 // seconds. Exported so the e2e suite can reason about it.
