@@ -20,6 +20,10 @@
  *   FOOOCUS_AUTH    optional. Sent as the Authorization header verbatim.
  *
  *   ART_MONITOR_PORT  port for the forced progress dashboard (default 8877)
+ *   ART_SFW           1/true/yes/on strips the raunchy register marker
+ *   ART_HEAT          naughty | nasty. Appends a short legacy heat tail
+ *                     after the scene. Ignored when ART_SFW is set. Opt-in:
+ *                     the default deck is already at CLIP's 77-token ceiling.
  *
  * Flags:
  *   --only 1,6,30      generate only these card ids
@@ -50,6 +54,7 @@ const { ALL_CARDS } = await import('@/stores/gameStore');
 // why). Re-merge them here so promptFor() and everything below sees the same
 // shape it always did.
 const { CARD_ART } = await import('@/data/cardArt');
+const { heatClause } = await import('@/lib/nsfwArt.js');
 
 // Chuck's goons (GameBoard.jsx opponent deck, base stats). They have no
 // descriptions in code, so the character lines live here.
@@ -152,15 +157,19 @@ const NEGATIVE =
 // silently truncated.
 const SFW = /^(1|true|yes|on)$/i.test(process.env.ART_SFW ?? '');
 const ADULT = SFW ? '' : ', raunchy NSFW';
+// Legacy naughty/nasty tail from teddy-mischief-mania. Empty unless ART_HEAT
+// is set, and empty again when ART_SFW is on, so a tamer pass stays tamer.
+const HEAT = heatClause(process.env);
+const tail = HEAT ? ` ${HEAT}` : '';
 
 const promptFor = (card) => {
   const subject = card.visual || card.description || card.name;
   const scene = card.scene || MOOD;
   if (card.type === 'trap' || card.type === 'special') {
-    return `Product photo${ADULT}, single object filling the frame — ${subject}. ${scene}`;
+    return `Product photo${ADULT}, single object filling the frame — ${subject}. ${scene}${tail}`;
   }
   const fur = card.fur ? `${card.fur} ` : '';
-  return `RAW photo, ${fur}plush teddy bear, ${fur}fur${ADULT} — ${subject}. ${scene}`;
+  return `RAW photo, ${fur}plush teddy bear, ${fur}fur${ADULT} — ${subject}. ${scene}${tail}`;
 };
 
 // Non-brown bears fight the model's brown-plush prior, so they get an

@@ -1,0 +1,467 @@
+# NSFW strings from source files that were not copied whole.
+# Each block is the repo-relative path, then the matching string literals.
+# Lockfiles are skipped. Files copied verbatim under this folder are not repeated here.
+
+## src/components/auth/LoginForm.tsx
+Ready to get naughty!
+Welcome back to the naughty side!
+Time to get nasty!
+your.naughty.email@example.com
+Create Naughty Account
+Enter The Naughty Side
+Keep me logged in (and naughty)
+your.nasty.email@example.com
+Unleash Your Nasty Side
+Enter The Nasty Arena
+
+## src/components/auth/AuthHeader.tsx
+Time to get naughty!
+
+## src/components/AdminTools/AssetGenerator/useAssetGeneration.ts
+Fantasy battle arena with magical ambient lighting, suitable for NSFW card game, dark vibrant colors
+Fantasy game board grid with magical runes and energy flowing through grid lines, top down view, NSFW elements subtly integrated
+Ornate teddy bear card back design with naughty symbols and magical elements, dark purple and gold, NSFW
+Fantasy game UI elements with ornate borders, buttons, and panels, dark theme with purple accents, subtle NSFW theming
+
+## src/components/AdminTools/AssetGenerator/hooks/useAssetGeneration.ts
+Generate ${type} for NSFW teddy bear card game
+
+## src/components/AdminTools/StableDiffusionConnector/components/LocalSDConnector.tsx
+sd-nsfw-enabled
+nsfw-switch
+
+## src/components/AdminTools/StableDiffusionConnector/components/GenerateTab.tsx
+Cute teddy bear with naughty pose, playful, flirty expression, adult content, high quality
+Generate NSFW Teddy Image
+
+## src/components/AdminTools/StableDiffusionConnector/components/PromptInput.tsx
+fantasy teddy bear, stuffed animal, seductive pose, playful, flirty expression, adult-themed, high quality
+
+## src/components/AdminTools/StableDiffusionConnector/hooks/useStableDiffusionTabs.ts
+NSFW, cute teddy bear, soft fur, realistic textures, detailed stitching, mischievous expression
+
+## src/components/AdminTools/StableDiffusionConnector/utils/storageUtils.ts
+naughty-teddy-sd-history
+
+## src/components/HomePage/GameSection.tsx
+Fluffy Seducer
+A master of flirtatious combat
+
+## src/components/HomePage/HomeHeader.tsx
+Seductive Teddies
+Naughty Moves
+Dominate Others
+
+## src/components/HomePage/GameStats.tsx
+Seduction Power
+Your teddies are feeling extra flirty!
+Naughty Rating
+
+## src/components/HomePage/GameSection/GameContainer.tsx
+Seductive Snuggle
+Flirty Flutter
+
+## src/components/HomePage/GameSection/GameContent/WelcomeSection.tsx
+px-4 py-2 rounded-full text-white transition-colors ${
+            gameMode === "naughty" ? "bg-rose-500 hover:bg-rose-600" : "bg-violet-500 hover:bg-violet-600"
+          }
+
+## src/components/HomePage/GameSection/GameContent/GameHeader.tsx
+hearthstone-button ${
+            gameMode === "naughty" ? "bg-rose-500" : "bg-violet-500"
+          }
+
+## src/components/HomePage/HeroSection/HeroSection.tsx
+Naughty Mode
+Nasty Mode
+
+## src/components/HomePage/HeroSection/FeatureTags.tsx
+Naughty Mode 😈
+Nasty Combat 💥
+Flirty Moves 💋
+Seductive Tactics 💝
+
+## src/components/HomePage/HeroSection/HeroTitle.tsx
+Where Naughty Meets Nasty
+
+## src/components/TeddyCard/types.ts
+SEDUCTION
+
+## src/components/TeddyCard/GenerateCardImageButton.tsx
+Our naughty AI is crafting your teddy bear...
+${mode === 'naughty' ? 'Naughty' : 'Nasty'} teddy ready!
+Your ${card.rarity.toLowerCase()} ${card.name} is feeling ${mode === 'naughty' ? 'frisky' : 'fierce'}!
+group gap-2 transition-all ${mode === 'naughty' ? 'bg-pink-500/10 hover:bg-pink-500/20 text-pink-500' : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-500'}
+Naughty Mode
+Nasty Mode
+
+## src/components/TeddyCard/TeddyImageDisplay.tsx
+Naughty Teddy
+Nasty Teddy
+Feeling naughty?
+Ready to get nasty?
+
+## src/components/GameBoard/CardComboEffect.tsx
+naughty-duo
+Double Seduction
+nasty-duo
+Ultimate Climax
+
+## src/components/GameBoard/SuggestiveEffects.tsx
+Naughty Whisper
+Nasty Taunt
+
+## src/components/GameBoard/CardInspection.tsx
+Seduction
+
+## src/components/GameBoard/GameBoard.tsx
+Honey Seducer
+
+## src/components/GameBoard/CardFlipAnimation.tsx
+absolute inset-0 backdrop-blur-sm ${
+            gameMode === "naughty" 
+              ? "bg-gradient-to-br from-pink-900/30 to-rose-900/30" 
+              : "bg-gradient-to-br from-purple-900/30 to-indigo-900/30"
+          }
+absolute inset-0 backface-hidden ${
+              gameMode === "naughty" 
+                ? "bg-gradient-to-br from-pink-500 to-rose-600" 
+                : "bg-gradient-to-br from-purple-600 to-indigo-700"
+            } rounded-xl p-2 flex items-center justify-center text-white font-bold shadow-inner
+absolute inset-2 rounded-lg border-2 ${
+              gameMode === "naughty" ? "border-pink-300/30" : "border-purple-300/30"
+            } flex items-center justify-center
+absolute w-8 h-8 rounded-full ${
+                      gameMode === "naughty" ? "bg-pink-300/20" : "bg-purple-300/20"
+                    }
+h-1/3 p-3 ${
+              gameMode === "naughty" 
+                ? "bg-gradient-to-br from-pink-50 to-rose-50" 
+                : "bg-gradient-to-br from-purple-50 to-indigo-50"
+            }
+text-sm font-semibold rounded-full px-2 ${
+                  gameMode === "naughty" 
+                    ? "bg-pink-100 text-pink-700" 
+                    : "bg-purple-100 text-purple-700"
+                }
+text-sm font-semibold ${
+                  gameMode === "naughty" ? "text-rose-600" : "text-indigo-600"
+                }
+absolute bottom-3 right-3 w-10 h-10 rounded-full flex items-center justify-center 
+              ${gameMode === "naughty" ? "bg-pink-600" : "bg-purple-700"} text-white font-bold
+absolute w-1 h-1 rounded-full ${
+                  gameMode === "naughty" ? "bg-pink-300" : "bg-purple-300"
+                }
+
+## src/components/GameBoard/AnimationSystem.tsx
+dominate
+
+## src/components/GameBoard/BattleStats.tsx
+Seduction
+Seduction Mode
+
+## src/components/GameBoard/AdultAnimations.tsx
+seduction
+domination
+
+## src/components/GameBoard/GameBoardLayout.tsx
+They look ready to seduce the opposition
+dominate
+? "Seduction" : 
+              actionType ===
+? "Domination" : 
+              actionType ===
+? "Seduction" : 
+            actionType ===
+? "Domination" : 
+            actionType ===
+
+## src/components/GameBoard/BattleInterface.tsx
+Your teddy's getting naughty!
+Your teddy's getting nasty!
+
+## src/components/GameBoard/GameTutorial.tsx
+Welcome to Naughty Teddies Battle!
+Switch between 'Naughty' mode for seductive attacks or 'Nasty' mode for brutal assaults. Each mode changes your cards' abilities and special moves!
+Each teddy has a unique special move. These powerful abilities can turn the tide of battle! Use them wisely to dominate your opponent.
+
+## src/components/GameBoard/BattleAnimation.tsx
+absolute inset-0 rounded-lg ${
+            gameMode === "naughty" 
+              ? (type === 'attack' ? 'bg-pink-500/10' : 
+                 type === 'defense' ? 'bg-rose-400/10' : 'bg-fuchsia-500/10')
+              : (type === 'attack' ? 'bg-purple-600/10' : 
+                 type === 'defense' ? 'bg-blue-500/10' : 'bg-violet-600/10')
+          }
+0 0 50px ${
+              gameMode === "naughty"
+                ? (type === 'attack' ? 'rgba(236, 72, 153, 0.4)' :
+                   type === 'defense' ? 'rgba(225, 29, 72, 0.4)' : 'rgba(217, 70, 239, 0.4)')
+                : (type === 'attack' ? 'rgba(147, 51, 234, 0.4)' :
+                   type === 'defense' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(139, 92, 246, 0.4)')
+            }
+
+## src/components/GameBoard/SpecialMoveEffects/SuggestiveEffects.tsx
+seduction
+Sweet Seduction
+domination
+Total Domination
+
+## src/components/GameBoard/SpecialMoveEffects/types.ts
+seduction
+domination
+
+## src/components/GameBoard/SpecialMoveEffects/SpecialMoveName.tsx
+Sweet Seduction
+Deep Penetration
+Multiple Climax
+Brutal Domination
+
+## src/components/GameBoard/Battle/BattleArea/index.tsx
+? "Your teddy thoroughly dominated the opposition!" 
+                : "Your teddy has been completely exhausted and humiliated!"}
+            </motion.div>
+            
+            <motion.button
+              className={cn(
+                "px-6 py-3 rounded-full font-bold",
+                "flex items-center gap-2",
+                winner ===
+
+## src/components/GameBoard/Animations/AdultAnimations.tsx
+dominate
+
+## src/components/GameBoard/Animations/SpecialMoveAnimation.tsx
+Dominate!
+
+## src/components/GameBoard/TutorialOverlay/GameTutorial.tsx
+Get ready for a naughty card battle where fluffy bears do very adult things. Choose your cards wisely - some are seductive, others are downright dominant.
+Naughty Mode Basics
+Nasty Mode Basics
+In Naughty Mode, your bears seduce and tempt the opponent. Focus on flirty tactics to weaken their resolve and make them submit willingly.
+In Nasty Mode, your bears dominate through brute force. Break your opponent's will and make them submit to your power.
+In Naughty Mode, focus on strategic card combinations and defense to wear down your opponent.
+In Nasty Mode, aggressive tactics and high-damage attacks are your path to victory.
+Unleash special seduction techniques that will leave your opponent begging for more. These powerful moves can turn the tide of battle.
+Dominate your opponent with brutal special moves. Show them who's in charge with devastating techniques.
+Now you're ready to experience all the naughty fun! Remember, the goal is to strip your opponent of all defenses and execute your finishing move.
+
+## src/components/GameBoard/CardInspection/CardStats.tsx
+This seductive move weakens your opponent's defenses and leaves them wanting more.
+
+## src/components/GameBoard/BattleAnimations/SuggestiveAnimations.tsx
+dominate
+seduction
+domination
+
+## src/components/GameBoard/CardSynergy/SynergyOverlay.tsx
+seduction
+
+## src/components/GameBoard/BattleArea/GameModeSwitch.tsx
+Naughty Mode
+Nasty Mode
+
+## src/components/GameBoard/BattleArea/TurnIndicator.tsx
+0 0 10px ${gameMode === "naughty" ? "rgba(236,72,153,0.3)" : "rgba(139,92,246,0.3)"}
+
+## src/components/GameBoard/CardCombo/ComboTitle.tsx
+naughty-duo
+Double Seduction
+nasty-duo
+Ultimate Climax
+
+## src/components/GameBoard/CardCombo/ComboIcon.tsx
+naughty-duo
+nasty-duo
+
+## src/components/GameBoard/BattleStats/index.tsx
+Seduction
+Seduction Mode
+
+## src/components/GameBoard/Layout/SpecialActionButtons.tsx
+dominate
+) return null;
+  
+  return (
+    <motion.div 
+      className="absolute bottom-32 right-6 flex flex-col gap-2"
+      initial={{ opacity: 0, scale: 0.8, x: 20 }}
+      animate={{ opacity: 1, scale: 1, x: 0 }}
+      transition={{ delay: 0.5 }}
+    >
+      {gameMode === "naughty" ? (
+        <>
+          <ActionButton 
+            icon={Heart} 
+            label="Seduce" 
+            color="rose" 
+            onClick={() => onSpecialAction(
+)}
+            tooltip="Use seduction to lower opponent
+onClick={() => onSpecialAction('dominate')}
+            tooltip=
+
+## src/components/GameBoard/Layout/GameContent.tsx
+dominate
+
+## src/components/GameBoard/AdultGameplay/index.ts
+./SeductionSystem
+
+## src/components/GameBoard/Tutorial/GameTutorial.tsx
+This adult-themed card game lets you battle with naughty or nasty teddy bears. Let's learn the basics!
+Naughty Mode
+Nasty Mode
+You're in Naughty Mode, where seduction and flirtation are your weapons. Cards focus on manipulation and control.
+You're in Nasty Mode, where brute force and domination rule. Cards focus on pure power and aggression.
+/images/tutorial/naughty.jpg
+/images/tutorial/nasty.jpg
+You can switch between Naughty and Nasty modes during your turn. This affects how your cards work!
+
+## src/components/Settings/Tabs/GameplaySettings.tsx
+Bears whisper naughty things in your ear
+Customize how your teddy bears behave... they can be quite naughty when no one's watching.
+
+## src/components/Settings/Tabs/ContentSettings.tsx
+Control just how naughty your teddy experience gets
+Allows naughty humor and suggestive themes
+settings.kink_level
+Kink Intensity
+settings.kink_level_description
+Enables more extreme adult content and fetish references
+
+## src/components/DeckBuilder/CollectionView/useSynergyDetection.ts
+Seduction Squad (${matchingCards.length + 1} cards): Your naughty bears form a flirtatious team that's impossible to resist
+Domination Crew (${matchingCards.length + 1} cards): Your nasty bears will break all resistance through overwhelming force
+Climax Team (${matchingCards.length + 1} cards): Multiple ways to end the game when your opponent is ready to surrender
+Good Cop/Bad Cop (${nastyCards.length + 1} cards): This naughty bear complements your nasty bears perfectly
+Pleasure and Pain (${naughtyCards.length + 1} cards): This nasty bear adds edge to your seductive team
+
+## src/hooks/use-game-mode.ts
+Time to get flirty! 💕
+
+## src/hooks/use-game-state.ts
+Someone's feeling naughty...
+
+## src/lib/services/cardService.ts
+Flirty Fannie
+This seductive teddy knows how to bat her eyelashes and get what she wants.
+Seductive Wink
+Master of the teddy seduction arts, no bear can resist his charm.
+The ultimate flirt who never delivers what's promised.
+
+## src/lib/types/soundTypes.ts
+success-naughty
+success-nasty
+
+## src/lib/types/battleTypes.ts
+dominate
+seduction
+
+## src/lib/types/battle.d.ts
+seduction
+
+## src/pages/GameBoard.tsx
+Fluffy Seducer
+Velvet Dominator
+Welcome to ${gameMode === "naughty" ? "Naughty" : "Nasty"} Teddies Game!
+Switched to ${gameMode === "naughty" ? "Nasty" : "Naughty"} mode!
+
+## src/pages/Login.tsx
+Prepare for some naughty teddy action!
+Naughty Teddies
+Nasty Teddies
+text-sm ${gameMode === "nasty" ? "text-amber-500" : "text-rose-500"}
+
+## src/pages/Index.tsx
+Join the most outrageous teddy bear card battle game! Choose your play style - Naughty or Nasty!
+
+## src/pages/HomePage.tsx
+text-4xl sm:text-6xl font-bold mb-6 bg-gradient-to-r ${
+          gameMode === "naughty" 
+            ? "from-rose-500 via-pink-500 to-rose-500" 
+            : "from-amber-500 via-yellow-500 to-amber-500"
+        } bg-clip-text text-transparent
+text-lg px-8 ${
+              gameMode === "naughty"
+                ? "bg-rose-500 hover:bg-rose-600"
+                : "bg-amber-500 hover:bg-amber-600"
+            }
+text-lg px-8 ${
+              gameMode === "naughty"
+                ? "border-rose-500/30 text-rose-500 hover:bg-rose-500/10"
+                : "border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+            }
+
+## src/pages/Game/GamePage.tsx
+Time to get naughty with your teddies!
+Prepare for some nasty bear action!
+Prepare for some seductive teddy action!
+Naughty Mode
+Nasty Mode
+
+## src/utils/deckBuilder.ts
+Seductive
+
+## src/utils/cardUtils.ts
+Once you go black bear, you never go back. The darkness hides all kinds of naughty secrets.
+Dominator
+Spanking
+Deep Penetration
+Multiple Climax
+Delightful Domination
+Intense Climax
+dominate
+${cardName} gives a seductive wink that weakens all resistance!
+${cardName} dominates the field with raw power!
+${cardName} delivers a powerful thrust that penetrates all defenses!
+
+## src/utils/sound/SoundManager.ts
+success-naughty
+success-nasty
+
+## src/utils/sound/types.ts
+success-naughty
+success-nasty
+
+## supabase/functions/grok-game-enhance/index.ts
+You are an expert at creating detailed, suggestive but tasteful image generation prompts. Convert user requests into highly detailed, visual prompts that will result in high-quality, flirtatious image generation while maintaining plausible deniability.
+
+## supabase/functions/scan-and-assign-images/aiAnalysisUtils.ts
+];
+    const nsfw = [
+
+## supabase/functions/scan-and-assign-images/types.ts
+seductive
+seduction
+dominate
+naughty mode
+nasty mode
+
+## supabase/functions/generate-game-assets/imageGenerator.ts
+Create decorative UI elements with a romantic and suggestive theme. Include heart-shaped buttons, intimate borders, and playful decorative elements that maintain a tasteful balance between cute and flirtatious.
+
+## supabase/functions/expand-card-descriptions/grokClient.ts
+}
+            Make it flirtatious but tasteful, using honey-themed innuendos.`
+          }
+        ],
+        model: "grok-beta",
+        temperature: 0.7
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+
+## supabase/functions/expand-card-descriptions/index.ts
+A flirtatious little troublemaker who knows how to have a good time. Don't let their innocent looks fool you - they're all about that honey!
+
+## supabase/functions/grok-generate/index.ts
+You are an expert at creating detailed, suggestive but tasteful image generation prompts. Convert user requests into highly detailed, visual prompts that will result in high-quality, flirtatious image generation while maintaining plausible deniability.
+
+## supabase/functions/generate-teddy-image/index.ts
+flirty, cute, romantic pose,
+
+## supabase/functions/verify-teddy-images/index.ts
+You are an AI that analyzes images of teddy bears for a card game. Your task is to determine if the image contains a teddy bear or stuffed animal, and if it contains adult/NSFW content.
