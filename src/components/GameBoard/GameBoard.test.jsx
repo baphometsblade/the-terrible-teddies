@@ -1,6 +1,8 @@
 import { StrictMode, act, createRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { MODIFIERS } from '@/lib/dailyFight';
+import { ALL_CARDS } from '@/stores/gameStore';
 
 // The board's sound and server sync are side effects this test has no use
 // for (jsdom has no audio, and there is no backend).
@@ -151,6 +153,24 @@ describe('GameBoard', () => {
     expect(button('Keep hand')).toBeFalsy();
     expect(button('Swap 1')).toBeFalsy();
     expect(container.querySelector('[data-mulligan]')).toBeNull();
+  });
+
+  it('a nightly short pour starts at 25 and prints the rule', async () => {
+    const modifier = MODIFIERS.find((mod) => mod.id === 'short-pour');
+    await renderBoard({
+      onBackToMenu: () => {},
+      daily: {
+        key: '2026-11-06',
+        modifier,
+        crewName: 'The Door Staff',
+        deck: ALL_CARDS.filter((card) => card.type === 'action').slice(0, 4),
+      },
+    }, { keep: false });
+    expect(container.querySelector('[data-daily]')?.textContent).toBe('Short Pour');
+    const said = [...container.querySelectorAll('[role="log"] > div')].map((e) => e.textContent).join(' ');
+    expect(said).toContain(modifier.rules);
+    const hp = container.querySelector('[aria-label^="Your health"]')?.getAttribute('aria-label');
+    expect(hp).toContain('25 of');
   });
 
   it('charges fatigue when the opening draw finds an empty deck', async () => {

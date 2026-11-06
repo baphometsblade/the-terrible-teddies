@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Swords, Target, Trophy, Store, Package, Medal, Layers, LibraryBig,
-  Gift, CircleHelp, Settings, Coins, Gem, Flame, ChevronRight,
+  Gift, CircleHelp, Settings, Coins, Gem, Flame, ChevronRight, Moon,
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { getDailyChallenges, getWeeklyChallenges, countClaimable } from '../stores/challenges';
@@ -17,6 +17,7 @@ import { signFor, subtitleFor, partOfDay, CLOSED_NOTES } from '@/lib/barClock';
 import { houseRank } from '@/lib/houseRank';
 import { pickLine } from '@/lib/mgmtNotes';
 import { TILE_LINES, streakLine, heroLineForVisit, footerLineForVisit, recordMenuVisit, SHIPPED_FOOTER } from '@/lib/menuLines';
+import { dailyFightFor } from '@/lib/dailyFight';
 import CardFan from './CardFan';
 import NeonSign from './NeonSign';
 
@@ -100,6 +101,7 @@ const MainMenu = ({
   onBattlePass,
   onLeaderboard,
   onChallenges,
+  onNightly,
 }) => {
   const {
     playerName, level, xp, getXPForNextLevel,
@@ -110,6 +112,7 @@ const MainMenu = ({
     weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
     syncPeriods, ownedCards,
     seasonXP, claimedBattlePassRewards, hasBattlePassPremium, syncSeason,
+    dailyKey, dailyResult, dailyStreak,
   } = useGameStore();
 
   const today = new Date().toDateString();
@@ -204,6 +207,11 @@ const MainMenu = ({
     { id: 'deck', title: 'Deck Builder', description: TILE_LINES.deck, icon: Layers, action: onDeckBuilder },
     { id: 'collection', title: 'Collection', description: TILE_LINES.collection, icon: LibraryBig, action: onCollection },
     { id: 'leaderboard', title: 'Rankings', description: TILE_LINES.leaderboard, icon: Medal, action: onLeaderboard },
+    { id: 'nightly', title: 'Nightly', description: TILE_LINES.nightly, icon: Moon, action: onNightly,
+      badge: dailyKey === dailyFightFor().key && dailyResult
+        ? (dailyResult === 'win' ? `${dailyStreak} streak` : 'Sat')
+        : 'Open',
+      accent: !(dailyKey === dailyFightFor().key && dailyResult) },
   ];
 
   return (
@@ -397,7 +405,7 @@ const MainMenu = ({
           colour each — the old eight-colour rainbow gave Rankings the same
           weight as the thing you came to do. */}
       <nav className="relative z-10 w-full max-w-6xl mx-auto" aria-label="Main menu">
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {destinations.map((d, index) => (
             <motion.div
               key={d.id}
@@ -409,9 +417,8 @@ const MainMenu = ({
               // its bottom 3px fall off it, so it dropped back under the
               // pointer and was hovered again, every frame: the tile shook.
               whileHover="lift"
-              // Seven tiles: the last spans two columns wherever the grid has
-              // 2 or 4 of them, so no row ends in an empty cell.
-              className={index === destinations.length - 1 ? 'col-span-2 lg:col-span-1' : ''}
+              // Eight tiles fill a 2-column and a 4-column grid exactly, so the
+              // last one does not have to stretch.
             >
               <motion.div
                 {...pressable(d.action, d.title)}

@@ -5,6 +5,7 @@ import { shuffleDeck } from '@/utils/deckUtils';
 import { getCurrentSeason, getSeason, seasonFromKey } from '@/utils/season';
 import { BATTLE_PASS_REWARDS, readyRewards, passOf, describeGrants } from '@/lib/battlePass';
 import analytics from '@/utils/analytics';
+import { nextDailyRecord } from '@/lib/dailyFight';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
@@ -29,7 +30,7 @@ export const ALL_CARDS = [
   { id: 15, name: "Tax-Fraud Teddy", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'stealth', rarity: 'rare', description: "Officially, he doesn't exist. Ask his accountant." },
 
   // Epic
-  { id: 16, name: "Lord Fluffington, Disgraced", attack: 4, defense: 4, type: 'action', cost: 5, ability: 'shield', rarity: 'epic', description: "Lost the estate to a lap dancer. She's technically a duchess now." },
+  { id: 16, name: "Lord Fluffington, Disgraced", attack: 4, defense: 3, type: 'action', cost: 5, ability: 'shield', rarity: 'epic', description: "Lost the estate to a lap dancer. She's technically a duchess now." },
   { id: 17, name: "Blackout Bjorn", attack: 6, defense: 1, type: 'action', cost: 4, ability: 'fury', rarity: 'epic', description: "Remembers nothing. Regrets everything. Hits like a truck." },
   { id: 18, name: "Grandpa Warcrimes", attack: 2, defense: 6, type: 'action', cost: 5, ability: 'protect', rarity: 'epic', description: "Don't ask what he did in the Pillow Wars. He'll tell you." },
   { id: 19, name: "The Seam Reaper", attack: 5, defense: 3, type: 'action', cost: 5, ability: 'piercing', rarity: 'epic', description: "Every bear's last date. Brings his own scissors, never calls." },
@@ -69,7 +70,7 @@ export const ALL_CARDS = [
   { id: 57, name: "Hairball Harriet", attack: 3, defense: 2, type: 'action', cost: 3, ability: 'piercing', rarity: 'uncommon', description: "Swallows anything once. Returns most of it." },
   { id: 58, name: "Prison-Wine Pierre", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'uncommon', description: "Ferments grudges in a toilet. Delicious." },
   { id: 59, name: "Glitter Lungs", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'stealth', rarity: 'uncommon', description: "Inhaled a craft store in '09. Still sparkles when he coughs." },
-  { id: 60, name: "Beargaritaville", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'shield', rarity: 'uncommon', description: "Wasting away again. Salt on the rim, a lime in the eye." },
+  { id: 60, name: "Beargaritaville", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'shield', rarity: 'uncommon', description: "Wasting away again. Salt on the rim, a lime in the eye." },
   { id: 61, name: "Snitchslap Sue", attack: 3, defense: 3, type: 'action', cost: 3, ability: 'none', rarity: 'uncommon', description: "Slapped the groom, slept with the best man, wore a wire to both." },
   { id: 62, name: "Chainsmoke Chad", attack: 4, defense: 2, type: 'action', cost: 3, ability: 'fury', rarity: 'rare', description: "Lights the next one off your burning deck." },
   { id: 63, name: "Bail-Money Bonnie", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'protect', rarity: 'rare', description: "She knows a guy. She IS the guy." },
@@ -82,7 +83,7 @@ export const ALL_CARDS = [
 
   // Five new traps (ids 70-74) and five new specials (ids 75-79). Specials
   // only use effects applySpecialEffect implements: heal / draw / buff.
-  { id: 70, name: "Glass in the Gummy Bears", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common', description: "Chewy, with consequences." },
+  { id: 70, name: "Glass in the Gummy Bears", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 4, rarity: 'common', description: "Chewy, with consequences." },
   { id: 71, name: "Wet Floor, No Sign", attack: 0, defense: 0, type: 'trap', cost: 1, effect: 'damage', amount: 2, rarity: 'common', description: "Beer, glitter and a third liquid. The mop quit rather than ask." },
   { id: 72, name: "Loaded Claw Machine", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Rigged? Obviously. Everybody pays to get grabbed. Nobody takes the prize home." },
   { id: 73, name: "Last Call Stampede", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Five words: two for one tequila night." },
@@ -306,6 +307,12 @@ const initialState = {
   // False on a new save. A save from before the lesson, once it has a battle
   // on it, is treated as already seen (normalizeSave).
   firstFightSeen: false,
+  // The nightly fight (src/lib/dailyFight.js). The key is the player's local
+  // calendar day. A result of null means tonight has not been sat.
+  dailyKey: null,
+  dailyResult: null,
+  dailyStreak: 0,
+  dailyBest: 0,
   // Battle Pass
   hasBattlePassPremium: false,
   claimedBattlePassRewards: { free: [], premium: [] },
@@ -457,7 +464,7 @@ export const normalizeSave = (persisted) => {
   for (const k of ['coins', 'gems', 'xp', 'level', 'cardPacks', 'premiumPacks',
     'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'weekStreak', 'weekBestStreak', 'weekNewCards',
     'consecutiveLogins', 'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak',
-    'lastSyncedServerGems', 'cloudRev', 'gemDebt']) {
+    'lastSyncedServerGems', 'cloudRev', 'gemDebt', 'dailyStreak', 'dailyBest']) {
     if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];
   }
   // A debt is a count of gems: never negative, which would be a credit.
@@ -469,6 +476,8 @@ export const normalizeSave = (persisted) => {
   // musicEnabled was a Settings switch nothing ever read. Drop it so a v3
   // save cannot write the dead field back on the next persist.
   delete s.musicEnabled;
+  s.dailyKey = typeof persisted?.dailyKey === 'string' ? persisted.dailyKey : null;
+  s.dailyResult = persisted?.dailyResult === 'win' || persisted?.dailyResult === 'loss' ? persisted.dailyResult : null;
   // The first-fight lesson. Absent on an older save: anyone who has already
   // fought has had their onboarding, and is not sat through it again.
   if (!persisted || !Object.prototype.hasOwnProperty.call(persisted, 'firstFightSeen')) {
@@ -1350,6 +1359,12 @@ export const useGameStore = create(
       // arms the coach for the fight that starts now, even on a difficulty
       // that would not teach it. coachNextFight is not saved (partialize).
       replayFirstFight: () => set({ firstFightSeen: false, coachNextFight: true }),
+      recordDailyResult: (won, key) => {
+        const patch = nextDailyRecord(get(), won, key);
+        if (!patch) return null;
+        set(patch);
+        return patch;
+      },
 
       // Wiping progress must NOT wipe the server-gem high-water mark. That mark
       // records how much purchased currency has already been credited locally;

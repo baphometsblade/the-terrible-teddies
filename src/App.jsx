@@ -10,7 +10,7 @@ import DialogErrorBoundary from './components/DialogErrorBoundary';
 // round-trip in front of the screen whose entire job is covering a round-trip.
 import BootScreen from './components/BootScreen';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGameStore } from './stores/gameStore';
+import { useGameStore, ALL_CARDS } from './stores/gameStore';
 import { fetchServerGemBalance, ensurePlayerProfile, isSupabaseConfigured } from './utils/supabaseClient';
 import analytics from './utils/analytics';
 import { useRehydrateOnFocus } from './hooks/useRehydrateOnFocus';
@@ -30,6 +30,7 @@ const loadCloudSave = () => import('./lib/cloudSave').then((m) => { cloudSave = 
 import { FOCUS_OUTLINE } from './lib/focus';
 import { SCREEN_PAD } from './lib/safeArea';
 import { holdBack } from './lib/historyGuard';
+import { dailyFightFor, resolveCrew } from './lib/dailyFight';
 import { focusWhenReady } from './lib/screenFocus';
 import { achievementToasts } from './lib/achievementAnnouncements';
 import { levelUpToast } from './lib/levelUpToast';
@@ -53,6 +54,7 @@ const Shop = lazy(() => import('./components/Shop'));
 const BattlePass = lazy(() => import('./components/BattlePass'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const Challenges = lazy(() => import('./components/Challenges'));
+const DailyFight = lazy(() => import('./components/DailyFight'));
 const PurchaseSuccess = lazy(() => import('./components/PurchaseSuccess'));
 
 // Shown for the moment a lazy dialog or the board chunk is in flight. A CSS
@@ -249,18 +251,20 @@ function App() {
   const [showBattlePass, setShowBattlePass] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
+  const [showDaily, setShowDaily] = useState(false);
+  const [dailySpec, setDailySpec] = useState(null);
 
   // Close every dialog at once — used by DialogErrorBoundary to return the app
   // to a usable state when a dialog chunk fails to load. Its result also keys
   // the boundary's reset, so opening any dialog re-attempts the chunk.
   const dialogFlags = [
     showTutorial, showCardPacks, showPlayerStats, showSettings, showDailyRewards,
-    showShop, showBattlePass, showLeaderboard, showChallenges,
+    showShop, showBattlePass, showLeaderboard, showChallenges, showDaily,
   ];
   const closeAllDialogs = () => {
     setShowTutorial(false); setShowCardPacks(false); setShowPlayerStats(false);
     setShowSettings(false); setShowDailyRewards(false); setShowShop(false);
-    setShowBattlePass(false); setShowLeaderboard(false); setShowChallenges(false);
+    setShowBattlePass(false); setShowLeaderboard(false); setShowChallenges(false); setShowDaily(false);
   };
   const [purchaseSessionId, setPurchaseSessionId] = useState(null);
 
@@ -285,7 +289,7 @@ function App() {
   };
   const toGems = (closeFrom) => routeTo(closeFrom, () => openShop('gems'));
 
-  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, reconcileServerGems } = useGameStore();
+  const { tutorialCompleted, setTutorialCompleted, lastLoginDate, pendingAchievements, reconcileServerGems, dailyKey, dailyResult, dailyStreak, dailyBest } = useGameStore();
   const { toast } = useToast();
 
   // Show achievement unlock toasts — every queued achievement, one after another.
@@ -521,7 +525,7 @@ function App() {
     if (!session) return;
     const action = new URLSearchParams(window.location.search).get('action');
     if (!action) return;
-    if (action === 'battle') navigateTo('game');
+    if (action === 'battle') { setDailySpec(null); navigateTo('game'); }
     else if (action === 'shop') openShop();
     else if (action === 'rewards') setShowDailyRewards(true);
     window.history.replaceState({}, '', window.location.pathname);
@@ -634,8 +638,9 @@ function App() {
               <Suspense fallback={<DialogLoader />}>
                 <GameBoard
                   ref={gameBoardRef}
-                  onBackToMenu={() => navigateTo('menu')}
-                  onOpenShop={() => { navigateTo('menu'); openShop(); }}
+                  daily={dailySpec}
+                  onBackToMenu={() => { setDailySpec(null); navigateTo('menu'); }}
+                  onOpenShop={() => { setDailySpec(null); navigateTo('menu'); openShop(); }}
                 />
               </Suspense>
             </DialogErrorBoundary>
@@ -679,7 +684,7 @@ function App() {
       default:
         return (
           <MainMenu
-            onStartGame={() => navigateTo('game')}
+            onStartGame={() => { setDailySpec(null); navigateTo('game'); }}
             onDeckBuilder={() => navigateTo('deck')}
             onCollection={() => navigateTo('collection')}
             onTutorial={() => setShowTutorial(true)}
@@ -691,6 +696,7 @@ function App() {
             onBattlePass={() => setShowBattlePass(true)}
             onLeaderboard={() => setShowLeaderboard(true)}
             onChallenges={() => setShowChallenges(true)}
+            onNightly={() => setShowDaily(true)}
           />
         );
     }
@@ -731,12 +737,14 @@ function App() {
                     onStartGame={() => {
                       setShowTutorial(false);
                       setTutorialCompleted(true);
+                      setDailySpec(null);
                       navigateTo('game');
                     }}
                     onReplayLesson={() => {
                       useGameStore.getState().replayFirstFight();
                       setShowTutorial(false);
                       setTutorialCompleted(true);
+                      setDailySpec(null);
                       navigateTo('game');
                     }}
                   />
@@ -766,6 +774,25 @@ function App() {
                 )}
                 {showLeaderboard && <Leaderboard key="leaderboard" onClose={() => setShowLeaderboard(false)} />}
                 {showChallenges && <Challenges key="challenges" onClose={() => setShowChallenges(false)} />}
+                {showDaily && (
+                  <DailyFight
+                    key="nightly"
+                    fight={dailyFightFor()}
+                    record={{ dailyKey, dailyResult, dailyStreak, dailyBest }}
+                    onClose={() => setShowDaily(false)}
+                    onStart={() => {
+                      const fight = dailyFightFor();
+                      setDailySpec({
+                        key: fight.key,
+                        modifier: fight.modifier,
+                        crewName: fight.crew.name,
+                        deck: resolveCrew(fight.crew, ALL_CARDS),
+                      });
+                      setShowDaily(false);
+                      navigateTo('game');
+                    }}
+                  />
+                )}
               </AnimatePresence>
             </Suspense>
             </DialogErrorBoundary>

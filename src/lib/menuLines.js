@@ -39,6 +39,7 @@ export const TILE_LINES = Object.freeze({
   deck: 'Assemble your goon squad',
   collection: 'Everyone you’ve ever pulled',
   leaderboard: 'Who’s on top. Ask their ex.',
+  nightly: 'One sitting. No rematch.',
 });
 
 // The streak line under the Battle button, by the running streak: one win, a

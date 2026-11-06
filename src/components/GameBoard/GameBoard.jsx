@@ -19,6 +19,7 @@ import { FIRST_FIGHT, firstFightStep } from '@/lib/firstFight';
 import { fatigueForEmptyDraw, fatigueLine } from '@/lib/fatigue';
 import { applyMulligan, mulliganKeptLine, mulliganOpponentDeck, mulliganOpponentLine, mulliganSwapLine } from '@/lib/mulligan';
 import { anchorCoachTarget } from '@/lib/coachAnchor';
+import { shouldFatigue } from '@/lib/dailyFight';
 import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
@@ -547,7 +548,7 @@ const GameOverDialog = ({ label, onEscape, children }) => {
  * handler). While a game is live it asks first; once the game is over, or
  * before it has dealt, it leaves at once.
  */
-const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, ref) {
+const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, daily = null }, ref) {
   // Get store data
   // Not the deck or the difficulty: a game is dealt from a snapshot of
   // those (see the deal below), so nothing the store does mid-game can reach
@@ -573,6 +574,15 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // damageTaken is what the 'Flawless' achievement actually means. Final HP
   // can't answer it: heal is capped at 30, so a player who gets hit and then
   // heals back finishes at full and would have claimed "Win without losing HP".
+  const dailyRef = useRef(daily);
+  dailyRef.current = daily;
+  const dailySettledRef = useRef(false);
+  const settleDaily = (won) => {
+    const spec = dailyRef.current;
+    if (!spec || dailySettledRef.current) return;
+    dailySettledRef.current = true;
+    useGameStore.getState().recordDailyResult(won, spec.key);
+  };
   const battleStatsRef = useRef({
     damageDealt: 0, healingDone: 0, cardsPlayed: 0, damageTaken: 0, fatigueTaken: 0, fatigueDealt: 0,
   });
@@ -770,6 +780,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       const { gameOver: over, deckReady: ready, playerHealth: hp } = liveRef.current;
       if (over || !ready || abandonHandledRef.current) return;
       abandonHandledRef.current = true;
+      settleDaily(false);
       const stats = battleStatsRef.current;
       // The local record persists synchronously through the store — that is what
       // closes the streak exploit even mid-unload. The server syncs are best-effort.
@@ -1131,17 +1142,34 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
 
     const initialPlayerDeck = shuffleDeck(deckToUse);
 
-    // Generate opponent deck based on difficulty — a fresh crew every fight,
-    // scaled by difficulty (see opponentDeck.js), instead of the same 8 goons
-    // forever.
-    const { cards: opponentCards, crewName } = buildOpponentDeck(aiDifficulty);
-    const healthMod = OPPONENT_HEALTH_MOD_BY_DIFFICULTY[aiDifficulty] ?? 0;
+    // A nightly fight brings its own crew and its own rules. A normal fight
+    // still rolls a fresh crew scaled by the difficulty it was dealt at.
+    const spec = dailyRef.current;
+    let opponentCards;
+    let crewName;
+    let healthMod = 0;
+    if (spec) {
+      const bump = spec.modifier.opponentAttack || 0;
+      opponentCards = spec.deck.map((card, idx) => ({
+        ...card,
+        instanceId: `d-${card.id}-${idx}`,
+        ...(bump && card.type === 'action' ? { attack: card.attack + bump } : {}),
+      }));
+      crewName = spec.crewName;
+    } else {
+      const built = buildOpponentDeck(aiDifficulty);
+      opponentCards = built.cards;
+      crewName = built.crewName;
+      healthMod = OPPONENT_HEALTH_MOD_BY_DIFFICULTY[aiDifficulty] ?? 0;
+    }
 
     const initialOpponentDeck = shuffleDeck(opponentCards);
 
-    // Set opponent health based on difficulty
-    setOpponentHealth(30 + healthMod);
-    setOpponentMaxHealth(30 + healthMod);
+    const startHp = spec?.modifier.startingHealth ?? 30;
+    setPlayerHealth(startHp);
+    setOpponentHealth(startHp + healthMod);
+    setOpponentMaxHealth(startHp + healthMod);
+    setPlayerEnergy(energyForTurn(1) + (spec?.modifier.extraEnergy || 0));
 
     const playerInitialHand = initialPlayerDeck.slice(0, 5);
     const playerRemainingDeck = initialPlayerDeck.slice(5);
@@ -1171,7 +1199,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // this fight only, and it is not part of the save.
     const { firstFightSeen, coachNextFight } = useGameStore.getState();
     if (coachNextFight) useGameStore.setState({ coachNextFight: false });
-    setCoachArmed((aiDifficulty === 'easy' && !firstFightSeen) || coachNextFight === true);
+    setCoachArmed(!spec && ((aiDifficulty === 'easy' && !firstFightSeen) || coachNextFight === true));
 
     // A fresh log at every deal, rather than appending to whatever is there.
     // Everything above replaces state, so this effect can run twice and end
@@ -1183,6 +1211,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // the hand-over, in the order it is said.
     const intro = [`${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`];
     if (mulled.tossed > 0) intro.push(mulliganOpponentLine(OPPONENT_NAME, mulled.tossed));
+    if (spec) intro.push(`${spec.modifier.name}. ${spec.modifier.rules}`);
     startBattleLog(intro);
     // The clock is read here, once, at the deal: a battle begun between
     // midnight and five in the morning opens differently, and one that runs
@@ -1202,6 +1231,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       clearAllTimeouts(); // cancel any queued opponent-turn steps
       setGameOver(true);
       setWinner('player');
+      settleDaily(true);
       setOppQuip(null);
       setPlayerQuip(null); // its dismiss timer was just cancelled by clearAllTimeouts
       setEndQuip(pickQuip('oppLoses'));
@@ -1243,6 +1273,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       clearAllTimeouts(); // cancel any queued opponent-turn steps
       setGameOver(true);
       setWinner('opponent');
+      settleDaily(false);
       setOppQuip(null);
       setPlayerQuip(null); // its dismiss timer was just cancelled by clearAllTimeouts
       setEndQuip(pickQuip('oppWins'));
@@ -1302,7 +1333,13 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     if (lastDrawRef.current === drawKey) return;
     lastDrawRef.current = drawKey;
 
-    if (playerDeck.length === 0) {
+    const spec = dailyRef.current;
+    const clock = shouldFatigue({
+      deckEmpty: playerDeck.length === 0,
+      turn: turnCount,
+      fatigueFromTurn: spec?.modifier.fatigueFromTurn,
+    });
+    if (clock) {
       const amount = fatigueForEmptyDraw(playerFatigueRef.current);
       playerFatigueRef.current = amount;
       setPlayerFatigue(amount);
@@ -1311,9 +1348,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       battleStatsRef.current.fatigueTaken += amount;
       pushFx([{ face: 'player', hit: true, tone: 'damage', text: `−${amount}` }]);
       addToBattleLog(fatigueLine('player', amount));
-    } else if (playerHand.length >= MAX_HAND_SIZE) {
+    }
+    if (playerDeck.length > 0 && playerHand.length >= MAX_HAND_SIZE) {
       addToBattleLog(`Hand is full (${MAX_HAND_SIZE}) — skipped draw. Put something down.`);
-    } else {
+    } else if (playerDeck.length > 0) {
       const drawnCard = playerDeck[0];
       setPlayerHand(prev => [...prev, drawnCard]);
       setPlayerDeck(prev => prev.slice(1));
@@ -1709,7 +1747,13 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
 
     // An empty deck is a draw he cannot make. Fatigue lands before he plays
     // or swings, and a lethal one ends the turn so the corpse does not also attack.
-    if (opponentDeck.length === 0) {
+    const spec = dailyRef.current;
+    const clock = shouldFatigue({
+      deckEmpty: opponentDeck.length === 0,
+      turn: turnCount,
+      fatigueFromTurn: spec?.modifier.fatigueFromTurn,
+    });
+    if (clock) {
       const amount = fatigueForEmptyDraw(opponentFatigueRef.current);
       opponentFatigueRef.current = amount;
       setOpponentFatigue(amount);
@@ -1734,7 +1778,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // budget (difficulty-scaled) while the field has room. Only played cards
     // leave the deck, so a full board never mills it.
     // At the difficulty this game was dealt at, not the live setting.
-    const energyBudget = OPPONENT_ENERGY_BY_DIFFICULTY[dealtDifficultyRef.current] ?? OPPONENT_ENERGY_BY_DIFFICULTY.normal;
+    const energyBudget = (OPPONENT_ENERGY_BY_DIFFICULTY[dealtDifficultyRef.current] ?? OPPONENT_ENERGY_BY_DIFFICULTY.normal)
+      + ((dailyRef.current?.modifier.extraEnergy && turnCount === 1) ? dailyRef.current.modifier.extraEnergy : 0);
     // Pass activeOpponentField so a 'swarm' card in the opponent's hand is
     // budgeted at its discounted cost under the same rule the player follows.
     const { plays, remainingDeck } = chooseOpponentPlays(opponentDeck, opponentField.length, energyBudget, MAX_FIELD_SIZE, activeOpponentField);
@@ -2666,6 +2711,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
             <Avatar ring={OPPONENT_RING} />
             <div className="min-w-0">
               <div className="font-display font-extrabold text-white leading-tight truncate max-w-[7rem] sm:max-w-none">{OPPONENT_NAME}</div>
+              {daily && (
+                <div data-daily="" className="truncate text-[11px] font-semibold text-brass-200 max-w-[8rem] sm:max-w-none">{daily.modifier.name}</div>
+              )}
               <div className="text-red-200/80 text-[11px] whitespace-nowrap">
                 Deck: {opponentDeck.length}
                 {opponentDeck.length === 0 && (
