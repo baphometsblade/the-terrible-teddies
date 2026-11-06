@@ -106,6 +106,18 @@ describe('BarTab', () => {
     expect(rows()[TAB_COPY.chuck]).toBe('50,000 damage, still open');
   });
 
+  it('prints fatigue only when that side took some', async () => {
+    await renderTab();
+    expect(rows()[TAB_COPY.fatigueTaken]).toBeUndefined();
+    expect(rows()[TAB_COPY.fatigueDealt]).toBeUndefined();
+    await renderTab({
+      ...baseRewards,
+      stats: { ...baseRewards.stats, fatigueTaken: 3, fatigueDealt: 1 },
+    });
+    expect(rows()[TAB_COPY.fatigueTaken]).toBe('3');
+    expect(rows()[TAB_COPY.fatigueDealt]).toBe('1');
+  });
+
   it('prints the footer it was given, and none when it was given none', async () => {
     await renderTab(baseRewards, 'Tip your bartender. She saw everything.');
     expect(container.textContent).toContain('Tip your bartender. She saw everything.');

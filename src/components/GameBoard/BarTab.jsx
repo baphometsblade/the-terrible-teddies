@@ -196,6 +196,10 @@ const BarTab = ({ rewards, footer }) => {
     [TAB_COPY.healed, stats?.healingDone],
     [TAB_COPY.taken, stats?.damageTaken],
   ];
+  // The keg's share, and only when it actually hit. A zero would read as a
+  // charge that did not happen.
+  if (stats?.fatigueTaken > 0) itemized.push([TAB_COPY.fatigueTaken, stats.fatigueTaken]);
+  if (stats?.fatigueDealt > 0) itemized.push([TAB_COPY.fatigueDealt, stats.fatigueDealt]);
   return (
     <div data-bar-tab="" className="receipt-feed relative mx-auto mb-5 w-full max-w-[18rem]">
       {/* The slit the paper comes out of. */}

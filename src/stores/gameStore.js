@@ -1346,6 +1346,10 @@ export const useGameStore = create(
       setDifficulty: (difficulty) => set({ difficulty }),
       setTutorialCompleted: (completed) => set({ tutorialCompleted: completed }),
       markFirstFightSeen: () => set({ firstFightSeen: true }),
+      // How to play's "Replay the lesson". Clears the persisted flag and
+      // arms the coach for the fight that starts now, even on a difficulty
+      // that would not teach it. coachNextFight is not saved (partialize).
+      replayFirstFight: () => set({ firstFightSeen: false, coachNextFight: true }),
 
       // Wiping progress must NOT wipe the server-gem high-water mark. That mark
       // records how much purchased currency has already been credited locally;
@@ -1391,7 +1395,9 @@ export const useGameStore = create(
       version: 4,
       // Don't persist in-flight UI state
       partialize: (state) => {
-        const { pendingAchievements, pendingLevelUps, pendingSeasonDeliveries, ...rest } = state;
+        const {
+          pendingAchievements, pendingLevelUps, pendingSeasonDeliveries, coachNextFight: _coachNextFight, ...rest
+        } = state;
         return rest;
       },
       // Normalize state persisted by any earlier release (normalizeSave).

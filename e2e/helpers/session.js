@@ -69,6 +69,24 @@ export const test = base.extend({
     }
     await use(context);
   },
+  // The opening mulligan sits in front of turn 1. Specs that start a fight
+  // wait for End Turn, which is the turn after Keep hand. This presses Keep
+  // whenever it is up, so those specs still land on the fight. A spec that
+  // wants the mulligan itself can click before this poll, or not use it.
+  page: async ({ page }, use) => {
+    let stopped = false;
+    const timer = setInterval(() => {
+      if (stopped) return;
+      const keep = page.getByRole('button', { name: 'Keep hand' });
+      keep.isVisible().then((visible) => {
+        if (visible && !stopped) return keep.click({ timeout: 1000 }).catch(() => {});
+        return undefined;
+      }).catch(() => {});
+    }, 150);
+    await use(page);
+    stopped = true;
+    clearInterval(timer);
+  },
   pageErrors: [
     async ({ page }, use) => {
       const errors = [];

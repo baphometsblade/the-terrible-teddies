@@ -70,6 +70,10 @@ export const TAB_COPY = {
   damage: 'Damage dealt',
   healed: 'Healed',
   taken: 'Damage taken',
+  // Shown only when that side actually took some. Short enough for one
+  // receipt line beside the figure (houseLines.test.js, 16 characters).
+  fatigueTaken: 'Fatigue taken',
+  fatigueDealt: 'Fatigue dealt',
   xp: 'XP',
   coins: 'Coins',
   chuck: `${OPPONENT_NAME.toUpperCase()}'S TAB`,
