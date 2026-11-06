@@ -38,5 +38,12 @@ describe('2-drop bodies', () => {
     // Uncommon. 3/2 Stealth matches Sally's body, and he lives past the turn
     // Stealth wears off. He was 3/1.
     expect(byName('Peeping Pete')).toMatchObject({ attack: 3, defense: 2, cost: 2, ability: 'stealth' });
+    // The AI-vs-AI field (1600 games, seed 20261106). Shield was winning the
+    // room: Lord Fluffington 65.9% at 4/4, Beargaritaville 60.1% at 2/3.
+    // One health off each. The worst trap, Glass in the Gummy Bears, won
+    // 35.8% at 3 damage; it now hits for 4.
+    expect(byName('Lord Fluffington, Disgraced')).toMatchObject({ attack: 4, defense: 3, cost: 5, ability: 'shield' });
+    expect(byName('Beargaritaville')).toMatchObject({ attack: 2, defense: 2, cost: 2, ability: 'shield' });
+    expect(byName('Glass in the Gummy Bears').amount).toBe(4);
   });
 });
