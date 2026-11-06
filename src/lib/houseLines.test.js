@@ -127,7 +127,7 @@ describe('TAB_COPY', () => {
   });
 
   it('has a label for every row, each short enough for one receipt line', () => {
-    for (const key of ['cards', 'damage', 'healed', 'taken', 'xp', 'coins', 'chuck']) {
+    for (const key of ['cards', 'damage', 'healed', 'taken', 'fatigueTaken', 'fatigueDealt', 'xp', 'coins', 'chuck']) {
       expect(typeof TAB_COPY[key], key).toBe('string');
       expect(TAB_COPY[key].trim(), key).not.toBe('');
       expect(TAB_COPY[key].length, `${key}: "${TAB_COPY[key]}"`).toBeLessThanOrEqual(LABEL_MAX);

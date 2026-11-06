@@ -179,7 +179,7 @@ const ListRow = ({ line, icon: Icon }) => {
   );
 };
 
-const Tutorial = ({ onClose, onStartGame }) => {
+const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const step = TUTORIAL_STEPS[currentStep];
   const dialogRef = useDialog(onClose);
@@ -303,6 +303,11 @@ const Tutorial = ({ onClose, onStartGame }) => {
             a phone, and of a short desktop window, the bar sat 5px into it. */}
         <div className="relative flex items-center gap-3 px-4 pb-4 pt-4 sm:px-6 sm:pt-5 [@media(max-height:500px)]:pb-1 [@media(max-height:500px)]:pt-3">
           <h2 className="min-w-0 flex-1 font-display text-xl font-extrabold leading-tight text-white">How to Play</h2>
+          {onReplayLesson && (
+            <button type="button" onClick={onReplayLesson} className={`${NAV} btn-glass px-3 text-xs sm:text-sm`}>
+              Replay the lesson
+            </button>
+          )}
           <DialogClose label="Close tutorial" onClick={onClose} />
         </div>
 

@@ -733,6 +733,12 @@ function App() {
                       setTutorialCompleted(true);
                       navigateTo('game');
                     }}
+                    onReplayLesson={() => {
+                      useGameStore.getState().replayFirstFight();
+                      setShowTutorial(false);
+                      setTutorialCompleted(true);
+                      navigateTo('game');
+                    }}
                   />
                 )}
 

@@ -17,6 +17,8 @@ import { LAST_CALL_BANNER, lastCallLog, BOARD_LINES, fillLine, pickLine } from '
 import { noteBooth } from '@/lib/boothAi';
 import { FIRST_FIGHT, firstFightStep } from '@/lib/firstFight';
 import { fatigueForEmptyDraw, fatigueLine } from '@/lib/fatigue';
+import { applyMulligan, mulliganKeptLine, mulliganOpponentDeck, mulliganOpponentLine, mulliganSwapLine } from '@/lib/mulligan';
+import { anchorCoachTarget } from '@/lib/coachAnchor';
 import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
 import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
@@ -419,7 +421,6 @@ const StatusChip = ({ children, zoom = 1, marked = false }) => {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-[37px] z-10 flex justify-center">
       <span
-        data-coach-target={marked ? '' : undefined}
         className={`max-w-full rounded-full bg-night-950/90 px-2 py-0.5 text-center text-[10px] leading-[14px] font-semibold text-plush-100 shadow-[0_2px_6px_rgba(0,0,0,0.6)] ${marked ? 'ring-2 ring-brass-300' : 'ring-1 ring-white/15'}`}
         // Grown, it gives up most of its side padding, so "Warming Up" keeps
         // to one line down to 0.64 (87px of text on a 96px card).
@@ -500,7 +501,9 @@ const rewardsFrom = (result, stats = null) => {
     progress,
     tierBefore: progress ? battlePassTier(progress.seasonXPBefore) : 0,
     tierAfter: progress ? battlePassTier(progress.seasonXPAfter) : 0,
-    stats: stats ? { ...stats } : { damageDealt: 0, healingDone: 0, cardsPlayed: 0, damageTaken: 0 },
+    stats: stats ? { ...stats } : {
+      damageDealt: 0, healingDone: 0, cardsPlayed: 0, damageTaken: 0, fatigueTaken: 0, fatigueDealt: 0,
+    },
   };
 };
 
@@ -570,7 +573,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // damageTaken is what the 'Flawless' achievement actually means. Final HP
   // can't answer it: heal is capped at 30, so a player who gets hit and then
   // heals back finishes at full and would have claimed "Win without losing HP".
-  const battleStatsRef = useRef({ damageDealt: 0, healingDone: 0, cardsPlayed: 0, damageTaken: 0 });
+  const battleStatsRef = useRef({
+    damageDealt: 0, healingDone: 0, cardsPlayed: 0, damageTaken: 0, fatigueTaken: 0, fatigueDealt: 0,
+  });
 
   // Track timeouts so queued turn steps can be cancelled on restart/concede/
   // game-over/unmount, instead of firing later and mutating a fresh game.
@@ -658,6 +663,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // for. Stays on for this battle even after the flag is saved, so both
   // beats can finish; a later battle sees the flag and stays quiet.
   const [coachArmed, setCoachArmed] = useState(false);
+  // The opening hand, before turn 1's draw. One decision a fight: keep, or
+  // throw some back. deckReady stays false until it is made, so the draw
+  // (and End Turn) wait.
+  const [mulliganOpen, setMulliganOpen] = useState(false);
+  const [mulliganPicks, setMulliganPicks] = useState(() => new Set());
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState(null);
   const [showAbilityPopup, setShowAbilityPopup] = useState(null);
@@ -896,6 +906,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // instead of overlapping, and a live one never jumps when an older one goes.
   const feltRef = useRef(null);
   const centreRef = useRef(null);
+  const boardRef = useRef(null);
   const [fx, setFx] = useState([]);
   const fxIdRef = useRef(0);
   const pushFx = useCallback((events) => {
@@ -1142,17 +1153,25 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // first turn. Without this the rule is lopsided: the player's turn-1 play
     // has to sit still while the opener — placed before the game even starts —
     // hits it for free, handing Chuck first blood every single game.
-    setOpponentField([{ ...withHp(initialOpponentDeck[0]), summoningSick: true }]);
-    setOpponentDeck(initialOpponentDeck.slice(1));
+    const opener = initialOpponentDeck[0];
+    const mulled = mulliganOpponentDeck(initialOpponentDeck.slice(1));
+    setOpponentField([{ ...withHp(opener), summoningSick: true }]);
+    setOpponentDeck(mulled.deck);
 
     playerFatigueRef.current = 0;
     opponentFatigueRef.current = 0;
     setPlayerFatigue(0);
     setOpponentFatigue(0);
     setLogOpen(false);
-    // The lesson is for a first easy fight only. Read the flag here, at the
-    // deal, so a skip during this battle does not have to re-deal.
-    setCoachArmed(aiDifficulty === 'easy' && !useGameStore.getState().firstFightSeen);
+    setMulliganPicks(new Set());
+    setMulliganOpen(true);
+    setDeckReady(false);
+    // The lesson is for a first easy fight, or the one How to play just
+    // asked to replay. Read the flag here, at the deal. coachNextFight is
+    // this fight only, and it is not part of the save.
+    const { firstFightSeen, coachNextFight } = useGameStore.getState();
+    if (coachNextFight) useGameStore.setState({ coachNextFight: false });
+    setCoachArmed((aiDifficulty === 'easy' && !firstFightSeen) || coachNextFight === true);
 
     // A fresh log at every deal, rather than appending to whatever is there.
     // Everything above replaces state, so this effect can run twice and end
@@ -1162,18 +1181,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // lines after it append to that fresh log, so a second run still ends
     // with one copy of each.) Chuck's opening line goes between the intro and
     // the hand-over, in the order it is said.
-    startBattleLog([
-      `${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`,
-    ]);
+    const intro = [`${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`];
+    if (mulled.tossed > 0) intro.push(mulliganOpponentLine(OPPONENT_NAME, mulled.tossed));
+    startBattleLog(intro);
     // The clock is read here, once, at the deal: a battle begun between
     // midnight and five in the morning opens differently, and one that runs
     // past the hour does not change its mind.
     speak(startPoolFor(new Date()));
     addToBattleLog('Your turn. Make it hurt.');
     noteBooth(addToBattleLog, lastBoothRef);
-    setDeckReady(true);
-    // startBattleLog, addToBattleLog and speak are stable useCallbacks, so
-    // only a new game (gameId) deals.
+    // The draw waits on the mulligan. deckReady is set when they keep or swap.
   }, [startBattleLog, addToBattleLog, gameId, speak]);
 
   // Check for game over. Opponent death is checked first so that a simultaneous
@@ -1291,6 +1308,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       setPlayerFatigue(amount);
       setPlayerHealth((prev) => Math.max(0, prev - amount));
       battleStatsRef.current.damageTaken += amount;
+      battleStatsRef.current.fatigueTaken += amount;
       pushFx([{ face: 'player', hit: true, tone: 'damage', text: `−${amount}` }]);
       addToBattleLog(fatigueLine('player', amount));
     } else if (playerHand.length >= MAX_HAND_SIZE) {
@@ -1698,6 +1716,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
       const hp = Math.max(0, opponentHealth - amount);
       setOpponentHealth(hp);
       battleStatsRef.current.damageDealt += Math.min(opponentHealth, amount);
+      battleStatsRef.current.fatigueDealt += Math.min(opponentHealth, amount);
       pushFx([{ face: 'opponent', hit: true, tone: 'damage', text: `−${amount}` }]);
       addToBattleLog(fatigueLine('opponent', amount, OPPONENT_NAME));
       if (hp <= 0) return;
@@ -1896,11 +1915,15 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     clearAllTimeouts();
 
     // Reset battle stats ref
-    battleStatsRef.current = { damageDealt: 0, healingDone: 0, cardsPlayed: 0, damageTaken: 0 };
+    battleStatsRef.current = {
+      damageDealt: 0, healingDone: 0, cardsPlayed: 0, damageTaken: 0, fatigueTaken: 0, fatigueDealt: 0,
+    };
 
     // Reset game state. deckReady gates the draw phase until the init effect
     // has dealt the new opening hand.
     setDeckReady(false);
+    setMulliganOpen(false);
+    setMulliganPicks(new Set());
     setPhase('draw');
     setCurrentTurn('player');
     setTurnCount(1);
@@ -1962,10 +1985,43 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   const won = winner === 'player';
   const playerTurn = currentTurn === 'player';
   const coachStep = firstFightStep({
-    armed: coachArmed && !gameOver,
+    armed: coachArmed && !gameOver && !mulliganOpen,
     readyAttacker: playerTurn && playerField.some((card) => canAttack(card)),
   });
   const coachCopy = coachStep ? FIRST_FIGHT[coachStep] : null;
+  const coachCardId = (() => {
+    if (coachStep === 'attack') return playerField.find((card) => canAttack(card))?.instanceId ?? null;
+    if (coachStep === 'warming') {
+      return playerField.find((card) => card.summoningSick)?.instanceId
+        ?? opponentField.find((card) => card.summoningSick)?.instanceId
+        ?? null;
+    }
+    return null;
+  })();
+
+  // The ring is painted on the card, so a scroll moves it with the card.
+  // A resize that pushes the card out of its row brings the card back.
+  useEffect(() => {
+    const root = boardRef.current;
+    if (!root || !coachCardId) return undefined;
+    const place = () => anchorCoachTarget(root);
+    place();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', place);
+      return () => window.removeEventListener('resize', place);
+    }
+    const ro = new ResizeObserver(place);
+    ro.observe(root);
+    root.querySelectorAll('[data-coach-scroll]').forEach((el) => ro.observe(el));
+    const onScroll = () => place();
+    root.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', place);
+    return () => {
+      ro.disconnect();
+      root.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', place);
+    };
+  }, [coachCardId]);
   // The player's turn proper: their card has arrived, and they can play cards
   // and attack with ready creatures in any order until they end it.
   const playerMove = playerTurn && phase === 'main' && !gameOver;
@@ -2291,7 +2347,27 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
   // (Chromium, Firefox and Safari 17 send it as a PointerEvent), it must also
   // say 'touch'. There is no time limit: a slow press is still a finger, and
   // the 1-second window this once had played a card held down to be read.
+  const finishMulligan = (ids) => {
+    if (!mulliganOpen) return;
+    const next = applyMulligan(playerHand, playerDeck, ids);
+    setPlayerHand(next.hand);
+    setPlayerDeck(next.deck);
+    setMulliganOpen(false);
+    setMulliganPicks(new Set());
+    addToBattleLog(next.drawn ? mulliganSwapLine(next.drawn) : mulliganKeptLine());
+    setDeckReady(true);
+  };
+
   const pressHandCard = (card, playable, index) => (e) => {
+    if (mulliganOpen) {
+      setMulliganPicks((prev) => {
+        const next = new Set(prev);
+        if (next.has(card.instanceId)) next.delete(card.instanceId);
+        else next.add(card.instanceId);
+        return next;
+      });
+      return;
+    }
     const last = lastPointerRef.current;
     lastPointerRef.current = { type: 'mouse', id: null };
     const clickType = typeof e?.nativeEvent?.pointerType === 'string' ? e.nativeEvent.pointerType : null;
@@ -2399,6 +2475,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
     // from it.)
     <div
       className="game-surface relative w-full h-[100dvh] [@media(pointer:fine)]:h-[max(100dvh,40rem)] bar-backdrop overflow-hidden"
+      ref={boardRef}
       data-last-call={lastCall ? '' : undefined}
       onKeyDown={onBoardKeyDown}
       onFocus={onBoardFocus}
@@ -2656,7 +2733,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               </AnimatePresence>
 
               {/* Chuck's half */}
-              <div className="self-center flex justify-center items-start gap-2 sm:gap-3" style={{ zoom: fieldZoom }}>
+              <div data-coach-scroll="" className="self-center flex justify-center items-start gap-2 sm:gap-3" style={{ zoom: fieldZoom }}>
                 {/* Keyed by game: Play Again remounts the row, rather than
                     playing the last game's cards out as if they had died. */}
                 <AnimatePresence key={gameId}>
@@ -2677,13 +2754,18 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       initial={{ y: -40, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       data-field="opponent"
+                      data-coach-target={coachCardId === card.instanceId ? '' : undefined}
                       className={`relative rounded-[10px] ${FOCUS_OUTLINE} ${hittable ? 'cursor-crosshair' : ''}`}
                       press={press}
                       {...inspectHandlers({ id: card.instanceId, from: 'opponent' }, { hold: 'preview' })}
                     >
                       <div
                         data-target-ring={hittable ? '' : undefined}
-                        className={`relative rounded-[10px] transition-shadow ${hittable ? 'ring-2 ring-red-400 shadow-[0_0_22px_4px_rgba(248,113,113,0.55)]' : ''}`}
+                        className={`relative rounded-[10px] transition-shadow ${hittable
+                          ? 'ring-2 ring-red-400 shadow-[0_0_22px_4px_rgba(248,113,113,0.55)]'
+                          : coachCardId === card.instanceId
+                            ? 'ring-2 ring-brass-300 shadow-[0_0_18px_2px_rgba(251,191,36,0.55)]'
+                            : ''}`}
                       >
                         {/* Only the card dims for stealth; the band and tags
                             stay at full strength so they keep their contrast.
@@ -2705,7 +2787,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                             actually swing at them next turn — without it,
                             summoning sickness is only legible on their own
                             half of the table. */}
-                        {card.summoningSick && <StatusChip zoom={fieldZoom} marked={coachStep === 'warming'}>Warming Up</StatusChip>}
+                        {card.summoningSick && (
+                          <StatusChip zoom={fieldZoom} marked={coachCardId === card.instanceId && coachStep === 'warming'}>Warming Up</StatusChip>
+                        )}
                         <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
                           {describeCard(card, { attack: effectiveAttack(card, opponentField) })}
                         </CardWords>
@@ -2826,7 +2910,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               </div>
 
               {/* The player's half */}
-              <div className="self-center flex justify-center items-start gap-2 sm:gap-3" style={{ zoom: fieldZoom }}>
+              <div data-coach-scroll="" className="self-center flex justify-center items-start gap-2 sm:gap-3" style={{ zoom: fieldZoom }}>
                 <AnimatePresence key={gameId}>
                 {playerField.map((card) => {
                   const selected = selectedCard?.instanceId === card.instanceId;
@@ -2857,14 +2941,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                       className={`relative rounded-[10px] ${FOCUS_OUTLINE} ${ready ? 'cursor-pointer' : ''}`}
                       press={press}
                       data-field="player"
-                      data-coach-target={coachStep === 'attack' && ready ? '' : undefined}
+                      data-coach-target={coachCardId === card.instanceId ? '' : undefined}
                       {...inspectHandlers({ id: card.instanceId, from: 'player' }, { hold: 'preview' })}
                     >
                       <div
                         data-target-ring={selected || ready ? '' : undefined}
                         className={`relative rounded-[10px] transition-shadow ${selected
                           ? 'ring-2 ring-brass-300 shadow-[0_0_24px_4px_rgba(251,191,36,0.55)]'
-                          : coachStep === 'attack' && ready
+                          : coachCardId === card.instanceId
                             ? 'ring-2 ring-brass-300 shadow-[0_0_18px_2px_rgba(251,191,36,0.55)]'
                             : ready ? 'shadow-[0_0_18px_2px_rgba(52,211,153,0.5)]' : ''}`}
                       >
@@ -2888,7 +2972,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                         {card.stealthActive && <StealthBand zoom={fieldZoom} />}
                         {card.hasAttacked && <StatusChip zoom={fieldZoom}>Exhausted</StatusChip>}
                         {card.summoningSick && !card.hasAttacked && (
-                          <StatusChip zoom={fieldZoom} marked={coachStep === 'warming'}>Warming Up</StatusChip>
+                          <StatusChip zoom={fieldZoom} marked={coachCardId === card.instanceId && coachStep === 'warming'}>Warming Up</StatusChip>
                         )}
                         <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
                           {describeCard(card, { attack: effectiveAttack(card, playerField) })}
@@ -3086,6 +3170,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 it, and an empty line made the whole table grow and shrink at
                 every turn boundary. Concede is icon-only on phones, to keep
                 the line short enough not to wrap. */}
+            {mulliganOpen && (
+              <p data-mulligan="" className="text-center text-xs font-semibold text-plush-100">
+                Opening hand. Throw any back. Once.
+              </p>
+            )}
             <div className="flex min-h-11 flex-row flex-wrap items-center justify-center gap-2 md:flex-col md:items-stretch">
               <button
                 type="button"
@@ -3137,6 +3226,26 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
               {/* The one turn control. Glass while the player still has a
                   move (a ready attacker, a card worth playing, a Rally),
                   brass once they have none, like Hearthstone's End Turn. */}
+              {mulliganOpen && (
+                <>
+                  {mulliganPicks.size > 0 && (
+                    <button
+                      type="button"
+                      className={`${ACTION} btn-glass`}
+                      onClick={() => finishMulligan(mulliganPicks)}
+                    >
+                      Swap {mulliganPicks.size}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className={`${ACTION} btn-brass`}
+                    onClick={() => finishMulligan(new Set())}
+                  >
+                    Keep hand
+                  </button>
+                </>
+              )}
               {playerMove && (
                 <button
                   ref={endTurnRef}
@@ -3177,6 +3286,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
         <div
           ref={handScrollerRef}
           data-hand-overflow={handFit.overflow ? '' : undefined}
+          data-coach-scroll=""
           className={`board-zoom relative shrink-0 max-w-full overflow-x-auto overflow-y-hidden px-3 sm:px-6 pt-11 pb-6 ${handFit.overflow
             ? '[mask-image:linear-gradient(90deg,transparent,#000_16px,#000_calc(100%-16px),transparent)]'
             : ''}`}
@@ -3217,9 +3327,13 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                 // would do nothing (a heal at full HP) stays bright but unlit.
                 const lit = playable && isUsefulPlay(card, moveState);
                 const raised = raisedId === card.instanceId;
-                const press = playable
-                  ? describedPress(pressable(pressHandCard(card, true, index), `Play ${card.name}`), `desc-hand-${card.instanceId}`)
-                  : { onClick: pressHandCard(card, false, index) };
+                const picked = mulliganOpen && mulliganPicks.has(card.instanceId);
+                const toggle = pressHandCard(card, false, index);
+                const press = mulliganOpen
+                  ? { ...describedPress(pressable(toggle, picked ? `Keep ${card.name} in hand` : `Throw back ${card.name}`), `desc-hand-${card.instanceId}`), 'aria-pressed': picked }
+                  : playable
+                    ? describedPress(pressable(pressHandCard(card, true, index), `Play ${card.name}`), `desc-hand-${card.instanceId}`)
+                    : { onClick: pressHandCard(card, false, index) };
                 return (
                   <HandSlot
                     key={card.instanceId}
@@ -3239,10 +3353,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop }, re
                     // The overlap is a margin, not a transform: Framer Motion
                     // owns this element's transform (the fan and the lift).
                     style={{ transformOrigin: 'bottom center', marginLeft: index ? -handOverlap : 0 }}
-                    className={`relative shrink-0 rounded-[10px] ${FOCUS_OUTLINE} ${playable ? 'cursor-pointer' : ''} ${!affordable
+                    data-mulligan-picked={picked ? '' : undefined}
+                    className={`relative shrink-0 rounded-[10px] ${FOCUS_OUTLINE} ${playable || mulliganOpen ? 'cursor-pointer' : ''} ${picked ? 'ring-2 ring-brass-300' : ''} ${!mulliganOpen && !affordable
                       ? 'opacity-50 saturate-50'
                       : lit ? 'shadow-[0_0_16px_1px_rgba(251,191,36,0.4)]' : ''}`}
-                    {...inspectHandlers({ id: card.instanceId, from: 'hand' }, { hold: 'raise' })}
+                    {...inspectHandlers({ id: card.instanceId, from: 'hand' }, mulliganOpen ? {} : { hold: 'raise' })}
                     press={press}
                   >
                     {/* The face is said in words (CardWords). */}

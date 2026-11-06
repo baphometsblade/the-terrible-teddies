@@ -49,11 +49,17 @@ let root;
 
 // Rendered under StrictMode, as the app is in development: effects run,
 // unmount and run again, which is what doubled the log's intro.
-async function renderBoard(props) {
+async function renderBoard(props, options = {}) {
   const ref = createRef();
   await act(async () => {
     root.render(<StrictMode><GameBoard ref={ref} {...props} /></StrictMode>);
   });
+  // The opening mulligan sits in front of the draw. The fights these tests
+  // are about start once the hand is kept.
+  if (options.keep !== false) {
+    const keep = [...container.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Keep hand');
+    if (keep) await act(async () => { keep.click(); });
+  }
   return ref;
 }
 
@@ -62,6 +68,10 @@ const leaveTitle = () => document.getElementById('leave-battle-title')?.textCont
 // DOM until then).
 const settle = () => act(() => new Promise((resolve) => { setTimeout(resolve, 400); }));
 const button = (name) => [...container.querySelectorAll('button')].find((b) => b.textContent.trim() === name);
+const keepHand = async () => {
+  const keep = button('Keep hand');
+  if (keep) await act(async () => { keep.click(); });
+};
 
 beforeEach(() => {
   localStorage.clear();
@@ -120,11 +130,27 @@ describe('GameBoard', () => {
     useGameStore.setState({ difficulty: 'easy', firstFightSeen: false, totalBattles: 0 });
     await renderBoard({ onBackToMenu: () => {} });
     expect(container.querySelector('[data-first-fight]')?.getAttribute('data-first-fight')).toBe('warming');
-    expect(container.querySelector('[data-coach-target]')).not.toBeNull();
+    expect(container.querySelectorAll('[data-coach-target]')).toHaveLength(1);
     const skip = [...container.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Skip');
     await act(async () => { skip.click(); });
     expect(container.querySelector('[data-first-fight]')).toBeNull();
     expect(useGameStore.getState().firstFightSeen).toBe(true);
+  });
+
+  it('swaps the opening cards you pick, once, and a kept hand starts the fight', async () => {
+    await renderBoard({ onBackToMenu: () => {} }, { keep: false });
+    expect(button('Keep hand')).toBeTruthy();
+    expect(button('End Turn')).toBeFalsy();
+    expect(container.querySelectorAll('[data-hand-id]')).toHaveLength(5);
+    const first = container.querySelector('[data-hand-id]');
+    await act(async () => { first.click(); });
+    expect(first.getAttribute('aria-pressed')).toBe('true');
+    await act(async () => { button('Swap 1').click(); });
+    const entries = [...container.querySelectorAll('[role="log"] > div')].map((e) => e.textContent);
+    expect(entries.some((line) => line.includes('Threw 1 back. Drew 1.'))).toBe(true);
+    expect(button('Keep hand')).toBeFalsy();
+    expect(button('Swap 1')).toBeFalsy();
+    expect(container.querySelector('[data-mulligan]')).toBeNull();
   });
 
   it('charges fatigue when the opening draw finds an empty deck', async () => {
@@ -165,6 +191,7 @@ describe('GameBoard', () => {
     await act(async () => container.querySelector('button[title="Concede"]').click());
     await act(async () => button('Concede — counts as a loss').click());
     await act(async () => button('Play Again').click());
+    await keepHand();
     expect(intros()).toHaveLength(1);
     expect(intros()[0]).toContain('HARD');
   });
@@ -304,6 +331,7 @@ describe('GameBoard result panel', () => {
       .find((el) => el.querySelector('dt').textContent === 'Cards played').querySelector('dd').textContent.trim();
     expect(cardsPlayed()).toBe('1');
     await act(async () => button('Play Again').click());
+    await keepHand();
     panel = await concede();
     expect(cardsPlayed()).toBe('0');
   });
@@ -351,6 +379,7 @@ describe('GameBoard result panel', () => {
       let last = said();
       for (let game = 2; game <= 4; game += 1) {
         await act(async () => button('Play Again').click());
+    await keepHand();
         panel = await concede();
         const next = said();
         expect(next.subline, `game ${game}'s line`).not.toBe(last.subline);
@@ -375,8 +404,14 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
       id: 999, name: 'Test Bruiser', attack, defense: 9, type: 'action', cost: 1,
       ability: 'none', rarity: 'common', instanceId: 'o-999-0',
     }, {
+      // Too expensive to play, so it stays in the deck. Two of them: one may
+      // be the opener, and the other still keeps the deck from running dry
+      // and killing him with fatigue before the scripted hits land.
       id: 997, name: 'Test Spare', attack: 0, defense: 1, type: 'action', cost: 99,
       ability: 'none', rarity: 'common', instanceId: 'o-997-0',
+    }, {
+      id: 996, name: 'Test Spare', attack: 0, defense: 1, type: 'action', cost: 99,
+      ability: 'none', rarity: 'common', instanceId: 'o-996-0',
     }];
   };
 
@@ -390,7 +425,7 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
   const advance = (ms) => act(async () => { vi.advanceTimersByTime(ms); });
   // Steps the faked clock in small bites, so React renders (and schedules the
   // next timer) between them as it would in a browser.
-  const advanceUntil = async (done, limitMs = 8000) => {
+  const advanceUntil = async (done, limitMs = 12000) => {
     for (let waited = 0; !done() && waited < limitMs; waited += 100) await advance(100);
     expect(done(), 'the board never got there').toBeTruthy();
   };
@@ -480,16 +515,12 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
     // 2 a round: the player is in range at 4, and again at 2, and the second
     // visit to the range must not call it a second time. A long deck and a
     // seen lesson, so fatigue and the first-fight coach stay out of the clock.
-    vi.useRealTimers();
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
     useGameStore.setState({
       currentDeck: Array.from({ length: 40 }, () => 4),
-      difficulty: 'normal',
       firstFightSeen: true,
     });
     facing(2);
     await startGame();
-    // Every last-call line that is ever added to the log, counted as it comes.
     const seen = [];
     const watcher = new MutationObserver((records) => {
       for (const record of records) {
@@ -517,6 +548,7 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
     // last call lights it again.
     facing(LAST_CALL_HP);
     await act(async () => button('Play Again').click());
+    await keepHand();
     await advanceUntil(() => button('End Turn'));
     expect(lit()).toBe(false);
     expect(health()).toBe(30);
@@ -539,6 +571,9 @@ describe('GameBoard last call', { timeout: 60_000 }, () => {
     }, {
       id: 997, name: 'Test Spare', attack: 0, defense: 1, type: 'action', cost: 99,
       ability: 'none', rarity: 'common', instanceId: 'o-997-0',
+    }, {
+      id: 996, name: 'Test Spare', attack: 0, defense: 1, type: 'action', cost: 99,
+      ability: 'none', rarity: 'common', instanceId: 'o-996-0',
     }];
     fixedCrew.opponentHp = 6;
     useGameStore.setState({ currentDeck: [4, 4, 4, 4, 4, 4] });
@@ -595,6 +630,9 @@ describe('GameBoard victory', () => {
     }, {
       id: 997, name: 'Test Spare', attack: 0, defense: 1, type: 'action', cost: 99,
       ability: 'none', rarity: 'common', instanceId: 'o-997-1',
+    }, {
+      id: 996, name: 'Test Spare', attack: 0, defense: 1, type: 'action', cost: 99,
+      ability: 'none', rarity: 'common', instanceId: 'o-996-1',
     }];
     fixedCrew.opponentHp = 1;
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });

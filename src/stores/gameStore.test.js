@@ -1071,6 +1071,14 @@ describe('persist migrate (returning-player safety)', () => {
     expect(normalizeSave({ firstFightSeen: false, totalBattles: 9 }).firstFightSeen).toBe(false);
   });
 
+  it('replayFirstFight clears the lesson and arms the next fight without saving that arm', () => {
+    useGameStore.setState({ firstFightSeen: true, difficulty: 'hard' });
+    get().replayFirstFight();
+    expect(get().firstFightSeen).toBe(false);
+    expect(get().coachNextFight).toBe(true);
+    expect(get().difficulty).toBe('hard');
+  });
+
   it('coerces corrupt numeric fields back to their concrete defaults', async () => {
     // A string ('lots') and a real NaN — both must land on the initialState
     // default, not merely "some number". The old assertions only checked the
