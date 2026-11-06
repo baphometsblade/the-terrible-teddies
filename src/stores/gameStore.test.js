@@ -1062,6 +1062,15 @@ describe('persist migrate (returning-player safety)', () => {
     expect(get().seasonXP).toBe(250);
   });
 
+  it('drops the unused music flag and does not reteach a veteran the first fight', async () => {
+    await rehydrateWith({ musicEnabled: false, coins: 420, totalBattles: 3 }, 3);
+    expect(get().musicEnabled).toBeUndefined();
+    expect(get().coins).toBe(420);
+    expect(get().firstFightSeen).toBe(true);
+    expect(normalizeSave({}).firstFightSeen).toBe(false);
+    expect(normalizeSave({ firstFightSeen: false, totalBattles: 9 }).firstFightSeen).toBe(false);
+  });
+
   it('coerces corrupt numeric fields back to their concrete defaults', async () => {
     // A string ('lots') and a real NaN — both must land on the initialState
     // default, not merely "some number". The old assertions only checked the
