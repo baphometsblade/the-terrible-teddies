@@ -1567,7 +1567,7 @@ REVOKE ALL ON public.rate_limits FROM PUBLIC, anon, authenticated;
 GRANT ALL ON public.rate_limits TO service_role;
 
 -- -------------------------------------------------------------------------
--- Platform growth. Kept in step with migrations/20261107120000_platform_growth.sql.
+-- Platform growth. Kept in step with migrations/20261107150000_platform_growth.sql.
 -- -------------------------------------------------------------------------
 
 -- Platform: feature flags, a staff desk, activity counts, and account

@@ -357,7 +357,7 @@ Point `ALLOWED_ORIGIN` (Supabase secret) at the deployed domain.
 
 ## Platform, growth and reliability
 
-Apply `supabase/migrations/20261107120000_platform_growth.sql` with
+Apply `supabase/migrations/20261107150000_platform_growth.sql` with
 `npx supabase db push` (a project built from `bootstrap.sql` already has it).
 Then, in the SQL editor, as the database owner, add yourself to the staff desk.
 Nothing in the client can do this:
