@@ -29,6 +29,7 @@ import { hitAside, hitFlavor } from '@/lib/critTalk';
 import { emptySlip, notePlay, noteHit, noteHeal, slipLine } from '@/lib/turnSlip';
 import './combatFeel.css';
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
+import { TAUNTS, tauntLine } from '@/lib/social/taunts';
 import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder, ownedEmotes, cosmeticLong } from '@/lib/cosmetics';
@@ -560,7 +561,7 @@ const GameOverDialog = ({ label, onEscape, children }) => {
  * handler). While a game is live it asks first; once the game is over, or
  * before it has dealt, it leaves at once.
  */
-const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, daily = null }, ref) {
+const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, daily = null, brawl = null }, ref) {
   // Get store data
   // Not the deck or the difficulty: a game is dealt from a snapshot of
   // those (see the deal below), so nothing the store does mid-game can reach
@@ -588,6 +589,23 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
   // heals back finishes at full and would have claimed "Win without losing HP".
   const dailyRef = useRef(daily);
   dailyRef.current = daily;
+  // A ladder ticket dealt instead of Chuck's crew. Read from a ref, like the
+  // nightly fight, so a re-render cannot re-deal the table.
+  const brawlRef = useRef(brawl);
+  brawlRef.current = brawl;
+  const brawlSettledRef = useRef(false);
+  const tauntRef = useRef(null);
+  const [tauntPick, setTauntPick] = useState(null);
+  // One attested result. Also marks the battle finished for the unmount
+  // path, so a win cannot be booked again as a walk-away.
+  const settleBrawl = (won) => {
+    const spec = brawlRef.current;
+    if (!spec || brawlSettledRef.current) return false;
+    brawlSettledRef.current = true;
+    abandonHandledRef.current = true;
+    if (typeof spec.onSettled === 'function') spec.onSettled(won, tauntRef.current);
+    return true;
+  };
   const dailySettledRef = useRef(false);
   const settleDaily = (won) => {
     const spec = dailyRef.current;
@@ -791,6 +809,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     const recordAbandonment = () => {
       const { gameOver: over, deckReady: ready, playerHealth: hp } = liveRef.current;
       if (over || !ready || abandonHandledRef.current) return;
+      // A ladder ticket books the walk-away itself and does not pay the till,
+      // the streak or the challenges. One result, attested to the server.
+      if (settleBrawl(false)) return;
       abandonHandledRef.current = true;
       settleDaily(false);
       const stats = battleStatsRef.current;
@@ -1151,7 +1172,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
   // table and the turn stayed as they were.
   useEffect(() => {
     const { currentDeck, difficulty: aiDifficulty } = useGameStore.getState();
-    dealtDifficultyRef.current = aiDifficulty;
+    const brawlSpec = brawlRef.current;
+    // A saved deck is piloted at normal, whatever the player has Chuck set to.
+    dealtDifficultyRef.current = brawlSpec ? 'normal' : aiDifficulty;
     // Build player deck from store's currentDeck (card IDs mapped to ALL_CARDS)
     const playerDeckCards = currentDeck
       .map(cardId => ALL_CARDS.find(c => c.id === cardId))
@@ -1180,6 +1203,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     let opponentCards;
     let crewName;
     let healthMod = 0;
+    let faceHp = 30;
     if (spec) {
       const bump = spec.modifier.opponentAttack || 0;
       opponentCards = spec.deck.map((card, idx) => ({
@@ -1188,6 +1212,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
         ...(bump && card.type === 'action' ? { attack: card.attack + bump } : {}),
       }));
       crewName = spec.crewName;
+    } else if (brawlSpec?.cards?.length) {
+      opponentCards = brawlSpec.cards.map((card, idx) => ({
+        ...card,
+        instanceId: card.instanceId || `g-${card.id}-${idx}`,
+      }));
+      crewName = brawlSpec.label || 'a saved deck';
+      const asked = Number(brawlSpec.faceHp);
+      faceHp = Number.isInteger(asked) && asked >= 1 && asked <= 30 ? asked : 30;
     } else {
       const built = buildOpponentDeck(aiDifficulty);
       opponentCards = built.cards;
@@ -1195,7 +1227,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       healthMod = OPPONENT_HEALTH_MOD_BY_DIFFICULTY[aiDifficulty] ?? 0;
     }
 
-    const rule = spec ? STANDARD_RULE : readHouseRule();
+    const rule = (spec || brawlSpec) ? STANDARD_RULE : readHouseRule();
     let initialOpponentDeck = shuffleDeck(opponentCards);
     if (rule.boss) {
       initialOpponentDeck = [{ ...BOSS_CARD, instanceId: 'o-boss' }, ...initialOpponentDeck.slice(0, 7)];
@@ -1207,9 +1239,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     setMvp(null);
     setRecap([]);
     const startHp = (spec?.modifier.startingHealth ?? 30) + rule.hp;
+    const opponentHp = brawlSpec?.cards?.length ? faceHp : startHp + healthMod + rule.chuckHp;
     setPlayerHealth(startHp);
-    setOpponentHealth(startHp + healthMod + rule.chuckHp);
-    setOpponentMaxHealth(startHp + healthMod + rule.chuckHp);
+    setOpponentHealth(opponentHp);
+    setOpponentMaxHealth(opponentHp);
     setPlayerEnergy(Math.min(MAX_ENERGY, energyForTurn(1) + (spec?.modifier.extraEnergy || 0) + rule.energy));
 
     const playerInitialHand = initialPlayerDeck.slice(0, 5);
@@ -1240,7 +1273,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // this fight only, and it is not part of the save.
     const { firstFightSeen, coachNextFight } = useGameStore.getState();
     if (coachNextFight) useGameStore.setState({ coachNextFight: false });
-    setCoachArmed(!spec && ((aiDifficulty === 'easy' && !firstFightSeen) || coachNextFight === true));
+    setCoachArmed(!spec && !brawlSpec && ((aiDifficulty === 'easy' && !firstFightSeen) || coachNextFight === true));
 
     // A fresh log at every deal, rather than appending to whatever is there.
     // Everything above replaces state, so this effect can run twice and end
@@ -1251,9 +1284,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // with one copy of each.) Chuck's opening line goes between the intro and
     // the hand-over, in the order it is said.
     setTurnSlip(emptySlip());
-    const intro = [`${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()} ${crewTaunt(crewName)}`];
-    intro.push(mindLine(aiDifficulty));
-    if (rule.id !== 'standard') intro.push(rule.blurb);
+    const intro = [brawlSpec
+      ? `${brawlSpec.rivalName || 'A rival'} stepped out. The deck stayed. Still warm.`
+      : `${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()} ${crewTaunt(crewName)}`];
+    // Chuck's mood is his. A ghost fight is someone else's deck, so it gets their greeting instead.
+    if (!brawlSpec) intro.push(mindLine(aiDifficulty));
+    if (!brawlSpec && rule.id !== 'standard') intro.push(rule.blurb);
+    const greeting = brawlSpec ? tauntLine(brawlSpec.greeting) : null;
+    if (greeting) intro.push(greeting);
     if (mulled.tossed > 0) intro.push(mulliganOpponentLine(OPPONENT_NAME, mulled.tossed));
     if (spec) intro.push(`${spec.modifier.name}. ${spec.modifier.rules}`);
     startBattleLog(intro);
@@ -1284,26 +1322,32 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       settleResultCopy(true);
       playSound('victory');
 
-      // Record victory — store handles XP and coin rewards
-      const result = recordBattleResult(
-        true,
-        battleStatsRef.current.damageDealt,
-        battleStatsRef.current.healingDone,
-        playerHealth,
-        battleStatsRef.current.cardsPlayed,
-        battleStatsRef.current.damageTaken
-      );
-      const { coinsGain } = result;
-      setBattleRewards(rewardsFrom(result, battleStatsRef.current));
-      showLevelUp(result.progress);
+      // A ladder ticket attests the result and stops there: no coins, no XP,
+      // no challenge credit. Chuck's fights still pay the till.
+      if (settleBrawl(true)) {
+        setBattleRewards(rewardsFrom(null, battleStatsRef.current));
+      } else {
+        // Record victory — store handles XP and coin rewards
+        const result = recordBattleResult(
+          true,
+          battleStatsRef.current.damageDealt,
+          battleStatsRef.current.healingDone,
+          playerHealth,
+          battleStatsRef.current.cardsPlayed,
+          battleStatsRef.current.damageTaken
+        );
+        const { coinsGain } = result;
+        setBattleRewards(rewardsFrom(result, battleStatsRef.current));
+        showLevelUp(result.progress);
 
-      // Sync to server (fire and forget - don't block UI)
-      syncBattleResult(true, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain, useGameStore.getState().ownerUserId)
-        .catch(err => console.error('Battle sync failed:', err));
-      // recordBattleResult ran addXP synchronously, so the store level/xp are
-      // now current. Push them so the leaderboard's rival rows stop reading as
-      // Level 1 (players.experience is otherwise never written).
-      syncLevelToServer();
+        // Sync to server (fire and forget - don't block UI)
+        syncBattleResult(true, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain, useGameStore.getState().ownerUserId)
+          .catch(err => console.error('Battle sync failed:', err));
+        // recordBattleResult ran addXP synchronously, so the store level/xp are
+        // now current. Push them so the leaderboard's rival rows stop reading as
+        // Level 1 (players.experience is otherwise never written).
+        syncLevelToServer();
+      }
 
       // Victory confetti
       celebrate({
@@ -1328,23 +1372,27 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       settleResultCopy(false);
       playSound('defeat');
 
-      // Record defeat — store now handles consolation coins internally
-      const result = recordBattleResult(
-        false,
-        battleStatsRef.current.damageDealt,
-        battleStatsRef.current.healingDone,
-        playerHealth,
-        battleStatsRef.current.cardsPlayed
-      );
-      const { coinsGain } = result;
-      setBattleRewards(rewardsFrom(result, battleStatsRef.current));
-      showLevelUp(result.progress);
+      if (settleBrawl(false)) {
+        setBattleRewards(rewardsFrom(null, battleStatsRef.current));
+      } else {
+        // Record defeat — store now handles consolation coins internally
+        const result = recordBattleResult(
+          false,
+          battleStatsRef.current.damageDealt,
+          battleStatsRef.current.healingDone,
+          playerHealth,
+          battleStatsRef.current.cardsPlayed
+        );
+        const { coinsGain } = result;
+        setBattleRewards(rewardsFrom(result, battleStatsRef.current));
+        showLevelUp(result.progress);
 
-      // Sync to server (fire and forget - don't block UI)
-      syncBattleResult(false, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain, useGameStore.getState().ownerUserId)
-        .catch(err => console.error('Battle sync failed:', err));
-      // Keep the server level/xp current even on a loss (a loss still grants XP).
-      syncLevelToServer();
+        // Sync to server (fire and forget - don't block UI)
+        syncBattleResult(false, battleStatsRef.current.damageDealt, battleStatsRef.current.healingDone, coinsGain, useGameStore.getState().ownerUserId)
+          .catch(err => console.error('Battle sync failed:', err));
+        // Keep the server level/xp current even on a loss (a loss still grants XP).
+        syncLevelToServer();
+      }
     }
   }, [playerHealth, opponentHealth, gameOver, playSound, recordBattleResult, clearAllTimeouts, showLevelUp, settleResultCopy]);
 
@@ -2686,7 +2734,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       {/* The screen's heading, for a screen reader and for App, which puts
           the focus here when the battle opens (the tile that opened it is
           gone by then). The table says it visually. */}
-      <h1 className="sr-only">Battle against {OPPONENT_NAME}</h1>
+      <h1 className="sr-only">Battle against {brawl?.rivalName || OPPONENT_NAME}</h1>
       <div className="absolute inset-0 grain pointer-events-none" aria-hidden="true" />
       {/* The house lights: last call's cold wash over the room, under all
           the content beside the grain, so no text sits under it (index.css,
@@ -2830,6 +2878,25 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                 </motion.div>
               )}
 
+              {brawl && (
+                <div className="relative mb-4">
+                  <p className="mb-3 text-sm text-plush-200">The ladder takes the finish. The till keeps its hands to itself.</p>
+                  <p className="label-caps mb-2 text-plush-300">Leave them a line</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {TAUNTS.map((taunt) => (
+                      <button
+                        key={taunt.id}
+                        type="button"
+                        aria-pressed={tauntPick === taunt.id}
+                        onClick={() => { tauntRef.current = taunt.id; setTauntPick(taunt.id); }}
+                        className={`btn-glass h-11 rounded-xl px-2 text-sm font-bold ${FOCUS_OUTLINE} ${tauntPick === taunt.id ? 'border-2 border-brass-300' : ''}`}
+                      >
+                        {taunt.short}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="relative flex gap-3 justify-center">
                 {/* The dialog's first focus (useDialog's data-autofocus), so
                     Enter plays again. The upsell above comes first in the
@@ -2837,20 +2904,23 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                     on gems or packs: Enter left the battle for the Shop.
                     Pressed from the keys, the focus goes on to the new game's
                     End Turn: this button goes with the panel, and the focus
-                    went to the page. */}
-                <button
-                  type="button"
-                  data-autofocus=""
-                  onClick={(e) => {
-                    if (viaKeys(e)) refocusRef.current = { kind: 'turn', from: e.currentTarget };
-                    restartGame();
-                  }}
-                  className={`${ACTION} btn-brass min-w-[8rem]`}
-                >
-                  Play Again
-                </button>
+                    went to the page. A ladder ticket is one result, so it
+                    has no Play Again: Menu takes the focus instead. */}
+                {!brawl && (
+                  <button
+                    type="button"
+                    data-autofocus=""
+                    onClick={(e) => {
+                      if (viaKeys(e)) refocusRef.current = { kind: 'turn', from: e.currentTarget };
+                      restartGame();
+                    }}
+                    className={`${ACTION} btn-brass min-w-[8rem]`}
+                  >
+                    Play Again
+                  </button>
+                )}
                 {onBackToMenu && (
-                  <button type="button" onClick={onBackToMenu} className={`${ACTION} btn-glass min-w-[6rem]`}>
+                  <button type="button" data-autofocus={brawl ? '' : undefined} onClick={onBackToMenu} className={`${ACTION} btn-glass min-w-[6rem]`}>
                     Menu
                   </button>
                 )}
@@ -2868,7 +2938,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
           <div className="flex items-center gap-2.5 min-w-0">
             <Avatar ring={OPPONENT_RING} />
             <div className="min-w-0">
-              <div className="font-display font-extrabold text-white leading-tight truncate max-w-[7rem] sm:max-w-none">{OPPONENT_NAME}</div>
+              <div className="font-display font-extrabold text-white leading-tight truncate max-w-[7rem] sm:max-w-none">{brawl?.rivalName || OPPONENT_NAME}</div>
               {daily && (
                 <div data-daily="" className="truncate text-[11px] font-semibold text-brass-200 max-w-[8rem] sm:max-w-none">{daily.modifier.name}</div>
               )}
