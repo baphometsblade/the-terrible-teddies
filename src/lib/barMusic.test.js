@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { NIGHT_BPM, NIGHT_SCORE, midiToHz, BarLoop } from './barMusic';
+import { NIGHT_BPM, NIGHT_SCORE, midiToHz, roomToneGain, BarLoop } from './barMusic';
 
 describe('the house band', () => {
   it('is a low, slow loop a bar can actually play', () => {
@@ -24,6 +24,12 @@ describe('the house band', () => {
   it('does not pull Howler into the menu', () => {
     const src = readFileSync(resolve(process.cwd(), 'src/lib/barMusic.js'), 'utf8');
     expect(src).not.toMatch(/howler/);
+  });
+
+  it('keeps the room hiss under the band, and off when the band is', () => {
+    expect(roomToneGain(0)).toBe(0);
+    expect(roomToneGain(0.5)).toBeGreaterThan(0);
+    expect(roomToneGain(0.5)).toBeLessThan(0.05);
   });
 
   it('stays quiet until asked, and stops cleanly without an audio device', () => {

@@ -256,13 +256,16 @@ describe('progress and the empty save', () => {
 
 describe('what goes to the account', () => {
   it('leaves out the device\'s own settings and the bookkeeping, and carries the gem mark', () => {
-    for (const k of ['soundEnabled', 'animationsEnabled', 'musicOn', 'musicVolume', 'sfxVolume', 'audioMuted', 'textSize', 'colorblindSafe', 'ownerUserId', 'cloudRev', 'cloudSyncedHash', 'cloudSyncedAt']) {
+    for (const k of ['soundEnabled', 'animationsEnabled', 'musicOn', 'musicVolume', 'sfxVolume', 'audioMuted', 'textSize', 'colorblindSafe', 'hapticsEnabled', 'ownerUserId', 'cloudRev', 'cloudSyncedHash', 'cloudSyncedAt']) {
       expect(CLOUD_FIELDS).not.toContain(k);
     }
     expect(CLOUD_FIELDS).toContain('lastSyncedServerGems');
     expect(CLOUD_FIELDS).toContain('ownedCards');
     expect(CLOUD_FIELDS).toContain('equippedCardBack');
     expect(CLOUD_FIELDS).toContain('equippedBoard');
+    expect(CLOUD_FIELDS).toContain('equippedFinish');
+    expect(CLOUD_FIELDS).toContain('equippedAvatar');
+    expect(CLOUD_FIELDS).toContain('equippedLine');
   });
 
   it('fingerprints a save the same whatever order its keys come back in', () => {
