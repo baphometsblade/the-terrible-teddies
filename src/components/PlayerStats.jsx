@@ -268,7 +268,7 @@ const PlayerStats = ({ onClose }) => {
               {/* The rank's roomy line (promotedLong): the House's remark on
                   where the player now stands. Plain small print. */}
               <p data-house-rank-line="" className="mx-auto mt-0.5 max-w-xs text-xs text-plush-300 md:mx-0">{rank.promotedLong}</p>
-              <p data-profile-line="" className="mx-auto mt-1 max-w-xs text-sm italic text-plush-200 md:mx-0">{wardrobeItem(equippedLine)?.blurb}</p>
+              <p data-profile-line="" className="sr-only">{wardrobeItem(equippedLine)?.blurb}</p>
               <div className="mx-auto mt-2 w-full max-w-[16rem] md:mx-0">
                 <div className="flex items-center justify-center gap-2 text-xs text-plush-200 md:justify-start">
                   <span className="btn-brass whitespace-nowrap rounded-md px-1.5 py-[3px] text-[11px] font-extrabold leading-none">Lv. {level}</span>

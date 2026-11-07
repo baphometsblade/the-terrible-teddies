@@ -544,7 +544,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
         <div className="relative px-3 max-[359px]:px-2 sm:px-6 pb-5 sm:pb-6">
           <p role="status" className="sr-only">{announcement}</p>
           {isOpening && ceremony && (
-            <p data-ceremony="" className="mb-3 text-center text-sm leading-snug text-plush-300">{ceremony}</p>
+            <p data-ceremony="" className="mb-3 text-center text-sm leading-snug text-plush-300 max-sm:[@media(max-height:620px)]:sr-only">{ceremony}</p>
           )}
 
           {/* The stage: a lit display case the pack sits in and the cards are
