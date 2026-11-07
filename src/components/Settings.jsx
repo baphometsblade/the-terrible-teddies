@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Settings as SettingsIcon, Volume2, Sparkles, Smile, Meh, Angry,
-  LogOut, Trash2, TriangleAlert, Minus, Check,
+  Settings as SettingsIcon, Volume2, VolumeX, Music, Sparkles, Smile, Meh, Angry,
+  LogOut, Trash2, TriangleAlert, Minus, Check, Type, Eye, Smartphone,
   Cloud, CloudUpload, CloudOff, HardDrive, ArrowLeftRight,
 } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
@@ -17,6 +17,7 @@ import {
   useCloudSave, describeSaveStatus, formatSavedAt, switchToBackupSave, saveNow,
 } from '@/lib/cloudSave';
 import AccountData from '@/components/AccountData';
+import { isInstalled, listenForInstall } from '@/lib/pwa';
 
 // The save's state, as an icon beside its words (describeSaveStatus).
 const SAVE_ICON = {
@@ -151,12 +152,83 @@ const ResetSummary = ({ summary }) => (
   </div>
 );
 
+const TEXT_SIZES = [
+  { id: 'default', label: 'Default' },
+  { id: 'large', label: 'Large' },
+  { id: 'larger', label: 'Larger' },
+];
+
+// The install offer arrives later than the dialog, and only in browsers that
+// have one. iOS never fires it; the share-sheet line is the way there.
+const InstallBlock = () => {
+  const [installed, setInstalled] = useState(() => isInstalled());
+  const [offer, setOffer] = useState(null);
+  const [note, setNote] = useState('');
+  useEffect(() => listenForInstall(setOffer), []);
+  useEffect(() => {
+    const onChange = () => setInstalled(isInstalled());
+    window.addEventListener('visibilitychange', onChange);
+    return () => window.removeEventListener('visibilitychange', onChange);
+  }, []);
+  const ios = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (installed) {
+    return <p className="text-sm text-plush-200">The bar is already on this home screen. Try explaining the icon.</p>;
+  }
+  return (
+    <div>
+      {offer ? (
+        <button
+          type="button"
+          className={`${ACTION} btn-glass`}
+          onClick={async () => {
+            const outcome = await offer.prompt();
+            if (outcome === 'accepted') setInstalled(true);
+            else setNote('Left in the browser. The offer stands, whenever you are feeling brave.');
+          }}
+        >
+          <Smartphone aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
+          Take the bar home
+        </button>
+      ) : (
+        <p className="text-sm leading-snug text-plush-200">
+          {ios
+            ? 'Open the share menu and choose Add to Home Screen. Then the bar comes home with you.'
+            : 'If the browser offers to install this site, take it. The icon is harder to explain than the habit.'}
+        </p>
+      )}
+      {note && <p role="status" className="mt-2 text-xs text-plush-300">{note}</p>}
+    </div>
+  );
+};
+
+const Fader = ({ id, icon: Icon = Music, label, description, value, onChange }) => (
+  <SettingRow icon={Icon} label={label} description={description} htmlFor={id}>
+    <input
+      id={id}
+      type="range"
+      min="0"
+      max="100"
+      step="5"
+      value={Math.round(value * 100)}
+      onChange={(event) => onChange(Number(event.target.value) / 100)}
+      className={`mixer-range ${FOCUS_OUTLINE}`}
+      aria-labelledby={`${id}-label`}
+      aria-describedby={`${id}-desc`}
+    />
+  </SettingRow>
+);
+
 const Settings = ({ onClose }) => {
   // The whole store: the reset confirmation is worded from the live save.
   const store = useGameStore();
   const {
     soundEnabled, setSoundEnabled,
-
+    musicOn, setMusicOn,
+    musicVolume, setMusicVolume,
+    sfxVolume, setSfxVolume,
+    audioMuted, setAudioMuted,
+    textSize, setTextSize,
+    colorblindSafe, setColorblindSafe,
     animationsEnabled, setAnimationsEnabled,
     difficulty, setDifficulty,
     resetProgress,
@@ -284,16 +356,43 @@ const Settings = ({ onClose }) => {
                   className={SWITCH}
                 />
               </SettingRow>
+              <div className="border-t border-white/[0.06]">
+                <SettingRow icon={Music} label="Slow dance" description="The house band, playing something you can deny later. It waits until you touch the room." htmlFor="setting-music">
+                  <Switch
+                    checked={musicOn}
+                    onCheckedChange={setMusicOn}
+                    id="setting-music"
+                    aria-labelledby="setting-music-label"
+                    aria-describedby="setting-music-desc"
+                    className={SWITCH}
+                  />
+                </SettingRow>
+              </div>
+              <div className="border-t border-white/[0.06]">
+                <SettingRow icon={VolumeX} label="Mute" description="Kills the band and the slaps. The neighbours were never the point. Remembered on this phone." htmlFor="setting-mute">
+                  <Switch
+                    checked={audioMuted}
+                    onCheckedChange={setAudioMuted}
+                    id="setting-mute"
+                    aria-labelledby="setting-mute-label"
+                    aria-describedby="setting-mute-desc"
+                    className={SWITCH}
+                  />
+                </SettingRow>
+              </div>
+              <div className="border-t border-white/[0.06]">
+                <Fader id="setting-sfx-volume" icon={Volume2} label="How hard" description="From a tap to a smack. The other noises follow." value={sfxVolume} onChange={setSfxVolume} />
+              </div>
+              <div className="border-t border-white/[0.06]">
+                <Fader id="setting-music-volume" label="In your ear" description="The band can sit in the corner, or breathe on your neck." value={musicVolume} onChange={setMusicVolume} />
+              </div>
             </div>
-            {/* No "Music" row. The switch wrote a flag nothing ever read,
-                and there is no music to control. Save version 4 drops the
-                field. Restore the row only with an actual track. */}
           </section>
 
           <section>
             <SectionHeading>Visual</SectionHeading>
             <div className="panel-glass rounded-xl">
-              <SettingRow icon={Sparkles} label="Animations" description="Shakes, bounces and flashes. Off if you’re hungover." htmlFor="setting-animations">
+              <SettingRow icon={Sparkles} label="Animations" description="Shakes and flashes. Off if you are hungover, and off when the phone asks for less motion." htmlFor="setting-animations">
                 <Switch
                   checked={animationsEnabled}
                   onCheckedChange={setAnimationsEnabled}
@@ -303,6 +402,46 @@ const Settings = ({ onClose }) => {
                   className={SWITCH}
                 />
               </SettingRow>
+            </div>
+          </section>
+
+          <section>
+            <SectionHeading>How close</SectionHeading>
+            <div className="seg-well grid grid-cols-3 gap-1" role="group" aria-label="Text size">
+              {TEXT_SIZES.map(({ id, label }) => {
+                const selected = textSize === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setTextSize(id)}
+                    aria-pressed={selected}
+                    className={`flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-lg px-1 font-display font-extrabold ${FOCUS_OUTLINE} ${selected ? 'seg-on text-brass-200' : 'seg-off text-plush-200'}`}
+                  >
+                    <Type aria-hidden="true" className={`h-4 w-4 ${selected ? 'text-brass-300' : 'text-plush-300'}`} strokeWidth={2.2} />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="panel-glass mt-3 rounded-xl">
+              <SettingRow icon={Eye} label="Colour-safe rarities" description="Shapes and colours that stay apart if green and red look the same to you. The cards do not get any more innocent." htmlFor="setting-cb">
+                <Switch
+                  checked={colorblindSafe}
+                  onCheckedChange={setColorblindSafe}
+                  id="setting-cb"
+                  aria-labelledby="setting-cb-label"
+                  aria-describedby="setting-cb-desc"
+                  className={SWITCH}
+                />
+              </SettingRow>
+            </div>
+          </section>
+
+          <section>
+            <SectionHeading>Take it home</SectionHeading>
+            <div className="panel-glass rounded-xl px-3.5 py-3.5 sm:px-4">
+              <InstallBlock />
             </div>
           </section>
 

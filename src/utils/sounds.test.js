@@ -4,12 +4,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // is re-imported per test rather than shared across them.
 const howlCtor = vi.fn();
 const play = vi.fn();
+const volume = vi.fn();
 
 vi.mock('howler', () => ({
   Howl: class {
     constructor(opts) {
       howlCtor(opts);
       this.play = play;
+      this.volume = volume;
     }
   },
 }));
@@ -22,6 +24,7 @@ async function freshModule() {
 beforeEach(() => {
   howlCtor.mockClear();
   play.mockClear();
+  volume.mockClear();
 });
 
 describe('sound effects', () => {
@@ -61,6 +64,18 @@ describe('sound effects', () => {
     playSound('attack', true);
     expect(howlCtor).toHaveBeenCalledTimes(1);
     expect(play).toHaveBeenCalledTimes(3);
+  });
+
+  it('constructs nothing when the mixer is muted, even with sound effects on', async () => {
+    const { playSound } = await freshModule();
+    const { useGameStore } = await import('@/stores/gameStore');
+    useGameStore.setState({ audioMuted: true });
+    expect(playSound('attack', true)).toBe(false);
+    expect(howlCtor).not.toHaveBeenCalled();
+    useGameStore.setState({ audioMuted: false, sfxVolume: 0.5 });
+    expect(playSound('attack', true)).toBe(true);
+    expect(howlCtor).toHaveBeenCalledTimes(1);
+    useGameStore.setState({ sfxVolume: 1 });
   });
 
   it('returns false for an unknown sound name rather than throwing', async () => {

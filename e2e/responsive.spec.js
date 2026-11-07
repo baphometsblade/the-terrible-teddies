@@ -339,6 +339,7 @@ const DIALOGS = [
   { trigger: 'Rankings', dialog: 'Leaderboard' },
   { trigger: 'Card Packs', dialog: 'Card packs' },
   { trigger: 'Settings', dialog: 'Settings' },
+  { trigger: 'Wardrobe', dialog: 'Wardrobe' },
 ];
 
 for (const { trigger, dialog } of DIALOGS) {
@@ -376,7 +377,7 @@ test.describe('under an installed iPhone\'s status bar and home indicator', () =
     expect(top, 'a header control is under the clock').toBeGreaterThanOrEqual(INSETS.top);
   });
 
-  for (const trigger of ['Shop', 'Challenges', 'Battle Pass', 'Rankings', 'Card Packs', 'Settings', 'How to play', 'Daily rewards', 'View player stats']) {
+  for (const trigger of ['Shop', 'Challenges', 'Battle Pass', 'Rankings', 'Card Packs', 'Settings', 'Wardrobe', 'How to play', 'Daily rewards', 'View player stats']) {
     test(`the ${trigger} dialog keeps its title and Close below the status bar, and its foot above the home indicator`, async ({ page }) => {
       await page.getByRole('button', { name: trigger, exact: true }).click();
       const dialog = page.getByRole('dialog');

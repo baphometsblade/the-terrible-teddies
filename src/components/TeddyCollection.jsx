@@ -54,6 +54,7 @@ const FilterGroup = ({ id, label, className = '', children }) => (
 const RarityDot = ({ rarity, className = 'h-2 w-2' }) => (
   <span
     aria-hidden="true"
+    data-rarity-metal={rarity}
     className={`shrink-0 rounded-full ring-1 ring-black/40 ${className}`}
     style={{ background: RARITY_METAL[rarity] }}
   />
@@ -430,7 +431,7 @@ const TeddyCollection = () => {
                   </span>
                 </Medallion>
                 <span className="sr-only">{owned} of {total}</span>
-                <div className={`label-caps font-display text-[9px] tracking-[0.04em] sm:text-[10px] sm:tracking-[0.12em] ${RARITY[rarity].text}`}>{rarity}</div>
+                <div data-rarity-ink={rarity} className={`label-caps font-display text-[9px] tracking-[0.04em] sm:text-[10px] sm:tracking-[0.12em] ${RARITY[rarity].text}`}>{rarity}</div>
               </li>
             ))}
           </ul>
