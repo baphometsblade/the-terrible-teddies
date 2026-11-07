@@ -1,6 +1,6 @@
 import {
   damageToCreatureHp, resolveCreatureHit, rallyField, effectiveCost, effectiveAttack,
-  canAttack, readyCreatures, getValidTargets,
+  canAttack, canSwingFace, readyCreatures, getValidTargets,
   gainedFuryStack, describeBlockedTarget,
 } from './battleUtils';
 
@@ -286,6 +286,16 @@ describe('canAttack / readyCreatures (summoning sickness)', () => {
     expect(rallied.summoningSick).toBe(true);
     expect(canAttack(rallied)).toBe(false);
     expect(rallied.attack).toBe(3); // rally's +1 still applies
+  });
+
+  it('a Quickie can hit creatures the turn it arrives, and not the face', () => {
+    const rush = creature({ ability: 'rush', summoningSick: true });
+    expect(canAttack(rush)).toBe(true);
+    expect(canSwingFace(rush)).toBe(false);
+    const [settled] = readyCreatures([rush]);
+    expect(canSwingFace(settled)).toBe(true);
+    expect(canSwingFace(creature({ ability: 'rush', summoningSick: true, hasAttacked: true }))).toBe(false);
+    expect(canSwingFace(creature({ summoningSick: false }))).toBe(true);
   });
 });
 

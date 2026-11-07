@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Swords, Target, RefreshCw, Layers, Zap, ScrollText, Rocket, Trophy,
-  Bomb, Sparkles, Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown,
+  Bomb, Sparkles,   Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown, Rabbit,
 } from 'lucide-react';
 import TeddyCard from './TeddyCard';
 import { ALL_CARDS } from '../stores/gameStore';
@@ -66,10 +66,10 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Rap Sheets (Abilities)",
-    content: "Catcall (Taunt) — talks so much shit, enemies HAVE to hit them first\nUncut (Piercing) — cuts straight through Shield. No foreplay.\nRubber (Shield) — takes 50% less damage, the coward\nPeep (Stealth) — untargetable for a turn (currently hiding in your hamper)\nWhiskey (Fury) — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nWingman (Protect) — while they're upright, nothing else on their side can be touched. Getting them horizontal comes first.\nPile-on (Swarm) — costs 1 less once you've already got someone on the table, and its cost disc turns green to say so. Bad decisions are cheaper in groups.\nPatron (Royal) — struts around giving everyone ELSE +1 Attack. Never itself.",
+    content: "Catcall (Taunt) — talks so much shit, enemies HAVE to hit them first\nUncut (Piercing) — cuts straight through Shield. No foreplay.\nRubber (Shield) — takes 50% less damage, the coward\nPeep (Stealth) — untargetable for a turn (currently hiding in your hamper)\nWhiskey (Fury) — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nWingman (Protect) — while they're upright, nothing else on their side can be touched. Getting them horizontal comes first.\nPile-on (Swarm) — costs 1 less once you've already got someone on the table, and its cost disc turns green to say so. Bad decisions are cheaper in groups.\nPatron (Royal) — struts around giving everyone ELSE +1 Attack. Never itself.\nQuickie (Rush) — they can go the moment they sit down, but only with the other bears. The face is a second round.",
     icon: ScrollText,
     list: true,
-    icons: [Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown],
+    icons: [Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown, Rabbit],
     columns: true,
   },
   {
