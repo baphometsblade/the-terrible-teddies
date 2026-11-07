@@ -475,13 +475,6 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
             the row stopped 12-24px short of the edge, with the step scrolling
             past beneath it. */}
         <div className="relative flex flex-col gap-2 border-t border-white/[0.06] px-4 py-4 sm:px-6 [@media(max-height:500px)]:sticky [@media(max-height:500px)]:-bottom-3 sm:[@media(max-height:500px)]:-bottom-6 [@media(max-height:500px)]:z-10 [@media(max-height:500px)]:bg-night-900 [@media(max-height:500px)]:py-2.5 [@media(max-height:500px)]:shadow-[0_-16px_24px_-16px_rgba(0,0,0,0.9)]">
-          {/* In the footer, not the header. A toast over a dialog owns the
-              top-left corner, and this button sat in it. */}
-          {onReplayLesson && (
-            <button type="button" onClick={onReplayLesson} className={`${NAV} btn-glass w-full px-3 text-xs sm:text-sm`}>
-              Replay the lesson
-            </button>
-          )}
           <div className="flex items-center justify-between gap-3">
           <button
             type="button"
@@ -513,6 +506,14 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
             </button>
           )}
           </div>
+          {/* After Previous in the tab order, so Shift+Tab from Previous still
+              reaches the step. In the footer, not the header: a toast over a
+              dialog owns the top-left corner, and this button sat in it. */}
+          {onReplayLesson && (
+            <button type="button" onClick={onReplayLesson} className={`${NAV} btn-glass w-full px-3 text-xs sm:text-sm`}>
+              Replay the lesson
+            </button>
+          )}
         </div>
       </motion.div>
     </div>
