@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Settings as SettingsIcon, Volume2, VolumeX, Music, Sparkles, Smile, Meh, Angry,
+  Settings as SettingsIcon, Volume2, VolumeX, Music, Vibrate, Sparkles, Smile, Meh, Angry,
   LogOut, Trash2, TriangleAlert, Minus, Check, Type, Eye, Smartphone,
   Cloud, CloudUpload, CloudOff, HardDrive, ArrowLeftRight,
 } from 'lucide-react';
@@ -227,6 +227,7 @@ const Settings = ({ onClose }) => {
     musicVolume, setMusicVolume,
     sfxVolume, setSfxVolume,
     audioMuted, setAudioMuted,
+    hapticsEnabled, setHapticsEnabled,
     textSize, setTextSize,
     colorblindSafe, setColorblindSafe,
     animationsEnabled, setAnimationsEnabled,
@@ -376,6 +377,18 @@ const Settings = ({ onClose }) => {
                     id="setting-mute"
                     aria-labelledby="setting-mute-label"
                     aria-describedby="setting-mute-desc"
+                    className={SWITCH}
+                  />
+                </SettingRow>
+              </div>
+              <div className="border-t border-white/[0.06]">
+                <SettingRow icon={Vibrate} label="Haptics" description="A short buzz when you sit, buy, or put a look on. Some phones stay quiet." htmlFor="setting-haptics">
+                  <Switch
+                    checked={hapticsEnabled}
+                    onCheckedChange={setHapticsEnabled}
+                    id="setting-haptics"
+                    aria-labelledby="setting-haptics-label"
+                    aria-describedby="setting-haptics-desc"
                     className={SWITCH}
                   />
                 </SettingRow>

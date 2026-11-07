@@ -9,6 +9,7 @@ import { ignoreKeyRepeat, useArmedAfterOpen } from '@/lib/keyRepeat';
 import { Medallion, DialogClose, WalletChips } from '@/components/ui/game-chrome';
 import { CardBack } from '@/components/TeddyCard';
 import { WARDROBE, ownsWardrobe, wardrobeLong } from '@/lib/wardrobe';
+import { pulse } from '@/lib/haptics';
 
 const ACTION = `inline-flex h-11 shrink-0 items-center justify-center rounded-xl px-3 font-display text-sm font-bold ${FOCUS_OUTLINE}`;
 
@@ -81,6 +82,10 @@ const Wardrobe = ({ onClose }) => {
   const unlocked = useGameStore((s) => s.unlockedCosmetics);
   const equippedBack = useGameStore((s) => s.equippedCardBack);
   const equippedBoard = useGameStore((s) => s.equippedBoard);
+  const equippedFinish = useGameStore((s) => s.equippedFinish);
+  const equippedAvatar = useGameStore((s) => s.equippedAvatar);
+  const equippedLine = useGameStore((s) => s.equippedLine);
+  const hapticsEnabled = useGameStore((s) => s.hapticsEnabled);
   const purchaseWardrobe = useGameStore((s) => s.purchaseWardrobe);
   const [pending, setPending] = useState(null);
   const [status, setStatus] = useState('');
@@ -100,7 +105,10 @@ const Wardrobe = ({ onClose }) => {
       setStatus(item.currency === 'gems' ? 'Not enough gems.' : 'Not enough coins.');
       return;
     }
-    if (reason === 'bought' || reason === 'owned') setStatus(`${item.label} is what you're wearing.`);
+    if (reason === 'bought' || reason === 'owned') {
+      pulse(reason === 'bought' ? 'buy' : 'tap', hapticsEnabled);
+      setStatus(`${item.label} is what you're wearing.`);
+    }
   };
 
   const confirm = () => {
@@ -109,12 +117,25 @@ const Wardrobe = ({ onClose }) => {
     const reason = purchaseWardrobe(item.id);
     setPending(null);
     if (reason === 'short') setStatus('Not enough gems.');
-    else if (reason === 'bought' || reason === 'owned') setStatus(`${item.label} is what you're wearing.`);
+    else if (reason === 'bought' || reason === 'owned') {
+      pulse('buy', hapticsEnabled);
+      setStatus(`${item.label} is what you're wearing.`);
+    }
   };
 
+  const equippedFor = (item) => {
+    if (item.slot === 'back') return equippedBack;
+    if (item.slot === 'board') return equippedBoard;
+    if (item.slot === 'finish') return equippedFinish;
+    if (item.slot === 'avatar') return equippedAvatar;
+    return equippedLine;
+  };
   const groups = [
     { id: 'backs', title: 'From behind', items: WARDROBE.filter((item) => item.slot === 'back') },
     { id: 'boards', title: 'The sheet', items: WARDROBE.filter((item) => item.slot === 'board') },
+    { id: 'finish', title: 'The shine', items: WARDROBE.filter((item) => item.slot === 'finish') },
+    { id: 'avatar', title: 'The ring', items: WARDROBE.filter((item) => item.slot === 'avatar') },
+    { id: 'line', title: 'The line', items: WARDROBE.filter((item) => item.slot === 'line') },
   ];
 
   return (
@@ -160,7 +181,7 @@ const Wardrobe = ({ onClose }) => {
                     key={item.id}
                     item={item}
                     owned={ownsWardrobe(unlocked, item)}
-                    equipped={(item.slot === 'back' ? equippedBack : equippedBoard) === item.id}
+                    equipped={equippedFor(item) === item.id}
                     onChoose={choose}
                   />
                 ))}
