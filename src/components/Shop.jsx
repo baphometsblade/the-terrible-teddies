@@ -4,7 +4,8 @@ import { Store, Package, Gem, Star, Coins, Timer, Sparkles, ShieldCheck, Percent
 import { useToast } from "@/components/ui/use-toast";
 import { useGameStore, SHOP_ITEMS } from '../stores/gameStore';
 import analytics from '../utils/analytics';
-import { redirectToStripeCheckout, fetchOnePerAccountHoldings } from '../utils/stripe';
+import { redirectToCheckout, fetchOnePerAccountHoldings } from '../utils/stripe';
+import { paymentProvider, checkoutFunctionName, PAYMENT_PROCESSOR_LABEL } from '@/lib/paymentProvider';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useDialog } from '@/hooks/useDialog';
 import { pressable } from '@/lib/a11y';
@@ -43,6 +44,17 @@ const ACTION =
   'disabled:opacity-50 disabled:cursor-not-allowed';
 
 const CHECKOUT_STATUS = 'Opening secure checkout…';
+
+// Card payments stay shut until VITE_PAYMENT_PROVIDER is ccbill or stripe.
+// The closed state is a status, never a button that cannot take payment.
+const GemShopClosed = () => (
+  <div role="status" data-gem-shop="closed" className="panel-glass rounded-2xl px-5 py-8 text-center">
+    <p className="font-display text-xl font-extrabold text-white">Gem shop opening soon</p>
+    <p className="mx-auto mt-2 max-w-md text-sm text-plush-300">
+      Card payments are not open yet. Packs and coin bags still take the gems and coins you already have.
+    </p>
+  </div>
+);
 
 // Each gem tier wears the next metal up the rarity ladder, pewter to brass, so
 // the five tiles read as a ladder rather than five copies of one tile.
@@ -142,6 +154,8 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
     ? Math.max(1, Math.ceil((coinDoublerExpiresAt - now) / 3_600_000))
     : 0;
   const { session } = useSupabaseAuth();
+  const provider = paymentProvider();
+  const paymentsOpen = provider !== 'none';
   const { toast } = useToast();
   // The Starter Gem Pack is one per account (the checkout function refuses a
   // second with a 409). Read the account's own purchases so a player who has
@@ -228,6 +242,8 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
   };
 
   const handleGemPurchase = async (bundle) => {
+    const endpoint = checkoutFunctionName(provider);
+    if (!endpoint) return;
     if (!session?.user) {
       toast({
         title: "Sign In Required",
@@ -241,7 +257,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
     setProcessing(true);
     try {
       analytics.trackBeginCheckout({ bundleId: bundle.id, gems: bundle.gems, price: bundle.price });
-      await redirectToStripeCheckout(bundle.id);
+      await redirectToCheckout(bundle.id, endpoint);
       // Browser navigates away — no further code runs here
     } catch (err) {
       analytics.trackError(err, 'gem_purchase');
@@ -429,17 +445,23 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                     </p>
                   )}
                 </div>
+                {paymentsOpen ? (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   {GEM_BUNDLES.map((bundle, tier) => (
                     <GemBundle key={bundle.id} bundle={bundle} tier={tier} processing={processing} onBuy={() => handleGemPurchase(bundle)} />
                   ))}
                 </div>
+                ) : (
+                  <GemShopClosed />
+                )}
                 <div className="mt-auto pt-6">
                 <div className="pt-4 border-t border-white/5 flex flex-col items-center gap-1 text-center text-plush-400 text-xs">
+                  {paymentsOpen && (
                   <p className="inline-flex items-center gap-1.5">
                     <ShieldCheck aria-hidden="true" className="w-3.5 h-3.5 text-emerald-300" strokeWidth={2.4} />
-                    Secure payment processing powered by Stripe
+                    {`Secure payment processing powered by ${PAYMENT_PROCESSOR_LABEL[provider]}`}
                   </p>
+                  )}
                   {/* What the Stripe webhook actually does (eventRouting.js): a
                       full refund, or a chargeback that takes the money, takes
                       back the gems that payment bought, and any already spent
@@ -493,7 +515,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                           <Check aria-hidden="true" className="h-4 w-4" strokeWidth={2.6} />
                           Claimed
                         </div>
-                      ) : (
+                      ) : paymentsOpen ? (
                         <button
                           type="button"
                           onClick={() => handleGemPurchase({ id: 'starter_bundle', gems: 300, bonus: 0, price: 4.99 })}
@@ -502,6 +524,8 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                         >
                           {processing ? '…' : 'Buy Now'}
                         </button>
+                      ) : (
+                        <p className="mt-4 text-sm text-plush-200">Gem shop opening soon</p>
                       )}
                       <p className="mt-2 text-xs text-plush-300">
                         {starterClaimed ? "One per account, and you've had yours." : 'One per account.'}
@@ -522,6 +546,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                     </div>
                     <div className="relative mt-4 pt-3 border-t border-white/5 flex justify-between items-center gap-3">
                       <span className="font-display font-extrabold text-fuchsia-200">350 gems</span>
+                      {paymentsOpen ? (
                       <button
                         type="button"
                         onClick={() => handleGemPurchase({ id: 'weekly_gem_pass', gems: 350, bonus: 0, price: 5.99 })}
@@ -530,6 +555,9 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                       >
                         $5.99
                       </button>
+                      ) : (
+                        <p className="text-sm text-plush-200">Gem shop opening soon</p>
+                      )}
                     </div>
                   </div>
 

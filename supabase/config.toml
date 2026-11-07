@@ -29,3 +29,9 @@ verify_jwt = true
 # before our handler runs — which would silently break all gem fulfillment.
 [functions.stripe-webhook]
 verify_jwt = false
+
+# CCBill posts NewSaleSuccess / Refund / Chargeback / Void with its own digest,
+# not a Supabase JWT. The handler checks that digest (and CCBILL_WEBHOOK_IPS
+# when set). The gateway JWT check would 401 every post before it ran.
+[functions.ccbill-webhook]
+verify_jwt = false

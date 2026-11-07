@@ -21,6 +21,8 @@ function parseServerTable(source) {
 
 const checkout = parseServerTable(read('supabase/functions/create-checkout-session/index.ts'));
 const webhook = parseServerTable(read('supabase/functions/stripe-webhook/index.ts'));
+const ccbillCheckout = parseServerTable(read('supabase/functions/ccbill-checkout/index.ts'));
+const ccbillWebhook = parseServerTable(read('supabase/functions/ccbill-webhook/index.ts'));
 const shopSrc = read('src/components/Shop.jsx');
 // The revenue event's price table. It moved out of PurchaseSuccess.jsx when
 // payments confirmed after that screen closed began to be counted too
@@ -69,6 +71,8 @@ describe('gem bundle price tables stay in sync', () => {
 
   it('checkout and webhook tables are identical', () => {
     expect(webhook).toEqual(checkout);
+    expect(ccbillCheckout).toEqual(checkout);
+    expect(ccbillWebhook).toEqual(checkout);
   });
 
   it('every Shop tile matches the server table (gems, bonus, price)', () => {
