@@ -4,6 +4,7 @@
   "short_name": "Terrible Teddies",
   "description": "An 18+ card battler for teddy bears with bad habits.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#120c1c",

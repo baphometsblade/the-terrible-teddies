@@ -19,7 +19,11 @@ export const isSaveObject = (v) => v !== null && typeof v === 'object' && !Array
 
 // This device's own settings: a laptop's sound being off says nothing about
 // the phone's. They neither go to the server nor come back from it.
-export const DEVICE_FIELDS = ['soundEnabled', 'animationsEnabled'];
+export const DEVICE_FIELDS = [
+  'soundEnabled', 'animationsEnabled',
+  'musicOn', 'musicVolume', 'sfxVolume', 'audioMuted',
+  'textSize', 'colorblindSafe',
+];
 // Which account, and the sync bookkeeping: about this copy, not the save.
 const BOOKKEEPING = ['ownerUserId', 'cloudRev', 'cloudSyncedHash', 'cloudSyncedAt'];
 

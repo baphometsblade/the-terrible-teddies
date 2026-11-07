@@ -14,6 +14,10 @@ import { comebackFor } from '@/lib/comeback';
 import { normalizeRerolls, rerollPatch } from '@/lib/questReroll';
 import { bookOf, normalizeClaimedSets } from '@/lib/collectionBook';
 import { titleById } from '@/lib/titles';
+import {
+  quoteWardrobe, cardBackId, boardId, DEFAULT_CARD_BACK, DEFAULT_BOARD,
+} from '@/lib/wardrobe';
+import { clampVolume } from '@/lib/audioMix';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
@@ -331,6 +335,17 @@ const initialState = {
   legendaryPacks: 0,
   soundEnabled: true,
   animationsEnabled: true,
+  // This device's mixer. Mute wins over both faders. Music stays off until
+  // the player asks: a bar that starts singing on a returning phone is a
+  // surprise, and these never leave the device (DEVICE_FIELDS).
+  musicOn: false,
+  musicVolume: 0.7,
+  sfxVolume: 1,
+  audioMuted: false,
+  // Display, also this device only. `larger` is the top of three, and the
+  // colourblind switch swaps rarity inks for ones that stay apart.
+  textSize: 'default',
+  colorblindSafe: false,
   // New players start on 'easy' for a gentler first session (the AI is a real
   // threat under the creature-HP combat model); they can ramp up in Settings.
   // Only affects fresh saves — returning players keep their persisted choice.
@@ -356,6 +371,11 @@ const initialState = {
   // pass, never what it unlocked (it used to clear these too, so the borders a
   // 500-gem pass sold vanished at the quarter).
   unlockedCosmetics: [],
+  // Which bought (or free) look is on the cards and the cloth. Ids from
+  // src/lib/wardrobe.js. They travel with the save; a missing or unknown id
+  // is the house look (normalizeSave).
+  equippedCardBack: DEFAULT_CARD_BACK,
+  equippedBoard: DEFAULT_BOARD,
   // Coin Doubler booster: epoch ms at which the 2x battle-coin multiplier
   // lapses, or null when it has never been bought. A timestamp (not a
   // remaining-duration counter) so the window keeps elapsing while the game is
@@ -435,6 +455,8 @@ export const keptThroughReset = (state, now = new Date()) => {
     legendaryPacks: state.legendaryPacks,
     coinDoublerExpiresAt: doublerRunning ? state.coinDoublerExpiresAt : null,
     unlockedCosmetics: [...state.unlockedCosmetics],
+    equippedCardBack: cardBackId(state.equippedCardBack),
+    equippedBoard: boardId(state.equippedBoard),
     claimedChallenges: [...state.claimedChallenges],
     dailyStatsDate: state.dailyStatsDate,
     weeklyStatsDate: state.weeklyStatsDate,
@@ -466,6 +488,16 @@ export const normalizeSave = (persisted) => {
     premium: persisted?.claimedBattlePassRewards?.premium ?? [],
   };
   s.unlockedCosmetics = Array.isArray(persisted?.unlockedCosmetics) ? persisted.unlockedCosmetics : [];
+  s.equippedCardBack = cardBackId(persisted?.equippedCardBack);
+  s.equippedBoard = boardId(persisted?.equippedBoard);
+  s.musicOn = persisted?.musicOn === true;
+  s.audioMuted = persisted?.audioMuted === true;
+  s.colorblindSafe = persisted?.colorblindSafe === true;
+  s.musicVolume = clampVolume(persisted?.musicVolume, initialState.musicVolume);
+  s.sfxVolume = clampVolume(persisted?.sfxVolume, initialState.sfxVolume);
+  s.textSize = persisted?.textSize === 'large' || persisted?.textSize === 'larger'
+    ? persisted.textSize
+    : 'default';
   // Booster expiry is a nullable timestamp, so it can't join the
   // numeric-coercion sweep below (that would rewrite every inactive null).
   // Anything that isn't a finite number means "no booster running".
@@ -952,6 +984,18 @@ export const useGameStore = create(
         const state = get();
         if (state.unlockedCosmetics.includes(name)) return;
         set({ unlockedCosmetics: [...state.unlockedCosmetics, name] });
+      },
+
+      // Buy a card back or a table cloth with coins or gems already held, or
+      // put on one the player already owns. The quote is the whole decision
+      // (src/lib/wardrobe.js); applying it is one write, so a second tap sees
+      // the first. Gems are real money: the wardrobe confirms those before
+      // it calls this. Returns the quote's reason, or 'unknown'.
+      purchaseWardrobe: (id) => {
+        const quote = quoteWardrobe(get(), id);
+        if (!quote.ok) return quote.reason;
+        set(quote.patch);
+        return quote.reason;
       },
 
       addCard: (cardId) => get().addCards([cardId]),
@@ -1458,6 +1502,12 @@ export const useGameStore = create(
 
       setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
       setAnimationsEnabled: (enabled) => set({ animationsEnabled: enabled }),
+      setMusicOn: (on) => set({ musicOn: on === true }),
+      setMusicVolume: (volume) => set({ musicVolume: clampVolume(volume, 0) }),
+      setSfxVolume: (volume) => set({ sfxVolume: clampVolume(volume, 0) }),
+      setAudioMuted: (muted) => set({ audioMuted: muted === true }),
+      setTextSize: (size) => set({ textSize: size === 'large' || size === 'larger' ? size : 'default' }),
+      setColorblindSafe: (on) => set({ colorblindSafe: on === true }),
       setDifficulty: (difficulty) => set({ difficulty }),
       setTutorialCompleted: (completed) => set({ tutorialCompleted: completed }),
       markFirstFightSeen: () => set({ firstFightSeen: true }),

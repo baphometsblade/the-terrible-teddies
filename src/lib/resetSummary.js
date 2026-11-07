@@ -46,7 +46,7 @@ export function describeReset(state, now = new Date(), { onAccount = false } = {
   // The fresh save brings its defaults for these too (resetProgress spreads
   // the whole initial state), so the list says so rather than leave a player
   // who switched Animations off to find them back on.
-  deletes.push({ label: 'Your name, sound, animation and difficulty settings', after: 'back to defaults' });
+  deletes.push({ label: 'Your name, sound, music, display and difficulty settings', after: 'back to defaults' });
 
   // Gems owed after a reversed payment survive the reset, and it does not
   // top the balance up to the starting amount against them.

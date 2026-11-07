@@ -61,6 +61,7 @@ const MENU_DIALOGS = [
   ['Card Packs', 'Card packs', 'Close card packs'],
   ['Rankings', 'Leaderboard', 'Close leaderboard'],
   ['Settings', 'Settings', 'Close settings'],
+  ['Wardrobe', 'Wardrobe', 'Close wardrobe'],
   ['How to play', 'How to play', 'Close tutorial'],
   [/^Daily rewards/, 'Daily Rewards', 'Close daily rewards'],
   ['View player stats', 'Player stats', 'Close stats'],

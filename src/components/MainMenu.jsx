@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Swords, Target, Trophy, Store, Package, Medal, Layers, LibraryBig,
-  Gift, CircleHelp, Settings, Coins, Gem, Flame, ChevronRight, Moon,
+  Gift, CircleHelp, Settings, Coins, Gem, Flame, ChevronRight, Moon, Palette,
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { countClaimable } from '../stores/challenges';
@@ -106,6 +106,7 @@ const MainMenu = ({
   onLeaderboard,
   onChallenges,
   onNightly,
+  onWardrobe,
 }) => {
   const {
     playerName, level, xp, getXPForNextLevel,
@@ -225,6 +226,7 @@ const MainMenu = ({
     { id: 'deck', title: 'Deck Builder', description: TILE_LINES.deck, icon: Layers, action: onDeckBuilder },
     { id: 'collection', title: 'Collection', description: TILE_LINES.collection, icon: LibraryBig, action: onCollection },
     { id: 'leaderboard', title: 'Rankings', description: TILE_LINES.leaderboard, icon: Medal, action: onLeaderboard },
+    { id: 'wardrobe', title: 'Wardrobe', description: TILE_LINES.wardrobe, icon: Palette, action: onWardrobe },
     { id: 'nightly', title: 'Nightly', description: TILE_LINES.nightly, icon: Moon, action: onNightly,
       badge: dailyKey === dailyFightFor().key && dailyResult
         ? (dailyResult === 'win' ? `${dailyStreak} streak` : 'Sat')
@@ -440,8 +442,8 @@ const MainMenu = ({
               // its bottom 3px fall off it, so it dropped back under the
               // pointer and was hovered again, every frame: the tile shook.
               whileHover="lift"
-              // Eight tiles fill a 2-column and a 4-column grid exactly, so the
-              // last one does not have to stretch.
+              // Nine tiles: the last row is short on a 2- and a 4-column grid,
+              // and a tile does not stretch to fill it.
             >
               <motion.div
                 {...pressable(d.action, d.title)}

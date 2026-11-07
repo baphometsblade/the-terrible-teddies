@@ -70,7 +70,7 @@ describe('the reset confirmation', () => {
       ['4 card packs', `back to ${FRESH_START.cardPacks}`],
       ['3,250 Battle Pass XP', undefined],
       ['Stats, achievements, login streak and challenge progress', undefined],
-      ['Your name, sound, animation and difficulty settings', 'back to defaults'],
+      ['Your name, sound, music, display and difficulty settings', 'back to defaults'],
     ]);
   });
 
@@ -87,7 +87,7 @@ describe('the reset confirmation', () => {
     // A fresh save: nothing of its own to lose but the stats and settings.
     expect(describeReset(get(), NOW).deletes.map((d) => d.label)).toEqual([
       'Stats, achievements, login streak and challenge progress',
-      'Your name, sound, animation and difficulty settings',
+      'Your name, sound, music, display and difficulty settings',
     ]);
   });
 
