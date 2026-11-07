@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Shield, Crosshair, ShieldHalf, Ghost, Castle, Flame, Bug, Crown,
+  Shield, Crosshair, ShieldHalf, Ghost, Castle, Flame, Bug, Crown, Rabbit,
   Heart, Layers, Bomb, Swords, Sparkles,
 } from 'lucide-react';
 import { abilityLabel } from '@/lib/abilities';
@@ -37,6 +37,7 @@ const ABILITY_ICONS = {
   fury: Flame,
   swarm: Bug,
   royal: Crown,
+  rush: Rabbit,
 };
 const EFFECT_ICONS = {
   heal: Heart,

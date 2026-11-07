@@ -1,0 +1,50 @@
+/* Combat feel on the battle felt. Transform and opacity only.
+   The Animations switch ([data-motion="off"]) and prefers-reduced-motion
+   both stop the shake. The gold crit number stays: it is information,
+   and the float's own rule already decides whether it moves. */
+
+@keyframes board-shake-sm {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+@keyframes board-shake-lg {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  15% { transform: translate3d(-6px, 2px, 0); }
+  30% { transform: translate3d(6px, -2px, 0); }
+  45% { transform: translate3d(-4px, 1px, 0); }
+  60% { transform: translate3d(4px, -1px, 0); }
+  75% { transform: translate3d(-2px, 0, 0); }
+}
+
+.felt-table[data-shake="sm"] { animation: board-shake-sm 320ms ease-out; }
+.felt-table[data-shake="lg"] { animation: board-shake-lg 420ms ease-out; }
+
+.fx-crit {
+  color: #fde68a;
+  font-size: 34px;
+}
+
+.fx-flavor {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  letter-spacing: 0;
+  color: #fde68a;
+}
+
+.fx-crit-flash {
+  background: radial-gradient(circle at 50% 45%, rgba(253, 230, 138, 0.8), rgba(217, 119, 6, 0.45) 60%, rgba(120, 53, 15, 0.2));
+}
+
+[data-motion="off"] .felt-table[data-shake] { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .felt-table[data-shake] { animation: none; }
+}

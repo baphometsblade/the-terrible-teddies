@@ -323,6 +323,22 @@ describe('GameBoard result panel', () => {
   // account of itself, copied when the game ended, and Chuck's bill is the
   // store's all-time damage, which recordBattleResult has already added this
   // game's to by the time the panel draws.
+  it('lets a Quickie swing the turn it arrives, and the slip counts the play', async () => {
+    useGameStore.setState({ currentDeck: [96, 96, 96, 96, 96, 96], firstFightSeen: true });
+    await renderBoard({ onBackToMenu: () => {} });
+    await act(() => new Promise((resolve) => { setTimeout(resolve, 700); }));
+    const play = container.querySelector('[aria-label="Play Quickie Quinn"]');
+    expect(play).not.toBeNull();
+    await act(async () => { play.click(); });
+    const swing = container.querySelector('[aria-label="Select Quickie Quinn to attack"]');
+    expect(swing).not.toBeNull();
+    await act(async () => { swing.click(); });
+    const preview = container.querySelector('[data-strike-preview]');
+    expect(preview?.textContent).toMatch(/Pick a victim/);
+    expect(preview?.textContent).toMatch(/dmg|creatures only/);
+    expect(container.querySelector('[data-turn-slip]')?.textContent).toMatch(/played 1/);
+  });
+
   it('prints the Tab with this battle\'s figures and Chuck\'s running bill', async () => {
     useGameStore.setState({ currentDeck: [4, 4, 4, 4, 4, 4], totalDamageDealt: 4800 });
     await renderBoard({ onBackToMenu: () => {} });
