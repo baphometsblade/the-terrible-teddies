@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import { CONSENT_KEY, consentRecord } from '@/lib/consent';
 
 // The buffered-load path in its own file: analytics.js holds module-level state
 // (`ph`, `loading`, the attempt counter), so exercising a FAILED init has to
@@ -17,6 +18,7 @@ const freshAnalytics = async (initImpl) => {
 const failing = () => { throw new Error('SDK unavailable'); };
 
 beforeEach(() => {
+  localStorage.setItem(CONSENT_KEY, consentRecord('granted', 0));
   vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test_key');
 });
 
@@ -61,6 +63,13 @@ describe('posthog init failure recovery', () => {
     // A permanently blocked SDK (ad blocker, CSP) must not re-import on every
     // single event for the rest of the session.
     expect(init.mock.calls.length).toBeLessThanOrEqual(3);
+  });
+
+  it('does not load the SDK before analytics are allowed', async () => {
+    localStorage.removeItem(CONSENT_KEY);
+    const { initializePostHog, init } = await freshAnalytics(() => {});
+    await initializePostHog();
+    expect(init).not.toHaveBeenCalled();
   });
 
   it('never loads the SDK at all without a key', async () => {

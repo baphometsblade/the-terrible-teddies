@@ -5,7 +5,7 @@
 // a run of points down and across its middle that land on it, so a hit area
 // drawn larger than the control (the Settings switch's) counts, and one that
 // a neighbour covers does not.
-import { test, expect, bootToMainMenu, stubSupabase, SLOW } from './helpers/session.js';
+import { test, expect, bootToMainMenu, stubSupabase, passTheLanding, SLOW } from './helpers/session.js';
 
 const MIN = 44;
 
@@ -253,6 +253,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }
     test('every control is a 44px target: the date form and its policy links', async ({ page }) => {
       await stubSupabase(page);
       await page.goto('/');
+      await passTheLanding(page);
       await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
       await expect(page.locator('form[data-armed="true"]')).toBeVisible();
       expect(await shortTargets(page.locator('main')), 'short targets on the door').toEqual([]);

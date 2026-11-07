@@ -10,7 +10,7 @@
 // tab, a deep link, a second tab), a date that is never stored or sent, the
 // keyboard and the double-tap, and a layout that fits a 320px phone.
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, stubSupabase, seedSignedIn, SESSION, SLOW } from './helpers/session.js';
+import { test, expect, stubSupabase, seedSignedIn, passTheLanding, SESSION, SLOW } from './helpers/session.js';
 import { DOOR_KEY, doorRecord } from '../src/lib/door.js';
 import { CONTENT_NOTICE } from '../src/lib/contentNotice.js';
 
@@ -41,6 +41,7 @@ test.use({ doorPassed: false });
 const meetTheDoor = async (page, url = '/') => {
   await stubSupabase(page);
   await page.goto(url);
+  await passTheLanding(page);
   await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
 };
 
@@ -375,6 +376,7 @@ test.describe('the address', () => {
     await stubSupabase(page);
     await seedSignedIn(page);
     await page.goto('/');
+    await passTheLanding(page);
     await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
     await expect(page.getByRole('button', { name: 'Battle', exact: true })).toHaveCount(0);
     await answer(page, ADULT);
@@ -612,7 +614,7 @@ test.describe('the opening', () => {
     expect(await transforms(page), 'at rest').toEqual([]);
     // Nothing on the door is animating: the sign is simply lit and the slot
     // simply open.
-    expect(await page.evaluate(() => document.querySelector('[data-door-room]').getAnimations({ subtree: true }).length)).toBe(0);
+    await expect.poll(() => page.evaluate(() => document.querySelector('[data-door-room]').getAnimations({ subtree: true }).length)).toBe(0);
     await answer(page, ADULT);
     // Handed over at once, not after a swing: well inside the 920ms the
     // ceremony would take.

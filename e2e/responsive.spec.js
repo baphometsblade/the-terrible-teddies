@@ -9,7 +9,7 @@
 // non-wrapping `flex` row of six buttons totalling 494px. Its parent wrapped,
 // but the row is a single flex item, so it pushed the whole document 52px
 // sideways and every screen below it scrolled horizontally.
-import { test, expect, bootToMainMenu, stubSupabase, SLOW } from './helpers/session.js';
+import { test, expect, bootToMainMenu, stubSupabase, passTheLanding, SLOW } from './helpers/session.js';
 // Pure, as door.js is: the rows the menu's clock is drawn from, so a line
 // dropped into any of them is measured here, not just the shipped ones.
 import { BAR_CLOCK } from '../src/lib/barClock.js';
@@ -458,6 +458,7 @@ test.describe('the door', () => {
   const atTheDoor = async (page) => {
     await stubSupabase(page);
     await page.goto('/');
+    await passTheLanding(page);
     await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
     await expect(page.locator('form[data-armed="true"]')).toBeVisible();
   };

@@ -10,8 +10,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="mobile-web-app-capable" content="yes" />
 
-    <title>Terrible Teddies - 18+ Card Battler With Bad Habits</title>
-    <meta name="description" content="Cute teddy bears. Filthy mouths. An 18+ card battler: build a deck of degenerate bears and beat the stuffing out of Chuck. He's earned it." />
+    <title>Terrible Teddies — 18+ Card Battler</title>
+    <meta name="description" content="A cheeky 18+ card battler about grown bears who close the bar. Build a deck, settle up with Chuck, and leave the rest of the night behind the door." />
     <meta name="keywords" content="card battler, 18+ card game, teddy bear game, collectible cards, mature humor, free to play" />
     <!-- Adult, so SafeSearch and family filters can decline it. The RTA label
          is the one those filters match; "adult" is the one Google documents.
@@ -25,12 +25,16 @@
          injects them from VITE_SITE_URL, and leaves them out without one. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Terrible Teddies" />
-    <meta property="og:title" content="Terrible Teddies - 18+ Card Battler With Bad Habits" />
-    <meta property="og:description" content="Bar fights, a tab nobody pays and one very smug bear named Chuck. Cards, fists and language you can't repeat at work." />
+    <meta property="og:title" content="Terrible Teddies — 18+ Card Battler" />
+    <meta property="og:description" content="Late nights, a tab nobody settles, and one smug bear. A card game with a crooked smile. 18+ only." />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Terrible Teddies - 18+ Card Battler With Bad Habits" />
-    <meta name="twitter:description" content="Bar fights, a tab nobody pays and one very smug bear named Chuck. Cards, fists and language you can't repeat at work." />
+    <meta name="twitter:title" content="Terrible Teddies — 18+ Card Battler" />
+    <meta name="twitter:description" content="Late nights, a tab nobody settles, and one smug bear. A card game with a crooked smile. 18+ only." />
+
+    <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Terrible Teddies","alternateName":"Terrible Teddies — 18+ Card Battler","url":"https://terribleteddies.vercel.app/","image":"https://terribleteddies.vercel.app/og-image.jpg","description":"A cheeky 18+ card battler about grown bears who close the bar. Build a deck, settle up with Chuck, and leave the rest of the night behind the door.","contentRating":"18+","applicationCategory":"Game","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+    </script>
 
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -289,6 +293,17 @@
         <div class="loader-reserve" aria-hidden="true"></div>
       </div>
     </div>
+    <div id="seo-landing" hidden>
+      <main>
+        <p>Adults only · 18+</p>
+        <h1>Terrible Teddies</h1>
+        <p>Stuffed animals with late-night habits.</p>
+        <p>Build a deck of grown bears, pick a fight with Chuck, and keep the jokes where they belong: on the other side of the door.</p>
+        <p>The next screen asks your age. The date is checked on this device and then thrown away. Nothing of the game loads until that screen lets you in.</p>
+        <p><a href="/terms">Terms of use</a> <a href="/privacy">Privacy</a></p>
+      </main>
+    </div>
+    <noscript><style>#initial-loader{display:none!important}#seo-landing{display:block!important}</style></noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
