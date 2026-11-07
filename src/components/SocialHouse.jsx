@@ -9,8 +9,9 @@ import { useGameStore, ALL_CARDS } from '@/stores/gameStore';
 import { deckProblem, challengeUrl, safeName, cleanCode, TIER_ASIDES } from '@/lib/social/ladder';
 import { cardsFromIds } from '@/lib/social/ghostDeck';
 import {
-  loadSocial, loadWeekly, loadCard, publishGhost, drawGhost, openChallenge, forfeitOpen, ticketFrom, reasonText,
+  loadSocial, loadWeekly, loadCard, publishGhost, drawGhost, openChallenge, forfeitOpen, ticketFrom, reasonText, slipUrl,
 } from '@/lib/social/client';
+import SocialRoom from './SocialRoom';
 import {
   CARD_W, CARD_H, victorySpec, drawVictoryCard, canvasBlob, shareCard, saveBlob, copyText,
 } from '@/lib/social/victoryCard';
@@ -21,6 +22,7 @@ const TABS = [
   { id: 'card', label: 'Card', name: 'Your card' },
   { id: 'week', label: 'Week', name: 'This week' },
   { id: 'brawl', label: 'Brawl', name: 'Brawls' },
+  { id: 'room', label: 'Room', name: 'The room' },
 ];
 
 const btn = `inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 font-display font-bold ${FOCUS_OUTLINE}`;
@@ -212,7 +214,7 @@ const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', receipt = null }
           <DialogClose label="Close the ladder" onClick={onClose} />
         </div>
 
-        <div className="seg-well relative mx-4 mb-3 grid grid-cols-3 gap-1 sm:mx-6" role="tablist" aria-label="Ladder sections">
+        <div className="seg-well relative mx-4 mb-3 grid grid-cols-4 gap-1 sm:mx-6" role="tablist" aria-label="Ladder sections">
           {TABS.map((item) => (
             <button
               key={item.id}
@@ -242,13 +244,28 @@ const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', receipt = null }
             {loading && <p>Counting who went home.</p>}
             {!loading && notice && <p>{notice}</p>}
             {!loading && !notice && receipt?.ok && (
-              <p>
-                {receipt.won ? 'You finished.' : 'They finished.'}
-                {' '}
-                {receipt.delta > 0 ? `+${receipt.delta}` : receipt.delta} on the ladder.
-                {' '}
-                Now {receipt.tier}, {receipt.rating}.
-              </p>
+              <div>
+                <p>
+                  {receipt.won ? 'You finished.' : 'They finished.'}
+                  {' '}
+                  {receipt.delta > 0 ? `+${receipt.delta}` : receipt.delta} on the ladder.
+                  {' '}
+                  Now {receipt.tier}, {receipt.rating}.
+                </p>
+                {slipUrl(receipt.match_id) && (
+                  <button
+                    type="button"
+                    onClick={() => run(async () => {
+                      const url = slipUrl(receipt.match_id);
+                      const ok = await copyText(url);
+                      setNotice(ok ? 'Slip copied. The filthy version stays here.' : url);
+                    })}
+                    className={`${btn} btn-glass mt-2`}
+                  >
+                    Copy the slip
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
@@ -340,6 +357,10 @@ const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', receipt = null }
                 </button>
               )}
             </div>
+          )}
+
+          {!loading && !unavailable && tab === 'room' && (
+            <SocialRoom onStartBrawl={onStartBrawl} />
           )}
 
           {!loading && !unavailable && tab === 'brawl' && (

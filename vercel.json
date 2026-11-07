@@ -5,6 +5,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/duel/:code", "destination": "/api/duel?code=:code" },
+    { "source": "/slip/:id", "destination": "/api/slip?id=:id" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

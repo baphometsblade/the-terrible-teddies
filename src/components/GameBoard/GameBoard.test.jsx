@@ -728,7 +728,7 @@ describe('GameBoard victory', () => {
     await advanceUntil(() => container.querySelector('[role="dialog"][aria-label="Victory"]'));
 
     expect(onSettled).toHaveBeenCalledTimes(1);
-    expect(onSettled).toHaveBeenCalledWith(true);
+    expect(onSettled).toHaveBeenCalledWith(true, null);
     expect(useGameStore.getState().totalWins).toBe(before.totalWins);
     expect(useGameStore.getState().coins).toBe(before.coins);
     expect(useGameStore.getState().xp).toBe(before.xp);

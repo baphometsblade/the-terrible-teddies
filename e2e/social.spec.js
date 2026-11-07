@@ -79,6 +79,8 @@ test.describe('house ladder on a narrow phone', () => {
     await page.getByRole('button', { name: 'The ladder', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'The ladder' });
     await expect(dialog.getByRole('tab', { name: 'Your card' })).toBeVisible(SLOW);
+    await dialog.getByRole('tab', { name: 'The room' }).click();
+    await expect(dialog.getByText(/back room is not open/i)).toBeVisible();
     const box = await dialog.boundingBox();
     expect(box.width).toBeLessThanOrEqual(320);
     const overflow = await page.evaluate(() => (

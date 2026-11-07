@@ -1203,4 +1203,123 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting the back room (follows, gangs, cup, ribbon, referral, slip)"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_a UUID := 'c0ffee00-0000-4000-8000-0000000000a1';
+  v_b UUID := 'c0ffee00-0000-4000-8000-0000000000b2';
+  v_json JSONB;
+  v_code TEXT;
+  v_ref TEXT;
+  v_ribbon TEXT;
+  v_denied BOOLEAN;
+  v_id UUID;
+BEGIN
+  INSERT INTO auth.users (id) VALUES (v_a), (v_b) ON CONFLICT DO NOTHING;
+  INSERT INTO public.players (user_id, username) VALUES (v_a, 'Ada'), (v_b, 'Bea')
+  ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  v_json := public.publish_ghost(ARRAY[1,2,3,4,5,6,7,8,9,10]::integer[], 'Saved deck');
+  v_code := v_json->>'code';
+  v_json := public.my_room();
+  v_ref := v_json->>'referral_code';
+  IF v_ref !~ '^[0-9a-f]{10}$' THEN RAISE EXCEPTION 'no referral code: %', v_json; END IF;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.follow_player(v_code);
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'follow failed: %', v_json; END IF;
+  v_json := public.follow_player(v_code);
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'second follow failed: %', v_json; END IF;
+  IF (SELECT count(*) FROM public.follows WHERE follower = v_a) <> 1 THEN
+    RAISE EXCEPTION 'follow was not idempotent';
+  END IF;
+  -- Publish A so self-follow can be attempted with A's own code.
+  PERFORM public.publish_ghost(ARRAY[1,1,2,3,4,5,6,7,8,9]::integer[], 'Saved deck');
+  v_json := public.follow_player((SELECT code FROM public.ghost_decks WHERE user_id = v_a));
+  IF v_json->>'reason' <> 'self' THEN RAISE EXCEPTION 'self follow was allowed: %', v_json; END IF;
+
+  v_json := public.set_rival(v_code);
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'rival failed: %', v_json; END IF;
+  v_json := public.my_room();
+  IF v_json->'rival'->>'username' <> 'Bea' THEN RAISE EXCEPTION 'rival name drifted: %', v_json; END IF;
+
+  v_json := public.create_gang('Night Shift', 'hot');
+  IF v_json->>'tag' <> 'HOT' THEN RAISE EXCEPTION 'gang tag was not uppercased: %', v_json; END IF;
+  v_json := public.create_gang('Other', 'HOT');
+  IF v_json->>'reason' <> 'in' THEN RAISE EXCEPTION 'second gang was allowed: %', v_json; END IF;
+
+  -- Ribbon: a played week, then the season rolls.
+  UPDATE public.ladder_players
+  SET week_wins = 3, week_losses = 1, week_delta = 20, season_id = '1999-W01'
+  WHERE user_id = v_a;
+  PERFORM public.my_social();
+  SELECT ribbon INTO v_ribbon FROM public.ladder_players WHERE user_id = v_a;
+  IF v_ribbon <> 'Top stool' THEN RAISE EXCEPTION 'ribbon was %', v_ribbon; END IF;
+
+  -- Taunt allowlist.
+  v_json := public.set_greeting(9);
+  IF v_json->>'reason' <> 'missing' THEN RAISE EXCEPTION 'bad taunt accepted: %', v_json; END IF;
+  v_json := public.set_greeting(3);
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'greeting failed: %', v_json; END IF;
+
+  -- Referral: A has reported matches? The follow path did not fight. Publish and a real result.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.redeem_referral(v_ref);
+  IF v_json->>'reason' <> 'play' THEN RAISE EXCEPTION 'referral paid before a fight: %', v_json; END IF;
+
+  -- One reported loss so the "played" gate opens, then redeem.
+  v_json := public.open_challenge(v_code);
+  v_id := (v_json->>'match_id')::uuid;
+  UPDATE public.ladder_matches SET created_at = pg_catalog.now() - INTERVAL '1 minute' WHERE id = v_id;
+  PERFORM public.report_ladder_result(v_id, false, false);
+  v_json := public.redeem_referral(v_ref);
+  IF v_json->>'ok' <> 'true' OR (v_json->>'bonus')::int <> 15 THEN
+    RAISE EXCEPTION 'referral did not pay 15: %', v_json;
+  END IF;
+  v_json := public.redeem_referral(v_ref);
+  IF v_json->>'reason' <> 'used' THEN RAISE EXCEPTION 'referral was reusable: %', v_json; END IF;
+
+  -- Slip is public and has no deck.
+  IF to_jsonb((SELECT s FROM public.slip_preview(v_id) s))::text LIKE '%deck%' THEN
+    RAISE EXCEPTION 'slip leaked a deck';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.slip_preview(v_id) WHERE username = 'Ada' AND won IS FALSE) THEN
+    RAISE EXCEPTION 'slip did not show the loss';
+  END IF;
+
+  v_denied := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.follow_player(v_code);
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := TRUE;
+  END;
+  EXECUTE 'RESET ROLE';
+  IF NOT v_denied THEN RAISE EXCEPTION 'anon could follow'; END IF;
+
+  v_denied := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.follows SET follower = v_b WHERE follower = v_a;
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := TRUE;
+  END;
+  EXECUTE 'RESET ROLE';
+  IF NOT v_denied THEN RAISE EXCEPTION 'authenticated could rewrite follows'; END IF;
+
+  -- Cup: both entered, A draws one, a fourth is impossible before three, and the cap holds at 3.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  PERFORM public.enter_cup();
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.enter_cup();
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'cup entry failed: %', v_json; END IF;
+  v_json := public.draw_cup();
+  IF v_json->>'match_id' IS NULL THEN RAISE EXCEPTION 'cup draw failed: %', v_json; END IF;
+
+  RAISE NOTICE 'back room assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"
