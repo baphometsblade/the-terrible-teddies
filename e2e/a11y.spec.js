@@ -284,6 +284,13 @@ const DIALOGS = [
   { trigger: 'Card Packs', dialog: 'Card packs' },
 ];
 
+test('house ladder dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.getByRole('button', { name: 'Rankings', exact: true }).click();
+  await page.getByRole('button', { name: 'The ladder', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'The ladder' })).toBeVisible(SLOW);
+  await expectNoViolations(page, 'house ladder');
+});
+
 for (const { trigger, dialog } of DIALOGS) {
   test(`${dialog} dialog has no WCAG 2.1 A/AA violations`, async ({ page }) => {
     await page.getByRole('button', { name: trigger, exact: true }).click();
