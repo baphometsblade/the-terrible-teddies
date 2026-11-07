@@ -1073,4 +1073,338 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting the social ladder (rating is server-side, clients cannot write it)"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_a UUID := 'a11ce000-0000-4000-8000-00000000000a';
+  v_b UUID := 'b0b00000-0000-4000-8000-00000000000b';
+  v_json JSONB;
+  v_code TEXT;
+  v_match UUID;
+  v_rating INTEGER;
+  v_wins INTEGER;
+  v_losses INTEGER;
+  v_delta INTEGER;
+  v_b_rating INTEGER;
+  v_denied BOOLEAN;
+  i INTEGER;
+BEGIN
+  IF public.ladder_season_id('2026-11-07 12:00:00+00') <> '2026-W45' THEN
+    RAISE EXCEPTION 'ladder_season_id drifted from ISO week: %', public.ladder_season_id('2026-11-07 12:00:00+00');
+  END IF;
+  IF public.ladder_season_id('2026-01-01 00:00:00+00') <> '2026-W01' THEN
+    RAISE EXCEPTION '2026-01-01 is not 2026-W01';
+  END IF;
+  IF public.ladder_season_id('2021-01-01 00:00:00+00') <> '2020-W53' THEN
+    RAISE EXCEPTION '2021-01-01 is not 2020-W53';
+  END IF;
+  IF public.ladder_tier(1049) <> 'Warming Up' OR public.ladder_tier(1050) <> 'Getting Handsy'
+     OR public.ladder_tier(1999) <> 'Last Call' OR public.ladder_tier(2000) <> 'All Night' THEN
+    RAISE EXCEPTION 'ladder tiers drifted';
+  END IF;
+  IF public.ladder_soft(1400) <> 1200 OR public.ladder_soft(900) <> 950 THEN
+    RAISE EXCEPTION 'soft reset drifted: 1400->%, 900->%', public.ladder_soft(1400), public.ladder_soft(900);
+  END IF;
+  IF public.ladder_delta(1000, 1000, true) <> 12
+     OR public.ladder_delta(1000, 1000, false) <> -12
+     OR public.ladder_delta(1000, 1400, true) <> 22
+     OR public.ladder_delta(1400, 1000, true) <> 2 THEN
+    RAISE EXCEPTION 'elo drifted: % % % %',
+      public.ladder_delta(1000, 1000, true), public.ladder_delta(1000, 1000, false),
+      public.ladder_delta(1000, 1400, true), public.ladder_delta(1400, 1000, true);
+  END IF;
+
+  INSERT INTO auth.users (id) VALUES (v_a), (v_b) ON CONFLICT DO NOTHING;
+  INSERT INTO public.players (user_id, username) VALUES (v_a, 'Ada'), (v_b, 'DreadBear')
+  ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username;
+
+  -- Clients cannot write the ladder tables, the way they cannot write players.
+  v_denied := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.ladder_players SET rating = 2400 WHERE user_id = v_a;
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := TRUE;
+  END;
+  EXECUTE 'RESET ROLE';
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'authenticated could UPDATE ladder_players';
+  END IF;
+
+  v_denied := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.report_ladder_result('00000000-0000-4000-8000-000000000000', true, false);
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := TRUE;
+  END;
+  EXECUTE 'RESET ROLE';
+  IF NOT v_denied THEN
+    RAISE EXCEPTION 'anon could call report_ladder_result';
+  END IF;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.my_social();
+  EXECUTE 'RESET ROLE';
+  UPDATE public.ladder_players SET rating = 1400, season_id = '1999-W01' WHERE user_id = v_a;
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_json := public.my_social();
+  EXECUTE 'RESET ROLE';
+  IF (v_json->>'rating')::int <> 1200 OR (v_json->>'week_wins')::int <> 0 THEN
+    RAISE EXCEPTION 'season reset did not halve toward 1000: %', v_json;
+  END IF;
+  IF v_json->>'tier' <> 'Regular' THEN
+    RAISE EXCEPTION 'tier after reset was %', v_json->>'tier';
+  END IF;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  v_json := public.publish_ghost(ARRAY[1,2,3,4,5,6,7,8,9,10]::integer[], 'Saved deck');
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'publish failed: %', v_json; END IF;
+  v_code := v_json->>'code';
+  IF v_code !~ '^[0-9a-f]{10}$' THEN RAISE EXCEPTION 'bad challenge code %', v_code; END IF;
+
+  -- The public preview is a name, a tier and a rating. No deck, no user id.
+  IF EXISTS (
+    SELECT 1 FROM public.challenge_preview(v_code) p
+    WHERE p.username <> 'DreadBear'
+  ) THEN
+    RAISE EXCEPTION 'preview did not show the saved name';
+  END IF;
+  IF to_jsonb((SELECT p FROM public.challenge_preview(v_code) p))::text LIKE '%user_id%'
+     OR to_jsonb((SELECT p FROM public.challenge_preview(v_code) p))::text LIKE '%deck%' THEN
+    RAISE EXCEPTION 'preview leaked a private column';
+  END IF;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  v_json := public.open_challenge(v_code);
+  IF v_json->>'reason' <> 'self' THEN RAISE EXCEPTION 'self challenge was not refused: %', v_json; END IF;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  -- Even ratings, so the attested win is the +12 the formula gives equals.
+  UPDATE public.ladder_players SET rating = 1000 WHERE user_id IN (v_a, v_b);
+  v_json := public.open_challenge(v_code);
+  v_match := (v_json->>'match_id')::uuid;
+  IF v_match IS NULL OR jsonb_typeof(v_json->'deck') <> 'array' THEN
+    RAISE EXCEPTION 'challenge did not issue a ticket: %', v_json;
+  END IF;
+  v_json := public.report_ladder_result(v_match, true, false);
+  IF v_json->>'reason' <> 'early' THEN RAISE EXCEPTION 'instant win was accepted: %', v_json; END IF;
+  SELECT rating INTO v_rating FROM public.ladder_players WHERE user_id = v_a;
+  IF v_rating <> 1000 THEN RAISE EXCEPTION 'early report moved the rating to %', v_rating; END IF;
+
+  UPDATE public.ladder_matches SET created_at = pg_catalog.now() - INTERVAL '1 minute' WHERE id = v_match;
+  v_json := public.report_ladder_result(v_match, true, false);
+  IF v_json->>'ok' <> 'true' OR (v_json->>'delta')::int <> 12 OR (v_json->>'won')::boolean IS NOT TRUE THEN
+    RAISE EXCEPTION 'equal-rating win was not +12: %', v_json;
+  END IF;
+  SELECT rating, wins INTO v_rating, v_wins FROM public.ladder_players WHERE user_id = v_a;
+  SELECT rating INTO v_b_rating FROM public.ladder_players WHERE user_id = v_b;
+  IF v_rating <> 1012 OR v_wins <> 1 OR v_b_rating <> 988 THEN
+    RAISE EXCEPTION 'ratings after the win: A % (% wins), B %', v_rating, v_wins, v_b_rating;
+  END IF;
+  v_json := public.report_ladder_result(v_match, true, false);
+  SELECT wins INTO v_wins FROM public.ladder_players WHERE user_id = v_a;
+  IF v_wins <> 1 OR (v_json->>'delta')::int <> 12 THEN
+    RAISE EXCEPTION 'a second report was applied again: wins %, body %', v_wins, v_json;
+  END IF;
+
+  -- p_forfeit cannot be combined with a win to skip the floor.
+  v_json := public.open_challenge(v_code);
+  v_match := (v_json->>'match_id')::uuid;
+  v_json := public.report_ladder_result(v_match, true, true);
+  SELECT wins, losses, rating INTO v_wins, v_losses, v_rating FROM public.ladder_players WHERE user_id = v_a;
+  IF (v_json->>'won')::boolean IS TRUE OR v_wins <> 1 OR v_losses <> 1 THEN
+    RAISE EXCEPTION 'forfeit-as-win landed: % wins % losses %', v_json, v_wins, v_losses;
+  END IF;
+
+  -- Someone else's ticket is invisible.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  v_json := public.report_ladder_result(v_match, true, false);
+  IF v_json->>'reason' <> 'missing' THEN
+    RAISE EXCEPTION 'B could report A''s ticket: %', v_json;
+  END IF;
+
+  -- A short deck is refused, and three copies are refused.
+  BEGIN
+    PERFORM public.publish_ghost(ARRAY[1,2,3,4,5,6,7,8,9]::integer[], 'Nope');
+    RAISE EXCEPTION 'a 9-card deck was accepted';
+  EXCEPTION WHEN SQLSTATE '22023' THEN NULL;
+  END;
+  BEGIN
+    PERFORM public.publish_ghost(ARRAY[1,1,1,2,3,4,5,6,7,8]::integer[], 'Nope');
+    RAISE EXCEPTION 'three copies were accepted';
+  EXCEPTION WHEN SQLSTATE '22023' THEN NULL;
+  END;
+
+  -- Queue fights against the same ghost stop at 3 in a season. The two
+  -- challenges above do not count toward that.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  FOR i IN 1..3 LOOP
+    v_json := public.draw_ghost();
+    v_match := (v_json->>'match_id')::uuid;
+    IF v_match IS NULL THEN RAISE EXCEPTION 'draw % failed: %', i, v_json; END IF;
+    UPDATE public.ladder_matches SET created_at = pg_catalog.now() - INTERVAL '1 minute' WHERE id = v_match;
+    PERFORM public.report_ladder_result(v_match, false, false);
+  END LOOP;
+  v_json := public.draw_ghost();
+  IF v_json->>'reason' <> 'empty' THEN
+    RAISE EXCEPTION 'a fourth queue fight was still offered: %', v_json;
+  END IF;
+
+  -- Daily gain cap, then the challenge-link cap (8 a day against one deck).
+  -- Earlier tickets would trip the link cap and the rate limit before the
+  -- gain cap has anything to refuse, so they are cleared here.
+  DELETE FROM public.ladder_matches WHERE challenger_id = v_a OR ghost_id = v_a;
+  DELETE FROM public.rate_limits WHERE user_id = v_a;
+  UPDATE public.ladder_players SET day_gain = 0, day_loss = 0, rating = 1000 WHERE user_id = v_a;
+  UPDATE public.ladder_players SET rating = 1000, day_gain = 0, day_loss = 0 WHERE user_id = v_b;
+  v_delta := 0;
+  FOR i IN 1..8 LOOP
+    v_json := public.open_challenge(v_code);
+    IF v_json->>'match_id' IS NULL THEN RAISE EXCEPTION 'cap setup fight % failed: %', i, v_json; END IF;
+    v_match := (v_json->>'match_id')::uuid;
+    UPDATE public.ladder_matches SET created_at = pg_catalog.now() - INTERVAL '1 minute',
+      challenger_rating = 1000, ghost_rating = 1000
+    WHERE id = v_match;
+    -- The snapshot ratings are what the delta uses. Keep them even.
+    v_json := public.report_ladder_result(v_match, true, false);
+    v_delta := (v_json->>'delta')::int;
+  END LOOP;
+  IF v_delta <> 0 THEN
+    RAISE EXCEPTION 'the 8th even win still paid rating: %', v_delta;
+  END IF;
+  SELECT day_gain INTO v_rating FROM public.ladder_players WHERE user_id = v_a;
+  IF v_rating <> 80 THEN
+    RAISE EXCEPTION 'day gain did not stop at 80 (got %)', v_rating;
+  END IF;
+  v_json := public.open_challenge(v_code);
+  IF v_json->>'reason' <> 'capped' THEN
+    RAISE EXCEPTION 'a ninth challenge link in a day was allowed: %', v_json;
+  END IF;
+
+  RAISE NOTICE 'social ladder assertions passed';
+END $$;
+SQL
+
+echo "==> Asserting the back room (follows, gangs, cup, ribbon, referral, slip)"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_a UUID := 'c0ffee00-0000-4000-8000-0000000000a1';
+  v_b UUID := 'c0ffee00-0000-4000-8000-0000000000b2';
+  v_json JSONB;
+  v_code TEXT;
+  v_ref TEXT;
+  v_ribbon TEXT;
+  v_denied BOOLEAN;
+  v_id UUID;
+BEGIN
+  INSERT INTO auth.users (id) VALUES (v_a), (v_b) ON CONFLICT DO NOTHING;
+  INSERT INTO public.players (user_id, username) VALUES (v_a, 'Ada'), (v_b, 'Bea')
+  ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  v_json := public.publish_ghost(ARRAY[1,2,3,4,5,6,7,8,9,10]::integer[], 'Saved deck');
+  v_code := v_json->>'code';
+  v_json := public.my_room();
+  v_ref := v_json->>'referral_code';
+  IF v_ref !~ '^[0-9a-f]{10}$' THEN RAISE EXCEPTION 'no referral code: %', v_json; END IF;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.follow_player(v_code);
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'follow failed: %', v_json; END IF;
+  v_json := public.follow_player(v_code);
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'second follow failed: %', v_json; END IF;
+  IF (SELECT count(*) FROM public.follows WHERE follower = v_a) <> 1 THEN
+    RAISE EXCEPTION 'follow was not idempotent';
+  END IF;
+  -- Publish A so self-follow can be attempted with A's own code.
+  PERFORM public.publish_ghost(ARRAY[1,1,2,3,4,5,6,7,8,9]::integer[], 'Saved deck');
+  v_json := public.follow_player((SELECT code FROM public.ghost_decks WHERE user_id = v_a));
+  IF v_json->>'reason' <> 'self' THEN RAISE EXCEPTION 'self follow was allowed: %', v_json; END IF;
+
+  v_json := public.set_rival(v_code);
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'rival failed: %', v_json; END IF;
+  v_json := public.my_room();
+  IF v_json->'rival'->>'username' <> 'Bea' THEN RAISE EXCEPTION 'rival name drifted: %', v_json; END IF;
+
+  v_json := public.create_gang('Night Shift', 'hot');
+  IF v_json->>'tag' <> 'HOT' THEN RAISE EXCEPTION 'gang tag was not uppercased: %', v_json; END IF;
+  v_json := public.create_gang('Other', 'HOT');
+  IF v_json->>'reason' <> 'in' THEN RAISE EXCEPTION 'second gang was allowed: %', v_json; END IF;
+
+  -- Ribbon: a played week, then the season rolls.
+  UPDATE public.ladder_players
+  SET week_wins = 3, week_losses = 1, week_delta = 20, season_id = '1999-W01'
+  WHERE user_id = v_a;
+  PERFORM public.my_social();
+  SELECT ribbon INTO v_ribbon FROM public.ladder_players WHERE user_id = v_a;
+  IF v_ribbon <> 'Top stool' THEN RAISE EXCEPTION 'ribbon was %', v_ribbon; END IF;
+
+  -- Taunt allowlist.
+  v_json := public.set_greeting(9);
+  IF v_json->>'reason' <> 'missing' THEN RAISE EXCEPTION 'bad taunt accepted: %', v_json; END IF;
+  v_json := public.set_greeting(3);
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'greeting failed: %', v_json; END IF;
+
+  -- Referral: A has reported matches? The follow path did not fight. Publish and a real result.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.redeem_referral(v_ref);
+  IF v_json->>'reason' <> 'play' THEN RAISE EXCEPTION 'referral paid before a fight: %', v_json; END IF;
+
+  -- One reported loss so the "played" gate opens, then redeem.
+  v_json := public.open_challenge(v_code);
+  v_id := (v_json->>'match_id')::uuid;
+  UPDATE public.ladder_matches SET created_at = pg_catalog.now() - INTERVAL '1 minute' WHERE id = v_id;
+  PERFORM public.report_ladder_result(v_id, false, false);
+  v_json := public.redeem_referral(v_ref);
+  IF v_json->>'ok' <> 'true' OR (v_json->>'bonus')::int <> 15 THEN
+    RAISE EXCEPTION 'referral did not pay 15: %', v_json;
+  END IF;
+  v_json := public.redeem_referral(v_ref);
+  IF v_json->>'reason' <> 'used' THEN RAISE EXCEPTION 'referral was reusable: %', v_json; END IF;
+
+  -- Slip is public and has no deck.
+  IF to_jsonb((SELECT s FROM public.slip_preview(v_id) s))::text LIKE '%deck%' THEN
+    RAISE EXCEPTION 'slip leaked a deck';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.slip_preview(v_id) WHERE username = 'Ada' AND won IS FALSE) THEN
+    RAISE EXCEPTION 'slip did not show the loss';
+  END IF;
+
+  v_denied := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.follow_player(v_code);
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := TRUE;
+  END;
+  EXECUTE 'RESET ROLE';
+  IF NOT v_denied THEN RAISE EXCEPTION 'anon could follow'; END IF;
+
+  v_denied := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.follows SET follower = v_b WHERE follower = v_a;
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := TRUE;
+  END;
+  EXECUTE 'RESET ROLE';
+  IF NOT v_denied THEN RAISE EXCEPTION 'authenticated could rewrite follows'; END IF;
+
+  -- Cup: both entered, A draws one, a fourth is impossible before three, and the cap holds at 3.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  PERFORM public.enter_cup();
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.enter_cup();
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'cup entry failed: %', v_json; END IF;
+  v_json := public.draw_cup();
+  IF v_json->>'match_id' IS NULL THEN RAISE EXCEPTION 'cup draw failed: %', v_json; END IF;
+
+  RAISE NOTICE 'back room assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"

@@ -309,7 +309,7 @@ const toRow = (player, index) => {
   };
 };
 
-const Leaderboard = ({ onClose }) => {
+const Leaderboard = ({ onClose, onOpenLadder }) => {
   const { playerName, level, totalWins, bestWinStreak, getLeaderboardExperience } = useGameStore();
   const [leaderboardData, setLeaderboardData] = useState([]);
   // Whether the rows came from the trophy view, ranked by the server.
@@ -512,6 +512,15 @@ const Leaderboard = ({ onClose }) => {
               stays intact). Nothing while the rank is unknown. */}
           {youLine(me.rank, BOARD_SIZE) && (
             <p data-you-line="" className="mt-1.5 text-xs text-plush-300">{youLine(me.rank, BOARD_SIZE)}</p>
+          )}
+          {onOpenLadder && (
+            <button
+              type="button"
+              onClick={onOpenLadder}
+              className={`btn-glass mt-3 h-11 w-full rounded-xl font-display font-bold ${FOCUS_OUTLINE}`}
+            >
+              The ladder
+            </button>
           )}
         </div>
 
