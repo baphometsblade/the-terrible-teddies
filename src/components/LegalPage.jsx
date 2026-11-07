@@ -64,9 +64,16 @@ const Privacy = () => (
       succeeded and which bundle it was. We do not see your full card number.
     </p>
     <p>
-      Product analytics start only after the age gate has let you in. A device that
-      was turned away does not load them. Analytics are used to understand how the
-      game is played, not to sell a profile of you.
+      Product analytics start only after the age gate has let you in and you have
+      allowed them. A device that was turned away does not load them. Refusing the
+      notice means they never start. They count how the game is played and do not
+      include your name or email. You can change the choice later in Settings.
+    </p>
+    <p>
+      From Settings you can download a copy of the data on your account, or delete
+      the account. Deleting removes the profile, the cloud save and the activity
+      counted for the staff desk. Payment records stay, with the account taken off
+      them, because the payment itself is still a record.
     </p>
   </>
 );

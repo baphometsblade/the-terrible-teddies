@@ -9,10 +9,23 @@ import { useGameStore } from './stores/gameStore'
 import ErrorBoundary from './components/ErrorBoundary'
 import OfflineNotice from './components/OfflineNotice'
 import DoorGate from './components/DoorGate'
+import FrontOfHouse from './components/FrontOfHouse'
+import ConsentNotice from './components/ConsentNotice'
+import BackendNotice from './components/BackendNotice'
+import PlatformRuntime from './components/PlatformRuntime'
 import { legalKind } from './lib/legalRoutes'
+import { isAdminPath } from './lib/publicPaths'
+import { installProductObservers } from './lib/productEvents'
 import { SupabaseProvider } from './integrations/supabase/auth'
 
 const LegalPage = lazy(() => import('./components/LegalPage'))
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'))
+
+installProductObservers()
+// The static landing is for browsers that do not run JavaScript. Once React
+// is up it would sit in the document as a second set of links, which a
+// turned-away device is not supposed to have.
+document.getElementById('seo-landing')?.remove()
 
 // Honors BOTH the OS "reduce motion" preference and the in-game Animations
 // switch, for every Framer Motion animation at once.
@@ -70,11 +83,22 @@ try {
               <LegalPage kind={legalKind(window.location.pathname)} />
             </Suspense>
           ) : (
-            <DoorGate>
-              <SupabaseProvider>
-                <App />
-              </SupabaseProvider>
-            </DoorGate>
+            <FrontOfHouse>
+              <DoorGate>
+                <SupabaseProvider>
+                  <ConsentNotice />
+                  <BackendNotice />
+                  <PlatformRuntime />
+                  {isAdminPath(window.location.pathname) ? (
+                    <Suspense fallback={null}>
+                      <AdminDashboard />
+                    </Suspense>
+                  ) : (
+                    <App />
+                  )}
+                </SupabaseProvider>
+              </DoorGate>
+            </FrontOfHouse>
           )}
         </MotionPreference>
       </ErrorBoundary>

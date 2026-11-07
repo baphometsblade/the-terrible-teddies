@@ -7,6 +7,7 @@ vi.mock('posthog-js', () => ({
 }));
 
 import posthog from 'posthog-js';
+import { CONSENT_KEY, consentRecord } from '@/lib/consent';
 import analytics, { initializePostHog } from './analytics';
 
 // posthog-js is now loaded dynamically (it is 225 kB and inert without a key),
@@ -15,6 +16,7 @@ import analytics, { initializePostHog } from './analytics';
 // of the pre-load buffer — without this every assertion below would be
 // checking a queued entry rather than a call to the mock.
 beforeEach(async () => {
+  localStorage.setItem(CONSENT_KEY, consentRecord('granted', 0));
   vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test_key');
   await initializePostHog();
   posthog.capture.mockClear();

@@ -1,6 +1,7 @@
 import React from 'react';
 import { HeartCrack, RotateCcw, RotateCw, Trash2, ChevronRight } from 'lucide-react';
 import analytics from '../utils/analytics';
+import { captureSentry } from '@/lib/sentry';
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { DOOR_KEY } from '@/lib/door';
@@ -35,6 +36,7 @@ class ErrorBoundary extends React.Component {
     // in production is actually visible instead of only reaching a browser
     // console no one is watching.
     analytics.trackError(error, 'react-error-boundary', true);
+    captureSentry(error, 'react-error-boundary');
   }
 
   // A crash replaces the whole tree, so whatever had focus is destroyed and

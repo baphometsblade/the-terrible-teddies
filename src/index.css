@@ -1401,3 +1401,10 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 @media (prefers-reduced-motion: reduce) {
   .teddy-drift { display: none; }
 }
+
+/* The cookie bar sits on the bottom edge. The menu's own padding is a utility,
+   so an unlayered rule is what can add room under the last row while the bar
+   is up. It is removed with the bar (html[data-consent]). */
+html[data-consent="open"] [data-screen-root="menu"] .bar-backdrop {
+  padding-bottom: calc(9rem + env(safe-area-inset-bottom));
+}

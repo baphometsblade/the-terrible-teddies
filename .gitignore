@@ -16,6 +16,10 @@ dist-ssr
 test-results/
 playwright-report/
 
+# Hidden source maps moved out of dist/ by the build, and Lighthouse CI output.
+sourcemaps/
+.lighthouseci/
+
 # Environment files (may contain secrets)
 .env
 .env.*

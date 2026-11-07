@@ -988,4 +988,158 @@ if [ "$CONC_GEMS" != "300" ] || ! grep -q one_per_account_already_held <<<"$CONC
 fi
 echo "    ok   the second waited for the first and was refused"
 
+echo "==> Asserting platform flags, the staff desk, and account export/deletion"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_staff  UUID := 'd1d1d1d1-d1d1-41d1-81d1-d1d1d1d1d1d1';
+  v_guest  UUID := 'e2e2e2e2-e2e2-42e2-82e2-e2e2e2e2e2e2';
+  v_leaver UUID := 'f3f3f3f3-f3f3-43f3-83f3-f3f3f3f3f3f3';
+  v_rows   INTEGER;
+  v_raised BOOLEAN;
+  v_json   JSONB;
+  v_uid    UUID;
+  v_on     BOOLEAN;
+BEGIN
+  INSERT INTO auth.users (id, email) VALUES
+    (v_staff, 'staff@example.com'),
+    (v_guest, 'guest@example.com'),
+    (v_leaver, 'leaver@example.com')
+  ON CONFLICT DO NOTHING;
+  INSERT INTO public.players (user_id, username) VALUES
+    (v_leaver, 'Leaver')
+  ON CONFLICT DO NOTHING;
+  INSERT INTO public.admins (user_id) VALUES (v_staff) ON CONFLICT DO NOTHING;
+  INSERT INTO public.purchases (user_id, bundle_id, gems_granted, stripe_session_id, amount_paid, status) VALUES
+    (v_leaver, 'gems_small', 50, 'cs_platform_leaver', 99, 'completed'),
+    (v_staff, 'gems_mega', 3000, 'cs_platform_staff', 4999, 'completed');
+
+  -- Flags: anon may read the seeded rows, and may not write one.
+  EXECUTE 'SET LOCAL ROLE anon';
+  SELECT count(*) INTO v_rows FROM public.feature_flags;
+  RESET ROLE;
+  IF v_rows < 3 THEN
+    RAISE EXCEPTION 'anon could not read feature flags (saw %)', v_rows;
+  END IF;
+  SELECT enabled INTO v_on FROM public.feature_flags WHERE key = 'public_landing';
+  IF v_on IS NOT TRUE THEN RAISE EXCEPTION 'public_landing was not seeded on'; END IF;
+
+  v_raised := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    INSERT INTO public.feature_flags (key, enabled) VALUES ('forged_flag', true);
+  EXCEPTION WHEN OTHERS THEN
+    v_raised := TRUE;
+  END;
+  RESET ROLE;
+  IF NOT v_raised THEN RAISE EXCEPTION 'a signed-in player could write a feature flag'; END IF;
+
+  v_raised := FALSE;
+  BEGIN
+    INSERT INTO public.feature_flags (key, enabled) VALUES ('Bad Key', true);
+  EXCEPTION WHEN check_violation THEN
+    v_raised := TRUE;
+  END;
+  IF NOT v_raised THEN RAISE EXCEPTION 'a flag key with a space was accepted'; END IF;
+
+  -- Staff rows are visible only to the person they name.
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_guest::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO v_rows FROM public.admins;
+  RESET ROLE;
+  IF v_rows <> 0 THEN RAISE EXCEPTION 'a non-admin could see staff rows (%)', v_rows; END IF;
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_staff::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO v_rows FROM public.admins;
+  RESET ROLE;
+  IF v_rows <> 1 THEN RAISE EXCEPTION 'staff could not see their own row (%)', v_rows; END IF;
+
+  -- Anon cannot execute the staff or account functions.
+  v_raised := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.admin_growth_stats();
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_raised := TRUE;
+  END;
+  RESET ROLE;
+  IF NOT v_raised THEN RAISE EXCEPTION 'anon could call admin_growth_stats'; END IF;
+
+  v_raised := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.delete_my_account();
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_raised := TRUE;
+  END;
+  RESET ROLE;
+  IF NOT v_raised THEN RAISE EXCEPTION 'anon could call delete_my_account'; END IF;
+
+  -- A signed-in non-admin is refused. A match they play still counts.
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_guest::text, 'role', 'authenticated')::text, true);
+  v_raised := FALSE;
+  BEGIN
+    PERFORM public.admin_growth_stats();
+  EXCEPTION WHEN SQLSTATE 'PT403' THEN
+    v_raised := TRUE;
+  END;
+  IF NOT v_raised THEN RAISE EXCEPTION 'a non-admin read the staff counts'; END IF;
+  PERFORM public.log_played_match(true);
+  PERFORM public.log_played_match(false);
+  PERFORM public.touch_player_activity();
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_staff::text, 'role', 'authenticated')::text, true);
+  SELECT public.admin_growth_stats() INTO v_json;
+  IF (v_json->>'signups')::int < 3 THEN
+    RAISE EXCEPTION 'signups were not counted (%)', v_json;
+  END IF;
+  IF (v_json->>'dau')::int < 1 OR (v_json->>'matches')::int < 2 OR (v_json->>'matches_today')::int < 2 THEN
+    RAISE EXCEPTION 'activity was not counted (%)', v_json;
+  END IF;
+  IF v_json::text LIKE '%guest@example.com%' OR v_json::text LIKE '%' || v_guest::text || '%' THEN
+    RAISE EXCEPTION 'the staff counts named a player (%)', v_json;
+  END IF;
+
+  -- Export is the caller's own rows, without the processor reference.
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_leaver::text, 'role', 'authenticated')::text, true);
+  SELECT public.export_my_data() INTO v_json;
+  IF v_json->>'email' IS DISTINCT FROM 'leaver@example.com' THEN
+    RAISE EXCEPTION 'export email was %', v_json->>'email';
+  END IF;
+  IF v_json->'player'->>'username' IS DISTINCT FROM 'Leaver' THEN
+    RAISE EXCEPTION 'export missed the profile (%)', v_json->'player';
+  END IF;
+  IF jsonb_array_length(v_json->'purchases') <> 1
+     OR v_json->'purchases'->0->>'bundle_id' <> 'gems_small' THEN
+    RAISE EXCEPTION 'export did not keep to the caller''s purchases (%)', v_json->'purchases';
+  END IF;
+  IF v_json::text LIKE '%cs_platform%' OR v_json::text LIKE '%gems_mega%' THEN
+    RAISE EXCEPTION 'export leaked a processor id or someone else''s bundle (%)', v_json;
+  END IF;
+
+  PERFORM public.delete_my_account();
+  IF EXISTS (SELECT 1 FROM auth.users WHERE id = v_leaver) THEN
+    RAISE EXCEPTION 'the account was not deleted';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.players WHERE user_id = v_leaver) THEN
+    RAISE EXCEPTION 'the profile survived the account';
+  END IF;
+  SELECT user_id INTO v_uid FROM public.purchases WHERE stripe_session_id = 'cs_platform_leaver';
+  IF v_uid IS NOT NULL THEN RAISE EXCEPTION 'the purchase kept the deleted account'; END IF;
+  SELECT user_id INTO v_uid FROM public.purchases WHERE stripe_session_id = 'cs_platform_staff';
+  IF v_uid IS DISTINCT FROM v_staff THEN RAISE EXCEPTION 'someone else''s purchase was touched'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id = v_staff) THEN
+    RAISE EXCEPTION 'delete removed a different account';
+  END IF;
+
+  RAISE NOTICE 'platform assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"

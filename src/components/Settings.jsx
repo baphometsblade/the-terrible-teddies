@@ -16,6 +16,7 @@ import { describeReset } from '@/lib/resetSummary';
 import {
   useCloudSave, describeSaveStatus, formatSavedAt, switchToBackupSave, saveNow,
 } from '@/lib/cloudSave';
+import AccountData from '@/components/AccountData';
 
 // The save's state, as an icon beside its words (describeSaveStatus).
 const SAVE_ICON = {
@@ -365,6 +366,8 @@ const Settings = ({ onClose }) => {
               <p role="alert" className="mt-2 text-xs text-amber-300">{signOutError}</p>
             )}
           </section>
+
+          <AccountData />
 
           <section className="border-t border-white/[0.06] pt-5">
             <SectionHeading tone="text-red-300">Danger Zone</SectionHeading>

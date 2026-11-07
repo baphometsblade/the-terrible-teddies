@@ -1,3 +1,5 @@
+import { readConsent } from '@/lib/consent';
+
 const isProduction = import.meta.env?.PROD;
 const isBrowser = typeof window !== 'undefined';
 
@@ -33,8 +35,18 @@ let initAttempts = 0;
 const MAX_PENDING = 50;
 const pending = [];
 
+export const dropQueuedAnalytics = () => {
+  pending.splice(0, pending.length);
+};
+
 const send = (method, args) => {
   try {
+    // A refusal is final for this device. A reset still runs if the SDK was
+    // already loaded, so a later "Refuse" in Settings actually opts out.
+    if (readConsent() === 'denied') {
+      if (ph && method === 'reset') ph.reset();
+      return;
+    }
     if (ph) {
       ph[method]?.(...args);
       return;
@@ -56,7 +68,9 @@ export const initializePostHog = async () => {
   try {
     const key = import.meta.env?.VITE_POSTHOG_KEY;
     // Key check FIRST: this is what keeps the 225 kB off a keyless deploy.
+    // Consent is next: the SDK stays unloaded until the device allows it.
     if (!key || !isBrowser || loading || ph) return;
+    if (readConsent() !== 'granted') return;
     if (initAttempts >= MAX_INIT_ATTEMPTS) return;
     initAttempts += 1;
 
