@@ -8,6 +8,7 @@ import { BATTLE_PASS_REWARDS, readyRewards, passOf, describeGrants } from '@/lib
 import analytics from '@/utils/analytics';
 import { nextDailyRecord } from '@/lib/dailyFight';
 import { AFTER_HOURS_CARDS } from '@/data/afterHoursCards';
+import { QUICKIE_CARDS } from '@/data/quickieCards';
 import {
   quoteWardrobe, cardBackId, boardId, DEFAULT_CARD_BACK, DEFAULT_BOARD,
 } from '@/lib/wardrobe';
@@ -100,6 +101,7 @@ export const ALL_CARDS = [
   { id: 78, name: "Bar-Top Baptism", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'heal', amount: 10, rarity: 'rare', description: "Fully submerged in the good stuff. Born again, smells worse." },
   { id: 79, name: "Suspicious Brownies", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'draw', amount: 2, rarity: 'uncommon', description: "Don't ask what's in them. Draw two, feel weird later." },
   ...AFTER_HOURS_CARDS,
+  ...QUICKIE_CARDS,
 ];
 
 // The HP at which the night is nearly over for a side. One number for the

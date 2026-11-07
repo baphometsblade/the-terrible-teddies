@@ -6,7 +6,7 @@
 
 import { ALL_CARDS } from '@/stores/gameStore';
 import {
-  canAttack, effectiveAttack, getValidTargets, readyCreatures, resolveCreatureHit,
+  canAttack, canSwingFace, effectiveAttack, getValidTargets, readyCreatures, resolveCreatureHit,
 } from '@/utils/battleUtils';
 import { chooseAttackTarget, chooseOpponentPlays } from '@/utils/opponentAI';
 import { energyForTurn, MAX_FIELD_SIZE } from '@/components/GameBoard/turn';
@@ -83,6 +83,8 @@ const takeTurn = (actor, defender, turn) => {
     if (actor.hp <= 0 || defender.hp <= 0) break;
     const targets = getValidTargets(actor.field, defender.field);
     if (targets.length === 0) {
+      // Quickie can hit a creature the turn it arrives, and nothing else.
+      if (!canSwingFace(attacker)) continue;
       const trap = defender.field.find((c) => c.type === 'trap');
       if (trap) {
         actor.hp -= trap.amount || 3;

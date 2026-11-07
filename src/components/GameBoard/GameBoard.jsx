@@ -10,7 +10,7 @@ import { motion, AnimatePresence, useIsPresent, useReducedMotionConfig } from 'f
 import { playSound as playSoundEffect } from '@/utils/sounds';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
-import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, readyCreatures, gainedFuryStack, getValidTargets, describeBlockedTarget } from '../../utils/battleUtils';
+import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, canSwingFace, readyCreatures, gainedFuryStack, getValidTargets, describeBlockedTarget } from '../../utils/battleUtils';
 import { pickQuip, startPoolFor, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { pickResultCopy, RESULT_TITLES, RESULT_SUBLINES } from '../../utils/resultLines';
 import { LAST_CALL_BANNER, lastCallLog, BOARD_LINES, fillLine, pickLine } from '@/lib/houseLines';
@@ -21,12 +21,18 @@ import { applyMulligan, mulliganKeptLine, mulliganOpponentDeck, mulliganOpponent
 import { anchorCoachTarget } from '@/lib/coachAnchor';
 import { shouldFatigue } from '@/lib/dailyFight';
 import { syncBattleResult, syncPlayerLevel } from '../../utils/supabaseClient';
-import { chooseOpponentPlays, chooseAttackTarget, OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
+import { OPPONENT_ENERGY_BY_DIFFICULTY } from '../../utils/opponentAI';
+import { planOpponentPlays, planAttackTarget, orderAttackers, mindLine } from '../../utils/opponentMind';
+import { strikePrompt } from '@/lib/combatPreview';
+import { classifyHit, withImpact, pulseImpact, motionReduced, strongestShake } from '@/lib/combatJuice';
+import { hitAside, hitFlavor } from '@/lib/critTalk';
+import { emptySlip, notePlay, noteHit, noteHeal, slipLine } from '@/lib/turnSlip';
+import './combatFeel.css';
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
 import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder, ownedEmotes, cosmeticLong } from '@/lib/cosmetics';
-import { abilityRules, describeCard } from '@/lib/abilities';
+import { abilityRules, arrivalChip, describeCard } from '@/lib/abilities';
 import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, canRally, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
 import FlavorLine from '../FlavorLine';
 import LeaveBattleDialog from './LeaveBattleDialog';
@@ -94,9 +100,9 @@ const exitFor = (side, reduced) => (reduced
   ? { opacity: [1, 0, 0], transition: { duration: FX_MS / 1000, times: [0, 0.3, 1] } }
   : {
       opacity: [1, 1, 0, 0],
-      scale: [1, 1, 0.6, 0.6],
-      rotate: [0, 0, side === 'player' ? 8 : -8, side === 'player' ? 8 : -8],
-      y: [0, 0, side === 'player' ? 24 : -24, side === 'player' ? 24 : -24],
+      scale: [1, 1.06, 0.45, 0.45],
+      rotate: [0, -2, side === 'player' ? 16 : -16, side === 'player' ? 16 : -16],
+      y: [0, 0, side === 'player' ? 40 : -40, side === 'player' ? 40 : -40],
       filter: ['grayscale(0) brightness(1)', 'grayscale(0) brightness(1)', 'grayscale(1) brightness(0.6)', 'grayscale(1) brightness(0.6)'],
       transition: { duration: FX_MS / 1000, times: [0, 0.12, 0.5, 1], ease: 'easeIn' },
     });
@@ -112,10 +118,11 @@ const FX_TONE = {
 };
 const FloatNumber = ({ fx, className = '' }) => (
   <span
-    className={`fx-float font-display text-[26px] font-extrabold leading-none tabular-nums ${FX_TONE[fx.tone] ?? FX_TONE.damage} ${className}`}
-    style={{ '--fx-i': fx.stack ?? 0 }}
+    className={`fx-float font-display text-[26px] font-extrabold leading-none tabular-nums ${fx.crit ? 'fx-crit' : ''} ${FX_TONE[fx.tone] ?? FX_TONE.damage} ${className}`}
+    style={{ '--fx-i': fx.stack ?? 0, ...(fx.crit ? { color: '#fde68a' } : {}) }}
   >
     {fx.text}
+    {fx.flavor ? <span className="fx-flavor">{fx.flavor}</span> : null}
   </span>
 );
 
@@ -194,7 +201,7 @@ const FieldSlot = ({ cardId, side, press, className = '', children, ...motionPro
     >
       <div className={`relative ${shakeClass(hit)} ${strike ? (side === 'player' ? 'fx-strike-up' : 'fx-strike-down') : ''}`}>
         {children}
-        {hit && <span key={hit.id} className="fx-flash" aria-hidden="true" />}
+        {hit && <span key={hit.id} className={`fx-flash${hit.crit ? ' fx-crit-flash' : ''}`} aria-hidden="true" />}
       </div>
       {numbers.length > 0 && (
         <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-[3.75rem] z-30">
@@ -919,9 +926,22 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
   const centreRef = useRef(null);
   const boardRef = useRef(null);
   const [fx, setFx] = useState([]);
+  const [boardShake, setBoardShake] = useState(null);
+  const [turnSlip, setTurnSlip] = useState(emptySlip);
+  const [aimId, setAimId] = useState(null);
   const fxIdRef = useRef(0);
+  const shakeGen = useRef(0);
   const pushFx = useCallback((events) => {
     if (!events.length) return;
+    const wave = strongestShake(events);
+    if (wave) {
+      const gen = ++shakeGen.current;
+      setBoardShake(wave.shake);
+      pulseImpact(wave.impact, { reduced: motionReduced() });
+      safeTimeout(() => {
+        if (shakeGen.current === gen) setBoardShake(null);
+      }, 420);
+    }
     const withIds = events.map((e) => ({ ...e, id: ++fxIdRef.current }));
     setFx((prev) => {
       const next = new Map();
@@ -1209,7 +1229,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // lines after it append to that fresh log, so a second run still ends
     // with one copy of each.) Chuck's opening line goes between the intro and
     // the hand-over, in the order it is said.
+    setTurnSlip(emptySlip());
     const intro = [`${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`];
+    intro.push(mindLine(aiDifficulty));
     if (mulled.tossed > 0) intro.push(mulliganOpponentLine(OPPONENT_NAME, mulled.tossed));
     if (spec) intro.push(`${spec.modifier.name}. ${spec.modifier.rules}`);
     startBattleLog(intro);
@@ -1409,6 +1431,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
       setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 1));
       battleStatsRef.current.cardsPlayed += 1;
+      setTurnSlip((slip) => notePlay(slip));
       playSound('cardPlay');
       return true;
     }
@@ -1439,6 +1462,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     setPlayerEnergy(prev => prev - cost);
     setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 1));
     battleStatsRef.current.cardsPlayed += 1;
+    setTurnSlip((slip) => notePlay(slip));
     playSound('cardPlay');
 
     // A card with a rule gets the ability callout, which names the rule it
@@ -1478,6 +1502,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
         playSound('heal');
         if (healed > 0) {
           pushFx([{ face: 'player', tone: 'heal', text: `+${healed}` }]);
+          setTurnSlip((slip) => noteHeal(slip, healed));
           addToBattleLog(`${card.name}: +${healed} HP. No questions asked.`);
         } else {
           // Still a legal play, but not a win to celebrate: it said "Patched
@@ -1538,7 +1563,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       toast({ title: "Let it come to you", description: `${card.name} springs automatically when an enemy strikes it.`, variant: "destructive" });
       return;
     }
-    if (card.summoningSick) {
+    if (card.summoningSick && card.ability !== 'rush') {
       toast({
         title: "Still finding the floor",
         description: `${card.name} only just staggered in — it can swing from your next turn.`,
@@ -1606,15 +1631,19 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // crumple) and written to the log, so it gets no toast: a toast for every
     // hit covered the log and the table to repeat them.
     const { survivor, overkill, dmg } = resolveCreatureHit(attacker, target, playerField);
+    const impact = classifyHit({ dmg, killed: !survivor, overkill });
     playSound('attack');
     battleStatsRef.current.damageDealt += dmg;
+    setTurnSlip((slip) => noteHit(slip, { damage: dmg, killed: !survivor, face: survivor ? 0 : overkill }));
     // On a kill the card shows what it actually lost, and any trample shows
     // on the face: the two add up to the hit, rather than the hit twice over.
     const taken = survivor ? dmg : dmg - overkill;
+    const flavor = hitFlavor({ dmg, killed: !survivor, overkill });
+    const mark = (event) => withImpact(flavor ? { ...event, flavor } : event, impact);
     pushFx([
       { card: attacker.instanceId, strike: true },
-      ...(taken > 0 ? [{ card: target.instanceId, hit: true, tone: 'damage', text: `−${taken}` }] : []),
-      ...(!survivor && overkill > 0 ? [{ face: 'opponent', hit: true, tone: 'damage', text: `−${overkill}` }] : []),
+      ...(taken > 0 ? [mark({ card: target.instanceId, hit: true, tone: 'damage', text: `−${taken}` })] : []),
+      ...(!survivor && overkill > 0 ? [mark({ face: 'opponent', hit: true, tone: 'damage', text: `−${overkill}` })] : []),
     ]);
 
     if (survivor) {
@@ -1631,6 +1660,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       addToBattleLog(`UNSTUFFED! ${attacker.name} took ${target.name} apart${overkill > 0 ? ` — ${overkill} trampled right into ${OPPONENT_NAME}'s beans` : ''}`);
       speak('oppLosesCreature');
     }
+    const aside = hitAside({
+      attacker: attacker.name, target: target.name, killed: !survivor, overkill, dmg, foe: OPPONENT_NAME,
+    });
+    if (aside) addToBattleLog(aside);
 
     // Mark card as having attacked
     setPlayerField(prev => prev.map(c =>
@@ -1641,6 +1674,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     finishFirstFight();
     setSelectedCard(null);
     setTargetingMode(false);
+    setAimId(null);
     if (viaKeys(e)) refocusRef.current = { kind: 'attack' };
   };
 
@@ -1654,6 +1688,19 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
         title: "Goons first",
         description: `${OPPONENT_NAME}'s goons are in the way. Deal with them first.`,
         variant: "destructive"
+      });
+      return;
+    }
+
+    // Re-read the attacker before the trap-or-face split. A Quickie that just
+    // arrived can hit creatures and must not reach the face, or spring a trap
+    // by swinging at it, until next turn.
+    const attacker = playerField.find(c => c.instanceId === selectedCard.instanceId) || selectedCard;
+    if (!canSwingFace(attacker)) {
+      toast({
+        title: 'Not on the first date',
+        description: `${attacker.name} only takes the other bears this turn. ${OPPONENT_NAME} can wait.`,
+        variant: 'destructive',
       });
       return;
     }
@@ -1675,21 +1722,24 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       playSound('trap');
       addToBattleLog(`${trap.name} sprang! ${trapDamage} damage, right in your pride`);
     } else {
-      // Re-read the attacker from the live field, not the selection snapshot:
-      // Rally mid-targeting replaces every field card with a +1-attack copy, so
-      // computing from selectedCard would deal the pre-Rally value straight to
-      // face — the same stale-snapshot bug already fixed in attackTarget.
-      // effectiveAttack then folds in any 'royal' ally aura on top.
-      const attacker = playerField.find(c => c.instanceId === selectedCard.instanceId) || selectedCard;
+      // The attacker was re-read above, so a Rally mid-targeting is already
+      // in `attacker`. effectiveAttack folds in any royal ally on top.
       const faceDamage = effectiveAttack(attacker, playerField);
+      const impact = classifyHit({ dmg: faceDamage, killed: faceDamage >= opponentHealth, overkill: 0 });
       playSound('attack');
+      const flavor = hitFlavor({ dmg: faceDamage, killed: faceDamage >= opponentHealth, overkill: 0 });
       pushFx([
         { card: attacker.instanceId, strike: true },
-        ...(faceDamage > 0 ? [{ face: 'opponent', hit: true, tone: 'damage', text: `−${faceDamage}` }] : []),
+        ...(faceDamage > 0 ? [withImpact({ face: 'opponent', hit: true, tone: 'damage', text: `−${faceDamage}`, ...(flavor ? { flavor } : {}) }, impact)] : []),
       ]);
       setOpponentHealth(prev => Math.max(0, prev - faceDamage));
       battleStatsRef.current.damageDealt += faceDamage;
+      setTurnSlip((slip) => noteHit(slip, { damage: faceDamage, face: faceDamage }));
       addToBattleLog(`${attacker.name} decked ${OPPONENT_NAME} in the face for ${faceDamage}!`);
+      const aside = hitAside({
+        attacker: attacker.name, dmg: faceDamage, killed: faceDamage >= opponentHealth, face: true, foe: OPPONENT_NAME,
+      });
+      if (aside) addToBattleLog(aside);
       if (faceDamage >= 4) speak('oppTakesFaceHit');
     }
 
@@ -1701,6 +1751,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     finishFirstFight();
     setSelectedCard(null);
     setTargetingMode(false);
+    setAimId(null);
     if (viaKeys(e)) refocusRef.current = { kind: 'attack' };
   };
 
@@ -1716,8 +1767,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     setPlayerField(prev => readyCreatures(prev));
     setSelectedCard(null);
     setTargetingMode(false);
+    setAimId(null);
     setCurrentTurn('opponent');
     setPhase('end');
+    addToBattleLog(slipLine(turnSlip));
     addToBattleLog(boardLine('endTurn'));
     safeTimeout(executeOpponentTurn, 1000);
   };
@@ -1782,11 +1835,18 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       + ((dailyRef.current?.modifier.extraEnergy && turnCount === 1) ? dailyRef.current.modifier.extraEnergy : 0);
     // Pass activeOpponentField so a 'swarm' card in the opponent's hand is
     // budgeted at its discounted cost under the same rule the player follows.
-    const { plays, remainingDeck } = chooseOpponentPlays(opponentDeck, opponentField.length, energyBudget, MAX_FIELD_SIZE, activeOpponentField);
-    // Creatures the opponent plays THIS turn. They can't attack (summoning-sick),
-    // but a 'royal' among them must still project its aura to the opponent's
-    // other attackers this turn — mirroring the player, whose just-played royal
-    // buffs immediately. The attack loop reads this for aura only.
+    const { plays, remainingDeck } = planOpponentPlays({
+      difficulty: dealtDifficultyRef.current,
+      deck: opponentDeck,
+      field: activeOpponentField,
+      energy: energyBudget,
+      maxField: MAX_FIELD_SIZE,
+      enemyField: readyCreatures(playerField),
+      ownHp: opponentHealth,
+    });
+    // Creatures the opponent plays THIS turn. A Quickie can swing at creatures
+    // immediately; everyone else is summoning-sick. A royal among them still
+    // projects its aura this turn, the way a royal the player just played does.
     let playedThisTurn = [];
     if (plays.length > 0) {
       setOpponentDeck(remainingDeck);
@@ -1822,32 +1882,39 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       const waveFx = [];
 
       // Aura field for royal: the pre-existing board PLUS what was just played,
-      // so a royal the opponent dropped this turn buffs its other attackers —
-      // in the hit, and in the AI's kill check that picks the target.
-      // Attackers still come only from activeOpponentField (played cards are
-      // summoning-sick and filtered by canAttack).
+      // so a royal the opponent dropped this turn buffs its other attackers.
+      // Quickies played this turn join the wave; other arrivals stay sick.
       const auraField = [...activeOpponentField, ...playedThisTurn];
+      const rushArrivals = playedThisTurn.filter((c) => c.type === 'action' && c.ability === 'rush');
+      const swingers = orderAttackers({
+        difficulty: dealtDifficultyRef.current,
+        attackers: [...activeOpponentField, ...rushArrivals].filter(canAttack),
+        attackerField: auraField,
+        enemyField: livePlayerField,
+      });
 
-      activeOpponentField.forEach(card => {
-        if (!canAttack(card)) return; // summoning-sick, spent, or not a creature
-
+      swingers.forEach(card => {
         // Creature blockers (taunt/protect/normal) must be dealt with first.
         const targets = getValidTargets(opponentField, livePlayerField);
 
         if (targets.length > 0) {
-          // Attack the biggest threat; resolve against its HP just like the
-          // player's attackTarget — it survives (fury fires) or dies with trample
-          // overkill carrying through to the player's face.
-          const target = chooseAttackTarget(targets, card, auraField);
-          // Pass auraField so a 'royal' ally on the opponent's own field —
-          // including one it just played this turn — buffs this attacker's hit,
-          // same as the player's attackTarget.
+          // Easy swings at the smallest threat. Normal and Hard take a kill
+          // when one is there. Resolve against HP the way the player does.
+          const target = planAttackTarget({
+            difficulty: dealtDifficultyRef.current,
+            attacker: card,
+            targets,
+            attackerField: auraField,
+          });
           const { survivor, overkill, dmg } = resolveCreatureHit(card, target, auraField);
+          const impact = classifyHit({ dmg, killed: !survivor, overkill });
+          const flavor = hitFlavor({ dmg, killed: !survivor, overkill });
+          const mark = (event) => withImpact(flavor ? { ...event, flavor } : event, impact);
           playSound('attack');
           const taken = survivor ? dmg : dmg - overkill;
           waveFx.push({ card: card.instanceId, strike: true });
-          if (taken > 0) waveFx.push({ card: target.instanceId, hit: true, tone: 'damage', text: `−${taken}` });
-          if (!survivor && overkill > 0) waveFx.push({ face: 'player', hit: true, tone: 'damage', text: `−${overkill}` });
+          if (taken > 0) waveFx.push(mark({ card: target.instanceId, hit: true, tone: 'damage', text: `−${taken}` }));
+          if (!survivor && overkill > 0) waveFx.push(mark({ face: 'player', hit: true, tone: 'damage', text: `−${overkill}` }));
           if (survivor) {
             livePlayerField = livePlayerField.map(c => c.instanceId === target.instanceId ? survivor : c);
             if (target.ability === 'fury') {
@@ -1862,11 +1929,19 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
             killedPlayerCreature = true;
             logs.push(`${card.name} UNSTUFFED ${target.name}${overkill > 0 ? ` — ${overkill} trampled into your beans` : ''}`);
           }
+          const aside = hitAside({
+            attacker: card.name, target: target.name, killed: !survivor, overkill, dmg, foe: 'you',
+          });
+          if (aside) logs.push(aside);
           return;
         }
 
-        // No creature blockers. A player trap springs on the attacker (and is
-        // consumed); otherwise the attack hits face.
+        // No creature blockers. A Quickie that just arrived stops here: the
+        // face, and the trap a face swing would spring, wait a turn.
+        if (!canSwingFace(card)) return;
+
+        // A player trap springs on the attacker (and is consumed); otherwise
+        // the attack hits face.
         const trap = livePlayerField.find(c => c.type === 'trap');
         if (trap) {
           const trapDamage = trap.amount || 3;
@@ -1881,10 +1956,21 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
           // just its creature-vs-creature hits. Uses auraField so a royal played
           // this turn counts. Mirrors the player-side fix at attackOpponentDirectly.
           const oppFaceDamage = effectiveAttack(card, auraField);
+          const faceKill = oppFaceDamage >= Math.max(0, playerHealth - faceDamage);
+          const impact = classifyHit({ dmg: oppFaceDamage, killed: faceKill, overkill: 0 });
+          const flavor = hitFlavor({ dmg: oppFaceDamage, killed: faceKill, overkill: 0 });
           faceDamage += oppFaceDamage;
           playSound('attack');
           waveFx.push({ card: card.instanceId, strike: true });
-          if (oppFaceDamage > 0) waveFx.push({ face: 'player', hit: true, tone: 'damage', text: `−${oppFaceDamage}` });
+          if (oppFaceDamage > 0) {
+            waveFx.push(withImpact({
+              face: 'player', hit: true, tone: 'damage', text: `−${oppFaceDamage}`, ...(flavor ? { flavor } : {}),
+            }, impact));
+          }
+          const aside = hitAside({
+            attacker: card.name, dmg: oppFaceDamage, killed: faceKill, face: true, foe: 'You',
+          });
+          if (aside) logs.push(aside);
           logs.push(fillLine(boardLine('oppFace'), { attacker: card.name, dmg: oppFaceDamage }));
         }
       });
@@ -1911,6 +1997,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
 
       safeTimeout(() => {
         setCurrentTurn('player');
+        setTurnSlip(emptySlip());
         setTurnCount(prev => prev + 1);
         // turnCount is still the pre-increment value in this closure — use +1
         // so energy tracks the turn the player is about to take.
@@ -1926,6 +2013,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
   const cancelTargeting = () => {
     setSelectedCard(null);
     setTargetingMode(false);
+    setAimId(null);
   };
 
   // Concede the battle — counts as a loss. Guarantees the player can always
@@ -1995,6 +2083,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // Reset UI state
     setSelectedCard(null);
     setTargetingMode(false);
+    setAimId(null);
+    setBoardShake(null);
+    setTurnSlip(emptySlip());
     setLeaveMode(null);
     setBattleLog([]);
     setFx([]);
@@ -2076,7 +2167,20 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
   };
   // Nothing left worth doing this turn: End Turn becomes the primary action.
   const outOfMoves = playerMove && !hasMoveLeft(moveState);
-  const directTargets = targetingMode && getValidTargets(playerField, opponentField).length === 0;
+  const liveAttacker = selectedCard
+    ? (playerField.find((c) => c.instanceId === selectedCard.instanceId) || selectedCard)
+    : null;
+  const faceOpen = targetingMode && getValidTargets(playerField, opponentField).length === 0;
+  const directTargets = faceOpen && (!liveAttacker || canSwingFace(liveAttacker));
+  const strike = targetingMode && liveAttacker
+    ? strikePrompt({
+      attacker: liveAttacker,
+      attackerField: playerField,
+      defenderField: opponentField,
+      focusId: aimId,
+      foeName: OPPONENT_NAME,
+    })
+    : null;
   const latestLog = battleLog.length > 0 ? battleLog[battleLog.length - 1].message : '';
   // Whoever spoke last, for the centre line below xl (see the bubbles).
   const speech = [oppQuip && { ...oppQuip, who: 'opponent' }, playerQuip && { ...playerQuip, who: 'player' }]
@@ -2744,6 +2848,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
           <div className="table-rail flex-1 min-h-0 min-w-0">
             <div
               ref={feltRef}
+              data-shake={boardShake || undefined}
               className="felt-table felt-print stitched relative h-full rounded-[15px] grid grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-3 px-2 py-3 sm:p-4"
             >
               {/* The lamp over the felt, brightened by last call. Absolute,
@@ -2789,10 +2894,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                   const validTargets = getValidTargets(playerField, opponentField);
                   const isValidTarget = validTargets.find(t => t.instanceId === card.instanceId);
                   const hittable = targetingMode && isValidTarget;
-                  const press = describedPress(
-                    pressable((e) => attackTarget(card, e), `Attack ${card.name}`, targetingMode),
-                    `desc-field-${card.instanceId}`,
-                  );
+                  const press = {
+                    ...describedPress(
+                      pressable((e) => attackTarget(card, e), `Attack ${card.name}`, targetingMode),
+                      `desc-field-${card.instanceId}`,
+                    ),
+                    ...(hittable ? {
+                      onPointerEnter: () => setAimId(card.instanceId),
+                      onPointerLeave: () => setAimId((id) => (id === card.instanceId ? null : id)),
+                    } : {}),
+                  };
 
                   return (
                     <FieldSlot
@@ -2836,7 +2947,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                             summoning sickness is only legible on their own
                             half of the table. */}
                         {card.summoningSick && (
-                          <StatusChip zoom={fieldZoom} marked={coachCardId === card.instanceId && coachStep === 'warming'}>Warming Up</StatusChip>
+                          <StatusChip zoom={fieldZoom} marked={coachCardId === card.instanceId && coachStep === 'warming'}>{arrivalChip(card)}</StatusChip>
                         )}
                         <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
                           {describeCard(card, { attack: effectiveAttack(card, opponentField) })}
@@ -2857,6 +2968,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                     whileFocus={{ scale: 1.04 }}
                     className={`w-24 h-36 rounded-[10px] border-2 border-dashed border-red-400/80 bg-red-950/50 shadow-[0_0_22px_rgba(248,113,113,0.35)] flex flex-col items-center justify-center gap-2 cursor-crosshair ${FOCUS_OUTLINE}`}
                     {...pressable(attackOpponentDirectly, opponentField.some(c => c.type === 'trap') ? 'Strike (springs trap)' : 'Attack opponent directly')}
+                    onPointerEnter={() => setAimId('face')}
+                    onPointerLeave={() => setAimId((id) => (id === 'face' ? null : id))}
+                    onFocus={() => setAimId('face')}
                   >
                     <Crosshair className="h-7 w-7 text-red-300" aria-hidden="true" />
                     <span className="text-red-200 text-xs font-bold text-center px-1">
@@ -2895,12 +3009,17 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                     about 42, which cut most of them before the punchline. */}
                 <div className="flex min-h-8 xl:min-h-[1.5rem] max-w-full items-center justify-center">
                   {targetingMode ? (
-                    <div className="relative flex items-center gap-1.5 rounded-full bg-red-950/90 px-3 py-1 text-xs font-bold text-red-100">
+                    <div
+                      data-strike-preview=""
+                      className="relative flex max-w-full items-center gap-1.5 rounded-full bg-red-950/90 px-3 py-1 text-xs font-bold text-red-100"
+                    >
                       {/* The ring pulses, not the text, so the prompt keeps its
                           contrast at every point of the pulse. */}
                       <span className="absolute inset-0 rounded-full ring-1 ring-red-400/70 motion-safe:animate-pulse" aria-hidden="true" />
-                      <Crosshair className="h-3.5 w-3.5" aria-hidden="true" />
-                      Pick a victim for {selectedCard?.name}!
+                      <Crosshair className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">
+                        Pick a victim for {selectedCard?.name}{strike?.tail ? ` · ${strike.tail}` : ''}
+                      </span>
                     </div>
                   ) : speech ? (
                     /* Up to two lines (every line in the pools fits two at
@@ -3020,7 +3139,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                         {card.stealthActive && <StealthBand zoom={fieldZoom} />}
                         {card.hasAttacked && <StatusChip zoom={fieldZoom}>Exhausted</StatusChip>}
                         {card.summoningSick && !card.hasAttacked && (
-                          <StatusChip zoom={fieldZoom} marked={coachCardId === card.instanceId && coachStep === 'warming'}>Warming Up</StatusChip>
+                          <StatusChip zoom={fieldZoom} marked={coachCardId === card.instanceId && coachStep === 'warming'}>{arrivalChip(card)}</StatusChip>
                         )}
                         <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
                           {describeCard(card, { attack: effectiveAttack(card, playerField) })}
@@ -3223,6 +3342,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                 Opening hand. Throw any back. Once.
               </p>
             )}
+            <p data-turn-slip="" className="max-w-full truncate px-2 text-center text-[11px] leading-4 text-plush-200">
+              {slipLine(turnSlip)}
+            </p>
             <div role="group" aria-label="Battle actions" className="flex min-h-11 flex-row flex-wrap items-center justify-center gap-2 md:flex-col md:items-stretch">
               <button
                 type="button"
