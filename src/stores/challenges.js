@@ -121,6 +121,14 @@ function localMonday(date) {
 }
 
 /**
+ * The Monday key the weekly challenges and the weekly reroll share with
+ * gameStore's week reset (`getWeekKey`): the local Monday's `toDateString()`.
+ */
+export function weekKeyOf(date = new Date()) {
+  return localMonday(date).toDateString();
+}
+
+/**
  * Pick `count` challenges from `pool`, stable for the given seed and free of
  * duplicates. Throws if the pool is smaller than `count` — a pool that can't
  * fill a period is a config bug, not a runtime condition to paper over.

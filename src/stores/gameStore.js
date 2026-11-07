@@ -9,6 +9,11 @@ import analytics from '@/utils/analytics';
 import { nextDailyRecord } from '@/lib/dailyFight';
 import { AFTER_HOURS_CARDS } from '@/data/afterHoursCards';
 import { QUICKIE_CARDS } from '@/data/quickieCards';
+import { resolveLogin, weekCoinBonus } from '@/lib/loginStreak';
+import { comebackFor } from '@/lib/comeback';
+import { normalizeRerolls, rerollPatch } from '@/lib/questReroll';
+import { bookOf, normalizeClaimedSets } from '@/lib/collectionBook';
+import { titleById } from '@/lib/titles';
 import {
   quoteWardrobe, cardBackId, boardId, finishId, avatarId, lineId,
   DEFAULT_CARD_BACK, DEFAULT_BOARD, DEFAULT_FINISH, DEFAULT_AVATAR, DEFAULT_LINE,
@@ -136,6 +141,11 @@ export const ACHIEVEMENTS = [
   { id: 'level_10', name: 'Third Date Energy', description: 'Reach level 10', reward: 500, icon: 'ChevronsUp', locked: 'Still free to walk away.' },
   { id: 'level_25', name: 'Too Old for This Shit', description: 'Reach level 25', reward: 1500, icon: 'Medal', locked: 'Nobody lives that long.' },
   { id: 'daily_7', name: 'Seven-Night Stand', description: 'Log in 7 days in a row', reward: 700, icon: 'CalendarCheck', locked: 'Commitment issues.' },
+  { id: 'win_100', name: 'Hundred-Night Stand', description: 'Win 100 battles', reward: 4000, icon: 'Skull', locked: 'Hasn’t earned a nickname.' },
+  { id: 'win_streak_10', name: 'Won’t Tap Out', description: 'Win 10 battles in a row', reward: 800, icon: 'Zap', locked: 'Tapped out after one. Rude.' },
+  { id: 'level_50', name: 'Keeps a Drawer Here', description: 'Reach level 50', reward: 3000, icon: 'KeyRound', locked: 'Still a toothbrush short.' },
+  { id: 'daily_30', name: 'They Save Your Stool', description: 'Log in 30 days in a row', reward: 2500, icon: 'CalendarRange', locked: 'Still introducing yourself.' },
+  { id: 'comeback_3', name: 'Crawls Back Grinning', description: `Win 3 battles at ${LAST_CALL_HP} HP or less`, reward: 1200, icon: 'Undo2', locked: 'One happy ending was enough.' },
 ];
 
 export const DAILY_REWARDS = [
@@ -150,16 +160,14 @@ export const DAILY_REWARDS = [
 
 /**
  * The day of the seven a daily claim made at `now` pays, and the streak it
- * records: one more than the last if that claim was yesterday, else a fresh
- * start at day 1. checkDailyLogin pays from this, and Daily Rewards lights
- * the same tile as Today before the player taps Claim, so the two cannot
- * disagree about which reward is waiting.
+ * records. Yesterday continues it. Exactly one missed night continues it too
+ * when a shield is banked (resolveLogin). Anything wider starts again at day
+ * 1. checkDailyLogin pays from the same resolution, and Daily Rewards lights
+ * the same tile as Today before the tap, so the two cannot disagree.
  */
-export const dailyClaimDay = ({ lastLoginDate = null, consecutiveLogins = 0 }, now = new Date()) => {
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const streak = lastLoginDate === yesterday.toDateString() ? consecutiveLogins + 1 : 1;
-  return { day: ((streak - 1) % DAILY_REWARDS.length) + 1, streak };
+export const dailyClaimDay = (state, now = new Date()) => {
+  const resolved = resolveLogin(state, now, DAILY_REWARDS.length);
+  return { day: resolved.day, streak: resolved.streak };
 };
 
 // Both storefronts (the Shop and the Card Packs table) render from this one
@@ -303,6 +311,26 @@ const initialState = {
   completedAchievements: [],
   lastLoginDate: null,
   consecutiveLogins: 0,
+  // One banked forgiveness. Finishing a 7-night cycle fills it; exactly one
+  // missed night spends it and the streak holds. It does not stack.
+  streakShields: 0,
+  // Wins taken at last call. The one-off comeback achievement does not count
+  // them, so a third one can pay a title of its own.
+  comebackWins: 0,
+  // Daily and weekly quest rerolls (src/lib/questReroll.js). A swap counts
+  // only while its day or week key still matches.
+  questRerolls: {
+    dailyKey: null,
+    weeklyKey: null,
+    dailyUsed: 0,
+    weeklyUsed: 0,
+    dailySwap: null,
+    weeklySwap: null,
+  },
+  // Rarity sets whose collection-book reward has been claimed.
+  claimedSets: [],
+  // The house title being worn (src/lib/titles.js), or null.
+  equippedTitle: null,
   cardPacks: 1,
   premiumPacks: 0,
   legendaryPacks: 0,
@@ -499,6 +527,15 @@ export const normalizeSave = (persisted) => {
   s.currentDeck = Array.isArray(persisted?.currentDeck) ? persisted.currentDeck : [...initialState.currentDeck];
   s.savedDecks = Array.isArray(persisted?.savedDecks) ? persisted.savedDecks : [];
   s.completedAchievements = Array.isArray(persisted?.completedAchievements) ? persisted.completedAchievements : [];
+  s.questRerolls = normalizeRerolls(persisted?.questRerolls);
+  s.claimedSets = normalizeClaimedSets(persisted?.claimedSets);
+  s.equippedTitle = titleById(persisted?.equippedTitle) ? persisted.equippedTitle : null;
+  // A save from before comeback wins were counted: the one-off achievement
+  // means they have done it at least once. Only when the field is absent, so
+  // a real zero stays zero.
+  if (!persisted || !Object.prototype.hasOwnProperty.call(persisted, 'comebackWins')) {
+    s.comebackWins = s.completedAchievements.includes('comeback') ? 1 : 0;
+  }
 
   // seasonXP was added in v3 — for players whose persisted state predates
   // it, seed from cumulative level progress so the Battle Pass doesn't
@@ -515,9 +552,13 @@ export const normalizeSave = (persisted) => {
   for (const k of ['coins', 'gems', 'xp', 'level', 'cardPacks', 'premiumPacks',
     'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'weekStreak', 'weekBestStreak', 'weekNewCards',
     'consecutiveLogins', 'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak',
-    'lastSyncedServerGems', 'cloudRev', 'gemDebt', 'dailyStreak', 'dailyBest']) {
+    'lastSyncedServerGems', 'cloudRev', 'gemDebt', 'dailyStreak', 'dailyBest',
+    'comebackWins', 'streakShields']) {
     if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];
   }
+  s.comebackWins = Math.max(0, Math.floor(s.comebackWins));
+  // One shield, or none. A forged 9 is still one.
+  s.streakShields = s.streakShields >= 1 ? 1 : 0;
   // A debt is a count of gems: never negative, which would be a credit.
   s.gemDebt = Math.max(0, s.gemDebt);
   // The sync bookkeeping is nullable like the booster's expiry: anything
@@ -639,6 +680,7 @@ export const useGameStore = create(
         for (let lvl = state.level + 1; lvl <= newLevel; lvl++) analytics.trackLevelUp(lvl);
         get().checkAchievement('level_10', newLevel >= 10);
         get().checkAchievement('level_25', newLevel >= 25);
+        get().checkAchievement('level_50', newLevel >= 50);
 
         return {
           levelBefore: state.level,
@@ -1077,6 +1119,8 @@ export const useGameStore = create(
         const priorWeekStreak = weeklyReset ? 0 : (state.weekStreak ?? 0);
         const newWeekStreak = won ? priorWeekStreak + 1 : 0;
         const newWeekBestStreak = Math.max(weeklyReset ? 0 : state.weekBestStreak, newWeekStreak);
+        const comebackWin = Boolean(won) && finalHP <= LAST_CALL_HP;
+        const newComebacks = (state.comebackWins || 0) + (comebackWin ? 1 : 0);
 
         // Clear claimed challenges for any period that just rolled over, so the
         // same daily/weekly challenge ids become claimable again. Challenge ids
@@ -1107,6 +1151,7 @@ export const useGameStore = create(
           weekBestStreak: newWeekBestStreak,
           weekNewCards: weeklyReset ? 0 : state.weekNewCards,
           weeklyStatsDate: weekKey,
+          comebackWins: newComebacks,
           // Re-claimable challenges after a period rollover
           claimedChallenges: newClaimedChallenges,
         });
@@ -1123,6 +1168,8 @@ export const useGameStore = create(
         get().checkAchievement('win_10', newWins >= 10);
         get().checkAchievement('win_50', newWins >= 50);
         get().checkAchievement('win_streak_5', newStreak >= 5);
+        get().checkAchievement('win_streak_10', newStreak >= 10);
+        get().checkAchievement('win_100', newWins >= 100);
         get().checkAchievement('play_100', newTotalBattles >= 100);
         get().checkAchievement('deal_1000_damage', newTotalDamage >= 1000);
         get().checkAchievement('heal_500', newTotalHealing >= 500);
@@ -1130,7 +1177,8 @@ export const useGameStore = create(
         // actually taken. finalHP === 30 alone is wrong: heal caps at 30, so a
         // player who got hit and healed back finished at full and claimed it.
         get().checkAchievement('perfect_win', won && finalHP === 30 && damageTaken === 0);
-        get().checkAchievement('comeback', won && finalHP <= LAST_CALL_HP);
+        get().checkAchievement('comeback', comebackWin);
+        get().checkAchievement('comeback_3', newComebacks >= 3);
 
         // `progress` is addXP's account of the XP (level, bar, bonus coins,
         // season XP), for the game-over panel.
@@ -1223,16 +1271,25 @@ export const useGameStore = create(
         const today = now.toDateString();
         if (state.lastLoginDate === today) return null;
 
-        const { day, streak: newConsecutive } = dailyClaimDay(state, now);
+        const resolution = resolveLogin(state, now, DAILY_REWARDS.length);
+        const { day, streak: newConsecutive } = resolution;
         const dayIndex = day - 1;
         const reward = DAILY_REWARDS[dayIndex];
+        // The table is the day's rate. A long bender adds a percentage of it,
+        // and an absence of three nights or more adds the comeback tab. Both
+        // are part of this one claim, so neither can be taken twice.
+        const bonusCoins = weekCoinBonus(reward.coins, newConsecutive);
+        const comeback = resolution.usedShield ? null : comebackFor(resolution.gap);
+        const extraCoins = bonusCoins + (comeback?.coins || 0);
+        const extraPacks = comeback?.packs || 0;
 
         set({
           lastLoginDate: today,
           consecutiveLogins: newConsecutive,
-          coins: state.coins + reward.coins,
+          streakShields: resolution.shields,
+          coins: state.coins + reward.coins + extraCoins,
           ...creditGems(state, reward.gems || 0),
-          cardPacks: state.cardPacks + reward.packs,
+          cardPacks: state.cardPacks + reward.packs + extraPacks,
         });
 
         // Track what was ACTUALLY handed over, not what the table promised.
@@ -1265,15 +1322,59 @@ export const useGameStore = create(
         }
 
         get().checkAchievement('daily_7', newConsecutive >= 7);
+        get().checkAchievement('daily_30', newConsecutive >= 30);
         return {
           ...reward,
           cards: grantedCards,
           cardIds,
-          coins: reward.coins + substituteCoins,
+          coins: reward.coins + extraCoins + substituteCoins,
+          packs: reward.packs + extraPacks,
           substitutedCards: reward.cards - grantedCards,
           day: dayIndex + 1,
           consecutive: newConsecutive,
+          bonusCoins,
+          comeback,
+          usedShield: resolution.usedShield,
+          shieldRefilled: resolution.shieldRefilled,
+          shields: resolution.shields,
         };
+      },
+
+      // Swap one unfinished, unclaimed quest for another from the same pool.
+      // One a day, one a week. Returns the swap, or null when it is refused.
+      rerollQuest: (period, fromId) => {
+        const next = rerollPatch(get(), period, fromId, new Date());
+        if (!next) return null;
+        set({ questRerolls: next });
+        return period === 'weekly' ? next.weeklySwap : next.dailySwap;
+      },
+
+      // The collection book's reward for owning every card of one rarity.
+      // Coins and ordinary packs only: a premium or legendary pack would
+      // survive a reset while the claim ledger would not, and mint another.
+      claimCollectionSet: (setId) => {
+        const state = get();
+        const row = bookOf(ALL_CARDS, state.ownedCards).find((set) => set.id === setId);
+        if (!row?.complete) return null;
+        if (state.claimedSets.includes(setId)) return null;
+        set({ claimedSets: [...state.claimedSets, setId] });
+        if (row.reward.coins) get().addCoins(row.reward.coins);
+        if (row.reward.packs) get().addCardPack(row.reward.packs);
+        return { ...row.reward };
+      },
+
+      // Wear a title the player has earned, or null to take it off. The
+      // account mirror is the caller's (setHouseTitle); this is the save.
+      equipTitle: (id) => {
+        if (id == null || id === '') {
+          set({ equippedTitle: null });
+          return null;
+        }
+        const title = titleById(id);
+        if (!title) return false;
+        if (!get().completedAchievements.includes(title.achievementId)) return false;
+        set({ equippedTitle: id });
+        return id;
       },
 
       addCardPack: (amount = 1, packType = 'regular') => {

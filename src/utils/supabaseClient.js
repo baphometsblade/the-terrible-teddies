@@ -78,6 +78,23 @@ export const ensurePlayerProfile = async (username = null, userId = null) => {
 // Server-side validation lives in set_player_username; this returns the stored
 // name on success or null on failure so the caller can keep the local store in
 // step only when the write actually landed.
+// Wear or clear the account's house title. The id must be one set_house_title
+// allows; anything else is refused. `missing` means the migration is not
+// applied yet, and the local save is the title until it is.
+const titleRpcMissing = (error) =>
+  ['PGRST202', 'PGRST205', '42883', '42P01'].includes(String(error?.code || ''));
+
+export const setHouseTitle = async (titleId) => {
+  const { data, error } = await supabase.rpc('set_house_title', {
+    p_title: titleId || '',
+  });
+  if (error) {
+    console.error('Error setting house title:', error);
+    return { ok: false, missing: titleRpcMissing(error) };
+  }
+  return { ok: true, title: data || null };
+};
+
 export const setPlayerUsername = async (username, userId = null) => {
   const uid = await resolveUserId(userId);
   if (!uid) return null;

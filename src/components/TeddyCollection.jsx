@@ -17,6 +17,7 @@ import { abilityRules } from '@/lib/abilities';
 import { effectLabel, effectRules } from '@/lib/effects';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { CLEARANCE, isKeyboardFocus, revealBetween } from '@/lib/keepClear';
+import CollectionBook from './CollectionBook';
 
 // Collection sorts and lists rarest-first.
 const RARITY_ORDER = [...RARITY_ORDER_ASC].reverse();
@@ -295,6 +296,7 @@ const TeddyCollection = () => {
   const [filter, setFilter] = useState('all');
   const [rarityFilter, setRarityFilter] = useState('all');
   const [showOwned, setShowOwned] = useState(true);
+  const [bookOpen, setBookOpen] = useState(false);
   const artVariant = gridArtVariant(useMediaQuery(CARD_ZOOM_QUERY));
 
   // The filter strip sticks over the top of the page, so a card the keyboard
@@ -393,6 +395,14 @@ const TeddyCollection = () => {
               aria-label={`Collection progress: ${totalOwned} of ${totalCards} cards`}
               className="mt-3 h-2 bg-night-950/70 ring-1 ring-inset ring-white/[0.06] [&>div]:bg-gradient-to-r [&>div]:from-brass-200 [&>div]:to-brass-500"
             />
+            <button
+              type="button"
+              aria-pressed={bookOpen}
+              onClick={() => { setSelectedId(null); setBookOpen((open) => !open); }}
+              className={`btn-glass mt-3 h-11 w-full rounded-xl font-display text-sm font-bold ${FOCUS_OUTLINE}`}
+            >
+              {bookOpen ? 'Back to the cards' : 'The notches'}
+            </button>
           </div>
 
           <div aria-hidden="true" className="hidden w-px self-stretch bg-white/[0.06] md:block" />
@@ -438,6 +448,9 @@ const TeddyCollection = () => {
         </div>
       </div>
 
+      {bookOpen && <CollectionBook />}
+
+      {!bookOpen && <>
       {/* The filters, on a strip that sticks to the top of the screen, so
           they are in reach from anywhere in a 64-card album instead of only
           from its top. Opaque (dialog-panel), because cards scroll under it
@@ -567,6 +580,7 @@ const TeddyCollection = () => {
           </p>
         </div>
       )}
+      </>}
 
       <AnimatePresence>
         {selectedIndex >= 0 && (
