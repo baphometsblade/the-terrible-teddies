@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Check, BookOpen } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { useGameStore, ALL_CARDS } from '../stores/gameStore';
+import { useGameStore, ALL_CARDS, coinsForDuplicate } from '../stores/gameStore';
 import { bookOf } from '@/lib/collectionBook';
+import { nextStarTarget, starCost, starSetReady, starringUnlocked, starCount } from '@/lib/cardStars';
+import { starMark } from '@/lib/retentionMarks';
+import { claimRetentionMark } from '@/utils/supabaseClient';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { RARITY_METAL } from '@/lib/rarity';
 
@@ -15,7 +18,7 @@ const rewardWords = (reward) => {
 
 // One rarity, owned and missing, with its completion reward. Missing names
 // stay behind a control so a set of twenty does not bury the next one.
-const SetRow = ({ row, claimed, onClaim }) => {
+const SetRow = ({ row, claimed, onClaim, star, onStar, starReady, starClaimed, onStarClaim }) => {
   const [open, setOpen] = useState(false);
   const percent = row.total ? (row.owned / row.total) * 100 : 0;
   return (
@@ -71,6 +74,25 @@ const SetRow = ({ row, claimed, onClaim }) => {
         {row.complete && !claimed && (
           <span className="sr-only">{row.name} is complete.</span>
         )}
+        {star && (
+          <button
+            type="button"
+            onClick={onStar}
+            className={`btn-glass h-11 rounded-lg px-3 font-display text-sm font-bold ${FOCUS_OUTLINE}`}
+          >
+            Another round, {star.cost} coins
+          </button>
+        )}
+        {starReady && !starClaimed && (
+          <button
+            type="button"
+            onClick={onStarClaim}
+            className={`btn-brass h-11 rounded-lg px-3 font-display text-sm font-bold ${FOCUS_OUTLINE}`}
+          >
+            They all stayed
+          </button>
+        )}
+        {starClaimed && <span className="text-sm text-plush-300">The whole tier came home.</span>}
       </div>
 
       {open && row.missing.length > 0 && (
@@ -85,9 +107,13 @@ const SetRow = ({ row, claimed, onClaim }) => {
 };
 
 const CollectionBook = () => {
-  const { ownedCards, claimedSets, claimCollectionSet } = useGameStore();
+  const {
+    ownedCards, claimedSets, claimCollectionSet, cardStars, coins, claimedStarSets,
+    raiseCardStar, claimStarSet,
+  } = useGameStore();
   const rows = bookOf(ALL_CARDS, ownedCards);
   const [said, setSaid] = useState('');
+  const starsOpen = starringUnlocked(ownedCards);
 
   const claim = (row) => {
     const paid = claimCollectionSet(row.id);
@@ -95,21 +121,49 @@ const CollectionBook = () => {
     setSaid(`${row.name} claimed: ${rewardWords(paid)}.`);
   };
 
+  const star = (row) => {
+    const paid = raiseCardStar(row.id);
+    if (!paid) return;
+    setSaid(`${paid.name} came home again. Star ${paid.stars}.`);
+  };
+
+  const starSet = (row) => {
+    const paid = claimStarSet(row.id);
+    if (!paid) return;
+    claimRetentionMark(starMark(row.id));
+    setSaid(`${row.name}: they all stayed. ${rewardWords(paid)}.`);
+  };
+
   return (
     <div className="mb-8 space-y-3">
       <div className="flex items-center gap-2 px-1">
         <BookOpen aria-hidden="true" className="h-4 w-4 text-brass-300" strokeWidth={2.2} />
-        <p className="text-sm text-plush-300">Fill a tier. The house buys the next round, once.</p>
+        <p className="text-sm text-plush-300">
+          {starsOpen
+            ? 'Fill a tier. Stars are another night with them. They do not hit harder.'
+            : 'Fill a tier. The house buys the next round, once.'}
+        </p>
       </div>
       <div role="status" className="sr-only">{said}</div>
-      {rows.map((row) => (
-        <SetRow
-          key={row.id}
-          row={row}
-          claimed={claimedSets.includes(row.id)}
-          onClaim={() => claim(row)}
-        />
-      ))}
+      {rows.map((row) => {
+        const target = starsOpen ? nextStarTarget(ALL_CARDS, ownedCards, cardStars, row.id) : null;
+        const cost = target ? starCost(target.id, cardStars, coinsForDuplicate) : null;
+        const starred = (ALL_CARDS.filter((card) => card.rarity === row.id && ownedCards.includes(card.id)))
+          .reduce((n, card) => n + (starCount(cardStars, card.id) > 0 ? 1 : 0), 0);
+        return (
+          <SetRow
+            key={row.id}
+            row={{ ...row, blurb: starsOpen && starred ? `${row.blurb} ${starred} starred.` : row.blurb }}
+            claimed={claimedSets.includes(row.id)}
+            onClaim={() => claim(row)}
+            star={target && cost != null && coins >= cost ? { cost } : null}
+            onStar={() => star(row)}
+            starReady={starsOpen && starSetReady(ALL_CARDS, ownedCards, cardStars, row.id)}
+            starClaimed={claimedStarSets.includes(row.id)}
+            onStarClaim={() => starSet(row)}
+          />
+        );
+      })}
     </div>
   );
 };
