@@ -109,7 +109,7 @@ export const effectiveAttack = (card, field = []) => {
 /** Why the attack badge is up, for the card's words. Empty when it is not. */
 export const attackAuraNote = (card, field = []) => {
   const notes = [];
-  if (friendOn(card, field, (c) => c.ability === 'royal' && c.type === 'action')) notes.push('a Patron');
+  if (friendOn(card, field, (c) => c.ability === 'royal' && c.type === 'action')) notes.push('a Royal ally');
   if (card.ability === 'smitten' && friendOn(card, field, (c) => c.type === 'action')) notes.push('company');
   if (card.tribe && friendOn(card, field, (c) => c.type === 'action' && c.tribe === card.tribe)) notes.push('the table');
   return notes.join(' and ');

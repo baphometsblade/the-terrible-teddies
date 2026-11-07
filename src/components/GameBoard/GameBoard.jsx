@@ -345,7 +345,7 @@ const Kbd = ({ children }) => (
  * closing (`onKeep`), and leaving it or clicking it closes it (`onDismiss`).
  */
 const CardPreview = ({
-  card, placement, rules, flavor = '', keys, hoverable, onKeep, onDismiss, costDelta = 0, attackDelta = 0, cosmeticBorder = null,
+  card, placement, rules, flavor = '', keys, hoverable, onKeep, onDismiss, costDelta = 0, attackDelta = 0, raisedNote = 'a Royal ally', cosmeticBorder = null,
 }) => {
   const { place, x, y, w, h, zoom, layout } = placement;
   const beside = layout === 'row';
@@ -363,7 +363,7 @@ const CardPreview = ({
         onClick={hoverable ? onDismiss : undefined}
       >
         <div className="rounded-[10px] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.9)]" style={{ zoom }}>
-          <TeddyCard teddy={card} lift={false} cosmeticBorder={cosmeticBorder} costDelta={costDelta} attackDelta={attackDelta} artVariant="responsive" artLoading="eager" />
+          <TeddyCard teddy={card} lift={false} cosmeticBorder={cosmeticBorder} costDelta={costDelta} attackDelta={attackDelta} raisedNote={raisedNote} artVariant="responsive" artLoading="eager" />
         </div>
         {(rules || flavor || keys) && (
           <div
@@ -2991,6 +2991,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                             side="opponent"
                             tauntActive={card.ability === 'taunt' && !card.stealthActive}
                             attackDelta={effectiveAttack(card, opponentField) - card.attack}
+                            raisedNote={attackAuraNote(card, opponentField) || 'a Royal ally'}
                             nameless={fieldZoom < NAMELESS_BELOW}
                             zoom={fieldZoom}
                           />
@@ -3187,6 +3188,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                             resting={resting}
                             tauntActive={card.ability === 'taunt' && !card.stealthActive}
                             attackDelta={effectiveAttack(card, playerField) - card.attack}
+                            raisedNote={attackAuraNote(card, playerField) || 'a Royal ally'}
                             nameless={fieldZoom < NAMELESS_BELOW}
                             zoom={fieldZoom}
                           />
@@ -3304,6 +3306,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                   attackDelta={previewTarget.from === 'hand'
                     ? 0
                     : effectiveAttack(previewCard, previewTarget.from === 'player' ? playerField : opponentField) - previewCard.attack}
+                  raisedNote={previewTarget.from === 'hand'
+                    ? 'a Royal ally'
+                    : (attackAuraNote(previewCard, previewTarget.from === 'player' ? playerField : opponentField) || 'a Royal ally')}
                   cosmeticBorder={previewTarget.from === 'opponent' ? null : cosmeticBorder}
                 />
               )}
