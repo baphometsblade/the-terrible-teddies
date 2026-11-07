@@ -78,6 +78,34 @@ export const ensurePlayerProfile = async (username = null, userId = null) => {
 // Server-side validation lives in set_player_username; this returns the stored
 // name on success or null on failure so the caller can keep the local store in
 // step only when the write actually landed.
+// Wear or clear the account's house title. The id must be one set_house_title
+// allows; anything else is refused. `missing` means the migration is not
+// applied yet, and the local save is the title until it is.
+const titleRpcMissing = (error) =>
+  ['PGRST202', 'PGRST205', '42883', '42P01'].includes(String(error?.code || ''));
+
+export const setHouseTitle = async (titleId) => {
+  const { data, error } = await supabase.rpc('set_house_title', {
+    p_title: titleId || '',
+  });
+  if (error) {
+    console.error('Error setting house title:', error);
+    return { ok: false, missing: titleRpcMissing(error) };
+  }
+  return { ok: true, title: data || null };
+};
+
+// Record a permanent retention mark on the account. Offline, or before the
+// migration is applied, the save still holds the claim.
+export const claimRetentionMark = async (mark) => {
+  const { data, error } = await supabase.rpc('claim_retention_mark', { p_mark: mark });
+  if (error) {
+    console.error('Error recording a retention mark:', error);
+    return { ok: false, missing: titleRpcMissing(error) };
+  }
+  return { ok: true, fresh: data === true };
+};
+
 export const setPlayerUsername = async (username, userId = null) => {
   const uid = await resolveUserId(userId);
   if (!uid) return null;

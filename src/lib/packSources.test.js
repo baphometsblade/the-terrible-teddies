@@ -78,6 +78,25 @@ describe('nextDailyPack', () => {
     expect(nextDailyPack({ consecutiveLogins: streak, lastLoginDate: yesterday }, today)).toMatchObject({ day: packDays[0], inDays: 0 });
   });
 
+  it('keeps the next pack where it is when a shield covers one missed night', () => {
+    const today = new Date(2026, 5, 10, 9);
+    const missed = new Date(2026, 5, 8);
+    const streak = 4;
+    const held = nextDailyPack(
+      { consecutiveLogins: streak, lastLoginDate: missed.toDateString(), streakShields: 1 },
+      today,
+    );
+    const broken = nextDailyPack(
+      { consecutiveLogins: streak, lastLoginDate: missed.toDateString(), streakShields: 0 },
+      today,
+    );
+    const continued = ((streak) % DAILY_REWARDS.length) + 1;
+    expect(DAILY_REWARDS[continued - 1].packs).toBeGreaterThan(0);
+    expect(held).toMatchObject({ day: continued, packs: DAILY_REWARDS[continued - 1].packs, inDays: 0 });
+    expect(broken.day).toBe(packDays[0]);
+    expect(broken.inDays).toBeGreaterThan(0);
+  });
+
   it('restarts at day 1 when the streak has lapsed, as checkDailyLogin does', () => {
     const p = nextDailyPack({ consecutiveLogins: 6, lastLoginDate: new Date(2026, 9, 1).toDateString() }, today);
     expect(p).toMatchObject({ day: packDays[0], inDays: packDays[0] - 1 });

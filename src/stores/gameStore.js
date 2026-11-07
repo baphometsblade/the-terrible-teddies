@@ -10,11 +10,24 @@ import { nextDailyRecord } from '@/lib/dailyFight';
 import { AFTER_HOURS_CARDS } from '@/data/afterHoursCards';
 import { QUICKIE_CARDS } from '@/data/quickieCards';
 import { NIGHT_TWO_CARDS } from '@/data/nightTwoCards';
+import { resolveLogin, weekCoinBonus } from '@/lib/loginStreak';
+import { comebackFor } from '@/lib/comeback';
+import { normalizeRerolls, rerollPatch, weekKeyOf } from '@/lib/questReroll';
+import { bookOf, normalizeClaimedSets } from '@/lib/collectionBook';
+import { titleById } from '@/lib/titles';
 import {
   quoteWardrobe, cardBackId, boardId, finishId, avatarId, lineId,
   DEFAULT_CARD_BACK, DEFAULT_BOARD, DEFAULT_FINISH, DEFAULT_AVATAR, DEFAULT_LINE,
 } from '@/lib/wardrobe';
 import { clampVolume } from '@/lib/audioMix';
+import { eventAt, eventSpentKey, isEventId, scaleReward } from '@/lib/houseEvents';
+import { crawlStatus, CRAWL_UNLOCK_BATTLES } from '@/lib/barCrawl';
+import { nextStarTarget, starCost, starSetReady, starringUnlocked, normalizeStars, STAR_CAP } from '@/lib/cardStars';
+import { morningAfterDue, MORNING_AFTER } from '@/lib/morningAfter';
+import { trackRow } from '@/lib/levelTrack';
+import { catchUpFor } from '@/lib/catchUp';
+import { storyChapters } from '@/lib/storyCampaign';
+import { plaqueById, plaqueBonus } from '@/lib/plaques';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
@@ -138,6 +151,11 @@ export const ACHIEVEMENTS = [
   { id: 'level_10', name: 'Third Date Energy', description: 'Reach level 10', reward: 500, icon: 'ChevronsUp', locked: 'Still free to walk away.' },
   { id: 'level_25', name: 'Too Old for This Shit', description: 'Reach level 25', reward: 1500, icon: 'Medal', locked: 'Nobody lives that long.' },
   { id: 'daily_7', name: 'Seven-Night Stand', description: 'Log in 7 days in a row', reward: 700, icon: 'CalendarCheck', locked: 'Commitment issues.' },
+  { id: 'win_100', name: 'Hundred-Night Stand', description: 'Win 100 battles', reward: 4000, icon: 'Skull', locked: 'Hasn’t earned a nickname.' },
+  { id: 'win_streak_10', name: 'Won’t Tap Out', description: 'Win 10 battles in a row', reward: 800, icon: 'Zap', locked: 'Tapped out after one. Rude.' },
+  { id: 'level_50', name: 'Keeps a Drawer Here', description: 'Reach level 50', reward: 3000, icon: 'KeyRound', locked: 'Still a toothbrush short.' },
+  { id: 'daily_30', name: 'They Save Your Stool', description: 'Log in 30 days in a row', reward: 2500, icon: 'CalendarRange', locked: 'Still introducing yourself.' },
+  { id: 'comeback_3', name: 'Crawls Back Grinning', description: `Win 3 battles at ${LAST_CALL_HP} HP or less`, reward: 1200, icon: 'Undo2', locked: 'One happy ending was enough.' },
 ];
 
 export const DAILY_REWARDS = [
@@ -152,16 +170,14 @@ export const DAILY_REWARDS = [
 
 /**
  * The day of the seven a daily claim made at `now` pays, and the streak it
- * records: one more than the last if that claim was yesterday, else a fresh
- * start at day 1. checkDailyLogin pays from this, and Daily Rewards lights
- * the same tile as Today before the player taps Claim, so the two cannot
- * disagree about which reward is waiting.
+ * records. Yesterday continues it. Exactly one missed night continues it too
+ * when a shield is banked (resolveLogin). Anything wider starts again at day
+ * 1. checkDailyLogin pays from the same resolution, and Daily Rewards lights
+ * the same tile as Today before the tap, so the two cannot disagree.
  */
-export const dailyClaimDay = ({ lastLoginDate = null, consecutiveLogins = 0 }, now = new Date()) => {
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const streak = lastLoginDate === yesterday.toDateString() ? consecutiveLogins + 1 : 1;
-  return { day: ((streak - 1) % DAILY_REWARDS.length) + 1, streak };
+export const dailyClaimDay = (state, now = new Date()) => {
+  const resolved = resolveLogin(state, now, DAILY_REWARDS.length);
+  return { day: resolved.day, streak: resolved.streak };
 };
 
 // Both storefronts (the Shop and the Card Packs table) render from this one
@@ -305,6 +321,44 @@ const initialState = {
   completedAchievements: [],
   lastLoginDate: null,
   consecutiveLogins: 0,
+  // One banked forgiveness. Finishing a 7-night cycle fills it; exactly one
+  // missed night spends it and the streak holds. It does not stack.
+  streakShields: 0,
+  // Wins taken at last call. The one-off comeback achievement does not count
+  // them, so a third one can pay a title of its own.
+  comebackWins: 0,
+  // Daily and weekly quest rerolls (src/lib/questReroll.js). A swap counts
+  // only while its day or week key still matches.
+  questRerolls: {
+    dailyKey: null,
+    weeklyKey: null,
+    dailyUsed: 0,
+    weeklyUsed: 0,
+    dailySwap: null,
+    weeklySwap: null,
+  },
+  // Rarity sets whose collection-book reward has been claimed.
+  claimedSets: [],
+  // The house title being worn (src/lib/titles.js), or null.
+  equippedTitle: null,
+  // One armed limited night (src/lib/houseEvents.js), and the day|id already used.
+  eventArmed: null,
+  eventSpent: null,
+  // Weekly crawl counters. They reset with the other weekly stats.
+  weekBattles: 0,
+  weekDamage: 0,
+  weekCards: 0,
+  crawlClaimedWeek: null,
+  // Card stars, keyed by id string, 1 to 3. Dupes still pay coins.
+  cardStars: {},
+  claimedStarSets: [],
+  lastBattleDate: null,
+  morningAfterDate: null,
+  firstSeenDate: null,
+  catchUpWeek: null,
+  claimedLevelRewards: [],
+  claimedPlaques: [],
+  claimedChapters: [],
   cardPacks: 1,
   premiumPacks: 0,
   legendaryPacks: 0,
@@ -501,6 +555,33 @@ export const normalizeSave = (persisted) => {
   s.currentDeck = Array.isArray(persisted?.currentDeck) ? persisted.currentDeck : [...initialState.currentDeck];
   s.savedDecks = Array.isArray(persisted?.savedDecks) ? persisted.savedDecks : [];
   s.completedAchievements = Array.isArray(persisted?.completedAchievements) ? persisted.completedAchievements : [];
+  s.questRerolls = normalizeRerolls(persisted?.questRerolls);
+  s.claimedSets = normalizeClaimedSets(persisted?.claimedSets);
+  s.equippedTitle = titleById(persisted?.equippedTitle) ? persisted.equippedTitle : null;
+  s.eventArmed = isEventId(persisted?.eventArmed) ? persisted.eventArmed : null;
+  s.eventSpent = typeof persisted?.eventSpent === 'string' && persisted.eventSpent.length <= 80 ? persisted.eventSpent : null;
+  s.cardStars = normalizeStars(persisted?.cardStars, ALL_CARDS.map((card) => card.id));
+  s.claimedStarSets = normalizeClaimedSets(persisted?.claimedStarSets);
+  s.crawlClaimedWeek = typeof persisted?.crawlClaimedWeek === 'string' ? persisted.crawlClaimedWeek : null;
+  s.lastBattleDate = typeof persisted?.lastBattleDate === 'string' ? persisted.lastBattleDate : null;
+  s.morningAfterDate = typeof persisted?.morningAfterDate === 'string' ? persisted.morningAfterDate : null;
+  s.firstSeenDate = typeof persisted?.firstSeenDate === 'string' ? persisted.firstSeenDate : null;
+  s.catchUpWeek = typeof persisted?.catchUpWeek === 'string' ? persisted.catchUpWeek : null;
+  s.claimedLevelRewards = Array.isArray(persisted?.claimedLevelRewards)
+    ? persisted.claimedLevelRewards.filter((level) => trackRow(level))
+    : [];
+  s.claimedPlaques = Array.isArray(persisted?.claimedPlaques)
+    ? persisted.claimedPlaques.filter((id) => plaqueById(id))
+    : [];
+  s.claimedChapters = Array.isArray(persisted?.claimedChapters)
+    ? persisted.claimedChapters.filter((id) => id === 'story_first_round' || id === 'story_lock_in')
+    : [];
+  // A save from before comeback wins were counted: the one-off achievement
+  // means they have done it at least once. Only when the field is absent, so
+  // a real zero stays zero.
+  if (!persisted || !Object.prototype.hasOwnProperty.call(persisted, 'comebackWins')) {
+    s.comebackWins = s.completedAchievements.includes('comeback') ? 1 : 0;
+  }
 
   // seasonXP was added in v3 — for players whose persisted state predates
   // it, seed from cumulative level progress so the Battle Pass doesn't
@@ -517,9 +598,13 @@ export const normalizeSave = (persisted) => {
   for (const k of ['coins', 'gems', 'xp', 'level', 'cardPacks', 'premiumPacks',
     'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'weekStreak', 'weekBestStreak', 'weekNewCards',
     'consecutiveLogins', 'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak',
-    'lastSyncedServerGems', 'cloudRev', 'gemDebt', 'dailyStreak', 'dailyBest']) {
+    'lastSyncedServerGems', 'cloudRev', 'gemDebt', 'dailyStreak', 'dailyBest',
+    'comebackWins', 'streakShields', 'weekBattles', 'weekDamage', 'weekCards']) {
     if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];
   }
+  s.comebackWins = Math.max(0, Math.floor(s.comebackWins));
+  // One shield, or none. A forged 9 is still one.
+  s.streakShields = s.streakShields >= 1 ? 1 : 0;
   // A debt is a count of gems: never negative, which would be a credit.
   s.gemDebt = Math.max(0, s.gemDebt);
   // The sync bookkeeping is nullable like the booster's expiry: anything
@@ -641,6 +726,7 @@ export const useGameStore = create(
         for (let lvl = state.level + 1; lvl <= newLevel; lvl++) analytics.trackLevelUp(lvl);
         get().checkAchievement('level_10', newLevel >= 10);
         get().checkAchievement('level_25', newLevel >= 25);
+        get().checkAchievement('level_50', newLevel >= 50);
 
         return {
           levelBefore: state.level,
@@ -1055,10 +1141,27 @@ export const useGameStore = create(
         const baseCoins = won ? 25 + (newStreak * 5) : 5;
         const doublerActive = typeof state.coinDoublerExpiresAt === 'number'
           && state.coinDoublerExpiresAt > Date.now();
-        const coinsThisBattle = doublerActive ? baseCoins * 2 : baseCoins;
+        const now = new Date();
+        const today = now.toDateString();
+        // An armed night pays on this one fight, then it is spent. A stale
+        // arm (the hour ended) is dropped and does not pay.
+        let coinsThisBattle = doublerActive ? baseCoins * 2 : baseCoins;
+        let eventApplied = null;
+        let nextArmed = state.eventArmed || null;
+        let nextSpent = state.eventSpent || null;
+        if (nextArmed) {
+          const live = eventAt(now);
+          if (live && live.id === nextArmed && nextSpent !== eventSpentKey(now, live.id)) {
+            coinsThisBattle = scaleReward(coinsThisBattle, live.coins, live.coinsDen);
+            eventApplied = live;
+            nextArmed = null;
+            nextSpent = eventSpentKey(now, live.id);
+          } else {
+            nextArmed = null;
+          }
+        }
 
         // Daily stats — auto-reset when the calendar date changes
-        const today = new Date().toDateString();
         const dailyReset = state.dailyStatsDate !== today;
         const newTodayWins = (dailyReset ? 0 : state.todayWins) + (won ? 1 : 0);
         const newTodayBattles = (dailyReset ? 0 : state.todayBattles) + 1;
@@ -1079,6 +1182,11 @@ export const useGameStore = create(
         const priorWeekStreak = weeklyReset ? 0 : (state.weekStreak ?? 0);
         const newWeekStreak = won ? priorWeekStreak + 1 : 0;
         const newWeekBestStreak = Math.max(weeklyReset ? 0 : state.weekBestStreak, newWeekStreak);
+        const newWeekBattles = (weeklyReset ? 0 : (state.weekBattles || 0)) + 1;
+        const newWeekDamage = (weeklyReset ? 0 : (state.weekDamage || 0)) + Math.max(0, damageDealt || 0);
+        const newWeekCards = (weeklyReset ? 0 : (state.weekCards || 0)) + Math.max(0, cardsPlayed || 0);
+        const comebackWin = Boolean(won) && finalHP <= LAST_CALL_HP;
+        const newComebacks = (state.comebackWins || 0) + (comebackWin ? 1 : 0);
 
         // Clear claimed challenges for any period that just rolled over, so the
         // same daily/weekly challenge ids become claimable again. Challenge ids
@@ -1108,12 +1216,20 @@ export const useGameStore = create(
           weekStreak: newWeekStreak,
           weekBestStreak: newWeekBestStreak,
           weekNewCards: weeklyReset ? 0 : state.weekNewCards,
+          weekBattles: newWeekBattles,
+          weekDamage: newWeekDamage,
+          weekCards: newWeekCards,
           weeklyStatsDate: weekKey,
+          comebackWins: newComebacks,
+          lastBattleDate: today,
+          eventArmed: nextArmed,
+          eventSpent: nextSpent,
           // Re-claimable challenges after a period rollover
           claimedChallenges: newClaimedChallenges,
         });
 
-        const xpGain = won ? BATTLE_XP.win : BATTLE_XP.loss;
+        const baseXp = won ? BATTLE_XP.win : BATTLE_XP.loss;
+        const xpGain = eventApplied ? scaleReward(baseXp, eventApplied.xp, eventApplied.xpDen) : baseXp;
         const progress = get().addXP(xpGain);
         // One grant for both outcomes — coinsThisBattle already encodes the
         // consolation amount on a loss. Granting a separate hardcoded 5 there
@@ -1125,6 +1241,8 @@ export const useGameStore = create(
         get().checkAchievement('win_10', newWins >= 10);
         get().checkAchievement('win_50', newWins >= 50);
         get().checkAchievement('win_streak_5', newStreak >= 5);
+        get().checkAchievement('win_streak_10', newStreak >= 10);
+        get().checkAchievement('win_100', newWins >= 100);
         get().checkAchievement('play_100', newTotalBattles >= 100);
         get().checkAchievement('deal_1000_damage', newTotalDamage >= 1000);
         get().checkAchievement('heal_500', newTotalHealing >= 500);
@@ -1132,11 +1250,12 @@ export const useGameStore = create(
         // actually taken. finalHP === 30 alone is wrong: heal caps at 30, so a
         // player who got hit and healed back finished at full and claimed it.
         get().checkAchievement('perfect_win', won && finalHP === 30 && damageTaken === 0);
-        get().checkAchievement('comeback', won && finalHP <= LAST_CALL_HP);
+        get().checkAchievement('comeback', comebackWin);
+        get().checkAchievement('comeback_3', newComebacks >= 3);
 
         // `progress` is addXP's account of the XP (level, bar, bonus coins,
         // season XP), for the game-over panel.
-        return { xpGain, coinsGain: coinsThisBattle, progress };
+        return { xpGain, coinsGain: coinsThisBattle, progress, event: eventApplied ? eventApplied.id : null };
       },
 
       checkAchievement: (achievementId, condition) => {
@@ -1211,6 +1330,7 @@ export const useGameStore = create(
           claimed = claimed.filter(id => !id.startsWith('w'));
           Object.assign(patch, {
             weekWins: 0, weekCoinsEarned: 0, weekStreak: 0, weekBestStreak: 0, weekNewCards: 0,
+            weekBattles: 0, weekDamage: 0, weekCards: 0,
             weeklyStatsDate: weekKey,
           });
         } else if (weeklyStamp) {
@@ -1225,16 +1345,27 @@ export const useGameStore = create(
         const today = now.toDateString();
         if (state.lastLoginDate === today) return null;
 
-        const { day, streak: newConsecutive } = dailyClaimDay(state, now);
+        const resolution = resolveLogin(state, now, DAILY_REWARDS.length);
+        const { day, streak: newConsecutive } = resolution;
         const dayIndex = day - 1;
         const reward = DAILY_REWARDS[dayIndex];
+        // The table is the day's rate. A long bender adds a percentage of it,
+        // and an absence of three nights or more adds the comeback tab. Both
+        // are part of this one claim, so neither can be taken twice.
+        const bonusCoins = weekCoinBonus(reward.coins, newConsecutive);
+        const comeback = resolution.usedShield ? null : comebackFor(resolution.gap);
+        const plaqueCoins = plaqueBonus(state.claimedPlaques);
+        const extraCoins = bonusCoins + (comeback?.coins || 0) + plaqueCoins;
+        const extraPacks = comeback?.packs || 0;
 
         set({
           lastLoginDate: today,
           consecutiveLogins: newConsecutive,
-          coins: state.coins + reward.coins,
+          streakShields: resolution.shields,
+          coins: state.coins + reward.coins + extraCoins,
           ...creditGems(state, reward.gems || 0),
-          cardPacks: state.cardPacks + reward.packs,
+          cardPacks: state.cardPacks + reward.packs + extraPacks,
+          ...(state.firstSeenDate ? {} : { firstSeenDate: today }),
         });
 
         // Track what was ACTUALLY handed over, not what the table promised.
@@ -1267,15 +1398,161 @@ export const useGameStore = create(
         }
 
         get().checkAchievement('daily_7', newConsecutive >= 7);
+        get().checkAchievement('daily_30', newConsecutive >= 30);
         return {
           ...reward,
           cards: grantedCards,
           cardIds,
-          coins: reward.coins + substituteCoins,
+          coins: reward.coins + extraCoins + substituteCoins,
+          packs: reward.packs + extraPacks,
           substitutedCards: reward.cards - grantedCards,
           day: dayIndex + 1,
           consecutive: newConsecutive,
+          bonusCoins,
+          plaqueCoins,
+          comeback,
+          usedShield: resolution.usedShield,
+          shieldRefilled: resolution.shieldRefilled,
+          shields: resolution.shields,
         };
+      },
+
+      // Swap one unfinished, unclaimed quest for another from the same pool.
+      // One a day, one a week. Returns the swap, or null when it is refused.
+      rerollQuest: (period, fromId) => {
+        const next = rerollPatch(get(), period, fromId, new Date());
+        if (!next) return null;
+        set({ questRerolls: next });
+        return period === 'weekly' ? next.weeklySwap : next.dailySwap;
+      },
+
+      // The collection book's reward for owning every card of one rarity.
+      // Coins and ordinary packs only: a premium or legendary pack would
+      // survive a reset while the claim ledger would not, and mint another.
+      claimCollectionSet: (setId) => {
+        const state = get();
+        const row = bookOf(ALL_CARDS, state.ownedCards).find((set) => set.id === setId);
+        if (!row?.complete) return null;
+        if (state.claimedSets.includes(setId)) return null;
+        set({ claimedSets: [...state.claimedSets, setId] });
+        if (row.reward.coins) get().addCoins(row.reward.coins);
+        if (row.reward.packs) get().addCardPack(row.reward.packs);
+        return { ...row.reward };
+      },
+
+      // Wear a title the player has earned, or null to take it off. The
+      // account mirror is the caller's (setHouseTitle); this is the save.
+      equipTitle: (id) => {
+        if (id == null || id === '') {
+          set({ equippedTitle: null });
+          return null;
+        }
+        const title = titleById(id);
+        if (!title) return false;
+        if (!get().completedAchievements.includes(title.achievementId)) return false;
+        set({ equippedTitle: id });
+        return id;
+      },
+
+      // Say you are in for tonight's limited night. One fight spends it.
+      armHouseEvent: () => {
+        const now = new Date();
+        const live = eventAt(now);
+        if (!live) return null;
+        const state = get();
+        if (state.eventSpent === eventSpentKey(now, live.id)) return null;
+        if (state.eventArmed === live.id) return live;
+        set({ eventArmed: live.id });
+        return live;
+      },
+
+      claimBarCrawl: () => {
+        get().syncPeriods();
+        const state = get();
+        if ((state.totalBattles || 0) < CRAWL_UNLOCK_BATTLES) return null;
+        const key = weekKeyOf(new Date());
+        const status = crawlStatus(state, key);
+        if (!status.done || status.claimed) return null;
+        set({ crawlClaimedWeek: key });
+        if (status.reward.coins) get().addCoins(status.reward.coins);
+        if (status.reward.packs) get().addCardPack(status.reward.packs);
+        return { ...status.reward };
+      },
+
+      // Spend the dupe price to take one more card in the set home again.
+      raiseCardStar: (setId) => {
+        const state = get();
+        if (!starringUnlocked(state.ownedCards)) return null;
+        const card = nextStarTarget(ALL_CARDS, state.ownedCards, state.cardStars, setId);
+        if (!card) return null;
+        const cost = starCost(card.id, state.cardStars, coinsForDuplicate);
+        if (cost == null || state.coins < cost) return null;
+        const have = Math.min(STAR_CAP, Math.floor(Number(state.cardStars[String(card.id)]) || 0));
+        set({
+          coins: state.coins - cost,
+          cardStars: { ...state.cardStars, [String(card.id)]: have + 1 },
+        });
+        return { id: card.id, name: card.name, stars: have + 1, cost };
+      },
+
+      claimStarSet: (setId) => {
+        const state = get();
+        if (state.claimedStarSets.includes(setId)) return null;
+        if (!starSetReady(ALL_CARDS, state.ownedCards, state.cardStars, setId)) return null;
+        const reward = { coins: 300, packs: 1 };
+        set({ claimedStarSets: [...state.claimedStarSets, setId] });
+        get().addCoins(reward.coins);
+        get().addCardPack(reward.packs);
+        return reward;
+      },
+
+      claimMorningAfter: () => {
+        const now = new Date();
+        const state = get();
+        if (!morningAfterDue(state, now)) return null;
+        set({ morningAfterDate: now.toDateString(), coins: state.coins + MORNING_AFTER.coins });
+        return { coins: MORNING_AFTER.coins, name: MORNING_AFTER.name, line: MORNING_AFTER.line };
+      },
+
+      claimLevelReward: (level) => {
+        const row = trackRow(level);
+        const state = get();
+        if (!row || state.level < row.level || state.claimedLevelRewards.includes(row.level)) return null;
+        set({ claimedLevelRewards: [...state.claimedLevelRewards, row.level] });
+        if (row.coins) get().addCoins(row.coins);
+        if (row.packs) get().addCardPack(row.packs);
+        return { level: row.level, coins: row.coins, packs: row.packs };
+      },
+
+      claimPlaque: (id) => {
+        const plaque = plaqueById(id);
+        const state = get();
+        if (!plaque || state.level < plaque.level || state.claimedPlaques.includes(id)) return null;
+        set({ claimedPlaques: [...state.claimedPlaques, id], coins: state.coins + plaque.coins });
+        return { id: plaque.id, coins: plaque.coins, name: plaque.name };
+      },
+
+      claimStory: (id) => {
+        const chapter = storyChapters(get()).find((row) => row.id === id);
+        if (!chapter || chapter.claimed || !chapter.ready) return null;
+        set({ claimedChapters: [...get().claimedChapters, id] });
+        if (chapter.coins) get().addCoins(chapter.coins);
+        if (chapter.packs) get().addCardPack(chapter.packs);
+        return { id, coins: chapter.coins, packs: chapter.packs };
+      },
+
+      claimCatchUp: () => {
+        const now = new Date();
+        const key = weekKeyOf(now);
+        const offer = catchUpFor(get(), now, key);
+        if (!offer) return null;
+        const state = get();
+        set({
+          catchUpWeek: key,
+          coins: state.coins + offer.coins,
+          cardPacks: state.cardPacks + offer.packs,
+        });
+        return offer;
       },
 
       addCardPack: (amount = 1, packType = 'regular') => {
@@ -1483,7 +1760,8 @@ export const useGameStore = create(
       // Safari private mode and Lockdown Mode throw from that call, and the
       // exception escapes before React mounts. This one does not throw.
       storage: createJSONStorage(() => browserLocalStorage()),
-      version: 6,
+      // 6 is the polish wardrobe. 7 runs normalizeSave for the back room.
+      version: 7,
       // Don't persist in-flight UI state
       partialize: (state) => {
         const {

@@ -2,6 +2,9 @@ import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Gift, Coins, Gem, Package, GalleryVerticalEnd, Check, Flame, Sparkles, Clock } from 'lucide-react';
 import { useGameStore, DAILY_REWARDS, ALL_CARDS, dailyClaimDay } from '../stores/gameStore';
+import { resolveLogin } from '@/lib/loginStreak';
+import { loginNotes } from '@/lib/retentionCopy';
+import { morningAfterDue } from '@/lib/morningAfter';
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
@@ -195,7 +198,10 @@ const NextReward = ({ now }) => (
 );
 
 const DailyRewards = ({ onClose }) => {
-  const { checkDailyLogin, consecutiveLogins, lastLoginDate } = useGameStore();
+  const {
+    checkDailyLogin, claimMorningAfter, consecutiveLogins, lastLoginDate, streakShields,
+    lastBattleDate, morningAfterDate,
+  } = useGameStore();
   // What the tap just paid, if it has happened in this opening.
   const [reward, setReward] = useState(null);
   // The clock the panel reads: the countdown, and whether today has been
@@ -218,8 +224,25 @@ const DailyRewards = ({ onClose }) => {
   const phase = !claimedToday ? 'ready' : reward ? 'paid' : 'done';
 
   // Today's place in the seven: the day a claim would pay, or the one it did.
-  const pending = dailyClaimDay({ lastLoginDate, consecutiveLogins }, now);
+  const pending = dailyClaimDay({ lastLoginDate, consecutiveLogins, streakShields }, now);
   const currentDay = phase === 'ready' ? pending.day : ((Math.max(consecutiveLogins, 1) - 1) % DAILY_REWARDS.length) + 1;
+  // What this claim adds past the day's row. An ordinary night is an empty
+  // list, so the panel the measurements were taken on does not grow.
+  const readyResolution = resolveLogin({ lastLoginDate, consecutiveLogins, streakShields }, now, DAILY_REWARDS.length);
+  const readyNotes = phase === 'ready'
+    ? loginNotes(readyResolution, DAILY_REWARDS[readyResolution.day - 1].coins)
+    : [];
+  const paidNotes = reward
+    ? loginNotes({
+      usedShield: reward.usedShield,
+      broken: Boolean(reward.comeback),
+      gap: reward.comeback ? reward.comeback.days + (reward.comeback.capped ? 1 : 0) : null,
+      streak: reward.consecutive,
+      shieldRefilled: reward.shieldRefilled,
+      alreadyClaimed: false,
+    }, DAILY_REWARDS[reward.day - 1].coins)
+    : [];
+  const notes = phase === 'ready' ? readyNotes : paidNotes;
   // The streak as it stands right now: before today's claim it is the one a
   // claim would extend (0 once it has lapsed), after it the recorded one.
   const streak = phase === 'ready' ? pending.streak - 1 : consecutiveLogins;
@@ -384,7 +407,8 @@ const DailyRewards = ({ onClose }) => {
               ticks, and inside a live region every tick would be read out. */}
           <div role="status" className="sr-only">
             {phase === 'paid' && `Day ${reward.day} claimed: ${inWords(reward)}.${
-              cardNames.length > 0 ? ` New card${cardNames.length > 1 ? 's' : ''}: ${cardNames.join(', ')}.` : ''}`}
+              cardNames.length > 0 ? ` New card${cardNames.length > 1 ? 's' : ''}: ${cardNames.join(', ')}.` : ''}${
+              paidNotes.length ? ` ${paidNotes.join(' ')}` : ''}`}
           </div>
           <div className="mt-5 rounded-xl bg-black/25 px-4 py-5 text-center ring-1 ring-white/5">
             {phase === 'ready' && (
@@ -398,6 +422,9 @@ const DailyRewards = ({ onClose }) => {
                     ? <>Claim it within <span className="font-semibold tabular-nums text-plush-100">{getTimeUntilReset(false, now)}</span> to keep your streak.</>
                     : 'Claim it to start a streak. Habits form fast.'}
                 </p>
+                {notes.map((note) => (
+                  <p key={note} data-login-note="" className="mt-2 text-sm text-plush-100">{note}</p>
+                ))}
               </>
             )}
 
@@ -411,6 +438,9 @@ const DailyRewards = ({ onClose }) => {
                   Day {reward.day} claimed
                 </h3>
                 {paidSub && <p data-paid-sub="" className="mt-1 text-sm text-plush-300">{paidSub}</p>}
+                {notes.map((note) => (
+                  <p key={note} data-login-note="" className="mt-2 text-sm text-plush-100">{note}</p>
+                ))}
                 <div aria-hidden="true" className="mt-4 flex flex-wrap items-center justify-center gap-2 min-[360px]:gap-3">
                   {PRIZES.filter((p) => reward[p.key] > 0 && !(p.key === 'cards' && cards.length > 0)).map(({ key, Icon, tone }, i) => (
                     <motion.div
@@ -469,6 +499,18 @@ const DailyRewards = ({ onClose }) => {
             {phase === 'ready' && <Gift aria-hidden="true" className="h-5 w-5" strokeWidth={2.2} />}
             {phase === 'ready' ? 'Claim' : 'Continue'}
           </button>
+          {morningAfterDue({ lastBattleDate, morningAfterDate }, now) && (
+            <button
+              type="button"
+              onClick={() => {
+                const paid = claimMorningAfter();
+                if (paid) setPaidSub(paid.line);
+              }}
+              className={`btn-glass mt-3 inline-flex h-11 w-full items-center justify-center rounded-xl font-display text-sm font-bold ${FOCUS_OUTLINE}`}
+            >
+              Hair of the dog
+            </button>
+          )}
         </div>
 
         {/* The header's close control, as on every other dialog. Last in the

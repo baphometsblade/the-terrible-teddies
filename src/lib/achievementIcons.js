@@ -1,6 +1,7 @@
 import {
   Trophy, Award, Crown, Flame, Library, Archive, Warehouse, BadgeCheck, Gamepad2,
   Bomb, HeartPulse, ShieldCheck, Swords, ChevronsUp, Medal, CalendarCheck,
+  Skull, Zap, KeyRound, CalendarRange, Undo2,
 } from 'lucide-react';
 
 // Each achievement's badge, by the name ACHIEVEMENTS gives it (gameStore.js
@@ -15,6 +16,7 @@ import {
 export const ACHIEVEMENT_ICONS = Object.freeze({
   Trophy, Award, Crown, Flame, Library, Archive, Warehouse, BadgeCheck, Gamepad2,
   Bomb, HeartPulse, ShieldCheck, Swords, ChevronsUp, Medal, CalendarCheck,
+  Skull, Zap, KeyRound, CalendarRange, Undo2,
 });
 
 /** The icon component for an achievement, a trophy for one with none. */

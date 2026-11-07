@@ -988,6 +988,91 @@ if [ "$CONC_GEMS" != "300" ] || ! grep -q one_per_account_already_held <<<"$CONC
 fi
 echo "    ok   the second waited for the first and was refused"
 
+echo "==> Asserting house titles: own row, allowlist, rate limit, no anon, no direct write"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_a     UUID := 'a11a11a1-1111-4111-8111-111111111111';
+  v_b     UUID := 'b22b22b2-2222-4222-8222-222222222222';
+  v_title TEXT;
+  v_other TEXT;
+  i       INTEGER;
+BEGIN
+  INSERT INTO auth.users (id) VALUES (v_a), (v_b) ON CONFLICT DO NOTHING;
+  INSERT INTO public.players (user_id, username) VALUES
+    (v_a, 'TitleBear'), (v_b, 'OtherBear')
+  ON CONFLICT DO NOTHING;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'set_house_title' AND p.prosecdef
+      AND EXISTS (SELECT 1 FROM unnest(p.proconfig) c WHERE c LIKE 'search_path=%')
+  ) THEN
+    RAISE EXCEPTION 'set_house_title is not SECURITY DEFINER with a pinned search_path';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'set_house_title'
+      AND has_function_privilege('anon', p.oid, 'EXECUTE')
+  ) THEN
+    RAISE EXCEPTION 'anon can EXECUTE set_house_title';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'set_house_title'
+      AND has_function_privilege('authenticated', p.oid, 'EXECUTE')
+  ) THEN
+    RAISE EXCEPTION 'authenticated cannot EXECUTE set_house_title';
+  END IF;
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+
+  BEGIN
+    UPDATE public.players SET house_title = 'lucky' WHERE user_id = v_a;
+    RAISE EXCEPTION 'authenticated updated house_title directly';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  SELECT set_house_title('lucky') INTO v_title;
+  IF v_title <> 'lucky' THEN RAISE EXCEPTION 'a known title was not stored (%)', v_title; END IF;
+
+  BEGIN
+    PERFORM set_house_title('not-a-title');
+    RAISE EXCEPTION 'an unknown title was accepted';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL;
+  END;
+  SELECT house_title INTO v_title FROM public.players WHERE user_id = v_a;
+  IF v_title <> 'lucky' THEN RAISE EXCEPTION 'a refused title changed the row to %', v_title; END IF;
+
+  SELECT set_house_title('') INTO v_title;
+  IF v_title IS NOT NULL THEN RAISE EXCEPTION 'clearing the title returned %', v_title; END IF;
+  SELECT house_title INTO v_title FROM public.players WHERE user_id = v_a;
+  IF v_title IS NOT NULL THEN RAISE EXCEPTION 'the title was not cleared (%)', v_title; END IF;
+
+  -- Two calls so far (set, clear). Eight more fill the window of ten.
+  FOR i IN 1..8 LOOP
+    PERFORM set_house_title('counsel');
+  END LOOP;
+  BEGIN
+    PERFORM set_house_title('closing');
+    RAISE EXCEPTION 'the 11th wear in a minute was allowed';
+  EXCEPTION WHEN SQLSTATE 'PT429' THEN NULL;
+  END;
+  SELECT house_title INTO v_title FROM public.players WHERE user_id = v_a;
+  IF v_title <> 'counsel' THEN RAISE EXCEPTION 'a limited wear changed the title to %', v_title; END IF;
+
+  SELECT house_title INTO v_other FROM public.players WHERE user_id = v_b;
+  IF v_other IS NOT NULL THEN RAISE EXCEPTION 'another account''s title was written (%)', v_other; END IF;
+
+  RESET ROLE;
+  RAISE NOTICE 'house title assertions passed';
+END $$;
+SQL
+
 echo "==> Asserting platform flags, the staff desk, and account export/deletion"
 "${PSQL[@]}" <<'SQL'
 DO $$
@@ -1473,6 +1558,83 @@ BEGIN
   IF v_json->>'match_id' IS NULL THEN RAISE EXCEPTION 'cup draw failed: %', v_json; END IF;
 
   RAISE NOTICE 'back room assertions passed';
+END $$;
+SQL
+
+echo "==> Asserting retention marks: own row, allowlist, one each, rate limit, no anon"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_a    UUID := 'a71a71a7-1111-4111-8111-111111111171';
+  v_b    UUID := 'b72b72b7-2222-4222-8222-222222222272';
+  v_fresh BOOLEAN;
+  v_rows INTEGER;
+  i      INTEGER;
+BEGIN
+  INSERT INTO auth.users (id) VALUES (v_a), (v_b) ON CONFLICT DO NOTHING;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'claim_retention_mark' AND p.prosecdef
+      AND EXISTS (SELECT 1 FROM unnest(p.proconfig) c WHERE c LIKE 'search_path=%')
+  ) THEN
+    RAISE EXCEPTION 'claim_retention_mark is not SECURITY DEFINER with a pinned search_path';
+  END IF;
+
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.retention_marks'::regclass) THEN
+    RAISE EXCEPTION 'RLS is not enabled on retention_marks';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'claim_retention_mark'
+      AND has_function_privilege('anon', p.oid, 'EXECUTE')
+  ) THEN
+    RAISE EXCEPTION 'anon can EXECUTE claim_retention_mark';
+  END IF;
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+
+  BEGIN
+    INSERT INTO public.retention_marks (user_id, mark) VALUES (v_a, 'plaque_10');
+    RAISE EXCEPTION 'authenticated inserted a retention mark directly';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  BEGIN
+    PERFORM claim_retention_mark('not-a-mark');
+    RAISE EXCEPTION 'an unknown mark was accepted';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL;
+  END;
+
+  SELECT claim_retention_mark('plaque_10') INTO v_fresh;
+  IF v_fresh IS NOT TRUE THEN RAISE EXCEPTION 'the first plaque mark was not fresh (%)', v_fresh; END IF;
+  SELECT claim_retention_mark('plaque_10') INTO v_fresh;
+  IF v_fresh IS NOT FALSE THEN RAISE EXCEPTION 'a repeat plaque mark was fresh'; END IF;
+
+  -- Two calls so far. Eighteen more fill the window of twenty.
+  FOR i IN 1..18 LOOP
+    PERFORM claim_retention_mark('level_2');
+  END LOOP;
+  BEGIN
+    PERFORM claim_retention_mark('level_3');
+    RAISE EXCEPTION 'the 21st mark in a minute was allowed';
+  EXCEPTION WHEN SQLSTATE 'PT429' THEN NULL;
+  END;
+
+  RESET ROLE;
+  -- Count as the owner. The table has no client policy, so the role above
+  -- cannot see the rows it just wrote through the function.
+  SELECT count(*) INTO v_rows FROM public.retention_marks WHERE user_id = v_a AND mark = 'plaque_10';
+  IF v_rows <> 1 THEN RAISE EXCEPTION 'plaque_10 was stored % times', v_rows; END IF;
+  SELECT count(*) INTO v_rows FROM public.retention_marks WHERE user_id = v_a AND mark = 'level_3';
+  IF v_rows <> 0 THEN RAISE EXCEPTION 'a rate-limited mark was stored'; END IF;
+  SELECT count(*) INTO v_rows FROM public.retention_marks WHERE user_id = v_b;
+  IF v_rows <> 0 THEN RAISE EXCEPTION 'another account received % marks', v_rows; END IF;
+
+  RAISE NOTICE 'retention mark assertions passed';
 END $$;
 SQL
 

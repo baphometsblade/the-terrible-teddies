@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import BackRoom from './BackRoom';
 import { motion } from 'framer-motion';
 import {
   Pencil, Coins, Gem, BarChart3, Trophy, Gamepad2, HeartCrack, TrendingUp, Flame, Star,
@@ -8,7 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { useGameStore, ACHIEVEMENTS, ALL_CARDS } from '../stores/gameStore';
 import { wardrobeItem } from '@/lib/wardrobe';
 import { useDialog } from '@/hooks/useDialog';
-import { setPlayerUsername } from '../utils/supabaseClient';
+import { setPlayerUsername, setHouseTitle } from '../utils/supabaseClient';
+import { titleForAchievement } from '@/lib/titles';
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
@@ -34,15 +36,17 @@ const AVATAR_RING = 'linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24)';
 // place instead of remounting them. The icon carries the colour; the number
 // stays white so the grid reads as one set.
 const StatTile = ({ icon: Icon, label, value, tone = 'text-plush-200', bar, className = '' }) => (
-  <div className={`panel-glass rounded-xl p-3.5 sm:p-4 ${className}`}>
+  // From sm the four-across tiles share one row, and a taller panel centres
+  // its pencil under the corner toast. The sm sizes keep that row short.
+  <div className={`panel-glass rounded-xl p-3.5 sm:p-3 ${className}`}>
     <span
       aria-hidden="true"
-      className={`grid h-8 w-8 place-items-center rounded-lg bg-white/5 ring-1 ring-inset ring-white/10 ${tone}`}
+      className={`grid h-8 w-8 place-items-center rounded-lg bg-white/5 ring-1 ring-inset ring-white/10 sm:h-7 sm:w-7 ${tone}`}
     >
-      <Icon className="h-4 w-4" strokeWidth={2.2} />
+      <Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={2.2} />
     </span>
-    <div className="mt-3 font-display text-2xl font-extrabold leading-none tabular-nums text-white sm:text-[28px]">{value}</div>
-    <div className="label-caps mt-1.5 text-plush-300">{label}</div>
+    <div className="mt-3 font-display text-2xl font-extrabold leading-none tabular-nums text-white sm:mt-2 sm:text-2xl">{value}</div>
+    <div className="label-caps mt-1.5 text-plush-300 sm:mt-1">{label}</div>
     {/* The meter repeats the number above it, so it is hidden from a screen
         reader rather than announced a second time. */}
     {bar != null && (
@@ -71,7 +75,7 @@ const PlayerStats = ({ onClose }) => {
     playerName, setPlayerName, level, xp, getXPForNextLevel, equippedLine,
     coins, gems, totalWins, totalLosses, currentWinStreak, bestWinStreak,
     totalDamageDealt, totalHealingDone, totalBattles, ownedCards,
-    completedAchievements, consecutiveLogins,
+    completedAchievements, consecutiveLogins, equippedTitle, equipTitle,
   } = useGameStore();
 
   const [editingName, setEditingName] = useState(false);
@@ -107,6 +111,7 @@ const PlayerStats = ({ onClose }) => {
   const completion = (ownedCards.length / ALL_CARDS.length) * 100;
 
   const [nameError, setNameError] = useState(null);
+  const [backRoom, setBackRoom] = useState(false);
 
   const handleSaveName = async () => {
     const trimmed = newName.trim();
@@ -357,7 +362,7 @@ const PlayerStats = ({ onClose }) => {
           className="relative min-h-0 flex-1 overflow-y-auto border-t border-white/[0.06] px-4 pb-6 pt-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brass-300/70 sm:px-6"
         >
           {activeTab === 'stats' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <Section title="Rap Sheet">
                 {totalBattles === 0 && <p data-stats-empty="" className="-mt-1 mb-3 text-sm text-plush-300">No priors. Give it a night.</p>}
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -391,6 +396,14 @@ const PlayerStats = ({ onClose }) => {
                   />
                 </div>
               </Section>
+
+              <button
+                type="button"
+                onClick={() => setBackRoom(true)}
+                className={`btn-glass h-11 w-full rounded-xl font-display text-sm font-bold ${FOCUS_OUTLINE}`}
+              >
+                The back room
+              </button>
             </div>
           )}
 
@@ -408,6 +421,8 @@ const PlayerStats = ({ onClose }) => {
             <ul className="space-y-2">
               {ACHIEVEMENTS.map((achievement, i) => {
                 const isCompleted = completedAchievements.includes(achievement.id);
+                const title = titleForAchievement(achievement.id);
+                const wearing = Boolean(title) && equippedTitle === title.id;
                 return (
                   <motion.li
                     key={achievement.id}
@@ -457,6 +472,29 @@ const PlayerStats = ({ onClose }) => {
                       {!isCompleted && achievement.locked && (
                         <div data-locked-caption="" className="mt-0.5 text-sm italic text-plush-300">{achievement.locked}</div>
                       )}
+                      {title && isCompleted && (
+                        <button
+                          type="button"
+                          aria-pressed={wearing}
+                          onClick={() => {
+                            const next = wearing ? null : title.id;
+                            equipTitle(next);
+                            // The account keeps the same title. Offline, or
+                            // before the migration is applied, the save stands.
+                            setHouseTitle(next);
+                          }}
+                          className={`mt-2 h-11 rounded-lg px-3 font-display text-sm font-bold ${FOCUS_OUTLINE} ${
+                            wearing ? 'btn-brass' : 'btn-glass'
+                          }`}
+                        >
+                          {wearing ? `Wearing ${title.name}` : `Wear ${title.name}`}
+                        </button>
+                      )}
+                      {title && !isCompleted && (
+                        <div className="mt-0.5 text-sm text-plush-300">
+                          Unlocks “{title.name}”.
+                        </div>
+                      )}
                     </div>
                     <div
                       className={`col-start-2 inline-flex items-center gap-1 justify-self-start rounded-full px-2.5 py-1 font-display text-sm font-extrabold tabular-nums ring-1 ring-inset sm:col-start-3 sm:row-start-1 sm:justify-self-end ${
@@ -475,6 +513,7 @@ const PlayerStats = ({ onClose }) => {
           )}
         </div>
       </motion.div>
+      {backRoom && <BackRoom onClose={() => setBackRoom(false)} />}
     </div>
   );
 };

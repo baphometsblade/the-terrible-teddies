@@ -5,7 +5,9 @@ import {
   Gift, CircleHelp, Settings, Coins, Gem, Flame, ChevronRight, Moon, Palette,
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
-import { getDailyChallenges, getWeeklyChallenges, countClaimable } from '../stores/challenges';
+import { countClaimable } from '../stores/challenges';
+import { visibleChallenges } from '@/lib/questReroll';
+import { titleById } from '@/lib/titles';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
 import { neighborIndex } from '@/lib/menuKeys';
@@ -112,7 +114,7 @@ const MainMenu = ({
     playerName, level, xp, getXPForNextLevel,
     coins, gems, gemDebt, cardPacks, premiumPacks, legendaryPacks, unlockedCosmetics,
     totalWins, currentWinStreak, lastLoginDate, animationsEnabled,
-    claimedChallenges,
+    claimedChallenges, questRerolls, equippedTitle,
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
     syncPeriods, ownedCards,
@@ -167,9 +169,11 @@ const MainMenu = ({
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
   };
+  const board = visibleChallenges({ questRerolls, ...challengeStats });
   const claimableChallenges =
-    countClaimable(getDailyChallenges(), challengeStats, claimedChallenges ?? []) +
-    countClaimable(getWeeklyChallenges(), challengeStats, claimedChallenges ?? []);
+    countClaimable(board.daily, challengeStats, claimedChallenges ?? []) +
+    countClaimable(board.weekly, challengeStats, claimedChallenges ?? []);
+  const wornTitle = titleById(equippedTitle);
 
   // How many Battle Pass tiles are waiting to be claimed: the helper the pass
   // itself badges with, so the tile and the dialog always agree. The tile was
@@ -292,6 +296,11 @@ const MainMenu = ({
             <div className="text-plush-300 text-[11px] mt-1">
               {houseRank(level).name} · {totalWins.toLocaleString()} {totalWins === 1 ? 'win' : 'wins'}
             </div>
+            {wornTitle && (
+              <div className="mt-0.5 max-w-[9rem] truncate text-[11px] font-semibold text-brass-200 sm:max-w-[16rem]">
+                {wornTitle.name}
+              </div>
+            )}
           </div>
         </motion.div>
 

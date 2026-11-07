@@ -40,6 +40,38 @@ describe('reward labels', () => {
   });
 });
 
+describe('rerolling a challenge', () => {
+  let host;
+  let root;
+  beforeEach(() => {
+    localStorage.clear();
+    useGameStore.setState(useGameStore.getInitialState(), true);
+    useGameStore.setState({
+      todayWins: 0, todayBattles: 0, todayDamageDealt: 0, todayCardsPlayed: 0,
+      dailyStatsDate: new Date().toDateString(), claimedChallenges: [],
+    });
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+  });
+  afterEach(() => {
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it('swaps one quest and spends the day’s reroll', () => {
+    act(() => root.render(<Challenges onClose={() => {}} />));
+    const before = [...host.querySelectorAll('h3')].map((heading) => heading.textContent);
+    const button = host.querySelector('button[aria-label^="Reroll"]');
+    expect(button).toBeTruthy();
+    act(() => button.click());
+    const after = [...host.querySelectorAll('h3')].map((heading) => heading.textContent);
+    expect(after).not.toEqual(before);
+    expect(host.querySelector('button[aria-label^="Reroll"]')).toBeNull();
+    expect(host.textContent).toContain('Tonight’s reroll already went home.');
+  });
+});
+
 describe('claiming a challenge', () => {
   let host;
   let root;
