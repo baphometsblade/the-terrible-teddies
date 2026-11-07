@@ -532,3 +532,40 @@ describe('check_rate_limit derives its window server-side', () => {
     expect(/CASE\s+p_action_type/i.test(body)).toBe(true);
   });
 });
+
+describe('the social ladder is authenticated and server-scored', () => {
+  const sql = loadMigrations()
+    .filter((m) => m.file.includes('social_ladder'))
+    .map((m) => m.sql)
+    .join('\n');
+
+  it('exists', () => {
+    expect(sql.length).toBeGreaterThan(0);
+  });
+
+  it('rates from auth.uid() and never from a client rating', () => {
+    const report = sql.slice(sql.indexOf('FUNCTION public.report_ladder_result'));
+    const signature = report.slice(0, report.indexOf('AS $$'));
+    expect(signature).toMatch(/p_match_id UUID/);
+    expect(signature).toMatch(/p_won BOOLEAN/);
+    expect(signature).toMatch(/p_forfeit BOOLEAN/);
+    expect(signature).not.toMatch(/p_rating|p_delta|p_user_id/);
+    expect(report.slice(0, report.indexOf('$$;'))).toMatch(/auth\.uid\(\)/);
+    expect(report.slice(0, report.indexOf('$$;'))).toMatch(/ladder_delta\(/);
+    expect(sql).toMatch(/social_rate_limit\('social_result'\)/);
+    expect(sql).toMatch(/WHEN 'social_publish'/);
+    expect(sql).toMatch(/WHEN 'social_ticket'/);
+    expect(sql).toMatch(/WHEN 'social_result'/);
+  });
+
+  it('locks the new tables and the anon key out of the writes', () => {
+    for (const table of ['ladder_players', 'ghost_decks', 'ladder_matches']) {
+      expect(sql).toMatch(new RegExp(`ALTER TABLE public\\.${table} ENABLE ROW LEVEL SECURITY`));
+      expect(sql).toMatch(new RegExp(`REVOKE ALL ON public\\.${table} FROM PUBLIC, anon, authenticated`));
+    }
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.report_ladder_result\(UUID, BOOLEAN, BOOLEAN\) FROM PUBLIC, anon/);
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.publish_ghost\(INTEGER\[\], TEXT\) FROM PUBLIC, anon/);
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.social_rate_limit\(TEXT\) FROM PUBLIC, anon, authenticated/);
+    expect(sql).toMatch(/GRANT EXECUTE ON FUNCTION public\.challenge_preview\(TEXT\) TO anon, authenticated/);
+  });
+});

@@ -53,6 +53,7 @@ const DailyRewards = lazy(() => import('./components/DailyRewards'));
 const Shop = lazy(() => import('./components/Shop'));
 const BattlePass = lazy(() => import('./components/BattlePass'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const SocialHouse = lazy(() => import('./components/SocialHouse'));
 const Challenges = lazy(() => import('./components/Challenges'));
 const DailyFight = lazy(() => import('./components/DailyFight'));
 const PurchaseSuccess = lazy(() => import('./components/PurchaseSuccess'));
@@ -250,6 +251,16 @@ function App() {
   const [shopTab, setShopTab] = useState('packs');
   const [showBattlePass, setShowBattlePass] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showSocial, setShowSocial] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).has('duel');
+  });
+  const [duelCode, setDuelCode] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('duel') || '';
+  });
+  const [brawl, setBrawl] = useState(null);
+  const [socialReceipt, setSocialReceipt] = useState(null);
   const [showChallenges, setShowChallenges] = useState(false);
   const [showDaily, setShowDaily] = useState(false);
   const [dailySpec, setDailySpec] = useState(null);
@@ -259,16 +270,39 @@ function App() {
   // the boundary's reset, so opening any dialog re-attempts the chunk.
   const dialogFlags = [
     showTutorial, showCardPacks, showPlayerStats, showSettings, showDailyRewards,
-    showShop, showBattlePass, showLeaderboard, showChallenges, showDaily,
+    showShop, showBattlePass, showLeaderboard, showSocial, showChallenges, showDaily,
   ];
   const closeAllDialogs = () => {
     setShowTutorial(false); setShowCardPacks(false); setShowPlayerStats(false);
     setShowSettings(false); setShowDailyRewards(false); setShowShop(false);
-    setShowBattlePass(false); setShowLeaderboard(false); setShowChallenges(false); setShowDaily(false);
+    setShowBattlePass(false); setShowLeaderboard(false); setShowSocial(false); setShowChallenges(false); setShowDaily(false);
   };
   const [purchaseSessionId, setPurchaseSessionId] = useState(null);
 
   const openShop = (tab = 'packs') => { setShopTab(tab); setShowShop(true); };
+
+  // A ladder result is attested once. The import stays off the boot path.
+  const reportBrawl = useCallback((matchId, won) => {
+    import('./lib/social/client')
+      .then(({ reportLadderResult }) => reportLadderResult(matchId, won))
+      .then((receipt) => { if (receipt) setSocialReceipt(receipt); })
+      .catch(() => setSocialReceipt({ ok: false, reason: 'unreachable' }));
+  }, []);
+  const startBrawl = useCallback((spec) => {
+    setSocialReceipt(null);
+    setShowSocial(false);
+    setShowLeaderboard(false);
+    setDailySpec(null);
+    setBrawl({ ...spec, onSettled: (won) => reportBrawl(spec.matchId, won) });
+    navigateTo('game');
+  }, [navigateTo, reportBrawl]);
+  const leaveBrawl = useCallback(() => {
+    const wasBrawl = Boolean(brawl);
+    setBrawl(null);
+    setDailySpec(null);
+    navigateTo('menu');
+    if (wasBrawl) setShowSocial(true);
+  }, [brawl, navigateTo]);
 
   // A route from one dialog to another: close the first, and open the next
   // once the first has finished leaving (the dialogs' AnimatePresence reports
@@ -523,11 +557,17 @@ function App() {
   // Battle / Shop / Daily Rewards), which land here as ?action=<name>.
   useEffect(() => {
     if (!session) return;
-    const action = new URLSearchParams(window.location.search).get('action');
-    if (!action) return;
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const duel = params.get('duel');
+    if (!action && !duel) return;
     if (action === 'battle') { setDailySpec(null); navigateTo('game'); }
     else if (action === 'shop') openShop();
     else if (action === 'rewards') setShowDailyRewards(true);
+    if (duel) {
+      setDuelCode(duel);
+      setShowSocial(true);
+    }
     window.history.replaceState({}, '', window.location.pathname);
   }, [session, navigateTo]);
 
@@ -637,10 +677,12 @@ function App() {
             <DialogErrorBoundary resetKey={currentScreen} onDismiss={() => navigateTo('menu')}>
               <Suspense fallback={<DialogLoader />}>
                 <GameBoard
+                  key={brawl?.matchId ?? 'house'}
                   ref={gameBoardRef}
                   daily={dailySpec}
-                  onBackToMenu={() => { setDailySpec(null); navigateTo('menu'); }}
-                  onOpenShop={() => { setDailySpec(null); navigateTo('menu'); openShop(); }}
+                  brawl={brawl}
+                  onBackToMenu={brawl ? leaveBrawl : () => { setDailySpec(null); navigateTo('menu'); }}
+                  onOpenShop={() => { setDailySpec(null); setBrawl(null); navigateTo('menu'); openShop(); }}
                 />
               </Suspense>
             </DialogErrorBoundary>
@@ -772,7 +814,22 @@ function App() {
                     onGetGems={() => toGems(setShowBattlePass)}
                   />
                 )}
-                {showLeaderboard && <Leaderboard key="leaderboard" onClose={() => setShowLeaderboard(false)} />}
+                {showLeaderboard && (
+                  <Leaderboard
+                    key="leaderboard"
+                    onClose={() => setShowLeaderboard(false)}
+                    onOpenLadder={() => routeTo(setShowLeaderboard, () => setShowSocial(true))}
+                  />
+                )}
+                {showSocial && (
+                  <SocialHouse
+                    key="house-ladder"
+                    onClose={() => setShowSocial(false)}
+                    onStartBrawl={startBrawl}
+                    initialCode={duelCode}
+                    receipt={socialReceipt}
+                  />
+                )}
                 {showChallenges && <Challenges key="challenges" onClose={() => setShowChallenges(false)} />}
                 {showDaily && (
                   <DailyFight
