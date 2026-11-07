@@ -9,7 +9,8 @@ import analytics from '@/utils/analytics';
 import { nextDailyRecord } from '@/lib/dailyFight';
 import { AFTER_HOURS_CARDS } from '@/data/afterHoursCards';
 import {
-  quoteWardrobe, cardBackId, boardId, DEFAULT_CARD_BACK, DEFAULT_BOARD,
+  quoteWardrobe, cardBackId, boardId, finishId, avatarId, lineId,
+  DEFAULT_CARD_BACK, DEFAULT_BOARD, DEFAULT_FINISH, DEFAULT_AVATAR, DEFAULT_LINE,
 } from '@/lib/wardrobe';
 import { clampVolume } from '@/lib/audioMix';
 
@@ -312,6 +313,9 @@ const initialState = {
   musicVolume: 0.7,
   sfxVolume: 1,
   audioMuted: false,
+  // A short buzz on a sit-down, a buy, or putting a look on. Off until asked.
+  // Many phones, including iOS, have no vibration API and stay quiet.
+  hapticsEnabled: false,
   // Display, also this device only. `larger` is the top of three, and the
   // colourblind switch swaps rarity inks for ones that stay apart.
   textSize: 'default',
@@ -346,6 +350,9 @@ const initialState = {
   // is the house look (normalizeSave).
   equippedCardBack: DEFAULT_CARD_BACK,
   equippedBoard: DEFAULT_BOARD,
+  equippedFinish: DEFAULT_FINISH,
+  equippedAvatar: DEFAULT_AVATAR,
+  equippedLine: DEFAULT_LINE,
   // Coin Doubler booster: epoch ms at which the 2x battle-coin multiplier
   // lapses, or null when it has never been bought. A timestamp (not a
   // remaining-duration counter) so the window keeps elapsing while the game is
@@ -427,6 +434,9 @@ export const keptThroughReset = (state, now = new Date()) => {
     unlockedCosmetics: [...state.unlockedCosmetics],
     equippedCardBack: cardBackId(state.equippedCardBack),
     equippedBoard: boardId(state.equippedBoard),
+    equippedFinish: finishId(state.equippedFinish),
+    equippedAvatar: avatarId(state.equippedAvatar),
+    equippedLine: lineId(state.equippedLine),
     claimedChallenges: [...state.claimedChallenges],
     dailyStatsDate: state.dailyStatsDate,
     weeklyStatsDate: state.weeklyStatsDate,
@@ -460,6 +470,10 @@ export const normalizeSave = (persisted) => {
   s.unlockedCosmetics = Array.isArray(persisted?.unlockedCosmetics) ? persisted.unlockedCosmetics : [];
   s.equippedCardBack = cardBackId(persisted?.equippedCardBack);
   s.equippedBoard = boardId(persisted?.equippedBoard);
+  s.equippedFinish = finishId(persisted?.equippedFinish);
+  s.equippedAvatar = avatarId(persisted?.equippedAvatar);
+  s.equippedLine = lineId(persisted?.equippedLine);
+  s.hapticsEnabled = persisted?.hapticsEnabled === true;
   s.musicOn = persisted?.musicOn === true;
   s.audioMuted = persisted?.audioMuted === true;
   s.colorblindSafe = persisted?.colorblindSafe === true;
@@ -1403,6 +1417,7 @@ export const useGameStore = create(
       setMusicVolume: (volume) => set({ musicVolume: clampVolume(volume, 0) }),
       setSfxVolume: (volume) => set({ sfxVolume: clampVolume(volume, 0) }),
       setAudioMuted: (muted) => set({ audioMuted: muted === true }),
+      setHapticsEnabled: (on) => set({ hapticsEnabled: on === true }),
       setTextSize: (size) => set({ textSize: size === 'large' || size === 'larger' ? size : 'default' }),
       setColorblindSafe: (on) => set({ colorblindSafe: on === true }),
       setDifficulty: (difficulty) => set({ difficulty }),
@@ -1464,7 +1479,7 @@ export const useGameStore = create(
       // Safari private mode and Lockdown Mode throw from that call, and the
       // exception escapes before React mounts. This one does not throw.
       storage: createJSONStorage(() => browserLocalStorage()),
-      version: 5,
+      version: 6,
       // Don't persist in-flight UI state
       partialize: (state) => {
         const {

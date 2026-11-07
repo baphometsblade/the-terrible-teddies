@@ -15,6 +15,7 @@ import { ignoreKeyRepeat } from '@/lib/keyRepeat';
 import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
 import { PackOddsGuide } from './PackOdds';
 import { pickRevealLines, freshLine, dupesLine } from '@/lib/packLines';
+import { packCeremonyLine } from '@/lib/packCeremony';
 import { RARITY, RARITY_ORDER } from '@/lib/rarity';
 import { revealOrder, waveRanges, tableLayout } from '@/lib/packReveal';
 import { nextCoinPack, nextGemPack, nextPassPack, nextDailyPack } from '@/lib/packSources';
@@ -67,6 +68,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
   // A gem-priced buy waits for its confirm (confirmNode, rendered last).
   const { requestBuy, confirmNode } = useStoreBuy();
   const [isOpening, setIsOpening] = useState(false);
+  const [ceremony, setCeremony] = useState('');
   // The pull in display order (revealOrder: the best card last). The store's
   // own order is untouched; this is only the order the cards are shown in.
   const [pulledCards, setPulledCards] = useState(null);
@@ -327,6 +329,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
     const instant = !useGameStore.getState().animationsEnabled;
     const opening = getNextPackType();
     setIsOpening(true);
+    setCeremony(packCeremonyLine());
     setPackAnimation(!instant);
     setPulledCards(null);
     setSpotlight(null);
@@ -540,6 +543,9 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
 
         <div className="relative px-3 max-[359px]:px-2 sm:px-6 pb-5 sm:pb-6">
           <p role="status" className="sr-only">{announcement}</p>
+          {isOpening && ceremony && (
+            <p data-ceremony="" className="mb-3 text-center text-sm leading-snug text-plush-300">{ceremony}</p>
+          )}
 
           {/* The stage: a lit display case the pack sits in and the cards are
               dealt onto. Isolated so the pack's glow can sit behind it. It

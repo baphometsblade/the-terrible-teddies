@@ -17,6 +17,11 @@ export const NIGHT_SCORE = Object.freeze([
 
 export const midiToHz = (midi) => 440 * (2 ** ((midi - 69) / 12));
 
+/** How loud the room hiss sits under the band. Silent when the band is. */
+export const roomToneGain = (musicVolume) => (
+  musicVolume > 0 ? Math.min(0.035, musicVolume * 0.04) : 0
+);
+
 const beatMs = (beats) => beats * (60000 / NIGHT_BPM);
 
 export class BarLoop {
@@ -27,6 +32,35 @@ export class BarLoop {
     this.timer = null;
     this.step = 0;
     this.volume = 0;
+    this.noise = null;
+  }
+
+  startRoom() {
+    const level = roomToneGain(this.volume);
+    if (!this.ctx || !(level > 0) || this.noise) return;
+    if (typeof this.ctx.createBuffer !== 'function') return;
+    const seconds = 1;
+    const rate = this.ctx.sampleRate || 22050;
+    const buffer = this.ctx.createBuffer(1, Math.floor(rate * seconds), rate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) data[i] = (Math.random() * 2 - 1) * 0.4;
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    const filter = this.ctx.createBiquadFilter?.();
+    const gain = this.ctx.createGain();
+    gain.gain.value = level;
+    if (filter) {
+      filter.type = 'lowpass';
+      filter.frequency.value = 420;
+      source.connect(filter);
+      filter.connect(gain);
+    } else {
+      source.connect(gain);
+    }
+    gain.connect(this.ctx.destination);
+    source.start();
+    this.noise = { source, gain };
   }
 
   /** Create the context if this browser has one, and resume it. Call from a gesture. */
@@ -53,9 +87,12 @@ export class BarLoop {
     if (this.volume > 0) {
       this.ensure();
       if (!this.timer) this.schedule();
+      this.startRoom();
+      if (this.noise) this.noise.gain.gain.value = roomToneGain(this.volume);
     } else {
       this.pause();
       if (this.gain) this.gain.gain.value = 0;
+      if (this.noise) this.noise.gain.gain.value = 0;
     }
   }
 
@@ -107,6 +144,7 @@ export class BarLoop {
     const ctx = this.ctx;
     this.ctx = null;
     this.gain = null;
+    this.noise = null;
     if (ctx && typeof ctx.close === 'function') ctx.close();
   }
 }

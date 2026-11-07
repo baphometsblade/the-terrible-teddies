@@ -12,6 +12,8 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { BrassCoin } from '@/components/ui/coin';
 import { DialogClose } from '@/components/ui/game-chrome';
+import { useGameStore } from '@/stores/gameStore';
+import { pulse } from '@/lib/haptics';
 
 // Presentation only — every `content` string is the copy as written, and
 // Tutorial.test.js reads it from this file.
@@ -184,6 +186,10 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
   const step = TUTORIAL_STEPS[currentStep];
   const dialogRef = useDialog(onClose);
   const bodyRef = useRef(null);
+  const sit = () => {
+    pulse('fight', useGameStore.getState().hapticsEnabled);
+    onStartGame();
+  };
 
   // Each step starts at its top: the body is a scroller, and without this a
   // long step read to the bottom left the next one opening half-way down. On
@@ -480,7 +486,7 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
           {!isLastStep && (
             <button
               type="button"
-              onClick={onStartGame}
+              onClick={sit}
               aria-label="Start the fight. Sit on Chuck's lap"
               className={`${NAV} btn-brass w-full px-3`}
             >
@@ -501,7 +507,7 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
           {isLastStep ? (
             <button
               type="button"
-              onClick={onStartGame}
+              onClick={sit}
               className={`${NAV} btn-brass min-w-0 flex-1 px-5 min-[360px]:min-w-[8.5rem] min-[360px]:flex-none`}
             >
               Start Playing!

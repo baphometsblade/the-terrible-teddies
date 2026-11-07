@@ -22,7 +22,7 @@ export const isSaveObject = (v) => v !== null && typeof v === 'object' && !Array
 export const DEVICE_FIELDS = [
   'soundEnabled', 'animationsEnabled',
   'musicOn', 'musicVolume', 'sfxVolume', 'audioMuted',
-  'textSize', 'colorblindSafe',
+  'textSize', 'colorblindSafe', 'hapticsEnabled',
 ];
 // Which account, and the sync bookkeeping: about this copy, not the save.
 const BOOKKEEPING = ['ownerUserId', 'cloudRev', 'cloudSyncedHash', 'cloudSyncedAt'];
