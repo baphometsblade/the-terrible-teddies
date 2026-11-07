@@ -95,6 +95,17 @@ export const setHouseTitle = async (titleId) => {
   return { ok: true, title: data || null };
 };
 
+// Record a permanent retention mark on the account. Offline, or before the
+// migration is applied, the save still holds the claim.
+export const claimRetentionMark = async (mark) => {
+  const { data, error } = await supabase.rpc('claim_retention_mark', { p_mark: mark });
+  if (error) {
+    console.error('Error recording a retention mark:', error);
+    return { ok: false, missing: titleRpcMissing(error) };
+  }
+  return { ok: true, fresh: data === true };
+};
+
 export const setPlayerUsername = async (username, userId = null) => {
   const uid = await resolveUserId(userId);
   if (!uid) return null;

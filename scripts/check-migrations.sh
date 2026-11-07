@@ -1561,4 +1561,81 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting retention marks: own row, allowlist, one each, rate limit, no anon"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_a    UUID := 'a71a71a7-1111-4111-8111-111111111171';
+  v_b    UUID := 'b72b72b7-2222-4222-8222-222222222272';
+  v_fresh BOOLEAN;
+  v_rows INTEGER;
+  i      INTEGER;
+BEGIN
+  INSERT INTO auth.users (id) VALUES (v_a), (v_b) ON CONFLICT DO NOTHING;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'claim_retention_mark' AND p.prosecdef
+      AND EXISTS (SELECT 1 FROM unnest(p.proconfig) c WHERE c LIKE 'search_path=%')
+  ) THEN
+    RAISE EXCEPTION 'claim_retention_mark is not SECURITY DEFINER with a pinned search_path';
+  END IF;
+
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.retention_marks'::regclass) THEN
+    RAISE EXCEPTION 'RLS is not enabled on retention_marks';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'claim_retention_mark'
+      AND has_function_privilege('anon', p.oid, 'EXECUTE')
+  ) THEN
+    RAISE EXCEPTION 'anon can EXECUTE claim_retention_mark';
+  END IF;
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+
+  BEGIN
+    INSERT INTO public.retention_marks (user_id, mark) VALUES (v_a, 'plaque_10');
+    RAISE EXCEPTION 'authenticated inserted a retention mark directly';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  BEGIN
+    PERFORM claim_retention_mark('not-a-mark');
+    RAISE EXCEPTION 'an unknown mark was accepted';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL;
+  END;
+
+  SELECT claim_retention_mark('plaque_10') INTO v_fresh;
+  IF v_fresh IS NOT TRUE THEN RAISE EXCEPTION 'the first plaque mark was not fresh (%)', v_fresh; END IF;
+  SELECT claim_retention_mark('plaque_10') INTO v_fresh;
+  IF v_fresh IS NOT FALSE THEN RAISE EXCEPTION 'a repeat plaque mark was fresh'; END IF;
+
+  -- Two calls so far. Eighteen more fill the window of twenty.
+  FOR i IN 1..18 LOOP
+    PERFORM claim_retention_mark('level_2');
+  END LOOP;
+  BEGIN
+    PERFORM claim_retention_mark('level_3');
+    RAISE EXCEPTION 'the 21st mark in a minute was allowed';
+  EXCEPTION WHEN SQLSTATE 'PT429' THEN NULL;
+  END;
+
+  RESET ROLE;
+  -- Count as the owner. The table has no client policy, so the role above
+  -- cannot see the rows it just wrote through the function.
+  SELECT count(*) INTO v_rows FROM public.retention_marks WHERE user_id = v_a AND mark = 'plaque_10';
+  IF v_rows <> 1 THEN RAISE EXCEPTION 'plaque_10 was stored % times', v_rows; END IF;
+  SELECT count(*) INTO v_rows FROM public.retention_marks WHERE user_id = v_a AND mark = 'level_3';
+  IF v_rows <> 0 THEN RAISE EXCEPTION 'a rate-limited mark was stored'; END IF;
+  SELECT count(*) INTO v_rows FROM public.retention_marks WHERE user_id = v_b;
+  IF v_rows <> 0 THEN RAISE EXCEPTION 'another account received % marks', v_rows; END IF;
+
+  RAISE NOTICE 'retention mark assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"

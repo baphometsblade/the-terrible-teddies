@@ -4,6 +4,7 @@ import { Gift, Coins, Gem, Package, GalleryVerticalEnd, Check, Flame, Sparkles, 
 import { useGameStore, DAILY_REWARDS, ALL_CARDS, dailyClaimDay } from '../stores/gameStore';
 import { resolveLogin } from '@/lib/loginStreak';
 import { loginNotes } from '@/lib/retentionCopy';
+import { morningAfterDue } from '@/lib/morningAfter';
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
@@ -197,7 +198,10 @@ const NextReward = ({ now }) => (
 );
 
 const DailyRewards = ({ onClose }) => {
-  const { checkDailyLogin, consecutiveLogins, lastLoginDate, streakShields } = useGameStore();
+  const {
+    checkDailyLogin, claimMorningAfter, consecutiveLogins, lastLoginDate, streakShields,
+    lastBattleDate, morningAfterDate,
+  } = useGameStore();
   // What the tap just paid, if it has happened in this opening.
   const [reward, setReward] = useState(null);
   // The clock the panel reads: the countdown, and whether today has been
@@ -495,6 +499,18 @@ const DailyRewards = ({ onClose }) => {
             {phase === 'ready' && <Gift aria-hidden="true" className="h-5 w-5" strokeWidth={2.2} />}
             {phase === 'ready' ? 'Claim' : 'Continue'}
           </button>
+          {morningAfterDue({ lastBattleDate, morningAfterDate }, now) && (
+            <button
+              type="button"
+              onClick={() => {
+                const paid = claimMorningAfter();
+                if (paid) setPaidSub(paid.line);
+              }}
+              className={`btn-glass mt-3 inline-flex h-11 w-full items-center justify-center rounded-xl font-display text-sm font-bold ${FOCUS_OUTLINE}`}
+            >
+              Hair of the dog
+            </button>
+          )}
         </div>
 
         {/* The header's close control, as on every other dialog. Last in the
