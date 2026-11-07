@@ -52,8 +52,8 @@ export const describePackOdds = (tier, odds = PACK_ODDS, slots = PACK_SLOTS) => 
 export const OddsRow = ({ rows, className = '' }) => (
   <span className={`flex flex-wrap gap-x-3.5 gap-y-1 text-xs font-semibold ${className}`}>
     {rows.map(({ rarity, pct }) => (
-      <span key={rarity} className={`inline-flex items-center gap-1.5 whitespace-nowrap ${RARITY[rarity].text}`}>
-        <span aria-hidden="true" className="w-2 h-2 rounded-full" style={{ background: RARITY_METAL[rarity] }} />
+      <span key={rarity} data-rarity-ink={rarity} className={`inline-flex items-center gap-1.5 whitespace-nowrap ${RARITY[rarity].text}`}>
+        <span aria-hidden="true" data-rarity-metal={rarity} className="w-2 h-2 rounded-full" style={{ background: RARITY_METAL[rarity] }} />
         {label(rarity)} {pct}
       </span>
     ))}

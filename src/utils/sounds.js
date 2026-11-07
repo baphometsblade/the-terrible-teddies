@@ -1,4 +1,6 @@
 import { Howl } from 'howler';
+import { useGameStore } from '@/stores/gameStore';
+import { effectiveSfxVolume } from '@/lib/audioMix';
 
 // Battle sound effects, served from our own origin.
 //
@@ -60,12 +62,22 @@ export function getSound(name) {
   return cache.get(name);
 }
 
-// Plays `name` if the player has sound enabled. Returns whether it played, so
-// callers (and tests) can tell "muted" apart from "unknown sound".
+// Plays `name` if the player has sound enabled and the mixer is up. Returns
+// whether it played, so callers (and tests) can tell "muted" apart from
+// "unknown sound". The fader and the mute live in the store; a gain of 1
+// leaves the Howl's own volume alone, which is what it was built with.
 export function playSound(name, enabled) {
-  if (!enabled) return false;
+  let gain = enabled ? 1 : 0;
+  try {
+    gain = effectiveSfxVolume({ ...useGameStore.getState(), soundEnabled: enabled });
+  } catch {
+    gain = enabled ? 1 : 0;
+  }
+  if (!(gain > 0)) return false;
   const sound = getSound(name);
   if (!sound) return false;
+  const spec = SOUND_SPECS[name];
+  if (gain !== 1 && typeof sound.volume === 'function') sound.volume(spec.volume * gain);
   sound.play();
   return true;
 }

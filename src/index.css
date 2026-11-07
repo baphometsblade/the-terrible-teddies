@@ -1132,6 +1132,67 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   }
 }
 
+/* Card backs. The house look is the one the stacks used to paint with
+   utilities; a bought back only swaps the paint. stitched-plush owns ::before,
+   so these rules do not. */
+.card-back {
+  color: #fbbf24;
+  border-color: #524368;
+  background-image: linear-gradient(to bottom right, #2f2344, #241a35, #120c1c);
+}
+.card-back-glow {
+  background: radial-gradient(circle at 50% 45%, #fbbf24 0%, transparent 60%);
+}
+.card-back-ring { border-color: rgba(251, 191, 36, 0.6); }
+.card-back[data-card-back="velvet-rope"] {
+  color: #fecdd3;
+  border-color: #9f1239;
+  background-image: linear-gradient(to bottom right, #4c0519, #9f1239, #1a1226);
+}
+.card-back[data-card-back="velvet-rope"] .card-back-glow {
+  background: radial-gradient(circle at 50% 45%, #fb7185 0%, transparent 62%);
+}
+.card-back[data-card-back="velvet-rope"] .card-back-ring { border-color: rgba(251, 113, 133, 0.75); }
+.card-back[data-card-back="neon-stall"] {
+  color: #fbcfe8;
+  border-color: #be185d;
+  background-image: linear-gradient(to bottom right, #500724, #1a1226 55%, #042f2e);
+}
+.card-back[data-card-back="neon-stall"] .card-back-glow {
+  background: radial-gradient(circle at 50% 45%, #f472b6 0%, transparent 62%);
+}
+.card-back[data-card-back="neon-stall"] .card-back-ring { border-color: rgba(244, 114, 182, 0.8); }
+.card-back[data-card-back="brass-knuckles"] {
+  color: #fde68a;
+  border-color: #b45309;
+  background-image: linear-gradient(to bottom right, #78350f, #292524, #120c1c);
+}
+.card-back[data-card-back="brass-knuckles"] .card-back-glow {
+  background: radial-gradient(circle at 50% 45%, #fbbf24 0%, transparent 62%);
+}
+.card-back[data-card-back="brass-knuckles"] .card-back-ring { border-color: rgba(251, 191, 36, 0.85); }
+
+/* Table cloths. The house felt is .felt-table itself; these only repaint a
+   cloth the player has put on. Text on the felt does not change colour. */
+html[data-board="after-hours"] .felt-table {
+  background-color: #241433;
+  background-image:
+    radial-gradient(ellipse 65% 70% at 50% 45%, rgba(120, 70, 150, 0.45), transparent 75%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+}
+html[data-board="red-room"] .felt-table {
+  background-color: #3a1218;
+  background-image:
+    radial-gradient(ellipse 65% 70% at 50% 45%, rgba(160, 40, 60, 0.4), transparent 75%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+}
+html[data-board="cold-open"] .felt-table {
+  background-color: #102433;
+  background-image:
+    radial-gradient(ellipse 65% 70% at 50% 45%, rgba(40, 120, 170, 0.4), transparent 75%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+}
+
 } /* end @layer components */
 
 @keyframes fx-float {
@@ -1400,4 +1461,93 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
    needs its own reduced-motion escape hatch. */
 @media (prefers-reduced-motion: reduce) {
   .teddy-drift { display: none; }
+}
+
+/* Text size. Only the root font size moves, and only when the player asks:
+   Tailwind's spacing is rem, so this also loosens the layout a little. The
+   default is the browser's 16px, which is what every measurement was taken at. */
+html[data-text="large"] { font-size: 17px; }
+html[data-text="larger"] { font-size: 18px; }
+
+/* The mixer's faders. The input itself is 44px tall, which is what a finger
+   meets; the track and thumb are drawn inside it. */
+.mixer-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8.5rem;
+  height: 44px;
+  background: transparent;
+  cursor: pointer;
+}
+.mixer-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #241a35;
+}
+.mixer-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border-radius: 999px;
+  background: #fbbf24;
+  box-shadow: 0 0 0 2px #1a1226;
+}
+.mixer-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #241a35;
+  border: 0;
+}
+.mixer-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #fbbf24;
+}
+
+/* Colourblind-safe rarity. Unlayered on purpose: an inline metal gradient and
+   a utility text colour would otherwise win. Shapes differ as well as hues,
+   so the tiers do not depend on colour alone. Hexes are src/lib/raritySafe.js. */
+html[data-cb="safe"] [data-rarity-ink="common"] { color: #d6d3d1; }
+html[data-cb="safe"] [data-rarity-ink="uncommon"] { color: #7dd3fc; }
+html[data-cb="safe"] [data-rarity-ink="rare"] { color: #fdba74; }
+html[data-cb="safe"] [data-rarity-ink="epic"] { color: #f9a8d4; }
+html[data-cb="safe"] [data-rarity-ink="legendary"] { color: #fcd34d; }
+html[data-cb="safe"] [data-rarity-metal="common"] { background: #44403c !important; }
+html[data-cb="safe"] [data-rarity-metal="uncommon"] { background: #0369a1 !important; }
+html[data-cb="safe"] [data-rarity-metal="rare"] { background: #c2410c !important; }
+html[data-cb="safe"] [data-rarity-metal="epic"] { background: #f9a8d4 !important; }
+html[data-cb="safe"] [data-rarity-metal="legendary"] { background: #fde047 !important; }
+html[data-cb="safe"] [data-rarity-frame="common"]:not([data-cosmetic]) {
+  background: linear-gradient(#120c1c, #120c1c) padding-box, linear-gradient(145deg, #e7e5e4, #78716c 40%, #d6d3d1 70%, #57534e) border-box !important;
+}
+html[data-cb="safe"] [data-rarity-frame="uncommon"]:not([data-cosmetic]) {
+  background: linear-gradient(#120c1c, #120c1c) padding-box, linear-gradient(145deg, #e0f2fe, #0369a1 40%, #7dd3fc 70%, #0c4a6e) border-box !important;
+}
+html[data-cb="safe"] [data-rarity-frame="rare"]:not([data-cosmetic]) {
+  background: linear-gradient(#120c1c, #120c1c) padding-box, linear-gradient(145deg, #ffedd5, #c2410c 40%, #fdba74 70%, #7c2d12) border-box !important;
+}
+html[data-cb="safe"] [data-rarity-frame="epic"]:not([data-cosmetic]) {
+  background: linear-gradient(#120c1c, #120c1c) padding-box, linear-gradient(145deg, #fce7f3, #be185d 40%, #f9a8d4 70%, #831843) border-box !important;
+}
+html[data-cb="safe"] [data-rarity-frame="legendary"]:not([data-cosmetic]) {
+  background: linear-gradient(#120c1c, #120c1c) padding-box, linear-gradient(145deg, #fef3c7, #b45309 40%, #fcd34d 70%, #78350f) border-box !important;
+}
+html[data-cb="safe"] [data-rarity-gem="common"] {
+  transform: none;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px #d6d3d1;
+}
+html[data-cb="safe"] [data-rarity-gem="uncommon"] { transform: none; border-radius: 999px; }
+html[data-cb="safe"] [data-rarity-gem="epic"] {
+  transform: none;
+  border-radius: 0;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+html[data-cb="safe"] [data-rarity-gem="legendary"] {
+  transform: none;
+  border-radius: 999px;
+  background: radial-gradient(circle, #1a1226 42%, #fde047 44%) !important;
 }

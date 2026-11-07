@@ -506,6 +506,20 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
             </button>
           )}
           </div>
+          {/* Painted above Previous, but after it in the tab order. Shift+Tab
+              from Previous has to reach the step: the focus ring is measured
+              there, and a stop between them stole it. order-first is visual
+              only. The last step's own button is the same door. */}
+          {!isLastStep && (
+            <button
+              type="button"
+              onClick={onStartGame}
+              aria-label="Start the fight. Sit on Chuck's lap"
+              className={`${NAV} btn-brass order-first w-full px-3`}
+            >
+              Sit on Chuck&apos;s lap
+            </button>
+          )}
           {/* After Previous in the tab order, so Shift+Tab from Previous still
               reaches the step. In the footer, not the header: a toast over a
               dialog owns the top-left corner, and this button sat in it. */}
