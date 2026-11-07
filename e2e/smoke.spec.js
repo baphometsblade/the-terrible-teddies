@@ -360,7 +360,7 @@ test('emote buttons stay fully tappable on a 390px phone', async ({ page }) => {
   }
 });
 
-test('shop opens, shows gem bundles with prices, and closes on Escape', async ({ page }) => {
+test('shop opens on a closed gem till and closes on Escape', async ({ page }) => {
   await page.getByRole('button', { name: 'Shop', exact: true }).click();
 
   const dialog = page.getByRole('dialog', { name: 'Shop' });
@@ -368,12 +368,10 @@ test('shop opens, shows gem bundles with prices, and closes on Escape', async ({
 
   await dialog.getByRole('button', { name: 'Buy Gems' }).click();
 
-  // Five gem bundles, each an accessible button labelled with its $ price.
-  const bundles = dialog.getByRole('button', { name: /^Buy \d+ gems for \$\d+\.\d{2}$/ });
-  await expect(bundles).toHaveCount(5, SLOW);
-  for (const bundle of await bundles.all()) {
-    await expect(bundle).toContainText(/\$\d+\.\d{2}/);
-  }
+  // Payments default to off. The till says so, and there is no price button
+  // that would call a checkout the build has not switched on.
+  await expect(dialog.getByText('Gem shop opening soon')).toBeVisible(SLOW);
+  await expect(dialog.getByRole('button', { name: /^Buy \d+ gems for \$\d+\.\d{2}$/ })).toHaveCount(0);
 
   // The dialog hook closes on Escape.
   await page.keyboard.press('Escape');
@@ -415,60 +413,30 @@ test('the Coin Doubler is buyable and then shows as active', async ({ page }) =>
   expect(expiry).toBeGreaterThan(Date.now());
 });
 
-test('buying a gem bundle starts Stripe checkout for that exact bundle', async ({ page }) => {
-  // Guards the revenue path end to end (button -> edge function). Intercept the
-  // create-checkout-session call, capture the bundle id it was invoked with, and
-  // hand back a same-origin URL so the redirect stays hermetic (no real Stripe).
-  // Registered here (after the beforeEach Supabase catch-all) so it wins by
-  // Playwright's last-registered-first routing.
-  let checkoutBody = null;
-  await page.route('**/functions/v1/create-checkout-session', async (route) => {
-    checkoutBody = route.request().postDataJSON();
-    await route.fulfill({ json: { url: '/?purchase=cancelled' } });
-  });
+test('a closed gem shop never starts checkout', async ({ page }) => {
+  let checkoutHits = 0;
+  await page.route('**/functions/v1/create-checkout-session', () => { checkoutHits += 1; });
+  await page.route('**/functions/v1/ccbill-checkout', () => { checkoutHits += 1; });
 
   await page.getByRole('button', { name: 'Shop', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Shop' });
   await expect(dialog).toBeVisible(SLOW);
   await dialog.getByRole('button', { name: 'Buy Gems' }).click();
-
-  // The smallest bundle — "Buy 50 gems for $0.99" — maps to bundle id gems_small.
-  await dialog.getByRole('button', { name: 'Buy 50 gems for $0.99' }).click();
-
-  await expect.poll(() => checkoutBody, SLOW).not.toBeNull();
-  expect(checkoutBody.bundle_id).toBe('gems_small');
+  await expect(dialog.getByText('Gem shop opening soon')).toBeVisible(SLOW);
+  await expect(dialog.getByRole('button', { name: /^Buy \d+ gems for \$/ })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Special Offers' }).click();
+  await expect(dialog.getByRole('button', { name: 'Buy Now' })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: '$5.99' })).toHaveCount(0);
+  expect(checkoutHits).toBe(0);
 });
 
-test('a checkout that never starts does not trap the buyer behind the spinner', async ({ page }) => {
-  // Shop covers the screen with a lone spinning gem — no text, no cancel —
-  // while it waits for create-checkout-session, and only clears it when that
-  // request fails. The request had no timeout, so a stalled or cold edge
-  // function stranded the buyer until the browser gave up, which can take
-  // minutes. Hang the request outright and fast-forward the app's own clock.
-  await page.route('**/functions/v1/create-checkout-session', () => {
-    // never fulfilled
-  });
-
+test('a closed gem shop does not cover the till with a checkout spinner', async ({ page }) => {
   await page.getByRole('button', { name: 'Shop', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Shop' });
   await expect(dialog).toBeVisible(SLOW);
   await dialog.getByRole('button', { name: 'Buy Gems' }).click();
-
-  // Installed only now, so it fakes the timer the purchase tap creates and
-  // nothing the boot path set up earlier.
-  await page.clock.install();
-  await dialog.getByRole('button', { name: 'Buy 50 gems for $0.99' }).click();
-
-  // The spinner is up and the purchase button is disabled while it waits.
-  await expect(dialog.getByRole('button', { name: 'Buy 50 gems for $0.99' })).toHaveCount(0);
-
-  await page.clock.runFor(21_000);
-
-  // It gives up, says so — including that nothing was charged — and hands the
-  // shop back.
-  await expect(page.getByText(/taking too long to start/i).first()).toBeVisible(SLOW);
-  await expect(page.getByText(/haven.t been charged/i).first()).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Buy 50 gems for $0.99' })).toBeVisible(SLOW);
+  await expect(dialog.getByText('Gem shop opening soon')).toBeVisible(SLOW);
+  await expect(dialog.getByText('Opening secure checkout…')).toHaveCount(0);
 });
 
 test('returning from a completed checkout confirms the credited gems', async ({ page }) => {
@@ -1376,58 +1344,25 @@ test('a mid-battle rehydrate refreshes the wallet without disturbing the game', 
   await expect(page.getByText('1,234')).toHaveCount(0);
 });
 
-test('every pay line sends the right bundle id to checkout', async ({ page }) => {
-  // The revenue path has SEVEN entry points — five gem tiles plus two special
-  // offers — and only one of them was covered. A tile wired to the wrong id
-  // charges the wrong price (or, if the id is unknown to the edge function,
-  // 400s and the sale is simply lost), and the webhook refuses to credit on any
-  // amount mismatch. This walks all seven.
-  const calls = [];
-  await page.route('**/functions/v1/create-checkout-session', async (route) => {
-    calls.push(route.request().postDataJSON().bundle_id);
-    // Reply WITHOUT a url. redirectToStripeCheckout then throws
-    // "No checkout URL returned" before it ever assigns window.location.href,
-    // so the page never navigates and the shop stays open for the next tile.
-    // (Returning a url instead makes the app navigate, which races this test's
-    // own page.goto and fails the run under parallelism.) The bundle id is
-    // already captured above — that is the whole assertion. Shop's catch calls
-    // setProcessing(false), so the next tile is immediately clickable.
-    await route.fulfill({ json: {} });
-  });
+test('a closed gem shop has no pay line that can call checkout', async ({ page }) => {
+  // The seven cash entry points (five gem tiles, two special offers) exist
+  // only once VITE_PAYMENT_PROVIDER is ccbill or stripe. The default build
+  // must not leave a button that posts to a checkout function.
+  let checkoutHits = 0;
+  await page.route('**/functions/v1/create-checkout-session', () => { checkoutHits += 1; });
+  await page.route('**/functions/v1/ccbill-checkout', () => { checkoutHits += 1; });
 
   await page.getByRole('button', { name: 'Shop', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Shop' });
   await expect(dialog).toBeVisible(SLOW);
-
-  // --- The five gem tiles, keyed by their accessible "Buy N gems for $X" name.
-  const TILES = [
-    { label: 'Buy 50 gems for $0.99', id: 'gems_small' },
-    { label: 'Buy 150 gems for $2.99', id: 'gems_medium' },
-    { label: 'Buy 500 gems for $9.99', id: 'gems_large' },
-    { label: 'Buy 1200 gems for $19.99', id: 'gems_huge' },
-    { label: 'Buy 3000 gems for $49.99', id: 'gems_mega' },
-  ];
-
   await dialog.getByRole('button', { name: 'Buy Gems' }).click();
-  for (const tile of TILES) {
-    await dialog.getByRole('button', { name: tile.label }).click();
-    await expect.poll(() => calls.length, SLOW).toBeGreaterThan(0);
-    expect(calls.pop(), `"${tile.label}" must charge ${tile.id}`).toBe(tile.id);
-  }
-
-  // --- The two special offers, which live on their own tab.
-  const OFFERS = [
-    { tile: /Starter/i, id: 'starter_bundle', button: 'Buy Now' },
-    { tile: /Mega Gem Pack/i, id: 'weekly_gem_pass', button: '$5.99' },
-  ];
-
+  await expect(dialog.getByText('Gem shop opening soon')).toBeVisible(SLOW);
+  await expect(dialog.getByRole('button', { name: /^Buy \d+ gems for \$/ })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Special Offers' }).click();
-  for (const offer of OFFERS) {
-    await expect(dialog.getByText(offer.tile).first()).toBeVisible(SLOW);
-    await dialog.getByRole('button', { name: offer.button, exact: true }).first().click();
-    await expect.poll(() => calls.length, SLOW).toBeGreaterThan(0);
-    expect(calls.pop(), `the ${offer.id} offer must charge ${offer.id}`).toBe(offer.id);
-  }
+  await expect(dialog.getByText('Starter Gem Pack')).toBeVisible(SLOW);
+  await expect(dialog.getByRole('button', { name: 'Buy Now' })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: '$5.99', exact: true })).toHaveCount(0);
+  expect(checkoutHits).toBe(0);
 });
 
 test('settings controls keep keyboard focus when toggled', async ({ page }) => {

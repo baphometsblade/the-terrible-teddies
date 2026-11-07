@@ -87,30 +87,20 @@ test('an account that has its Starter Gem Pack sees it as claimed, with nothing 
   expect(decodeURIComponent(read)).toContain('bundle_id=in.(');
 });
 
-test('a refunded Starter Gem Pack is on sale again', async ({ page }) => {
+test('a refunded Starter Gem Pack is not sold while the gem shop is closed', async ({ page }) => {
   await page.route(/\/rest\/v1\/purchases/, (route) =>
     route.fulfill({ json: [{ bundle_id: 'starter_bundle', status: 'refunded' }] }));
   const shop = await openSpecialOffers(page);
   await expect(shop.getByText('One per account.', { exact: true })).toBeVisible(SLOW);
-  await expect(shop.getByRole('button', { name: 'Buy Now' })).toBeVisible();
+  await expect(shop.getByText('Gem shop opening soon').first()).toBeVisible();
+  await expect(shop.getByRole('button', { name: 'Buy Now' })).toHaveCount(0);
 });
 
-test("the checkout's one-per-account refusal marks the offer claimed instead of reading as a failure", async ({ page }) => {
-  // The purchases read says nothing (bought on another device a moment ago,
-  // say); the checkout function knows better and answers 409.
-  await page.route('**/functions/v1/create-checkout-session', (route) => route.fulfill({
-    status: 409,
-    json: { error: "You've already bought the Starter Gem Pack. It's one per account.", code: 'already_purchased' },
-  }));
+test('a closed gem shop has no Buy button a refusal could replace', async ({ page }) => {
   const shop = await openSpecialOffers(page);
-  await shop.getByRole('button', { name: 'Buy Now' }).click();
-
-  await expect(page.getByText('Already claimed').first()).toBeVisible(SLOW);
-  await expect(page.getByText('Checkout Failed')).toHaveCount(0);
-  const claimed = shop.getByText('Claimed', { exact: true });
-  await expect(claimed).toBeVisible();
-  await expect(claimed).toBeFocused();
+  await expect(shop.getByText('Gem shop opening soon').first()).toBeVisible(SLOW);
   await expect(shop.getByRole('button', { name: 'Buy Now' })).toHaveCount(0);
+  await expect(page.getByText('Checkout Failed')).toHaveCount(0);
 });
 
 // --- Spending gems ----------------------------------------------------------
