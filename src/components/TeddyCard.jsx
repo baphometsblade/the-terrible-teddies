@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useGameStore } from '@/stores/gameStore';
 import { motion } from 'framer-motion';
 import {
   Shield, Crosshair, ShieldHalf, Ghost, Castle, Flame, Bug, Crown, Rabbit,
@@ -8,6 +9,7 @@ import { abilityLabel } from '@/lib/abilities';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 import { BrassCoin } from '@/components/ui/coin';
 import { COSMETIC_FRAMES } from '@/lib/cosmetics';
+import { cardBackId } from '@/lib/wardrobe';
 
 // Dark-face fallbacks for cards without a rarity (typed opponent cards).
 const TYPE_STYLES = {
@@ -172,20 +174,34 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   );
 };
 
-// The back of every card in the game: night felt, stitched seam, brass
-// emblem rings. Used for facedown reveals and the deck stacks on the board.
-export const CardBack = ({ className = 'w-24 h-36', mini = false }) => (
-  <div
-    className={`${className} rounded-lg border-2 border-plush-700 bg-gradient-to-br from-night-700 via-night-800 to-night-950 stitched-plush relative overflow-hidden grid place-items-center shadow-lg shadow-black/40`}
-  >
-    <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_45%,#fbbf24_0%,transparent_60%)]" />
-    <div className={`rounded-full border-2 border-brass-400/60 grid place-items-center ${mini ? 'w-5 h-5' : 'w-12 h-12'}`}>
-      <div className={`rounded-full border border-brass-400/40 grid place-items-center ${mini ? 'w-3.5 h-3.5 text-[8px]' : 'w-9 h-9 text-xl'}`}>
-        🧸
+// The back of every card in the game. The house look is night felt, a
+// stitched seam and brass emblem rings; a bought back (src/lib/wardrobe.js)
+// repaints it through [data-card-back] in index.css. `look` forces one, for
+// the wardrobe's own samples. Everywhere else it follows the equipped back.
+const BACK_MARK = {
+  'house-back': '🧸',
+  'velvet-rope': '🌹',
+  'neon-stall': '💋',
+  'brass-knuckles': '👊',
+};
+
+export const CardBack = ({ className = 'w-24 h-36', mini = false, look }) => {
+  const equipped = useGameStore((s) => s.equippedCardBack);
+  const id = cardBackId(look || equipped);
+  return (
+    <div
+      data-card-back={id}
+      className={`${className} card-back rounded-lg border-2 stitched-plush relative overflow-hidden grid place-items-center shadow-lg shadow-black/40`}
+    >
+      <div className="card-back-glow absolute inset-0 opacity-10" />
+      <div className={`card-back-ring rounded-full border-2 grid place-items-center ${mini ? 'w-5 h-5' : 'w-12 h-12'}`}>
+        <div className={`rounded-full border border-white/40 grid place-items-center ${mini ? 'w-3.5 h-3.5 text-[8px]' : 'w-9 h-9 text-xl'}`}>
+          {BACK_MARK[id] || '🧸'}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // A font size for print on the battle table, which the board scales to fit
 // the felt (`zoom`, down to 0.45 on a short phone): raised just enough to
@@ -304,6 +320,7 @@ const RarityGem = ({ rarity }) => (
     <span
       aria-hidden="true"
       data-rarity-gem={rarity}
+      data-rarity-metal={rarity}
       className="inline-block h-[8px] w-[8px] rotate-45 rounded-[1.5px] ring-1 ring-night-950/80 shadow-[0_1px_2px_rgba(0,0,0,0.7)]"
       style={{ background: RARITY_METAL[rarity] }}
     />
@@ -412,6 +429,7 @@ const TeddyCard = ({
     >
       <div
         data-cosmetic={cosmeticBorder || undefined}
+        data-rarity-frame={teddy.rarity || undefined}
         data-variant={board ? 'board' : undefined}
         data-taunt={taunt ? side : undefined}
         // A pointer and a press only where something takes the press: this

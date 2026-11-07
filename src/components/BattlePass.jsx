@@ -212,7 +212,7 @@ const RewardCard = ({ reward, isPremium, tier, isUnlocked, isClaimed, canClaim, 
             )}
           </span>
         ) : reward.rarity && (
-          <span aria-hidden="true" className={`label-caps text-[8px] leading-3 ${RARITY[reward.rarity].text}`}>
+          <span aria-hidden="true" data-rarity-ink={reward.rarity} className={`label-caps text-[8px] leading-3 ${RARITY[reward.rarity].text}`}>
             {reward.rarity}
           </span>
         )}

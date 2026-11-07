@@ -37,7 +37,7 @@ describe('every line fits the slot it is written for', () => {
   });
 
   it('the tile lines: 42 characters, and the two that shipped are kept', () => {
-    expect(Object.keys(TILE_LINES)).toHaveLength(8);
+    expect(Object.keys(TILE_LINES)).toHaveLength(9);
     for (const l of Object.values(TILE_LINES)) expect(l.length, l).toBeLessThanOrEqual(TILE_MAX);
     expect(TILE_LINES.challenges).toBe('Prove you have a problem');
     expect(TILE_LINES.deck).toBe('Assemble your goon squad');

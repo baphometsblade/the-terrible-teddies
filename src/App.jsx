@@ -34,6 +34,9 @@ import { dailyFightFor, resolveCrew } from './lib/dailyFight';
 import { focusWhenReady } from './lib/screenFocus';
 import { achievementToasts } from './lib/achievementAnnouncements';
 import { levelUpToast } from './lib/levelUpToast';
+import { preloadCardThumbs } from './lib/preloadArt';
+import { loadingTip } from './lib/loadingTips';
+import BarMusic from './components/BarMusic';
 
 // GameBoard is lazy for the same reason the dialogs are: it is only reachable
 // after tapping Battle, but a static import put it — and its dependency tail,
@@ -57,6 +60,7 @@ const SocialHouse = lazy(() => import('./components/SocialHouse'));
 const Challenges = lazy(() => import('./components/Challenges'));
 const DailyFight = lazy(() => import('./components/DailyFight'));
 const PurchaseSuccess = lazy(() => import('./components/PurchaseSuccess'));
+const Wardrobe = lazy(() => import('./components/Wardrobe'));
 
 // Shown for the moment a lazy dialog or the board chunk is in flight. A CSS
 // spin (transform only, on the compositor) rather than the Framer Motion
@@ -77,6 +81,7 @@ const DialogLoader = ({ onCancel }) => {
   const cancelRef = useRef(onCancel);
   cancelRef.current = onCancel;
   const cancellable = Boolean(onCancel);
+  const [tip] = useState(() => loadingTip());
   useEffect(() => {
     if (!cancellable) return undefined;
     const cancel = () => cancelRef.current?.();
@@ -96,6 +101,7 @@ const DialogLoader = ({ onCancel }) => {
           <div className="absolute inset-0 flex items-center justify-center text-2xl" aria-hidden="true">🧸</div>
         </div>
         <span className="label-caps text-plush-300">Loading</span>
+        <p className="max-w-[18rem] px-4 text-center text-sm leading-snug text-plush-200">{tip}</p>
       </div>
     </div>
   );
@@ -169,6 +175,9 @@ function App() {
   const currentScreen = nav.screen;
   const navigateTo = useCallback((screen) => {
     setNav((n) => (n.screen === screen ? n : { screen, from: n.screen }));
+    // The board chunk and the card pictures start together, on the tap,
+    // rather than when the first hand paints.
+    if (screen === 'game') preloadCardThumbs(useGameStore.getState().currentDeck);
   }, []);
   // The Deck Builder's and the battle board's leave guards (each one's
   // requestLeave): "← Menu" and the system's Back go through them.
@@ -263,6 +272,7 @@ function App() {
   const [socialReceipt, setSocialReceipt] = useState(null);
   const [showChallenges, setShowChallenges] = useState(false);
   const [showDaily, setShowDaily] = useState(false);
+  const [showWardrobe, setShowWardrobe] = useState(false);
   const [dailySpec, setDailySpec] = useState(null);
 
   // Close every dialog at once — used by DialogErrorBoundary to return the app
@@ -270,12 +280,13 @@ function App() {
   // the boundary's reset, so opening any dialog re-attempts the chunk.
   const dialogFlags = [
     showTutorial, showCardPacks, showPlayerStats, showSettings, showDailyRewards,
-    showShop, showBattlePass, showLeaderboard, showSocial, showChallenges, showDaily,
+    showShop, showBattlePass, showLeaderboard, showSocial, showChallenges, showDaily, showWardrobe,
   ];
   const closeAllDialogs = () => {
     setShowTutorial(false); setShowCardPacks(false); setShowPlayerStats(false);
     setShowSettings(false); setShowDailyRewards(false); setShowShop(false);
     setShowBattlePass(false); setShowLeaderboard(false); setShowSocial(false); setShowChallenges(false); setShowDaily(false);
+    setShowWardrobe(false);
   };
   const [purchaseSessionId, setPurchaseSessionId] = useState(null);
 
@@ -739,6 +750,7 @@ function App() {
             onLeaderboard={() => setShowLeaderboard(true)}
             onChallenges={() => setShowChallenges(true)}
             onNightly={() => setShowDaily(true)}
+            onWardrobe={() => setShowWardrobe(true)}
           />
         );
     }
@@ -749,6 +761,7 @@ function App() {
       <div className="App min-h-screen">
         {session ? (
           <>
+            <BarMusic />
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentScreen}
@@ -805,6 +818,7 @@ function App() {
                 )}
                 {showPlayerStats && <PlayerStats key="player-stats" onClose={() => setShowPlayerStats(false)} />}
                 {showSettings && <Settings key="settings" onClose={() => setShowSettings(false)} />}
+                {showWardrobe && <Wardrobe key="wardrobe" onClose={() => setShowWardrobe(false)} />}
                 {showDailyRewards && <DailyRewards key="daily-rewards" onClose={() => setShowDailyRewards(false)} />}
                 {showShop && <Shop key="shop" initialTab={shopTab} onClose={() => setShowShop(false)} />}
                 {showBattlePass && (
