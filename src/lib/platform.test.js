@@ -4,6 +4,7 @@ import { CONSENT_KEY, consentRecord, hasAnalyticsConsent, parseConsent, writeCon
 import { LANDING, PUBLIC_DESCRIPTION, PUBLIC_OG_DESCRIPTION, PUBLIC_SITE_ORIGIN, PUBLIC_TITLE } from './publicCopy';
 import { structuredData } from './structuredData';
 import { isAdminPath, showPublicLanding } from './publicPaths';
+import { RECOVERY_RESUME_KEY } from './authLanding';
 import { DOOR_KEY, doorRecord } from './door';
 import { backoffMs, isRetryableError, withRetry } from './retry';
 import { eventsFromScreen, eventsFromStoreChange, productAnalyticsEnabled, sanitizeProps, trackProduct } from './productEvents';
@@ -55,6 +56,12 @@ describe('public paths', () => {
     expect(showPublicLanding({
       href: 'https://terribleteddies.vercel.app/#access_token=t&type=recovery',
       storage: ask,
+    })).toBe(false);
+    const session = mem({ [RECOVERY_RESUME_KEY]: JSON.stringify({ at: Date.now(), uid: null }) });
+    expect(showPublicLanding({
+      href: 'https://terribleteddies.vercel.app/',
+      storage: ask,
+      session,
     })).toBe(false);
   });
 

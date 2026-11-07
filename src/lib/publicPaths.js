@@ -1,4 +1,4 @@
-import { landedFromAuthLink } from './authLanding.js';
+import { landedFromAuthLink, readRecoveryResume } from './authLanding.js';
 import { readDoor } from './door.js';
 
 // Which address is the staff desk. A trailing slash is the same page.
@@ -7,11 +7,11 @@ export function isAdminPath(pathname) {
   return path === '/admin';
 }
 
-const storageOf = (storage) => {
+const storageOf = (storage, kind) => {
   if (storage !== undefined) return storage;
   try {
     if (typeof window === 'undefined') return null;
-    return window.localStorage;
+    return kind === 'session' ? window.sessionStorage : window.localStorage;
   } catch {
     return null;
   }
@@ -23,8 +23,11 @@ const storageOf = (storage) => {
  * password-reset link go straight to the door so those arrivals are not
  * asked to read a poster first.
  */
-export function showPublicLanding({ href, storage } = {}) {
-  if (readDoor(storageOf(storage)) !== 'ask') return false;
+export function showPublicLanding({ href, storage, session } = {}) {
+  if (readDoor(storageOf(storage, 'local')) !== 'ask') return false;
+  // A reload at the door drops the recovery tokens from the address. The
+  // tab still has the reset to finish, so the poster must not cover the door.
+  if (readRecoveryResume(storageOf(session, 'session'))) return false;
   const address = String(href ?? (typeof window !== 'undefined' ? window.location.href : '/'));
   if (landedFromAuthLink(address)) return false;
   try {
