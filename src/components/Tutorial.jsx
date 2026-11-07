@@ -303,11 +303,6 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
             a phone, and of a short desktop window, the bar sat 5px into it. */}
         <div className="relative flex items-center gap-3 px-4 pb-4 pt-4 sm:px-6 sm:pt-5 [@media(max-height:500px)]:pb-1 [@media(max-height:500px)]:pt-3">
           <h2 className="min-w-0 flex-1 font-display text-xl font-extrabold leading-tight text-white">How to Play</h2>
-          {onReplayLesson && (
-            <button type="button" onClick={onReplayLesson} className={`${NAV} btn-glass px-3 text-xs sm:text-sm`}>
-              Replay the lesson
-            </button>
-          )}
           <DialogClose label="Close tutorial" onClick={onClose} />
         </div>
 
@@ -479,7 +474,15 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
             padding, so the offset is minus the scrim's (p-3 / sm:p-6): at 0
             the row stopped 12-24px short of the edge, with the step scrolling
             past beneath it. */}
-        <div className="relative flex items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-4 sm:px-6 [@media(max-height:500px)]:sticky [@media(max-height:500px)]:-bottom-3 sm:[@media(max-height:500px)]:-bottom-6 [@media(max-height:500px)]:z-10 [@media(max-height:500px)]:bg-night-900 [@media(max-height:500px)]:py-2.5 [@media(max-height:500px)]:shadow-[0_-16px_24px_-16px_rgba(0,0,0,0.9)]">
+        <div className="relative flex flex-col gap-2 border-t border-white/[0.06] px-4 py-4 sm:px-6 [@media(max-height:500px)]:sticky [@media(max-height:500px)]:-bottom-3 sm:[@media(max-height:500px)]:-bottom-6 [@media(max-height:500px)]:z-10 [@media(max-height:500px)]:bg-night-900 [@media(max-height:500px)]:py-2.5 [@media(max-height:500px)]:shadow-[0_-16px_24px_-16px_rgba(0,0,0,0.9)]">
+          {/* In the footer, not the header. A toast over a dialog owns the
+              top-left corner, and this button sat in it. */}
+          {onReplayLesson && (
+            <button type="button" onClick={onReplayLesson} className={`${NAV} btn-glass w-full px-3 text-xs sm:text-sm`}>
+              Replay the lesson
+            </button>
+          )}
+          <div className="flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={prevStep}
@@ -509,6 +512,7 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
               <ChevronRight aria-hidden="true" className="-mr-1 h-4 w-4" strokeWidth={2.6} />
             </button>
           )}
+          </div>
         </div>
       </motion.div>
     </div>

@@ -9,7 +9,10 @@
     "noEmit": true,
     "strict": true,
     "skipLibCheck": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "types": []
   },
-  "include": ["src/lib/network.js", "src/lib/menuKeys.js"]
+  "include": ["src/lib/network.js", "src/lib/menuKeys.js", "src/lib/safeStorage.js"]
 }

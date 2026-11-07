@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { browserLocalStorage } from '@/lib/safeStorage';
 
 // The current project. A deploy that sets the Vite variables uses those; a
 // build that does not still talks to this project rather than a retired one.
@@ -19,7 +20,12 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// GoTrue reads its session store while this module loads. The same private-mode
+// throw that would kill the game save kills the client too, so it gets the
+// storage that falls back to memory instead of throwing.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: { storage: browserLocalStorage() },
+});
 
 // Resolve whose account we are acting on.
 //

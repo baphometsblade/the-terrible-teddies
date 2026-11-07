@@ -96,6 +96,13 @@ export default defineConfig({
     ],
   },
   build: {
+    // Vite 7's default is Baseline Widely Available (Safari 16). iOS 15 is
+    // still in the field, and a syntax it cannot parse fails the module
+    // before React mounts — the loader never leaves. safari15 is the floor
+    // esbuild will downlevel to. It does not polyfill methods; those are
+    // avoided in shipped source (see safeStorage and DailyRewards).
+    target: 'safari15',
+    cssTarget: 'safari15',
     rollupOptions: {
       output: {
         manualChunks: {
