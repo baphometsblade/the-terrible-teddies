@@ -4,6 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/duel/:code", "destination": "/api/duel?code=:code" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

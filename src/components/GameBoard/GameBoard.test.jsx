@@ -686,6 +686,40 @@ describe('GameBoard victory', () => {
     expect(row("CHUCK'S TAB")).toContain('102 damage, still open');
     expect(RECEIPT_FOOTERS).toContain(panel.querySelector('[data-bar-tab] p:last-of-type').textContent);
   });
+
+  it('a ladder win is attested and does not pay the till', async () => {
+    const onSettled = vi.fn();
+    const before = useGameStore.getState();
+    await renderBoard({
+      onBackToMenu: () => {},
+      brawl: {
+        matchId: 'match-1',
+        rivalName: 'Ada',
+        label: 'Saved deck',
+        cards: fixedCrew.cards,
+        faceHp: 1,
+        onSettled,
+      },
+    });
+    expect(container.querySelector('h1').textContent).toBe('Battle against Ada');
+    await advanceUntil(() => button('End Turn'));
+    await act(async () => container.querySelector('[aria-label="Play Bar-Fight Barry"]').click());
+    await act(async () => button('End Turn').click());
+    await advanceUntil(() => !button('End Turn'));
+    await advanceUntil(() => button('End Turn'));
+    await act(async () => container.querySelector('[aria-label="Select Bar-Fight Barry to attack"]').click());
+    await act(async () => container.querySelector('[data-field="opponent"]').click());
+    await advanceUntil(() => container.querySelector('[role="dialog"][aria-label="Victory"]'));
+
+    expect(onSettled).toHaveBeenCalledTimes(1);
+    expect(onSettled).toHaveBeenCalledWith(true);
+    expect(useGameStore.getState().totalWins).toBe(before.totalWins);
+    expect(useGameStore.getState().coins).toBe(before.coins);
+    expect(useGameStore.getState().xp).toBe(before.xp);
+    expect(button('Play Again')).toBeUndefined();
+    expect(container.textContent).toContain('The ladder takes the finish. The till keeps its hands to itself.');
+    expect(container.textContent).toContain('Ada');
+  });
 });
 
 // Between midnight and five in the morning, by the player's own clock, Chuck

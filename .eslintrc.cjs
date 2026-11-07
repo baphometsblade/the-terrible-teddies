@@ -28,6 +28,12 @@ module.exports = {
       env: { node: true, browser: false },
     },
     {
+      // The challenge-link preview is a Vercel function, not the game bundle.
+      files: ["api/**/*.js"],
+      env: { node: true, browser: false },
+      globals: { fetch: "readonly" },
+    },
+    {
       // Vitest injects these as globals (test.globals = true); tests run in
       // Node (jsdom), so Node globals like process/Buffer are legitimate.
       files: ["**/*.test.{js,jsx}", "**/*.spec.{js,jsx}"],
