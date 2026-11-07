@@ -475,18 +475,6 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
             the row stopped 12-24px short of the edge, with the step scrolling
             past beneath it. */}
         <div className="relative flex flex-col gap-2 border-t border-white/[0.06] px-4 py-4 sm:px-6 [@media(max-height:500px)]:sticky [@media(max-height:500px)]:-bottom-3 sm:[@media(max-height:500px)]:-bottom-6 [@media(max-height:500px)]:z-10 [@media(max-height:500px)]:bg-night-900 [@media(max-height:500px)]:py-2.5 [@media(max-height:500px)]:shadow-[0_-16px_24px_-16px_rgba(0,0,0,0.9)]">
-          {/* On every step but the last, so a new player can be at the table
-              before the speech is. The last step's own button is the same door. */}
-          {!isLastStep && (
-            <button
-              type="button"
-              onClick={onStartGame}
-              aria-label="Start the fight. Sit on Chuck's lap"
-              className={`${NAV} btn-brass w-full px-3`}
-            >
-              Sit on Chuck&apos;s lap
-            </button>
-          )}
           <div className="flex items-center justify-between gap-3">
           <button
             type="button"
@@ -518,6 +506,20 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
             </button>
           )}
           </div>
+          {/* Painted above Previous, but after it in the tab order. Shift+Tab
+              from Previous has to reach the step: the focus ring is measured
+              there, and a stop between them stole it. order-first is visual
+              only. The last step's own button is the same door. */}
+          {!isLastStep && (
+            <button
+              type="button"
+              onClick={onStartGame}
+              aria-label="Start the fight. Sit on Chuck's lap"
+              className={`${NAV} btn-brass order-first w-full px-3`}
+            >
+              Sit on Chuck&apos;s lap
+            </button>
+          )}
           {/* After Previous in the tab order, so Shift+Tab from Previous still
               reaches the step. In the footer, not the header: a toast over a
               dialog owns the top-left corner, and this button sat in it. */}
