@@ -1,4 +1,5 @@
 import { SHOP_ITEMS, DAILY_REWARDS } from '@/stores/gameStore';
+import { resolveLogin } from '@/lib/loginStreak';
 
 // Where a player's next card pack comes from, with real numbers, for the empty
 // Card Packs table. Each reads the table that actually grants the pack, so the
@@ -53,15 +54,17 @@ export const nextPassPack = ({ seasonXP = 0, claimed = { free: [], premium: [] }
 /**
  * The next login-streak day that gives packs, and how many days away it is
  * if the streak is kept. Mirrors checkDailyLogin: a claim the day after the
- * last one extends the streak, any later claim restarts it at day 1.
+ * last one extends the streak, one missed night extends it when a shield is
+ * banked, and any wider gap restarts it at day 1.
  */
-export const nextDailyPack = ({ consecutiveLogins = 0, lastLoginDate = null }, today = new Date(), rewards = DAILY_REWARDS) => {
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+export const nextDailyPack = (state = {}, today = new Date(), rewards = DAILY_REWARDS) => {
+  const { consecutiveLogins = 0, lastLoginDate = null } = state;
   const claimedToday = lastLoginDate === today.toDateString();
-  const continues = claimedToday || lastLoginDate === yesterday.toDateString();
-  // The streak count the next claim will record (tomorrow's, if today's is in).
-  const nextStreak = continues ? consecutiveLogins + 1 : 1;
+  // Tomorrow's streak when today's claim is already in; otherwise the streak
+  // the claim waiting today will record, shield included.
+  const nextStreak = claimedToday
+    ? (Number(consecutiveLogins) || 0) + 1
+    : resolveLogin(state, today, rewards.length).streak;
   for (let k = 0; k < rewards.length; k++) {
     const day = (nextStreak - 1 + k) % rewards.length;
     if (rewards[day].packs > 0) {

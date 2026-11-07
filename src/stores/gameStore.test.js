@@ -656,7 +656,7 @@ describe('recordBattleResult', () => {
     // win/battle-count achievements so nothing else moves the balance.
     useGameStore.setState({
       totalWins: 100, totalBattles: 200, currentWinStreak: 0, coins: 0,
-      completedAchievements: ['first_win', 'win_10', 'win_50', 'win_streak_5', 'play_100'],
+      completedAchievements: ['first_win', 'win_10', 'win_50', 'win_100', 'win_streak_5', 'play_100'],
       dailyStatsDate: new Date().toDateString(), weeklyStatsDate: 'x',
     });
     const before = get().coins;

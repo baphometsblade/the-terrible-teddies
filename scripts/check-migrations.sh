@@ -988,4 +988,89 @@ if [ "$CONC_GEMS" != "300" ] || ! grep -q one_per_account_already_held <<<"$CONC
 fi
 echo "    ok   the second waited for the first and was refused"
 
+echo "==> Asserting house titles: own row, allowlist, rate limit, no anon, no direct write"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_a     UUID := 'a11a11a1-1111-4111-8111-111111111111';
+  v_b     UUID := 'b22b22b2-2222-4222-8222-222222222222';
+  v_title TEXT;
+  v_other TEXT;
+  i       INTEGER;
+BEGIN
+  INSERT INTO auth.users (id) VALUES (v_a), (v_b) ON CONFLICT DO NOTHING;
+  INSERT INTO public.players (user_id, username) VALUES
+    (v_a, 'TitleBear'), (v_b, 'OtherBear')
+  ON CONFLICT DO NOTHING;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'set_house_title' AND p.prosecdef
+      AND EXISTS (SELECT 1 FROM unnest(p.proconfig) c WHERE c LIKE 'search_path=%')
+  ) THEN
+    RAISE EXCEPTION 'set_house_title is not SECURITY DEFINER with a pinned search_path';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'set_house_title'
+      AND has_function_privilege('anon', p.oid, 'EXECUTE')
+  ) THEN
+    RAISE EXCEPTION 'anon can EXECUTE set_house_title';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'set_house_title'
+      AND has_function_privilege('authenticated', p.oid, 'EXECUTE')
+  ) THEN
+    RAISE EXCEPTION 'authenticated cannot EXECUTE set_house_title';
+  END IF;
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+
+  BEGIN
+    UPDATE public.players SET house_title = 'lucky' WHERE user_id = v_a;
+    RAISE EXCEPTION 'authenticated updated house_title directly';
+  EXCEPTION WHEN insufficient_privilege THEN NULL;
+  END;
+
+  SELECT set_house_title('lucky') INTO v_title;
+  IF v_title <> 'lucky' THEN RAISE EXCEPTION 'a known title was not stored (%)', v_title; END IF;
+
+  BEGIN
+    PERFORM set_house_title('not-a-title');
+    RAISE EXCEPTION 'an unknown title was accepted';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL;
+  END;
+  SELECT house_title INTO v_title FROM public.players WHERE user_id = v_a;
+  IF v_title <> 'lucky' THEN RAISE EXCEPTION 'a refused title changed the row to %', v_title; END IF;
+
+  SELECT set_house_title('') INTO v_title;
+  IF v_title IS NOT NULL THEN RAISE EXCEPTION 'clearing the title returned %', v_title; END IF;
+  SELECT house_title INTO v_title FROM public.players WHERE user_id = v_a;
+  IF v_title IS NOT NULL THEN RAISE EXCEPTION 'the title was not cleared (%)', v_title; END IF;
+
+  -- Two calls so far (set, clear). Eight more fill the window of ten.
+  FOR i IN 1..8 LOOP
+    PERFORM set_house_title('counsel');
+  END LOOP;
+  BEGIN
+    PERFORM set_house_title('closing');
+    RAISE EXCEPTION 'the 11th wear in a minute was allowed';
+  EXCEPTION WHEN SQLSTATE 'PT429' THEN NULL;
+  END;
+  SELECT house_title INTO v_title FROM public.players WHERE user_id = v_a;
+  IF v_title <> 'counsel' THEN RAISE EXCEPTION 'a limited wear changed the title to %', v_title; END IF;
+
+  SELECT house_title INTO v_other FROM public.players WHERE user_id = v_b;
+  IF v_other IS NOT NULL THEN RAISE EXCEPTION 'another account''s title was written (%)', v_other; END IF;
+
+  RESET ROLE;
+  RAISE NOTICE 'house title assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"

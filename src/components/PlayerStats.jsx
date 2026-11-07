@@ -7,7 +7,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { useGameStore, ACHIEVEMENTS, ALL_CARDS } from '../stores/gameStore';
 import { useDialog } from '@/hooks/useDialog';
-import { setPlayerUsername } from '../utils/supabaseClient';
+import { setPlayerUsername, setHouseTitle } from '../utils/supabaseClient';
+import { titleForAchievement } from '@/lib/titles';
 import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
@@ -70,7 +71,7 @@ const PlayerStats = ({ onClose }) => {
     playerName, setPlayerName, level, xp, getXPForNextLevel,
     coins, gems, totalWins, totalLosses, currentWinStreak, bestWinStreak,
     totalDamageDealt, totalHealingDone, totalBattles, ownedCards,
-    completedAchievements, consecutiveLogins,
+    completedAchievements, consecutiveLogins, equippedTitle, equipTitle,
   } = useGameStore();
 
   const [editingName, setEditingName] = useState(false);
@@ -406,6 +407,8 @@ const PlayerStats = ({ onClose }) => {
             <ul className="space-y-2">
               {ACHIEVEMENTS.map((achievement, i) => {
                 const isCompleted = completedAchievements.includes(achievement.id);
+                const title = titleForAchievement(achievement.id);
+                const wearing = Boolean(title) && equippedTitle === title.id;
                 return (
                   <motion.li
                     key={achievement.id}
@@ -454,6 +457,29 @@ const PlayerStats = ({ onClose }) => {
                       {/* The House's caption, only while the row is locked. */}
                       {!isCompleted && achievement.locked && (
                         <div data-locked-caption="" className="mt-0.5 text-sm italic text-plush-300">{achievement.locked}</div>
+                      )}
+                      {title && isCompleted && (
+                        <button
+                          type="button"
+                          aria-pressed={wearing}
+                          onClick={() => {
+                            const next = wearing ? null : title.id;
+                            equipTitle(next);
+                            // The account keeps the same title. Offline, or
+                            // before the migration is applied, the save stands.
+                            setHouseTitle(next);
+                          }}
+                          className={`mt-2 h-11 rounded-lg px-3 font-display text-sm font-bold ${FOCUS_OUTLINE} ${
+                            wearing ? 'btn-brass' : 'btn-glass'
+                          }`}
+                        >
+                          {wearing ? `Wearing ${title.name}` : `Wear ${title.name}`}
+                        </button>
+                      )}
+                      {title && !isCompleted && (
+                        <div className="mt-0.5 text-sm text-plush-300">
+                          Unlocks “{title.name}”.
+                        </div>
                       )}
                     </div>
                     <div

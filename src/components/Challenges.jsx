@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { useGameStore } from '../stores/gameStore';
-import { getDailyChallenges, getWeeklyChallenges, challengeProgress } from '../stores/challenges';
+import { challengeProgress } from '../stores/challenges';
+import { visibleChallenges } from '@/lib/questReroll';
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
@@ -138,7 +139,7 @@ export const RewardChip = ({ type, amount, className = '' }) => {
 // Claim is 44px tall, the size every control is held to, but takes the bar
 // row's 32px (-my-1.5): a card does not grow when it becomes claimable, nor
 // shrink when "Claimed" replaces the button.
-const ChallengeCard = ({ challenge, progress, isClaimed, onClaim, float }) => {
+const ChallengeCard = ({ challenge, progress, isClaimed, onClaim, onReroll, float }) => {
   const isComplete = progress >= challenge.target;
   const progressPercent = Math.min((progress / challenge.target) * 100, 100);
   const isReady = isComplete && !isClaimed;
@@ -236,6 +237,16 @@ const ChallengeCard = ({ challenge, progress, isClaimed, onClaim, float }) => {
           )}
         </div>
       </div>
+      {onReroll && (
+        <button
+          type="button"
+          onClick={onReroll}
+          aria-label={`Reroll ${challenge.name}`}
+          className={`btn-glass mt-3 h-11 w-full rounded-lg font-display text-sm font-bold ${FOCUS_OUTLINE}`}
+        >
+          Reroll
+        </button>
+      )}
     </motion.div>
   );
 };
@@ -270,6 +281,7 @@ const TabButton = ({ active, onClick, icon: Icon, label, done, total }) => (
 const Challenges = ({ onClose }) => {
   const {
     addCoins, addGems, addXP, addCardPack, claimChallenge, claimedChallenges, syncPeriods,
+    rerollQuest, questRerolls,
     // Daily stats (auto-reset each day)
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     // Weekly stats (auto-reset each Monday)
@@ -300,8 +312,14 @@ const Challenges = ({ onClose }) => {
   // next day/week. Recomputed every render (cheap: a shuffle over ~12 items)
   // so a dialog left open across midnight/Monday picks up the new set
   // without a remount.
-  const DAILY_CHALLENGES = getDailyChallenges();
-  const WEEKLY_CHALLENGES = getWeeklyChallenges();
+  const board = visibleChallenges({
+    questRerolls,
+    claimedChallenges,
+    todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
+    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
+  });
+  const DAILY_CHALLENGES = board.daily;
+  const WEEKLY_CHALLENGES = board.weekly;
 
   // Roll over daily/weekly stats and the claimed ledger if the calendar has
   // advanced, so the panel never shows stale challenges.
@@ -454,6 +472,19 @@ const Challenges = ({ onClose }) => {
         {(activeTab === 'daily' ? DAILY_CHALLENGES : WEEKLY_CHALLENGES).every((c) => getChallengeProgress(c) <= 0) && (
           <p data-nothing-started="" className="relative px-4 pt-1 text-xs text-plush-300 sm:px-6">Nothing started. We noticed.</p>
         )}
+        {(() => {
+          const shown = activeTab === 'daily' ? DAILY_CHALLENGES : WEEKLY_CHALLENGES;
+          const open = shown.some((c) => getChallengeProgress(c) < c.target && !(claimedChallenges ?? []).includes(c.id));
+          if (!open) return null;
+          const left = activeTab === 'daily' ? board.dailyLeft : board.weeklyLeft;
+          return (
+            <p data-reroll-line="" className="relative px-4 pt-1 text-xs text-plush-300 sm:px-6">
+              {left > 0
+                ? (activeTab === 'daily' ? 'One reroll. Dump a quest you don’t fancy.' : 'One reroll this week. Be picky.')
+                : (activeTab === 'daily' ? 'Tonight’s reroll already went home.' : 'This week’s reroll already went home.')}
+            </p>
+          );
+        })()}
 
         {/* Content */}
         <div
@@ -473,6 +504,13 @@ const Challenges = ({ onClose }) => {
                       progress={getChallengeProgress(challenge)}
                       isClaimed={(claimedChallenges ?? []).includes(challenge.id)}
                       onClaim={() => claimReward(challenge)}
+                      onReroll={
+                        board.dailyLeft > 0
+                        && getChallengeProgress(challenge) < challenge.target
+                        && !(claimedChallenges ?? []).includes(challenge.id)
+                          ? () => rerollQuest('daily', challenge.id)
+                          : null
+                      }
                       float={float?.at === challenge.id ? float : null}
                     />
                   </div>
@@ -489,6 +527,13 @@ const Challenges = ({ onClose }) => {
                       progress={getChallengeProgress(challenge)}
                       isClaimed={(claimedChallenges ?? []).includes(challenge.id)}
                       onClaim={() => claimReward(challenge)}
+                      onReroll={
+                        board.weeklyLeft > 0
+                        && getChallengeProgress(challenge) < challenge.target
+                        && !(claimedChallenges ?? []).includes(challenge.id)
+                          ? () => rerollQuest('weekly', challenge.id)
+                          : null
+                      }
                       float={float?.at === challenge.id ? float : null}
                     />
                   </div>
