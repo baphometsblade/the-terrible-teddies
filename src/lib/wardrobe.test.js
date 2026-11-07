@@ -32,7 +32,8 @@ describe('wardrobe catalog', () => {
       if (item.currency === 'gems') expect(item.price, item.id).toBeGreaterThan(0);
       const long = wardrobeLong(item);
       expect(long.startsWith(item.label), long).toBe(true);
-      expect(long.endsWith(item.slot === 'back' ? 'card back' : 'board'), long).toBe(true);
+      const kind = { back: 'card back', board: 'board', finish: 'finish', avatar: 'frame', line: 'line' }[item.slot];
+      expect(long.endsWith(kind), long).toBe(true);
       expect(item.swatch, item.id).toMatch(/^#[0-9a-f]{6}$/);
     }
     const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');

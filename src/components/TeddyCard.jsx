@@ -407,6 +407,9 @@ const TeddyCard = ({
   const wounded = teddy.currentHp !== undefined && teddy.currentHp < teddy.defense;
   const rules = rulesFor(teddy);
   const foil = teddy.rarity === 'legendary' ? 'foil' : teddy.rarity === 'epic' ? 'foil foil-epic' : '';
+  const finish = useGameStore((s) => s.equippedFinish);
+  const holo = finish === 'wet-look';
+  const gleam = teddy.rarity === 'rare' || teddy.rarity === 'epic' || teddy.rarity === 'legendary';
   const cost = teddy.cost !== undefined ? teddy.cost + costDelta : undefined;
   const discounted = costDelta < 0;
   const taunt = board && (tauntActive ?? teddy.ability === 'taunt')
@@ -477,6 +480,8 @@ const TeddyCard = ({
 
         {/* Foil sweep (epic+) — above the art, below the text. */}
         {foil && !dimmed && !resting && <div className={`absolute inset-0 rounded-[8px] pointer-events-none ${foil}`} />}
+        {gleam && !dimmed && <div className="rarity-gleam" data-gleam={teddy.rarity} aria-hidden="true" />}
+        {holo && !dimmed && <div className="card-holo" aria-hidden="true" />}
 
         {/* Taunt's frame: a band of its side's metal just inside the rarity
             frame, lit inward, so a guarded card reads as walled in. Inside
