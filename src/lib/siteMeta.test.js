@@ -16,8 +16,8 @@ describe('the link preview tags', () => {
     expect(siteUrlFrom({ VITE_SITE_URL: 'https://example.com/play/' })).toBe('https://example.com/play');
     expect(siteUrlFrom({ VERCEL_PROJECT_PRODUCTION_URL: 'teddies.vercel.app' })).toBe('https://teddies.vercel.app');
     expect(siteUrlFrom({ VITE_SITE_URL: 'https://a.example', VERCEL_PROJECT_PRODUCTION_URL: 'b.vercel.app' })).toBe('https://a.example');
-    expect(siteUrlFrom({})).toBeNull();
-    expect(siteUrlFrom({ VITE_SITE_URL: '  ' })).toBeNull();
+    expect(siteUrlFrom({})).toBe('https://terribleteddies.vercel.app');
+    expect(siteUrlFrom({ VITE_SITE_URL: '  ' })).toBe('https://terribleteddies.vercel.app');
   });
 
   it('refuses an address that is not an absolute http(s) URL, rather than ship a broken one', () => {
@@ -41,7 +41,7 @@ describe('the link preview tags', () => {
     expect(jpeg.readUInt16BE(sof + 5)).toBe(Number(content('property', 'og:image:height')));
   });
 
-  it('are injected by the build plugin only when there is a site to point at', () => {
+  it('are injected by the build plugin, falling back to the public origin', () => {
     const run = (env) => {
       const plugin = socialMeta();
       plugin.configResolved({ env, command: 'build', logger: { warn() {} } });
@@ -51,7 +51,7 @@ describe('the link preview tags', () => {
     delete process.env.VITE_SITE_URL;
     delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
     try {
-      expect(run({})).toEqual([]);
+      expect(run({})).toEqual(socialMetaTags('https://terribleteddies.vercel.app'));
       expect(run({ VITE_SITE_URL: 'https://teddies.example' })).toEqual(socialMetaTags('https://teddies.example'));
     } finally {
       if (saved.site !== undefined) process.env.VITE_SITE_URL = saved.site;

@@ -9,6 +9,23 @@
 // may be configured to ask for more, and its refusal is shown as it words it.
 export const PASSWORD_MIN_LENGTH = 6;
 
+// The set-password panel survives a reload of its tab. supabase-js removes
+// the recovery tokens from the address, so the door (and the page in front
+// of the door) has to recognise the marker instead. An hour, the life of
+// the session the link signs in with.
+export const RECOVERY_RESUME_KEY = 'terrible-teddies-recovery';
+export const RECOVERY_RESUME_MS = 60 * 60 * 1000;
+
+export function readRecoveryResume(storage, now = Date.now()) {
+  try {
+    const record = JSON.parse(storage?.getItem(RECOVERY_RESUME_KEY) ?? 'null');
+    const age = now - record?.at;
+    return typeof record?.at === 'number' && age >= 0 && age < RECOVERY_RESUME_MS ? record : null;
+  } catch {
+    return null;
+  }
+}
+
 const params = (href) => {
   let url;
   try {

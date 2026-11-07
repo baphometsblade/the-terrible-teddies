@@ -28,6 +28,7 @@
     "@radix-ui/react-progress": "^1.1.0",
     "@radix-ui/react-switch": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.0",
+    "@sentry/react": "^11.11.0",
     "@supabase/supabase-js": "^2.104.1",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.0",
@@ -40,6 +41,7 @@
     "react-dom": "^18.2.0",
     "tailwind-merge": "^2.2.1",
     "tailwindcss-animate": "^1.0.7",
+    "web-vitals": "^6.2.3",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

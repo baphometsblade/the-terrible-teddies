@@ -114,3 +114,33 @@ jobs:
       env:
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
       run: ./scripts/check-migrations.sh
+
+  # The production page a crawler meets: the SFW landing, its weight, and the
+  # web-vitals budget in lighthouserc.json. Desktop, one run — mobile
+  # throttling on a shared runner moves more than the budget does.
+  lighthouse:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+    - run: npm ci
+    - name: Build production bundle
+      env:
+        VITE_SUPABASE_URL: https://testproject.supabase.co
+        VITE_SUPABASE_ANON_KEY: test-anon-key
+      run: npm run build
+    - name: Lighthouse against the preview
+      run: |
+        npx vite preview --host 127.0.0.1 --port 4173 &
+        for _ in $(seq 1 40); do
+          curl -sf -o /dev/null http://127.0.0.1:4173 && break
+          sleep 1
+        done
+        curl -sf -o /dev/null http://127.0.0.1:4173
+        npx --yes @lhci/cli@0.14.0 autorun

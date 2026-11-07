@@ -21,14 +21,20 @@ function readRepoText(relPath) {
   return readFileSync(resolve(process.cwd(), relPath), 'utf8').replace(/\r\n/g, '\n');
 }
 
-function inlineScriptContent(html) {
+function inlineScripts(html) {
   const re = /<script((?:\s[^>]*)?)>([\s\S]*?)<\/script>/g;
   const blocks = [];
   let m;
   while ((m = re.exec(html))) blocks.push({ attrs: m[1], content: m[2] });
-  const inline = blocks.filter((b) => b.content.trim().length > 0 && !/\bsrc=/.test(b.attrs));
+  return blocks.filter((b) => b.content.trim().length > 0 && !/\bsrc=/.test(b.attrs));
+}
+
+const isJsonLd = (attrs) => /type\s*=\s*["']application\/ld\+json["']/.test(attrs);
+
+function inlineScriptContent(html) {
+  const inline = inlineScripts(html).filter((b) => !isJsonLd(b.attrs));
   if (inline.length !== 1) {
-    throw new Error(`expected exactly 1 inline (non-src) <script> in index.html, found ${inline.length}`);
+    throw new Error(`expected exactly 1 executable inline <script> in index.html, found ${inline.length}`);
   }
   return inline[0].content;
 }
@@ -112,6 +118,32 @@ describe('CSP script-src hash matches the actual inline script in index.html', (
       `PostHog serves remote config from ${assetsHost}, but vercel.json's connect-src ` +
         `(${connectSrc}) does not allow it — remote config would be silently CSP-blocked`
     ).toBe(true);
+  });
+
+  it("the JSON-LD block's hash is in script-src, and it is the only other inline script", () => {
+    const html = readRepoText('index.html');
+    const jsonLd = inlineScripts(html).filter((b) => isJsonLd(b.attrs));
+    expect(jsonLd).toHaveLength(1);
+    const hash = createHash('sha256').update(jsonLd[0].content, 'utf8').digest('base64');
+    const vercelConfig = JSON.parse(readFileSync(resolve(process.cwd(), 'vercel.json'), 'utf8'));
+    const cspHeader = vercelConfig.headers
+      .flatMap((h) => h.headers)
+      .find((h) => h.key === 'Content-Security-Policy')?.value;
+    expect(cspHeader.includes(`'sha256-${hash}'`)).toBe(true);
+  });
+
+  it("Sentry's ingest hosts are allowed by connect-src", () => {
+    const sentrySrc = readFileSync(resolve(process.cwd(), 'src/lib/sentry.js'), 'utf8');
+    const hosts = [...sentrySrc.matchAll(/https:\/\/\*\.ingest[^\s'"]+/g)].map((m) => m[0]);
+    expect(hosts.length).toBeGreaterThan(0);
+    const vercelConfig = JSON.parse(readFileSync(resolve(process.cwd(), 'vercel.json'), 'utf8'));
+    const cspHeader = vercelConfig.headers
+      .flatMap((h) => h.headers)
+      .find((h) => h.key === 'Content-Security-Policy')?.value;
+    const connectSrc = cspHeader.split(';').map((d) => d.trim()).find((d) => d.startsWith('connect-src'));
+    for (const host of hosts) {
+      expect(connectSrc, host).toContain(host);
+    }
   });
 
   it('index.html has no dynamically-injected inline event-handler or style attributes', () => {

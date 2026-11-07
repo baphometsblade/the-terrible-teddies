@@ -6,7 +6,7 @@
 // session/stubbing boot as e2e/smoke.spec.js (see e2e/helpers/session.js) so
 // this spec never touches a real backend.
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
+import { test, expect, bootToMainMenu, passTheLanding, SLOW } from './helpers/session.js';
 import { getCurrentSeason } from '../src/utils/season.js';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
@@ -552,6 +552,7 @@ test.describe('the door', () => {
   test('has no WCAG 2.1 A/AA violations, and no dead tab stops', async ({ page }) => {
     await page.route('**testproject.supabase.co/**', (route) => route.fulfill({ json: {} }));
     await page.goto('/');
+    await passTheLanding(page);
     await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
     await expect(page.locator('form[data-armed="true"]')).toBeVisible();
     await expectNoViolations(page, 'the door');

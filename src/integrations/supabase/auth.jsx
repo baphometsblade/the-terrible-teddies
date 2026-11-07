@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import DialogErrorBoundary from '@/components/DialogErrorBoundary';
 import {
   landingRecord, withoutAuthError, recoveryLinkFailure, signInIntent,
+  RECOVERY_RESUME_KEY, readRecoveryResume,
 } from '@/lib/authLanding';
 
 // Only a reset email's landing draws it, so it is a chunk of its own (about
@@ -32,22 +33,14 @@ const LANDING = landingRecord(typeof window !== 'undefined' ? window.location.hr
 // (sessionStorage survives a reload and a discarded tab's restore, not a new
 // tab) and for an hour, the life of the session the link signs in with.
 // `uid` is the account the link signed in, once known.
-const RESUME_KEY = 'terrible-teddies-recovery';
-const RESUME_MS = 60 * 60 * 1000;
 const readResume = () => {
-  try {
-    const r = JSON.parse(sessionStorage.getItem(RESUME_KEY) ?? 'null');
-    const age = Date.now() - r?.at;
-    return typeof r?.at === 'number' && age >= 0 && age < RESUME_MS ? r : null;
-  } catch {
-    return null;
-  }
+  try { return readRecoveryResume(sessionStorage); } catch { return null; }
 };
 const writeResume = (r) => {
-  try { sessionStorage.setItem(RESUME_KEY, JSON.stringify(r)); } catch { /* a convenience: without it, no resume */ }
+  try { sessionStorage.setItem(RECOVERY_RESUME_KEY, JSON.stringify(r)); } catch { /* a convenience: without it, no resume */ }
 };
 const clearResume = () => {
-  try { sessionStorage.removeItem(RESUME_KEY); } catch { /* as above */ }
+  try { sessionStorage.removeItem(RECOVERY_RESUME_KEY); } catch { /* as above */ }
 };
 
 // A recovery landing is noted at module load, before anything has mounted:

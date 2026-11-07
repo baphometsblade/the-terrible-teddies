@@ -1475,6 +1475,13 @@ html[data-board="casino-felt"] .felt-table {
   .teddy-drift { display: none; }
 }
 
+/* The cookie bar sits on the bottom edge. The menu's own padding is a utility,
+   so an unlayered rule is what can add room under the last row while the bar
+   is up. It is removed with the bar (html[data-consent]). */
+html[data-consent="open"] [data-screen-root="menu"] .bar-backdrop {
+  padding-bottom: calc(9rem + env(safe-area-inset-bottom));
+}
+
 /* Text size. Only the root font size moves, and only when the player asks:
    Tailwind's spacing is rem, so this also loosens the layout a little. The
    default is the browser's 16px, which is what every measurement was taken at. */
