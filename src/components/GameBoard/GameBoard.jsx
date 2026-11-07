@@ -29,6 +29,7 @@ import { hitAside, hitFlavor } from '@/lib/critTalk';
 import { emptySlip, notePlay, noteHit, noteHeal, slipLine } from '@/lib/turnSlip';
 import './combatFeel.css';
 import { buildOpponentDeck, OPPONENT_HEALTH_MOD_BY_DIFFICULTY } from '../../utils/opponentDeck';
+import { TAUNTS, tauntLine } from '@/lib/social/taunts';
 import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder, ownedEmotes, cosmeticLong } from '@/lib/cosmetics';
@@ -588,6 +589,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
   const brawlRef = useRef(brawl);
   brawlRef.current = brawl;
   const brawlSettledRef = useRef(false);
+  const tauntRef = useRef(null);
+  const [tauntPick, setTauntPick] = useState(null);
   // One attested result. Also marks the battle finished for the unmount
   // path, so a win cannot be booked again as a walk-away.
   const settleBrawl = (won) => {
@@ -595,7 +598,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     if (!spec || brawlSettledRef.current) return false;
     brawlSettledRef.current = true;
     abandonHandledRef.current = true;
-    if (typeof spec.onSettled === 'function') spec.onSettled(won);
+    if (typeof spec.onSettled === 'function') spec.onSettled(won, tauntRef.current);
     return true;
   };
   const dailySettledRef = useRef(false);
@@ -1263,8 +1266,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     const intro = [brawlSpec
       ? `${brawlSpec.rivalName || 'A rival'} stepped out. The deck stayed. Still warm.`
       : `${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`];
-    // Chuck's mood is his. A ghost fight is someone else's deck, so it does not get his line.
+    // Chuck's mood is his. A ghost fight is someone else's deck, so it gets their greeting instead.
     if (!brawlSpec) intro.push(mindLine(aiDifficulty));
+    const greeting = brawlSpec ? tauntLine(brawlSpec.greeting) : null;
+    if (greeting) intro.push(greeting);
     if (mulled.tossed > 0) intro.push(mulliganOpponentLine(OPPONENT_NAME, mulled.tossed));
     if (spec) intro.push(`${spec.modifier.name}. ${spec.modifier.rules}`);
     startBattleLog(intro);
@@ -2820,7 +2825,23 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
               )}
 
               {brawl && (
-                <p className="relative mb-4 text-sm text-plush-200">The ladder takes the finish. The till keeps its hands to itself.</p>
+                <div className="relative mb-4">
+                  <p className="mb-3 text-sm text-plush-200">The ladder takes the finish. The till keeps its hands to itself.</p>
+                  <p className="label-caps mb-2 text-plush-300">Leave them a line</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {TAUNTS.map((taunt) => (
+                      <button
+                        key={taunt.id}
+                        type="button"
+                        aria-pressed={tauntPick === taunt.id}
+                        onClick={() => { tauntRef.current = taunt.id; setTauntPick(taunt.id); }}
+                        className={`btn-glass h-11 rounded-xl px-2 text-sm font-bold ${FOCUS_OUTLINE} ${tauntPick === taunt.id ? 'border-2 border-brass-300' : ''}`}
+                      >
+                        {taunt.short}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
               <div className="relative flex gap-3 justify-center">
                 {/* The dialog's first focus (useDialog's data-autofocus), so

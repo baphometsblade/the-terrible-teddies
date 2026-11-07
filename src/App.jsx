@@ -282,9 +282,9 @@ function App() {
   const openShop = (tab = 'packs') => { setShopTab(tab); setShowShop(true); };
 
   // A ladder result is attested once. The import stays off the boot path.
-  const reportBrawl = useCallback((matchId, won) => {
+  const reportBrawl = useCallback((matchId, won, taunt) => {
     import('./lib/social/client')
-      .then(({ reportLadderResult }) => reportLadderResult(matchId, won))
+      .then(({ reportLadderResult }) => reportLadderResult(matchId, won, undefined, taunt))
       .then((receipt) => { if (receipt) setSocialReceipt(receipt); })
       .catch(() => setSocialReceipt({ ok: false, reason: 'unreachable' }));
   }, []);
@@ -293,7 +293,7 @@ function App() {
     setShowSocial(false);
     setShowLeaderboard(false);
     setDailySpec(null);
-    setBrawl({ ...spec, onSettled: (won) => reportBrawl(spec.matchId, won) });
+    setBrawl({ ...spec, onSettled: (won, taunt) => reportBrawl(spec.matchId, won, taunt) });
     navigateTo('game');
   }, [navigateTo, reportBrawl]);
   const leaveBrawl = useCallback(() => {
