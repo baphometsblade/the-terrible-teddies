@@ -3,6 +3,34 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { siteUrlFrom, socialMetaTags } from "./src/lib/siteMeta.js";
 
+// The display face is font-display: swap, so the wordmark can jump when
+// Baloo 2 arrives. Preloading the woff2 starts that download with the
+// document instead of after the stylesheet, which is the jump. woff stays
+// a fallback for browsers that cannot read woff2; they are not preloaded.
+export const preloadDisplayFont = () => ({
+  name: "preload-display-font",
+  transformIndexHtml: {
+    order: "post",
+    handler(_html, ctx) {
+      const bundle = ctx?.bundle;
+      if (!bundle) return;
+      return Object.values(bundle)
+        .filter((file) => file.type === "asset" && /baloo-2-latin-(?:600|800)-normal-[\w-]+\.woff2$/.test(file.fileName))
+        .map((file) => ({
+          tag: "link",
+          injectTo: "head",
+          attrs: {
+            rel: "preload",
+            as: "font",
+            type: "font/woff2",
+            href: `/${file.fileName}`,
+            crossorigin: "anonymous",
+          },
+        }));
+    },
+  },
+});
+
 // The link preview's absolute URLs (og:url, og:image and its size and alt,
 // twitter:image), injected into index.html from the site's address. Shared
 // links got no picture from a relative og:image. With no address configured
@@ -34,7 +62,7 @@ export default defineConfig({
     host: "::",
     port: "8080",
   },
-  plugins: [react(), socialMeta()],
+  plugins: [react(), socialMeta(), preloadDisplayFont()],
   resolve: {
     alias: [
       {
@@ -68,6 +96,13 @@ export default defineConfig({
     ],
   },
   build: {
+    // Vite 7's default is Baseline Widely Available (Safari 16). iOS 15 is
+    // still in the field, and a syntax it cannot parse fails the module
+    // before React mounts — the loader never leaves. safari15 is the floor
+    // esbuild will downlevel to. It does not polyfill methods; those are
+    // avoided in shipped source (see safeStorage and DailyRewards).
+    target: 'safari15',
+    cssTarget: 'safari15',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -85,6 +120,17 @@ export default defineConfig({
           // every dialog that celebrates, Daily Rewards' once-a-day auto-open
           // included, for players who might never start a battle.
           effects: ['canvas-confetti'],
+          // Auth, the save and the leaderboard all import the client, so it
+          // used to sit inside the entry chunk: every copy change re-downloaded
+          // it. Its own chunk stays on the first paint (the session is restored
+          // before the menu) and is cached across those changes. Howler is
+          // still not here — see the effects note above.
+          supabase: [
+            '@supabase/supabase-js',
+            '@supabase/auth-js',
+            '@supabase/postgrest-js',
+            '@supabase/functions-js',
+          ],
         },
       },
     },

@@ -8,6 +8,7 @@ import { RARITY_METAL } from '@/lib/rarity';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { LEADERBOARD_COPY, youLine } from '@/lib/leaderboardLines';
+import { playerFacingError } from '@/lib/network';
 import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 
 // Trophies from a player's stats. The server computes the same thing
@@ -370,7 +371,9 @@ const Leaderboard = ({ onClose }) => {
         setLeaderboardData(transformed);
       } catch (err) {
         console.error('Error fetching leaderboard:', err);
-        setError(err.message || 'Failed to load leaderboard');
+        // A server sentence stays as the server wrote it. A fetch that never
+        // left the device ("Failed to fetch") is not one of those.
+        setError(playerFacingError(err, 'Failed to load leaderboard'));
       } finally {
         setLoading(false);
       }

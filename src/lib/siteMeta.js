@@ -42,6 +42,7 @@ const meta = (attrs) => ({ tag: 'meta', attrs, injectTo: 'head' });
 export function socialMetaTags(site) {
   const image = `${site}${OG_IMAGE.path}`;
   return [
+    { tag: 'link', attrs: { rel: 'canonical', href: `${site}/` }, injectTo: 'head' },
     meta({ property: 'og:url', content: `${site}/` }),
     meta({ property: 'og:image', content: image }),
     meta({ property: 'og:image:type', content: OG_IMAGE.type }),

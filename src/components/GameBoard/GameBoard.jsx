@@ -3223,7 +3223,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                 Opening hand. Throw any back. Once.
               </p>
             )}
-            <div className="flex min-h-11 flex-row flex-wrap items-center justify-center gap-2 md:flex-col md:items-stretch">
+            <div role="group" aria-label="Battle actions" className="flex min-h-11 flex-row flex-wrap items-center justify-center gap-2 md:flex-col md:items-stretch">
               <button
                 type="button"
                 className={`${ACTION} btn-glass md:hidden h-11 w-11 !px-0`}

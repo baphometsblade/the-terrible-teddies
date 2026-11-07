@@ -318,6 +318,12 @@ test('when this device and the account both moved, the other save is kept and ca
   const { calls, row } = await boot(page, {
     account: accountSave({ level: 12, totalBattles: 120 }),
     store: {
+      // seasonKey and seasonXP have to be present. A levelled save with neither
+      // is an unstamped Season 1 pass: past Season 1 the calendar pays the
+      // tiers that level reached (250 coins at level 3) before this test can
+      // look at the coins. This test is about which save is kept.
+      ...stampedOn(new Date()),
+      seasonXP: 0,
       ownerUserId: SESSION.user.id, playerName: 'QA Bear', level: 3, totalBattles: 9, coins: 777,
       tutorialCompleted: true, lastLoginDate: today(), cloudRev: 2, cloudSyncedHash: 'an-older-save',
     },
@@ -355,6 +361,8 @@ for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }
     await boot(page, {
       account: accountSave({ level: 12, totalBattles: 120 }),
       store: {
+        ...stampedOn(new Date()),
+        seasonXP: 0,
         ownerUserId: SESSION.user.id, playerName: 'QA Bear', level: 3, totalBattles: 9, coins: 777,
         tutorialCompleted: true, lastLoginDate: today(), cloudRev: 2, cloudSyncedHash: 'an-older-save',
       },
@@ -372,6 +380,10 @@ for (const viewport of [{ width: 320, height: 640 }, { width: 390, height: 844 }
 
 test('a backend without cloud saves says so, changes nothing, and asks no more', async ({ page }) => {
   const store = {
+    // Same as the conflict test: stamp the season, or a level 4 save with no
+    // seasonXP is paid the tiers that level had reached (coins and 10 gems).
+    ...stampedOn(new Date()),
+    seasonXP: 0,
     ownerUserId: SESSION.user.id, playerName: 'QA Bear', level: 4, coins: 1234, gems: 56,
     tutorialCompleted: true, lastLoginDate: today(),
   };

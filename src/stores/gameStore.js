@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { browserLocalStorage } from '@/lib/safeStorage';
 import { createStore } from 'zustand/vanilla';
 import { shuffleDeck } from '@/utils/deckUtils';
 import { getCurrentSeason, getSeason, seasonFromKey } from '@/utils/season';
@@ -1407,6 +1408,10 @@ export const useGameStore = create(
     })),
     {
       name: 'terrible-teddies-storage',
+      // The default storage calls localStorage while the module is loading.
+      // Safari private mode and Lockdown Mode throw from that call, and the
+      // exception escapes before React mounts. This one does not throw.
+      storage: createJSONStorage(() => browserLocalStorage()),
       version: 4,
       // Don't persist in-flight UI state
       partialize: (state) => {
