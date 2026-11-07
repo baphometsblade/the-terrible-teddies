@@ -49,7 +49,10 @@ describe('Shop initialTab', () => {
 // tile's description, spoken after BEST VALUE / bonus / total; the tile's name
 // and price are untouched.
 describe('gem tier captions', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it('every tile has a caption within its 24-character slot, wired as a description', () => {
+    vi.stubEnv('VITE_PAYMENT_PROVIDER', 'stripe');
     render({ initialTab: 'gems' });
     const tiles = [...host.querySelectorAll('[aria-describedby]')].filter((t) => /^Buy \d+ gems/.test(t.getAttribute('aria-label') || ''));
     expect(tiles).toHaveLength(5);
@@ -83,12 +86,27 @@ describe('the Buy Gems tab with gems owed', () => {
 // "1400 total" under "1,200" and "+750 BONUS" beside wallet chips reading
 // "1,234".
 describe('Shop gem bundles', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it('write their bonus and total with thousands separators', () => {
+    vi.stubEnv('VITE_PAYMENT_PROVIDER', 'ccbill');
     render({ initialTab: 'gems' });
     const lines = [...host.querySelectorAll('[id$="-bonus"], [id$="-total"]')].map((el) => el.textContent.trim());
     expect(lines.length).toBeGreaterThan(0);
     for (const line of lines) expect(line).toMatch(/^\+?\d{1,3}(?:,\d{3})* (?:BONUS|total)$/);
     // The largest bundle does pass a thousand, so the separator is seen.
     expect(lines.some((line) => line.includes(','))).toBe(true);
+  });
+});
+
+describe('the gem shop while payments are closed', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('says the shop is opening soon and offers no card-payment button', () => {
+    vi.stubEnv('VITE_PAYMENT_PROVIDER', '');
+    render({ initialTab: 'gems' });
+    expect(host.textContent).toContain('Gem shop opening soon');
+    expect(host.querySelector('[data-gem-shop="closed"]')).not.toBeNull();
+    expect([...host.querySelectorAll('[role="button"], button')].some((el) => /Buy \d+ gems|Buy Now|^\$\d/.test(el.getAttribute('aria-label') || el.textContent))).toBe(false);
   });
 });

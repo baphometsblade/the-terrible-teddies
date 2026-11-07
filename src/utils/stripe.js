@@ -5,16 +5,22 @@ import { ONE_PER_ACCOUNT_BUNDLES, holdsBundle } from '../../supabase/functions/c
 
 const FUNCTIONS_URL = `${supabaseUrl}/functions/v1`;
 const ANON_KEY = supabaseAnonKey;
+const CHECKOUT_FUNCTIONS = new Set(['create-checkout-session', 'ccbill-checkout']);
 
 // Generous: a cold edge function plus Stripe's session create is a few
 // seconds. Exported so the e2e suite can reason about it.
 export const CHECKOUT_START_TIMEOUT_MS = 20_000;
 
 /**
- * Creates a Stripe Checkout Session and redirects the browser to it.
- * Throws if the edge function returns an error.
+ * Asks the named checkout function for a payment URL and redirects to it.
+ * `create-checkout-session` is Stripe. `ccbill-checkout` is CCBill FlexForms.
+ * Throws if the edge function returns an error. Nothing is charged until the
+ * buyer finishes the provider's own page, which a thrown error never reached.
  */
-export async function redirectToStripeCheckout(bundleId) {
+export async function redirectToCheckout(bundleId, functionName = 'create-checkout-session') {
+  if (!CHECKOUT_FUNCTIONS.has(functionName)) {
+    throw new Error('Gem shop is not open yet.');
+  }
   // Get current user's JWT for secure server-side verification
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) {
@@ -33,7 +39,7 @@ export async function redirectToStripeCheckout(bundleId) {
   const timer = setTimeout(() => controller.abort(), CHECKOUT_START_TIMEOUT_MS);
   let url;
   try {
-    const res = await fetch(`${FUNCTIONS_URL}/create-checkout-session`, {
+    const res = await fetch(`${FUNCTIONS_URL}/${functionName}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -67,6 +73,11 @@ export async function redirectToStripeCheckout(bundleId) {
   if (!url) throw new Error('No checkout URL returned');
 
   window.location.href = url;
+}
+
+/** Stripe Checkout. Kept for the stripe provider; the shop calls redirectToCheckout. */
+export async function redirectToStripeCheckout(bundleId) {
+  return redirectToCheckout(bundleId, 'create-checkout-session');
 }
 
 /**
