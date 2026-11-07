@@ -63,6 +63,13 @@ describe('describeCard', () => {
     expect(describeCard({ ...byName('Peeping Pete'), stealthActive: true })).toMatch(/Stealthed\.$/);
   });
 
+  it('reads a Quickie that just arrived as able to hit creatures, not as warming up', () => {
+    const quinn = { ...byName('Quickie Quinn'), summoningSick: true };
+    expect(describeCard(quinn)).toMatch(/Other bears only, this turn\./);
+    expect(describeCard(quinn)).not.toMatch(/Warming Up/);
+    expect(describeCard(quinn)).toMatch(/Quickie:/);
+  });
+
   it('reads a trap and each kind of special by what it does', () => {
     expect(describeCard(byName('Honey Trap'), { cost: 2 }))
       .toBe("Costs 2 energy. Springs when an enemy attacks with no creature to hit: 3 damage to the attacker's side.");

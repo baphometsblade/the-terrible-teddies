@@ -17,6 +17,7 @@ export const ABILITY_LABELS = {
   fury: 'Whiskey',
   swarm: 'Pile-on',
   royal: 'Patron',
+  rush: 'Quickie',
 };
 
 export const abilityLabel = (ability) => (
@@ -32,7 +33,11 @@ export const ABILITY_RULES = {
   fury: 'Gains +1 attack each time it survives a hit, up to +3',
   swarm: 'Costs 1 less energy (min 1) if you already control another creature',
   royal: 'Other creatures you control get +1 attack while this is on the field',
+  rush: 'Can swing the turn it arrives, but only at other creatures. The face waits',
 };
+
+/** The chip on a bear that just sat down. Quickie can already swing. */
+export const arrivalChip = (card) => (card?.ability === 'rush' ? 'Quickie' : 'Warming Up');
 
 // The rules text for an ability, or '' for a card with none ('none', or a
 // missing field). An own-property lookup, so a name that happens to match an
@@ -86,6 +91,7 @@ export const describeCard = (card, { cost, attack } = {}) => {
   const label = abilityLabel(card.ability);
   if (rules && label) parts.push(`${label}: ${rules}.`);
   if (card.hasAttacked) parts.push('Exhausted.');
+  else if (card.summoningSick && card.ability === 'rush') parts.push('Other bears only, this turn.');
   else if (card.summoningSick) parts.push('Warming Up.');
   if (card.stealthActive) parts.push('Stealthed.');
   return parts.join(' ');
