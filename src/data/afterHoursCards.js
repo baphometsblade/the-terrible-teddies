@@ -20,6 +20,6 @@ export const AFTER_HOURS_CARDS = [
   { id: 91, name: 'Walk of Shame', attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: 'Shoes in one paw, pride in neither, and a cab that knows her.' },
   { id: 92, name: 'Spiked Punchbowl', attack: 2, defense: 3, type: 'action', cost: 2, ability: 'none', rarity: 'uncommon', description: 'The punch is free. The headache sends an invoice at dawn.' },
   { id: 93, name: 'The Morning After', attack: 2, defense: 2, type: 'action', cost: 2, ability: 'swarm', rarity: 'common', description: 'Aspirin, a lie, and just enough fight left to text them back.' },
-  { id: 94, name: 'Booty Call', attack: 2, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'uncommon', description: 'No small talk. She arrives angry and leaves angrier.' },
+  { id: 94, name: 'Booty Call', attack: 3, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'uncommon', description: 'No small talk. She arrives angry and leaves angrier.' },
   { id: 95, name: 'Room Service', attack: 3, defense: 2, type: 'action', cost: 3, ability: 'none', rarity: 'rare', description: 'Ice, a towel, and no questions about the noise or the headboard.' },
 ];

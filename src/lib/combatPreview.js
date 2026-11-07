@@ -49,6 +49,12 @@ export const strikePrompt = ({
 
   if (subject) {
     const hit = previewStrike(attacker, subject, attackerField);
+    if (attacker.ability === 'blackout') {
+      return {
+        tail: `${hit.dmg} dmg, they pick`,
+        full: `${attacker.name} picks a bear. You do not. About ${hit.dmg} if it lands clean.`,
+      };
+    }
     const who = lastName(subject);
     const tail = hit.kills ? `${hit.dmg} dmg, ruins ${who}` : `${hit.dmg} dmg, ${who} stays`;
     const bits = [`${attacker.name} puts ${hit.dmg} on ${subject.name}.`];

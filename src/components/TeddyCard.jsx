@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Shield, Crosshair, ShieldHalf, Ghost, Castle, Flame, Bug, Crown, Rabbit,
-  Heart, Layers, Bomb, Swords, Sparkles,
+  Shield, Crosshair, ShieldHalf, Ghost, Castle, Flame, Bug, Crown, Rabbit, Beer, Heart, Moon,
+  Layers, Bomb, Swords, Sparkles,
 } from 'lucide-react';
 import { abilityLabel } from '@/lib/abilities';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
@@ -38,6 +38,9 @@ const ABILITY_ICONS = {
   swarm: Bug,
   royal: Crown,
   rush: Rabbit,
+  hungover: Beer,
+  smitten: Heart,
+  blackout: Moon,
 };
 const EFFECT_ICONS = {
   heal: Heart,

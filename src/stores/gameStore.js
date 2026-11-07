@@ -9,6 +9,7 @@ import analytics from '@/utils/analytics';
 import { nextDailyRecord } from '@/lib/dailyFight';
 import { AFTER_HOURS_CARDS } from '@/data/afterHoursCards';
 import { QUICKIE_CARDS } from '@/data/quickieCards';
+import { NIGHT_TWO_CARDS } from '@/data/nightTwoCards';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
@@ -98,6 +99,7 @@ export const ALL_CARDS = [
   { id: 79, name: "Suspicious Brownies", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'draw', amount: 2, rarity: 'uncommon', description: "Don't ask what's in them. Draw two, feel weird later." },
   ...AFTER_HOURS_CARDS,
   ...QUICKIE_CARDS,
+  ...NIGHT_TWO_CARDS,
 ];
 
 // The HP at which the night is nearly over for a side. One number for the

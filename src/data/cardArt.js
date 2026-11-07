@@ -16,6 +16,7 @@
  */
 
 import { QUICKIE_ART } from './quickieArt';
+import { NIGHT_TWO_ART } from './nightTwoArt';
 
 export const CARD_ART = {
   1: { fur: "chocolate brown", visual: "barrel-chested bear, torn ear, novelty condom necklace, brass knuckles gripped in one paw", scene: "Low hero angle on the bar top under amber jukebox glow, Ted cracking a beer bottle over a rival's head mid-swing." },
@@ -99,6 +100,7 @@ export const CARD_ART = {
   94: { fur: "midnight plum", visual: "lean bear in a trench coat over nothing decent, phone in one paw, impatient grin", scene: "Doorway shot in a motel corridor under a red bulb, her knocking at 2am." },
   95: { fur: "linen white", visual: "neat bear in a waistcoat, ice bucket, folded towel, knowing butler smile", scene: "Dutch tilt in a hotel corridor under warm sconce light, the tray held at a shut door." },
   ...QUICKIE_ART,
+  ...NIGHT_TWO_ART,
 };
 
 export default CARD_ART;

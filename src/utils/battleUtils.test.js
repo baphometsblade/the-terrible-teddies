@@ -1,6 +1,6 @@
 import {
   damageToCreatureHp, resolveCreatureHit, rallyField, effectiveCost, effectiveAttack,
-  canAttack, canSwingFace, readyCreatures, getValidTargets,
+  canAttack, canSwingFace, readyCreatures, pickBlackoutTarget, getValidTargets,
   gainedFuryStack, describeBlockedTarget,
 } from './battleUtils';
 
@@ -288,6 +288,17 @@ describe('canAttack / readyCreatures (summoning sickness)', () => {
     expect(rallied.attack).toBe(3); // rally's +1 still applies
   });
 
+  it('a Hungover bear sits out the turn after it swings, then wakes', () => {
+    const drunk = creature({ ability: 'hungover', pendingHangover: true, hasAttacked: true });
+    const [morning] = readyCreatures([drunk]);
+    expect(morning.hungover).toBe(true);
+    expect(morning.pendingHangover).toBe(false);
+    expect(canAttack(morning)).toBe(false);
+    const [after] = readyCreatures([morning]);
+    expect(after.hungover).toBe(false);
+    expect(canAttack(after)).toBe(true);
+  });
+
   it('a Quickie can hit creatures the turn it arrives, and not the face', () => {
     const rush = creature({ ability: 'rush', summoningSick: true });
     expect(canAttack(rush)).toBe(true);
@@ -438,5 +449,25 @@ describe('describeBlockedTarget', () => {
     // Guard the guard: a bug that made every card legal would vacuously pass.
     expect(checkedBlocked).toBeGreaterThan(20);
     expect(checkedLegal).toBeGreaterThan(20);
+  });
+});
+
+describe('smitten, the table, and blackout', () => {
+  const bear = (over) => ({ type: 'action', attack: 2, defense: 2, ability: 'none', instanceId: 'a', ...over });
+
+  it('gives Smitten +1 only with company, and a tribe +1 only with a mate', () => {
+    const sid = bear({ ability: 'smitten', tribe: 'regular', instanceId: 'sid' });
+    expect(effectiveAttack(sid, [sid])).toBe(2);
+    const pal = bear({ tribe: 'regular', instanceId: 'pal' });
+    expect(effectiveAttack(sid, [sid, pal])).toBe(4);
+    const stranger = bear({ tribe: 'staff', instanceId: 'st' });
+    expect(effectiveAttack(sid, [sid, stranger])).toBe(3);
+  });
+
+  it('picks a blackout target from the legal list', () => {
+    const targets = [bear({ instanceId: '1' }), bear({ instanceId: '2' }), bear({ instanceId: '3' })];
+    expect(pickBlackoutTarget(targets, () => 0).instanceId).toBe('1');
+    expect(pickBlackoutTarget(targets, () => 0.99).instanceId).toBe('3');
+    expect(pickBlackoutTarget([], () => 0)).toBeNull();
   });
 });

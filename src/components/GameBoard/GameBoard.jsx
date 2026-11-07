@@ -10,7 +10,7 @@ import { motion, AnimatePresence, useIsPresent, useReducedMotionConfig } from 'f
 import { playSound as playSoundEffect } from '@/utils/sounds';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
-import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, canSwingFace, readyCreatures, gainedFuryStack, getValidTargets, describeBlockedTarget } from '../../utils/battleUtils';
+import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, canSwingFace, readyCreatures, gainedFuryStack, getValidTargets, describeBlockedTarget, attackAuraNote, pickBlackoutTarget, stampSwing } from '../../utils/battleUtils';
 import { pickQuip, startPoolFor, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { pickResultCopy, RESULT_TITLES, RESULT_SUBLINES } from '../../utils/resultLines';
 import { LAST_CALL_BANNER, lastCallLog, BOARD_LINES, fillLine, pickLine } from '@/lib/houseLines';
@@ -33,7 +33,12 @@ import { pressable } from '@/lib/a11y';
 import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder, ownedEmotes, cosmeticLong } from '@/lib/cosmetics';
 import { abilityRules, arrivalChip, describeCard } from '@/lib/abilities';
-import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, canRally, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
+import { MAX_HAND_SIZE, MAX_FIELD_SIZE, MOMENTUM_MAX, MAX_ENERGY, canRally, energyForTurn, hasMoveLeft, isUsefulPlay } from './turn';
+import { BOSS_CARD, BOSS_HEAL, STANDARD_RULE, bossMends, readHouseRule } from '@/lib/houseRules';
+import { COMBO_PLAY, COMBO_SWING } from '@/lib/comboTalk';
+import { crewTaunt } from '@/lib/crewVoice';
+import { pickMvp, pushRecap, tallyMvp } from '@/lib/matchNight';
+import NightSlip from '../NightSlip';
 import FlavorLine from '../FlavorLine';
 import LeaveBattleDialog from './LeaveBattleDialog';
 import BarTab, { REWARD_BEATS } from './BarTab';
@@ -827,6 +832,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       }
       setWinner('opponent');
       setGameOver(true);
+      setMvp(pickMvp(mvpRef.current));
+      setRecap([...recapRef.current]);
     };
     // pagehide covers reload / tab-close / cross-document navigation — the cases
     // where React effect cleanups do NOT run, so the unmount path alone would
@@ -928,6 +935,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
   const [fx, setFx] = useState([]);
   const [boardShake, setBoardShake] = useState(null);
   const [turnSlip, setTurnSlip] = useState(emptySlip);
+  const [houseRule, setHouseRule] = useState(STANDARD_RULE);
+  const [mvp, setMvp] = useState(null);
+  const [recap, setRecap] = useState([]);
+  const mvpRef = useRef({});
+  const recapRef = useRef([]);
   const [aimId, setAimId] = useState(null);
   const fxIdRef = useRef(0);
   const shakeGen = useRef(0);
@@ -1183,13 +1195,22 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       healthMod = OPPONENT_HEALTH_MOD_BY_DIFFICULTY[aiDifficulty] ?? 0;
     }
 
-    const initialOpponentDeck = shuffleDeck(opponentCards);
+    const rule = spec ? STANDARD_RULE : readHouseRule();
+    let initialOpponentDeck = shuffleDeck(opponentCards);
+    if (rule.boss) {
+      initialOpponentDeck = [{ ...BOSS_CARD, instanceId: 'o-boss' }, ...initialOpponentDeck.slice(0, 7)];
+    }
 
-    const startHp = spec?.modifier.startingHealth ?? 30;
+    setHouseRule(rule);
+    mvpRef.current = {};
+    recapRef.current = [];
+    setMvp(null);
+    setRecap([]);
+    const startHp = (spec?.modifier.startingHealth ?? 30) + rule.hp;
     setPlayerHealth(startHp);
-    setOpponentHealth(startHp + healthMod);
-    setOpponentMaxHealth(startHp + healthMod);
-    setPlayerEnergy(energyForTurn(1) + (spec?.modifier.extraEnergy || 0));
+    setOpponentHealth(startHp + healthMod + rule.chuckHp);
+    setOpponentMaxHealth(startHp + healthMod + rule.chuckHp);
+    setPlayerEnergy(Math.min(MAX_ENERGY, energyForTurn(1) + (spec?.modifier.extraEnergy || 0) + rule.energy));
 
     const playerInitialHand = initialPlayerDeck.slice(0, 5);
     const playerRemainingDeck = initialPlayerDeck.slice(5);
@@ -1230,8 +1251,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // with one copy of each.) Chuck's opening line goes between the intro and
     // the hand-over, in the order it is said.
     setTurnSlip(emptySlip());
-    const intro = [`${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()}`];
+    const intro = [`${OPPONENT_NAME} slams his deck on the table with ${crewName} at his back. Difficulty: ${aiDifficulty.toUpperCase()} ${crewTaunt(crewName)}`];
     intro.push(mindLine(aiDifficulty));
+    if (rule.id !== 'standard') intro.push(rule.blurb);
     if (mulled.tossed > 0) intro.push(mulliganOpponentLine(OPPONENT_NAME, mulled.tossed));
     if (spec) intro.push(`${spec.modifier.name}. ${spec.modifier.rules}`);
     startBattleLog(intro);
@@ -1252,6 +1274,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     if (opponentHealth <= 0) {
       clearAllTimeouts(); // cancel any queued opponent-turn steps
       setGameOver(true);
+      setMvp(pickMvp(mvpRef.current));
+      setRecap([...recapRef.current]);
       setWinner('player');
       settleDaily(true);
       setOppQuip(null);
@@ -1294,6 +1318,8 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     } else if (playerHealth <= 0) {
       clearAllTimeouts(); // cancel any queued opponent-turn steps
       setGameOver(true);
+      setMvp(pickMvp(mvpRef.current));
+      setRecap([...recapRef.current]);
       setWinner('opponent');
       settleDaily(false);
       setOppQuip(null);
@@ -1431,7 +1457,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
       setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 1));
       battleStatsRef.current.cardsPlayed += 1;
+      if (turnSlip.played + 1 === 2) addToBattleLog(COMBO_PLAY);
       setTurnSlip((slip) => notePlay(slip));
+      recapRef.current = pushRecap(recapRef.current, `Played ${card.name}`);
       playSound('cardPlay');
       return true;
     }
@@ -1462,7 +1490,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     setPlayerEnergy(prev => prev - cost);
     setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 1));
     battleStatsRef.current.cardsPlayed += 1;
+    if (turnSlip.played + 1 === 2) addToBattleLog(COMBO_PLAY);
     setTurnSlip((slip) => notePlay(slip));
+    recapRef.current = pushRecap(recapRef.current, `Played ${card.name}`);
     playSound('cardPlay');
 
     // A card with a rule gets the ability callout, which names the rule it
@@ -1623,6 +1653,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // pre-Rally attack and silently ate the buff the player just spent a full
     // momentum gauge on.
     const attacker = playerField.find(c => c.instanceId === selectedCard.instanceId) || selectedCard;
+    const struck = attacker.ability === 'blackout' ? (pickBlackoutTarget(validTargets) || target) : target;
 
     // Resolve against the target's HP: it survives a non-lethal hit (and its
     // fury fires), or dies and trample overkill spills to the opponent's face.
@@ -1630,11 +1661,13 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // The outcome is drawn on the table (the lunge, the hit, the number, the
     // crumple) and written to the log, so it gets no toast: a toast for every
     // hit covered the log and the table to repeat them.
-    const { survivor, overkill, dmg } = resolveCreatureHit(attacker, target, playerField);
+    const { survivor, overkill, dmg } = resolveCreatureHit(attacker, struck, playerField, houseRule.damage || 0);
     const impact = classifyHit({ dmg, killed: !survivor, overkill });
     playSound('attack');
     battleStatsRef.current.damageDealt += dmg;
+    if ((turnSlip.swings || 0) + 1 === 2) addToBattleLog(COMBO_SWING);
     setTurnSlip((slip) => noteHit(slip, { damage: dmg, killed: !survivor, face: survivor ? 0 : overkill }));
+    mvpRef.current = tallyMvp(mvpRef.current, { id: attacker.instanceId, name: attacker.name, damage: dmg });
     // On a kill the card shows what it actually lost, and any trample shows
     // on the face: the two add up to the hit, rather than the hit twice over.
     const taken = survivor ? dmg : dmg - overkill;
@@ -1642,33 +1675,33 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     const mark = (event) => withImpact(flavor ? { ...event, flavor } : event, impact);
     pushFx([
       { card: attacker.instanceId, strike: true },
-      ...(taken > 0 ? [mark({ card: target.instanceId, hit: true, tone: 'damage', text: `−${taken}` })] : []),
+      ...(taken > 0 ? [mark({ card: struck.instanceId, hit: true, tone: 'damage', text: `−${taken}` })] : []),
       ...(!survivor && overkill > 0 ? [mark({ face: 'opponent', hit: true, tone: 'damage', text: `−${overkill}` })] : []),
     ]);
 
     if (survivor) {
-      setOpponentField(prev => prev.map(c => c.instanceId === target.instanceId ? survivor : c));
-      if (target.ability === 'fury') {
-        addToBattleLog(gainedFuryStack(target, survivor)
-          ? `${target.name}'s fury activated! +1 attack`
-          : `${target.name} is already as furious as they get — capped at +3.`);
+      setOpponentField(prev => prev.map(c => c.instanceId === struck.instanceId ? survivor : c));
+      if (struck.ability === 'fury') {
+        addToBattleLog(gainedFuryStack(struck, survivor)
+          ? `${struck.name}'s fury activated! +1 attack`
+          : `${struck.name} is already as furious as they get — capped at +3.`);
       }
-      addToBattleLog(`${attacker.name} smacked ${target.name} for ${dmg} (${survivor.currentHp} HP left)`);
+      addToBattleLog(`${attacker.name} smacked ${struck.name} for ${dmg} (${survivor.currentHp} HP left)`);
     } else {
-      setOpponentField(prev => prev.filter(c => c.instanceId !== target.instanceId));
+      setOpponentField(prev => prev.filter(c => c.instanceId !== struck.instanceId));
       if (overkill > 0) setOpponentHealth(prev => Math.max(0, prev - overkill));
-      addToBattleLog(`UNSTUFFED! ${attacker.name} took ${target.name} apart${overkill > 0 ? ` — ${overkill} trampled right into ${OPPONENT_NAME}'s beans` : ''}`);
+      addToBattleLog(`UNSTUFFED! ${attacker.name} took ${struck.name} apart${overkill > 0 ? ` — ${overkill} trampled right into ${OPPONENT_NAME}'s beans` : ''}`);
       speak('oppLosesCreature');
     }
     const aside = hitAside({
-      attacker: attacker.name, target: target.name, killed: !survivor, overkill, dmg, foe: OPPONENT_NAME,
+      attacker: attacker.name, target: struck.name, killed: !survivor, overkill, dmg, foe: OPPONENT_NAME,
     });
     if (aside) addToBattleLog(aside);
+    recapRef.current = pushRecap(recapRef.current, `${attacker.name} hit ${struck.name} for ${dmg}`);
 
-    // Mark card as having attacked
-    setPlayerField(prev => prev.map(c =>
-      c.instanceId === selectedCard.instanceId ? { ...c, hasAttacked: true } : c
-    ));
+    setPlayerField(prev => prev.map(c => (
+      c.instanceId === selectedCard.instanceId ? stampSwing(c) : c
+    )));
 
     setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 2));
     finishFirstFight();
@@ -1724,7 +1757,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     } else {
       // The attacker was re-read above, so a Rally mid-targeting is already
       // in `attacker`. effectiveAttack folds in any royal ally on top.
-      const faceDamage = effectiveAttack(attacker, playerField);
+      const faceDamage = effectiveAttack(attacker, playerField) + (houseRule.damage || 0);
       const impact = classifyHit({ dmg: faceDamage, killed: faceDamage >= opponentHealth, overkill: 0 });
       playSound('attack');
       const flavor = hitFlavor({ dmg: faceDamage, killed: faceDamage >= opponentHealth, overkill: 0 });
@@ -1734,7 +1767,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       ]);
       setOpponentHealth(prev => Math.max(0, prev - faceDamage));
       battleStatsRef.current.damageDealt += faceDamage;
+      if ((turnSlip.swings || 0) + 1 === 2) addToBattleLog(COMBO_SWING);
       setTurnSlip((slip) => noteHit(slip, { damage: faceDamage, face: faceDamage }));
+      mvpRef.current = tallyMvp(mvpRef.current, { id: attacker.instanceId, name: attacker.name, damage: faceDamage });
+      recapRef.current = pushRecap(recapRef.current, `${attacker.name} hit ${OPPONENT_NAME} for ${faceDamage}`);
       addToBattleLog(`${attacker.name} decked ${OPPONENT_NAME} in the face for ${faceDamage}!`);
       const aside = hitAside({
         attacker: attacker.name, dmg: faceDamage, killed: faceDamage >= opponentHealth, face: true, foe: OPPONENT_NAME,
@@ -1743,9 +1779,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       if (faceDamage >= 4) speak('oppTakesFaceHit');
     }
 
-    setPlayerField(prev => prev.map(c =>
-      c.instanceId === selectedCard.instanceId ? { ...c, hasAttacked: true } : c
-    ));
+    setPlayerField(prev => prev.map(c => (
+      c.instanceId === selectedCard.instanceId ? stampSwing(c) : c
+    )));
 
     setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 3));
     finishFirstFight();
@@ -1826,13 +1862,23 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // of attacks.
     const activeOpponentField = opponentField.map(c => ({ ...c, stealthActive: false }));
     setOpponentField(prev => prev.map(c => ({ ...c, stealthActive: false })));
+    if (houseRule.boss && bossMends(activeOpponentField)) {
+      const room = Math.max(0, opponentMaxHealth - opponentHealth);
+      const healed = Math.min(BOSS_HEAL, room);
+      if (healed > 0) {
+        setOpponentHealth((hp) => Math.min(opponentMaxHealth, hp + healed));
+        addToBattleLog(`Donna is still catcalling. ${OPPONENT_NAME} mends ${healed}.`);
+        pushFx([{ face: 'opponent', tone: 'heal', text: `+${healed}` }]);
+      }
+    }
 
     // Opponent plays every card it can afford within its per-turn energy
     // budget (difficulty-scaled) while the field has room. Only played cards
     // leave the deck, so a full board never mills it.
     // At the difficulty this game was dealt at, not the live setting.
     const energyBudget = (OPPONENT_ENERGY_BY_DIFFICULTY[dealtDifficultyRef.current] ?? OPPONENT_ENERGY_BY_DIFFICULTY.normal)
-      + ((dailyRef.current?.modifier.extraEnergy && turnCount === 1) ? dailyRef.current.modifier.extraEnergy : 0);
+      + ((dailyRef.current?.modifier.extraEnergy && turnCount === 1) ? dailyRef.current.modifier.extraEnergy : 0)
+      + (houseRule.energy || 0);
     // Pass activeOpponentField so a 'swarm' card in the opponent's hand is
     // budgeted at its discounted cost under the same rule the player follows.
     const { plays, remainingDeck } = planOpponentPlays({
@@ -1876,6 +1922,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       let trapDamageToOpponent = 0;
       let killedPlayerCreature = false;
       const logs = [];
+      const hungoverSwung = [];
       // The wave's combat feedback, fired together once it has resolved —
       // before the write-back below, while every card it names (the dead
       // included) is still on screen to be measured.
@@ -1900,13 +1947,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
         if (targets.length > 0) {
           // Easy swings at the smallest threat. Normal and Hard take a kill
           // when one is there. Resolve against HP the way the player does.
-          const target = planAttackTarget({
-            difficulty: dealtDifficultyRef.current,
-            attacker: card,
-            targets,
-            attackerField: auraField,
-          });
-          const { survivor, overkill, dmg } = resolveCreatureHit(card, target, auraField);
+          const target = card.ability === 'blackout'
+            ? pickBlackoutTarget(targets)
+            : planAttackTarget({
+              difficulty: dealtDifficultyRef.current,
+              attacker: card,
+              targets,
+              attackerField: auraField,
+            });
+          if (card.ability === 'hungover') hungoverSwung.push(card.instanceId);
+          const { survivor, overkill, dmg } = resolveCreatureHit(card, target, auraField, houseRule.damage || 0);
           const impact = classifyHit({ dmg, killed: !survivor, overkill });
           const flavor = hitFlavor({ dmg, killed: !survivor, overkill });
           const mark = (event) => withImpact(flavor ? { ...event, flavor } : event, impact);
@@ -1939,6 +1989,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
         // No creature blockers. A Quickie that just arrived stops here: the
         // face, and the trap a face swing would spring, wait a turn.
         if (!canSwingFace(card)) return;
+        if (card.ability === 'hungover') hungoverSwung.push(card.instanceId);
 
         // A player trap springs on the attacker (and is consumed); otherwise
         // the attack hits face.
@@ -1955,7 +2006,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
           // Include a 'royal' ally's aura in the opponent's face damage too, not
           // just its creature-vs-creature hits. Uses auraField so a royal played
           // this turn counts. Mirrors the player-side fix at attackOpponentDirectly.
-          const oppFaceDamage = effectiveAttack(card, auraField);
+          const oppFaceDamage = effectiveAttack(card, auraField) + (houseRule.damage || 0);
           const faceKill = oppFaceDamage >= Math.max(0, playerHealth - faceDamage);
           const impact = classifyHit({ dmg: oppFaceDamage, killed: faceKill, overkill: 0 });
           const flavor = hitFlavor({ dmg: oppFaceDamage, killed: faceKill, overkill: 0 });
@@ -1981,7 +2032,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       // the opener, and whatever he just slammed down — is settled and free to
       // swing next turn. Done after the wave rather than before it so cards
       // played this turn still sit out the turn they arrived.
-      setOpponentField(prev => readyCreatures(prev));
+      setOpponentField(prev => readyCreatures(prev.map((c) => (
+        hungoverSwung.includes(c.instanceId) ? { ...c, pendingHangover: true } : c
+      ))));
       if (faceDamage > 0) {
         setPlayerHealth(prev => Math.max(0, prev - faceDamage));
         battleStatsRef.current.damageTaken += faceDamage;
@@ -2001,7 +2054,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
         setTurnCount(prev => prev + 1);
         // turnCount is still the pre-increment value in this closure — use +1
         // so energy tracks the turn the player is about to take.
-        setPlayerEnergy(energyForTurn(turnCount + 1));
+        setPlayerEnergy(Math.min(MAX_ENERGY, energyForTurn(turnCount + 1) + (houseRule.energy || 0)));
         setPhase('draw');
         addToBattleLog(boardLine('yourTurn'));
         noteBooth(addToBattleLog, lastBoothRef);
@@ -2754,6 +2807,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                   footer (BarTab.jsx). It used to be two chips and a bar,
                   while a level-up paid 100 x the new level in coins without a
                   word. */}
+              <NightSlip mvp={mvp} recap={recap} />
               <BarTab rewards={battleRewards} footer={resultCopy?.footer} />
               {/* Upsell nudge — only shown when player is low on resources */}
               {(cardPacks === 0 || gems < 50) && (onOpenShop || onBackToMenu) && (
@@ -2946,11 +3000,12 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                             actually swing at them next turn — without it,
                             summoning sickness is only legible on their own
                             half of the table. */}
-                        {card.summoningSick && (
+                        {card.hungover && <StatusChip zoom={fieldZoom}>Hungover</StatusChip>}
+                        {card.summoningSick && !card.hungover && (
                           <StatusChip zoom={fieldZoom} marked={coachCardId === card.instanceId && coachStep === 'warming'}>{arrivalChip(card)}</StatusChip>
                         )}
                         <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
-                          {describeCard(card, { attack: effectiveAttack(card, opponentField) })}
+                          {describeCard(card, { attack: effectiveAttack(card, opponentField), aura: attackAuraNote(card, opponentField) })}
                         </CardWords>
                         {hittable && (
                           <span data-target-mark="" className="absolute -top-2.5 -right-2.5 z-20 grid h-7 w-7 place-items-center rounded-full bg-red-600 ring-2 ring-red-200 shadow-lg" aria-hidden="true">
@@ -3137,12 +3192,13 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                           />
                         </div>
                         {card.stealthActive && <StealthBand zoom={fieldZoom} />}
-                        {card.hasAttacked && <StatusChip zoom={fieldZoom}>Exhausted</StatusChip>}
-                        {card.summoningSick && !card.hasAttacked && (
+                        {card.hungover && <StatusChip zoom={fieldZoom}>Hungover</StatusChip>}
+                        {card.hasAttacked && !card.hungover && <StatusChip zoom={fieldZoom}>Exhausted</StatusChip>}
+                        {card.summoningSick && !card.hasAttacked && !card.hungover && (
                           <StatusChip zoom={fieldZoom} marked={coachCardId === card.instanceId && coachStep === 'warming'}>{arrivalChip(card)}</StatusChip>
                         )}
                         <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
-                          {describeCard(card, { attack: effectiveAttack(card, playerField) })}
+                          {describeCard(card, { attack: effectiveAttack(card, playerField), aura: attackAuraNote(card, playerField) })}
                         </CardWords>
                       </div>
                     </FieldSlot>
@@ -3622,9 +3678,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
               {/* Current over the turn's maximum, as Hearthstone's crystals
                   read: "2/4" says both what is left and what the turn gave. */}
               <span className="font-display text-xl font-extrabold text-white tabular-nums" aria-hidden="true" data-energy="">
-                {playerEnergy}<span className="text-sm font-bold text-plush-300">/{energyForTurn(turnCount)}</span>
+                {playerEnergy}<span className="text-sm font-bold text-plush-300">/{Math.min(MAX_ENERGY, energyForTurn(turnCount) + (houseRule.energy || 0))}</span>
               </span>
-              <span className="sr-only">{playerEnergy} of {energyForTurn(turnCount)} energy</span>
+              <span className="sr-only">{playerEnergy} of {Math.min(MAX_ENERGY, energyForTurn(turnCount) + (houseRule.energy || 0))} energy</span>
             </div>
             <HealthMeter
               hp={playerHealth}

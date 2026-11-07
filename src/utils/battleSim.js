@@ -6,7 +6,7 @@
 
 import { ALL_CARDS } from '@/stores/gameStore';
 import {
-  canAttack, canSwingFace, effectiveAttack, getValidTargets, readyCreatures, resolveCreatureHit,
+  canAttack, canSwingFace, effectiveAttack, getValidTargets, pickBlackoutTarget, readyCreatures, resolveCreatureHit,
 } from '@/utils/battleUtils';
 import { chooseAttackTarget, chooseOpponentPlays } from '@/utils/opponentAI';
 import { energyForTurn, MAX_FIELD_SIZE } from '@/components/GameBoard/turn';
@@ -62,7 +62,7 @@ const applySpecial = (side, card) => {
   }
 };
 
-const takeTurn = (actor, defender, turn) => {
+const takeTurn = (actor, defender, turn, random) => {
   actor.field = actor.field.map((c) => ({ ...c, stealthActive: false }));
   if (actor.deck.length === 0) {
     actor.fatigue += 1;
@@ -92,7 +92,9 @@ const takeTurn = (actor, defender, turn) => {
       }
       defender.hp -= effectiveAttack(attacker, actor.field);
     } else {
-      const target = chooseAttackTarget(targets, attacker, actor.field);
+      const target = attacker.ability === 'blackout'
+        ? pickBlackoutTarget(targets, random)
+        : chooseAttackTarget(targets, attacker, actor.field);
       const hit = resolveCreatureHit(attacker, target, actor.field);
       defender.hp -= hit.overkill;
       defender.field = defender.field.flatMap((c) => (
@@ -100,7 +102,9 @@ const takeTurn = (actor, defender, turn) => {
       ));
     }
     actor.field = actor.field.map((c) => (
-      c.instanceId === attacker.instanceId ? { ...c, hasAttacked: true } : c
+      c.instanceId === attacker.instanceId
+        ? { ...c, hasAttacked: true, ...(c.ability === 'hungover' ? { pendingHangover: true } : {}) }
+        : c
     ));
   }
   actor.field = readyCreatures(actor.field);
@@ -113,9 +117,9 @@ export const simulateGame = (deckA, deckB, random = Math.random) => {
   const a = makeSide(deckA, 'a', random);
   const b = makeSide(deckB, 'b', random);
   for (let turn = 1; turn <= SIM_MAX_TURNS && a.hp > 0 && b.hp > 0; turn += 1) {
-    takeTurn(a, b, turn);
+    takeTurn(a, b, turn, random);
     if (a.hp <= 0 || b.hp <= 0) break;
-    takeTurn(b, a, turn);
+    takeTurn(b, a, turn, random);
   }
   if (a.hp <= 0 && b.hp <= 0) return 'draw';
   if (b.hp <= 0) return 'a';
