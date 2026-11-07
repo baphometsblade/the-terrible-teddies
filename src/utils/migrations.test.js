@@ -456,10 +456,14 @@ describe('leaderboard-integrity hardening', () => {
     const body = finalBody('sync_battle_result');
     expect(body, 'no sync_battle_result body found').toBeTruthy();
     expect(
-      /check_rate_limit\s*\(\s*p_user_id\s*,\s*'battle_result'/i.test(body),
+      /check_rate_limit\s*\(\s*'battle_result'/i.test(body),
       'sync_battle_result increments wins with no throttle — a console loop forges ' +
         'unlimited leaderboard wins. Gate it behind check_rate_limit.'
     ).toBe(true);
+    expect(
+      /\bp_user_id\b/i.test(body),
+      'sync_battle_result must derive the player from auth.uid(), not a client-supplied id'
+    ).toBe(false);
   });
 
   it('sync_player_level is rate-limited too — the experience cap alone is loopable', () => {
@@ -469,10 +473,14 @@ describe('leaderboard-integrity hardening', () => {
     const body = finalBody('sync_player_level');
     expect(body, 'no sync_player_level body found').toBeTruthy();
     expect(
-      /check_rate_limit\s*\(\s*p_user_id\s*,\s*'level_sync'/i.test(body),
+      /check_rate_limit\s*\(\s*'level_sync'/i.test(body),
       'sync_player_level has no check_rate_limit gate — a rapid loop of capped ' +
         '+200 increases still forges level 101 / ~1010 trophies with zero battles.'
     ).toBe(true);
+    expect(
+      /\bp_user_id\b/i.test(body),
+      'sync_player_level must derive the player from auth.uid(), not a client-supplied id'
+    ).toBe(false);
   });
 
   it('backfills email-derived usernames off the leaderboard — and ONLY those', () => {
