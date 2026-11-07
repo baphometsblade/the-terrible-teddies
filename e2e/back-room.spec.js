@@ -3,7 +3,7 @@ import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
 const seed = async (page, patch) => {
   await page.addInitScript((p) => {
     const raw = localStorage.getItem('terrible-teddies-storage');
-    const stored = raw ? JSON.parse(raw) : { state: {}, version: 6 };
+    const stored = raw ? JSON.parse(raw) : { state: {}, version: 7 };
     Object.assign(stored.state, p);
     localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
   }, patch);

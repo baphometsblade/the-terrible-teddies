@@ -1758,7 +1758,8 @@ export const useGameStore = create(
       // Safari private mode and Lockdown Mode throw from that call, and the
       // exception escapes before React mounts. This one does not throw.
       storage: createJSONStorage(() => browserLocalStorage()),
-      version: 6,
+      // 6 is the polish wardrobe. 7 runs normalizeSave for the back room.
+      version: 7,
       // Don't persist in-flight UI state
       partialize: (state) => {
         const {
