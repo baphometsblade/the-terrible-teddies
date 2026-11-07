@@ -34,6 +34,8 @@ import { dailyFightFor, resolveCrew } from './lib/dailyFight';
 import { focusWhenReady } from './lib/screenFocus';
 import { achievementToasts } from './lib/achievementAnnouncements';
 import { levelUpToast } from './lib/levelUpToast';
+import { preloadCardThumbs } from './lib/preloadArt';
+import BarMusic from './components/BarMusic';
 
 // GameBoard is lazy for the same reason the dialogs are: it is only reachable
 // after tapping Battle, but a static import put it — and its dependency tail,
@@ -56,6 +58,7 @@ const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const Challenges = lazy(() => import('./components/Challenges'));
 const DailyFight = lazy(() => import('./components/DailyFight'));
 const PurchaseSuccess = lazy(() => import('./components/PurchaseSuccess'));
+const Wardrobe = lazy(() => import('./components/Wardrobe'));
 
 // Shown for the moment a lazy dialog or the board chunk is in flight. A CSS
 // spin (transform only, on the compositor) rather than the Framer Motion
@@ -168,6 +171,9 @@ function App() {
   const currentScreen = nav.screen;
   const navigateTo = useCallback((screen) => {
     setNav((n) => (n.screen === screen ? n : { screen, from: n.screen }));
+    // The board chunk and the card pictures start together, on the tap,
+    // rather than when the first hand paints.
+    if (screen === 'game') preloadCardThumbs(useGameStore.getState().currentDeck);
   }, []);
   // The Deck Builder's and the battle board's leave guards (each one's
   // requestLeave): "← Menu" and the system's Back go through them.
@@ -252,6 +258,7 @@ function App() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
   const [showDaily, setShowDaily] = useState(false);
+  const [showWardrobe, setShowWardrobe] = useState(false);
   const [dailySpec, setDailySpec] = useState(null);
 
   // Close every dialog at once — used by DialogErrorBoundary to return the app
@@ -259,12 +266,13 @@ function App() {
   // the boundary's reset, so opening any dialog re-attempts the chunk.
   const dialogFlags = [
     showTutorial, showCardPacks, showPlayerStats, showSettings, showDailyRewards,
-    showShop, showBattlePass, showLeaderboard, showChallenges, showDaily,
+    showShop, showBattlePass, showLeaderboard, showChallenges, showDaily, showWardrobe,
   ];
   const closeAllDialogs = () => {
     setShowTutorial(false); setShowCardPacks(false); setShowPlayerStats(false);
     setShowSettings(false); setShowDailyRewards(false); setShowShop(false);
     setShowBattlePass(false); setShowLeaderboard(false); setShowChallenges(false); setShowDaily(false);
+    setShowWardrobe(false);
   };
   const [purchaseSessionId, setPurchaseSessionId] = useState(null);
 
@@ -697,6 +705,7 @@ function App() {
             onLeaderboard={() => setShowLeaderboard(true)}
             onChallenges={() => setShowChallenges(true)}
             onNightly={() => setShowDaily(true)}
+            onWardrobe={() => setShowWardrobe(true)}
           />
         );
     }
@@ -707,6 +716,7 @@ function App() {
       <div className="App min-h-screen">
         {session ? (
           <>
+            <BarMusic />
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentScreen}
@@ -763,6 +773,7 @@ function App() {
                 )}
                 {showPlayerStats && <PlayerStats key="player-stats" onClose={() => setShowPlayerStats(false)} />}
                 {showSettings && <Settings key="settings" onClose={() => setShowSettings(false)} />}
+                {showWardrobe && <Wardrobe key="wardrobe" onClose={() => setShowWardrobe(false)} />}
                 {showDailyRewards && <DailyRewards key="daily-rewards" onClose={() => setShowDailyRewards(false)} />}
                 {showShop && <Shop key="shop" initialTab={shopTab} onClose={() => setShowShop(false)} />}
                 {showBattlePass && (

@@ -191,6 +191,12 @@ test('settings dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
   await expectNoViolations(page, 'settings dialog');
 });
 
+test('wardrobe dialog has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  await page.getByRole('button', { name: 'Wardrobe', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Wardrobe' })).toBeVisible(SLOW);
+  await expectNoViolations(page, 'wardrobe dialog');
+});
+
 test('deck builder has no WCAG 2.1 A/AA violations', async ({ page }) => {
   await page.getByRole('button', { name: 'Deck Builder', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Deck Builder' })).toBeVisible(SLOW);

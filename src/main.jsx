@@ -6,6 +6,7 @@ import '@fontsource/baloo-2/latin-600.css'
 import '@fontsource/baloo-2/latin-800.css'
 import './index.css'
 import { useGameStore } from './stores/gameStore'
+import { registerShell } from './lib/pwa'
 import ErrorBoundary from './components/ErrorBoundary'
 import OfflineNotice from './components/OfflineNotice'
 import DoorGate from './components/DoorGate'
@@ -25,6 +26,22 @@ const LegalPage = lazy(() => import('./components/LegalPage'))
 //
 // A selector subscription, not the bare hook: this sits above the entire tree,
 // so subscribing to the whole store would re-render the app on every coin.
+// Text size, colourblind rarity and the table cloth. On <html>, so a
+// stylesheet can see them without every card subscribing to the store.
+function LookPrefs() {
+  const textSize = useGameStore((s) => s.textSize);
+  const colorblindSafe = useGameStore((s) => s.colorblindSafe);
+  const board = useGameStore((s) => s.equippedBoard);
+  React.useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.text = textSize === 'large' || textSize === 'larger' ? textSize : 'default';
+    root.dataset.cb = colorblindSafe ? 'safe' : 'full';
+    if (board && board !== 'house-board') root.dataset.board = board;
+    else delete root.dataset.board;
+  }, [textSize, colorblindSafe, board]);
+  return null;
+}
+
 function MotionPreference({ children }) {
   const animationsEnabled = useGameStore((s) => s.animationsEnabled);
   // MotionConfig reaches Framer Motion only. The foil and sheen effects are
@@ -46,10 +63,13 @@ try {
   // anything was drawn.
   const root = ReactDOM.createRoot(document.getElementById('root'));
 
+  registerShell();
+
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
         <MotionPreference>
+          <LookPrefs />
           {/* Outside the door and the session, so a signed-out player and a
               player still at the age gate hear it too. It renders nothing
               while the device is online. */}

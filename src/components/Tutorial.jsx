@@ -475,6 +475,13 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
             the row stopped 12-24px short of the edge, with the step scrolling
             past beneath it. */}
         <div className="relative flex flex-col gap-2 border-t border-white/[0.06] px-4 py-4 sm:px-6 [@media(max-height:500px)]:sticky [@media(max-height:500px)]:-bottom-3 sm:[@media(max-height:500px)]:-bottom-6 [@media(max-height:500px)]:z-10 [@media(max-height:500px)]:bg-night-900 [@media(max-height:500px)]:py-2.5 [@media(max-height:500px)]:shadow-[0_-16px_24px_-16px_rgba(0,0,0,0.9)]">
+          {/* On every step but the last, so a new player can be at the table
+              before the speech is. The last step's own button is the same door. */}
+          {!isLastStep && (
+            <button type="button" onClick={onStartGame} className={`${NAV} btn-brass w-full px-3`}>
+              Sit down and fight
+            </button>
+          )}
           <div className="flex items-center justify-between gap-3">
           <button
             type="button"

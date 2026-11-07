@@ -653,7 +653,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                       className={`relative overflow-hidden rounded-xl ${WELL}`}
                     >
                       {/* The card's tier, as a sliver of its frame metal. */}
-                      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px]" style={{ background: RARITY_METAL[card.rarity] }} />
+                      <span aria-hidden="true" data-rarity-metal={card.rarity} className="absolute inset-y-0 left-0 w-[3px]" style={{ background: RARITY_METAL[card.rarity] }} />
                       <div className="flex items-center gap-2.5 py-0.5 pl-3 pr-0.5 max-[359px]:gap-2 max-[359px]:pl-2.5">
                         {/* The brass coin a card's cost is struck on — TeddyCard's, at list size. */}
                         <BrassCoin size="sm">{card.cost}</BrassCoin>

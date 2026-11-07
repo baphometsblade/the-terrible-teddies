@@ -31,4 +31,16 @@ describe('How to play', () => {
     await act(async () => { replay.click(); });
     expect(onReplayLesson).toHaveBeenCalledTimes(1);
   });
+
+  it('lets a new player sit down and fight without paging the speech', async () => {
+    const onStartGame = vi.fn();
+    await act(async () => {
+      root.render(<Tutorial onClose={() => {}} onStartGame={onStartGame} onReplayLesson={() => {}} />);
+    });
+    const sit = [...container.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Sit down and fight');
+    expect(sit).toBeTruthy();
+    expect(sit.className).toMatch(/h-11/);
+    await act(async () => { sit.click(); });
+    expect(onStartGame).toHaveBeenCalledTimes(1);
+  });
 });

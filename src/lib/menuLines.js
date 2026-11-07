@@ -40,6 +40,7 @@ export const TILE_LINES = Object.freeze({
   collection: 'Everyone you’ve ever pulled',
   leaderboard: 'Who’s on top. Ask their ex.',
   nightly: 'One sitting. No rematch.',
+  wardrobe: 'Dress the cards and the table',
 });
 
 // The streak line under the Battle button, by the running streak: one win, a
