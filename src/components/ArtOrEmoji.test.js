@@ -14,13 +14,25 @@ describe('ArtOrEmoji loading hints', () => {
     const tag = img(renderToStaticMarkup(createElement(ArtOrEmoji, { teddy })));
     expect(tag).toContain('loading="lazy"');
     expect(tag).toContain('decoding="async"');
+    expect(tag).toContain('width="192"');
+    expect(tag).toContain('height="256"');
+    expect(tag).not.toContain('fetchpriority');
   });
 
-  it('loads eagerly when asked, for every variant', () => {
+  it('loads eagerly when asked, for every variant, and reserves the file’s aspect', () => {
+    const expected = {
+      thumb: ['width="192"', 'height="256"'],
+      full: ['width="768"', 'height="1024"'],
+      responsive: ['width="192"', 'height="256"'],
+    };
     for (const variant of ['thumb', 'full', 'responsive']) {
       const tag = img(renderToStaticMarkup(createElement(ArtOrEmoji, { teddy, variant, loading: 'eager' })));
       expect(tag, variant).toContain('loading="eager"');
       expect(tag, variant).toContain('decoding="async"');
+      // React 18 prints the DOM property name. The browser reads it as the
+      // fetch priority hint either way.
+      expect(tag, variant).toMatch(/fetchpriority="high"|fetchPriority="high"/);
+      for (const attr of expected[variant]) expect(tag, variant).toContain(attr);
     }
   });
 

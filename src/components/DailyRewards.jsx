@@ -34,7 +34,9 @@ const noun = (prize, n) => `${n} ${n === 1 ? prize.one : prize.many}`;
 // "75 coins and 1 card", for the claim's announcement.
 const inWords = (reward) => {
   const parts = PRIZES.filter((p) => reward[p.key] > 0).map((p) => noun(p, reward[p.key]));
-  return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0] ?? '';
+  // parts.at is Safari 15.4. Indexing works on every iOS 15.
+  const last = parts[parts.length - 1];
+  return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${last}` : parts[0] ?? '';
 };
 
 // The card reveal honours the Animations switch and the OS preference, as the

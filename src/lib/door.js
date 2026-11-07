@@ -125,7 +125,18 @@ export function checkAge(yearText, now = Date.now(), hadBirthday = null) {
   return 'ask';
 }
 
-const browserStorage = () => (typeof window !== 'undefined' ? window.localStorage : null);
+// Even reading `window.localStorage` throws under Lockdown Mode and in some
+// private-mode states. A throw here is an "ask", which createDoor already
+// treats as no answer; catching it at the getter keeps that throw out of
+// every caller that forgets.
+const browserStorage = () => {
+  try {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+};
 
 /**
  * One device's door: the stored answer, with the page's own memory behind it.

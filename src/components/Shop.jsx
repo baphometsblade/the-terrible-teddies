@@ -2,6 +2,7 @@ import { useState, useEffect, useId, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Store, Package, Gem, Star, Coins, Timer, Sparkles, ShieldCheck, Percent, Check } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { playerFacingError } from '@/lib/network';
 import { useGameStore, SHOP_ITEMS } from '../stores/gameStore';
 import analytics from '../utils/analytics';
 import { redirectToCheckout, fetchOnePerAccountHoldings } from '../utils/stripe';
@@ -271,7 +272,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
       }
       toast({
         title: "Checkout Failed",
-        description: err.message || "Please try again.",
+        description: playerFacingError(err, 'Please try again.'),
         variant: "destructive",
       });
     }

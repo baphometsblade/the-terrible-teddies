@@ -32,6 +32,8 @@ describe('the link preview tags', () => {
     expect(content('property', 'og:image')).toBe('https://teddies.example/og-image.jpg');
     expect(content('name', 'twitter:image')).toBe('https://teddies.example/og-image.jpg');
     expect(content('property', 'og:image:alt')).toBeTruthy();
+    const canonical = tags.find((t) => t.tag === 'link' && t.attrs.rel === 'canonical');
+    expect(canonical?.attrs.href).toBe('https://teddies.example/');
     // The size the tags claim is the size of the file in public/.
     const jpeg = fs.readFileSync(path.join(root, 'public', OG_IMAGE.path));
     const sof = jpeg.findIndex((b, i) => b === 0xff && (jpeg[i + 1] === 0xc0 || jpeg[i + 1] === 0xc2));
