@@ -30,6 +30,9 @@ export const QUIPS = {
     "One of us gets a number. The other gets a restraining order.",
     "Tonight's special: shots, regret, and your ass handed to you.",
     "I'm told I have a type: anyone within punching distance.",
+    "I flirt like I fight: handsy, and I do not tap out.",
+    "Buy me a drink. I'll still swing. That's the deal.",
+    "One of us is going home sweaty. Bring a towel.",
   ],
   // The same opener when the battle begins between midnight and five in the
   // morning, local time (startPoolFor). Card-agnostic, like gameStart.
@@ -48,6 +51,9 @@ export const QUIPS = {
     "The last bus left. I was not on it.",
     "The bartender's mopping around my feet. Deal faster.",
     "After midnight I become a different bear. He has priors.",
+    "Past midnight I charge extra and finish louder.",
+    "The lights are low. My standards left with them.",
+    "You rang. I was already undressed. Convenient.",
   ],
   // The first time the PLAYER is down to LAST_CALL_HP (the house lights come
   // up): Chuck gloats. When it is Chuck who is down, he says a line from
@@ -68,6 +74,9 @@ export const QUIPS = {
     "Look at you, hanging on. Like my ex. Like my tab.",
     "Down to your last drink. Make it a double. Make it count.",
     "Last call. Time to find out who's driving you home.",
+    "Last call. Zip up, or don't. The street is dark.",
+    "Lights up. Your alibi just walked out with mine.",
+    "House lights. Nobody here is married. Anymore.",
   ],
   // The first time CHUCK is down to LAST_CALL_HP: he bluffs and sulks.
   lastCallChuckDown: [
@@ -91,6 +100,9 @@ export const QUIPS = {
     "Everything on the table. Including the table. It's not mine.",
     "Jukebox dead, lights up, someone crying in a stall. Me.",
     "Last call for booze. Last call for dignity. I'm taking both.",
+    "Lights up and I'm still half out of this shirt.",
+    "Last call. I can still pull. I cannot stand.",
+    "Don't look down. I fight better with my fly open.",
   ],
   oppPlays: [
     "Say hello to my fluffy little friend.",
@@ -108,6 +120,9 @@ export const QUIPS = {
     "This one owes me money. I'm collecting in violence.",
     "Nine hours sober and feral. Don't make eye contact.",
     "DON'T fuck this up. I've got a reputation. A bad one.",
+    "This one charges by the hour. Tip in violence.",
+    "Off a double shift and still unzipped. Perfect.",
+    "They came for the open bar. They stayed to bite.",
   ],
   oppKills: [
     "Aww, was that your favorite? Tragic.",
@@ -126,6 +141,9 @@ export const QUIPS = {
     "Down for the count. The count was one.",
     "Add it to the list of things I've broken. Page two.",
     "Dead. Fucking. Gorgeous.",
+    "Dead, and still prettier than my last three.",
+    "Unstuffed. The fun way, then the other way.",
+    "That's a finish. I usually charge for those.",
   ],
   oppHitsFace: [
     "Right in the beans!",
@@ -147,6 +165,9 @@ export const QUIPS = {
     "That's not a bruise, that's a hickey with anger issues.",
     "Complimentary facial. Mostly exfoliation.",
     "Right in the face, no foreplay. That's romance.",
+    "Right in the mouth. You still owe me dinner.",
+    "A hickey with a closed fist. Romantic.",
+    "Your face called. It wants a safe word.",
   ],
   oppLosesCreature: [
     "You MONSTER. He had a family. Of decorative pillows.",
@@ -164,6 +185,9 @@ export const QUIPS = {
     "Shit. Shit shit shit. Okay. Shit.",
     "That one had a tab! Now it's MINE! I hate this!",
     "You bastard! I had plans for that one. Bad ones.",
+    "That was my date! We had a room! A cheap one!",
+    "You killed the only one who liked me back!",
+    "Great. Now who is walking me to the motel?",
   ],
   oppTakesFaceHit: [
     "OW. Okay. OKAY. Now I'm cranky.",
@@ -182,6 +206,9 @@ export const QUIPS = {
     "Hit me again. ...No. Don't. I panicked.",
     "I felt that in a part I'm not sure I have.",
     "I just threw up a little. I'm swallowing it. Keep going.",
+    "OW. Buy me a drink before you do that again.",
+    "Right in the goods. I felt that in my tab.",
+    "Harder. Wait. No. That was a reflex. Ow.",
   ],
   oppNearDeath: [
     "Let's talk about this like adults. Adult-ish.",
@@ -201,6 +228,9 @@ export const QUIPS = {
     "Tell my liver I'm sorry. Tell the bar I'm not.",
     "Beaten by someone who tips. I've never been so ashamed.",
     "Safe word! SAFE WORD! ...We never picked one.",
+    "Safe word is whiskey. I am saying whiskey.",
+    "I tap. I tap! ...I do not tap. Hit me.",
+    "Tell my ex I died doing what I do worst.",
   ],
   playerRally: [
     "Oh COME ON. That's cheating-adjacent!",
@@ -218,6 +248,9 @@ export const QUIPS = {
     "Great. A seminar. In a bar. With bears. I hate it here.",
     "All fluffed up and nowhere to go. I know the feeling.",
     "Pace yourselves! Some of us can't.",
+    "A pep talk and a grope. This bar has range.",
+    "Fully fluffed. I hate how into this I am.",
+    "Save some of that for the parking lot.",
   ],
   oppWins: [
     "Get stuffed, kid. Literally.",
@@ -236,6 +269,9 @@ export const QUIPS = {
     "I get the booth, the last pretzel, and your respect.",
     "I WON! Somebody write this down! ...Got a pen?",
     "Save my number. I'll call when I'm lonely and need to win.",
+    "Walk of shame starts at the door. Your left.",
+    "I won. Drinks, then my place. I have no place.",
+    "You were a lovely mistake. Don't call.",
   ],
   oppLoses: [
     "This is rigged. I want a rematch and a juice box.",
@@ -254,6 +290,9 @@ export const QUIPS = {
     "Fuck this bar. ...No, wait. I love this bar. Fuck YOU.",
     "One more? It's a long walk home. I don't have one.",
     "This isn't over. It's just on my tab.",
+    "Fine. Your round. Then my round. In bed.",
+    "I lost the fight and the bet about my pants.",
+    "Rematch at my motel. Loser pays. I lost.",
   ],
   // The player's Teddy Emote (Battle Pass exclusive) — trash talk fired at
   // Chuck on demand. Same register as his own lines: crude, never explicit.
@@ -276,6 +315,9 @@ export const QUIPS = {
     "You smell like a bar floor that gave up and moved in.",
     "Your deck is like your love life: over by turn five.",
     "You fight like you flirt: loud, desperate, over in a minute.",
+    "Chuck, buy a round or buy a clue. Either.",
+    "Your fly has been down since the first round.",
+    "I've seen hotter fights in a locked stall.",
   ],
 };
 

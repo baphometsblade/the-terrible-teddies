@@ -125,6 +125,42 @@ export function checkAge(yearText, now = Date.now(), hadBirthday = null) {
   return 'ask';
 }
 
+/**
+ * What a date of birth, typed as YYYY-MM-DD, comes to.
+ *
+ *   'invalid'  not a real calendar date, before 1900-01-01, or still in the future
+ *   'under'    under 18 on the player's own calendar day
+ *   'in'       18 or over today
+ *
+ * The date is compared and dropped. It is not stored. A full date needs no
+ * follow-up question: the birthday either has happened this year or it has not.
+ * `now` is an epoch or a Date. Surrounding whitespace is forgiven, and so are
+ * full-width digits, which NFKC folds to ASCII.
+ */
+export function checkDateOfBirth(text, now = Date.now()) {
+  const raw = String(text ?? '').normalize('NFKC').trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (!match) return 'invalid';
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const dob = new Date(year, month - 1, day);
+  if (dob.getFullYear() !== year || dob.getMonth() !== month - 1 || dob.getDate() !== day) return 'invalid';
+  const clock = now instanceof Date ? now : new Date(now);
+  if (Number.isNaN(clock.getTime())) return 'invalid';
+  const today = new Date(clock.getFullYear(), clock.getMonth(), clock.getDate());
+  if (dob < new Date(FIRST_YEAR, 0, 1) || dob > today) return 'invalid';
+  let age = today.getFullYear() - year;
+  const anniversary = new Date(today.getFullYear(), month - 1, day);
+  if (anniversary > today) age -= 1;
+  return age >= ADULT_AGE ? 'in' : 'under';
+}
+
+/** SFW until a device has been let in. Opening and a decline stay SFW: the game is not up. */
+export function contentMode(state) {
+  return state === 'pass' ? 'nsfw' : 'sfw';
+}
+
 const browserStorage = () => (typeof window !== 'undefined' ? window.localStorage : null);
 
 /**

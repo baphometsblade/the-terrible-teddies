@@ -241,28 +241,20 @@ test.describe('a toast over a dialog on a phone', () => {
 });
 
 // The door, for a device that has not passed it (the specs above start past
-// it): its year field and its one button, and the birthday question's two,
-// are each a 44px target by what a finger meets, at the two phone sizes the
-// rest of this file measures. The menu's bar-clock sign adds no target: it is
-// decoration that takes no tap, so a finger on it reaches what is under it.
+// it): the date field, the check, and the policy links are each a 44px
+// target by what a finger meets, at the two phone sizes the rest of this
+// file measures. The menu's bar-clock sign adds no target: it is decoration
+// that takes no tap, so a finger on it reaches what is under it.
 for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
   test.describe(`the door at ${viewport.width}x${viewport.height}`, () => {
     test.use({ viewport, doorPassed: false });
 
-    test('every control is a 44px target: the year form and the birthday question', async ({ page }) => {
+    test('every control is a 44px target: the date form and its policy links', async ({ page }) => {
       await stubSupabase(page);
       await page.goto('/');
       await expect(page.getByRole('heading', { name: 'ID.', level: 1 })).toBeVisible(SLOW);
       await expect(page.locator('form[data-armed="true"]')).toBeVisible();
       expect(await shortTargets(page.locator('main')), 'short targets on the door').toEqual([]);
-      await page.getByLabel('Year you were born').fill(String(new Date().getFullYear() - 18));
-      await page.getByRole('button', { name: 'Check my year' }).click();
-      await expect(page.getByRole('heading', { name: 'Had your birthday yet this year?' })).toBeVisible();
-      const question = page.locator('div[data-armed="true"]').filter({ has: page.getByRole('button', { name: 'Yes', exact: true }) });
-      await question.waitFor();
-      // The question's own box: the form it replaced is still in the page
-      // (hidden, to hold the door's height) and takes no tap.
-      expect(await shortTargets(question), 'short targets on the birthday question').toEqual([]);
     });
   });
 }

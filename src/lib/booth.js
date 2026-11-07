@@ -128,6 +128,11 @@ export const BOOTH = {
       'RIGHT THERE!',
       "DON'T STOP!",
       'HARDER!',
+      'The booth would like a moment. And a cold shower.',
+      'That was filth. The good kind. Do it again.',
+      'Somebody\'s tab is going to smell like perfume.',
+      'Consent is sexy. So is the uppercut.',
+      'He bought a round and lost his shirt. Again.',
     ],
   },
   nasty: {
@@ -159,6 +164,9 @@ export const BOOTH = {
       'NO MERCY!',
       'MAKE IT HURT!',
       'PUNISH ME HARDER!',
+      'Marks you asked for. Marks you got.',
+      'Safe word stays on the bar. The rest does not.',
+      'Rough, loud, and both of you are still grinning.',
     ],
   },
 };

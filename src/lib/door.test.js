@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   DOOR_KEY, DOOR_ART, OPENING_MS, FIRST_YEAR,
-  doorRecord, parseDoor, readDoor, writeDoor, checkAge, createDoor, openingMs,
+  doorRecord, parseDoor, readDoor, writeDoor, checkAge, checkDateOfBirth, contentMode, createDoor, openingMs,
 } from './door';
 
 // A Storage that holds what it is given, and one that refuses everything, as
@@ -215,6 +215,54 @@ describe('checkAge', () => {
     expect(checkAge(String(year - 30))).toBe('in');
     expect(checkAge(String(year - 10))).toBe('under');
     expect(checkAge(String(year - 18))).toBe('ask');
+  });
+});
+
+describe('checkDateOfBirth', () => {
+  const NOW = new Date(2026, 9, 31, 12);
+
+  it('lets an adult in, including someone who turns 18 today', () => {
+    expect(checkDateOfBirth('1990-06-15', NOW)).toBe('in');
+    expect(checkDateOfBirth('2008-10-31', NOW)).toBe('in');
+    expect(checkDateOfBirth('1900-01-01', NOW)).toBe('in');
+    expect(checkDateOfBirth(' 2000-01-01 ', NOW)).toBe('in');
+    expect(checkDateOfBirth('１９９０-０６-１５', NOW)).toBe('in');
+  });
+
+  it('turns a minor away, including a birthday that is still tomorrow', () => {
+    expect(checkDateOfBirth('2015-01-01', NOW)).toBe('under');
+    expect(checkDateOfBirth('2008-11-01', NOW)).toBe('under');
+    expect(checkDateOfBirth('2026-10-31', NOW)).toBe('under');
+  });
+
+  it('treats 29 February in a non-leap year as the next day', () => {
+    expect(checkDateOfBirth('2008-02-29', new Date(2026, 1, 28))).toBe('under');
+    expect(checkDateOfBirth('2008-02-29', new Date(2026, 2, 1))).toBe('in');
+  });
+
+  it('refuses a date that is not one, or not yet, or before 1900', () => {
+    for (const text of ['', '1990', '1990-6-15', '2020-02-31', '2021-02-29', '1899-12-31', '2026-11-01', 'abcd', null, undefined]) {
+      expect(checkDateOfBirth(text, NOW), JSON.stringify(text)).toBe('invalid');
+    }
+  });
+
+  it('uses the clock when it is not told the time', () => {
+    const today = new Date();
+    const adult = new Date(today.getFullYear() - 30, today.getMonth(), today.getDate());
+    const minor = new Date(today.getFullYear() - 10, today.getMonth(), today.getDate());
+    const stamp = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    expect(checkDateOfBirth(stamp(adult))).toBe('in');
+    expect(checkDateOfBirth(stamp(minor))).toBe('under');
+  });
+});
+
+describe('contentMode', () => {
+  it('stays SFW until a pass, which is the only state that unlocks the adult catalog', () => {
+    expect(contentMode('ask')).toBe('sfw');
+    expect(contentMode('opening')).toBe('sfw');
+    expect(contentMode('declined')).toBe('sfw');
+    expect(contentMode('pass')).toBe('nsfw');
+    expect(contentMode(undefined)).toBe('sfw');
   });
 });
 

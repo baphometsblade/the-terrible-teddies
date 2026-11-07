@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
-import { ABILITY_RULES, abilityRules, describeCard } from './abilities';
+import { ABILITY_RULES, abilityLabel, abilityRules, describeCard } from './abilities';
 import { ALL_CARDS } from '@/stores/gameStore';
 
 // The abilities the catalog guard accepts, read from cardSchema.test.js itself
@@ -57,7 +57,7 @@ describe('describeCard', () => {
   it('reads a table creature without a cost, with its wounds, its ability, its state and a Royal ally', () => {
     const sally = { ...byName('Shit-Talk Sally'), currentHp: 1, summoningSick: true };
     expect(describeCard(sally, { attack: 3 })).toBe(
-      `3 attack (+1 from a Royal ally), 1 of 3 HP. Taunt: ${ABILITY_RULES.taunt}. Warming Up.`,
+      `3 attack (+1 from a Royal ally), 1 of 3 HP. ${abilityLabel('taunt')}: ${ABILITY_RULES.taunt}. Warming Up.`,
     );
     expect(describeCard({ ...sally, summoningSick: false, hasAttacked: true })).toMatch(/2 attack, 1 of 3 HP\. .* Exhausted\.$/);
     expect(describeCard({ ...byName('Peeping Pete'), stealthActive: true })).toMatch(/Stealthed\.$/);

@@ -6,6 +6,23 @@
 // Each line states what the engine actually does (src/utils/battleUtils.js),
 // not what the keyword suggests: Shield halves a hit rounded down, Fury
 // counts hits survived, not hits taken, and stops at +3.
+// What the card face calls the keyword. The engine key stays taunt, shield,
+// and the rest; the label is the bar's name for it. Rules text is unchanged.
+export const ABILITY_LABELS = {
+  taunt: 'Catcall',
+  piercing: 'Uncut',
+  shield: 'Rubber',
+  stealth: 'Peep',
+  protect: 'Wingman',
+  fury: 'Whiskey',
+  swarm: 'Pile-on',
+  royal: 'Patron',
+};
+
+export const abilityLabel = (ability) => (
+  ability && Object.prototype.hasOwnProperty.call(ABILITY_LABELS, ability) ? ABILITY_LABELS[ability] : ''
+);
+
 export const ABILITY_RULES = {
   taunt: 'Enemies must attack this card first',
   piercing: 'Cuts through Shield: deals full damage to shielded cards',
@@ -66,7 +83,8 @@ export const describeCard = (card, { cost, attack } = {}) => {
     if (line) parts.push(`${line}.`);
   }
   const rules = abilityRules(card.ability);
-  if (rules) parts.push(`${card.ability.charAt(0).toUpperCase()}${card.ability.slice(1)}: ${rules}.`);
+  const label = abilityLabel(card.ability);
+  if (rules && label) parts.push(`${label}: ${rules}.`);
   if (card.hasAttacked) parts.push('Exhausted.');
   else if (card.summoningSick) parts.push('Warming Up.');
   if (card.stealthActive) parts.push('Stealthed.');

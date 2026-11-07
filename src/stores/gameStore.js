@@ -6,13 +6,14 @@ import { getCurrentSeason, getSeason, seasonFromKey } from '@/utils/season';
 import { BATTLE_PASS_REWARDS, readyRewards, passOf, describeGrants } from '@/lib/battlePass';
 import analytics from '@/utils/analytics';
 import { nextDailyRecord } from '@/lib/dailyFight';
+import { AFTER_HOURS_CARDS } from '@/data/afterHoursCards';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
   { id: 1, name: "Shitstarter Ted", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Every bar fight in this town starts with Ted." },
-  { id: 2, name: "Feral Tim", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'swarm', rarity: 'common', description: "Raised by raccoons. It shows." },
+  { id: 2, name: "Feral Tim", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'swarm', rarity: 'common', description: "Raised in the alley. The alley is still pressing charges." },
   { id: 3, name: "Fluffy McFuckface", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Legally changed his name. Won the bet." },
-  { id: 4, name: "Bar-Fight Barry", attack: 2, defense: 1, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Banned from six pubs and one build-a-workshop." },
+  { id: 4, name: "Bar-Fight Barry", attack: 2, defense: 1, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Banned from six pubs and the honeymoon suite." },
   { id: 5, name: "Stitches the Snitch", attack: 2, defense: 3, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "Held together by thread and plea deals." },
 
   // Uncommon
@@ -41,7 +42,7 @@ export const ALL_CARDS = [
 
   // Trap Cards
   { id: 30, name: "Honey Trap", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'common', description: "He only came up for a nightcap. The nightstand had teeth." },
-  { id: 31, name: "Hug With Consequences", attack: 0, defense: 0, type: 'trap', cost: 1, effect: 'damage', amount: 2, rarity: 'common', description: "It felt nice for exactly one second." },
+  { id: 31, name: "Hug With Consequences", attack: 0, defense: 0, type: 'trap', cost: 1, effect: 'damage', amount: 2, rarity: 'common', description: "It felt nice for one second. The bruise sends a thank-you." },
   { id: 32, name: "Premature Detonation", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "It happens to lots of traps. Don't make it weird." },
   { id: 33, name: "Full Metal Buttons", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 3, rarity: 'uncommon', description: "A quarter buys a shock. Not the kind you came for." },
   { id: 34, name: "Cuddle Homicide", attack: 0, defense: 0, type: 'trap', cost: 4, effect: 'damage', amount: 6, rarity: 'rare', description: "The coroner ruled it 'death by affection.'" },
@@ -61,9 +62,9 @@ export const ALL_CARDS = [
   // engine actually implements (taunt/protect/stealth targeting; shield/
   // piercing/fury combat) — see cardSchema.test.js, which enforces this.
   { id: 50, name: "Dumpster Dave", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'stealth', rarity: 'common', description: "Lives behind the bar. You won't see him coming out of it." },
-  { id: 51, name: "Mange Marvin", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "The bald patches are from stress. And mange." },
+  { id: 51, name: "Mange Marvin", attack: 3, defense: 2, type: 'action', cost: 2, ability: 'none', rarity: 'common', description: "The bald patches are from stress, cheap bleach, and a long weekend." },
   { id: 52, name: "Two-Beer Tina", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'common', description: "Two beers in and she's everyone's problem. Three beers in and she's unstoppable." },
-  { id: 53, name: "Coupon Carl", attack: 1, defense: 2, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Fights dirty. Tips worse." },
+  { id: 53, name: "Coupon Carl", attack: 1, defense: 2, type: 'action', cost: 1, ability: 'none', rarity: 'common', description: "Fights dirty, tips in singles, and smells like the carpet." },
   { id: 54, name: "Sticky Mickey", attack: 2, defense: 2, type: 'action', cost: 2, ability: 'protect', rarity: 'common', description: "Nobody asks why he's sticky. He's not going anywhere, and neither is whoever's behind him." },
   { id: 55, name: "Ashtray Annie", attack: 1, defense: 2, type: 'action', cost: 1, ability: 'shield', rarity: 'common', description: "Smells like 1987 and menthols. Burned through three husbands and a mattress." },
   { id: 56, name: "Bouncer Bruno", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'taunt', rarity: 'uncommon', description: "You're not on the list. Nobody is on the list." },
@@ -76,14 +77,14 @@ export const ALL_CARDS = [
   { id: 63, name: "Bail-Money Bonnie", attack: 2, defense: 4, type: 'action', cost: 3, ability: 'protect', rarity: 'rare', description: "She knows a guy. She IS the guy." },
   { id: 64, name: "Sgt. Snuggles, Dishonorable", attack: 4, defense: 3, type: 'action', cost: 4, ability: 'shield', rarity: 'rare', description: "Court-martialed for fraternizing. With the entire tribunal." },
   { id: 65, name: "The Debt Collector", attack: 5, defense: 1, type: 'action', cost: 4, ability: 'piercing', rarity: 'rare', description: "Your kneecaps called. They're nervous." },
-  { id: 66, name: "Mama Mauls", attack: 5, defense: 3, type: 'action', cost: 5, ability: 'taunt', rarity: 'epic', description: "Ask about her cubs. Go ahead. Ask." },
+  { id: 66, name: "Mama Mauls", attack: 5, defense: 3, type: 'action', cost: 5, ability: 'taunt', rarity: 'epic', description: "The apron stays on. The rolling pin does not." },
   { id: 67, name: "Whiskey Priest", attack: 3, defense: 5, type: 'action', cost: 5, ability: 'protect', rarity: 'epic', description: "Absolves everything but his own tab." },
   { id: 68, name: "Duke of Dumpsterfire", attack: 6, defense: 2, type: 'action', cost: 5, ability: 'fury', rarity: 'epic', description: "Royalty of the alley. Exes report a burning sensation. So does the fire marshal." },
   { id: 69, name: "Big Spoon, Last Warning", attack: 6, defense: 4, type: 'action', cost: 6, ability: 'shield', rarity: 'legendary', description: "The cuddle is mandatory. The survival is optional." },
 
   // Five new traps (ids 70-74) and five new specials (ids 75-79). Specials
   // only use effects applySpecialEffect implements: heal / draw / buff.
-  { id: 70, name: "Glass in the Gummy Bears", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 4, rarity: 'common', description: "Chewy, with consequences." },
+  { id: 70, name: "Glass in the Gummy Bears", attack: 0, defense: 0, type: 'trap', cost: 2, effect: 'damage', amount: 4, rarity: 'common', description: "Chewy, then a clinic, then a story you will not tell sober." },
   { id: 71, name: "Wet Floor, No Sign", attack: 0, defense: 0, type: 'trap', cost: 1, effect: 'damage', amount: 2, rarity: 'common', description: "Beer, glitter and a third liquid. The mop quit rather than ask." },
   { id: 72, name: "Loaded Claw Machine", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Rigged? Obviously. Everybody pays to get grabbed. Nobody takes the prize home." },
   { id: 73, name: "Last Call Stampede", attack: 0, defense: 0, type: 'trap', cost: 3, effect: 'damage', amount: 4, rarity: 'uncommon', description: "Five words: two for one tequila night." },
@@ -93,6 +94,7 @@ export const ALL_CARDS = [
   { id: 77, name: "The Group Chat Leaks", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'draw', amount: 4, rarity: 'rare', description: "Everyone's secrets, face up. Draw four, lose friends." },
   { id: 78, name: "Bar-Top Baptism", attack: 0, defense: 0, type: 'special', cost: 5, effect: 'heal', amount: 10, rarity: 'rare', description: "Fully submerged in the good stuff. Born again, smells worse." },
   { id: 79, name: "Suspicious Brownies", attack: 0, defense: 0, type: 'special', cost: 3, effect: 'draw', amount: 2, rarity: 'uncommon', description: "Don't ask what's in them. Draw two, feel weird later." },
+  ...AFTER_HOURS_CARDS,
 ];
 
 // The HP at which the night is nearly over for a side. One number for the
@@ -156,18 +158,18 @@ export const dailyClaimDay = ({ lastLoginDate = null, consecutiveLogins = 0 }, n
 // table: `description` on the Shop's tiles, `short` on the compact Card Packs
 // tiles. shopCopy.test.js checks the claims in both against the prices.
 export const SHOP_ITEMS = [
-  { id: 'pack_1', name: 'Card Pack', description: '5 random cards. Open in the toilets.', short: '5 cards. Open in the toilets.', icon: '📦', price: 200, currency: 'coins', type: 'pack', quantity: 1 },
-  { id: 'pack_5', name: '5 Card Packs', description: '25 random cards (10% off). Hide your keys.', short: '25 cards · 10% off. Hide your keys.', icon: '📦', price: 900, currency: 'coins', type: 'pack', quantity: 5 },
-  { id: 'pack_10', name: '10 Card Packs', description: '50 random cards (20% off). Cancel Sunday.', short: '50 cards · 20% off. Cancel Sunday.', icon: '📦📦', price: 1600, currency: 'coins', type: 'pack', quantity: 10 },
-  { id: 'premium_pack', name: 'Premium Pack', description: 'Guaranteed rare or better. Pure, uncut.', short: 'Rare or better. Pure, uncut.', icon: '💎', price: 50, currency: 'gems', type: 'premium', quantity: 1 },
-  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards, guaranteed legendary. Finally.', short: '10 cards · 1 legendary. Tell no one.', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
-  { id: 'coins_small', name: 'Small Coin Bag', description: '+500 coins. Singles, mostly.', icon: '💰', price: 10, currency: 'gems', type: 'coins', quantity: 500 },
-  { id: 'coins_large', name: 'Large Coin Bag', description: '+3,000 coins. Hundreds, unmarked.', icon: '💰', price: 50, currency: 'gems', type: 'coins', quantity: 3000 },
+  { id: 'pack_1', name: 'Card Pack', description: '5 filthy cards. Open in a stall.', short: '5 cards. Open in a stall.', icon: '📦', price: 200, currency: 'coins', type: 'pack', quantity: 1 },
+  { id: 'pack_5', name: '5 Card Packs', description: '25 random cards (10% off). Hide the keys.', short: '25 cards · 10% off. Hide the keys.', icon: '📦', price: 900, currency: 'coins', type: 'pack', quantity: 5 },
+  { id: 'pack_10', name: '10 Card Packs', description: '50 random cards (20% off). Call in sick.', short: '50 cards · 20% off. Call in sick.', icon: '📦📦', price: 1600, currency: 'coins', type: 'pack', quantity: 10 },
+  { id: 'premium_pack', name: 'Premium Pack', description: 'Guaranteed rare or better. Uncut.', short: 'Rare or better. Uncut.', icon: '💎', price: 50, currency: 'gems', type: 'premium', quantity: 1 },
+  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards, guaranteed legendary. Hide it.', short: '10 cards · 1 legendary. Hide it.', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
+  { id: 'coins_small', name: 'Small Coin Bag', description: '+500 coins. For the cheap rounds.', icon: '💰', price: 10, currency: 'gems', type: 'coins', quantity: 500 },
+  { id: 'coins_large', name: 'Large Coin Bag', description: '+3,000 coins. Unmarked. Like you.', icon: '💰', price: 50, currency: 'gems', type: 'coins', quantity: 3000 },
   // Timed booster rather than a lump sum: pays out only as you play, so it
   // rewards an active day instead of being a flat coin bag (those already
   // exist above at a guaranteed rate). Priced between the two bags — it beats
   // coins_small for anyone who plays more than ~10 battles in the window.
-  { id: 'coin_doubler', name: 'Coin Doubler', description: 'Double battle coins for 24h', icon: '🪙', price: 25, currency: 'gems', type: 'booster', durationHours: 24 },
+  { id: 'coin_doubler', name: 'Coin Doubler', description: 'Double battle coins for 24h. Sin.', icon: '🪙', price: 25, currency: 'gems', type: 'booster', durationHours: 24 },
 ];
 
 // The odds of every pack slot, as weights out of 100, best rarity first (the

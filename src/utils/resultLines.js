@@ -25,6 +25,9 @@ export const RESULT_TITLES = {
     "Pleasure doing business.",
     "Uncalled for. Do it again.",
     "Chuck got fucked up.",
+    "Sent home in a stranger's coat.",
+    "He finished. Loudly. Early.",
+    "The room key is yours now.",
   ],
   loss: [
     'ABSOLUTELY UNSTUFFED!',
@@ -37,6 +40,9 @@ export const RESULT_TITLES = {
     "Chuck won. Hydrate.",
     "The lights came on.",
     "Stuffing on the ceiling.",
+    "You finished early. Again.",
+    "Walk of shame, still loading.",
+    "The headboard won. Not you.",
   ],
 };
 
@@ -55,6 +61,9 @@ export const RESULT_SUBLINES = {
     `He's calling his ex. The bar looks away.`,
     `He ordered a water. The bar went quiet.`,
     `He wants a recount. He counts to four.`,
+    `${OPPONENT_NAME} is in the alley, arguing with his trousers.`,
+    `He is texting three people. None of them are you.`,
+    `The bartender cut him off and kept his room key.`,
   ],
   loss: [
     `${OPPONENT_NAME} is doing a victory lap. It's insufferable.`,
@@ -70,6 +79,9 @@ export const RESULT_SUBLINES = {
     `He called his ex to tell her. She picked up this time.`,
     `${OPPONENT_NAME} has taken your stool. He is not giving it back.`,
     `${OPPONENT_NAME} is celebrating in the restroom. Alone. At length.`,
+    `He is telling the story with his hips. Staff look away.`,
+    `${OPPONENT_NAME} bought a round and put it on your card.`,
+    `The room still smells like him. Open a window.`,
   ],
 };
 

@@ -5,9 +5,9 @@
 // turns that off.
 //
 // It is a courtesy gate in the fiction, not age verification, and these tests
-// pin what it promises: both answers, the year the player turns 18 and its
-// birthday question, an answer that stays on the device (a reload, a new
-// tab, a deep link, a second tab), a year that is never stored or sent, the
+// pin what it promises: both answers, the date that turns 18 today and the
+// one that is still 17, an answer that stays on the device (a reload, a new
+// tab, a deep link, a second tab), a date that is never stored or sent, the
 // keyboard and the double-tap, and a layout that fits a 320px phone.
 import AxeBuilder from '@axe-core/playwright';
 import { test, expect, stubSupabase, seedSignedIn, SESSION, SLOW } from './helpers/session.js';
@@ -15,13 +15,23 @@ import { DOOR_KEY, doorRecord } from '../src/lib/door.js';
 import { CONTENT_NOTICE } from '../src/lib/contentNotice.js';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
-const YEAR = new Date().getFullYear();
-const ADULT = String(YEAR - 30);
-const MINOR = String(YEAR - 12);
-const TURNING_18 = String(YEAR - 18);
+const pad = (n) => String(n).padStart(2, '0');
+const iso = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+const shifted = (years, days = 0) => {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setFullYear(date.getFullYear() - years);
+  date.setDate(date.getDate() + days);
+  return iso(date);
+};
+const ADULT = shifted(30);
+const MINOR = shifted(12);
+const TURNS_TODAY = shifted(18);
+const STILL_17 = iso(new Date(new Date().getFullYear() - 18, new Date().getMonth(), new Date().getDate() + 1));
+const FUTURE = iso(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1));
 // The one error line (DOOR_COPY.error, in a .jsx the node-side runner cannot
-// import): true of every year it is shown for, 2099 and 1850 included.
-const ERROR = 'Enter a year, 1900 to this year.';
+// import): true of every date it is shown for.
+const ERROR = 'Enter a real date, 1900 on.';
 const DECLINED = 'Sorry, this room is 18+. Terrible Teddies is for players 18 and over. Thanks for being honest.';
 
 test.use({ doorPassed: false });
@@ -37,18 +47,13 @@ const meetTheDoor = async (page, url = '/') => {
 // The form is dead for its first moments (the double-tap that launched the
 // app must not answer), so wait for it to be armed before using it.
 const armed = (page) => expect(page.locator('form[data-armed="true"]')).toBeVisible();
-const yearField = (page) => page.getByLabel('Year you were born');
-const comeIn = (page) => page.getByRole('button', { name: 'Check my year' });
+const dobField = (page) => page.getByLabel('Date of birth');
+const comeIn = (page) => page.getByRole('button', { name: 'Check my age' });
 
-const answer = async (page, year) => {
+const answer = async (page, date) => {
   await armed(page);
-  await yearField(page).fill(year);
+  await dobField(page).fill(date);
   await comeIn(page).click();
-};
-const answerBirthday = async (page, name) => {
-  await expect(page.getByRole('heading', { name: 'Had your birthday yet this year?' })).toBeVisible();
-  await expect(page.locator('[data-armed="true"]').filter({ has: page.getByRole('button', { name }) })).toBeVisible();
-  await page.getByRole('button', { name, exact: true }).click();
 };
 
 const record = async (page) => JSON.parse(await page.evaluate((k) => localStorage.getItem(k), DOOR_KEY));
@@ -69,13 +74,11 @@ test.describe('a new device', () => {
     // The scene: the amber sign, the shades in the slot, the shared content line.
     await expect(page.getByText('THE SEAMY SIDE')).toBeVisible();
     await expect(page.getByText(`Contains ${CONTENT_NOTICE}.`)).toBeVisible();
-    await expect(page.getByText("Only used to check you're 18 or over. The year is never saved or sent.")).toBeVisible();
-    // Bruno's card at full size, not the thumbnail, drawn and decoration only.
-    const art = page.locator('.peep-slot img');
-    await expect(art).toHaveJSProperty('naturalWidth', 768);
-    await expect(art).toHaveAttribute('alt', '');
-    expect(requests.some((u) => u.endsWith('/cards/56.webp'))).toBe(true);
-    expect(requests.some((u) => u.includes('/cards/thumbs/56'))).toBe(false);
+    await expect(page.getByText("Only used to check you're 18 or over. The date is never saved or sent.")).toBeVisible();
+    // No adult card art before the date is accepted.
+    await expect(page.locator('.peep-slot img')).toHaveCount(0);
+    await expect(page.locator('.peep-slot [data-lenses]')).toBeVisible();
+    expect(requests.some((u) => /\/cards\/.*\.webp/.test(u))).toBe(false);
 
     // None of the game: not its sign-in screen, not its menu, not its dialogs.
     await expect(theGame(page)).toHaveCount(0);
@@ -215,75 +218,47 @@ test.describe('a new device', () => {
   });
 });
 
-test.describe('the year the player turns 18', () => {
-  test('is asked whether the birthday has been, in the form\'s place, with two equal answers', async ({ page }) => {
+test.describe('the date the player turns 18', () => {
+  test('a birthday that is today is let in, with no follow-up question', async ({ page }) => {
     await meetTheDoor(page);
-    await answer(page, TURNING_18);
-    const heading = page.getByRole('heading', { name: 'Had your birthday yet this year?' });
-    await expect(heading).toBeVisible();
-    await expect(heading).toBeFocused();
-    // The form is gone from the page as far as anyone can tell.
-    await expect(yearField(page)).toBeHidden();
-    await expect(comeIn(page)).toBeHidden();
-
-    const yes = page.getByRole('button', { name: 'Yes', exact: true });
-    const notYet = page.getByRole('button', { name: 'Not yet', exact: true });
-    await expect(yes).toBeVisible();
-    // Equal: the same size, the same glass, and neither is the brass that
-    // marks the answer a screen wants.
-    const [a, b] = await Promise.all([yes.boundingBox(), notYet.boundingBox()]);
-    expect([Math.round(a.width), Math.round(a.height)]).toEqual([Math.round(b.width), Math.round(b.height)]);
-    const look = (el) => el.evaluate((n) => ({ cls: n.className.replace(/\bpointer-events-none\b/, '').trim(), bg: getComputedStyle(n).backgroundImage, color: getComputedStyle(n).color }));
-    const [ly, ln] = await Promise.all([look(yes), look(notYet)]);
-    expect(ly).toEqual(ln);
-    expect(ly.cls).toContain('btn-glass');
-    expect(ly.cls).not.toContain('btn-brass');
-    await expect(page.locator('.btn-brass')).toHaveCount(0);
-  });
-
-  test('"Yes" is let in', async ({ page }) => {
-    await meetTheDoor(page);
-    await answer(page, TURNING_18);
-    await answerBirthday(page, 'Yes');
+    await answer(page, TURNS_TODAY);
     await expect(theGame(page)).toBeVisible(SLOW);
+    await expect(page.getByRole('heading', { name: 'Had your birthday yet this year?' })).toHaveCount(0);
     expect((await record(page)).state).toBe('pass');
+    const everywhere = await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }));
+    expect(everywhere).not.toContain(TURNS_TODAY);
   });
 
-  test('"Not yet" is turned away, for good', async ({ page }) => {
+  test('a birthday that is tomorrow is turned away, for good', async ({ page }) => {
     await meetTheDoor(page);
-    await answer(page, TURNING_18);
-    await answerBirthday(page, 'Not yet');
+    await answer(page, STILL_17);
     await expect(declined(page)).toBeVisible();
     expect((await record(page)).state).toBe('declined');
     await page.reload();
     await expect(declined(page)).toBeVisible(SLOW);
-  });
-
-  test('is not asked of anyone else: a year before it is in, a year after it is out', async ({ page }) => {
-    await meetTheDoor(page);
-    await answer(page, String(YEAR - 19));
-    await expect(theGame(page)).toBeVisible(SLOW);
+    const everywhere = await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }));
+    expect(everywhere).not.toContain(STILL_17);
   });
 });
 
 test.describe('a year that is not one', () => {
-  for (const [what, text] of [['nothing', ''], ['three digits', '199'], ['letters', 'abcd'], ['before 1900', '1899'], ['next year', String(YEAR + 1)], ['four digits, far ahead', '2099']]) {
+  for (const [what, text] of [['nothing', ''], ['a year alone', '1990'], ['letters', 'abcd'], ['before 1900', '1899-12-31'], ['not a day', '2020-02-31'], ['tomorrow', FUTURE], ['far ahead', '2099-01-01']]) {
     test(`says so, in place, for ${what}, and lets nobody in`, async ({ page }) => {
       await meetTheDoor(page);
       await armed(page);
-      await yearField(page).fill(text);
+      await dobField(page).fill(text);
       await comeIn(page).click();
       const alert = page.getByRole('alert');
       await expect(alert).toHaveText(ERROR);
-      await expect(yearField(page)).toHaveAttribute('aria-invalid', 'true');
-      await expect(yearField(page)).toBeFocused();
-      await expect(yearField(page)).toHaveAccessibleDescription(/Only used to check.*Enter a year, 1900 to this year\./);
+      await expect(dobField(page)).toHaveAttribute('aria-invalid', 'true');
+      await expect(dobField(page)).toBeFocused();
+      await expect(dobField(page)).toHaveAccessibleDescription(/Only used to check.*Enter a real date, 1900 on\./);
       expect(await page.evaluate((k) => localStorage.getItem(k), DOOR_KEY)).toBeNull();
       await expect(theGame(page)).toHaveCount(0);
       // Typing again takes the message away.
-      await yearField(page).press('1');
+      await dobField(page).press('1');
       await expect(alert).toHaveText('');
-      await expect(yearField(page)).not.toHaveAttribute('aria-invalid', 'true');
+      await expect(dobField(page)).not.toHaveAttribute('aria-invalid', 'true');
     });
   }
 
@@ -327,31 +302,29 @@ test.describe('with only a keyboard', () => {
     const stops = await page.evaluate(() => [...document.querySelectorAll('a[href], button, input, select, textarea, [tabindex]')]
       .filter((el) => el.tabIndex >= 0 && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden')
       .map((el) => el.tagName.toLowerCase()));
-    expect(stops).toEqual(['input', 'button']);
+    expect(stops).toEqual(['input', 'button', 'a', 'a']);
     await armed(page);
     await page.keyboard.press('Tab');
-    await expect(yearField(page)).toBeFocused();
+    await expect(dobField(page)).toBeFocused();
     await page.keyboard.type(ADULT);
     await page.keyboard.press('Enter');
     await expect(theGame(page)).toBeVisible(SLOW);
   });
 
-  test('answers the birthday question from the keyboard, Yes then Not yet in the tab order', async ({ page }) => {
+  test('reaches the policy links after the button, and a too-young date declines from the keyboard', async ({ page }) => {
     await meetTheDoor(page);
     await armed(page);
     await page.keyboard.press('Tab');
-    await page.keyboard.type(TURNING_18);
-    await page.keyboard.press('Enter');
-    const heading = page.getByRole('heading', { name: 'Had your birthday yet this year?' });
-    await expect(heading).toBeFocused();
-    await expect(page.locator('[data-armed="true"]').filter({ has: page.getByRole('button', { name: 'Yes', exact: true }) })).toBeVisible();
+    await expect(dobField(page)).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Yes', exact: true })).toBeFocused();
+    await expect(comeIn(page)).toBeFocused();
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Not yet', exact: true })).toBeFocused();
-    await page.keyboard.press('Shift+Tab');
-    await page.keyboard.press('Enter');
-    await expect(theGame(page)).toBeVisible(SLOW);
+    await expect(page.getByRole('link', { name: 'Terms' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('link', { name: 'Privacy' })).toBeFocused();
+    await dobField(page).fill(STILL_17);
+    await dobField(page).press('Enter');
+    await expect(declined(page)).toBeVisible(SLOW);
   });
 });
 
@@ -370,7 +343,7 @@ test.describe('the first moments', () => {
     // pointers) before long; the answer-side guard is the clock.
     await armed(page);
     // A tap that arrives with no time passed is not an answer and not an error.
-    await yearField(page).fill(ADULT);
+    await dobField(page).fill(ADULT);
     await comeIn(page).click();
     await page.waitForTimeout(300);
     await expect(page.getByRole('alert')).toHaveText('');
@@ -515,13 +488,10 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 1280, height: 800 
       expect(violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(' | ')}`), label).toEqual([]);
     };
 
-    test('has no WCAG 2.1 A/AA violations: the door, the question and the turning away', async ({ page }) => {
+    test('has no WCAG 2.1 A/AA violations: the door and the turning away', async ({ page }) => {
       await meetTheDoor(page);
       await expectNoViolations(page, 'the door');
-      await answer(page, TURNING_18);
-      await expect(page.getByRole('heading', { name: 'Had your birthday yet this year?' })).toBeVisible();
-      await expectNoViolations(page, 'the birthday question');
-      await answerBirthday(page, 'Not yet');
+      await answer(page, MINOR);
       await expect(declined(page)).toBeVisible();
       await expectNoViolations(page, 'the turning away');
     });
@@ -539,7 +509,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 1280, height: 800 
     test('has a 44px target for every control', async ({ page }) => {
       await meetTheDoor(page);
       await armed(page);
-      const short = () => page.evaluate(() => [...document.querySelectorAll('button, input')]
+      const short = () => page.evaluate(() => [...document.querySelectorAll('button, input, a[href]')]
         .filter((el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden')
         .map((el) => {
           const r = el.getBoundingClientRect();
@@ -547,12 +517,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 1280, height: 800 
           return { name: (el.getAttribute('aria-label') || el.textContent || el.id).trim(), w: Math.round(r.width), h: Math.round(r.height), hits: hit === el || el.contains(hit) };
         })
         .filter((c) => c.w < 44 || c.h < 44 || !c.hits));
-      expect(await short(), 'the year form').toEqual([]);
-      await yearField(page).fill(TURNING_18);
-      await comeIn(page).click();
-      await page.getByRole('heading', { name: 'Had your birthday yet this year?' }).waitFor();
-      await page.locator('[data-armed="true"]').filter({ has: page.getByRole('button', { name: 'Yes', exact: true }) }).waitFor();
-      expect(await short(), 'the birthday question').toEqual([]);
+      expect(await short(), 'the date form').toEqual([]);
     });
   });
 }
@@ -579,15 +544,11 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 375, height: 553 }
     test('fits above the fold, the form with its field focused and the question', async ({ page }) => {
       await meetTheDoor(page);
       await armed(page);
-      await yearField(page).focus();
+      await dobField(page).focus();
       await fits(page, 'the door, field focused');
       await comeIn(page).click();
       await expect(page.getByRole('alert')).toHaveText(ERROR);
       await fits(page, 'the door with its error');
-      await yearField(page).fill(TURNING_18);
-      await comeIn(page).click();
-      await page.getByRole('heading', { name: 'Had your birthday yet this year?' }).waitFor();
-      await fits(page, 'the birthday question');
     });
 
     test('fits above the fold when it turns someone away', async ({ page }) => {

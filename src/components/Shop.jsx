@@ -379,10 +379,10 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                         onClick={() => setShowOdds(true)}
                         // 44px tall for a finger, but in the line's 16px:
                         // it reaches 17px up into the space above the
-                        // heading and 11px down, short of the tiles 12px
+                        // heading and 10px down, short of the tiles 12px
                         // below (the first tile would cover its foot), and
                         // pt-1.5 keeps the words on the heading's line.
-                        className={`inline-flex min-h-11 items-center gap-1 -mt-[17px] -mb-[11px] pt-1.5 px-1.5 rounded-md text-xs font-semibold whitespace-nowrap text-brass-200 hover:text-white ${FOCUS_RING}`}
+                        className={`inline-flex min-h-11 items-center gap-1 -mt-[17px] -mb-[10px] pt-1.5 px-1.5 rounded-md text-xs font-semibold whitespace-nowrap text-brass-200 hover:text-white ${FOCUS_RING}`}
                       >
                         {/* Shed below 360px, with the heading's hairline, so
                             the label stays on one line beside the heading. */}

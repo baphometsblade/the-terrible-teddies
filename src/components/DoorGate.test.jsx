@@ -101,6 +101,7 @@ describe('a device that has been let in', () => {
     await flush();
     expect(game(host)).not.toBeNull();
     expect(theDoor(host)).toBeNull();
+    expect(document.documentElement.dataset.content).toBe('nsfw');
     // The door's chunk is not requested, not even to warm it: a returning
     // player must not pay for it.
     expect(door.imported).toBe(0);
@@ -155,6 +156,7 @@ describe('a device with no answer', () => {
     expect(theDoor(host).getAttribute('data-state')).toBe('ask');
     expect(game(host)).toBeNull();
     expect(mountedGame).toBe(0);
+    expect(document.documentElement.dataset.content).toBe('sfw');
   });
 
   it('starts nothing that sends: no analytics', async () => {
@@ -182,8 +184,7 @@ describe('a device with no answer', () => {
     render();
     await flush();
     await vi.waitFor(() => expect(door.imported).toBeGreaterThan(0), { timeout: 5000 });
-    expect(images.map((i) => i.src)).toEqual(['/cards/56.webp']);
-    expect(images[0].fetchPriority).toBe('high');
+    expect(images, 'card art stays unloaded until a pass').toEqual([]);
   });
 
   describe('that is let in', () => {
