@@ -79,18 +79,151 @@ export const WARDROBE = Object.freeze([
     blurb: 'Blue felt, for when the night got ahead of you.',
     swatch: '#102433',
   },
+  {
+    id: 'dive-bar',
+    slot: 'board',
+    price: 1100,
+    currency: 'coins',
+    label: 'Dive Bar',
+    blurb: 'Sticky floor, warm beer, and a light that flatters nobody.',
+    swatch: '#1c140c',
+  },
+  {
+    id: 'neon-pit',
+    slot: 'board',
+    price: 1800,
+    currency: 'coins',
+    label: 'Neon Pit',
+    blurb: 'Pink tubing and a stage nobody admits they watched.',
+    swatch: '#240818',
+  },
+  {
+    id: 'casino-felt',
+    slot: 'board',
+    price: 50,
+    currency: 'gems',
+    label: 'The Casino',
+    blurb: 'Green that costs gems. The house still wins.',
+    swatch: '#0e2418',
+  },
+  {
+    id: 'matte',
+    slot: 'finish',
+    price: 0,
+    currency: 'coins',
+    label: 'Matte',
+    blurb: 'No shine. The honest way to be looked at.',
+    swatch: '#524368',
+  },
+  {
+    id: 'wet-look',
+    slot: 'finish',
+    price: 800,
+    currency: 'coins',
+    label: 'Wet Look',
+    blurb: 'The cards look like someone has been handling them.',
+    swatch: '#67e8f9',
+  },
+  {
+    id: 'bare-ring',
+    slot: 'avatar',
+    price: 0,
+    currency: 'coins',
+    label: 'Bare Ring',
+    blurb: 'Brass, and nothing else on it.',
+    swatch: '#fbbf24',
+  },
+  {
+    id: 'lipstick',
+    slot: 'avatar',
+    price: 500,
+    currency: 'coins',
+    label: 'Lipstick',
+    blurb: 'A ring that looks kissed. It was.',
+    swatch: '#fb7185',
+  },
+  {
+    id: 'high-roller',
+    slot: 'avatar',
+    price: 25,
+    currency: 'gems',
+    label: 'High Roller',
+    blurb: 'The frame they notice from the door.',
+    swatch: '#e9d5ff',
+  },
+  {
+    id: 'house-line',
+    slot: 'line',
+    price: 0,
+    currency: 'coins',
+    label: 'The Offer',
+    blurb: 'Buy you a drink. Then we see.',
+    swatch: '#b6a8ca',
+  },
+  {
+    id: 'slow-line',
+    slot: 'line',
+    price: 350,
+    currency: 'coins',
+    label: 'Say It Slow',
+    blurb: 'The line for when he wants you to stay.',
+    swatch: '#f9a8d4',
+  },
+  {
+    id: 'closing-line',
+    slot: 'line',
+    price: 20,
+    currency: 'gems',
+    label: 'After Close',
+    blurb: 'What he says once the chairs are up.',
+    swatch: '#fdba74',
+  },
 ]);
 
 export const DEFAULT_CARD_BACK = 'house-back';
 export const DEFAULT_BOARD = 'house-board';
+export const DEFAULT_FINISH = 'matte';
+export const DEFAULT_AVATAR = 'bare-ring';
+export const DEFAULT_LINE = 'house-line';
+
+const KIND = {
+  back: 'card back',
+  board: 'board',
+  finish: 'finish',
+  avatar: 'frame',
+  line: 'line',
+};
+
+export const SLOT_FIELD = {
+  back: 'equippedCardBack',
+  board: 'equippedBoard',
+  finish: 'equippedFinish',
+  avatar: 'equippedAvatar',
+  line: 'equippedLine',
+};
+
+const DEFAULT_BY_SLOT = {
+  back: DEFAULT_CARD_BACK,
+  board: DEFAULT_BOARD,
+  finish: DEFAULT_FINISH,
+  avatar: DEFAULT_AVATAR,
+  line: DEFAULT_LINE,
+};
 
 const BY_ID = new Map(WARDROBE.map((item) => [item.id, item]));
 
 export const wardrobeItem = (id) => BY_ID.get(id) ?? null;
 
 export const wardrobeLong = (item) => (
-  item ? `${item.label} ${item.slot === 'back' ? 'card back' : 'board'}` : ''
+  item ? `${item.label} ${KIND[item.slot]}` : ''
 );
+
+/** A known id for that slot, or the free house look. */
+export const idForSlot = (slot, id) => (
+  wardrobeItem(id)?.slot === slot ? id : DEFAULT_BY_SLOT[slot]
+);
+
+export const equipPatch = (item) => ({ [SLOT_FIELD[item.slot]]: item.id });
 
 export const isFreeWardrobe = (item) => !!item && item.price === 0;
 
@@ -99,13 +232,11 @@ export const ownsWardrobe = (owned, item) => (
   !!item && (isFreeWardrobe(item) || (Array.isArray(owned) && owned.includes(item.id)))
 );
 
-export const cardBackId = (id) => (
-  wardrobeItem(id)?.slot === 'back' ? id : DEFAULT_CARD_BACK
-);
-
-export const boardId = (id) => (
-  wardrobeItem(id)?.slot === 'board' ? id : DEFAULT_BOARD
-);
+export const cardBackId = (id) => idForSlot('back', id);
+export const boardId = (id) => idForSlot('board', id);
+export const finishId = (id) => idForSlot('finish', id);
+export const avatarId = (id) => idForSlot('avatar', id);
+export const lineId = (id) => idForSlot('line', id);
 
 /**
  * What buying `id` does to a save, with no side effects.
@@ -121,7 +252,7 @@ export const quoteWardrobe = (state, id) => {
     return {
       ok: true,
       reason: 'owned',
-      patch: item.slot === 'back' ? { equippedCardBack: item.id } : { equippedBoard: item.id },
+      patch: equipPatch(item),
     };
   }
   const purse = item.currency === 'gems' ? Number(state?.gems) || 0 : Number(state?.coins) || 0;
@@ -136,7 +267,7 @@ export const quoteWardrobe = (state, id) => {
     patch: {
       ...spent,
       unlockedCosmetics: [...owned, item.id],
-      ...(item.slot === 'back' ? { equippedCardBack: item.id } : { equippedBoard: item.id }),
+      ...equipPatch(item),
     },
   };
 };

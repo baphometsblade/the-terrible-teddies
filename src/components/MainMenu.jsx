@@ -20,6 +20,8 @@ import { countReadyRewards, passOf } from '@/lib/battlePass';
 import { signFor, subtitleFor, partOfDay, CLOSED_NOTES } from '@/lib/barClock';
 import { houseRank } from '@/lib/houseRank';
 import { pickLine } from '@/lib/mgmtNotes';
+import { chuckTip } from '@/lib/chuckTips';
+import { pulse } from '@/lib/haptics';
 import { TILE_LINES, streakLine, heroLineForVisit, footerLineForVisit, recordMenuVisit, SHIPPED_FOOTER } from '@/lib/menuLines';
 import { dailyFightFor } from '@/lib/dailyFight';
 import CardFan from './CardFan';
@@ -118,7 +120,13 @@ const MainMenu = ({
     syncPeriods, ownedCards,
     seasonXP, claimedBattlePassRewards, hasBattlePassPremium, syncSeason,
     dailyKey, dailyResult, dailyStreak,
+    equippedAvatar, hapticsEnabled,
   } = useGameStore();
+  const [aside] = useState(() => chuckTip(useGameStore.getState()));
+  const startFight = () => {
+    pulse('fight', hapticsEnabled);
+    onStartGame();
+  };
 
   const today = new Date().toDateString();
   const dailyAvailable = lastLoginDate !== today;
@@ -253,6 +261,12 @@ const MainMenu = ({
         </div>
       )}
       <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
+      <div className="bar-life" aria-hidden="true">
+        <span className="bar-bottle" />
+        <span className="bar-bottle" />
+        <span className="bar-bottle" />
+        <span className="bar-lamp" />
+      </div>
 
       {/* Top bar */}
       <header className="relative z-10 flex flex-wrap justify-between items-center gap-3">
@@ -264,7 +278,7 @@ const MainMenu = ({
           aria-describedby="menu-player-summary"
           className={`panel-glass sheen relative flex items-center gap-3 rounded-2xl pl-2 pr-4 py-2 cursor-pointer ${FOCUS_OUTLINE}`}
         >
-          <div className="relative w-12 h-12 rounded-full p-[2px]" style={{ background: 'linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24)' }}>
+          <div className="avatar-ring relative w-12 h-12 rounded-full p-[2px]" data-avatar={equippedAvatar}>
             <div className="w-full h-full rounded-full bg-night-800 grid place-items-center text-2xl">🧸</div>
           </div>
           <div className="min-w-0" id="menu-player-summary">
@@ -394,7 +408,7 @@ const MainMenu = ({
             <motion.div whileHover="lift">
               <motion.div variants={LIFT_2} className="rounded-2xl">
                 <div
-                  {...pressable(onStartGame, 'Battle')}
+                  {...pressable(startFight, 'Battle')}
                   // The name stays "Battle"; the clock's line under it is its
                   // description, so a screen reader hears it too.
                   aria-describedby="menu-battle-line"
@@ -486,6 +500,7 @@ const MainMenu = ({
       >
         {footerLine}
       </motion.p>
+      <p className="relative z-10 mx-auto mt-1 max-w-sm px-4 text-center text-[11px] leading-snug text-plush-400">{aside}</p>
     </div>
   );
 };
