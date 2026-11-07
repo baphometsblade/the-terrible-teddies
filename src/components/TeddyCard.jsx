@@ -92,6 +92,16 @@ const getTeddyEmoji = (teddy) => {
 // moment it mounts (a pack reveal's face) passes 'eager'. Decoding is async
 // either way, so a large image never holds up the frame that shows it.
 //
+// Width and height are the file's own pixels (thumbs 192×256, full art
+// 768×1024, both 3:4). The card slot sizes the image with CSS; the attributes
+// are what the browser uses if that CSS has not arrived, so the slot does not
+// jump. An eager face also asks for high fetch priority — that is the pack
+// reveal, which is on screen the moment it mounts.
+export const ART_INTRINSIC = {
+  thumb: { width: 192, height: 256 },
+  full: { width: 768, height: 1024 },
+};
+
 // The <img> takes no pointer events: it is alt="" decoration and the card
 // around it owns the tap. Hit-testable, a long-press landed on the image and
 // opened the phone's Save Image / Copy callout instead of reaching the card
@@ -121,6 +131,8 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   // the fallback chain.
   const thumb = `/cards/thumbs/${teddy.id}.webp`;
   const full = `/cards/${teddy.id}.webp`;
+  const box = variant === 'full' ? ART_INTRINSIC.full : ART_INTRINSIC.thumb;
+  const priority = loading === 'eager' ? 'high' : undefined;
   if (variant === 'responsive' && !responsiveFailed && !thumbFailed) {
     return (
       <img
@@ -128,7 +140,10 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
         srcSet={`${thumb} 192w, ${full} 768w`}
         sizes={sizes}
         alt=""
+        width={box.width}
+        height={box.height}
         loading={loading}
+        fetchPriority={priority}
         decoding="async"
         draggable={false}
         className={`pointer-events-none ${imgClassName}`}
@@ -138,12 +153,16 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   }
   const useFull = variant === 'full' || thumbFailed;
   const src = useFull ? full : thumb;
+  const shown = useFull ? ART_INTRINSIC.full : ART_INTRINSIC.thumb;
 
   return (
     <img
       src={src}
       alt=""
+      width={shown.width}
+      height={shown.height}
       loading={loading}
+      fetchPriority={priority}
       decoding="async"
       draggable={false}
       className={`pointer-events-none ${imgClassName}`}

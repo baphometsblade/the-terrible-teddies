@@ -64,7 +64,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Rap Sheets (Abilities)",
-    content: "Catcall (Taunt) — talks so much filth they HAVE to hit you first. That is the kink.\nUncut (Piercing) — cuts straight through Shield. No foreplay.\nRubber (Shield) — takes 50% less damage. Cowardice, in a raincoat.\nPeep (Stealth) — untargetable for a turn, currently in the wrong hamper.\nWhiskey (Fury) — every hit they survive is +1 Attack, up to +3. Then they have peaked, like everyone else in here.\nWingman (Protect) — while they are upright, nothing else on their side can be touched. Getting them horizontal comes first.\nPile-on (Swarm) — costs 1 less once you already have someone on the table, and the cost disc turns green. Bad decisions are cheaper in a group.\nPatron (Royal) — struts around giving everyone ELSE +1 Attack. Never itself. Tips in attention.",
+    content: "Catcall (Taunt) — talks so much shit, enemies HAVE to hit them first\nUncut (Piercing) — cuts straight through Shield. No foreplay.\nRubber (Shield) — takes 50% less damage, the coward\nPeep (Stealth) — untargetable for a turn (currently hiding in your hamper)\nWhiskey (Fury) — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nWingman (Protect) — while they're upright, nothing else on their side can be touched. Getting them horizontal comes first.\nPile-on (Swarm) — costs 1 less once you've already got someone on the table, and its cost disc turns green to say so. Bad decisions are cheaper in groups.\nPatron (Royal) — struts around giving everyone ELSE +1 Attack. Never itself.",
     icon: ScrollText,
     list: true,
     icons: [Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown],
@@ -303,11 +303,6 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
             a phone, and of a short desktop window, the bar sat 5px into it. */}
         <div className="relative flex items-center gap-3 px-4 pb-4 pt-4 sm:px-6 sm:pt-5 [@media(max-height:500px)]:pb-1 [@media(max-height:500px)]:pt-3">
           <h2 className="min-w-0 flex-1 font-display text-xl font-extrabold leading-tight text-white">How to Play</h2>
-          {onReplayLesson && (
-            <button type="button" onClick={onReplayLesson} className={`${NAV} btn-glass px-3 text-xs sm:text-sm`}>
-              Replay the lesson
-            </button>
-          )}
           <DialogClose label="Close tutorial" onClick={onClose} />
         </div>
 
@@ -479,7 +474,8 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
             padding, so the offset is minus the scrim's (p-3 / sm:p-6): at 0
             the row stopped 12-24px short of the edge, with the step scrolling
             past beneath it. */}
-        <div className="relative flex items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-4 sm:px-6 [@media(max-height:500px)]:sticky [@media(max-height:500px)]:-bottom-3 sm:[@media(max-height:500px)]:-bottom-6 [@media(max-height:500px)]:z-10 [@media(max-height:500px)]:bg-night-900 [@media(max-height:500px)]:py-2.5 [@media(max-height:500px)]:shadow-[0_-16px_24px_-16px_rgba(0,0,0,0.9)]">
+        <div className="relative flex flex-col gap-2 border-t border-white/[0.06] px-4 py-4 sm:px-6 [@media(max-height:500px)]:sticky [@media(max-height:500px)]:-bottom-3 sm:[@media(max-height:500px)]:-bottom-6 [@media(max-height:500px)]:z-10 [@media(max-height:500px)]:bg-night-900 [@media(max-height:500px)]:py-2.5 [@media(max-height:500px)]:shadow-[0_-16px_24px_-16px_rgba(0,0,0,0.9)]">
+          <div className="flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={prevStep}
@@ -507,6 +503,15 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
             >
               Next
               <ChevronRight aria-hidden="true" className="-mr-1 h-4 w-4" strokeWidth={2.6} />
+            </button>
+          )}
+          </div>
+          {/* After Previous in the tab order, so Shift+Tab from Previous still
+              reaches the step. In the footer, not the header: a toast over a
+              dialog owns the top-left corner, and this button sat in it. */}
+          {onReplayLesson && (
+            <button type="button" onClick={onReplayLesson} className={`${NAV} btn-glass w-full px-3 text-xs sm:text-sm`}>
+              Replay the lesson
             </button>
           )}
         </div>

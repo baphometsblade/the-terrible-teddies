@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { supabase, getPlayerSave, putPlayerSave, NO_SESSION } from './supabaseClient';
+import {
+  supabase, getPlayerSave, putPlayerSave, NO_SESSION,
+  ensurePlayerProfile, setPlayerUsername, syncBattleResult, syncPlayerLevel,
+} from './supabaseClient';
 
 // With no usable session (an expired token whose refresh is failing, which
 // auth-js holds for a minute), supabase-js sends the anon key as the bearer.
@@ -38,5 +41,35 @@ describe('the cloud-save calls', () => {
     expect(sent.headers.Authorization).toBe('Bearer user-jwt');
     expect(sent.signal).toBeInstanceOf(AbortSignal);
     expect(res).toEqual({ data: { rev: 0, save: null }, error: null, status: 200 });
+  });
+});
+
+describe('profile and battle sync', () => {
+  it('do not call without a session', async () => {
+    vi.spyOn(supabase.auth, 'getUser').mockResolvedValue({ data: { user: null }, error: null });
+    const rpc = vi.spyOn(supabase, 'rpc');
+    expect(await ensurePlayerProfile('Ada')).toBeNull();
+    expect(await setPlayerUsername('Ada')).toBeNull();
+    expect(await syncBattleResult(true, 1, 2, 3)).toBeNull();
+    expect(await syncPlayerLevel(2, 40)).toBeNull();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('send the payload and never a user id', async () => {
+    const rpc = vi.spyOn(supabase, 'rpc').mockResolvedValue({ data: 'Ada', error: null });
+    expect(await ensurePlayerProfile('Ada', 'user-1')).toBe(true);
+    expect(await setPlayerUsername('Ada', 'user-1')).toBe('Ada');
+    expect(await syncBattleResult(false, 4, 2, 9, 'user-1')).toBe(true);
+    expect(await syncPlayerLevel(3, 40, 'user-1')).toBe(true);
+    expect(rpc).toHaveBeenNthCalledWith(1, 'upsert_player_profile', { p_username: 'Ada' });
+    expect(rpc).toHaveBeenNthCalledWith(2, 'set_player_username', { p_username: 'Ada' });
+    expect(rpc).toHaveBeenNthCalledWith(3, 'sync_battle_result', {
+      p_won: false,
+      p_damage_dealt: 4,
+      p_healing_done: 2,
+      p_coins_earned: 9,
+    });
+    expect(rpc).toHaveBeenNthCalledWith(4, 'sync_player_level', { p_level: 3, p_xp: 40 });
+    for (const [, args] of rpc.mock.calls) expect(args).not.toHaveProperty('p_user_id');
   });
 });

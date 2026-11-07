@@ -7,6 +7,7 @@ import '@fontsource/baloo-2/latin-800.css'
 import './index.css'
 import { useGameStore } from './stores/gameStore'
 import ErrorBoundary from './components/ErrorBoundary'
+import OfflineNotice from './components/OfflineNotice'
 import DoorGate from './components/DoorGate'
 import { legalKind } from './lib/legalRoutes'
 import { SupabaseProvider } from './integrations/supabase/auth'
@@ -49,6 +50,10 @@ try {
     <React.StrictMode>
       <ErrorBoundary>
         <MotionPreference>
+          {/* Outside the door and the session, so a signed-out player and a
+              player still at the age gate hear it too. It renders nothing
+              while the device is online. */}
+          <OfflineNotice />
           {/* No BrowserRouter and no QueryClientProvider. Neither had a
               consumer: there is no Route, Link, useNavigate or useParams
               anywhere — navigation is the `currentScreen` state in App — and

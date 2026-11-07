@@ -2,6 +2,7 @@
 // the hand fits a phone, how a touch screen plays a card, and what the result
 // panel says about XP. Each test names the defect it pins.
 import AxeBuilder from '@axe-core/playwright';
+import { ABILITY_RULES, abilityLabel } from '../src/lib/abilities.js';
 import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
 import { getDailyChallenges } from '../src/stores/challenges.js';
 import { getCurrentSeason } from '../src/utils/season.js';
@@ -328,7 +329,7 @@ test.describe('with a mouse and a keyboard', () => {
     await expect(page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first())
       .toHaveAccessibleDescription('Costs 1 energy. 2 attack, 1 of 1 HP.');
     await expect(page.getByRole('button', { name: 'Play Shit-Talk Sally' }).first())
-      .toHaveAccessibleDescription(/^Costs 2 energy\. 2 attack, 3 of 3 HP\. Taunt: Enemies must attack this card first\.$/);
+      .toHaveAccessibleDescription(`Costs 2 energy. 2 attack, 3 of 3 HP. ${abilityLabel('taunt')}: ${ABILITY_RULES.taunt}.`);
 
     await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
     await page.getByRole('button', { name: 'Play Shit-Talk Sally' }).first().click();

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { browserLocalStorage } from '@/lib/safeStorage';
 
 // The current project. A deploy that sets the Vite variables uses those; a
 // build that does not still talks to this project rather than a retired one.
@@ -19,7 +20,12 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// GoTrue reads its session store while this module loads. The same private-mode
+// throw that would kill the game save kills the client too, so it gets the
+// storage that falls back to memory instead of throwing.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: { storage: browserLocalStorage() },
+});
 
 // Resolve whose account we are acting on.
 //
@@ -58,7 +64,6 @@ export const ensurePlayerProfile = async (username = null, userId = null) => {
   if (!uid) return null;
 
   const { error } = await supabase.rpc('upsert_player_profile', {
-    p_user_id: uid,
     p_username: username,
   });
 
@@ -92,7 +97,6 @@ export const syncBattleResult = async (won, damageDealt = 0, healingDone = 0, co
   if (!uid) return null;
 
   const { error } = await supabase.rpc('sync_battle_result', {
-    p_user_id: uid,
     p_won: won,
     p_damage_dealt: damageDealt,
     p_healing_done: healingDone,
@@ -111,7 +115,6 @@ export const syncPlayerLevel = async (level, xp, userId = null) => {
   if (!uid) return null;
 
   const { error } = await supabase.rpc('sync_player_level', {
-    p_user_id: uid,
     p_level: level,
     p_xp: xp,
   });
