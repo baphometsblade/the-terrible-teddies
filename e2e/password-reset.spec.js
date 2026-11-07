@@ -448,9 +448,12 @@ test.describe('landing from a reset link on a device that has not passed the doo
   test.use({ doorPassed: false });
   const YEAR = new Date().getFullYear();
   const answer = async (page, year) => {
+    const today = new Date();
+    const day = String(Math.min(today.getDate(), 28)).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
     await expect(page.locator('form[data-armed="true"]')).toBeVisible();
-    await page.getByLabel('Year you were born').fill(String(year));
-    await page.getByRole('button', { name: 'Check my year' }).click();
+    await page.getByLabel('Date of birth').fill(`${year}-${month}-${day}`);
+    await page.getByRole('button', { name: 'Check my age' }).click();
   };
 
   test('shows the door first, then the set-new-password panel, and the reset still works', async ({ page }) => {

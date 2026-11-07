@@ -4,6 +4,7 @@ import {
   Shield, Crosshair, ShieldHalf, Ghost, Castle, Flame, Bug, Crown,
   Heart, Layers, Bomb, Swords, Sparkles,
 } from 'lucide-react';
+import { abilityLabel } from '@/lib/abilities';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
 import { BrassCoin } from '@/components/ui/coin';
 import { COSMETIC_FRAMES } from '@/lib/cosmetics';
@@ -117,7 +118,11 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   const fullFailed = failed.id === teddy.id && failed.stage === 'full';
   const responsiveFailed = failed.id === teddy.id && failed.stage === 'responsive';
 
-  if (!teddy.id || fullFailed) {
+  // SFW is the default on the document. Card photos are adult art, so they
+  // stay off until the age gate has set data-content="nsfw". An unset flag
+  // (unit tests, a story) still shows the picture.
+  const heldBack = typeof document !== 'undefined' && document.documentElement.dataset.content === 'sfw';
+  if (!teddy.id || fullFailed || heldBack) {
     return <div className={emojiClassName}>{getTeddyEmoji(teddy)}</div>;
   }
 
@@ -193,7 +198,7 @@ const rulesFor = (teddy) => {
   if (teddy.ability && teddy.ability !== 'none') {
     return {
       Icon: ABILITY_ICONS[teddy.ability] || Sparkles,
-      label: teddy.ability.charAt(0).toUpperCase() + teddy.ability.slice(1),
+      label: abilityLabel(teddy.ability),
     };
   }
   const Icon = EFFECT_ICONS[teddy.effect];

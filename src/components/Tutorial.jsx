@@ -64,7 +64,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Rap Sheets (Abilities)",
-    content: "Taunt — talks so much shit, enemies HAVE to hit them first\nPiercing — cuts straight through Shield. No foreplay.\nShield — takes 50% less damage, the coward\nStealth — untargetable for a turn (currently hiding in your hamper)\nFury — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nProtect — while they're upright, nothing else on their side can be touched. Getting them horizontal comes first.\nSwarm — costs 1 less once you've already got someone on the table, and its cost disc turns green to say so. Bad decisions are cheaper in groups.\nRoyal — struts around giving everyone ELSE +1 Attack. Never itself.",
+    content: "Catcall (Taunt) — talks so much shit, enemies HAVE to hit them first\nUncut (Piercing) — cuts straight through Shield. No foreplay.\nRubber (Shield) — takes 50% less damage, the coward\nPeep (Stealth) — untargetable for a turn (currently hiding in your hamper)\nWhiskey (Fury) — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nWingman (Protect) — while they're upright, nothing else on their side can be touched. Getting them horizontal comes first.\nPile-on (Swarm) — costs 1 less once you've already got someone on the table, and its cost disc turns green to say so. Bad decisions are cheaper in groups.\nPatron (Royal) — struts around giving everyone ELSE +1 Attack. Never itself.",
     icon: ScrollText,
     list: true,
     icons: [Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown],

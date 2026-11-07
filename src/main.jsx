@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import { MotionConfig } from 'framer-motion'
 import App from './App.jsx'
@@ -9,7 +9,10 @@ import { useGameStore } from './stores/gameStore'
 import ErrorBoundary from './components/ErrorBoundary'
 import OfflineNotice from './components/OfflineNotice'
 import DoorGate from './components/DoorGate'
+import { legalKind } from './lib/legalRoutes'
 import { SupabaseProvider } from './integrations/supabase/auth'
+
+const LegalPage = lazy(() => import('./components/LegalPage'))
 
 // Honors BOTH the OS "reduce motion" preference and the in-game Animations
 // switch, for every Framer Motion animation at once.
@@ -62,11 +65,17 @@ try {
               (see DoorGate). For a device that has been let in it renders
               its children and nothing else, so what follows is the game as
               it always was. */}
-          <DoorGate>
-            <SupabaseProvider>
-              <App />
-            </SupabaseProvider>
-          </DoorGate>
+          {legalKind(window.location.pathname) ? (
+            <Suspense fallback={null}>
+              <LegalPage kind={legalKind(window.location.pathname)} />
+            </Suspense>
+          ) : (
+            <DoorGate>
+              <SupabaseProvider>
+                <App />
+              </SupabaseProvider>
+            </DoorGate>
+          )}
         </MotionPreference>
       </ErrorBoundary>
     </React.StrictMode>

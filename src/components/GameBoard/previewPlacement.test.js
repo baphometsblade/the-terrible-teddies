@@ -171,7 +171,7 @@ describe('captionHeight', () => {
     'Bar-Top Baptism': { rules: '', flavor: 'Fully submerged in the good stuff. Born again, smells worse.' },
     'Blackout Bjorn': { rules: 'Gains +1 attack each time it survives a hit, up to +3', flavor: 'Remembers nothing. Regrets everything. Hits like a truck.' },
     'Shitstarter Ted': { rules: '', flavor: 'Every bar fight in this town starts with Ted.' },
-    'Mama Mauls': { rules: 'Enemies must attack this card first', flavor: 'Ask about her cubs. Go ahead. Ask.' },
+    'Mama Mauls': { rules: 'Enemies must attack this card first', flavor: 'The apron stays on. The rolling pin does not.' },
     'Minibar Raid': { rules: '', flavor: 'Tiny bottles. Tiny crimes. Tiny recovery.' },
   };
   const MEASURED = [

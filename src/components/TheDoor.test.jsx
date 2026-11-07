@@ -3,7 +3,7 @@ import { createElement, act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MotionConfig } from 'framer-motion';
 import { CONTENT_NOTICE } from '@/lib/contentNotice';
-import { DOOR_ART, OPENING_MS } from '@/lib/door';
+import { OPENING_MS } from '@/lib/door';
 import TheDoor, { DOOR_COPY } from './TheDoor';
 import DoorDeclined from './DoorDeclined';
 
@@ -12,6 +12,23 @@ import DoorDeclined from './DoorDeclined';
 // makes of the layout is e2e/door.spec.js; this is what each control does.
 
 const YEAR = new Date().getFullYear();
+const pad = (n) => String(n).padStart(2, '0');
+const iso = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+const shifted = (years, days = 0) => {
+  const date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setFullYear(date.getFullYear() - years);
+  date.setDate(date.getDate() + days);
+  return iso(date);
+};
+const ADULT = shifted(30);
+const MINOR = shifted(12);
+const TURNS_TODAY = shifted(18);
+const still17 = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return iso(new Date(tomorrow.getFullYear() - 18, tomorrow.getMonth(), tomorrow.getDate()));
+};
 
 let mounted = [];
 const render = (props = {}, { reduced = null } = {}) => {
@@ -35,7 +52,7 @@ const type = (input, value) => act(() => {
 });
 const click = (el) => act(() => { el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); });
 const submit = (host) => click(host.querySelector('button[type="submit"]'));
-const field = (host) => host.querySelector('#door-year');
+const field = (host) => host.querySelector('#door-dob');
 const alertText = (host) => host.querySelector('#door-error').textContent;
 const buttons = (host) => [...host.querySelectorAll('button')].filter((b) => getComputedStyle(b).visibility !== 'hidden' && !b.closest('[aria-hidden="true"]'));
 const heldEnter = (el) => {
@@ -75,13 +92,12 @@ describe('DOOR_COPY', () => {
     intro: 48, // two lines at 16px
     notice: null, // the shared content line, checked below
     label: 20, // small caps, one line
-    placeholder: 6,
+    placeholder: 10,
     smallPrint: 80, // two lines at 12px
     error: 32, // one line at 13px beside its icon, in the widest fallback font
     submit: 14,
-    birthdayHeading: 44, // two lines at 20px
-    birthdayYes: 12,
-    birthdayNo: 12,
+    terms: 12,
+    privacy: 12,
     declined: 110, // four lines at 20px
   };
 
@@ -110,22 +126,22 @@ describe('DOOR_COPY', () => {
 
   // A courtesy gate in the fiction, not age verification: it takes the
   // player's word, and nothing it says may claim more.
-  // The one line serves every refusal, so it must be true of each: a year
-  // four digits long but out of range is refused too (it once said "four digits").
-  it('words the error so that it is true of every year it is shown for', () => {
-    expect(DOOR_COPY.error).toBe('Enter a year, 1900 to this year.');
+  // The one line serves every refusal, so it must be true of each: a date
+  // that is not a date, or out of range, is refused too.
+  it('words the error so that it is true of every date it is shown for', () => {
+    expect(DOOR_COPY.error).toBe('Enter a real date, 1900 on.');
   });
 
   it('does not claim to verify anyone', () => {
     expect(Object.values(DOOR_COPY).join(' ')).not.toMatch(/verif|complian|certif|legal|official|checked by|guarantee/i);
   });
 
-  it('asks for the year in the neutral words, and says what becomes of it', () => {
-    expect(DOOR_COPY.label).toBe('Year you were born');
-    // Moved with the after-dark deck: the same plain fact (the year is not kept), said once and shorter.
-    expect(DOOR_COPY.smallPrint).toBe("Only used to check you're 18 or over. The year is never saved or sent.");
-    expect(DOOR_COPY.birthdayHeading).toBe('Had your birthday yet this year?');
-    expect([DOOR_COPY.birthdayYes, DOOR_COPY.birthdayNo]).toEqual(['Yes', 'Not yet']);
+  it('asks for the date in the neutral words, and says what becomes of it', () => {
+    expect(DOOR_COPY.label).toBe('Date of birth');
+    expect(DOOR_COPY.placeholder).toBe('YYYY-MM-DD');
+    expect(DOOR_COPY.smallPrint).toBe("Only used to check you're 18 or over. The date is never saved or sent.");
+    expect(DOOR_COPY.terms).toBe('Terms');
+    expect(DOOR_COPY.privacy).toBe('Privacy');
   });
 });
 
@@ -140,22 +156,22 @@ describe('the door, asking', () => {
     expect(sign.textContent).toBe(DOOR_COPY.sign);
     expect(sign.getAttribute('data-tone')).toBe('amber');
     expect(sign.closest('[aria-hidden="true"]')).not.toBeNull();
-    // Bruno's art at full size, asked for first, with no alt (decoration).
-    const art = host.querySelector('.peep-slot img');
-    expect(art.getAttribute('src')).toBe(DOOR_ART);
-    expect(art.getAttribute('alt')).toBe('');
-    expect(art.getAttribute('fetchpriority')).toBe('high');
+    // Shades, drawn. No card art: the adult pictures stay unloaded.
+    expect(host.querySelector('.peep-slot img')).toBeNull();
+    expect(host.querySelector('.peep-slot [data-lenses]')).not.toBeNull();
+    expect(host.querySelector('a[href="/terms"]').textContent).toBe('Terms');
+    expect(host.querySelector('a[href="/privacy"]').textContent).toBe('Privacy');
     expect(host.textContent).toContain(DOOR_COPY.notice);
     expect(host.textContent).toContain(DOOR_COPY.intro);
   });
 
-  it('labels the year field, describes it, and asks for a numeric keypad', () => {
+  it('labels the date field, describes it, and does not name it for the browser', () => {
     const { host } = render();
     const input = field(host);
-    expect(host.querySelector('label[for="door-year"]').textContent).toBe('Year you were born');
-    expect(input.getAttribute('inputmode')).toBe('numeric');
-    expect(input.getAttribute('autocomplete')).toBe('bday-year');
-    expect(input.getAttribute('maxlength')).toBe('4');
+    expect(host.querySelector('label[for="door-dob"]').textContent).toBe('Date of birth');
+    expect(input.getAttribute('autocomplete')).toBe('bday');
+    expect(input.getAttribute('maxlength')).toBe('10');
+    expect(input.getAttribute('placeholder')).toBe('YYYY-MM-DD');
     // Described by the small print and the error line, both of which exist.
     const ids = input.getAttribute('aria-describedby').split(' ');
     expect(ids).toEqual(['door-print', 'door-error']);
@@ -189,8 +205,8 @@ describe('the door, asking', () => {
     expect(document.getElementById('initial-loader').classList.contains('to-app')).toBe(true);
   });
 
-  describe('a year that is not one', () => {
-    it.each(['', '  ', '19', '1990 5', 'abcd', '1899', '2099', String(YEAR + 1)])('says so, in place, for "%s"', (text) => {
+  describe('a date that is not one', () => {
+    it.each(['', '  ', '19', '1990', 'abcd', '1899-12-31', '2020-02-31', '2099-01-01', `${YEAR + 1}-01-01`])('says so, in place, for "%s"', (text) => {
       const { host, calls } = render();
       armed();
       type(field(host), text);
@@ -225,7 +241,7 @@ describe('the door, asking', () => {
     it('is let in, once', () => {
       const { host, calls } = render();
       armed();
-      type(field(host), '1990');
+      type(field(host), ADULT);
       submit(host);
       expect(calls.pass).toHaveBeenCalledTimes(1);
       expect(calls.decline).not.toHaveBeenCalled();
@@ -234,7 +250,7 @@ describe('the door, asking', () => {
     it('is let in by the form submitting, whichever way it is submitted', () => {
       const { host, calls } = render();
       armed();
-      type(field(host), ' 1985 ');
+      type(field(host), ` ${ADULT} `);
       act(() => { host.querySelector('form').requestSubmit(); });
       expect(calls.pass).toHaveBeenCalledTimes(1);
     });
@@ -244,36 +260,32 @@ describe('the door, asking', () => {
     it('is turned away, once, and nothing lets them in', () => {
       const { host, calls } = render();
       armed();
-      type(field(host), String(YEAR - 12));
+      type(field(host), MINOR);
       submit(host);
       expect(calls.decline).toHaveBeenCalledTimes(1);
       expect(calls.pass).not.toHaveBeenCalled();
     });
   });
 
-  describe('the year', () => {
+  describe('the date', () => {
     // Typed, compared, dropped. Nothing is stored, logged or sent.
     it('is not stored, logged or sent, whichever way the answer goes', () => {
-      const secret = String(YEAR - 31);
+      const secret = shifted(31);
+      const dates = [secret, MINOR, still17(), TURNS_TODAY];
       const fetchSpy = vi.fn();
       vi.stubGlobal('fetch', fetchSpy);
       const logged = ['log', 'info', 'warn', 'error', 'debug'].map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
       const beacon = vi.fn();
       Object.defineProperty(navigator, 'sendBeacon', { value: beacon, configurable: true });
-      for (const year of [secret, String(YEAR - 10), String(YEAR - 18)]) {
+      for (const date of dates) {
         const { host } = render();
         armed();
-        type(field(host), year);
+        type(field(host), date);
         submit(host);
-        if (host.querySelector('h2')) {
-          armed();
-          click(buttons(host).find((b) => b.textContent === 'Yes'));
-        }
-        // Dropped from the field the moment it is decided.
         expect(field(host).value).toBe('');
       }
       const everything = JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage });
-      for (const year of [secret, String(YEAR - 10), String(YEAR - 18)]) expect(everything).not.toContain(year);
+      for (const date of dates) expect(everything).not.toContain(date);
       expect(fetchSpy).not.toHaveBeenCalled();
       expect(beacon).not.toHaveBeenCalled();
       for (const spy of logged) {
@@ -286,101 +298,26 @@ describe('the door, asking', () => {
     it('is never submitted to the page', () => {
       const { host } = render();
       armed();
-      type(field(host), '1990');
+      type(field(host), ADULT);
       const e = new Event('submit', { bubbles: true, cancelable: true });
       act(() => { host.querySelector('form').dispatchEvent(e); });
       expect(e.defaultPrevented).toBe(true);
     });
-  });
 
-  describe('a player turning 18 this year', () => {
-    const toTheQuestion = () => {
-      const result = render();
+    it('lets in a birthday that is today and turns away one that is tomorrow', () => {
+      let { host, calls } = render();
       armed();
-      type(field(result.host), String(YEAR - 18));
-      submit(result.host);
-      return result;
-    };
-
-    it('is asked whether their birthday has been, in the form\'s place, and the heading takes the focus', () => {
-      const { host, calls } = toTheQuestion();
-      const heading = host.querySelector('h2');
-      expect(heading.textContent).toBe('Had your birthday yet this year?');
-      act(() => { vi.advanceTimersByTime(50); });
-      expect(document.activeElement).toBe(heading);
-      // The form is still in the page, to hold the door's height, but hidden
-      // from everything: nothing in it can be reached or read.
-      expect(host.querySelector('form').getAttribute('aria-hidden')).toBe('true');
-      expect(host.querySelector('form').className).toContain('invisible');
-      expect(calls.pass).not.toHaveBeenCalled();
-      expect(calls.decline).not.toHaveBeenCalled();
-    });
-
-    it('has two answers, the same glass, and neither is lit', () => {
-      const { host } = toTheQuestion();
-      const [yes, notYet] = buttons(host);
-      expect([yes.textContent, notYet.textContent]).toEqual(['Yes', 'Not yet']);
-      expect(yes.className).toBe(notYet.className);
-      expect(yes.className).toContain('btn-glass');
-      expect(host.innerHTML).not.toContain('btn-brass');
-      expect(buttons(host)).toHaveLength(2);
-    });
-
-    it('is let in by Yes and turned away by Not yet', () => {
-      let { host, calls } = toTheQuestion();
-      armed();
-      click(buttons(host).find((b) => b.textContent === 'Yes'));
+      type(field(host), TURNS_TODAY);
+      submit(host);
       expect(calls.pass).toHaveBeenCalledTimes(1);
       expect(calls.decline).not.toHaveBeenCalled();
-      ({ host, calls } = toTheQuestion());
+      ({ host, calls } = render());
       armed();
-      click(buttons(host).find((b) => b.textContent === 'Not yet'));
+      type(field(host), still17());
+      submit(host);
       expect(calls.decline).toHaveBeenCalledTimes(1);
       expect(calls.pass).not.toHaveBeenCalled();
-    });
-
-    // The second tap of a double-tap on the year button lands where an answer now
-    // is: it must not give one.
-    it('does not take an answer from the tap that brought it up', () => {
-      const { host, calls } = toTheQuestion();
-      click(buttons(host).find((b) => b.textContent === 'Yes'));
-      click(buttons(host).find((b) => b.textContent === 'Not yet'));
-      expect(calls.pass).not.toHaveBeenCalled();
-      expect(calls.decline).not.toHaveBeenCalled();
-      expect(buttons(host)[0].className).toContain('pointer-events-none');
-      armed();
-      expect(buttons(host)[0].className).not.toContain('pointer-events-none');
-      click(buttons(host).find((b) => b.textContent === 'Yes'));
-      expect(calls.pass).toHaveBeenCalledTimes(1);
-    });
-
-    // `inert` on the open door is what stops a second tap in a modern engine;
-    // jsdom (like Safari before 15.5) has none, so this is the answer's own
-    // guard: the year was cleared at the first answer, a second one reads as
-    // no year at all, and that must never become a decline (it is for good).
-    it('takes one answer only: a second tap on Yes does not turn an adult away', () => {
-      const { host, calls } = toTheQuestion();
-      armed();
-      const yes = buttons(host).find((b) => b.textContent === 'Yes');
-      click(yes);
-      click(yes);
-      click(buttons(host).find((b) => b.textContent === 'Not yet'));
-      expect(calls.pass).toHaveBeenCalledTimes(1);
-      expect(calls.decline).not.toHaveBeenCalled();
-    });
-
-    it('takes one answer only: Not yet then Yes stays turned away, and lets nobody in', () => {
-      const { host, calls } = toTheQuestion();
-      armed();
-      click(buttons(host).find((b) => b.textContent === 'Not yet'));
-      click(buttons(host).find((b) => b.textContent === 'Yes'));
-      expect(calls.decline).toHaveBeenCalledTimes(1);
-      expect(calls.pass).not.toHaveBeenCalled();
-    });
-
-    it('does not take a held Enter for an answer', () => {
-      const { host } = toTheQuestion();
-      for (const button of buttons(host)) expect(heldEnter(button), button.textContent).toBe(true);
+      expect(host.querySelector('h2')).toBeNull();
     });
   });
 
@@ -389,7 +326,7 @@ describe('the door, asking', () => {
   describe('in its first moments', () => {
     it('does not answer, and does not complain, to a tap that arrives at once', () => {
       const { host, calls } = render();
-      type(field(host), '1990');
+      type(field(host), ADULT);
       submit(host);
       expect(calls.pass).not.toHaveBeenCalled();
       expect(alertText(host)).toBe('');
@@ -403,7 +340,7 @@ describe('the door, asking', () => {
 
     it('does not take Enter in the field for an answer either', () => {
       const { host, calls } = render();
-      type(field(host), '1990');
+      type(field(host), ADULT);
       act(() => { host.querySelector('form').requestSubmit(); });
       expect(calls.pass).not.toHaveBeenCalled();
     });

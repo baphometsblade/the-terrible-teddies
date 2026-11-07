@@ -531,8 +531,8 @@ for (const [part, hour] of NIGHT) {
 }
 
 // The door: what a device that has never answered it sees (the specs above
-// start past it). Its scene, its birthday question and its plain turning
-// away are each audited, here as at the other widths in e2e/door.spec.js.
+// start past it). Its scene and its plain turning away are each audited,
+// here as at the other widths in e2e/door.spec.js.
 test.describe('the door', () => {
   test.use({ doorPassed: false });
 
@@ -544,14 +544,11 @@ test.describe('the door', () => {
     await expectNoViolations(page, 'the door');
     expect(await deadTabStops(page), 'the door').toEqual([]);
 
-    await page.getByLabel('Year you were born').fill(String(new Date().getFullYear() - 18));
-    await page.getByRole('button', { name: 'Check my year' }).click();
-    await expect(page.getByRole('heading', { name: 'Had your birthday yet this year?' })).toBeVisible();
-    await expectNoViolations(page, 'the birthday question');
-    expect(await deadTabStops(page), 'the birthday question').toEqual([]);
-
-    await page.locator('[data-armed="true"]').filter({ has: page.getByRole('button', { name: 'Not yet', exact: true }) }).waitFor();
-    await page.getByRole('button', { name: 'Not yet', exact: true }).click();
+    const today = new Date();
+    const day = String(Math.min(today.getDate(), 28)).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    await page.getByLabel('Date of birth').fill(`${today.getFullYear() - 12}-${month}-${day}`);
+    await page.getByRole('button', { name: 'Check my age' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Sorry, this room is 18+.' })).toBeVisible();
     await expectNoViolations(page, 'the turning away');
   });

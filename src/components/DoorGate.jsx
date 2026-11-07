@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { createDoor, DOOR_ART, DOOR_KEY } from '@/lib/door';
+import { contentMode, createDoor, DOOR_KEY } from '@/lib/door';
 import { initializePostHog } from '@/utils/analytics';
 // Static, as App imports it: BootScreen covers the door's chunk, and a chunk
 // for the thing that covers a round-trip would be a round-trip.
@@ -49,15 +49,10 @@ const door = createDoor();
 // waiting for the scene to render before it is asked for. Only for a device
 // that is going to see the door; a failure here says nothing, because the
 // render's own import reports it.
+// The chunk only. Card art stays out until a pass: the ask screen is SFW,
+// and a cropped bear portrait is still a card from the adult set.
 const warmTheDoor = () => {
   loadDoor().catch(() => {});
-  try {
-    const art = new Image();
-    art.fetchPriority = 'high';
-    art.src = DOOR_ART;
-  } catch {
-    // An engine without Image just draws it when the door does.
-  }
 };
 
 const DoorGate = ({ children }) => {
@@ -106,6 +101,12 @@ const DoorGate = ({ children }) => {
   const onPass = useCallback(() => setState(door.pass() === 'pass' ? 'opening' : 'declined'), []);
   const onDecline = useCallback(() => setState(door.decline()), []);
   const onOpened = useCallback(() => setState('pass'), []);
+
+  // Set before children render. A pass is the only state that may show the
+  // adult catalog; everything else, including the swing, stays SFW.
+  if (typeof document !== 'undefined') {
+    document.documentElement.dataset.content = contentMode(state);
+  }
 
   if (state === 'pass') return children;
   // Drawn here, not by the door's chunk: a turned-away device fetches nothing.

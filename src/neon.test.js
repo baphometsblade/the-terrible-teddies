@@ -152,7 +152,7 @@ describe('the text on the door\'s steel', () => {
     return m ? colors[m[1]][m[2]] : PALETTE[name];
   };
   // The scene is everything above the declined screen, which is on the night.
-  const scene = door.slice(door.indexOf('const BirthdayQuestion'), door.indexOf('const TheDoor = '));
+  const scene = door.slice(door.indexOf('const DobForm'), door.indexOf('const TheDoor = '));
   const used = [...new Set([...scene.matchAll(/(?<![\w:-])text-(white|(?:plush|red|brass)-\d+)(?![\w-])/g)].map((m) => m[1]))];
 
   it('finds the colours the door sets its text in (the extraction still matches)', () => {

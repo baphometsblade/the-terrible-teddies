@@ -33,6 +33,11 @@ export const RECEIPT_FOOTERS = [
   'The mop bucket is not a throne. — Mgmt.',
   'Please stop bleeding on the felt. — Mgmt.',
   'Stuffing in the sink again. Really. — Mgmt.',
+  'The stall has a waiting list again.',
+  'Lipstick on the rim. Not yours. Lucky.',
+  'We comped the ice. Not the hickey.',
+  'Please zip up before you sign.',
+  'Hickeys are not a line item. Yet.',
 ];
 
 /**
@@ -97,8 +102,8 @@ export const TAB_COPY = {
 export const BOARD_LINES = {
   // Decorative, 1.3 s, aria-hidden. 13 characters is what the banner holds on
   // the felt at 320px (houseLines.test.js).
-  bannerPlayer: ['Your turn', "You're up", 'Your shot', 'Your swing'],
-  bannerChuck: [`${OPPONENT_NAME}'s turn`, `${OPPONENT_NAME}'s up`, `${OPPONENT_NAME} swings`, `${OPPONENT_NAME}'s shot`],
+  bannerPlayer: ['Your turn', "You're up", 'Your shot', 'Your swing', 'Play dirty', 'Get filthy'],
+  bannerChuck: [`${OPPONENT_NAME}'s turn`, `${OPPONENT_NAME}'s up`, `${OPPONENT_NAME} swings`, `${OPPONENT_NAME}'s shot`, `${OPPONENT_NAME} leers`, `${OPPONENT_NAME} grins`],
   // The row under the table on Chuck's turn (text-xs italic, aria-hidden).
   thinking: [
     `${OPPONENT_NAME} is making his move…`,
@@ -109,6 +114,8 @@ export const BOARD_LINES = {
     `${OPPONENT_NAME} is cheating, probably…`,
     `${OPPONENT_NAME} is checking his pockets for a plan…`,
     `${OPPONENT_NAME} is trying to remember the rules…`,
+    `${OPPONENT_NAME} is adjusting his fly…`,
+    `${OPPONENT_NAME} is loose already…`,
   ],
   // The log, which a screen reader reads out. The first turn's "Your turn.
   // Make it hurt." is not in these: it is pinned and it opens the game.
@@ -118,6 +125,8 @@ export const BOARD_LINES = {
     'Your turn. The bar is on your side. Quietly.',
     'Your turn. The bartender is pretending not to watch.',
     "Your turn. He's still standing. Fix that.",
+    'Your turn. Mind the fly.',
+    'Your turn. Make it filthy.',
   ],
   chuckTurn: [
     `${OPPONENT_NAME}'s turn. Brace your beans.`,
@@ -126,12 +135,16 @@ export const BOARD_LINES = {
     `${OPPONENT_NAME}'s turn. He has a plan. It's a bad one.`,
     `${OPPONENT_NAME}'s turn. Somebody count the exits.`,
     `${OPPONENT_NAME}'s turn. Somebody hide the good bottles.`,
+    `${OPPONENT_NAME}'s turn. Hide the whiskey.`,
+    `${OPPONENT_NAME}'s turn. Zip something.`,
   ],
   endTurn: [
     'Ending turn...',
     `Ending turn. Your move, ${OPPONENT_NAME}.`,
     'Ending turn. Hands to yourself.',
     'Ending turn. Passing the bottle.',
+    'Ending turn. Zip up.',
+    'Ending turn. Hands off the felt.',
   ],
   // {card} stays early in each line so the phone ticker's single-line cut
   // keeps the name. Chuck's side only.
@@ -142,6 +155,8 @@ export const BOARD_LINES = {
     `${OPPONENT_NAME} wheeled in {card}`,
     `${OPPONENT_NAME} pulled {card} out of his coat`,
     `${OPPONENT_NAME} sent in {card}. Nobody asked.`,
+    `${OPPONENT_NAME} slid in {card}`,
+    `${OPPONENT_NAME} unzipped {card}`,
   ],
   // Chuck's creature hitting yours / your face. Only the verb is voiced.
   oppHit: [
@@ -149,11 +164,13 @@ export const BOARD_LINES = {
     '{attacker} worked {target} over for {dmg} ({hp} HP left)',
     '{attacker} slapped {target} around for {dmg} ({hp} HP left)',
     '{attacker} leaned on {target} for {dmg} ({hp} HP left)',
+    '{attacker} worked {target} over, filthy, for {dmg} ({hp} HP left)',
   ],
   oppFace: [
     '{attacker} socked you right in the face for {dmg}!',
     '{attacker} clocked you right in the face for {dmg}!',
     '{attacker} popped you right in the face for {dmg}!',
+    '{attacker} kissed you with a fist for {dmg}!',
   ],
   // Every variant keeps the "You conceded" prefix the specs find it by.
   conceded: [
@@ -161,6 +178,7 @@ export const BOARD_LINES = {
     `You conceded. ${OPPONENT_NAME} is dancing on the pool table. Pants optional.`,
     `You conceded. ${OPPONENT_NAME} is doing a little dance. Nobody asked for the hips.`,
     `You conceded. ${OPPONENT_NAME} is accepting congratulations from a plant.`,
+    `You conceded. ${OPPONENT_NAME} is keeping the room key.`,
   ],
 };
 

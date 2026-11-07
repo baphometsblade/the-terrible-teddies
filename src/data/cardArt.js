@@ -80,6 +80,22 @@ export const CARD_ART = {
   77: { visual: "cracked phone face-up on wet bar wood, screen lit with a wall of damning texts", scene: "Overhead flash on a police desk, phone bagged as evidence, screen glaring under harsh camera flash." },
   78: { visual: "teddy bear dunked headfirst into an overflowing pitcher of foaming beer, arms flailing", scene: "Shot through a cracked bar mirror, the dunked bear lit by hot pink neon signage." },
   79: { visual: "plate of lumpy green-tinged pot brownies with one bite missing and a rolled receipt", scene: "Extreme macro on a pawn-shop counter, brownies glowing sickly under flickering green fluorescent light." },
+  80: { fur: "stale ale brown", visual: "scrawny bear, undone bow tie, one shoe missing, motel keycard between his teeth", scene: "Low angle in a motel hallway under a red exit sign, Ned toasting a minibar bottle." },
+  81: { fur: "burgundy plush", visual: "tall bear in a backless black dress, velvet rope in one paw, unimpressed stare", scene: "Medium shot at a strip-club rope under hot pink neon, Vicky blocking the velvet line." },
+  82: { fur: "citrus yellow", visual: "squat bear, puckered scowl, salt on his snout, crushed whiskey glass in one paw", scene: "Tight profile at the bar under amber jukebox light, Walt slamming an empty sour glass." },
+  83: { fur: "parchment cream", visual: "lanky bear in a rumpled slip, hollowed motel bible, lipstick on the pages", scene: "Over-the-shoulder shot on a motel bed under one bare bulb, Mara hiding cash in the bible." },
+  84: { fur: "stage pink", visual: "curvy bear, sequin bra top, garter of dollar bills, bored professional smile", scene: "Low hero angle on a strip-club stage under a spinning disco ball, Lila mid-spin on a pole." },
+  85: { fur: "smoke grey", visual: "lean bear, trench coat, sunglasses indoors, one paw pressed to a plywood glory wall", scene: "Dutch tilt in a dive-bar back room under a red bulb, Gus leaning through a crude partition." },
+  86: { fur: "latex black", visual: "broad bear, rubber collar, brass whistle, calm open palm held up like a stop", scene: "Wide shot in a private booth under warm practical light, Sandy calling a halt with one paw." },
+  87: { fur: "confetti gold", visual: "hulking bear, shirt snagged on a ceiling fan, glitter in his chest fur, wild grin", scene: "Fisheye lens in a wrecked hotel suite at dawn, Andre dancing on a coffee table." },
+  88: { fur: "cash green", visual: "squat bear, open shirt, gold tooth, thick receipt roll used as a sash", scene: "Handheld shot on casino felt under pink neon, Omar buying a round with someone else's card." },
+  89: { fur: "last-call amber", visual: "tall bear, smeared mascara, one heel in her paw, dress strap fallen", scene: "Shot through the bar door at closing under harsh house lights, Lana walking out anyway." },
+  90: { fur: "wine red", visual: "mature broad bear, silk robe, cigarette holder, paw hooked in a date's loosened tie", scene: "Medium shot in a piano-bar booth under low amber light, Carol choosing the next round." },
+  91: { fur: "walk-of-shame beige", visual: "disheveled bear, one heel in her paw, dress strap down, taxi receipt stuck to her thigh", scene: "Low angle by the bar exit under a flickering exit sign, she limping out at dawn." },
+  92: { fur: "punch red", visual: "squat bear, cherry stem behind one ear, stained tuxedo shirt, bowl of spiked punch in both paws", scene: "Wide shot at a banquet table under sickly fluorescent light, him toasting too hard." },
+  93: { fur: "hangover grey", visual: "bleary bear, sunglasses indoors, aspirin bottle, phone lighting a guilty face", scene: "Overhead shot on a motel bed at dawn, the bear texting with one eye shut." },
+  94: { fur: "midnight plum", visual: "lean bear in a trench coat over nothing decent, phone in one paw, impatient grin", scene: "Doorway shot in a motel corridor under a red bulb, her knocking at 2am." },
+  95: { fur: "linen white", visual: "neat bear in a waistcoat, ice bucket, folded towel, knowing butler smile", scene: "Dutch tilt in a hotel corridor under warm sconce light, the tray held at a shut door." },
 };
 
 export default CARD_ART;

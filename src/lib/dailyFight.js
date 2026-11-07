@@ -54,6 +54,27 @@ export const MODIFIERS = Object.freeze([
     rules: "Chuck's creatures have +1 attack.",
     opponentAttack: 1,
   },
+  {
+    id: 'happy-ending',
+    name: 'Happy Ending',
+    flavour: 'The masseuse clocks out. The tab does not.',
+    rules: 'Both sides have 1 extra energy on their first turn.',
+    extraEnergy: 1,
+  },
+  {
+    id: 'two-for-one',
+    name: 'Two for One',
+    flavour: 'Cheap drinks, cheaper decisions, same hangover.',
+    rules: 'Both sides start at 25 health.',
+    startingHealth: 25,
+  },
+  {
+    id: 'one-last-round',
+    name: 'One Last Round',
+    flavour: 'The bottle is down. The night is not.',
+    rules: "Chuck's creatures have +1 attack.",
+    opponentAttack: 1,
+  },
 ]);
 
 // The card list is the fight. Order is shuffled with the day's seed inside

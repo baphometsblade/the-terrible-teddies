@@ -461,15 +461,14 @@ test.describe('the door', () => {
     await expect(page.locator('form[data-armed="true"]')).toBeVisible();
   };
 
-  test('does not scroll sideways on a phone: the form, the question and the turning away', async ({ page }) => {
+  test('does not scroll sideways on a phone: the form and the turning away', async ({ page }) => {
     await atTheDoor(page);
     await expectNoHorizontalOverflow(page, 'the door');
-    await page.getByLabel('Year you were born').fill(String(YEAR - 18));
-    await page.getByRole('button', { name: 'Check my year' }).click();
-    await expect(page.getByRole('heading', { name: 'Had your birthday yet this year?' })).toBeVisible();
-    await expectNoHorizontalOverflow(page, 'the birthday question');
-    await page.locator('[data-armed="true"]').filter({ has: page.getByRole('button', { name: 'Not yet', exact: true }) }).waitFor();
-    await page.getByRole('button', { name: 'Not yet', exact: true }).click();
+    const today = new Date();
+    const day = String(Math.min(today.getDate(), 28)).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    await page.getByLabel('Date of birth').fill(`${YEAR - 12}-${month}-${day}`);
+    await page.getByRole('button', { name: 'Check my age' }).click();
     await expect(page.getByRole('status')).toBeVisible();
     await expectNoHorizontalOverflow(page, 'the turning away');
   });

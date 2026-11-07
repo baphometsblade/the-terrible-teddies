@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import TeddyCard from './TeddyCard';
+import { abilityLabel } from '@/lib/abilities';
 import { ALL_CARDS } from '@/stores/gameStore';
 
 const render = (props) => {
@@ -42,7 +43,7 @@ describe('TeddyCard on the battle table (variant="board")', () => {
 
   it('shows the ability as an icon chip that still names it to a screen reader', () => {
     const board = render({ teddy: byName('Feral Tim'), variant: 'board' });
-    expect(board.querySelector('.sr-only')?.textContent).toBe('Swarm');
+    expect(board.querySelector('.sr-only')?.textContent).toBe(abilityLabel('swarm'));
     // The hand card's printed rules line is not drawn as well.
     expect(board.querySelectorAll('.truncate')).toHaveLength(0);
   });
