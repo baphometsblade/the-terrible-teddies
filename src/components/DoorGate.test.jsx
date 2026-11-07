@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DOOR_KEY, doorRecord } from '@/lib/door';
+import { CONSENT_KEY, consentRecord } from '@/lib/consent';
 
 // The gate in front of the game. TheDoor is stood in for by a stub with one
 // button per thing the real door can say (TheDoor.test.jsx has the real one),
@@ -422,7 +423,7 @@ describe('the analytics, for real', () => {
     return { posthog, sdkLoaded, trackEvent };
   };
 
-  it('starts for a first-ever pass, and then sends what was raised at the door', async () => {
+  it('holds a pass until analytics are allowed, then sends what was raised at the door', async () => {
     const { posthog, trackEvent } = await withKey();
     const host = render();
     await flush();
@@ -433,6 +434,13 @@ describe('the analytics, for real', () => {
     expect(posthog.capture).not.toHaveBeenCalled();
 
     press(host, 'adult');
+    await quiet();
+    // The door is not a yes to cookies. The SDK stays unloaded.
+    expect(posthog.init).not.toHaveBeenCalled();
+
+    localStorage.setItem(CONSENT_KEY, consentRecord('granted', 1));
+    const { initializePostHog } = await import('@/utils/analytics');
+    await initializePostHog();
     await vi.waitFor(() => expect(posthog.init).toHaveBeenCalledTimes(1), { timeout: 5000 });
     expect(posthog.init.mock.calls[0][0]).toBe('phc_test_key');
     await vi.waitFor(() => expect(posthog.capture).toHaveBeenCalledWith('raised_at_the_door', {}), { timeout: 5000 });
@@ -455,9 +463,10 @@ describe('the analytics, for real', () => {
     expect(posthog.capture).not.toHaveBeenCalled();
   });
 
-  it('starts at once for a returning player, as it did before the door', async () => {
+  it('starts at once for a returning player who already allowed analytics', async () => {
     const { posthog } = await withKey();
     localStorage.setItem(DOOR_KEY, doorRecord('pass', 0));
+    localStorage.setItem(CONSENT_KEY, consentRecord('granted', 0));
     render();
     await vi.waitFor(() => expect(posthog.init).toHaveBeenCalledTimes(1), { timeout: 5000 });
   });

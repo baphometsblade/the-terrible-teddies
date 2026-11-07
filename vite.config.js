@@ -1,3 +1,5 @@
+import { existsSync, mkdirSync, renameSync } from "fs";
+import { dirname, resolve } from "path";
 import { fileURLToPath, URL } from "url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -39,6 +41,46 @@ export const preloadDisplayFont = () => ({
 // undefined %VAR% in the page verbatim, which would ship a broken URL, and
 // it keeps index.html's inline script, whose hash vercel.json pins, as it is.
 // See src/lib/siteMeta.js.
+// Source maps are generated so a crash can be read, and then taken out of
+// dist/. Vite's `hidden` already omits the sourceMappingURL comment, so a
+// browser will not ask for them; moving the files is what stops the host
+// from serving them to anyone who guesses the name. Upload sourcemaps/ to
+// Sentry from a trusted machine. They are gitignored.
+export const hideSourceMaps = () => ({
+  name: "hide-source-maps",
+  apply: "build",
+  writeBundle(outputOptions, bundle) {
+    const outDir = outputOptions.dir;
+    if (!outDir) return;
+    const destRoot = resolve(outDir, "..", "sourcemaps");
+    for (const fileName of Object.keys(bundle)) {
+      if (!fileName.endsWith(".map")) continue;
+      const from = resolve(outDir, fileName);
+      if (!existsSync(from)) continue;
+      const to = resolve(destRoot, fileName);
+      mkdirSync(dirname(to), { recursive: true });
+      renameSync(from, to);
+    }
+  },
+});
+
+// The error monitor and the vitals reporter are dynamic imports. Naming their
+// chunks and keeping them out of the entry's modulepreload list means a
+// visitor does not download either until the code actually asks.
+// Howler is deliberately not grouped: its only importer is sounds.js, which
+// only GameBoard imports, so it stays in that chunk.
+export const manualChunks = (id) => {
+  if (!id.includes("node_modules")) return undefined;
+  if (id.includes("@sentry")) return "sentry";
+  if (id.includes("web-vitals")) return "web-vitals";
+  if (id.includes("framer-motion")) return "animations";
+  if (id.includes("@radix-ui")) return "ui";
+  if (id.includes("zustand")) return "state";
+  if (id.includes("canvas-confetti")) return "effects";
+  if (id.includes("@supabase")) return "supabase";
+  return undefined;
+};
+
 export const socialMeta = () => {
   let tags = [];
   return {
@@ -62,7 +104,7 @@ export default defineConfig({
     host: "::",
     port: "8080",
   },
-  plugins: [react(), socialMeta(), preloadDisplayFont()],
+  plugins: [react(), socialMeta(), preloadDisplayFont(), hideSourceMaps()],
   resolve: {
     alias: [
       {
@@ -103,35 +145,15 @@ export default defineConfig({
     // avoided in shipped source (see safeStorage and DailyRewards).
     target: 'safari15',
     cssTarget: 'safari15',
+    sourcemap: "hidden",
+    modulePreload: {
+      resolveDependencies(_filename, deps) {
+        return deps.filter((dep) => !/\/(sentry|web-vitals)-/.test(dep));
+      },
+    },
     rollupOptions: {
       output: {
-        manualChunks: {
-          // No `vendor: ['react', 'react-dom']` entry. It never matched — React
-          // resolves through a different specifier here, so Rollup put it in an
-          // auto-named chunk of its own and emitted `vendor` as a 1-byte file.
-          // Harmless (nothing preloads it) but the rule claimed to do something
-          // it did not, which is worse than not having it.
-          animations: ['framer-motion'],
-          ui: ['@radix-ui/react-slot', '@radix-ui/react-toast', '@radix-ui/react-progress', '@radix-ui/react-switch'],
-          state: ['zustand'],
-          // Howler is deliberately not here. Its only importer is
-          // src/utils/sounds.js, which only GameBoard imports, so Rollup keeps
-          // it in the GameBoard chunk. Grouped with confetti it downloaded with
-          // every dialog that celebrates, Daily Rewards' once-a-day auto-open
-          // included, for players who might never start a battle.
-          effects: ['canvas-confetti'],
-          // Auth, the save and the leaderboard all import the client, so it
-          // used to sit inside the entry chunk: every copy change re-downloaded
-          // it. Its own chunk stays on the first paint (the session is restored
-          // before the menu) and is cached across those changes. Howler is
-          // still not here — see the effects note above.
-          supabase: [
-            '@supabase/supabase-js',
-            '@supabase/auth-js',
-            '@supabase/postgrest-js',
-            '@supabase/functions-js',
-          ],
-        },
+        manualChunks,
       },
     },
     chunkSizeWarningLimit: 600,

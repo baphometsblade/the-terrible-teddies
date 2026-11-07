@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { contentMode, createDoor, DOOR_KEY } from '@/lib/door';
 import { initializePostHog } from '@/utils/analytics';
+import { initializeSentry } from '@/lib/sentry';
 // Static, as App imports it: BootScreen covers the door's chunk, and a chunk
 // for the thing that covers a round-trip would be a round-trip.
 import BootScreen from './BootScreen';
@@ -70,6 +71,7 @@ const DoorGate = ({ children }) => {
     if (answer === 'pass' && !analyticsStarted.current) {
       analyticsStarted.current = true;
       initializePostHog();
+      initializeSentry();
     }
     return answer;
   });
@@ -77,6 +79,7 @@ const DoorGate = ({ children }) => {
     if ((state === 'opening' || state === 'pass') && !analyticsStarted.current) {
       analyticsStarted.current = true;
       initializePostHog();
+      initializeSentry();
     }
   }, [state]);
 

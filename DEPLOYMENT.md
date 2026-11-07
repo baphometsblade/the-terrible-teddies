@@ -344,12 +344,47 @@ Point `ALLOWED_ORIGIN` (Supabase secret) at the deployed domain.
   60 level syncs reach level 100, and wins accrue without a ceiling. Gems are
   unaffected; they come only from the webhook. A cheat-proof leaderboard would
   need battles resolved on the server.
-- The rate limiter accepts only the three actions the system uses
-  (`checkout`, `battle_result`, `level_sync`), so it cannot be used to write
-  unlimited rows.
+- The rate limiter accepts only actions the system uses
+  (`checkout`, `battle_result`, `level_sync`, plus the platform actions
+  `admin_stats`, `activity_ping`, `match_log`, `data_export` and
+  `data_delete`), so it cannot be used to write unlimited rows.
 - Spending gems can't be undone by re-reading the server balance:
   `reconcileServerGems` credits only purchases above a high-water mark. A
   server total that moves *down* is a refund or chargeback reversal, and is
   applied to the spendable balance (floored at 0) so the clawback lands.
 - The leaderboard reads a view exposing only ranking columns; direct `players`
   reads are restricted to the owner's own row.
+
+## Platform, growth and reliability
+
+Apply `supabase/migrations/20261107150000_platform_growth.sql` with
+`npx supabase db push` (a project built from `bootstrap.sql` already has it).
+Then, in the SQL editor, as the database owner, add yourself to the staff desk.
+Nothing in the client can do this:
+
+```sql
+insert into public.admins (user_id)
+select id from auth.users where email = 'you@example.com';
+```
+
+Open `https://terribleteddies.vercel.app/admin` after signing in. The page
+shows four counts: accounts, players seen in the last day, matches today, and
+matches all time. It does not list people.
+
+Optional environment variables, set in the Vercel project and rebuilt:
+
+| Variable | What it does |
+| --- | --- |
+| `VITE_SENTRY_DSN` | Loads Sentry after the age door. Unset, the SDK is never downloaded. |
+| `VITE_PRODUCT_ANALYTICS` | `1` records match, pack, shop and funnel events. Needs `VITE_POSTHOG_KEY` and the cookie notice. Unset or `off` records nothing. |
+| `VITE_SITE_URL` | Absolute origin for the link-preview tags. Unset, the build uses `https://terribleteddies.vercel.app`. |
+
+Source maps are built with `sourcemap: 'hidden'` and moved to `sourcemaps/`
+outside `dist/`, so the site does not serve them. To read a production stack
+in Sentry, upload that directory with `sentry-cli` from a trusted machine
+(`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`). The app runs without
+that upload; traces are just minified until you do it.
+
+Players download their account or delete it from Settings. Deletion removes
+the auth user, the profile and the cloud save. Purchase rows stay, with the
+account taken off them.

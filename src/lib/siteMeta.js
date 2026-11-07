@@ -5,9 +5,10 @@
 // Open Graph and X want absolute URLs, and Facebook's, X's and LinkedIn's
 // scrapers do not resolve a relative one, so the old
 // <meta property="og:image" content="/og-image.jpg"> gave most shared links
-// no picture. The site's address is not in the repo, so it comes from the
-// build's environment, and with none set the tags are left out rather than
-// guessed: a wrong absolute URL is worse than none.
+// no picture. VITE_SITE_URL wins, then Vercel's production host, then the
+// public origin of the live game. A value that is set but is not an absolute
+// http(s) URL still fails the build.
+import { PUBLIC_SITE_ORIGIN } from './publicCopy.js';
 
 export const OG_IMAGE = { path: '/og-image.jpg', width: 1200, height: 630, type: 'image/jpeg' };
 export const OG_IMAGE_ALT =
@@ -16,14 +17,14 @@ export const OG_IMAGE_ALT =
 /**
  * The site's origin (and base path, if any), without a trailing slash:
  * VITE_SITE_URL if it is set, else the production domain Vercel's build
- * provides (VERCEL_PROJECT_PRODUCTION_URL, a bare host), else null. An
- * address that is set but is not an absolute http(s) URL fails the build
- * rather than shipping a broken preview.
+ * provides (VERCEL_PROJECT_PRODUCTION_URL, a bare host), else
+ * https://terribleteddies.vercel.app. An address that is set but is not an
+ * absolute http(s) URL fails the build rather than shipping a broken preview.
  */
 export function siteUrlFrom(env = {}) {
   const raw = (env.VITE_SITE_URL || '').trim()
-    || (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL.trim()}` : '');
-  if (!raw) return null;
+    || (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL.trim()}` : '')
+    || PUBLIC_SITE_ORIGIN;
   let url;
   try {
     url = new URL(raw);

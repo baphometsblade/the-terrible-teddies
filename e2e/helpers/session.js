@@ -12,6 +12,7 @@
 import { test as base, expect } from '@playwright/test';
 // The door's storage contract, from the same pure module the app reads it with.
 import { DOOR_KEY, doorRecord } from '../../src/lib/door.js';
+import { CONSENT_KEY, consentRecord } from '../../src/lib/consent.js';
 
 export const REF = 'testproject'; // first host label of VITE_SUPABASE_URL
 
@@ -57,7 +58,10 @@ export const SLOW = { timeout: 30_000 };
 // with browser.newContext() are not seeded: they are new devices.
 export const test = base.extend({
   doorPassed: [true, { option: true }],
-  context: async ({ context, doorPassed }, use) => {
+  // The cookie bar covers the bottom of the menu. Specs that are not about
+  // the choice start with it already made, the way the door is seeded.
+  consentGranted: [true, { option: true }],
+  context: async ({ context, doorPassed, consentGranted }, use) => {
     if (doorPassed) {
       await context.addInitScript(([key, value]) => {
         try {
@@ -66,6 +70,15 @@ export const test = base.extend({
           // No storage to write to (about:blank, blocked): the page is not one that reads it.
         }
       }, [DOOR_KEY, doorRecord('pass', 0)]);
+    }
+    if (consentGranted) {
+      await context.addInitScript(([key, value]) => {
+        try {
+          if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+        } catch {
+          // Same as the door: a page with no storage is not one that reads it.
+        }
+      }, [CONSENT_KEY, consentRecord('granted', 0)]);
     }
     await use(context);
   },
@@ -145,6 +158,20 @@ export async function bootToMainMenu(page) {
 
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
+}
+
+// The marketing page stands in front of the age door for a brand-new device.
+// A home-screen shortcut and a password-reset link skip it. Everything else
+// that wants the door clicks through. The pointer is moved off afterwards so
+// it does not land on the date field and start a hover transition.
+export async function passTheLanding(page) {
+  const enter = page.getByRole('button', { name: "I'm old enough. Check the door." });
+  const door = page.getByRole('heading', { name: 'ID.', level: 1 });
+  await expect(enter.or(door)).toBeVisible(SLOW);
+  if (await enter.isVisible()) {
+    await enter.click();
+    await page.mouse.move(0, 0);
+  }
 }
 
 export { expect };

@@ -3,6 +3,9 @@
 # Card art is not indexable. Those pictures are the explicit surface, and
 # they sit behind the age gate. Players still load them — this file is only
 # a hint to crawlers.
+Sitemap: https://terribleteddies.vercel.app/sitemap.xml
+
 User-agent: *
 Allow: /
 Disallow: /cards/
+Disallow: /admin
