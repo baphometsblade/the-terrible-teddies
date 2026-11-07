@@ -64,7 +64,6 @@ export const ensurePlayerProfile = async (username = null, userId = null) => {
   if (!uid) return null;
 
   const { error } = await supabase.rpc('upsert_player_profile', {
-    p_user_id: uid,
     p_username: username,
   });
 
@@ -98,7 +97,6 @@ export const syncBattleResult = async (won, damageDealt = 0, healingDone = 0, co
   if (!uid) return null;
 
   const { error } = await supabase.rpc('sync_battle_result', {
-    p_user_id: uid,
     p_won: won,
     p_damage_dealt: damageDealt,
     p_healing_done: healingDone,
@@ -117,7 +115,6 @@ export const syncPlayerLevel = async (level, xp, userId = null) => {
   if (!uid) return null;
 
   const { error } = await supabase.rpc('sync_player_level', {
-    p_user_id: uid,
     p_level: level,
     p_xp: xp,
   });

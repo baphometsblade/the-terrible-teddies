@@ -167,16 +167,16 @@ BEGIN
   --     rate-limited — the +200/call cap alone just converts the one-call
   --     exploit into a 50-iteration console loop. With the server default of
   --     5 calls/window, six rapid syncs may apply at most five increases.
-  PERFORM public.sync_player_level(uid, 100, 10000);
+  PERFORM public.sync_player_level(100, 10000);
   SELECT experience INTO v_exp FROM public.players WHERE user_id = uid;
   IF v_exp > 200 THEN
     RAISE EXCEPTION 'sync_player_level did NOT cap the experience increase: got %', v_exp;
   END IF;
-  PERFORM public.sync_player_level(uid, 100, 10000);
-  PERFORM public.sync_player_level(uid, 100, 10000);
-  PERFORM public.sync_player_level(uid, 100, 10000);
-  PERFORM public.sync_player_level(uid, 100, 10000);
-  PERFORM public.sync_player_level(uid, 100, 10000); -- 6th call in the window
+  PERFORM public.sync_player_level(100, 10000);
+  PERFORM public.sync_player_level(100, 10000);
+  PERFORM public.sync_player_level(100, 10000);
+  PERFORM public.sync_player_level(100, 10000);
+  PERFORM public.sync_player_level(100, 10000); -- 6th call in the window
   SELECT experience INTO v_exp FROM public.players WHERE user_id = uid;
   IF v_exp > 1000 THEN
     RAISE EXCEPTION 'sync_player_level is NOT rate-limited: a rapid loop reached experience %', v_exp;
@@ -184,12 +184,12 @@ BEGIN
 
   -- (2) Rapid battle syncs must be rate-limited: with the server default of
   --     5 per window, the 6th win in one window must not land.
-  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
-  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
-  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
-  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
-  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
-  PERFORM public.sync_battle_result(uid, true, 0, 0, 0);
+  PERFORM public.sync_battle_result(true, 0, 0, 0);
+  PERFORM public.sync_battle_result(true, 0, 0, 0);
+  PERFORM public.sync_battle_result(true, 0, 0, 0);
+  PERFORM public.sync_battle_result(true, 0, 0, 0);
+  PERFORM public.sync_battle_result(true, 0, 0, 0);
+  PERFORM public.sync_battle_result(true, 0, 0, 0);
   SELECT wins INTO v_wins FROM public.players WHERE user_id = uid;
   IF v_wins <> 5 THEN
     RAISE EXCEPTION 'sync_battle_result is NOT rate-limited: expected 5 wins, got %', v_wins;
@@ -248,7 +248,7 @@ BEGIN
   INSERT INTO auth.users(id) VALUES (v_user) ON CONFLICT DO NOTHING;
   PERFORM set_config('request.jwt.claims',
     format('{"sub":"%s","role":"authenticated"}', v_user), TRUE);
-  PERFORM upsert_player_profile(v_user, repeat('A', 500) || '<script>');
+  PERFORM upsert_player_profile(repeat('A', 500) || '<script>');
   SELECT username INTO v_name FROM public.players WHERE user_id = v_user;
   IF v_name IS NULL OR char_length(v_name) > 20 OR v_name !~ '^[A-Za-z0-9 _.!?-]+$' THEN
     RAISE EXCEPTION 'upsert_player_profile stored an unvalidated username: %', left(coalesce(v_name,'<null>'), 40);
@@ -256,7 +256,7 @@ BEGIN
 
   -- ...while still keeping a name that WOULD pass set_player_username.
   DELETE FROM public.players WHERE user_id = v_user;
-  PERFORM upsert_player_profile(v_user, 'Grizzly Pete');
+  PERFORM upsert_player_profile('Grizzly Pete');
   SELECT username INTO v_name FROM public.players WHERE user_id = v_user;
   IF v_name <> 'Grizzly Pete' THEN
     RAISE EXCEPTION 'upsert_player_profile mangled a legitimate username: %', v_name;
@@ -338,8 +338,11 @@ BEGIN
     v_rejected    BOOLEAN := FALSE;
   BEGIN
     SELECT count(*) INTO v_rows_before FROM rate_limits;
+    -- The limiter keys the row on auth.uid(), not an argument.
+    PERFORM set_config('request.jwt.claims',
+      json_build_object('sub', v_user::text, 'role', 'authenticated')::text, true);
     BEGIN
-      PERFORM check_rate_limit(v_user, 'definitely-not-a-real-action');
+      PERFORM check_rate_limit('definitely-not-a-real-action');
     EXCEPTION WHEN OTHERS THEN
       v_rejected := TRUE;
     END;
@@ -351,9 +354,9 @@ BEGIN
       RAISE EXCEPTION 'an unknown action_type still wrote % rate_limits row(s)', v_rows_after - v_rows_before;
     END IF;
     -- ...while the three real actions still work.
-    IF NOT (check_rate_limit(v_user, 'checkout')
-        AND check_rate_limit(v_user, 'battle_result')
-        AND check_rate_limit(v_user, 'level_sync')) THEN
+    IF NOT (check_rate_limit('checkout')
+        AND check_rate_limit('battle_result')
+        AND check_rate_limit('level_sync')) THEN
       RAISE EXCEPTION 'a legitimate rate-limit action was rejected';
     END IF;
   END;
@@ -444,9 +447,10 @@ BEGIN
     ) THEN bad := bad || format('  authenticated cannot EXECUTE %s%s', fn, chr(10)); END IF;
   END LOOP;
 
-  -- The trophy board is read-only for a signed-in player and closed to anon.
-  IF has_table_privilege('anon', 'public.leaderboard_trophies', 'SELECT') THEN
-    bad := bad || '  anon can SELECT leaderboard_trophies' || chr(10);
+  -- The trophy board is read-only, and anonymous visitors can read it.
+  -- It exposes ranking columns only; that is checked behaviourally below.
+  IF NOT has_table_privilege('anon', 'public.leaderboard_trophies', 'SELECT') THEN
+    bad := bad || '  anon cannot SELECT leaderboard_trophies' || chr(10);
   END IF;
   IF NOT has_table_privilege('authenticated', 'public.leaderboard_trophies', 'SELECT') THEN
     bad := bad || '  authenticated cannot SELECT leaderboard_trophies' || chr(10);
@@ -592,8 +596,15 @@ BEGIN
   BEGIN PERFORM * FROM public.get_my_rank(); EXCEPTION WHEN insufficient_privilege THEN ok := TRUE; END;
   IF NOT ok THEN RAISE EXCEPTION 'anon can call get_my_rank'; END IF;
   ok := FALSE;
-  BEGIN PERFORM 1 FROM public.leaderboard_trophies; EXCEPTION WHEN insufficient_privilege THEN ok := TRUE; END;
-  IF NOT ok THEN RAISE EXCEPTION 'anon can read leaderboard_trophies'; END IF;
+  BEGIN PERFORM 1 FROM public.leaderboard_trophies; ok := TRUE; EXCEPTION WHEN insufficient_privilege THEN ok := FALSE; END;
+  IF NOT ok THEN RAISE EXCEPTION 'anon cannot read the public leaderboard'; END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'leaderboard_trophies'
+      AND column_name IN ('user_id', 'coins', 'xp', 'level')
+  ) THEN
+    RAISE EXCEPTION 'leaderboard_trophies exposes a private column';
+  END IF;
   RESET ROLE;
 
   RAISE NOTICE 'cloud-save behavioural assertions passed';
@@ -706,6 +717,8 @@ DECLARE
   v_rank BIGINT;
   v_plan TEXT;
   v_ok BOOLEAN := FALSE;
+  v_def TEXT;
+  v_sql TEXT;
   r RECORD;
 BEGIN
   -- Rows at the formula's edges, beside every row the earlier blocks made:
@@ -750,7 +763,15 @@ BEGIN
   -- index (an expression in place of the column, an index on something else)
   -- falls back to one regardless, and this sees it.
   PERFORM set_config('enable_seqscan', 'off', true);
-  EXECUTE 'EXPLAIN (FORMAT JSON) SELECT * FROM public.leaderboard_trophies' INTO v_plan;
+  -- The view is a security-invoker wrapper over a security-definer function,
+  -- which the planner will not inline. Explain the function body itself:
+  -- that is the statement that has to use the trophy index.
+  v_def := pg_get_functiondef('public.leaderboard_trophies_rows()'::regprocedure);
+  v_sql := (regexp_match(
+    replace(v_def, chr(10), ' '),
+    '[$]function[$](.*)[$]function[$]'
+  ))[1];
+  EXECUTE 'EXPLAIN (FORMAT JSON) ' || v_sql INTO v_plan;
   IF position('players_board_trophies_idx' IN v_plan) = 0 THEN
     RAISE EXCEPTION 'the board does not read players_board_trophies_idx: %', v_plan;
   END IF;

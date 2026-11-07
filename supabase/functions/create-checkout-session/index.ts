@@ -46,10 +46,6 @@ const GEM_BUNDLES: Record<string, { gems: number; bonus: number; price: number; 
   weekly_gem_pass:   { gems: 350,  bonus: 0,   price: 599,  name: "Mega Gem Pack — 350 Gems" },
 };
 
-// Rate limiting config - enforced via database for durability across function restarts
-const RATE_LIMIT_MAX = 5;
-const RATE_LIMIT_WINDOW_SECONDS = 60;
-
 // Allowed origins — production domain set via env var, localhost only in dev
 const ALLOWED_ORIGINS = [
   Deno.env.get("ALLOWED_ORIGIN"),
@@ -101,11 +97,11 @@ serve(async (req) => {
     }
 
     // Rate limit via database (durable across function restarts)
+    // The window and the account both come from the database. The JWT on this
+    // client is the buyer's, so check_rate_limit reads auth.uid() and ignores
+    // any id in the body.
     const { data: allowed, error: rateLimitError } = await supabase.rpc("check_rate_limit", {
-      p_user_id: user.id,
       p_action_type: "checkout",
-      p_max_requests: RATE_LIMIT_MAX,
-      p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
     });
     if (rateLimitError || allowed === false) {
       return new Response(
