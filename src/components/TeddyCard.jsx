@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useGameStore } from '@/stores/gameStore';
 import { motion } from 'framer-motion';
 import {
-  Shield, Crosshair, ShieldHalf, Ghost, Castle, Flame, Bug, Crown, Rabbit,
-  Heart, Layers, Bomb, Swords, Sparkles,
+  Shield, Crosshair, ShieldHalf, Ghost, Castle, Flame, Bug, Crown, Rabbit, Beer, Heart, Moon,
+  Layers, Bomb, Swords, Sparkles,
 } from 'lucide-react';
 import { abilityLabel } from '@/lib/abilities';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
@@ -40,6 +40,9 @@ const ABILITY_ICONS = {
   swarm: Bug,
   royal: Crown,
   rush: Rabbit,
+  hungover: Beer,
+  smitten: Heart,
+  blackout: Moon,
 };
 const EFFECT_ICONS = {
   heal: Heart,
@@ -240,11 +243,11 @@ const rulesFor = (teddy) => {
 // shows the raised figure (`value` is the printed one) in BUFFED_TONE, and
 // its title says where the rest comes from. `fontSize` overrides the
 // numerals' size, for a board card scaled below full size (see legibleSize).
-const StatBadge = ({ value, title, tone, className, board = false, raisedBy = 0, fontSize, ...data }) => (
+const StatBadge = ({ value, title, tone, className, board = false, raisedBy = 0, raisedFrom = 'a Royal ally', fontSize, ...data }) => (
   <div
     {...data}
     data-buffed={raisedBy > 0 ? '' : undefined}
-    title={raisedBy > 0 ? `${title} (includes +${raisedBy} from a Royal ally)` : title}
+    title={raisedBy > 0 ? `${title} (includes +${raisedBy} from ${raisedFrom || 'a Royal ally'})` : title}
     className={`absolute bottom-[3px] z-10 rounded-full grid place-items-center
       text-white font-display font-extrabold leading-none tabular-nums
       ring-[1.5px] ring-night-950 shadow-[0_2px_4px_rgba(0,0,0,0.6)]
@@ -384,7 +387,7 @@ const RarityGem = ({ rarity }) => (
 const TeddyCard = ({
   teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null,
   lift = true, artVariant = 'thumb', artLoading = 'lazy', dimmed = false,
-  variant = 'hand', costDelta = 0, attackDelta = 0, side = 'player', tauntActive, resting = false,
+  variant = 'hand', costDelta = 0, attackDelta = 0, raisedNote = 'a Royal ally', side = 'player', tauntActive, resting = false,
   nameless = false, zoom = 1,
 }) => {
   const board = variant === 'board';
@@ -580,7 +583,7 @@ const TeddyCard = ({
             {/* title, tone and className stay together on one line:
                 Tutorial.test.js reads where each badge sits, and in what
                 colour, from here. */}
-            <StatBadge board={board} value={teddy.attack} title="Attack" tone={ATTACK_TONE} className="left-[3px]" raisedBy={attackDelta} fontSize={statSize} data-stat="attack" />
+            <StatBadge board={board} value={teddy.attack} title="Attack" tone={ATTACK_TONE} className="left-[3px]" raisedBy={attackDelta} raisedFrom={raisedNote} fontSize={statSize} data-stat="attack" />
             <StatBadge board={board} value={hp} title="HP" tone={wounded ? WOUNDED_TONE : HP_TONE} className="right-[3px]" fontSize={statSize} data-stat="hp" />
           </>
         )}

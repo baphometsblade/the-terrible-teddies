@@ -30,7 +30,8 @@ const isSameCard = (a, b) => {
  * @returns {boolean} whether `card` may declare an attack right now
  */
 export const canAttack = (card) =>
-  card.type === 'action' && !card.hasAttacked && (!card.summoningSick || card.ability === 'rush');
+  card.type === 'action' && !card.hasAttacked && !card.hungover
+  && (!card.summoningSick || card.ability === 'rush');
 
 /**
  * A face swing (or the trap it springs) needs a settled attacker. Quickie
@@ -49,7 +50,21 @@ export const canSwingFace = (card) =>
  * field never depends on which flags happen to have been stamped on it.
  */
 export const readyCreatures = (field) =>
-  field.map((c) => ({ ...c, hasAttacked: false, summoningSick: false }));
+  field.map((c) => ({
+    ...c,
+    hasAttacked: false,
+    summoningSick: false,
+    // A Hungover bear sits out the turn after it swings, then wakes up.
+    hungover: !!c.pendingHangover,
+    pendingHangover: false,
+  }));
+
+/** Stamp a swing. Hungover bears book the morning after. */
+export const stampSwing = (card) => ({
+  ...card,
+  hasAttacked: true,
+  ...(card?.ability === 'hungover' ? { pendingHangover: true } : {}),
+});
 
 /**
  * Energy cost to play a card, accounting for `swarm`: a swarm card is cheaper
@@ -82,9 +97,29 @@ export const effectiveCost = (card, field = []) => {
  * @param {object[]} field - the attacker's own field (creatures + traps)
  * @returns {number} card.attack, plus 1 if a royal ally is present
  */
+const friendOn = (card, field, pred) => field.some((c) => !isSameCard(c, card) && pred(c));
+
 export const effectiveAttack = (card, field = []) => {
-  const hasRoyalAlly = field.some((c) => !isSameCard(c, card) && c.ability === 'royal' && c.type === 'action');
-  return card.attack + (hasRoyalAlly ? 1 : 0);
+  const royal = friendOn(card, field, (c) => c.ability === 'royal' && c.type === 'action');
+  const smitten = card.ability === 'smitten' && friendOn(card, field, (c) => c.type === 'action');
+  const table = card.tribe && friendOn(card, field, (c) => c.type === 'action' && c.tribe === card.tribe);
+  return card.attack + (royal ? 1 : 0) + (smitten ? 1 : 0) + (table ? 1 : 0);
+};
+
+/** Why the attack badge is up, for the card's words. Empty when it is not. */
+export const attackAuraNote = (card, field = []) => {
+  const notes = [];
+  if (friendOn(card, field, (c) => c.ability === 'royal' && c.type === 'action')) notes.push('a Royal ally');
+  if (card.ability === 'smitten' && friendOn(card, field, (c) => c.type === 'action')) notes.push('company');
+  if (card.tribe && friendOn(card, field, (c) => c.type === 'action' && c.tribe === card.tribe)) notes.push('the table');
+  return notes.join(' and ');
+};
+
+/** Blackout picks for itself. `random` is in [0, 1). */
+export const pickBlackoutTarget = (targets, random = Math.random) => {
+  if (!targets?.length) return null;
+  const i = Math.min(targets.length - 1, Math.floor(random() * targets.length));
+  return targets[i];
 };
 
 /**
@@ -96,12 +131,12 @@ export const effectiveAttack = (card, field = []) => {
  *   before — plain `attacker.attack`, no aura.
  * @returns {number} raw HP damage this hit deals (>= 0)
  */
-export const damageToCreatureHp = (attacker, target, attackerField) => {
+export const damageToCreatureHp = (attacker, target, attackerField, bonus = 0) => {
   let dmg = attackerField ? effectiveAttack(attacker, attackerField) : attacker.attack;
   if (target.ability === 'shield' && attacker.ability !== 'piercing') {
     dmg = Math.floor(dmg / 2);
   }
-  return Math.max(0, dmg);
+  return Math.max(0, dmg + (bonus || 0));
 };
 
 /**
@@ -122,8 +157,8 @@ export const damageToCreatureHp = (attacker, target, attackerField) => {
  * @param {object[]} [attackerField] - optional: see damageToCreatureHp.
  * @returns {{ survivor: object|null, overkill: number, dmg: number }}
  */
-export const resolveCreatureHit = (attacker, target, attackerField) => {
-  const dmg = damageToCreatureHp(attacker, target, attackerField);
+export const resolveCreatureHit = (attacker, target, attackerField, bonus = 0) => {
+  const dmg = damageToCreatureHp(attacker, target, attackerField, bonus);
   const hpBefore = target.currentHp ?? target.defense ?? 0;
   const hpAfter = hpBefore - dmg;
 

@@ -2,7 +2,7 @@
 // back when you pass the bottle. Pure, so the words can be tested without
 // mounting the table.
 
-export const emptySlip = () => ({ played: 0, damage: 0, kills: 0, face: 0, healed: 0 });
+export const emptySlip = () => ({ played: 0, damage: 0, kills: 0, face: 0, healed: 0, swings: 0 });
 
 export const notePlay = (slip) => ({ ...(slip || emptySlip()), played: (slip?.played || 0) + 1 });
 
@@ -13,6 +13,7 @@ export const noteHit = (slip, { damage = 0, killed = false, face = 0 } = {}) => 
     damage: base.damage + damage,
     kills: base.kills + (killed ? 1 : 0),
     face: base.face + face,
+    swings: (base.swings || 0) + 1,
   };
 };
 

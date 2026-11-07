@@ -10,7 +10,7 @@ import { RARITY_ORDER } from '@/lib/rarity';
 // they must keep holding as the catalog grows.
 
 const VALID_TYPES = ['action', 'trap', 'special'];
-const VALID_ABILITIES = ['none', 'taunt', 'piercing', 'shield', 'stealth', 'protect', 'fury', 'swarm', 'royal', 'rush'];
+const VALID_ABILITIES = ['none', 'taunt', 'piercing', 'shield', 'stealth', 'protect', 'fury', 'swarm', 'royal', 'rush', 'hungover', 'smitten', 'blackout'];
 const VALID_SPECIAL_EFFECTS = ['heal', 'draw', 'buff'];
 // Opponent goon deck ids reserved in GameBoard.jsx (101-108) — player catalog
 // ids must stay below this range so card art/keys never collide.

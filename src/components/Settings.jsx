@@ -13,6 +13,8 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 import { describeReset } from '@/lib/resetSummary';
+import HouseRulesPicker from './HouseRulesPicker';
+import { readHouseRule } from '@/lib/houseRules';
 import {
   useCloudSave, describeSaveStatus, formatSavedAt, switchToBackupSave, saveNow,
 } from '@/lib/cloudSave';
@@ -235,6 +237,7 @@ const Settings = ({ onClose }) => {
     resetProgress,
   } = store;
 
+  const [houseRule, setHouseRule] = useState(readHouseRule);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetConfirmText, setResetConfirmText] = useState('');
   const resetButtonRef = useRef(null);
@@ -467,6 +470,11 @@ const Settings = ({ onClose }) => {
               <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="normal" label="Normal" description="Two in. Top card." icon={Meh} />
               <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="hard" label="Hard" description="Sober. Reads you." icon={Angry} />
             </div>
+          </section>
+
+          <section>
+            <SectionHeading>House rules</SectionHeading>
+            <HouseRulesPicker rule={houseRule} onChange={setHouseRule} />
           </section>
 
           <section>

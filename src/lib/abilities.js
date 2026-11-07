@@ -18,6 +18,9 @@ export const ABILITY_LABELS = {
   swarm: 'Pile-on',
   royal: 'Patron',
   rush: 'Quickie',
+  hungover: 'Hungover',
+  smitten: 'Smitten',
+  blackout: 'Blackout',
 };
 
 export const abilityLabel = (ability) => (
@@ -34,6 +37,9 @@ export const ABILITY_RULES = {
   swarm: 'Costs 1 less energy (min 1) if you already control another creature',
   royal: 'Other creatures you control get +1 attack while this is on the field',
   rush: 'Can swing the turn it arrives, but only at other creatures. The face waits',
+  hungover: 'After it attacks, it cannot attack on its next turn',
+  smitten: 'Gets +1 attack while you control another creature',
+  blackout: 'Picks its own legal target. You do not',
 };
 
 /** The chip on a bear that just sat down. Quickie can already swing. */
@@ -75,14 +81,15 @@ const effectLine = (card) => {
  * leave it out for a card on the table, where it has been paid. `attack` is
  * the attack the card hits for now (a Royal ally's +1 included).
  */
-export const describeCard = (card, { cost, attack } = {}) => {
+export const describeCard = (card, { cost, attack, aura } = {}) => {
   const parts = [];
   if (cost !== undefined && cost !== null) parts.push(`Costs ${cost} energy.`);
   if (card.type === 'action') {
     const atk = attack ?? card.attack;
     const bonus = atk - card.attack;
+    const from = aura || 'a Royal ally';
     const hp = card.currentHp ?? card.defense;
-    parts.push(`${atk} attack${bonus > 0 ? ` (+${bonus} from a Royal ally)` : ''}, ${hp} of ${card.defense} HP.`);
+    parts.push(`${atk} attack${bonus > 0 ? ` (+${bonus} from ${from})` : ''}, ${hp} of ${card.defense} HP.`);
   } else {
     const line = effectLine(card);
     if (line) parts.push(`${line}.`);
@@ -90,7 +97,8 @@ export const describeCard = (card, { cost, attack } = {}) => {
   const rules = abilityRules(card.ability);
   const label = abilityLabel(card.ability);
   if (rules && label) parts.push(`${label}: ${rules}.`);
-  if (card.hasAttacked) parts.push('Exhausted.');
+  if (card.hungover) parts.push('Hungover.');
+  else if (card.hasAttacked) parts.push('Exhausted.');
   else if (card.summoningSick && card.ability === 'rush') parts.push('Other bears only, this turn.');
   else if (card.summoningSick) parts.push('Warming Up.');
   if (card.stealthActive) parts.push('Stealthed.');
