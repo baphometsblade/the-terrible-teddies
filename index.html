@@ -12,6 +12,12 @@
     <title>Terrible Teddies - 18+ Card Battler With Bad Habits</title>
     <meta name="description" content="Cute teddy bears. Filthy mouths. An 18+ card battler: build a deck of degenerate bears and beat the stuffing out of Chuck. He's earned it." />
     <meta name="keywords" content="card battler, 18+ card game, teddy bear game, collectible cards, mature humor, free to play" />
+    <!-- Adult, so SafeSearch and family filters can decline it. The RTA label
+         is the one those filters match; "adult" is the one Google documents.
+         The page stays indexable — the rating is the gate, not a noindex. -->
+    <meta name="rating" content="adult" />
+    <meta name="rating" content="RTA-5042-1996-1400-1577-RTA" />
+    <meta name="robots" content="index, follow, max-image-preview:standard" />
 
     <!-- og:url, og:image (with its size and alt) and twitter:image need the
          site's absolute address, which only the build knows: vite.config.js

@@ -36,4 +36,32 @@ describe('card art is cached', () => {
   it('leaves the hashed build assets immutable', () => {
     expect(cacheControlFor('/assets/(.*)')).toMatch(/immutable/);
   });
+
+  it('tells crawlers not to index the pictures, which are not content-addressed', () => {
+    const robots = vercel.headers
+      .find((h) => h.source === '/cards/(.*)')?.headers.find((x) => x.key.toLowerCase() === 'x-robots-tag')?.value;
+    expect(robots).toMatch(/noindex/);
+    expect(robots).toMatch(/noimageindex/);
+  });
+});
+
+describe('other static files are cached, and not as if they were hashed', () => {
+  it('keeps sounds for a week — the filenames do not change with the build', () => {
+    const value = cacheControlFor('/sounds/(.*)');
+    expect(Number(value.match(/max-age=(\d+)/)?.[1])).toBeGreaterThanOrEqual(604800);
+    expect(value).toMatch(/stale-while-revalidate/);
+    expect(value).not.toMatch(/immutable/);
+  });
+
+  it('caches the icons and the link-preview image for a day', () => {
+    const value = cacheControlFor('/(favicon.ico|favicon.png|apple-touch-icon.png|icon-192.png|icon-512.png|icon-maskable-192.png|icon-maskable-512.png|og-image.jpg)');
+    expect(Number(value.match(/max-age=(\d+)/)?.[1])).toBeGreaterThanOrEqual(86400);
+    expect(value).not.toMatch(/immutable/);
+  });
+
+  it('lets the manifest go stale within the hour, so an update can ship', () => {
+    const value = cacheControlFor('/manifest.json');
+    expect(Number(value.match(/max-age=(\d+)/)?.[1])).toBeLessThanOrEqual(3600);
+    expect(value).not.toMatch(/immutable/);
+  });
 });

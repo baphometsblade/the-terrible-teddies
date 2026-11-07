@@ -1,2 +1,8 @@
+# Terrible Teddies is an 18+ game. The page is indexable so people can find
+# it; the age rating in index.html is what SafeSearch and family filters read.
+# Card art is not indexable. Those pictures are the explicit surface, and
+# they sit behind the age gate. Players still load them — this file is only
+# a hint to crawlers.
 User-agent: *
 Allow: /
+Disallow: /cards/

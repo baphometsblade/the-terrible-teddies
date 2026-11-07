@@ -285,6 +285,35 @@ describe('the menu\'s lines', () => {
     expect(chip(render(MainMenu))).toBe(`${houseRank(26).name} · ${(1234).toLocaleString()} wins`);
   });
 
+  it('moves between tiles with the arrow keys, and stops at the edge of the grid', () => {
+    // jsdom's window is wide enough that matchMedia, where it exists, would
+    // report the 4-column layout. Pin the phone grid the assertions count on.
+    const original = window.matchMedia;
+    window.matchMedia = () => ({
+      matches: false, media: '', onchange: null,
+      addEventListener() {}, removeEventListener() {}, dispatchEvent() { return false; },
+      addListener() {}, removeListener() {},
+    });
+    try {
+      const host = render(MainMenu);
+      const tiles = [...host.querySelector('nav[aria-label="Main menu"]').querySelectorAll('[data-dest]')];
+      expect(tiles.length).toBeGreaterThan(4);
+      const press = (el, key) => act(() => {
+        el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      });
+      tiles[0].focus();
+      press(tiles[0], 'ArrowRight');
+      expect(document.activeElement).toBe(tiles[1]);
+      press(tiles[1], 'ArrowDown');
+      expect(document.activeElement).toBe(tiles[3]);
+      // Left from the first tile is the edge: focus stays where it was.
+      press(tiles[0], 'ArrowLeft');
+      expect(document.activeElement).toBe(tiles[3]);
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
   it('says the streak in three tiers, with "N-win streak" from two up', () => {
     useGameStore.setState({ currentWinStreak: 0 });
     expect(streak(render(MainMenu))).toBeNull();

@@ -8,6 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { getDailyChallenges, getWeeklyChallenges, countClaimable } from '../stores/challenges';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
+import { neighborIndex } from '@/lib/menuKeys';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { MENU_PAD } from '@/lib/safeArea';
 import { RARITY_ORDER } from '@/lib/rarity';
@@ -199,6 +201,18 @@ const MainMenu = ({
   // Everything except Battle, which is the hero. `accent` marks the
   // destinations that are currently asking for attention, each with a badge
   // that says why.
+  // The tile grid is 2 columns until sm, then 4. Arrow keys follow that;
+  // Tab still visits every tile, the header and Battle included.
+  const menuColumns = useMediaQuery('(min-width: 640px)') ? 4 : 2;
+  const onMenuKeyDown = (event) => {
+    const tiles = [...event.currentTarget.querySelectorAll('[data-dest]')];
+    const index = tiles.indexOf(event.target.closest?.('[data-dest]'));
+    const next = neighborIndex(index, event.key, menuColumns, tiles.length);
+    if (next == null) return;
+    event.preventDefault();
+    tiles[next].focus();
+  };
+
   const destinations = [
     { id: 'challenges', title: 'Challenges', description: TILE_LINES.challenges, icon: Target, action: onChallenges, badge: claimableChallenges > 0 ? `${claimableChallenges} ready` : null, accent: claimableChallenges > 0 },
     { id: 'battlepass', title: 'Battle Pass', description: TILE_LINES.battlepass, icon: Trophy, action: onBattlePass, badge: passReady > 0 ? `${passReady} ready` : null, accent: passReady > 0 },
@@ -404,7 +418,7 @@ const MainMenu = ({
           are asking for attention get the brass trim instead of a different
           colour each — the old eight-colour rainbow gave Rankings the same
           weight as the thing you came to do. */}
-      <nav className="relative z-10 w-full max-w-6xl mx-auto" aria-label="Main menu">
+      <nav className="relative z-10 w-full max-w-6xl mx-auto" aria-label="Main menu" onKeyDown={onMenuKeyDown}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {destinations.map((d, index) => (
             <motion.div
