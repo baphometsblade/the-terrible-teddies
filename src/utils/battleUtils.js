@@ -17,24 +17,28 @@ const isSameCard = (a, b) => {
 };
 
 /**
- * Summoning sickness: a creature cannot attack on the turn it is played. It
- * enters stamped `summoningSick` and is cleared by readyCreatures() at the
- * player's next turn boundary.
+ * Summoning sickness: a creature cannot attack on the turn it is played,
+ * unless it is Quickie (rush). Rush still cannot reach the face that turn
+ * (see canSwingFace). Sickness is stamped on arrival and cleared by
+ * readyCreatures() at the controller's next turn boundary.
  *
- * This exists because without it, taunt and protect barely mattered: any
- * blocker the player put up could be answered by simply playing a fresh
- * creature and swinging with it the same turn, so board position never had to
- * be established a turn ahead. It also removes a real asymmetry — the
- * opponent already could not attack with what it had just played, because
- * executeOpponentTurn resolves attacks against `activeOpponentField`, the
- * snapshot taken *before* that turn's plays are appended. The rule was
- * therefore already being applied to the AI and only the player was exempt.
+ * The rule exists because without it, taunt and protect barely mattered: any
+ * blocker could be answered by playing a fresh creature and swinging with it
+ * the same turn. Rush is the one exception, and it is priced for it.
  *
  * @param {object} card
  * @returns {boolean} whether `card` may declare an attack right now
  */
 export const canAttack = (card) =>
-  card.type === 'action' && !card.hasAttacked && !card.summoningSick;
+  card.type === 'action' && !card.hasAttacked && (!card.summoningSick || card.ability === 'rush');
+
+/**
+ * A face swing (or the trap it springs) needs a settled attacker. Quickie
+ * (rush) may hit creatures the turn it arrives, and only creatures: the
+ * owner's face is off limits until the sickness lifts.
+ */
+export const canSwingFace = (card) =>
+  canAttack(card) && !(card.summoningSick && card.ability === 'rush');
 
 /**
  * Clear the per-turn attack flags on a field, readying every creature for its
