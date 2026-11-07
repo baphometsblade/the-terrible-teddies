@@ -18,7 +18,7 @@ test('a new player can sit down and fight from the first tutorial step', async (
   const tutorial = page.getByRole('dialog', { name: 'How to play' });
   await expect(tutorial).toBeVisible(SLOW);
   await expect(tutorial.getByText('Step 1 of 9')).toBeVisible();
-  await tutorial.getByRole('button', { name: 'Sit down and fight' }).click();
+  await tutorial.getByRole('button', { name: /Sit on Chuck's lap/ }).click();
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
   await expect(page.getByRole('dialog', { name: 'How to play' })).toHaveCount(0);
 });
@@ -29,8 +29,8 @@ test('a coin card back equips, shows on the table, and is still on after a reloa
   const dialog = page.getByRole('dialog', { name: 'Wardrobe' });
   await dialog.getByRole('button', { name: 'Buy Velvet Rope card back' }).click();
   await expect(dialog.getByRole('button', { name: 'Velvet Rope, wearing' })).toBeVisible();
-  await expect(dialog.getByText('Velvet Rope is on.')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Buy Brass Knuckles card back' }).click();
+  await expect(dialog.getByText("Velvet Rope is what you're wearing.")).toBeVisible();
+  await dialog.getByRole('button', { name: 'Buy Firm Hand card back' }).click();
   await expect(dialog.getByRole('button', { name: 'Spend 30 gems' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Keep them' }).click();
   await expect(dialog.getByRole('button', { name: 'Spend 30 gems' })).toHaveCount(0);

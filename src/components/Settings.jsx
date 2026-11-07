@@ -171,7 +171,7 @@ const InstallBlock = () => {
   }, []);
   const ios = typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
   if (installed) {
-    return <p className="text-sm text-plush-200">The bar is already on this home screen.</p>;
+    return <p className="text-sm text-plush-200">The bar is already on this home screen. Try explaining the icon.</p>;
   }
   return (
     <div>
@@ -182,17 +182,17 @@ const InstallBlock = () => {
           onClick={async () => {
             const outcome = await offer.prompt();
             if (outcome === 'accepted') setInstalled(true);
-            else setNote('Left on the browser. You can add it whenever you like.');
+            else setNote('Left in the browser. The offer stands, whenever you are feeling brave.');
           }}
         >
           <Smartphone aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
-          Add to home screen
+          Take the bar home
         </button>
       ) : (
         <p className="text-sm leading-snug text-plush-200">
           {ios
-            ? 'Open the share menu and choose Add to Home Screen.'
-            : 'If the browser offers to install this site, that is the one.'}
+            ? 'Open the share menu and choose Add to Home Screen. Then the bar comes home with you.'
+            : 'If the browser offers to install this site, take it. The icon is harder to explain than the habit.'}
         </p>
       )}
       {note && <p role="status" className="mt-2 text-xs text-plush-300">{note}</p>}
@@ -356,7 +356,7 @@ const Settings = ({ onClose }) => {
                 />
               </SettingRow>
               <div className="border-t border-white/[0.06]">
-                <SettingRow icon={Music} label="Music" description="A low loop from the house band. Starts after you tap." htmlFor="setting-music">
+                <SettingRow icon={Music} label="Slow dance" description="The house band, playing something you can deny later. It waits until you touch the room." htmlFor="setting-music">
                   <Switch
                     checked={musicOn}
                     onCheckedChange={setMusicOn}
@@ -368,7 +368,7 @@ const Settings = ({ onClose }) => {
                 </SettingRow>
               </div>
               <div className="border-t border-white/[0.06]">
-                <SettingRow icon={VolumeX} label="Mute" description="Silences the band and the slaps. Remembered on this phone." htmlFor="setting-mute">
+                <SettingRow icon={VolumeX} label="Mute" description="Kills the band and the slaps. The neighbours were never the point. Remembered on this phone." htmlFor="setting-mute">
                   <Switch
                     checked={audioMuted}
                     onCheckedChange={setAudioMuted}
@@ -380,10 +380,10 @@ const Settings = ({ onClose }) => {
                 </SettingRow>
               </div>
               <div className="border-t border-white/[0.06]">
-                <Fader id="setting-sfx-volume" icon={Volume2} label="Slap volume" description="How hard the hits land." value={sfxVolume} onChange={setSfxVolume} />
+                <Fader id="setting-sfx-volume" icon={Volume2} label="How hard" description="From a tap to a smack. The other noises follow." value={sfxVolume} onChange={setSfxVolume} />
               </div>
               <div className="border-t border-white/[0.06]">
-                <Fader id="setting-music-volume" label="Band volume" description="How loud the loop sits." value={musicVolume} onChange={setMusicVolume} />
+                <Fader id="setting-music-volume" label="In your ear" description="The band can sit in the corner, or breathe on your neck." value={musicVolume} onChange={setMusicVolume} />
               </div>
             </div>
           </section>
@@ -391,7 +391,7 @@ const Settings = ({ onClose }) => {
           <section>
             <SectionHeading>Visual</SectionHeading>
             <div className="panel-glass rounded-xl">
-              <SettingRow icon={Sparkles} label="Animations" description="Shakes and flashes. Also off when the phone asks for less motion." htmlFor="setting-animations">
+              <SettingRow icon={Sparkles} label="Animations" description="Shakes and flashes. Off if you are hungover, and off when the phone asks for less motion." htmlFor="setting-animations">
                 <Switch
                   checked={animationsEnabled}
                   onCheckedChange={setAnimationsEnabled}
@@ -405,7 +405,7 @@ const Settings = ({ onClose }) => {
           </section>
 
           <section>
-            <SectionHeading>Reading</SectionHeading>
+            <SectionHeading>How close</SectionHeading>
             <div className="seg-well grid grid-cols-3 gap-1" role="group" aria-label="Text size">
               {TEXT_SIZES.map(({ id, label }) => {
                 const selected = textSize === id;
@@ -424,7 +424,7 @@ const Settings = ({ onClose }) => {
               })}
             </div>
             <div className="panel-glass mt-3 rounded-xl">
-              <SettingRow icon={Eye} label="Colour-safe rarities" description="Shapes and colours that stay apart if green and red look the same." htmlFor="setting-cb">
+              <SettingRow icon={Eye} label="Colour-safe rarities" description="Shapes and colours that stay apart if green and red look the same to you. The cards do not get any more innocent." htmlFor="setting-cb">
                 <Switch
                   checked={colorblindSafe}
                   onCheckedChange={setColorblindSafe}
@@ -438,7 +438,7 @@ const Settings = ({ onClose }) => {
           </section>
 
           <section>
-            <SectionHeading>On this phone</SectionHeading>
+            <SectionHeading>Take it home</SectionHeading>
             <div className="panel-glass rounded-xl px-3.5 py-3.5 sm:px-4">
               <InstallBlock />
             </div>

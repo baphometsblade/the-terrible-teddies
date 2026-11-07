@@ -35,6 +35,7 @@ import { focusWhenReady } from './lib/screenFocus';
 import { achievementToasts } from './lib/achievementAnnouncements';
 import { levelUpToast } from './lib/levelUpToast';
 import { preloadCardThumbs } from './lib/preloadArt';
+import { loadingTip } from './lib/loadingTips';
 import BarMusic from './components/BarMusic';
 
 // GameBoard is lazy for the same reason the dialogs are: it is only reachable
@@ -79,6 +80,7 @@ const DialogLoader = ({ onCancel }) => {
   const cancelRef = useRef(onCancel);
   cancelRef.current = onCancel;
   const cancellable = Boolean(onCancel);
+  const [tip] = useState(() => loadingTip());
   useEffect(() => {
     if (!cancellable) return undefined;
     const cancel = () => cancelRef.current?.();
@@ -98,6 +100,7 @@ const DialogLoader = ({ onCancel }) => {
           <div className="absolute inset-0 flex items-center justify-center text-2xl" aria-hidden="true">🧸</div>
         </div>
         <span className="label-caps text-plush-300">Loading</span>
+        <p className="max-w-[18rem] px-4 text-center text-sm leading-snug text-plush-200">{tip}</p>
       </div>
     </div>
   );

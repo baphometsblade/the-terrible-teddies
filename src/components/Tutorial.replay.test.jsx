@@ -37,7 +37,8 @@ describe('How to play', () => {
     await act(async () => {
       root.render(<Tutorial onClose={() => {}} onStartGame={onStartGame} onReplayLesson={() => {}} />);
     });
-    const sit = [...container.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Sit down and fight');
+    const sit = [...container.querySelectorAll('button')].find((b) => b.textContent.includes('Chuck'));
+    expect(sit?.getAttribute('aria-label')).toMatch(/start the fight/i);
     expect(sit).toBeTruthy();
     expect(sit.className).toMatch(/h-11/);
     await act(async () => { sit.click(); });

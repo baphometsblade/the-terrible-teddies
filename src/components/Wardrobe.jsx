@@ -100,7 +100,7 @@ const Wardrobe = ({ onClose }) => {
       setStatus(item.currency === 'gems' ? 'Not enough gems.' : 'Not enough coins.');
       return;
     }
-    if (reason === 'bought' || reason === 'owned') setStatus(`${item.label} is on.`);
+    if (reason === 'bought' || reason === 'owned') setStatus(`${item.label} is what you're wearing.`);
   };
 
   const confirm = () => {
@@ -109,12 +109,12 @@ const Wardrobe = ({ onClose }) => {
     const reason = purchaseWardrobe(item.id);
     setPending(null);
     if (reason === 'short') setStatus('Not enough gems.');
-    else if (reason === 'bought' || reason === 'owned') setStatus(`${item.label} is on.`);
+    else if (reason === 'bought' || reason === 'owned') setStatus(`${item.label} is what you're wearing.`);
   };
 
   const groups = [
-    { id: 'backs', title: 'Card backs', items: WARDROBE.filter((item) => item.slot === 'back') },
-    { id: 'boards', title: 'Tables', items: WARDROBE.filter((item) => item.slot === 'board') },
+    { id: 'backs', title: 'From behind', items: WARDROBE.filter((item) => item.slot === 'back') },
+    { id: 'boards', title: 'The sheet', items: WARDROBE.filter((item) => item.slot === 'board') },
   ];
 
   return (
@@ -145,7 +145,7 @@ const Wardrobe = ({ onClose }) => {
 
         <div className="relative min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 sm:px-6">
           <p className="text-sm leading-snug text-plush-300">
-            Backs show on every deck. Cloths change the felt. Coins and gems you already hold. No checkout.
+            Backs are what the table sees when you are not showing. Cloths are the sheet. Coins, or gems you already hold. No checkout.
           </p>
           {pending && (
             <ConfirmSpend item={pending} onYes={confirm} onNo={() => setPending(null)} />

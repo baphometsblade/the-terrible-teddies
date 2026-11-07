@@ -478,8 +478,13 @@ const Tutorial = ({ onClose, onStartGame, onReplayLesson }) => {
           {/* On every step but the last, so a new player can be at the table
               before the speech is. The last step's own button is the same door. */}
           {!isLastStep && (
-            <button type="button" onClick={onStartGame} className={`${NAV} btn-brass w-full px-3`}>
-              Sit down and fight
+            <button
+              type="button"
+              onClick={onStartGame}
+              aria-label="Start the fight. Sit on Chuck's lap"
+              className={`${NAV} btn-brass w-full px-3`}
+            >
+              Sit on Chuck&apos;s lap
             </button>
           )}
           <div className="flex items-center justify-between gap-3">

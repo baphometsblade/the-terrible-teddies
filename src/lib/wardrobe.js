@@ -12,8 +12,8 @@ export const WARDROBE = Object.freeze([
     slot: 'back',
     price: 0,
     currency: 'coins',
-    label: 'House Felt',
-    blurb: 'The back every deck shows up in.',
+    label: 'The Usual',
+    blurb: 'What everyone wears in. It still counts as dressed.',
     swatch: '#2f2344',
   },
   {
@@ -22,7 +22,7 @@ export const WARDROBE = Object.freeze([
     price: 400,
     currency: 'coins',
     label: 'Velvet Rope',
-    blurb: 'Burgundy, for the booth they know you in.',
+    blurb: 'They only lift it if they like what they see.',
     swatch: '#9f1239',
   },
   {
@@ -30,8 +30,8 @@ export const WARDROBE = Object.freeze([
     slot: 'back',
     price: 900,
     currency: 'coins',
-    label: 'Neon Stall',
-    blurb: 'Pink tubing. The stall at the back.',
+    label: 'Peep Show',
+    blurb: 'Pink light, thin walls, and a very committed audience.',
     swatch: '#be185d',
   },
   {
@@ -39,8 +39,8 @@ export const WARDROBE = Object.freeze([
     slot: 'back',
     price: 30,
     currency: 'gems',
-    label: 'Brass Knuckles',
-    blurb: 'A brass stamp. Paid for in gems.',
+    label: 'Firm Hand',
+    blurb: 'Costs gems. Leaves a mark. You did ask.',
     swatch: '#b45309',
   },
   {
@@ -48,8 +48,8 @@ export const WARDROBE = Object.freeze([
     slot: 'board',
     price: 0,
     currency: 'coins',
-    label: 'House Cloth',
-    blurb: 'The green the house has always used.',
+    label: 'Open Table',
+    blurb: 'The green everyone learns on. Nobody stays green.',
     swatch: '#163423',
   },
   {
@@ -58,7 +58,7 @@ export const WARDROBE = Object.freeze([
     price: 600,
     currency: 'coins',
     label: 'After Hours',
-    blurb: 'Plum felt, once the respectable crowd leaves.',
+    blurb: 'Plum felt. The respectable ones went home. You did not.',
     swatch: '#241433',
   },
   {
@@ -67,7 +67,7 @@ export const WARDROBE = Object.freeze([
     price: 1500,
     currency: 'coins',
     label: 'Red Room',
-    blurb: 'Burgundy cloth. The stains are the decor.',
+    blurb: 'The cloth they leave off the tour. Mind the knees.',
     swatch: '#3a1218',
   },
   {
@@ -75,8 +75,8 @@ export const WARDROBE = Object.freeze([
     slot: 'board',
     price: 40,
     currency: 'gems',
-    label: 'Cold Open',
-    blurb: 'Blue felt under a light that tells the truth.',
+    label: 'Cold Shower',
+    blurb: 'Blue felt, for when the night got ahead of you.',
     swatch: '#102433',
   },
 ]);
