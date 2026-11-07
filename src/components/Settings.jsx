@@ -311,9 +311,9 @@ const Settings = ({ onClose }) => {
             {/* One recessed well, the chosen key raised out of it. Each key is
                 still its own aria-pressed button. */}
             <div className="seg-well grid grid-cols-3 gap-1">
-              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="easy" label="Easy" description="Chuck’s facedown" icon={Smile} />
-              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="normal" label="Normal" description="Chuck’s had two" icon={Meh} />
-              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="hard" label="Hard" description="Chuck’s sober. Run." icon={Angry} />
+              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="easy" label="Easy" description="Loose. Swings wild." icon={Smile} />
+              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="normal" label="Normal" description="Two in. Top card." icon={Meh} />
+              <DifficultyButton difficulty={difficulty} setDifficulty={setDifficulty} value="hard" label="Hard" description="Sober. Reads you." icon={Angry} />
             </div>
           </section>
 

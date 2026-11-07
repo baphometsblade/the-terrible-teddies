@@ -15,6 +15,8 @@
  * and this file must not contain ids that no longer exist in ALL_CARDS.
  */
 
+import { QUICKIE_ART } from './quickieArt';
+
 export const CARD_ART = {
   1: { fur: "chocolate brown", visual: "barrel-chested bear, torn ear, novelty condom necklace, brass knuckles gripped in one paw", scene: "Low hero angle on the bar top under amber jukebox glow, Ted cracking a beer bottle over a rival's head mid-swing." },
   2: { fur: "ash grey", visual: "feral runt teddy, wild bristling matted plush, crazed mismatched button eyes, snarling stitched mouth, fingerless gloves, chewed leash", scene: "Wide full-body shot under a single bare bulb, hunched low on the bar top, ready to pounce." },
@@ -96,6 +98,7 @@ export const CARD_ART = {
   93: { fur: "hangover grey", visual: "bleary bear, sunglasses indoors, aspirin bottle, phone lighting a guilty face", scene: "Overhead shot on a motel bed at dawn, the bear texting with one eye shut." },
   94: { fur: "midnight plum", visual: "lean bear in a trench coat over nothing decent, phone in one paw, impatient grin", scene: "Doorway shot in a motel corridor under a red bulb, her knocking at 2am." },
   95: { fur: "linen white", visual: "neat bear in a waistcoat, ice bucket, folded towel, knowing butler smile", scene: "Dutch tilt in a hotel corridor under warm sconce light, the tray held at a shut door." },
+  ...QUICKIE_ART,
 };
 
 export default CARD_ART;
