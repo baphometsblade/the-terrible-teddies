@@ -112,7 +112,7 @@ const realtimeSplit = () => {
     resolveId(id, importer) {
       if (id !== "@supabase/realtime-js") return null;
       const from = String(importer || "").replace(/\\/g, "/");
-      if (from.includes("/src/lib/social/presence.js")) return null;
+      if (from.includes("/src/lib/social/presence.js") || from.includes("/src/lib/push/runtime.js")) return null;
       return stub;
     },
   };

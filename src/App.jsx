@@ -584,12 +584,17 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const action = params.get('action');
     const duel = params.get('duel');
-    if (!action && !duel) return;
+    const social = params.get('social');
+    if (!action && !duel && social !== 'room') return;
     if (action === 'battle') { setDailySpec(null); navigateTo('game'); }
     else if (action === 'shop') openShop();
     else if (action === 'rewards') setShowDailyRewards(true);
     if (duel) {
       setDuelCode(duel);
+      setShowSocial(true);
+    }
+    if (social === 'room') {
+      setSocialTab('room');
       setShowSocial(true);
     }
     window.history.replaceState({}, '', window.location.pathname);
@@ -646,6 +651,35 @@ function App() {
       stop();
     };
   }, [session?.user?.id, session?.access_token]);
+
+  // Pings: focus, "I walked in", and in-app toasts. No permission prompt here.
+  useEffect(() => {
+    if (!session?.user?.id || !session.access_token) return undefined;
+    let stop = () => {};
+    let dead = false;
+    import('./lib/push/runtime.js')
+      .then(({ startPushRuntime }) => {
+        if (dead) return;
+        stop = startPushRuntime({
+          userId: session.user.id,
+          accessToken: session.access_token,
+          readStatus: () => presenceForScreen(
+            presenceRef.current.screen,
+            presenceRef.current.social,
+          ),
+          onToast: (row) => toast({
+            queue: true,
+            title: row.title,
+            description: row.body,
+          }),
+        });
+      })
+      .catch(() => {});
+    return () => {
+      dead = true;
+      stop();
+    };
+  }, [session?.user?.id, session?.access_token, toast]);
 
   // After a Discord link returns, hash the guild list and drop the raw ids.
   useEffect(() => {

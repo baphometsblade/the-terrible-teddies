@@ -617,3 +617,35 @@ describe('social links keep guild ids, presence, and the live seam on the server
     expect(sql).not.toMatch(/ALTER TABLE realtime\.messages/);
   });
 });
+
+describe('push notifications are opt-in and the turn hook is not a client call', () => {
+  const sql = loadMigrations()
+    .filter((m) => m.file.includes('push_notifications'))
+    .map((m) => m.sql)
+    .join('\n');
+
+  it('exists', () => {
+    expect(sql.length).toBeGreaterThan(0);
+  });
+
+  it('locks the tables and leaves clients a read of their own inbox only', () => {
+    for (const table of [
+      'notification_prefs', 'push_subscriptions', 'push_outbox', 'push_inbox',
+      'push_debounce', 'push_hourly', 'player_focus', 'player_presence',
+    ]) {
+      expect(sql).toMatch(new RegExp(`ALTER TABLE public\\.${table} ENABLE ROW LEVEL SECURITY`));
+      expect(sql).toMatch(new RegExp(`REVOKE ALL ON public\\.${table} FROM PUBLIC, anon, authenticated`));
+    }
+    expect(sql).toMatch(/GRANT SELECT ON public\.push_inbox TO authenticated/);
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.push_your_turn\(UUID, UUID, UUID\) FROM PUBLIC, anon, authenticated/);
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.push_enqueue\(UUID, TEXT, UUID, TEXT, BOOLEAN\) FROM PUBLIC, anon, authenticated/);
+    expect(sql).toMatch(/GRANT EXECUTE ON FUNCTION public\.save_push_subscription\(TEXT, TEXT, TEXT\) TO authenticated/);
+  });
+
+  it('names the PvP hook and the debounce', () => {
+    expect(sql).toMatch(/push_your_turn/);
+    expect(sql).toMatch(/20261110130000_pvp_matches/);
+    expect(sql).toMatch(/INTERVAL '4 hours'/);
+    expect(sql).toMatch(/INTERVAL '2 minutes'/);
+  });
+});

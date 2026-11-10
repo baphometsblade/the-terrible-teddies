@@ -2189,6 +2189,165 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting push notifications: opt-in, debounce, quiet hours, focus, the turn hook"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_a UUID := 'd1a10000-0000-4000-8000-00000000a111';
+  v_b UUID := 'd1b10000-0000-4000-8000-00000000b222';
+  v_c UUID := 'd1c10000-0000-4000-8000-00000000c333';
+  v_json JSONB;
+  v_n INTEGER;
+  v_id UUID;
+  v_denied BOOLEAN;
+  v_hour INTEGER;
+  i INTEGER;
+BEGIN
+  INSERT INTO auth.users (id) VALUES (v_a), (v_b), (v_c) ON CONFLICT DO NOTHING;
+  INSERT INTO public.players (user_id, username) VALUES
+    (v_a, 'Ada'), (v_b, 'Bea'), (v_c, 'Cid')
+  ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username;
+
+  -- No prefs: nothing is sent.
+  IF public.push_enqueue(v_b, 'challenge_live', v_a, '/', true) THEN
+    RAISE EXCEPTION 'a ping was sent before anyone opted in';
+  END IF;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  v_json := public.set_notification_prefs(true, true, true, true, false, 2, 8, 0);
+  IF v_json->>'enabled' <> 'true' THEN RAISE EXCEPTION 'prefs did not stick: %', v_json; END IF;
+
+  -- Ten live dares land. The eleventh is the hourly cap.
+  FOR i IN 1..10 LOOP
+    IF NOT public.push_enqueue(v_b, 'challenge_live', v_a, '/', true) THEN
+      RAISE EXCEPTION 'ping % was refused before the cap', i;
+    END IF;
+  END LOOP;
+  IF public.push_enqueue(v_b, 'challenge_live', v_a, '/', true) THEN
+    RAISE EXCEPTION 'the 11th ping in an hour was allowed';
+  END IF;
+  SELECT count(*) INTO v_n FROM public.push_outbox WHERE user_id = v_b;
+  IF v_n <> 10 THEN RAISE EXCEPTION 'expected 10 outbox rows, got %', v_n; END IF;
+
+  -- Quiet hours cover the current UTC hour: inbox yes, web push no.
+  UPDATE public.push_hourly SET sent = 0, window_start = pg_catalog.now() WHERE user_id = v_b;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  v_hour := pg_catalog.date_part('hour', pg_catalog.now())::integer;
+  PERFORM public.set_notification_prefs(true, true, true, true, true, v_hour, (v_hour + 1) % 24, 0);
+  DELETE FROM public.push_outbox WHERE user_id = v_b;
+  DELETE FROM public.push_inbox WHERE user_id = v_b;
+  IF NOT public.push_enqueue(v_b, 'challenge_ghost', v_a, '/', true) THEN
+    RAISE EXCEPTION 'quiet hours dropped the toast as well';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.push_outbox WHERE user_id = v_b) THEN
+    RAISE EXCEPTION 'quiet hours still sent a web push';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.push_inbox WHERE user_id = v_b AND kind = 'challenge_ghost') THEN
+    RAISE EXCEPTION 'quiet hours dropped the in-app toast';
+  END IF;
+
+  -- Friend came online: one ping, then the four-hour debounce.
+  PERFORM public.set_notification_prefs(true, true, true, true, false, 2, 8, 0);
+  UPDATE public.push_hourly SET sent = 0 WHERE user_id = v_b;
+  DELETE FROM public.push_outbox WHERE user_id = v_b;
+  DELETE FROM public.push_inbox WHERE user_id = v_b;
+  DELETE FROM public.push_debounce WHERE user_id = v_b;
+  INSERT INTO public.friendships (user_low, user_high)
+  VALUES (LEAST(v_a, v_b), GREATEST(v_a, v_b))
+  ON CONFLICT DO NOTHING;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.report_presence('online');
+  IF v_json->>'status' <> 'online' THEN RAISE EXCEPTION 'presence was not stored: %', v_json; END IF;
+  SELECT count(*) INTO v_n FROM public.push_outbox WHERE user_id = v_b AND kind = 'friends_online';
+  IF v_n <> 1 THEN RAISE EXCEPTION 'coming online wrote % pings', v_n; END IF;
+  IF (SELECT body FROM public.push_outbox WHERE user_id = v_b AND kind = 'friends_online')
+       NOT LIKE '%just walked in%' THEN
+    RAISE EXCEPTION 'the online copy drifted';
+  END IF;
+  UPDATE public.player_presence SET status = 'offline' WHERE user_id = v_a;
+  v_json := public.report_presence('bar');
+  SELECT count(*) INTO v_n FROM public.push_outbox WHERE user_id = v_b AND kind = 'friends_online';
+  IF v_n <> 1 THEN RAISE EXCEPTION 'the debounce let a second online ping through (% )', v_n; END IF;
+
+  -- A challenge trigger, then an accept.
+  PERFORM public.set_notification_prefs(true, true, true, true, false, 2, 8, 0);
+  UPDATE public.push_hourly SET sent = 0 WHERE user_id = v_b;
+  DELETE FROM public.push_outbox WHERE user_id = v_b;
+  INSERT INTO public.friend_challenges (challenger_id, friend_id, mode, status)
+  VALUES (v_a, v_b, 'live', 'open')
+  RETURNING id INTO v_id;
+  IF NOT EXISTS (SELECT 1 FROM public.push_outbox WHERE user_id = v_b AND kind = 'challenge_live') THEN
+    RAISE EXCEPTION 'a live dare did not ping the friend';
+  END IF;
+  -- Challenger opts in, then the friend accepts.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  PERFORM public.set_notification_prefs(true, true, true, true, false, 2, 8, 0);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  v_json := public.accept_friend_challenge(v_id);
+  IF v_json->>'status' <> 'accepted' THEN RAISE EXCEPTION 'accept failed: %', v_json; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.push_inbox WHERE user_id = v_a AND kind = 'accept_challenge'
+  ) THEN
+    RAISE EXCEPTION 'accepting a dare did not tell the challenger';
+  END IF;
+
+  -- Focused tab: toast only.
+  UPDATE public.push_hourly SET sent = 0 WHERE user_id = v_b;
+  DELETE FROM public.push_outbox WHERE user_id = v_b;
+  DELETE FROM public.push_inbox WHERE user_id = v_b;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  PERFORM public.set_tab_focused(true);
+  PERFORM public.push_your_turn(v_id, v_b, v_a);
+  IF EXISTS (SELECT 1 FROM public.push_outbox WHERE user_id = v_b AND kind = 'your_turn') THEN
+    RAISE EXCEPTION 'a focused tab still got a web push';
+  END IF;
+  IF (SELECT body FROM public.push_inbox WHERE user_id = v_b AND kind = 'your_turn')
+       NOT LIKE '%darling%' THEN
+    RAISE EXCEPTION 'the turn copy drifted';
+  END IF;
+  -- Background tab: web push too.
+  PERFORM public.set_tab_focused(false);
+  UPDATE public.push_hourly SET sent = 0 WHERE user_id = v_b;
+  PERFORM public.push_your_turn(v_id, v_b, v_a);
+  IF NOT EXISTS (SELECT 1 FROM public.push_outbox WHERE user_id = v_b AND kind = 'your_turn') THEN
+    RAISE EXCEPTION 'a background tab did not get a web push';
+  END IF;
+
+  -- Clients cannot read the outbox or call the turn hook.
+  v_denied := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.push_your_turn(v_id, v_b, v_a);
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := TRUE;
+  END;
+  EXECUTE 'RESET ROLE';
+  IF NOT v_denied THEN RAISE EXCEPTION 'a player could call push_your_turn'; END IF;
+
+  v_denied := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.save_push_subscription('https://push.example/x', 'abcdefghij', 'abcdefghij');
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := TRUE;
+  END;
+  EXECUTE 'RESET ROLE';
+  IF NOT v_denied THEN RAISE EXCEPTION 'anon could save a subscription'; END IF;
+
+  EXECUTE 'GRANT SELECT ON public.push_outbox TO authenticated';
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO v_n FROM public.push_outbox;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'a client read % outbox rows', v_n; END IF;
+  SELECT count(*) INTO v_n FROM public.push_inbox WHERE user_id = v_b;
+  IF v_n < 1 THEN RAISE EXCEPTION 'the player could not read their own toast'; END IF;
+  EXECUTE 'RESET ROLE';
+  EXECUTE 'REVOKE SELECT ON public.push_outbox FROM authenticated';
+
+  RAISE NOTICE 'push notification assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"
 
 # Every card the client can roll has a catalog row. A future set that is

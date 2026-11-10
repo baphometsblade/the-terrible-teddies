@@ -21,6 +21,36 @@ var OFFLINE = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
   + '<p>Check your connection, then reload.</p>'
   + '<a href="/">Reload</a></div></body></html>';
 
+self.addEventListener('push', function (event) {
+  var data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (_e) {
+    data = {};
+  }
+  var title = data.title || 'Terrible Teddies';
+  var body = data.body || '';
+  event.waitUntil(self.registration.showNotification(title, {
+    body: body,
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    data: { url: data.url || '/' },
+  }));
+});
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  var url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+    var i;
+    for (i = 0; i < list.length; i += 1) {
+      if (list[i].focus) return list[i].focus();
+    }
+    if (self.clients.openWindow) return self.clients.openWindow(url);
+    return undefined;
+  }));
+});
+
 self.addEventListener('fetch', function (event) {
   if (event.request.mode !== 'navigate') return;
   event.respondWith(fetch(event.request).catch(function () {
