@@ -7,6 +7,8 @@
 // so a test can fail when the two drift. The SQL assertions in
 // scripts/check-migrations.sh pin the same boundaries and the same Elo steps.
 
+import { toGhostId } from './ghostDeck';
+
 export const LADDER_START = 1000;
 export const LADDER_FLOOR = 100;
 export const LADDER_CEILING = 2400;
@@ -130,12 +132,15 @@ export const deckProblem = (ids, known) => {
   if (!Array.isArray(ids) || ids.length !== DECK_SIZE) return 'A published deck is 10 cards.';
   const counts = new Map();
   for (const id of ids) {
-    const listed = known ? known.has(id) : Number.isInteger(id) && id >= 1 && id <= MAX_CARD_ID;
-    if (!listed) {
+    // Prefixed ids file as the integer the deck column already accepts.
+    // The catalog check stays on the id the player actually owns.
+    const filed = toGhostId(id);
+    const listed = known ? known.has(id) : filed != null;
+    if (!listed || filed == null || filed < 1 || filed > MAX_CARD_ID) {
       return 'That deck has a card the bar does not serve.';
     }
-    const n = (counts.get(id) || 0) + 1;
-    counts.set(id, n);
+    const n = (counts.get(filed) || 0) + 1;
+    counts.set(filed, n);
     if (n > MAX_COPIES) return 'Two copies of a card is the house limit.';
   }
   return null;

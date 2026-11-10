@@ -181,7 +181,14 @@ const negativeFor = (card) =>
     ? `${NEGATIVE}, brown fur, tan fur, beige fur`
     : NEGATIVE;
 
-const seedFor = (id) => 40_000 + id * 97; // stable per card, arbitrary base
+const seedFor = (id) => {
+  // Numbered cards keep the seeds they were rendered with. A prefixed id
+  // (`ma-1`) hashes to its own stable seed instead of becoming NaN.
+  const n = typeof id === 'number' && Number.isInteger(id)
+    ? id
+    : [...String(id)].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  return 40_000 + n * 97;
+};
 
 // ---------------------------------------------------------------------------
 // Endpoint flavors
@@ -288,7 +295,12 @@ async function main() {
   const auth = process.env.FOOOCUS_AUTH ?? null;
 
   const cards = [...ALL_CARDS.map((c) => ({ ...c, ...(CARD_ART[c.id] ?? {}) })), ...GOONS];
-  const only = argOf('--only')?.split(',').map(Number);
+  const onlyRaw = argOf('--only');
+  const only = onlyRaw
+    ? onlyRaw.split(',').map((part) => part.trim()).filter(Boolean).map((part) => (
+      /^[1-9]\d*$/.test(part) ? Number(part) : part
+    ))
+    : null;
   const todo = cards.filter((c) => !only || only.includes(c.id));
 
   if (has('--dry-run')) {

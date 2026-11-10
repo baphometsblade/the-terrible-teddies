@@ -25,5 +25,7 @@ describe('preloading a fight\'s pictures', () => {
     expect(thumbUrl(-2)).toBeNull();
     expect(thumbUrl(1.5)).toBeNull();
     expect(thumbUrl('1')).toBe('/cards/thumbs/1.webp');
+    expect(thumbUrl('ma-1')).toBe('/cards/thumbs/ma-1.webp');
+    expect(isThumbUrl('/cards/thumbs/ma-1.webp')).toBe(true);
   });
 });
