@@ -24,7 +24,9 @@ describe('card art is cached', () => {
     expect(value).not.toMatch(/immutable/);
     const names = readdirSync(resolve(process.cwd(), 'public/cards')).filter((f) => f.endsWith('.webp'));
     expect(names.length).toBeGreaterThan(0);
-    expect(names.every((f) => /^\d+\.webp$/.test(f))).toBe(true);
+    // Numeric ids (1.webp) and slug ids (hd-bree.webp, ma-1.webp, ck-chuck.webp).
+    // Not content-hashed, so "immutable" would pin a stale picture.
+    expect(names.every((f) => /^[a-z0-9]+(?:-[a-z0-9]+)*\.webp$/.test(f))).toBe(true);
   });
 
   it('covers the paths the app actually requests art from', () => {
