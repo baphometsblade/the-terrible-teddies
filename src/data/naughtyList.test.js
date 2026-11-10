@@ -44,19 +44,25 @@ describe('The Naughty List', () => {
         aspect: '896*1152',
       });
       expect(entry.prompt).toMatch(/adult/i);
-      expect(entry.prompt).toMatch(/neon/i);
-      expect(entry.prompt).toMatch(/no minors/i);
+      // Per-bear art direction (docs/ART_DIRECTION.md): no shared bar or neon, only the plush guard.
+      expect(entry.prompt).toMatch(/stuffed plush teddy bear toy/i);
+      expect(entry.prompt).toMatch(/not a human/i);
+      expect(entry.negative_prompt).toMatch(/minor/i);
+      expect(entry.prompt).not.toMatch(BANNED);
       expect(card.art).toBe(`/cards/${card.id}.webp`);
       expect(thumbUrl(card.id)).toBe(`/cards/thumbs/${card.id}.webp`);
       expect(CARD_ART[card.id].visual.length).toBeGreaterThan(0);
       expect(CARD_ART[card.id].scene.length).toBeGreaterThan(0);
     }
+    const prompts = NAUGHTY_LIST_CARDS.map((card) => manifest.find((row) => row.id === card.id).prompt);
+    expect(new Set(prompts).size).toBe(NAUGHTY_LIST_CARDS.length);
     const banner = manifest.find((row) => row.id === 'naughty-list-banner');
     const background = manifest.find((row) => row.id === 'naughty-list-bg');
     expect(banner).toMatchObject({ type: 'banner', aspect: '1344*768', target: 'public/seasons/naughty-list-banner.webp' });
-    expect(background).toMatchObject({ type: 'background', target: 'public/seasons/naughty-list-bg.webp' });
+    expect(background).toMatchObject({ type: 'background', aspect: '1344*768', target: 'public/seasons/naughty-list-bg.webp' });
     expect(banner.prompt).toMatch(/adult/i);
-    expect(background.prompt).toMatch(/neon/i);
+    expect(background.prompt).toMatch(/no people/i);
+    expect(background.prompt).toMatch(/no bears/i);
 
     document.documentElement.dataset.content = 'sfw';
     const held = renderToStaticMarkup(createElement(ArtOrEmoji, { teddy: NAUGHTY_LIST_CARDS[0] }));

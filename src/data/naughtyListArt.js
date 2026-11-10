@@ -1,55 +1,56 @@
 // Art prompts for The Naughty List. Same shape as the rest of CARD_ART.
 // Short on purpose: CLIP keeps 77 tokens, and the scene is the part it cuts.
+// Fur, pose and setting follow the per-bear bibles in art/bear-bibles.json.
 
 export const NAUGHTY_LIST_ART = {
   'xm-desk': {
-    fur: 'espresso brown',
-    visual: 'adult plush bear, pencil skirt hiked, garter, peeking from under a desk',
-    scene: 'Low angle under an office desk, red and green neon leaking across the carpet.',
+    fur: 'pitch-black',
+    visual: 'adult plush bear peeking from under a desk, pencil skirt, red lace garter, one kicked-off stiletto',
+    scene: 'Low under-desk angle in the mahogany kneehole, fairy-light spill, Uma peeking toward the lens.',
   },
   'xm-reply': {
-    fur: 'printer white',
-    visual: 'adult plush bear, undone blouse, phone lighting her grin, one more copy',
-    scene: 'Dutch tilt in a copy room under a green neon EXIT and a red party bulb.',
+    fur: 'printer-paper white',
+    visual: 'adult plush bear, toner smudges, undone blouse, phone glow, photocopier spitting identical teddies',
+    scene: 'High copy-room angle under harsh fluorescents, a tinsel-taped copier trailing Rita copies.',
   },
   'xm-ozzy': {
-    fur: 'eggnog cream',
-    visual: 'adult plush bear, loosened tie, two glasses, already furious smile',
-    scene: 'Medium shot at the open bar, amber bottles and a red neon SANTA sign.',
+    fur: 'bourbon-amber',
+    visual: 'adult plush bear, barrel chest, loosened Christmas tie, both paws full of glasses, furious grin',
+    scene: 'Low mid-raid flash at a raided hotel open bar, bottles stacked like trophies, gold tinsel.',
   },
   'xm-holly': {
-    fur: 'holly red',
-    visual: 'adult plush bear, clipboard, holly crown, very little else, stern wink',
-    scene: 'Tight portrait in a doorway under green neon, the clipboard held like a weapon.',
+    fur: 'holly-leaf green',
+    visual: 'adult plush bear, holly crown, clipboard write-up, berry sash and lanyard, stern wink',
+    scene: 'Doorway medium shot at a frosted Confidential cubicle, Holly barring the way with her form.',
   },
   'xm-nog': {
-    fur: 'nutmeg gold',
-    visual: 'adult plush bear, stained apron, ladle, guilty toast to the room',
-    scene: 'Overhead on a sticky bar top, the punchbowl steaming under red and green neon.',
+    fur: 'eggnog-cream',
+    visual: 'adult plush bear, nutmeg speckles, stained apron, ladle raised, gold coin over the nog',
+    scene: 'High over a steaming cut-glass punchbowl on a sticky banquet table, nutmeg in the air.',
   },
   'xm-elf': {
-    fur: 'stage crimson',
-    visual: 'adult plush bear, grown elf, striped stockings, costume half off, bored pro smile',
-    scene: 'Low hero angle on a pole, festive red and green neon, the costume mid-fall.',
+    fur: 'forest-green',
+    visual: 'grown adult plush bear, elf costume off one shoulder, striped stockings, punch card, pole',
+    scene: 'Low stage-front shot on a cheap North-Pole dive stage, time clock punched OUT, tip jar.',
   },
   'xm-secret': {
-    fur: 'wrapping green',
-    visual: 'adult plush bear, crooked Santa hat, torn gift paper, swapped tag',
-    scene: 'Close shot in a booth, a badly wrapped present between two bears, magenta spill.',
+    fur: 'kraft-paper brown',
+    visual: 'adult plush bear, crooked too-small Santa hat, lumpy present, gift tag crossed out and rewritten',
+    scene: 'Flash snapshot under a sparse desk tree, mixed-up Secret Santa gifts, the swapped tag in front.',
   },
   'xm-mistletoe': {
-    fur: 'mistletoe green',
-    visual: 'adult plush bear, sprig overhead, lipstick mark, grabbing a lapel',
-    scene: 'Wide two-shot under a sprig, red neon lips and green neon leaves, seats trading.',
+    fur: 'berry-red',
+    visual: 'adult plush bear dangling huge mistletoe, lipstick mark on a smaller teddy, grabbing his lapel',
+    scene: 'Medium two-shot in a mistletoe-jammed doorway, two bar stools mid-swap, only stuffed toys.',
   },
   'xm-list': {
-    fur: 'ledger black',
-    visual: 'adult plush bear, tiny spectacles, long list, coin mid-flip, knowing grin',
-    scene: 'Low angle at the hostess stand, a spinning coin, red and green neon on the list.',
+    fur: 'ink-black',
+    visual: 'adult plush bear, silver muzzle, tiny spectacles, gold coin mid-flip, scroll unrolling to the floor',
+    scene: 'Low lectern portrait, brass lamp, the naughty list cascading toward the lens.',
   },
   'xm-santa': {
-    fur: 'sooty red',
-    visual: 'adult plush bear, open Santa coat, sack, cigar, sleazy holiday grin',
-    scene: 'Hero angle on a bar stool, coat open, sack at his feet, red and green neon.',
+    fur: 'sooty-white',
+    visual: 'adult plush bear, yellowed fur, open cheap Santa coat, cigar, bulging sack, beer-crate throne',
+    scene: 'Low Polaroid in the back alley behind the party, sodium light, sack at his feet.',
   },
 };
