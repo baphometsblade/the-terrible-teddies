@@ -17,6 +17,7 @@ import { SCRIM_PAD } from '@/lib/safeArea';
 import { BalanceChip, DialogClose } from '@/components/ui/game-chrome';
 import { achievementIcon } from '@/lib/achievementIcons';
 import { houseRank, rankLevels } from '@/lib/houseRank';
+import { listReplays, openReplay } from '@/lib/replay/client';
 
 // An achievement's badge: brass once unlocked, a dimmed outline before.
 const AchievementBadge = ({ achievement, unlocked }) => {
@@ -74,6 +75,12 @@ const PlayerStats = ({ onClose }) => {
     totalDamageDealt, totalHealingDone, totalBattles, ownedCards,
     completedAchievements, consecutiveLogins, equippedTitle, equipTitle, equippedAvatar,
   } = useGameStore();
+  const [nights, setNights] = useState([]);
+  useEffect(() => {
+    let live = true;
+    listReplays().then((result) => { if (live) setNights(result?.rows || []); });
+    return () => { live = false; };
+  }, []);
 
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState(playerName);
@@ -360,6 +367,20 @@ const PlayerStats = ({ onClose }) => {
         >
           {activeTab === 'stats' && (
             <div className="space-y-5">
+              {nights.length > 0 && (
+                <Section title="The nights">
+                  <ul className="max-h-40 space-y-2 overflow-y-auto">
+                    {nights.slice(0, 50).map((row) => (
+                      <li key={row.id}>
+                        <button type="button" onClick={() => openReplay({ id: row.id })} className={`flex min-h-11 w-full items-center justify-between rounded-xl px-3 btn-glass ${FOCUS_OUTLINE}`}>
+                          <span className="truncate text-sm text-plush-100">{(row.names || []).join(' · ') || 'A night'}</span>
+                          <span className="shrink-0 text-xs font-bold text-brass-200">Watch it back</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
               <Section title="Rap Sheet">
                 {totalBattles === 0 && <p data-stats-empty="" className="-mt-1 mb-3 text-sm text-plush-300">No priors. Give it a night.</p>}
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

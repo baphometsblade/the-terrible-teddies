@@ -2374,6 +2374,165 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting match replays: hidden until finished, participants friends or a public link, last 50"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_owner    UUID := '11111111-1111-4111-8111-111111111111';
+  v_friend   UUID := '22222222-2222-4222-8222-222222222222';
+  v_stranger UUID := '33333333-3333-4333-8333-333333333333';
+  v_hoarder  UUID := '44444444-4444-4444-8444-444444444444';
+  v_id       UUID;
+  v_house    UUID;
+  v_match    UUID;
+  v_out      JSONB;
+  v_code     TEXT;
+  v_n        INTEGER;
+  v_i        INTEGER;
+  v_log      JSONB := '{"v":1,"kind":"house","names":["Ada","Bea"]}'::jsonb;
+BEGIN
+  INSERT INTO auth.users(id) VALUES (v_owner), (v_friend), (v_stranger), (v_hoarder)
+  ON CONFLICT DO NOTHING;
+
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.match_replays'::regclass) THEN
+    RAISE EXCEPTION 'RLS is not enabled on match_replays';
+  END IF;
+  IF has_table_privilege('anon', 'public.match_replays', 'SELECT')
+     OR has_table_privilege('authenticated', 'public.match_replays', 'SELECT') THEN
+    RAISE EXCEPTION 'a client role can read match_replays';
+  END IF;
+  IF has_function_privilege('anon', 'public.replay_put(uuid,uuid,uuid,jsonb)', 'EXECUTE')
+     OR has_function_privilege('authenticated', 'public.replay_put(uuid,uuid,uuid,jsonb)', 'EXECUTE')
+     OR has_function_privilege('anon', 'public.replay_prune(uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'a client role can write replays';
+  END IF;
+  IF NOT has_function_privilege('anon', 'public.replay_open(uuid,text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'a public link cannot call replay_open';
+  END IF;
+  IF NOT has_function_privilege('anon', 'public.replay_slip(uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'a fight slip cannot ask for a public tape';
+  END IF;
+
+  INSERT INTO public.pvp_matches (kind, status, seed, state, setup, rules, state_hash)
+  VALUES ('ladder', 'active', 1, '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, 'x')
+  RETURNING id INTO v_match;
+
+  EXECUTE 'SET LOCAL ROLE service_role';
+  SELECT public.replay_put(v_owner, v_friend, v_match, v_log) INTO v_out;
+  IF v_out->>'error' IS DISTINCT FROM 'live' THEN
+    RAISE EXCEPTION 'an active brawl was stored (%)', v_out;
+  END IF;
+  RESET ROLE;
+
+  UPDATE public.pvp_matches SET status = 'finished' WHERE id = v_match;
+  EXECUTE 'SET LOCAL ROLE service_role';
+  SELECT public.replay_put(v_owner, v_friend, v_match, v_log) INTO v_out;
+  IF v_out->>'ok' IS DISTINCT FROM 'true' THEN
+    RAISE EXCEPTION 'a finished brawl was refused (%)', v_out;
+  END IF;
+  v_id := (v_out->>'id')::uuid;
+  SELECT public.replay_put(v_owner, NULL, NULL, '{"v":9}'::jsonb) INTO v_out;
+  IF v_out->>'error' IS DISTINCT FROM 'incompatible' THEN
+    RAISE EXCEPTION 'a foreign engine version was stored (%)', v_out;
+  END IF;
+  RESET ROLE;
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_stranger::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.replay_open(v_id, '') INTO v_out;
+  IF v_out->>'error' IS DISTINCT FROM 'private' THEN
+    RAISE EXCEPTION 'a stranger opened a private tape (%)', v_out;
+  END IF;
+  RESET ROLE;
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_owner::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.replay_open(v_id, '') INTO v_out;
+  IF v_out->>'ok' IS DISTINCT FROM 'true' OR v_out->'log' IS NULL THEN
+    RAISE EXCEPTION 'the owner could not watch (%)', v_out;
+  END IF;
+  SELECT public.replay_share(v_id, 'friends') INTO v_out;
+  RESET ROLE;
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_friend::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.replay_open(v_id, '') INTO v_out;
+  IF v_out->>'ok' IS DISTINCT FROM 'true' THEN
+    RAISE EXCEPTION 'the other player could not watch their own brawl (%)', v_out;
+  END IF;
+  RESET ROLE;
+
+  EXECUTE 'SET LOCAL ROLE service_role';
+  SELECT public.replay_put(v_owner, NULL, NULL, v_log) INTO v_out;
+  v_house := (v_out->>'id')::uuid;
+  RESET ROLE;
+  INSERT INTO public.follows (follower, followee) VALUES (v_friend, v_owner)
+  ON CONFLICT DO NOTHING;
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_owner::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.replay_share(v_house, 'friends') INTO v_out;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_friend::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.replay_open(v_house, '') INTO v_out;
+  IF v_out->>'ok' IS DISTINCT FROM 'true' THEN
+    RAISE EXCEPTION 'a friend could not watch a friends tape (%)', v_out;
+  END IF;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_stranger::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.replay_open(v_house, '') INTO v_out;
+  IF v_out->>'error' IS DISTINCT FROM 'private' THEN
+    RAISE EXCEPTION 'a stranger watched a friends tape (%)', v_out;
+  END IF;
+  RESET ROLE;
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_owner::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT public.replay_share(v_id, 'public') INTO v_out;
+  v_code := v_out->>'code';
+  IF v_code IS NULL THEN RAISE EXCEPTION 'sharing did not mint a code (%)', v_out; END IF;
+  SELECT public.replay_star(v_id, true) INTO v_out;
+  RESET ROLE;
+  PERFORM set_config('request.jwt.claims', '', true);
+
+  EXECUTE 'SET LOCAL ROLE anon';
+  SELECT public.replay_open(NULL, v_code) INTO v_out;
+  IF v_out->>'ok' IS DISTINCT FROM 'true' THEN
+    RAISE EXCEPTION 'a public link did not open (%)', v_out;
+  END IF;
+  SELECT public.replay_open(v_id, '') INTO v_out;
+  IF v_out->>'error' IS DISTINCT FROM 'private' THEN
+    RAISE EXCEPTION 'the public id opened without the link (%)', v_out;
+  END IF;
+  SELECT public.replay_slip(v_match) INTO v_out;
+  IF v_out->>'code' IS DISTINCT FROM v_code THEN
+    RAISE EXCEPTION 'the slip did not reveal the public code (%)', v_out;
+  END IF;
+  RESET ROLE;
+
+  EXECUTE 'SET LOCAL ROLE service_role';
+  FOR v_i IN 1..51 LOOP
+    PERFORM public.replay_put(v_hoarder, NULL, NULL, v_log);
+  END LOOP;
+  RESET ROLE;
+  SELECT count(*) INTO v_n FROM public.match_replays
+  WHERE owner_id = v_hoarder AND starred = FALSE AND share_code IS NULL;
+  IF v_n <> 50 THEN RAISE EXCEPTION 'retention kept % ordinary tapes', v_n; END IF;
+  SELECT count(*) INTO v_n FROM public.match_replays WHERE id = v_id AND starred = TRUE;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'a starred tape was pruned'; END IF;
+
+  RAISE NOTICE 'match replay assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"
 
 # Every card the client can roll has a catalog row. A future set that is

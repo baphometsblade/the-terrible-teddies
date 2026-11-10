@@ -113,18 +113,26 @@ function stampDeck(cards, seat, start) {
   return { stamped, next: n };
 }
 
+/** Bump when a replay from an older ruleset would not reconstruct. */
+export const ENGINE_VERSION = 1;
+
 /**
  * Deal a match. `deckA` / `deckB` are card records (already looked up).
  * `seed` is a uint32. `first` is who sits down on turn 1.
+ * `preserveOrder` keeps the deck order it was given (a house fight already shuffled).
  */
-export function createMatch({ seed, deckA, deckB, nameA, nameB, rules, first }) {
+export function createMatch({ seed, deckA, deckB, nameA, nameB, rules, first, preserveOrder = false }) {
   const rule = pvpRules(rules);
   const maxHealth = Math.max(1, PLAYER_MAX_HEALTH + rule.hp);
   const seeded = (Number(seed) >>> 0) || 1;
   const aStamped = stampDeck(deckA || [], 'a', 0);
   const bStamped = stampDeck(deckB || [], 'b', 0);
-  const shuffledA = shuffle(aStamped.stamped, seeded);
-  const shuffledB = shuffle(bStamped.stamped, shuffledA.rng);
+  const shuffledA = preserveOrder
+    ? { cards: aStamped.stamped, rng: seeded }
+    : shuffle(aStamped.stamped, seeded);
+  const shuffledB = preserveOrder
+    ? { cards: bStamped.stamped, rng: shuffledA.rng }
+    : shuffle(bStamped.stamped, shuffledA.rng);
   const seats = {
     a: emptySeat(nameA, maxHealth),
     b: emptySeat(nameB, maxHealth),
@@ -600,6 +608,9 @@ export function stateHash(state) {
 
 /** Replay accepted intents from the deal. Rejected intents are not in the list. */
 export function replay(setup, actions) {
+  if (setup && setup.v != null && setup.v !== ENGINE_VERSION) {
+    return { ok: false, error: 'incompatible', at: 0, state: null, hash: '' };
+  }
   let state = createMatch(setup);
   const applied = [];
   for (let i = 0; i < actions.length; i += 1) {
@@ -610,4 +621,20 @@ export function replay(setup, actions) {
     applied.push(action);
   }
   return { ok: true, state, hash: stateHash(state), applied };
+}
+
+/** Every frame, including the deal. An old engine version is refused. */
+export function framesFrom(setup, actions) {
+  if (setup && setup.v != null && setup.v !== ENGINE_VERSION) {
+    return { ok: false, error: 'incompatible', frames: [] };
+  }
+  let state = createMatch(setup);
+  const frames = [state];
+  for (let i = 0; i < (actions || []).length; i += 1) {
+    const result = applyIntent(state, actions[i]);
+    if (!result.ok) return { ok: false, error: result.error, at: i, frames, state };
+    state = result.state;
+    frames.push(state);
+  }
+  return { ok: true, frames, state, hash: stateHash(state) };
 }

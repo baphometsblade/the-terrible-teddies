@@ -25,6 +25,28 @@ async function preview(id) {
   return row;
 }
 
+async function publicReplay(id) {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return '';
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_URL;
+  const key = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_ANON_KEY;
+  try {
+    const response = await fetch(`${url}/rest/v1/rpc/replay_slip`, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        authorization: `Bearer ${key}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ p_match: id }),
+    });
+    if (!response.ok) return '';
+    const data = await response.json();
+    return data && data.ok && typeof data.code === 'string' ? data.code : '';
+  } catch {
+    return '';
+  }
+}
+
 export default async function handler(req, res) {
   const id = String((req.query && req.query.id) || '');
   let slip = {};
@@ -41,6 +63,11 @@ export default async function handler(req, res) {
     }
   } catch {
     // A slip that cannot reach the server still renders a safe page.
+  }
+  try {
+    slip.replay = await publicReplay(id);
+  } catch {
+    slip.replay = '';
   }
   const html = renderSlipPage({ id, ...slip });
   res.setHeader('Content-Type', 'text/html; charset=utf-8');

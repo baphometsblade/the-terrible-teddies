@@ -58,3 +58,12 @@ verify_jwt = true
 # Matches also time out lazily on the next sync or move.
 [functions.pvp-timeout]
 verify_jwt = false
+
+# Replay read and write for the signed-in player. The log is checked here
+# before it is stored.
+[functions.replay]
+verify_jwt = true
+
+# Retention. Same cron secret as the Pub Brawl clock.
+[functions.replay-prune]
+verify_jwt = false

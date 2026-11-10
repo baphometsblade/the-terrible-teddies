@@ -42,6 +42,8 @@ import { COMBO_PLAY, COMBO_SWING } from '@/lib/comboTalk';
 import { crewTaunt } from '@/lib/crewVoice';
 import { pickMvp, pushRecap, tallyMvp } from '@/lib/matchNight';
 import NightSlip from '../NightSlip';
+import { beginHouseTape, compileTape, noteHouse, takeHouseTape } from '@/lib/replay/houseTape';
+import { openReplay, saveReplay } from '@/lib/replay/client';
 import FlavorLine from '../FlavorLine';
 import LeaveBattleDialog from './LeaveBattleDialog';
 import BarTab, { REWARD_BEATS } from './BarTab';
@@ -964,6 +966,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
   const [houseRule, setHouseRule] = useState(STANDARD_RULE);
   const [mvp, setMvp] = useState(null);
   const [recap, setRecap] = useState([]);
+  const [replayId, setReplayId] = useState(null);
   const mvpRef = useRef({});
   const recapRef = useRef([]);
   const [aimId, setAimId] = useState(null);
@@ -1253,6 +1256,14 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
 
     const playerInitialHand = initialPlayerDeck.slice(0, 5);
     const playerRemainingDeck = initialPlayerDeck.slice(5);
+    beginHouseTape({
+      kind: brawlSpec ? 'ghost' : 'house',
+      seed: 1,
+      deckA: initialPlayerDeck.map((card) => card.id),
+      deckB: initialOpponentDeck.map((card) => card.id),
+      names: [useGameStore.getState().playerName || 'You', brawlSpec?.rivalName || OPPONENT_NAME],
+      rules: { id: rule.id, hp: rule.hp || 0, energy: rule.energy || 0, damage: rule.damage || 0 },
+    });
 
     setPlayerHand(playerInitialHand);
     setPlayerDeck(playerRemainingDeck);
@@ -1320,6 +1331,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       setGameOver(true);
       setMvp(pickMvp(mvpRef.current));
       setRecap([...recapRef.current]);
+      const tape = takeHouseTape();
+      const compiled = compileTape(tape);
+      if (compiled) {
+        saveReplay(compiled).then((saved) => { if (saved?.id) setReplayId(saved.id); });
+      }
       setWinner('player');
       settleDaily(true);
       setOppQuip(null);
@@ -1370,6 +1386,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       setGameOver(true);
       setMvp(pickMvp(mvpRef.current));
       setRecap([...recapRef.current]);
+      const lostTape = takeHouseTape();
+      const lostLog = compileTape(lostTape);
+      if (lostLog) saveReplay(lostLog).then((saved) => { if (saved?.id) setReplayId(saved.id); });
       setWinner('opponent');
       settleDaily(false);
       setOppQuip(null);
@@ -1515,6 +1534,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       setTurnSlip((slip) => notePlay(slip));
       recapRef.current = pushRecap(recapRef.current, `Played ${card.name}`);
       playSound('cardPlay');
+      noteHouse('a', { t: 'play', c: card.id });
       return true;
     }
 
@@ -1587,6 +1607,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       }
       arrival.logs.forEach(addToBattleLog);
     }
+    noteHouse('a', { t: 'play', c: card.id });
     return true;
   };
 
@@ -1820,6 +1841,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     setTargetingMode(false);
     setAimId(null);
     if (viaKeys(e)) refocusRef.current = { kind: 'attack' };
+    noteHouse('a', { t: 'hit', c: attacker.id, g: struck.id });
   };
 
   // Attack opponent directly
@@ -1908,6 +1930,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     setTargetingMode(false);
     setAimId(null);
     if (viaKeys(e)) refocusRef.current = { kind: 'attack' };
+    noteHouse('a', { t: 'face', c: attacker.id });
   };
 
   // End turn
@@ -1934,6 +1957,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     setPhase('end');
     addToBattleLog(slipLine(turnSlip));
     addToBattleLog(boardLine('endTurn'));
+    noteHouse('a', { t: 'end' });
     safeTimeout(executeOpponentTurn, 1000);
   };
 
@@ -2092,7 +2116,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       if (waveOppHp !== opponentHealth) setOpponentHealth(waveOppHp);
       if (wavePlayerHp !== playerHealth) setPlayerHealth(wavePlayerHp);
       playSound('cardPlay');
-      plays.forEach(c => addToBattleLog(fillLine(boardLine('chuckPlays'), { card: c.name })));
+      plays.forEach(c => {
+        addToBattleLog(fillLine(boardLine('chuckPlays'), { card: c.name }));
+        noteHouse('b', { t: 'play', c: c.id });
+      });
       speak('oppPlays');
     }
 
@@ -2164,6 +2191,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
             if (card.ability === 'cutoff' && survivor.hungover) {
               logs.push(`${card.name} cut ${target.name} off. They can watch the next one.`);
             }
+            noteHouse('b', { t: 'hit', c: card.id, g: target.id });
           } else {
             livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
             faceDamage += overkill;
@@ -2219,6 +2247,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
           });
           if (aside) logs.push(aside);
           logs.push(fillLine(boardLine('oppFace'), { attacker: card.name, dmg: oppFaceDamage }));
+          noteHouse('b', { t: 'face', c: card.id });
         }
       });
 
@@ -2271,6 +2300,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
         setPlayerEnergy(nextEnergy);
         setPhase('draw');
         addToBattleLog(boardLine('yourTurn'));
+        noteHouse('b', { t: 'end' });
         noteBooth(addToBattleLog, lastBoothRef);
       }, 500);
     }, 1000);
@@ -3022,7 +3052,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                   footer (BarTab.jsx). It used to be two chips and a bar,
                   while a level-up paid 100 x the new level in coins without a
                   word. */}
-              <NightSlip mvp={mvp} recap={recap} />
+              <NightSlip mvp={mvp} recap={recap} onWatch={replayId ? () => openReplay({ id: replayId }) : null} />
               <BarTab rewards={battleRewards} footer={resultCopy?.footer} />
               {/* Upsell nudge — only shown when player is low on resources */}
               {(cardPacks === 0 || gems < 50) && (onOpenShop || onBackToMenu) && (

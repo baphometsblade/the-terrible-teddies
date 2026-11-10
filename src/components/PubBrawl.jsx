@@ -6,6 +6,7 @@ import { cardsFor, knownDeck } from '@/lib/pvp/decks';
 import { isCardAvailable, refreshPackSeasons } from '@/lib/seasons';
 import { toGhostId } from '@/lib/social/ghostDeck';
 import { drawGhost, slipUrl, ticketFrom } from '@/lib/social/client';
+import { openReplay, replayForMatch } from '@/lib/replay/client';
 import { TAUNTS } from '@/lib/social/taunts';
 import { FOCUS_OUTLINE } from '@/lib/focus';
 import { supabase } from '@/utils/supabaseClient';
@@ -483,6 +484,18 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
             <p className="break-all text-sm">
               <a className="underline" href={slipUrl(view.matchId)}>The slip</a>
             </p>
+          )}
+          {view.matchId && (
+            <button
+              type="button"
+              className={`${btn} btn-glass`}
+              onClick={() => replayForMatch(view.matchId).then((found) => {
+                if (found?.id) openReplay({ id: found.id });
+                else setNotice('The tape is still being wound.');
+              })}
+            >
+              Watch it back
+            </button>
           )}
           <button type="button" className={`${btn} btn-brass`} onClick={onLeave}>Back to the bar</button>
         </section>

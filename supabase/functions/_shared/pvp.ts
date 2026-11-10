@@ -5,6 +5,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
 import { sameSecret, userIdFromAuth } from "./jwt.ts";
 import { createMatch, projectFor, pvpRules, stateHash } from "../../../src/lib/combat/engine.js";
+import { packLog } from "../../../src/lib/replay/codec.js";
 import { cardsFor, knownDeck } from "../../../src/lib/pvp/decks.js";
 import { BUNDLED_SEASON_IDS } from "../../../src/data/seasonsCatalog.js";
 import { acceptAction } from "../../../src/lib/pvp/authority.js";
@@ -391,6 +392,9 @@ async function commitAction(loaded, user: string, action, now: number) {
       }).eq("match_id", loaded.id).eq("user_id", player.user_id);
     }
   }
+  if (admitted.match.status === "finished") {
+    await savePvpReplay(loaded, players).catch((err) => console.error("replay", err));
+  }
   return {
     ok: true,
     matchId: loaded.id,
@@ -398,6 +402,40 @@ async function commitAction(loaded, user: string, action, now: number) {
     view: decorate(admitted.match.state, me.seat, { ...ctx, deltas: committed.settled || null }),
     settled: committed.settled || null,
   };
+}
+
+async function savePvpReplay(loaded, players) {
+  const { data, error } = await service.from("pvp_actions")
+    .select("intent, user_id, version")
+    .eq("match_id", loaded.id)
+    .order("version", { ascending: true });
+  if (error || !loaded.setup) return;
+  const seatOf = new Map(players.map((p) => [p.user_id, p.seat]));
+  const actions = (data || []).map((row) => ({
+    seat: seatOf.get(row.user_id) || "a",
+    intent: row.intent,
+    server: row.intent?.type === "timeout",
+  }));
+  const setup = loaded.setup;
+  const log = packLog({
+    seed: setup.seed,
+    deckA: setup.deckA,
+    deckB: setup.deckB,
+    rules: setup.rules,
+    first: setup.first,
+    names: [setup.nameA, setup.nameB],
+    kind: "pvp",
+    actions,
+  });
+  if (!log) return;
+  const owner = players.find((p) => p.seat === "a");
+  const other = players.find((p) => p.seat === "b");
+  await rpc("replay_put", {
+    p_owner: owner?.user_id,
+    p_opponent: other?.user_id,
+    p_match: loaded.id,
+    p_log: log,
+  });
 }
 
 export async function handleAction(user: string, body: Record<string, unknown>) {

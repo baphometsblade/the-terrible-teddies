@@ -7,12 +7,12 @@ import { collectiblePool } from '@/lib/seasons';
 import { cleanTag, cleanGangName, REPORT_REASONS } from '@/lib/social/room';
 import { TAUNTS } from '@/lib/social/taunts';
 import { copyText } from '@/lib/social/victoryCard';
-import {
-  loadRoom, loadFollows, loadGangs, loadCup, followPlayer, unfollowPlayer,
+import { loadRoom, loadFollows, loadGangs, loadCup, followPlayer, unfollowPlayer,
   createGang, joinGang, leaveGang, enterCup, drawCup, setGreeting, matchAside,
   setRival, clearRival, submitReport, redeemReferral, loadLineup, ticketFrom, reasonText,
 } from '@/lib/social/client';
 import FriendsBar from './FriendsBar';
+import { feedReplays, openReplay } from '@/lib/replay/client';
 
 const btn = `inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 font-display font-bold ${FOCUS_OUTLINE}`;
 const field = `mt-1 h-11 w-full rounded-xl border border-white/10 bg-night-950/60 px-3 text-plush-100 ${FOCUS_OUTLINE}`;
@@ -35,6 +35,7 @@ const startFrom = (ticket, onStart, setNotice, greeting) => {
 const SocialRoom = ({ onStartBrawl }) => {
   const [room, setRoom] = useState(null);
   const [follows, setFollows] = useState([]);
+  const [feed, setFeed] = useState([]);
   const [gangs, setGangs] = useState([]);
   const [cup, setCup] = useState([]);
   const [notice, setNotice] = useState(null);
@@ -53,6 +54,8 @@ const SocialRoom = ({ onStartBrawl }) => {
     setFollows(people.rows || []);
     setGangs(houses.rows || []);
     setCup(table.rows || []);
+    const nights = await feedReplays();
+    setFeed(nights?.rows || []);
   };
 
   useEffect(() => { refresh(); }, []);
@@ -232,6 +235,21 @@ const SocialRoom = ({ onStartBrawl }) => {
               <span className="min-w-0 truncate font-display font-bold text-white">{row.username}</span>
               <span className="shrink-0 text-xs text-plush-200">{row.tier} · {row.rating}</span>
               <button type="button" className={`${btn} btn-glass px-3`} onClick={() => run(async () => { await unfollowPlayer(row.code); await refresh(); })}>Drop</button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section>
+        <h3 className="label-caps text-plush-300">From the stools you follow</h3>
+        {feed.length === 0 && <p className="mt-2 text-sm text-plush-200">Nothing they left the door open for.</p>}
+        <ul className="mt-2 space-y-2">
+          {feed.map((row) => (
+            <li key={row.id}>
+              <button type="button" onClick={() => openReplay({ id: row.id })} className={`${btn} btn-glass w-full justify-between px-3`}>
+                <span className="truncate">{(row.names || []).join(' · ') || 'A night'}</span>
+                <span>Watch it back</span>
+              </button>
             </li>
           ))}
         </ul>

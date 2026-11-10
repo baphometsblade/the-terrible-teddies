@@ -3,9 +3,14 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 
 // The end of the night: who did the work, and a recap you open if you want
 // the gossip. Closed by default so Play Again stays in reach.
-const NightSlip = ({ mvp, recap = [] }) => (
+const NightSlip = ({ mvp, recap = [], onWatch = null }) => (
   <div className="relative mb-4">
     <p data-mvp="" className="text-sm font-semibold text-brass-200">{mvpLine(mvp)}</p>
+    {onWatch && (
+      <button type="button" onClick={onWatch} className={`mt-2 flex h-11 w-full items-center justify-center rounded-xl text-sm font-bold text-night-950 btn-brass ${FOCUS_OUTLINE}`}>
+        Watch it back
+      </button>
+    )}
     {recap.length > 0 && (
       <details className="mt-2 text-left">
         <summary className={`flex h-11 cursor-pointer list-none items-center justify-center rounded-xl text-sm font-bold text-plush-100 btn-glass ${FOCUS_OUTLINE}`}>
