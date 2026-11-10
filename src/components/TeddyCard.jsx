@@ -231,7 +231,7 @@ const rulesFor = (teddy) => {
   if (teddy.ability && teddy.ability !== 'none') {
     return {
       Icon: ABILITY_ICONS[teddy.ability] || Sparkles,
-      label: abilityLabel(teddy.ability),
+      label: teddy.epithet || abilityLabel(teddy.ability),
     };
   }
   const Icon = EFFECT_ICONS[teddy.effect];

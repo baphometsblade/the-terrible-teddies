@@ -3,7 +3,8 @@
 //
 // Ids are prefixed so a parallel set cannot take the same number. `ladderId`
 // is only the integer the ghost-deck column already stores (1–200). It is
-// not the card's id. This set reserves ladder ids 150–159. The picture
+// not the card's id. This set reserves ladder ids 161–170, clear of
+// Hen Do (191–200) and Morning After (151–160). The picture
 // itself is public/cards/<id>.webp, same as the other expansions.
 
 const plate = (id) => ({ art: `/cards/${id}.webp`, artThumb: `/cards/thumbs/${id}.webp` });
@@ -11,7 +12,7 @@ const plate = (id) => ({ art: `/cards/${id}.webp`, artThumb: `/cards/thumbs/${id
 export const LAST_ORDERS_CARDS = [
   {
     id: 'lo-velvet-rope',
-    ladderId: 150,
+    ladderId: 161,
     ...plate('lo-velvet-rope'),
     name: 'Velvet Rope Vera',
     attack: 1,
@@ -24,7 +25,7 @@ export const LAST_ORDERS_CARDS = [
   },
   {
     id: 'lo-two-for-one',
-    ladderId: 151,
+    ladderId: 162,
     ...plate('lo-two-for-one'),
     name: 'Two-for-One Tess',
     attack: 2,
@@ -37,7 +38,7 @@ export const LAST_ORDERS_CARDS = [
   },
   {
     id: 'lo-last-pour',
-    ladderId: 152,
+    ladderId: 163,
     ...plate('lo-last-pour'),
     name: 'Last Pour Lola',
     attack: 1,
@@ -50,7 +51,7 @@ export const LAST_ORDERS_CARDS = [
   },
   {
     id: 'lo-on-the-house',
-    ladderId: 153,
+    ladderId: 164,
     ...plate('lo-on-the-house'),
     name: 'On the House Hope',
     attack: 2,
@@ -63,7 +64,7 @@ export const LAST_ORDERS_CARDS = [
   },
   {
     id: 'lo-firm-hand',
-    ladderId: 154,
+    ladderId: 165,
     ...plate('lo-firm-hand'),
     name: 'Firm Hand Frankie',
     attack: 2,
@@ -76,7 +77,7 @@ export const LAST_ORDERS_CARDS = [
   },
   {
     id: 'lo-sorry-mate',
-    ladderId: 155,
+    ladderId: 166,
     ...plate('lo-sorry-mate'),
     name: 'Sorry Mate Mack',
     attack: 2,
@@ -89,7 +90,7 @@ export const LAST_ORDERS_CARDS = [
   },
   {
     id: 'lo-lights-down',
-    ladderId: 156,
+    ladderId: 167,
     ...plate('lo-lights-down'),
     name: 'Lights-Down Dana',
     attack: 3,
@@ -102,7 +103,7 @@ export const LAST_ORDERS_CARDS = [
   },
   {
     id: 'lo-cut-the-line',
-    ladderId: 157,
+    ladderId: 168,
     ...plate('lo-cut-the-line'),
     name: 'Cut-the-Line Cole',
     attack: 4,
@@ -115,7 +116,7 @@ export const LAST_ORDERS_CARDS = [
   },
   {
     id: 'lo-still-standing',
-    ladderId: 158,
+    ladderId: 169,
     ...plate('lo-still-standing'),
     name: 'Still Standing Sal',
     attack: 3,
@@ -128,7 +129,7 @@ export const LAST_ORDERS_CARDS = [
   },
   {
     id: 'lo-owners-round',
-    ladderId: 159,
+    ladderId: 170,
     ...plate('lo-owners-round'),
     name: "The Owner's Round",
     attack: 3,

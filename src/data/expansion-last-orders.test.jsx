@@ -52,8 +52,8 @@ describe('Last Orders cards', () => {
     expect(new Set(aliases).size).toBe(aliases.length);
     const taken = new Set(ALL_CARDS.map((card) => card.id));
     for (const alias of aliases) {
-      expect(alias).toBeGreaterThanOrEqual(150);
-      expect(alias).toBeLessThanOrEqual(159);
+      expect(alias).toBeGreaterThanOrEqual(161);
+      expect(alias).toBeLessThanOrEqual(170);
       expect(taken.has(alias)).toBe(false);
     }
   });
@@ -69,19 +69,19 @@ describe('Last Orders cards', () => {
     }
     const hard = ALL_CARDS.filter((card) => card.type === 'action' && ['rare', 'epic', 'legendary'].includes(card.rarity));
     expect(hard.some((card) => card.id === 'lo-owners-round')).toBe(true);
-    expect(resolveCrew({ cards: [150, 'lo-lights-down'] }, ALL_CARDS).map((card) => card.id)).toEqual([
+    expect(resolveCrew({ cards: [161, 'lo-lights-down'] }, ALL_CARDS).map((card) => card.id)).toEqual([
       'lo-velvet-rope',
       'lo-lights-down',
     ]);
     const stars = normalizeStars({ 'lo-velvet-rope': 2, 1: 1 }, ALL_CARDS.map((card) => card.id));
     expect(stars['lo-velvet-rope']).toBe(2);
-    const ghost = cardsFromIds([150, 'lo-firm-hand', 999], ALL_CARDS);
+    const ghost = cardsFromIds([161, 'lo-firm-hand', 999], ALL_CARDS);
     expect(ghost.map((card) => card.id)).toEqual(['lo-velvet-rope', 'lo-firm-hand']);
     expect(ghost[0]).not.toBe(byId('lo-velvet-rope'));
     const ids = ['lo-velvet-rope', 1, 1, 2, 3, 4, 5, 6, 7, 8];
     expect(deckProblem(ids, new Set(ids))).toBeNull();
-    expect(ids.map((id) => toLadderId(id))).toEqual([150, 1, 1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(fromLadderId(159)).toBe('lo-owners-round');
+    expect(ids.map((id) => toLadderId(id))).toEqual([161, 1, 1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(fromLadderId(170)).toBe('lo-owners-round');
   });
 
   it('points every card at its Fooocus plate and hides that picture while the gate is shut', () => {

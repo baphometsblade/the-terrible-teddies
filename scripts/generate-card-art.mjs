@@ -182,7 +182,8 @@ const negativeFor = (card) =>
     : NEGATIVE;
 
 const seedFor = (id) => {
-  // Prefixed expansion ids are not numbers. Hash them so a regen still has a stable seed.
+  // Numbered cards keep the seeds they were rendered with. A prefixed id
+  // hashes to its own stable seed instead of becoming NaN.
   if (typeof id === 'number' && Number.isFinite(id)) return 40_000 + id * 97;
   let h = 2166136261;
   const text = String(id);
@@ -295,10 +296,12 @@ async function main() {
   const auth = process.env.FOOOCUS_AUTH ?? null;
 
   const cards = [...ALL_CARDS.map((c) => ({ ...c, ...(CARD_ART[c.id] ?? {}) })), ...GOONS];
-  const only = argOf('--only')?.split(',').map((part) => {
-    const text = part.trim();
-    return /^\d+$/.test(text) ? Number(text) : text;
-  });
+  const onlyRaw = argOf('--only');
+  const only = onlyRaw
+    ? onlyRaw.split(',').map((part) => part.trim()).filter(Boolean).map((part) => (
+      /^[1-9]\d*$/.test(part) ? Number(part) : part
+    ))
+    : null;
   const todo = cards.filter((c) => !only || only.includes(c.id));
 
   if (has('--dry-run')) {
