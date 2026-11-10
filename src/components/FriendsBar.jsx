@@ -151,7 +151,11 @@ const FriendsBar = ({ onStartBrawl }) => {
 
   const onLink = (platform) => run(async () => {
     const result = await linkPlatform(platform);
-    if (result.ok === false) setNotice(result.message || reasonText(result));
+    if (result.ok === false) { setNotice(result.message || reasonText(result)); return; }
+    if (result.reason === 'linked') {
+      setNotice(platform === 'discord' ? 'Discord is already on this tab.' : 'X is already on this tab.');
+      await refresh();
+    }
   });
 
   const onUnlink = (platform) => run(async () => {

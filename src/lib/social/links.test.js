@@ -68,6 +68,51 @@ describe('account linking', () => {
     expect(storage.setItem).toHaveBeenCalled();
   });
 
+  it('does not start OAuth when this account already has that login', async () => {
+    const assign = vi.fn();
+    const auth = {
+      getUserIdentities: vi.fn(() => Promise.resolve({
+        data: { identities: [{ provider: 'discord', identity_id: 'abc' }] },
+        error: null,
+      })),
+      linkIdentity: vi.fn(),
+    };
+    const result = await linkPlatform('discord', { auth, assign, storage: { setItem() {}, removeItem() {} } });
+    expect(result).toEqual({ ok: true, reason: 'linked' });
+    expect(auth.linkIdentity).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
+    expect(supabase.rpc).toHaveBeenCalledWith('sync_links');
+  });
+
+  it('refuses a login that already sits on another account', async () => {
+    const assign = vi.fn();
+    const auth = {
+      getUserIdentities: vi.fn(() => Promise.resolve({ data: { identities: [] }, error: null })),
+      linkIdentity: vi.fn(() => Promise.resolve({
+        data: null,
+        error: { message: 'Identity is already linked to another user', code: 'identity_already_exists' },
+      })),
+    };
+    const result = await linkPlatform('x', { auth, assign, storage: { setItem() {}, removeItem() {} } });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('taken');
+    expect(result.message).toMatch(/someone else/);
+    expect(assign).not.toHaveBeenCalled();
+  });
+
+  it('treats an already-linked error for this account as done', async () => {
+    const auth = {
+      getUserIdentities: vi.fn(() => Promise.resolve({ data: { identities: [] }, error: null })),
+      linkIdentity: vi.fn(() => Promise.resolve({
+        data: null,
+        error: { message: 'Identity is already linked' },
+      })),
+    };
+    const result = await linkPlatform('discord', { auth, assign: vi.fn(), storage: { setItem() {}, removeItem() {} } });
+    expect(result).toEqual({ ok: true, reason: 'linked' });
+    expect(supabase.rpc).toHaveBeenCalledWith('sync_links');
+  });
+
   it('says so when manual linking is off, and does not navigate', async () => {
     const assign = vi.fn();
     const auth = {

@@ -2045,8 +2045,15 @@ BEGIN
     RAISE EXCEPTION 'discord search missed Bea: %', v_json;
   END IF;
 
+  v_json := public.request_friend(v_a);
+  IF v_json->>'reason' <> 'self' THEN RAISE EXCEPTION 'self request was allowed: %', v_json; END IF;
   v_json := public.request_friend(v_b);
   IF v_json->>'status' <> 'pending' THEN RAISE EXCEPTION 'request failed: %', v_json; END IF;
+  v_json := public.request_friend(v_b);
+  IF v_json->>'status' <> 'pending' THEN RAISE EXCEPTION 'repeat request failed: %', v_json; END IF;
+  IF (SELECT count(*) FROM public.friend_requests WHERE from_user = v_a AND to_user = v_b AND status = 'pending') <> 1 THEN
+    RAISE EXCEPTION 'a repeat request duplicated the row';
+  END IF;
   PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
   v_json := public.request_friend(v_a);
   IF v_json->>'status' <> 'accepted' THEN RAISE EXCEPTION 'mutual request did not accept: %', v_json; END IF;

@@ -16,10 +16,19 @@ export const LINK_SPEC = Object.freeze({
   x: Object.freeze({ provider: X_PROVIDER, scopes: X_SCOPES }),
 });
 
-const plainLinkError = (error) => {
-  const msg = String(error?.message || error?.msg || '');
+const linkErrorText = (error) => {
+  const msg = `${error?.message || ''} ${error?.msg || ''} ${error?.code || ''}`;
   if (/manual linking/i.test(msg)) return 'Linking is not switched on for this bar yet.';
+  if (/another user|different user/i.test(msg)) return 'That login already sits on someone else\'s tab.';
   return 'The bar could not open that login.';
+};
+
+/** GoTrue's "already linked" errors. Another account is a refusal. This account is done. */
+const alreadyLinked = (error) => {
+  const msg = `${error?.message || ''} ${error?.msg || ''} ${error?.code || ''}`;
+  if (/another user|different user/i.test(msg)) return 'other';
+  if (/already linked|identity_already_exists|already exists/i.test(msg)) return 'self';
+  return '';
 };
 
 export const loadAuthProviders = async (fetchImpl = fetch) => {
@@ -56,6 +65,13 @@ export async function linkPlatform(platform, { auth = supabase.auth, assign, sto
   const spec = LINK_SPEC[platform];
   if (!spec) return { ok: false, reason: 'missing' };
   const store = storage || (typeof sessionStorage !== 'undefined' ? sessionStorage : null);
+  if (typeof auth.getUserIdentities === 'function') {
+    const existing = await auth.getUserIdentities();
+    if (!existing?.error && linkedFlags(existing?.data)[platform]) {
+      await syncLinks();
+      return { ok: true, reason: 'linked' };
+    }
+  }
   try { store?.setItem(PENDING_LINK_KEY, platform); } catch { /* private mode */ }
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const { data, error } = await auth.linkIdentity({
@@ -68,7 +84,15 @@ export async function linkPlatform(platform, { auth = supabase.auth, assign, sto
   });
   if (error || !data?.url) {
     try { store?.removeItem(PENDING_LINK_KEY); } catch { /* ignore */ }
-    return { ok: false, reason: 'link', message: plainLinkError(error) };
+    if (alreadyLinked(error) === 'self') {
+      await syncLinks();
+      return { ok: true, reason: 'linked' };
+    }
+    return {
+      ok: false,
+      reason: alreadyLinked(error) === 'other' ? 'taken' : 'link',
+      message: linkErrorText(error),
+    };
   }
   const go = assign || ((url) => window.location.assign(url));
   go(data.url);
