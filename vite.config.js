@@ -77,6 +77,10 @@ export const manualChunks = (id) => {
   if (id.includes("@radix-ui")) return "ui";
   if (id.includes("zustand")) return "state";
   if (id.includes("canvas-confetti")) return "effects";
+  // The real Realtime client is only imported by src/lib/social/presence.js.
+  // Grouping every @supabase package would pull that engine into the
+  // preloaded supabase chunk. Leave it with the presence import.
+  if (id.includes("node_modules/@supabase/realtime-js")) return undefined;
   if (id.includes("@supabase")) return "supabase";
   return undefined;
 };
@@ -98,13 +102,29 @@ export const socialMeta = () => {
   };
 };
 
+// The entry client never opens a socket. Presence does, and only from its
+// own module, so the ~85 kB engine stays out of first paint.
+const realtimeSplit = () => {
+  const stub = fileURLToPath(new URL("./src/stubs/supabase-realtime.js", import.meta.url));
+  return {
+    name: "realtime-split",
+    enforce: "pre",
+    resolveId(id, importer) {
+      if (id !== "@supabase/realtime-js") return null;
+      const from = String(importer || "").replace(/\\/g, "/");
+      if (from.includes("/src/lib/social/presence.js")) return null;
+      return stub;
+    },
+  };
+};
+
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
     host: "::",
     port: "8080",
   },
-  plugins: [react(), socialMeta(), preloadDisplayFont(), hideSourceMaps()],
+  plugins: [react(), socialMeta(), preloadDisplayFont(), hideSourceMaps(), realtimeSplit()],
   resolve: {
     alias: [
       {
@@ -127,10 +147,11 @@ export default defineConfig({
       //
       // src/stubs/supabase-stubs.test.js fails the build if a supabase-js
       // upgrade starts importing a name the stubs do not export.
-      {
-        find: "@supabase/realtime-js",
-        replacement: fileURLToPath(new URL("./src/stubs/supabase-realtime.js", import.meta.url)),
-      },
+      //
+      // Realtime stays stubbed on the entry client. Friends presence is the
+      // one module allowed to load the real package: the `realtime-split`
+      // plugin above resolves `@supabase/realtime-js` to node_modules only
+      // when the importer is src/lib/social/presence.js.
       {
         find: "@supabase/storage-js",
         replacement: fileURLToPath(new URL("./src/stubs/supabase-storage.js", import.meta.url)),

@@ -6,6 +6,7 @@ import { supabase } from '../supabase.js';
 import { playerFacingError } from '../network.js';
 import { PUBLIC_ORIGIN } from './ladder.js';
 import { toGhostId } from './ghostDeck.js';
+import { challengePlan } from './friends.js';
 
 const MISSING = new Set(['PGRST202', 'PGRST205', '42883', '42P01']);
 
@@ -106,6 +107,57 @@ export const submitReport = (code, reason) => call('submit_report', { p_code: co
 export const redeemReferral = (code) => call('redeem_referral', { p_code: code });
 export const loadLineup = (code) => call('lineup', { p_code: code });
 
+const rowsOf = async (name, args, emptyMessage) => {
+  const { data, error, status } = await supabase.rpc(name, args);
+  if (error) {
+    if (isMissingRpc(error, status)) return { unavailable: true, rows: [] };
+    return { error: playerFacingError(error, emptyMessage), rows: [] };
+  }
+  return { rows: Array.isArray(data) ? data : [] };
+};
+
+export const loadFriends = () => rowsOf('list_friends', undefined, 'Could not load your pals.');
+export const loadFriendRequests = () => rowsOf('list_friend_requests', undefined, 'Could not load requests.');
+export const loadFriendGhosts = () => rowsOf('friend_ghosts', undefined, 'Could not load their decks.');
+export const loadFriendsBoard = () => rowsOf('friends_board', undefined, 'Could not load the friends\' week.');
+
+export const requestFriend = (userId) => call('request_friend', { p_user: userId });
+export const respondFriend = (requestId, accept) => call('respond_friend', { p_request: requestId, p_accept: accept });
+export const removeFriend = (userId) => call('remove_friend', { p_user: userId });
+export const blockPlayer = (userId) => call('block_player', { p_user: userId });
+export const unblockPlayer = (userId) => call('unblock_player', { p_user: userId });
+export const reportPlayer = (userId, reason) => call('report_player', { p_user: userId, p_reason: reason });
+export const createFriendInvite = () => call('create_friend_invite');
+export const redeemFriendInvite = (code) => call('redeem_friend_invite', { p_code: code });
+export const setAppearOffline = (off) => call('set_appear_offline', { p_off: off });
+
+export async function findPlayers(query) {
+  const result = await call('find_players', { p_query: query });
+  if (result.ok === false) return { ...result, rows: [] };
+  const rows = Array.isArray(result.rows) ? result.rows : [];
+  return { ok: true, rows };
+}
+
+export async function loadSuggestions() {
+  const result = await call('suggest_friends');
+  if (result.ok === false) return { ...result, rows: [] };
+  const rows = Array.isArray(result.rows) ? result.rows : [];
+  return { ok: true, rows };
+}
+
+/**
+ * The plug Live PvP should keep. Ghost deals a ladder ticket now. Live
+ * records public.friend_challenges and does not deal a deck. See
+ * docs/SOCIAL_SETUP.md.
+ */
+export async function challengeFriend(friendId, mode) {
+  const plan = challengePlan(mode);
+  if (!plan) return { ok: false, reason: 'missing' };
+  const result = await call('challenge_friend', { p_friend: friendId, p_mode: plan.mode });
+  if (!plan.playsNow) return result;
+  return { ...result, ticket: ticketFrom(result) };
+}
+
 export async function loadFollows() {
   const { data, error, status } = await supabase.rpc('list_follows');
   if (error) {
@@ -170,6 +222,11 @@ export const SOCIAL_REASONS = Object.freeze({
   taken: 'That tag is already on the door.',
   deck: 'Leave a deck on the bar first.',
   play: 'Fight once before you cash that.',
+  no: 'Not available.',
+  friends: 'You already sit together.',
+  discord: 'Link Discord before the bar can match servers.',
+  last: 'That login is how you get in. Add another before you drop it.',
+  link: 'The bar could not open that login.',
   used: 'You already cashed one.',
   unavailable: 'The ladder is not open on this server yet.',
   unreachable: 'Couldn’t reach the server. Nothing was changed.',

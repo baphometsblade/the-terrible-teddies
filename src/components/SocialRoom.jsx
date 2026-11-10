@@ -12,6 +12,7 @@ import {
   createGang, joinGang, leaveGang, enterCup, drawCup, setGreeting, matchAside,
   setRival, clearRival, submitReport, redeemReferral, loadLineup, ticketFrom, reasonText,
 } from '@/lib/social/client';
+import FriendsBar from './FriendsBar';
 
 const btn = `inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 font-display font-bold ${FOCUS_OUTLINE}`;
 const field = `mt-1 h-11 w-full rounded-xl border border-white/10 bg-night-950/60 px-3 text-plush-100 ${FOCUS_OUTLINE}`;
@@ -170,6 +171,8 @@ const SocialRoom = ({ onStartBrawl }) => {
   return (
     <div className="space-y-6">
       {notice && <p role="status" className="text-sm text-plush-200">{notice}</p>}
+
+      <FriendsBar onStartBrawl={onStartBrawl} />
 
       <section>
         <h3 className="label-caps text-plush-300">Ribbon</h3>

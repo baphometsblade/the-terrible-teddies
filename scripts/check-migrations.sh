@@ -1964,6 +1964,224 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting social links: friends, guild hashes, presence, invites, challenge seam"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_a UUID := 'a11ce000-0000-4000-8000-0000000000a1';
+  v_b UUID := 'b0b00000-0000-4000-8000-0000000000b2';
+  v_c UUID := 'c0de0000-0000-4000-8000-0000000000c3';
+  v_guild TEXT := '111111111111111111';
+  v_json JSONB;
+  v_code TEXT;
+  v_id UUID;
+  v_n INTEGER;
+  v_seen BOOLEAN;
+  v_hash TEXT;
+  v_denied BOOLEAN;
+BEGIN
+  CREATE TABLE IF NOT EXISTS auth.identities (
+    id UUID PRIMARY KEY DEFAULT pg_catalog.gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL,
+    provider_id TEXT,
+    identity_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT pg_catalog.now()
+  );
+
+  INSERT INTO auth.users (id) VALUES (v_a), (v_b), (v_c) ON CONFLICT DO NOTHING;
+  INSERT INTO public.players (user_id, username) VALUES
+    (v_a, 'Ada'), (v_b, 'Bea'), (v_c, 'Cid')
+  ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username;
+
+  INSERT INTO auth.identities (user_id, provider, provider_id, identity_data) VALUES
+    (v_a, 'discord', '100000000000000001', jsonb_build_object('preferred_username', 'ada.bear', 'email', 'ada@secret.example')),
+    (v_b, 'discord', '100000000000000002', jsonb_build_object('preferred_username', 'bea.bear', 'email', 'bea@secret.example')),
+    (v_b, 'twitter', '200000000000000002', jsonb_build_object('user_name', 'bea_x', 'email', 'bea@secret.example'));
+
+  IF pg_catalog.length(public.social_digest('pepper:guild')) <> 64 THEN
+    RAISE EXCEPTION 'guild digest is not sha-256';
+  END IF;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.sync_links();
+  IF v_json->>'discord' <> 'true' OR v_json->>'x' <> 'false' THEN
+    RAISE EXCEPTION 'A sync drifted: %', v_json;
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.linked_identities WHERE display_name LIKE '%@%') THEN
+    RAISE EXCEPTION 'a linked handle stored an email';
+  END IF;
+  v_json := public.remember_guilds(ARRAY[v_guild, 'not-a-guild', v_guild]);
+  IF v_json->>'count' <> '1' OR v_json::text LIKE '%' || v_guild || '%' THEN
+    RAISE EXCEPTION 'guild ids were stored or echoed: %', v_json;
+  END IF;
+  SELECT guild_hash INTO v_hash FROM public.discord_guilds WHERE user_id = v_a;
+  IF v_hash IS NULL OR v_hash = v_guild OR pg_catalog.length(v_hash) <> 64 THEN
+    RAISE EXCEPTION 'guild hash was not a keyed sha-256: %', v_hash;
+  END IF;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  PERFORM public.sync_links();
+  IF (SELECT display_name FROM public.linked_identities WHERE user_id = v_b AND provider = 'x') <> 'bea_x' THEN
+    RAISE EXCEPTION 'X handle was not stored';
+  END IF;
+  PERFORM public.remember_guilds(ARRAY[v_guild]);
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.suggest_friends();
+  IF v_json->'rows'->0->>'username' <> 'Bea' OR (v_json->'rows'->0->>'shared')::int <> 1 THEN
+    RAISE EXCEPTION 'shared-server suggestion missed Bea: %', v_json;
+  END IF;
+  IF v_json::text LIKE '%' || v_guild || '%' OR v_json::text LIKE '%' || v_hash || '%' THEN
+    RAISE EXCEPTION 'suggestion leaked a guild id or hash';
+  END IF;
+
+  v_json := public.find_players('bea');
+  IF v_json->'rows'->0->>'username' <> 'Bea' THEN
+    RAISE EXCEPTION 'name search missed Bea: %', v_json;
+  END IF;
+  v_json := public.find_players('bea.bear');
+  IF v_json->'rows'->0->>'discord_name' <> 'bea.bear' THEN
+    RAISE EXCEPTION 'discord search missed Bea: %', v_json;
+  END IF;
+
+  v_json := public.request_friend(v_b);
+  IF v_json->>'status' <> 'pending' THEN RAISE EXCEPTION 'request failed: %', v_json; END IF;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  v_json := public.request_friend(v_a);
+  IF v_json->>'status' <> 'accepted' THEN RAISE EXCEPTION 'mutual request did not accept: %', v_json; END IF;
+  IF (SELECT count(*) FROM public.friendships) < 1 THEN RAISE EXCEPTION 'no friendship row'; END IF;
+  IF (SELECT count(*) FROM public.follows WHERE follower = v_a AND followee = v_b) <> 1
+     OR (SELECT count(*) FROM public.follows WHERE follower = v_b AND followee = v_a) <> 1 THEN
+    RAISE EXCEPTION 'accept did not follow both ways';
+  END IF;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_c::text, 'role', 'authenticated')::text, true);
+  v_json := public.request_friend(v_a);
+  v_id := (SELECT id FROM public.friend_requests WHERE from_user = v_c AND to_user = v_a AND status = 'pending');
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.respond_friend(v_id, false);
+  IF v_json->>'status' <> 'declined' THEN RAISE EXCEPTION 'decline failed: %', v_json; END IF;
+  IF public.social_friends(v_a, v_c) THEN RAISE EXCEPTION 'a decline became a friendship'; END IF;
+
+  v_json := public.create_friend_invite();
+  v_code := v_json->>'code';
+  IF v_code !~ '^[0-9a-f]{12}$' THEN RAISE EXCEPTION 'bad invite: %', v_json; END IF;
+  v_json := public.redeem_friend_invite(v_code);
+  IF v_json->>'reason' <> 'self' THEN RAISE EXCEPTION 'self-redeem worked: %', v_json; END IF;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_c::text, 'role', 'authenticated')::text, true);
+  v_json := public.redeem_friend_invite(v_code);
+  IF v_json->>'ok' <> 'true' OR NOT public.social_friends(v_a, v_c) THEN
+    RAISE EXCEPTION 'invite did not auto-friend: %', v_json;
+  END IF;
+  v_json := public.redeem_friend_invite(v_code);
+  IF v_json->>'reason' <> 'used' THEN RAISE EXCEPTION 'invite redeemed twice: %', v_json; END IF;
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  PERFORM public.publish_ghost(ARRAY[1,2,3,4,5,6,7,8,9,10]::integer[], 'Saved deck');
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.challenge_friend(v_b, 'live');
+  IF v_json->>'seam' <> 'friend_challenges' OR v_json->>'mode' <> 'live' OR (v_json ? 'deck') THEN
+    RAISE EXCEPTION 'live challenge was not the seam: %', v_json;
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.ladder_matches WHERE challenger_id = v_a AND ghost_id = v_b) THEN
+    RAISE EXCEPTION 'live challenge dealt a ghost brawl';
+  END IF;
+  v_json := public.challenge_friend(v_b, 'ghost');
+  IF v_json->>'match_id' IS NULL OR jsonb_array_length(v_json->'deck') <> 10 THEN
+    RAISE EXCEPTION 'ghost challenge did not deal: %', v_json;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.friend_challenges
+    WHERE challenger_id = v_a AND friend_id = v_b AND mode = 'ghost' AND ladder_match_id IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'ghost challenge was not recorded';
+  END IF;
+
+  SELECT count(*) INTO v_n FROM public.friends_board();
+  IF v_n < 2 THEN RAISE EXCEPTION 'friends board was % rows', v_n; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.friend_ghosts() WHERE user_id = v_b) THEN
+    RAISE EXCEPTION 'friend ghost was not first-class';
+  END IF;
+
+  IF NOT public.can_see_presence(v_b) THEN RAISE EXCEPTION 'a friend was invisible'; END IF;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  PERFORM public.set_appear_offline(true);
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  IF public.can_see_presence(v_b) THEN RAISE EXCEPTION 'appear-offline was still visible'; END IF;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  IF NOT public.can_see_presence(v_b) THEN RAISE EXCEPTION 'a player could not see their own presence slot'; END IF;
+  PERFORM public.set_appear_offline(false);
+
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  v_json := public.block_player(v_b);
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'block failed: %', v_json; END IF;
+  IF public.social_friends(v_a, v_b) OR public.can_see_presence(v_b) THEN
+    RAISE EXCEPTION 'block left the friendship or the presence';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.follows
+    WHERE (follower = v_a AND followee = v_b) OR (follower = v_b AND followee = v_a)
+  ) THEN
+    RAISE EXCEPTION 'block left a follow';
+  END IF;
+  v_json := public.request_friend(v_b);
+  IF v_json->>'reason' <> 'no' THEN RAISE EXCEPTION 'a blocked request was accepted: %', v_json; END IF;
+  v_json := public.suggest_friends();
+  IF v_json::text LIKE '%Bea%' THEN RAISE EXCEPTION 'a blocked player was still suggested: %', v_json; END IF;
+
+  -- Unlink deletes the derived rows.
+  DELETE FROM auth.identities WHERE user_id = v_a AND provider = 'discord';
+  v_json := public.sync_links();
+  IF EXISTS (SELECT 1 FROM public.discord_guilds WHERE user_id = v_a)
+     OR EXISTS (SELECT 1 FROM public.linked_identities WHERE user_id = v_a AND provider = 'discord') THEN
+    RAISE EXCEPTION 'unlink left derived Discord data: %', v_json;
+  END IF;
+
+  v_denied := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    PERFORM public.request_friend(v_b);
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := TRUE;
+  END;
+  EXECUTE 'RESET ROLE';
+  IF NOT v_denied THEN RAISE EXCEPTION 'anon could request a friend'; END IF;
+
+  EXECUTE 'GRANT SELECT ON public.friendships, public.discord_guilds, public.social_pepper TO authenticated';
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_c::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  -- C is friends with A (the invite) and must not see A's friendship with nobody else,
+  -- nor any guild hash, nor the pepper.
+  SELECT count(*) INTO v_n FROM public.discord_guilds;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'a client read % guild hashes', v_n; END IF;
+  SELECT count(*) INTO v_n FROM public.social_pepper;
+  IF v_n <> 0 THEN RAISE EXCEPTION 'a client read the pepper'; END IF;
+  SELECT count(*) INTO v_n FROM public.friendships WHERE user_low = v_c OR user_high = v_c;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'friendship RLS returned % rows for C', v_n; END IF;
+  v_seen := FALSE;
+  BEGIN
+    INSERT INTO public.friendships (user_low, user_high) VALUES (v_a, v_b);
+    v_seen := TRUE;
+  EXCEPTION WHEN insufficient_privilege THEN
+    NULL;
+  END;
+  IF v_seen THEN RAISE EXCEPTION 'authenticated inserted a friendship directly'; END IF;
+  EXECUTE 'RESET ROLE';
+  EXECUTE 'REVOKE ALL ON public.friendships, public.discord_guilds, public.social_pepper FROM authenticated';
+
+  IF to_regclass('realtime.messages') IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM pg_policies
+       WHERE schemaname = 'realtime' AND tablename = 'messages' AND policyname = 'social_presence_select'
+     ) THEN
+    RAISE EXCEPTION 'realtime.messages exists without the presence policy';
+  END IF;
+
+  RAISE NOTICE 'social links assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"
 
 # Every card the client can roll has a catalog row. A future set that is

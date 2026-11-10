@@ -40,6 +40,9 @@ import { levelUpToast } from './lib/levelUpToast';
 import { preloadCardThumbs } from './lib/preloadArt';
 import { loadingTip } from './lib/loadingTips';
 import BarMusic from './components/BarMusic';
+import {
+  captureFriendInvite, clearFriendInvite, presenceForScreen, readFriendInvite,
+} from './lib/social/friends';
 
 // GameBoard is lazy for the same reason the dialogs are: it is only reachable
 // after tapping Battle, but a static import put it — and its dependency tail,
@@ -266,6 +269,11 @@ function App() {
   const [showSocial, setShowSocial] = useState(() => {
     if (typeof window === 'undefined') return false;
     return new URLSearchParams(window.location.search).has('duel');
+  });
+  const [socialTab, setSocialTab] = useState('');
+  const [pendingFriend] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return captureFriendInvite(window.location.href, window.sessionStorage);
   });
   const [duelCode, setDuelCode] = useState(() => {
     if (typeof window === 'undefined') return '';
@@ -587,6 +595,74 @@ function App() {
     window.history.replaceState({}, '', window.location.pathname);
   }, [session, navigateTo]);
 
+  // An invite link auto-friends once the account exists. The code is captured
+  // before any effect strips the address. A missing migration is a no-op.
+  useEffect(() => {
+    if (!session?.user?.id) return undefined;
+    const code = pendingFriend || readFriendInvite(window.sessionStorage);
+    if (!code) return undefined;
+    let dead = false;
+    import('./lib/social/client.js')
+      .then(({ redeemFriendInvite }) => redeemFriendInvite(code))
+      .then((result) => {
+        if (dead) return;
+        clearFriendInvite(window.sessionStorage);
+        if (!result?.ok) return;
+        setSocialTab('room');
+        setShowSocial(true);
+        toast({
+          queue: true,
+          title: 'You are in',
+          description: 'Their deck is one tap away.',
+        });
+      })
+      .catch(() => {});
+    return () => { dead = true; };
+  }, [session?.user?.id, pendingFriend, toast]);
+
+  // Presence is a separate chunk. It publishes only after the pals migration
+  // answers, and only to friends.
+  const presenceRef = useRef({ screen: 'menu', social: false });
+  presenceRef.current = { screen: currentScreen, social: showSocial };
+  useEffect(() => {
+    if (!session?.user?.id || !session.access_token) return undefined;
+    let stop = () => {};
+    let dead = false;
+    import('./lib/social/presence.js')
+      .then(({ watchPresence }) => {
+        if (dead) return;
+        stop = watchPresence({
+          userId: session.user.id,
+          accessToken: session.access_token,
+          readStatus: () => presenceForScreen(
+            presenceRef.current.screen,
+            presenceRef.current.social,
+          ),
+        });
+      })
+      .catch(() => {});
+    return () => {
+      dead = true;
+      stop();
+    };
+  }, [session?.user?.id, session?.access_token]);
+
+  // After a Discord link returns, hash the guild list and drop the raw ids.
+  useEffect(() => {
+    if (!session?.provider_token) return undefined;
+    let pending = '';
+    try { pending = window.sessionStorage.getItem('terrible-teddies-pending-link') || ''; } catch { pending = ''; }
+    if (pending !== 'discord') return undefined;
+    let dead = false;
+    import('./lib/social/links.js')
+      .then(({ syncDiscordGuilds, syncLinks }) => syncLinks().then(() => syncDiscordGuilds(session.provider_token)))
+      .finally(() => {
+        if (dead) return;
+        try { window.sessionStorage.removeItem('terrible-teddies-pending-link'); } catch { /* private mode */ }
+      });
+    return () => { dead = true; };
+  }, [session]);
+
   // Daily Rewards and the first-run tutorial open by themselves, and only
   // onto a bare menu: never over a battle (a day that turns over mid-match,
   // the Battle shortcut on a new day, a new player tapping Battle the moment
@@ -848,6 +924,7 @@ function App() {
                     onClose={() => setShowSocial(false)}
                     onStartBrawl={startBrawl}
                     initialCode={duelCode}
+                    initialTab={socialTab}
                     receipt={socialReceipt}
                   />
                 )}

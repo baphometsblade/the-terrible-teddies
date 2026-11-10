@@ -569,3 +569,51 @@ describe('the social ladder is authenticated and server-scored', () => {
     expect(sql).toMatch(/GRANT EXECUTE ON FUNCTION public\.challenge_preview\(TEXT\) TO anon, authenticated/);
   });
 });
+
+describe('social links keep guild ids, presence, and the live seam on the server', () => {
+  const sql = loadMigrations()
+    .filter((m) => m.file.includes('social_links'))
+    .map((m) => m.sql)
+    .join('\n');
+
+  it('exists after the PvP version slot', () => {
+    expect(sql.length).toBeGreaterThan(0);
+    expect(sql).toMatch(/20261110130000_pvp_matches/);
+  });
+
+  it('hashes guild ids and does not store a guild id column', () => {
+    expect(sql).not.toMatch(/guild_id\s+TEXT/);
+    expect(sql).toMatch(/discord_guilds/);
+    expect(sql).toMatch(/guild_hash/);
+    expect(sql).toMatch(/social_digest/);
+    expect(sql).toMatch(/remember_guilds\(TEXT\[\]\)/);
+    expect(sql).toMatch(/CREATE POLICY discord_guilds_none/);
+  });
+
+  it('locks the new tables and keeps client writes off them', () => {
+    for (const table of [
+      'linked_identities', 'discord_guilds', 'friendships', 'friend_requests',
+      'player_blocks', 'friend_invites', 'friend_invite_redemptions',
+      'presence_prefs', 'friend_challenges', 'social_pepper',
+    ]) {
+      expect(sql).toMatch(new RegExp(`ALTER TABLE public\\.${table} ENABLE ROW LEVEL SECURITY`));
+      expect(sql).toMatch(new RegExp(`REVOKE ALL ON public\\.${table} FROM PUBLIC, anon, authenticated`));
+    }
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.challenge_friend\(UUID, TEXT\) FROM PUBLIC, anon/);
+    expect(sql).toMatch(/GRANT EXECUTE ON FUNCTION public\.challenge_friend\(UUID, TEXT\) TO authenticated/);
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.social_digest\(TEXT\) FROM PUBLIC, anon, authenticated/);
+    expect(sql).toMatch(/auth\.uid\(\)/);
+  });
+
+  it('routes ghost challenges through the ladder and live ones through friend_challenges', () => {
+    const body = sql.slice(sql.indexOf('FUNCTION public.challenge_friend'));
+    expect(body).toMatch(/ladder_issue\(p_friend, 'challenge'\)/);
+    expect(body).toMatch(/'friend_challenges'/);
+    expect(body).toMatch(/mode', 'live'/);
+    expect(body).not.toMatch(/p_rating|p_delta/);
+    expect(sql).toMatch(/can_see_presence/);
+    expect(sql).toMatch(/social_presence_select/);
+    expect(sql).toMatch(/to_regclass\('realtime\.messages'\)/);
+    expect(sql).not.toMatch(/ALTER TABLE realtime\.messages/);
+  });
+});
