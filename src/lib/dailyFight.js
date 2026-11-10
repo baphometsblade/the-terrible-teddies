@@ -97,7 +97,7 @@ export const dailyFightFor = (date = new Date()) => {
 };
 
 export const resolveCrew = (crew, cards) =>
-  crew.cards.map((id) => cards.find((card) => card.id === id)).filter(Boolean);
+  crew.cards.map((id) => cards.find((card) => card.id === id || card.ladderId === id)).filter(Boolean);
 
 /** True when this turn owes a fatigue tick: the deck is empty, or the night's clock has started. One tick, not both. */
 export const shouldFatigue = ({ deckEmpty, turn, fatigueFromTurn }) =>

@@ -5,7 +5,7 @@
 import { supabase } from '../supabase.js';
 import { playerFacingError } from '../network.js';
 import { PUBLIC_ORIGIN } from './ladder.js';
-import { toLadderId } from '@/data/cardRegistry';
+import { toGhostId } from './ghostDeck.js';
 
 const MISSING = new Set(['PGRST202', 'PGRST205', '42883', '42P01']);
 
@@ -29,7 +29,7 @@ export const loadSocial = () => call('my_social');
 
 /** Publish the deck the player is fighting with. */
 export const publishGhost = (deck, label) => call('publish_ghost', {
-  p_deck: (deck || []).map(toLadderId),
+  p_deck: (deck || []).map(toGhostId),
   p_label: label,
 });
 

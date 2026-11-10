@@ -77,6 +77,20 @@
   html {
     touch-action: manipulation;
   }
+  /* The bar's tokens. Hexes that are also a Tailwind shade must match
+     tailwind.config.js (docs/ART_STYLE.md). Neon gas colours are not copied
+     here: .neon reads them through theme(), and a second hex would drift. */
+  :root {
+    --bar-ink: #100e0c;
+    --bar-panel: #1a1410;
+    --bar-wood: #261c16;
+    --bar-rail: #36281e;
+    --bar-ivory: #f7f1e8;
+    --bar-brass: #fbbf24;
+    --bar-amber: theme("colors.neon.amber.glow");
+    --bar-magenta: theme("colors.neon.pink.glow");
+    --bar-cyan: theme("colors.neon.teal.glow");
+  }
   body {
     @apply bg-night-900 text-plush-100;
   }
@@ -176,12 +190,12 @@
    an empty screen. The grain is a tiny inline SVG noise tile: allowed by the
    CSP's img-src data:, painted once, no network request. */
 .bar-backdrop {
-  background-color: #120c1c;
+  background-color: var(--bar-ink);
   background-image:
     radial-gradient(ellipse 70% 45% at 50% -5%, rgba(245, 158, 11, 0.16), transparent 70%),
-    radial-gradient(ellipse 45% 35% at 0% 100%, rgba(236, 72, 153, 0.08), transparent 70%),
-    radial-gradient(ellipse 45% 35% at 100% 90%, rgba(45, 212, 191, 0.06), transparent 70%),
-    linear-gradient(180deg, #241a35 0%, #1a1226 45%, #120c1c 100%);
+    radial-gradient(ellipse 42% 38% at 0% 100%, rgba(255, 47, 134, 0.12), transparent 70%),
+    radial-gradient(ellipse 36% 32% at 100% 88%, rgba(62, 200, 255, 0.08), transparent 72%),
+    linear-gradient(180deg, var(--bar-wood) 0%, var(--bar-panel) 45%, var(--bar-ink) 100%);
 }
 .grain::after {
   content: "";
@@ -209,14 +223,14 @@
    carry its own copy of an arbitrary-value hover utility to work round that. */
 .panel-glass,
 .tile-glass {
-  background: linear-gradient(180deg, rgba(47, 35, 68, 0.78), rgba(26, 18, 38, 0.88));
+  background: linear-gradient(180deg, rgba(54, 40, 30, 0.82), rgba(26, 20, 16, 0.9));
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.07),
     0 12px 32px -14px rgba(0, 0, 0, 0.75);
 }
 .tile-glass:not(:disabled):not([aria-disabled="true"]):hover {
-  background-image: linear-gradient(180deg, rgba(59, 45, 84, 0.85), rgba(32, 23, 47, 0.92));
+  background-image: linear-gradient(180deg, rgba(74, 56, 40, 0.88), rgba(38, 28, 22, 0.94));
 }
 
 /* Brass trim: a metallic gradient edge drawn on ::before and masked to a
@@ -240,7 +254,7 @@
    and a darker lower lip, so it reads as a pressable object; it settles 1px on
    press. Text is night-950 on brass-300: 11.9:1. */
 .btn-brass {
-  color: #120c1c;
+  color: var(--bar-ink);
   background: linear-gradient(180deg, #fde68a 0%, #fbbf24 42%, #d97706 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
@@ -256,8 +270,8 @@
 
 /* The secondary button: dark glass with a quiet rim, same press behaviour. */
 .btn-glass {
-  color: #ece6f2;
-  background: linear-gradient(180deg, rgba(65, 52, 86, 0.9), rgba(36, 26, 53, 0.95));
+  color: var(--bar-ivory);
+  background: linear-gradient(180deg, rgba(70, 52, 40, 0.9), rgba(38, 28, 22, 0.95));
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 6px 16px -10px rgba(0, 0, 0, 0.8);
   transition: background 150ms ease, transform 150ms ease, border-color 150ms ease;
@@ -273,6 +287,7 @@
   isolation: isolate;
   background-color: #163423;
   background-image:
+    radial-gradient(ellipse 80% 36% at 50% 0%, rgba(255, 154, 44, 0.16), transparent 70%),
     radial-gradient(ellipse 65% 70% at 50% 45%, rgba(52, 140, 92, 0.55), transparent 75%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4), inset 0 0 50px rgba(0, 0, 0, 0.55);
@@ -287,12 +302,12 @@
    over moving content is recomputed every frame for as long as the dialog is
    open. A darker fill does the separating instead. */
 .dialog-scrim {
-  background: rgba(10, 6, 16, 0.86);
+  background: rgba(8, 6, 4, 0.88);
 }
 .dialog-panel {
   background:
-    linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.55), transparent) top / 100% 1px no-repeat,
-    linear-gradient(180deg, #2f2344 0%, #1a1226 100%);
+    linear-gradient(90deg, transparent, rgba(255, 47, 134, 0.45), rgba(251, 191, 36, 0.7), transparent) top / 100% 1px no-repeat,
+    linear-gradient(180deg, var(--bar-rail) 0%, var(--bar-panel) 100%);
   border: 1px solid rgba(255, 255, 255, 0.09);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
@@ -310,9 +325,9 @@
 }
 .hud-player {
   background:
-    radial-gradient(ellipse 45% 160% at 100% 100%, rgba(16, 185, 129, 0.18), transparent 70%),
-    linear-gradient(0deg, rgba(14, 32, 26, 0.97), rgba(22, 15, 32, 0.95));
-  border-top: 1px solid rgba(52, 211, 153, 0.2);
+    radial-gradient(ellipse 45% 160% at 100% 100%, rgba(255, 154, 44, 0.2), transparent 70%),
+    linear-gradient(0deg, rgba(28, 18, 12, 0.97), rgba(22, 16, 12, 0.95));
+  border-top: 1px solid rgba(255, 154, 44, 0.28);
   box-shadow: 0 -12px 28px -14px rgba(0, 0, 0, 0.85);
 }
 
@@ -435,7 +450,7 @@
 }
 [data-screen="battle"] .toast-viewport > li {
   padding: 0.625rem 2rem 0.625rem 1rem;
-  background: linear-gradient(180deg, #2f2344 0%, #1a1226 100%);
+  background: linear-gradient(180deg, #36281e 0%, #1a1410 100%);
   --tw-enter-translate-x: 0;
   --tw-enter-translate-y: 0;
   --tw-enter-scale: 0.9;
@@ -500,7 +515,7 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
     gap: 0.75rem;
     padding: 1.5rem;
     text-align: center;
-    background: #120c1c;
+    background: #100e0c;
   }
 }
 
@@ -519,7 +534,7 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 }
 .seg-on {
   color: #fde68a;
-  background: linear-gradient(180deg, rgba(65, 52, 86, 0.9), rgba(36, 26, 53, 0.95));
+  background: linear-gradient(180deg, rgba(70, 52, 40, 0.9), rgba(38, 28, 22, 0.95));
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.07),
@@ -527,7 +542,7 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
     0 4px 10px -6px rgba(0, 0, 0, 0.8);
 }
 .seg-off {
-  color: #b6a8ca;
+  color: #cbb59a;
   border: 1px solid transparent;
   transition: background-color 150ms ease, color 150ms ease;
 }
@@ -543,15 +558,15 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
    Contrast, WCAG 2.x, measured on the lightest stop of each real background
    (a texture or a glow may only darken, never sit under text lighter than
    the stop it was measured on):
-     neon cores on night-950 (#120c1c): pink 15.99, teal 18.00, amber 17.28,
-       red 13.20 to 1. The dimmest a core is ever drawn: last call's flicker
-       dips to 0.8 (pink: 10.36 on night-950, 7.21 on .bar-backdrop's lightest
-       stop, the amber pool at its top, #452f2e) and CLOSED rests at 0.75
-       (red: 7.71 on night-950, 7.43 on night-900). All above 7:1.
-     on the door's steel at its lightest stop (#3b4049): plush-100 8.52,
-       plush-200 6.55 (the smallest print uses nothing fainter), red-200
+     neon cores on night-950 (#100e0c): pink 16.06, teal 18.08, amber 17.36,
+       red 13.26 to 1. The dimmest a core is ever drawn: last call's flicker
+       dips to 0.8 (pink: 10.40 on night-950, 7.16 on .bar-backdrop's lightest
+       stop, the amber pool at its top, #473114) and CLOSED rests at 0.75
+       (red: 7.73 on night-950, 7.47 on night-900). All above 7:1.
+     on the door's steel at its lightest stop (#3b4049): plush-100 9.28,
+       plush-200 7.52 (the smallest print uses nothing fainter), red-200
        7.20, brass-300 focus outline 6.24; the year field's text on its well
-       13.72 and a .btn-glass key's 9.21.
+       15.00 and a .btn-glass key's 10.39.
      the taped note: ink #2a2219 on paper #f3e9c8, 12.90. */
 
 /* .neon: bent-tube lettering. Baloo 2's rounded strokes already read as
@@ -761,7 +776,7 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   /* A solid dark edge that is part of the glyph (paint-order puts it under
      the fill), so the number holds its contrast over any card art and over
      the red hit flash. The shadow only softens it. */
-  -webkit-text-stroke: 4px #120c1c;
+  -webkit-text-stroke: 4px #100e0c;
   paint-order: stroke fill;
   text-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
   transform: translate(-50%, calc(-50% - var(--fx-i, 0) * 26px));
@@ -947,8 +962,8 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   mix-blend-mode: screen;
 }
 .foil-epic::after {
-  --foil-a: rgba(192, 132, 252, 0.35);
-  --foil-b: rgba(125, 211, 252, 0.45);
+  --foil-a: rgba(255, 47, 134, 0.4);
+  --foil-b: rgba(255, 154, 44, 0.45);
   animation-duration: 7s;
 }
 
@@ -1138,7 +1153,7 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 .card-back {
   color: #fbbf24;
   border-color: #524368;
-  background-image: linear-gradient(to bottom right, #2f2344, #241a35, #120c1c);
+  background-image: linear-gradient(to bottom right, #36281e, #261c16, #100e0c);
 }
 .card-back-glow {
   background: radial-gradient(circle at 50% 45%, #fbbf24 0%, transparent 60%);
@@ -1147,7 +1162,7 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 .card-back[data-card-back="velvet-rope"] {
   color: #fecdd3;
   border-color: #9f1239;
-  background-image: linear-gradient(to bottom right, #4c0519, #9f1239, #1a1226);
+  background-image: linear-gradient(to bottom right, #4c0519, #9f1239, #1a1410);
 }
 .card-back[data-card-back="velvet-rope"] .card-back-glow {
   background: radial-gradient(circle at 50% 45%, #fb7185 0%, transparent 62%);
@@ -1156,7 +1171,7 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 .card-back[data-card-back="neon-stall"] {
   color: #fbcfe8;
   border-color: #be185d;
-  background-image: linear-gradient(to bottom right, #500724, #1a1226 55%, #042f2e);
+  background-image: linear-gradient(to bottom right, #500724, #1a1410 55%, #042f2e);
 }
 .card-back[data-card-back="neon-stall"] .card-back-glow {
   background: radial-gradient(circle at 50% 45%, #f472b6 0%, transparent 62%);
@@ -1165,7 +1180,7 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
 .card-back[data-card-back="brass-knuckles"] {
   color: #fde68a;
   border-color: #b45309;
-  background-image: linear-gradient(to bottom right, #78350f, #292524, #120c1c);
+  background-image: linear-gradient(to bottom right, #78350f, #292524, #100e0c);
 }
 .card-back[data-card-back="brass-knuckles"] .card-back-glow {
   background: radial-gradient(circle at 50% 45%, #fbbf24 0%, transparent 62%);
@@ -1194,15 +1209,21 @@ html[data-board="cold-open"] .felt-table {
 }
 html[data-board="dive-bar"] .felt-table {
   background-color: #1c140c;
-  background-image: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(120, 72, 24, 0.45), transparent 72%);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 154, 44, 0.38), transparent 70%),
+    radial-gradient(ellipse 36% 46% at 100% 100%, rgba(255, 47, 134, 0.16), transparent 72%);
 }
 html[data-board="neon-pit"] .felt-table {
   background-color: #240818;
-  background-image: radial-gradient(ellipse 60% 70% at 50% 30%, rgba(255, 79, 163, 0.28), transparent 70%);
+  background-image:
+    radial-gradient(ellipse 70% 48% at 18% 0%, rgba(255, 47, 134, 0.46), transparent 68%),
+    radial-gradient(ellipse 48% 40% at 100% 100%, rgba(62, 200, 255, 0.24), transparent 70%);
 }
 html[data-board="casino-felt"] .felt-table {
   background-color: #0e2418;
-  background-image: radial-gradient(ellipse 65% 70% at 50% 45%, rgba(40, 140, 80, 0.4), transparent 74%);
+  background-image:
+    radial-gradient(ellipse 50% 28% at 50% 0%, rgba(255, 154, 44, 0.22), transparent 70%),
+    radial-gradient(ellipse 65% 70% at 50% 45%, rgba(40, 140, 80, 0.42), transparent 74%);
 }
 
 } /* end @layer components */
@@ -1501,7 +1522,7 @@ html[data-text="larger"] { font-size: 18px; }
 .mixer-range::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 999px;
-  background: #241a35;
+  background: #261c16;
 }
 .mixer-range::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -1510,12 +1531,12 @@ html[data-text="larger"] { font-size: 18px; }
   margin-top: -8px;
   border-radius: 999px;
   background: #fbbf24;
-  box-shadow: 0 0 0 2px #1a1226;
+  box-shadow: 0 0 0 2px #1a1410;
 }
 .mixer-range::-moz-range-track {
   height: 6px;
   border-radius: 999px;
-  background: #241a35;
+  background: #261c16;
   border: 0;
 }
 .mixer-range::-moz-range-thumb {
@@ -1540,19 +1561,19 @@ html[data-cb="safe"] [data-rarity-metal="rare"] { background: #c2410c !important
 html[data-cb="safe"] [data-rarity-metal="epic"] { background: #f9a8d4 !important; }
 html[data-cb="safe"] [data-rarity-metal="legendary"] { background: #fde047 !important; }
 html[data-cb="safe"] [data-rarity-frame="common"]:not([data-cosmetic]) {
-  background: linear-gradient(#120c1c, #120c1c) padding-box, linear-gradient(145deg, #e7e5e4, #78716c 40%, #d6d3d1 70%, #57534e) border-box !important;
+  background: linear-gradient(#100e0c, #100e0c) padding-box, linear-gradient(145deg, #e7e5e4, #78716c 40%, #d6d3d1 70%, #57534e) border-box !important;
 }
 html[data-cb="safe"] [data-rarity-frame="uncommon"]:not([data-cosmetic]) {
-  background: linear-gradient(#120c1c, #120c1c) padding-box, linear-gradient(145deg, #e0f2fe, #0369a1 40%, #7dd3fc 70%, #0c4a6e) border-box !important;
+  background: linear-gradient(#100e0c, #100e0c) padding-box, linear-gradient(145deg, #e0f2fe, #0369a1 40%, #7dd3fc 70%, #0c4a6e) border-box !important;
 }
 html[data-cb="safe"] [data-rarity-frame="rare"]:not([data-cosmetic]) {
-  background: linear-gradient(#120c1c, #120c1c) padding-box, linear-gradient(145deg, #ffedd5, #c2410c 40%, #fdba74 70%, #7c2d12) border-box !important;
+  background: linear-gradient(#100e0c, #100e0c) padding-box, linear-gradient(145deg, #ffedd5, #c2410c 40%, #fdba74 70%, #7c2d12) border-box !important;
 }
 html[data-cb="safe"] [data-rarity-frame="epic"]:not([data-cosmetic]) {
-  background: linear-gradient(#120c1c, #120c1c) padding-box, linear-gradient(145deg, #fce7f3, #be185d 40%, #f9a8d4 70%, #831843) border-box !important;
+  background: linear-gradient(#100e0c, #100e0c) padding-box, linear-gradient(145deg, #fce7f3, #be185d 40%, #f9a8d4 70%, #831843) border-box !important;
 }
 html[data-cb="safe"] [data-rarity-frame="legendary"]:not([data-cosmetic]) {
-  background: linear-gradient(#120c1c, #120c1c) padding-box, linear-gradient(145deg, #fef3c7, #b45309 40%, #fcd34d 70%, #78350f) border-box !important;
+  background: linear-gradient(#100e0c, #100e0c) padding-box, linear-gradient(145deg, #fef3c7, #b45309 40%, #fcd34d 70%, #78350f) border-box !important;
 }
 html[data-cb="safe"] [data-rarity-gem="common"] {
   transform: none;
@@ -1568,53 +1589,80 @@ html[data-cb="safe"] [data-rarity-gem="epic"] {
 html[data-cb="safe"] [data-rarity-gem="legendary"] {
   transform: none;
   border-radius: 999px;
-  background: radial-gradient(circle, #1a1226 42%, #fde047 44%) !important;
+  background: radial-gradient(circle, #1a1410 42%, #fde047 44%) !important;
 }
 
-/* Rarity gleam and the wet-look holo. Transform and opacity only, and both
-   stop with the Animations switch and with reduced motion. */
+/* Rarity gleam and the wet-look holo. The gleam pulses opacity. The holo band
+   is a child that only translates and fades, so a hand of cards does not
+   repaint a gradient every frame. Both stop with the Animations switch and
+   with reduced motion. Amber and magenta, the bar's two tubes. */
 .rarity-gleam {
   position: absolute;
   inset: 0;
   z-index: 4;
   pointer-events: none;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(255, 154, 44, 0.55);
   animation: rarity-gleam 3.6s ease-in-out infinite;
 }
-.rarity-gleam[data-gleam="rare"] { box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.55); }
-.rarity-gleam[data-gleam="epic"] { box-shadow: inset 0 0 0 1px rgba(232, 121, 249, 0.55); }
-.rarity-gleam[data-gleam="legendary"] { box-shadow: inset 0 0 0 1px rgba(253, 230, 138, 0.7); }
+.rarity-gleam[data-gleam="rare"] { box-shadow: inset 0 0 0 1px rgba(255, 154, 44, 0.7); }
+.rarity-gleam[data-gleam="epic"] { box-shadow: inset 0 0 0 1px rgba(255, 47, 134, 0.72); }
+.rarity-gleam[data-gleam="legendary"] {
+  box-shadow: inset 0 0 0 1px rgba(255, 154, 44, 0.9), inset 0 0 12px rgba(255, 47, 134, 0.45);
+}
 .card-holo {
   position: absolute;
   inset: 0;
   z-index: 4;
+  overflow: hidden;
   pointer-events: none;
   border-radius: inherit;
-  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.16) 44%, rgba(103, 232, 249, 0.42) 50%, rgba(249, 168, 212, 0.32) 56%, transparent 70%);
-  background-size: 220% 100%;
-  mix-blend-mode: screen;
-  animation: holo-shift 4.5s linear infinite;
+}
+.card-holo::after {
+  content: "";
+  position: absolute;
+  inset: -50% -70%;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 154, 44, 0.5) 48%, rgba(255, 47, 134, 0.42) 55%, transparent 64%);
+  transform: translateX(-55%);
+  opacity: 0.8;
+  animation: holo-sweep 4.8s ease-in-out infinite;
 }
 @keyframes rarity-gleam {
   0%, 100% { opacity: 0.35; }
   50% { opacity: 0.9; }
 }
-@keyframes holo-shift {
-  from { background-position: 0% 0; }
-  to { background-position: 100% 0; }
+@keyframes holo-sweep {
+  0%, 100% { transform: translateX(-55%); opacity: 0.45; }
+  50% { transform: translateX(55%); opacity: 0.95; }
 }
 [data-motion="off"] .rarity-gleam,
-[data-motion="off"] .card-holo,
+[data-motion="off"] .card-holo::after,
 [data-motion="off"] .bar-lamp { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .rarity-gleam, .card-holo, .bar-lamp { animation: none; }
+  .rarity-gleam, .card-holo::after, .bar-lamp { animation: none; }
 }
 
-/* Profile rings. The bare one is the brass the menu already wore. */
-.avatar-ring { background: linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24); }
+/* Profile rings. The same three the wardrobe sells, on the menu chip, the
+   player sheet, and every card that is yours. Bare is brass, lipstick is the
+   kiss, high roller is the magenta tube with an amber edge. #e9d5ff stays in
+   the high-roller gradient: it is that ring's swatch. */
+.avatar-ring,
+.avatar-ring[data-avatar="bare-ring"] { background: linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24); }
 .avatar-ring[data-avatar="lipstick"] { background: linear-gradient(145deg, #ffe4e6, #fb7185 40%, #9f1239); }
-.avatar-ring[data-avatar="high-roller"] { background: linear-gradient(145deg, #faf5ff, #e9d5ff 35%, #7e22ce); }
+.avatar-ring[data-avatar="high-roller"] { background: linear-gradient(145deg, #fde68a, theme("colors.neon.pink.glow") 42%, #e9d5ff 72%, #7e22ce); }
+.card-profile-ring {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px rgba(251, 191, 36, 0.8);
+}
+.card-profile-ring[data-avatar="bare-ring"] { box-shadow: inset 0 0 0 2px rgba(251, 191, 36, 0.8); }
+.card-profile-ring[data-avatar="lipstick"] { box-shadow: inset 0 0 0 2px rgba(251, 113, 133, 0.9); }
+.card-profile-ring[data-avatar="high-roller"] {
+  box-shadow: inset 0 0 0 2px rgba(255, 47, 134, 0.85), inset 0 0 10px rgba(255, 154, 44, 0.4);
+}
 
 /* The living bar, desktop and tablet only, so a phone's Battle button
    does not move. Bottles and a lamp, decoration. */

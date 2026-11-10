@@ -72,8 +72,8 @@ export const CHUCK_CARDS = [
 // Where they sit in the catalog. The seeded field the older sets were
 // measured against is sensitive to this order.
 const CATALOG_ORDER = [
-  'ck-chuck', 'ck-tabitha', 'ck-on-the-tab', 'ck-quiet-word', 'ck-offduty',
-  'ck-last-orders', 'ck-closing', 'ck-top-up', 'ck-cut-off', 'ck-rita',
+  'ck-tabitha', 'ck-cut-off', 'ck-chuck', 'ck-offduty', 'ck-on-the-tab',
+  'ck-top-up', 'ck-last-orders', 'ck-quiet-word', 'ck-rita', 'ck-closing',
 ];
 
 export const CHUCK_CATALOG = CATALOG_ORDER.map((id) => CHUCK_CARDS.find((card) => card.id === id));

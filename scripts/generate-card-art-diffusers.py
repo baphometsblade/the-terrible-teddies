@@ -146,7 +146,12 @@ def main() -> int:
     for f in flags:
         if f.startswith("--only"):
             raw = f.split("=", 1)[1] if "=" in f else args[2] if len(args) > 2 else ""
-            only = {int(x) for x in raw.replace(",", " ").split()}
+            only = set()
+            for part in raw.replace(",", " ").split():
+                token = part.strip()
+                if not token:
+                    continue
+                only.add(int(token) if token.isdigit() else token)
     # An empty --only (no ids parsed) is an error, not "all cards". Falling
     # through to the full set — which with --force silently overwrites every
     # rendered card — is never what someone who typed --only intended.

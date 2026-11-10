@@ -16,7 +16,7 @@ import { BrassCoin } from '@/components/ui/game-chrome';
 export const PACK_LOOK = {
   regular: {
     metal: RARITY_METAL.common,
-    face: 'linear-gradient(165deg, #4b2a72 0%, #2b1845 55%, #170d25 100%)',
+    face: 'linear-gradient(165deg, #4a3424 0%, #261c16 55%, #100e0c 100%)',
     Icon: Package,
     tone: 'text-brass-300',
     tagTone: 'text-brass-300',
@@ -29,13 +29,13 @@ export const PACK_LOOK = {
   },
   premium: {
     metal: RARITY_METAL.epic,
-    face: 'linear-gradient(165deg, #6d28d9 0%, #3b0f6b 55%, #1a0b30 100%)',
+    face: 'linear-gradient(165deg, #7a1848 0%, #3a1024 55%, #14080e 100%)',
     Icon: Gem,
     tone: 'text-fuchsia-200',
     tagTone: 'text-sky-300',
     foil: 'foil foil-epic',
-    glow: 'rgba(192, 132, 252, 0.4)',
-    light: 'rgba(192, 132, 252, 0.18)',
+    glow: 'rgba(255, 47, 134, 0.4)',
+    light: 'rgba(255, 47, 134, 0.18)',
     title: 'Premium Pack',
     tag: 'GUARANTEED RARE+',
     contents: '5 Cards Inside',

@@ -49,7 +49,7 @@ export function renderSlipPage({ id = '', name = null, rival = null, won = null,
 <meta name="twitter:description" content="${escapeHtml(description)}">
 <meta name="twitter:image" content="${escapeHtml(image)}">
 <style>
-  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #120c1c; color: #f5f0e6; font-family: Georgia, "Times New Roman", serif; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #100e0c; color: #f5f0e6; font-family: Georgia, "Times New Roman", serif; }
   main { max-width: 28rem; padding: 2rem 1.25rem; text-align: center; }
   p { color: #d9cfe3; line-height: 1.5; }
   a { display: inline-block; margin-top: 1.5rem; min-height: 44px; min-width: 44px; line-height: 44px; padding: 0 1.25rem; border-radius: 0.75rem; background: #fbbf24; color: #1a1208; font-weight: 700; text-decoration: none; }

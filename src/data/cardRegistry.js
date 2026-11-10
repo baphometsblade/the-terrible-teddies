@@ -1,12 +1,14 @@
 // One door for expansion ids. The ladder stores integers. Each set knows
-// its own block. Adding a set is one line here, and the publish and the
-// ghost deal both read this instead of a single set.
+// its own block. Adding a set is one line here, and the ghost deal reads
+// this before the prefix table.
 
-import { toLadderId as henTo, fromLadderId as henFrom } from '@/data/henDoHavoc';
 import { toLadderId as chuckTo, fromLadderId as chuckFrom } from '@/data/chuckCrew';
+import { toLadderId as ordersTo, fromLadderId as ordersFrom } from '@/data/expansion-last-orders';
+import { toLadderId as henTo, fromLadderId as henFrom } from '@/data/henDoHavoc';
 
 const SETS = Object.freeze([
   Object.freeze({ toLadderId: chuckTo, fromLadderId: chuckFrom }),
+  Object.freeze({ toLadderId: ordersTo, fromLadderId: ordersFrom }),
   Object.freeze({ toLadderId: henTo, fromLadderId: henFrom }),
 ]);
 

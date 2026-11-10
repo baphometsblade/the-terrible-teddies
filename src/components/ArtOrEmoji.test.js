@@ -36,6 +36,13 @@ describe('ArtOrEmoji loading hints', () => {
     }
   });
 
+  it('keeps the night-felt back under the picture until it loads', () => {
+    const html = renderToStaticMarkup(createElement(ArtOrEmoji, { teddy }));
+    expect(html).toContain('data-art-frame');
+    expect(html).toContain('opacity-0');
+    expect(html).toContain('/cards/thumbs/2.webp');
+  });
+
   it('TeddyCard passes artLoading through to its art', () => {
     expect(img(renderToStaticMarkup(createElement(TeddyCard, { teddy, artLoading: 'eager' })))).toContain('loading="eager"');
     expect(img(renderToStaticMarkup(createElement(TeddyCard, { teddy })))).toContain('loading="lazy"');

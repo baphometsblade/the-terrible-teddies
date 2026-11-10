@@ -3,17 +3,13 @@
 // battle shuffles the deck before it deals — so taking a card out and putting
 // it back is not a change.
 
-const idRank = (id) => (typeof id === 'number' ? id : null);
-
 /** A canonical string for a list of card ids: equal for equal decks. */
-export const deckKey = (ids) => [...(ids ?? [])].sort((a, b) => {
-  const na = idRank(a);
-  const nb = idRank(b);
-  if (na != null && nb != null) return na - nb;
-  if (na != null) return -1;
-  if (nb != null) return 1;
-  return String(a).localeCompare(String(b));
-}).join(',');
+export const deckKey = (ids) => [...(ids ?? [])]
+  .map((id) => (typeof id === 'number' || (typeof id === 'string' && /^\d+$/.test(id)) ? Number(id) : String(id)))
+  .sort((a, b) => (
+    typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b))
+  ))
+  .join(',');
 
 /** Whether two lists of card ids are the same deck. */
 export const sameDeck = (a, b) => deckKey(a) === deckKey(b);

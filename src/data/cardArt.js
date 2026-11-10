@@ -18,6 +18,8 @@
 import { QUICKIE_ART } from './quickieArt';
 import { NIGHT_TWO_ART } from './nightTwoArt';
 import { HEN_DO_ART } from './henDoArt';
+import { LAST_ORDERS_ART } from './lastOrdersArt';
+import { MORNING_AFTER_ART } from './morningAfterArt';
 import { CHUCK_ART } from './chuckArt';
 
 export const CARD_ART = {
@@ -104,6 +106,8 @@ export const CARD_ART = {
   ...QUICKIE_ART,
   ...NIGHT_TWO_ART,
   ...HEN_DO_ART,
+  ...LAST_ORDERS_ART,
+  ...MORNING_AFTER_ART,
   ...CHUCK_ART,
 };
 

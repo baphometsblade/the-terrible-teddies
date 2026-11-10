@@ -165,7 +165,7 @@ const HealthMeter = ({ hp, max, fill, label, side }) => {
           <motion.span
             key={hp}
             initial={{ scale: 1.6, color: '#fca5a5' }}
-            animate={{ scale: 1, color: '#ece6f2' }}
+            animate={{ scale: 1, color: '#f7f1e8' }}
             transition={{ type: 'spring', stiffness: 400, damping: 14 }}
             className="inline-block font-display text-lg sm:text-xl font-extrabold tabular-nums whitespace-nowrap"
           >
@@ -3182,6 +3182,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                           <TeddyCard
                             teddy={card}
                             lift={false}
+                            wearRing={false}
                             variant="board"
                             side="opponent"
                             tauntActive={card.ability === 'taunt' && !card.stealthActive}
@@ -3505,6 +3506,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                     ? 'a Royal ally'
                     : (attackAuraNote(previewCard, previewTarget.from === 'player' ? playerField : opponentField) || 'a Royal ally')}
                   cosmeticBorder={previewTarget.from === 'opponent' ? null : cosmeticBorder}
+                  wearRing={previewTarget.from !== 'opponent'}
                 />
               )}
             </div>

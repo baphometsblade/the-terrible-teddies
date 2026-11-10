@@ -13,8 +13,8 @@ describe('preloading a fight\'s pictures', () => {
         return img;
       },
     };
-    const urls = preloadCardThumbs([1, 1, 42, 0, 'nope', null], doc);
-    expect(urls).toEqual(['/cards/thumbs/1.webp', '/cards/thumbs/42.webp']);
+    const urls = preloadCardThumbs([1, 1, 42, 0, 'nope', 'lo-velvet', null], doc);
+    expect(urls).toEqual(['/cards/thumbs/1.webp', '/cards/thumbs/42.webp', '/cards/thumbs/lo-velvet.webp']);
     expect(asked).toEqual(urls);
     expect(urls.every(isThumbUrl)).toBe(true);
   });
@@ -25,5 +25,12 @@ describe('preloading a fight\'s pictures', () => {
     expect(thumbUrl(-2)).toBeNull();
     expect(thumbUrl(1.5)).toBeNull();
     expect(thumbUrl('1')).toBe('/cards/thumbs/1.webp');
+    expect(thumbUrl('lo-velvet')).toBe('/cards/thumbs/lo-velvet.webp');
+    expect(thumbUrl('hd-1')).toBe('/cards/thumbs/hd-1.webp');
+    expect(thumbUrl('ma-last-call')).toBe('/cards/thumbs/ma-last-call.webp');
+    expect(thumbUrl('ma-1')).toBe('/cards/thumbs/ma-1.webp');
+    expect(isThumbUrl('/cards/thumbs/ma-1.webp')).toBe(true);
+    expect(thumbUrl('../x')).toBeNull();
+    expect(thumbUrl('nope')).toBeNull();
   });
 });
