@@ -2,6 +2,11 @@
 # Supabase on every merge to main, so database-backed PRs can auto-merge and
 # go live without a manual step. The frontend itself is deployed by Vercel.
 #
+# Both jobs call scripts/deploy-supabase.sh — the same script used locally
+# via `npm run deploy:supabase` — so the workflow and a laptop share one
+# implementation. GitHub Actions on this account may be billing-locked; when
+# it is, run the script locally (always --dry-run first).
+#
 # Migrations: only files newer than BASELINE are considered (everything up to
 # it was applied by hand before this workflow existed, partly via
 # bootstrap.sql). A file is applied once, matched by its name suffix against
@@ -15,6 +20,7 @@ on:
       - "supabase/migrations/**"
       - "supabase/functions/**"
       - "supabase/config.toml"
+      - "scripts/deploy-supabase.sh"
       - ".github/workflows/deploy-supabase.yml"
   workflow_dispatch:
 
@@ -27,40 +33,16 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BASELINE: "20261107160000"
   SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-  PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+  SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
 
 jobs:
   migrate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Apply new migrations
-        run: |
-          set -euo pipefail
-          api="https://api.supabase.com/v1/projects/${PROJECT_REF}/database/migrations"
-          curl -sSf -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" "$api" \
-            | jq -r '.[].name // empty' | sort -u > applied.txt
-          applied_count=0
-          for f in $(ls supabase/migrations/*.sql | sort); do
-            base=$(basename "$f" .sql)
-            version=${base%%_*}
-            name=${base#*_}
-            if [[ ! "$version" =~ ^[0-9]{14}$ ]] || [[ "$version" -le "$BASELINE" ]]; then continue; fi
-            if grep -qxF "$name" applied.txt; then echo "skip $base (already applied)"; continue; fi
-            echo "::group::apply $base"
-            body=$(jq -n --rawfile q "$f" --arg n "$name" '{query:$q, name:$n}')
-            code=$(curl -sS -o resp.json -w '%{http_code}' -X POST "$api" \
-              -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-              -H "Content-Type: application/json" -d "$body")
-            cat resp.json; echo
-            echo "::endgroup::"
-            if [[ "$code" -ge 300 ]]; then echo "::error::$base failed with HTTP $code"; exit 1; fi
-            applied_count=$((applied_count+1))
-          done
-          echo "Applied $applied_count migration(s)."
+        run: bash scripts/deploy-supabase.sh --no-functions
 
   functions:
     needs: migrate
@@ -71,4 +53,4 @@ jobs:
         with:
           version: latest
       - name: Deploy Edge Functions
-        run: supabase functions deploy --project-ref "$PROJECT_REF" --use-api
+        run: bash scripts/deploy-supabase.sh --no-migrations

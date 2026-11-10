@@ -15,6 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "ci:local": "bash scripts/ci-local.sh",
+    "deploy:supabase": "bash scripts/deploy-supabase.sh",
     "art:generate": "vite-node scripts/generate-card-art.mjs",
     "art:manifest": "vite-node scripts/build-fooocus-manifest.mjs",
     "art:monitor": "node scripts/art-monitor.mjs",
