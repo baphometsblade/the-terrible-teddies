@@ -65,7 +65,7 @@ const reducedMotion = () => !useGameStore.getState().animationsEnabled
 // onGetGems / onBattlePass / onDailyRewards (from App) are the empty table's
 // routes to where packs come from; each closes this dialog and opens that one.
 const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) => {
-  const { cardPacks, premiumPacks, legendaryPacks, openCardPack, coins, gems, gemDebt, getNextPackType } = useGameStore();
+  const { cardPacks, premiumPacks, legendaryPacks, openCardPackFromServer, openAllPacks, coins, gems, gemDebt, getNextPackType, instantOpen } = useGameStore();
   // A gem-priced buy waits for its confirm (confirmNode, rendered last).
   const { requestBuy, confirmNode } = useStoreBuy();
   const [isOpening, setIsOpening] = useState(false);
@@ -327,7 +327,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
     clearIdle();
     // With Animations off a pack opens straight to its cards, face up:
     // nothing tears, nothing is dealt, nothing pulses.
-    const instant = !useGameStore.getState().animationsEnabled;
+    const instant = !useGameStore.getState().animationsEnabled || useGameStore.getState().instantOpen === true;
     const opening = getNextPackType();
     setIsOpening(true);
     setCeremony(packCeremonyLine());
@@ -341,19 +341,20 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
     // until the reveal ends, rather than letting it fall out of the dialog.
     stageRef.current?.focus({ preventScroll: true });
 
-    later(() => {
+    later(async () => {
       setShowPack(false);
-      // Open the next available pack type (prioritizes legendary > premium > regular)
       const packType = getNextPackType();
-      const result = openCardPack(packType);
+      const result = await openCardPackFromServer(packType);
       // The store claims the pack atomically; if none remain (e.g. a lost race),
       // it returns null — bail without crashing the reveal animation.
-      if (!result) {
+      if (!result || result.blocked) {
         setIsOpening(false);
         setShowPack(true);
         setPackAnimation(false);
         setOpenedType(null);
-        setAnnouncement('');
+        setAnnouncement(result?.blocked
+          ? 'Today’s free opens are used up. Instant open skips that wait. The cards stay the same.'
+          : '');
         return;
       }
       const shown = revealOrder(result.cards);
@@ -767,6 +768,26 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
                 >
                   <PackageOpen aria-hidden="true" className="hidden min-[360px]:block w-5 h-5" strokeWidth={2.2} />
                   {openLabel}
+                </button>
+              )}
+              {!pulledCards && !isOpening && instantOpen && totalPacks > 1 && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const opened = await openAllPacks();
+                    if (!opened?.length) return;
+                    const coinsBack = opened.reduce((n, pack) => n + (pack.dupeCoins || 0), 0);
+                    const shown = opened.flatMap((pack) => pack.cards).slice(0, 10);
+                    setPulledCards(shown);
+                    setDupeCoins(coinsBack);
+                    setRevealedNow(shown.map(() => true));
+                    setIsOpening(false);
+                    setShowPack(false);
+                    setAnnouncement(`Opened ${opened.length} packs. +${coinsBack} coins. Same cards as opening them one by one.`);
+                  }}
+                  className={`${ACTION} btn-glass px-4 text-base`}
+                >
+                  Open all
                 </button>
               )}
 

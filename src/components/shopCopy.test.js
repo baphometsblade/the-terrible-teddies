@@ -152,18 +152,13 @@ describe('shop copy matches the economy it is selling', () => {
   // Rewritten when the odds moved into PACK_ODDS. It used to check only that
   // the standard table's heading carried a qualifier; now every tier's odds
   // are posted, so it pins that each guaranteed first card is posted too.
-  it('posts the first-card odds of every tier that has its own', () => {
+  it('posts that gem packs use the same table', () => {
     const guaranteed = Object.entries(PACK_SLOTS).filter(([, s]) => s.first !== 'standard');
-    expect(guaranteed.length, 'expected a tier whose first card rolls on better odds').toBeGreaterThan(0);
+    expect(guaranteed).toEqual([]);
     const guide = textOf(renderCardPacks());
-    for (const [tier] of guaranteed) {
-      const line = describePackOdds(tier).lines[0];
-      expect(line.label).toBe('First card');
-      for (const { rarity, pct } of line.rows) {
-        expect(guide, `Card Packs omits ${tier}'s first-card ${rarity} ${pct}`).toContain(`${TIER_NAME[tier]} · first card`);
-        expect(guide).toContain(`${rarity.charAt(0).toUpperCase()}${rarity.slice(1)} ${pct}`);
-      }
-    }
+    expect(guide).toContain('same odds');
+    expect(guide).toContain('Premium Pack');
+    expect(guide).toContain('Legendary Pack');
   });
 });
 
@@ -216,10 +211,9 @@ describe('the posted pack odds are the rolled odds', () => {
 
   it('retuning PACK_ODDS changes what both screens post', () => {
     retune('standard', [['legendary', 2], ['epic', 8], ['rare', 20], ['uncommon', 30], ['common', 40]]);
-    retune('premiumFirst', [['legendary', 10], ['epic', 30], ['rare', 60]]);
     for (const html of [renderCardPacks(), renderOddsDialog()]) {
       const text = textOf(html);
-      for (const chip of ['Common 40%', 'Legendary 2%', 'Epic 8%', 'Rare 60%', 'Epic 30%', 'Legendary 10%']) {
+      for (const chip of ['Common 40%', 'Legendary 2%', 'Epic 8%', 'Rare 20%']) {
         expect(text, `${chip} did not follow the retune`).toContain(chip);
       }
       expect(text).not.toContain('Common 49%');
@@ -264,13 +258,16 @@ describe('the posted pack odds are the rolled odds', () => {
   // text, so class names and styles cannot be mistaken for odds.
   it('every percentage on screen comes from PACK_ODDS', async () => {
     retune('standard', [['legendary', 3], ['epic', 7], ['rare', 19], ['uncommon', 29], ['common', 42]]);
-    retune('premiumFirst', [['legendary', 11], ['epic', 23], ['rare', 66]]);
-    retune('legendaryFirst', [['legendary', 97], ['epic', 3]]);
     // To one decimal, as posted (29 / 100 * 100 is 28.999999999999996 in floats).
     const allowed = new Set(Object.values(PACK_ODDS).flatMap((t) => {
       const total = t.reduce((n, [, w]) => n + w, 0);
       return t.map(([, w]) => `${Number(((w * 100) / total).toFixed(1))}%`);
     }));
+    // The sell-back rate is posted beside the odds. It is not a drop rate.
+    allowed.add(`${Math.round(0.4 * 100)}%`);
+    // Gem bundles, unchanged prices. Each step up is more gems per dollar
+    // than the $0.99 pack: +6, +9, +39, +49.
+    for (const pct of ['6%', '9%', '39%', '49%']) allowed.add(pct);
     const screens = {
       'Card Packs': textOf(renderCardPacks()),
       'odds dialog': textOf(renderOddsDialog()),
@@ -281,7 +278,7 @@ describe('the posted pack odds are the rolled odds', () => {
       expect(shown.filter((p) => !allowed.has(p)), `${screen} shows odds that are not PACK_ODDS'`).toEqual([]);
     }
     // The dialog and the guide did post the retuned odds (not vacuous).
-    expect(screens['odds dialog']).toContain('Legendary 97%');
+    expect(screens['odds dialog']).toContain('Common 42%');
     expect(screens['Card Packs']).toContain('Common 42%');
   });
 });

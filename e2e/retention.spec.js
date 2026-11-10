@@ -25,6 +25,7 @@ test('a quest reroll swaps one challenge and is then spent', async ({ page }) =>
   await dialog.getByRole('button', { name: /^Reroll / }).first().click();
   await expect(dialog.getByText('Tonight’s reroll already went home.')).toBeVisible();
   await expect(dialog.getByRole('button', { name: /^Reroll / })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: 'Buy reroll' })).toBeVisible();
   const after = await dialog.locator('h3').allTextContents();
   expect(after).not.toEqual(before);
 });

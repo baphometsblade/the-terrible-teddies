@@ -8,7 +8,7 @@ import {
   DAILY_POOL, WEEKLY_POOL, getDailyChallenges, getWeeklyChallenges, challengeProgress, weekKeyOf,
 } from '../stores/challenges';
 
-export { weekKeyOf };
+export { weekKeyOf, DAILY_POOL, WEEKLY_POOL };
 
 export const emptyRerolls = () => ({
   dailyKey: null,

@@ -17,6 +17,7 @@ import { Medallion, SectionHeading, WalletChips, DialogClose } from '@/component
 import { ignoreKeyRepeat } from '@/lib/keyRepeat';
 import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
 import { PackOddsDialog } from './PackOdds';
+import { BarTab, Shortcuts } from './BarTab';
 
 const GEM_BUNDLES = [
   { id: 'gems_small', gems: 50, price: 0.99, bonus: 0, popular: false },
@@ -43,6 +44,10 @@ const GEM_CAPTIONS = {
 const ACTION =
   `inline-flex items-center justify-center gap-2 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS_OUTLINE} ` +
   'disabled:opacity-50 disabled:cursor-not-allowed';
+
+const gemsPerDollar = (bundle) => (bundle.gems + bundle.bonus) / bundle.price;
+const BASE_GEMS_PER_DOLLAR = gemsPerDollar(GEM_BUNDLES[0]);
+const extraGemsPct = (bundle) => Math.round((gemsPerDollar(bundle) / BASE_GEMS_PER_DOLLAR - 1) * 100);
 
 const CHECKOUT_STATUS = 'Opening secure checkout…';
 
@@ -111,6 +116,11 @@ const GemBundle = ({ bundle, tier, processing, onBuy }) => {
         {bundle.gems.toLocaleString()}
       </span>
       {bundle.bonus > 0 && <span id={`${id}-bonus`} className="relative mt-2 text-emerald-300 text-xs font-bold tracking-wide">+{bundle.bonus.toLocaleString()} BONUS</span>}
+      {extraGemsPct(bundle) > 0 && (
+        <span className="relative mt-1 text-emerald-300 text-[11px] font-bold">
+          {`+${extraGemsPct(bundle)}% more gems per dollar`}
+        </span>
+      )}
       {bundle.bonus > 0 && <span id={`${id}-total`} className="relative text-plush-300 text-[11px] mt-0.5">{(bundle.gems + bundle.bonus).toLocaleString()} total</span>}
       {GEM_CAPTIONS[bundle.id] && <span id={`${id}-caption`} className="relative mt-2 text-balance text-plush-300 text-xs leading-snug">{GEM_CAPTIONS[bundle.id]}</span>}
       <span className="relative mt-auto pt-4">
@@ -138,7 +148,7 @@ const TAB_MOTION = {
 // `initialTab` is the tab it opens on: App sends a route to gems (the Battle
 // Pass confirm, the empty Card Packs table) straight to "Buy Gems".
 const Shop = ({ onClose, initialTab = 'packs' }) => {
-  const { coins, gems, gemDebt, cardPacks, premiumPacks, legendaryPacks, coinDoublerExpiresAt } = useGameStore();
+  const { coins, gems, gemDebt, cardPacks, premiumPacks, legendaryPacks, coinDoublerExpiresAt, dismissStarterOffer } = useGameStore();
   // Purchases re-render via the store subscription, but time ELAPSING is not a
   // store write — a dialog left open across the expiry would keep advertising
   // an "Active" booster that recordBattleResult (which recomputes from
@@ -169,16 +179,20 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
     if (!userId) return undefined;
     let live = true;
     fetchOnePerAccountHoldings(userId).then((held) => {
-      if (live && held?.has('starter_bundle')) setStarterClaimed(true);
+      if (live && held?.has('starter_bundle')) {
+        setStarterClaimed(true);
+        dismissStarterOffer();
+      }
     });
     return () => { live = false; };
-  }, [userId]);
+  }, [userId, dismissStarterOffer]);
   // Where focus goes when a tap on Buy Now comes back refused: the button it
   // was on has just been replaced by the claimed note.
   const starterClaimedRef = useRef(null);
   const focusStarterClaimed = useRef(false);
   const [activeTab, setActiveTab] = useState(TABS.some((t) => t.id === initialTab) ? initialTab : 'packs');
   const [showOdds, setShowOdds] = useState(false);
+  const [showTab, setShowTab] = useState(false);
   const [processing, setProcessing] = useState(false);
   // Read by the Escape handler, which must see the current value.
   const processingRef = useRef(false);
@@ -408,13 +422,18 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                       </button>
                     )}
                   >
-                    Guaranteed packs
+                    Gem packs
                   </SectionHeading>
+                  <p className="mb-3 text-xs text-plush-300">Same odds, pity and sell-back as a Card Pack. The bigger pack is more cards, not better ones.</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {gemPacks.map(item => (
                       <StoreTile key={item.id} item={item} onBuy={handleBuyItem} />
                     ))}
                   </div>
+                  <Shortcuts />
+                  <button type="button" onClick={() => setShowTab(true)} className="mt-3 min-h-11 text-sm font-semibold text-brass-200">
+                    Bar tab
+                  </button>
                 </div>
                 {/* Gems for coins. Sold here and under the Card Packs table
                     alike — coins_large used to be sold nowhere, while the
@@ -436,7 +455,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
               <motion.div key="gems" {...TAB_MOTION} className="flex-1 flex flex-col">
                 <div className="text-center mb-5">
                   <h3 className="font-display text-2xl font-extrabold text-white leading-tight">Get More Gems</h3>
-                  <p className="mt-1 text-sm text-plush-300">Gems buy the top shelf. First card guaranteed rare or better.</p>
+                  <p className="mt-1 text-sm text-plush-300">Gems buy time: faster opens, more shelves, skipped waits. The cards stay the same.</p>
                   {/* Said before the buyer pays, not after: the gems a bundle
                       brings pay what is owed first (creditGems), so the
                       balance rises by less than the bundle. */}
@@ -477,7 +496,6 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
 
             {activeTab === 'special' && (
               <motion.div key="special" {...TAB_MOTION}>
-                {/* The headline offer: brass-trimmed, the only brass button on the tab. */}
                 <div className="panel-glass trim-brass relative overflow-hidden rounded-2xl p-5 sm:p-6 mb-4">
                   <div aria-hidden="true" className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_60%_90%_at_0%_0%,rgba(251,191,36,0.2),transparent_70%)]" />
                   <div className="relative flex flex-col md:flex-row md:items-center gap-5 md:gap-8">
@@ -621,6 +639,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
       <p role="status" className="sr-only">{processing ? CHECKOUT_STATUS : ''}</p>
 
       {showOdds && <PackOddsDialog onClose={() => setShowOdds(false)} />}
+      {showTab && <BarTab onClose={() => setShowTab(false)} />}
       {confirmNode}
 
       {processing && (

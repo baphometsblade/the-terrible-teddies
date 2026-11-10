@@ -131,15 +131,42 @@ describe('reconcileServerGems (closes the gem-respend exploit)', () => {
     expect(get().buyShopItem('premium_pack').success).toBe(true);
     expect(get().buyShopItem('coins_large').success).toBe(true);
     for (let i = 0; i < 4; i += 1) expect(get().buyShopItem('coins_small').success).toBe(true);
-    expect(get().gems).toBe(10);                          // 540 spent
+    // 8+8+4+50+40 = 110. The 440 left is what a won dispute gives back.
+    expect(get().gems).toBe(440);
     expect(get().legendaryPacks).toBe(2);
 
     get().reconcileServerGems(0);                         // charged back
-    expect([get().gems, get().gemDebt]).toEqual([0, 540]);
+    expect([get().gems, get().gemDebt]).toEqual([0, 110]);
 
     get().reconcileServerGems(550);                       // dispute won
-    expect([get().gems, get().gemDebt]).toEqual([10, 0]);  // the 10 it took, no more
+    expect([get().gems, get().gemDebt]).toEqual([440, 0]);
     expect(get().lastSyncedServerGems).toBe(550);
+  });
+
+  it('charges a shortcut once and does not raise a debt when the server agrees', () => {
+    useGameStore.setState({ gems: 100, lastSyncedServerGems: 100, gemDebt: 0, instantOpen: false });
+    expect(get().buyConvenience('instant_open')).toMatchObject({ ok: true });
+    expect(get().gems).toBe(20);
+    get().adoptConvenienceReceipt({ ok: true, charged: 80, balance: 20, replay: false }, 80);
+    get().reconcileServerGems(20);
+    expect(get().gems).toBe(20);
+    expect(get().gemDebt).toBe(0);
+    expect(get().instantOpen).toBe(true);
+  });
+
+  it('does not treat a lost convenience receipt as a chargeback', () => {
+    useGameStore.setState({
+      gems: 100, lastSyncedServerGems: 100, gemDebt: 0, instantOpen: false, pendingGemCharges: [],
+    });
+    expect(get().buyConvenience('instant_open')).toMatchObject({ ok: true });
+    expect(get().pendingGemCharges).toEqual([80]);
+    // The RPC committed and the response never arrived. The next reconcile
+    // reads the same 80 the client already spent.
+    get().reconcileServerGems(20);
+    expect(get().gems).toBe(20);
+    expect(get().gemDebt).toBe(0);
+    expect(get().pendingGemCharges).toEqual([]);
+    expect(get().lastSyncedServerGems).toBe(20);
   });
 
   it('takes what is owed from earned gems too, before any reach the balance', () => {
@@ -336,11 +363,11 @@ describe('openCardPack atomicity', () => {
     expect(get().cardPacks).toBe(0);
   });
 
-  it('legendary pack pulls 10 with a guaranteed legendary first and consumes one', () => {
+  it('legendary pack pulls 10 cards on the shared table and consumes one', () => {
     useGameStore.setState({ cardPacks: 0, premiumPacks: 0, legendaryPacks: 1 });
     const { cards } = get().openCardPack('legendary');
     expect(cards).toHaveLength(10);
-    expect(cards[0].rarity).toBe('legendary');
+    expect(PACK_SLOTS.legendary.first).toBe('standard');
     expect(get().legendaryPacks).toBe(0);
   });
 
@@ -401,10 +428,6 @@ describe('pack odds: openCardPack rolls on PACK_ODDS', () => {
     expect(rollRarity(std, 50.99)).toBe('uncommon');
     expect(rollRarity(std, 51)).toBe('common');
     expect(rollRarity(std, 99.99)).toBe('common');
-    // Premium's first card: 5 / 25.
-    expect(rollRarity(PACK_ODDS.premiumFirst, 4.99)).toBe('legendary');
-    expect(rollRarity(PACK_ODDS.premiumFirst, 5)).toBe('epic');
-    expect(rollRarity(PACK_ODDS.premiumFirst, 25)).toBe('rare');
   });
 
   it('every table sums to 100, so each weight IS its posted percentage', () => {
@@ -420,13 +443,11 @@ describe('pack odds: openCardPack rolls on PACK_ODDS', () => {
     expect(cards.map((c) => c.rarity)).toEqual(Array(PACK_SLOTS.regular.size).fill('epic'));
   });
 
-  it("a retuned first-card table changes a Premium pack's first card only", () => {
-    retune('premiumFirst', [['legendary', 100]]);
+  it('a premium pack rolls the same table as a card pack', () => {
     retune('standard', [['common', 100]]);
     useGameStore.setState({ cardPacks: 0, premiumPacks: 1, legendaryPacks: 0 });
     const { cards } = get().openCardPack('premium');
-    expect(cards[0].rarity).toBe('legendary');
-    expect(cards.slice(1).every((c) => c.rarity === 'common')).toBe(true);
+    expect(cards.every((c) => c.rarity === 'common')).toBe(true);
   });
 
   it('pack sizes come from PACK_SLOTS', () => {

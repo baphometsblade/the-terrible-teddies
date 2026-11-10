@@ -1186,6 +1186,16 @@ html[data-screen="battle"] body { overscroll-behavior: none; }
   background: radial-gradient(circle at 50% 45%, #fbbf24 0%, transparent 62%);
 }
 .card-back[data-card-back="brass-knuckles"] .card-back-ring { border-color: rgba(251, 191, 36, 0.85); }
+.card-back[data-card-back="brass-frame"] {
+  color: #f8efd4;
+  border-color: #d6b25e;
+  background-color: #d6b25e;
+  background-image: linear-gradient(to bottom right, #5c4520, #241c2e, #120c1c);
+}
+.card-back[data-card-back="brass-frame"] .card-back-glow {
+  background: radial-gradient(circle at 50% 45%, #e7c98a 0%, transparent 62%);
+}
+.card-back[data-card-back="brass-frame"] .card-back-ring { border-color: rgba(214, 178, 94, 0.9); }
 
 /* Table cloths. The house felt is .felt-table itself; these only repaint a
    cloth the player has put on. Text on the felt does not change colour. */
@@ -1224,6 +1234,10 @@ html[data-board="casino-felt"] .felt-table {
   background-image:
     radial-gradient(ellipse 50% 28% at 50% 0%, rgba(255, 154, 44, 0.22), transparent 70%),
     radial-gradient(ellipse 65% 70% at 50% 45%, rgba(40, 140, 80, 0.42), transparent 74%);
+}
+html[data-board="last-table"] .felt-table {
+  background-color: #3f2a4a;
+  background-image: radial-gradient(ellipse 65% 70% at 50% 45%, rgba(214, 178, 94, 0.28), transparent 74%);
 }
 
 } /* end @layer components */

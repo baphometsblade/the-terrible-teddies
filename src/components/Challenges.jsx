@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { useGameStore } from '../stores/gameStore';
 import { challengeProgress } from '../stores/challenges';
 import { visibleChallenges } from '@/lib/questReroll';
+import { PAID_REROLLS_PER_DAY, REROLL_GEMS } from '@/lib/convenience';
 import { celebrate } from '@/lib/celebrate';
 import { useDialog } from '@/hooks/useDialog';
 import { FOCUS_OUTLINE } from '@/lib/focus';
@@ -281,7 +282,7 @@ const TabButton = ({ active, onClick, icon: Icon, label, done, total }) => (
 const Challenges = ({ onClose }) => {
   const {
     addCoins, addGems, addXP, addCardPack, claimChallenge, claimedChallenges, syncPeriods,
-    rerollQuest, questRerolls,
+    rerollQuest, questRerolls, buyQuestReroll, gems, paidRerollDay, paidRerollsToday,
     // Daily stats (auto-reset each day)
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     // Weekly stats (auto-reset each Monday)
@@ -483,6 +484,23 @@ const Challenges = ({ onClose }) => {
                 ? (activeTab === 'daily' ? 'One reroll. Dump a quest you don’t fancy.' : 'One reroll this week. Be picky.')
                 : (activeTab === 'daily' ? 'Tonight’s reroll already went home.' : 'This week’s reroll already went home.')}
             </p>
+          );
+        })()}
+        {(() => {
+          const shown = activeTab === 'daily' ? DAILY_CHALLENGES : WEEKLY_CHALLENGES;
+          const left = activeTab === 'daily' ? board.dailyLeft : board.weeklyLeft;
+          const used = paidRerollDay === new Date().toDateString() ? paidRerollsToday : 0;
+          const open = shown.find((c) => getChallengeProgress(c) < c.target && !(claimedChallenges ?? []).includes(c.id));
+          if (left > 0 || !open || used >= PAID_REROLLS_PER_DAY) return null;
+          return (
+            <button
+              type="button"
+              aria-label="Buy reroll"
+              onClick={() => buyQuestReroll(activeTab === 'daily' ? 'daily' : 'weekly', open.id)}
+              className="relative mx-4 mt-2 min-h-11 rounded-xl px-3 text-left text-xs font-semibold text-brass-200 sm:mx-6"
+            >
+              {`Buy reroll · ${REROLL_GEMS} gems. You have ${gems}. ${PAID_REROLLS_PER_DAY - used} left today.`}
+            </button>
           );
         })()}
 

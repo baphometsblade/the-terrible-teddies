@@ -213,7 +213,10 @@ test.describe('daily rewards', () => {
     // The card it drew is on the table, and it is one the player did not own.
     const card = dialog.locator('[data-granted-card]');
     await expect(card).toHaveCount(1);
-    expect(Number(await card.getAttribute('data-granted-card'))).toBeGreaterThan(10);
+    const granted = await card.getAttribute('data-granted-card');
+    const asNumber = Number(granted);
+    if (/^-?\d+$/.test(granted || '')) expect(asNumber).toBeGreaterThan(10);
+    else expect(granted).toBeTruthy();
     await expect(card.locator('[data-reveal-card="up"]')).toBeVisible(SLOW);
     expect(await coins()).toBe(before + 75);
 

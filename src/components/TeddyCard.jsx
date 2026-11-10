@@ -231,6 +231,7 @@ const BACK_MARK = {
   'velvet-rope': '🌹',
   'neon-stall': '💋',
   'brass-knuckles': '👊',
+  'brass-frame': '🖼️',
 };
 
 export const CardBack = ({ className = 'w-24 h-36', mini = false, look, framed = false }) => {

@@ -35,6 +35,15 @@ export const WARDROBE = Object.freeze([
     swatch: '#be185d',
   },
   {
+    id: 'brass-frame',
+    slot: 'back',
+    price: 20,
+    currency: 'gems',
+    label: 'Brass Frame',
+    blurb: 'A frame. The card inside is the same card.',
+    swatch: '#d6b25e',
+  },
+  {
     id: 'brass-knuckles',
     slot: 'back',
     price: 30,
@@ -96,6 +105,15 @@ export const WARDROBE = Object.freeze([
     label: 'Neon Pit',
     blurb: 'Pink tubing and a stage nobody admits they watched.',
     swatch: '#240818',
+  },
+  {
+    id: 'last-table',
+    slot: 'board',
+    price: 25,
+    currency: 'gems',
+    label: 'Last Table',
+    blurb: 'A cloth. The rules on it do not change.',
+    swatch: '#3f2a4a',
   },
   {
     id: 'casino-felt',
