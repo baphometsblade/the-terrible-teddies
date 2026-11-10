@@ -130,7 +130,8 @@ export const deckProblem = (ids, known) => {
   if (!Array.isArray(ids) || ids.length !== DECK_SIZE) return 'A published deck is 10 cards.';
   const counts = new Map();
   for (const id of ids) {
-    if (!Number.isInteger(id) || id < 1 || id > MAX_CARD_ID || (known && !known.has(id))) {
+    const listed = known ? known.has(id) : Number.isInteger(id) && id >= 1 && id <= MAX_CARD_ID;
+    if (!listed) {
       return 'That deck has a card the bar does not serve.';
     }
     const n = (counts.get(id) || 0) + 1;
