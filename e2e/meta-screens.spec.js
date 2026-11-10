@@ -213,10 +213,11 @@ test.describe('daily rewards', () => {
     // The card it drew is on the table, and it is one the player did not own.
     const card = dialog.locator('[data-granted-card]');
     await expect(card).toHaveCount(1);
-    const granted = await card.getAttribute('data-granted-card');
-    const asNumber = Number(granted);
-    if (/^-?\d+$/.test(granted || '')) expect(asNumber).toBeGreaterThan(10);
-    else expect(granted).toBeTruthy();
+    const grantedId = await card.getAttribute('data-granted-card');
+    expect(grantedId).toBeTruthy();
+    // Starters 1–10 were already owned. A prefixed id is not a number; Number()
+    // of it is NaN and would fail the comparison even when the card is new.
+    if (/^-?\d+$/.test(grantedId)) expect(Number(grantedId)).toBeGreaterThan(10);
     await expect(card.locator('[data-reveal-card="up"]')).toBeVisible(SLOW);
     expect(await coins()).toBe(before + 75);
 

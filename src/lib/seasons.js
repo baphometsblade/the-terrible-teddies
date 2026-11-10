@@ -4,7 +4,7 @@
 // timestamps are only for the countdown, anchored to the server's "now".
 
 import { supabase } from '@/utils/supabaseClient';
-import { BUNDLED_SEASONS, bundledSeason } from '@/data/seasonsCatalog';
+import { BUNDLED_SEASON_IDS, BUNDLED_SEASONS, bundledSeason } from '@/data/seasonsCatalog';
 import { NAUGHTY_CREW } from '@/data/naughtyList';
 
 export const VAULT_BADGE = 'Vaulted';
@@ -126,6 +126,30 @@ export const visibleSeasons = (snap = snapshot) => {
   }
   return rows;
 };
+
+/**
+ * A card may be granted or dealt from the live catalog when it is evergreen,
+ * or when a season the server marked `active` lists it. Upcoming, ended,
+ * preview, and an unloaded snapshot keep a bundled seasonal id out. This
+ * does not read the laptop clock. Preview is not active: packs may dress
+ * themselves with it in dev, grants and opponent decks may not.
+ */
+export const isCardAvailable = (cardId, snap = snapshot, bundledIds = BUNDLED_SEASON_IDS) => {
+  if (cardId == null) return false;
+  let seasonal = bundledIds.has(cardId);
+  let active = false;
+  for (const season of snap?.seasons || []) {
+    if (!(season?.card_ids || []).includes(cardId)) continue;
+    seasonal = true;
+    if (season.status === 'active') active = true;
+  }
+  return !seasonal || active;
+};
+
+/** Catalog rows a grant or a sampled deck may use. */
+export const collectiblePool = (catalog, snap = snapshot, bundledIds = BUNDLED_SEASON_IDS) => (
+  (catalog || []).filter((card) => card && isCardAvailable(card.id, snap, bundledIds))
+);
 
 /**
  * Seasons whose cards may be pulled. `status: 'active'` is the server's

@@ -10,6 +10,7 @@ import { deckProblem, challengeUrl, safeName, cleanCode, TIER_ASIDES } from '@/l
 import { toLadderId as toHenDo } from '@/data/henDoHavoc';
 import { toLadderId as toLastOrders } from '@/data/expansion-last-orders';
 import { cardsFromIds } from '@/lib/social/ghostDeck';
+import { collectiblePool } from '@/lib/seasons';
 import {
   loadSocial, loadWeekly, loadCard, publishGhost, drawGhost, openChallenge, forfeitOpen, ticketFrom, reasonText, slipUrl,
 } from '@/lib/social/client';
@@ -18,7 +19,7 @@ import {
   CARD_W, CARD_H, victorySpec, drawVictoryCard, canvasBlob, shareCard, saveBlob, copyText,
 } from '@/lib/social/victoryCard';
 
-const KNOWN = new Set(ALL_CARDS.map((card) => card.id));
+const knownNow = () => new Set(collectiblePool(ALL_CARDS).map((card) => card.id));
 
 const TABS = [
   { id: 'card', label: 'Card', name: 'Your card' },
@@ -87,7 +88,7 @@ const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', receipt = null }
   }, [mine, receipt]);
 
   const deal = (ticket) => {
-    const cards = cardsFromIds(ticket.deck, ALL_CARDS);
+    const cards = cardsFromIds(ticket.deck, collectiblePool(ALL_CARDS));
     if (cards.length < 8) {
       setNotice('That deck did not survive the night.');
       return;
@@ -113,7 +114,7 @@ const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', receipt = null }
 
   const onPublish = () => run(async () => {
     const ids = useGameStore.getState().currentDeck;
-    const problem = deckProblem(ids, KNOWN);
+    const problem = deckProblem(ids, knownNow());
     if (problem) { setNotice(problem); return; }
     const stored = ids.map((id) => toLastOrders(toHenDo(id)));
     const result = await publishGhost(stored, 'Saved deck');

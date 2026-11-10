@@ -41,7 +41,7 @@ import { catchUpFor } from '@/lib/catchUp';
 import { storyChapters, STORY_CHAPTERS } from '@/lib/storyCampaign';
 import { plaqueById, plaqueBonus } from '@/lib/plaques';
 import { syncConvenience, syncPackWin, requestPackRoll } from '@/lib/packSync';
-import { getSeasonSnapshot } from '@/lib/seasons';
+import { collectiblePool, getSeasonSnapshot, isCardAvailable } from '@/lib/seasons';
 import { BUNDLED_SEASON_IDS } from '@/data/seasonsCatalog';
 import { bumpSeasonQuest, normalizeSeasonQuest, questReady, questsFor } from '@/lib/seasonQuests';
 
@@ -1119,6 +1119,13 @@ export const useGameStore = create(
             get().addCardPack(reward.amount);
             return { packs: reward.amount };
           case 'card': {
+            // Same gate as a pack: a seasonal card the server has not marked
+            // active is not handed over. The tile still pays, as coins.
+            if (!isCardAvailable(reward.cardId)) {
+              const coins = 50;
+              get().addCoins(coins);
+              return { withheld: true, coins };
+            }
             const card = { id: reward.cardId, name: reward.name };
             const dupeCoins = get().addCard(reward.cardId);
             return dupeCoins > 0 ? { card, alreadyOwned: true, coins: dupeCoins } : { card };
@@ -1520,7 +1527,7 @@ export const useGameStore = create(
         // which card it was.
         let cardIds = [];
         if (reward.cards > 0) {
-          const availableCards = ALL_CARDS.filter(c => !state.ownedCards.includes(c.id));
+          const availableCards = collectiblePool(ALL_CARDS).filter(c => !state.ownedCards.includes(c.id));
           const randomCards = shuffleDeck(availableCards)
             .slice(0, reward.cards)
             .map(c => c.id);

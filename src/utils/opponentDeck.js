@@ -2,6 +2,7 @@
 // the deck varies fight-to-fight instead of being the same hardcoded 8 goons
 // forever — and so the composition logic is pure and unit-testable.
 import { ALL_CARDS } from '@/stores/gameStore';
+import { collectiblePool } from '@/lib/seasons';
 
 // Chuck's 7 named regulars — the recognisable core of his crew. Ids/stats/
 // abilities are moved here verbatim from the array GameBoard.jsx used to
@@ -91,7 +92,8 @@ const sample = (pool, n, rng) => shuffle(pool, rng).slice(0, Math.max(0, n));
  *
  * Deck = `goonCount` of Chuck's 7 named regulars (random subset) + the rest
  * drawn from the catalog (`ALL_CARDS`, `type === 'action'`, filtered to the
- * difficulty's rarity band) = 8 cards total. Catalog cards are reused as-is —
+ * difficulty's rarity band and to seasons the server has marked active) = 8
+ * cards total. Catalog cards are reused as-is —
  * their art already exists — just copied (never mutating ALL_CARDS) and
  * stamped with a unique `instanceId`, the same convention GameBoard already
  * uses for the player's deck (`o-<id>-<idx>`).
@@ -121,12 +123,14 @@ export const buildOpponentDeck = (difficulty, rng = Math.random) => {
 
   const goonPool = sample(OPPONENT_GOONS, Math.min(goonCount, OPPONENT_GOONS.length), rng);
 
-  let catalogPool = ALL_CARDS.filter((c) => c.type === 'action' && rarities.includes(c.rarity));
+  // Seasonal ids stay out until open_card_pack says the season is active.
+  // The widened fallback uses the same pool, so a thin rarity band cannot
+  // pull them back in.
+  const live = collectiblePool(ALL_CARDS);
+  let catalogPool = live.filter((c) => c.type === 'action' && rarities.includes(c.rarity));
   const neededCatalog = DECK_SIZE - goonPool.length;
   if (catalogPool.length < neededCatalog) {
-    // Rarity band too thin to fill the quota — widen to every action card
-    // rather than under-filling the deck.
-    catalogPool = ALL_CARDS.filter((c) => c.type === 'action');
+    catalogPool = live.filter((c) => c.type === 'action');
   }
   const catalogCards = sample(catalogPool, Math.min(neededCatalog, catalogPool.length), rng);
 

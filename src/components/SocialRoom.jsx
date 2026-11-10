@@ -3,6 +3,7 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 import { useGameStore, ALL_CARDS } from '@/stores/gameStore';
 import { safeName, cleanCode, PUBLIC_ORIGIN } from '@/lib/social/ladder';
 import { cardsFromIds } from '@/lib/social/ghostDeck';
+import { collectiblePool } from '@/lib/seasons';
 import { cleanTag, cleanGangName, REPORT_REASONS } from '@/lib/social/room';
 import { TAUNTS } from '@/lib/social/taunts';
 import { copyText } from '@/lib/social/victoryCard';
@@ -16,7 +17,7 @@ const btn = `inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 
 const field = `mt-1 h-11 w-full rounded-xl border border-white/10 bg-night-950/60 px-3 text-plush-100 ${FOCUS_OUTLINE}`;
 
 const startFrom = (ticket, onStart, setNotice, greeting) => {
-  const cards = cardsFromIds(ticket.deck, ALL_CARDS);
+  const cards = cardsFromIds(ticket.deck, collectiblePool(ALL_CARDS));
   if (cards.length < 8) {
     setNotice('That deck did not survive the night.');
     return;
@@ -97,7 +98,7 @@ const SocialRoom = ({ onStartBrawl }) => {
     if (result.ok === false) { setNotice(reasonText(result)); return; }
     const ids = Array.isArray(result.deck) ? result.deck.map(Number) : [];
     const owned = new Set(useGameStore.getState().ownedCards);
-    const cards = cardsFromIds(ids, ALL_CARDS);
+    const cards = cardsFromIds(ids, collectiblePool(ALL_CARDS));
     const keep = cards.filter((card) => owned.has(card.id)).map((card) => card.id);
     setLineup({ name: result.username, cards, keep });
   });
