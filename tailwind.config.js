@@ -27,22 +27,23 @@ module.exports = {
         ],
       },
       colors: {
-        // "Toy chest after dark" palette — plush nursery shapes, dive-bar light.
+        // Dive-bar night. Wood-black, not nursery purple: the same ink as the
+        // reference still (docs/ART_STYLE.md). Ivory plush is the paper on it.
         night: {
-          950: "#120c1c",
-          900: "#1a1226",
-          800: "#241a35",
-          700: "#2f2344",
-          600: "#3b2d54",
+          950: "#100e0c",
+          900: "#1a1410",
+          800: "#261c16",
+          700: "#36281e",
+          600: "#4a3828",
         },
         plush: {
-          900: "#332944",
-          800: "#413456",
-          700: "#524368",
-          400: "#9b8ab3",
-          300: "#b6a8ca",
-          200: "#d3c9e0",
-          100: "#ece6f2",
+          900: "#2c2018",
+          800: "#463428",
+          700: "#6a5040",
+          400: "#a89074",
+          300: "#cbb59a",
+          200: "#e7d9c8",
+          100: "#f7f1e8",
         },
         brass: {
           600: "#b45309",
@@ -60,12 +61,12 @@ module.exports = {
         // The bar's neon (the .neon material in index.css reads these through
         // theme(), so this is the one place a tone is defined). Each tone is a
         // core and a glow: the core is the hot glass and carries the text
-        // contrast (15.99, 18.00, 17.28 and 13.20 to 1 on night-950), the glow
+        // contrast (16.06, 18.08, 17.36 and 13.26 to 1 on night-950), the glow
         // is the gas colour and is only ever the halo around it.
         neon: {
-          pink: { core: "#FFE3F1", glow: "#FF4FA3" },
-          teal: { core: "#DBFFFB", glow: "#2DE2D0" },
-          amber: { core: "#FFF2D6", glow: "#FFB23F" },
+          pink: { core: "#FFE3F1", glow: "#FF2F86" },
+          teal: { core: "#DBFFFB", glow: "#3EC8FF" },
+          amber: { core: "#FFF2D6", glow: "#FF9A2C" },
           red: { core: "#FFC9C9", glow: "#FF4D4D" },
         },
         // Brushed steel, for the door: 700 to 800 is the plate's gradient (text

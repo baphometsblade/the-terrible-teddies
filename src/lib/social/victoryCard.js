@@ -83,7 +83,7 @@ export function drawVictoryCard(ctx, spec, width = CARD_W, height = CARD_H) {
   ctx.font = '700 36px Georgia, "Times New Roman", serif';
   ctx.fillText(spec.rating, width / 2, 530);
 
-  ctx.fillStyle = '#b6a8ca';
+  ctx.fillStyle = '#cbb59a';
   ctx.font = '400 20px Georgia, "Times New Roman", serif';
   ctx.fillText(spec.footer, width / 2, height - 120);
   return true;

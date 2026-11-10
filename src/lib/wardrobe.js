@@ -14,7 +14,7 @@ export const WARDROBE = Object.freeze([
     currency: 'coins',
     label: 'The Usual',
     blurb: 'What everyone wears in. It still counts as dressed.',
-    swatch: '#2f2344',
+    swatch: '#36281e',
   },
   {
     id: 'velvet-rope',
@@ -158,7 +158,7 @@ export const WARDROBE = Object.freeze([
     currency: 'coins',
     label: 'The Offer',
     blurb: 'Buy you a drink. Then we see.',
-    swatch: '#b6a8ca',
+    swatch: '#cbb59a',
   },
   {
     id: 'slow-line',

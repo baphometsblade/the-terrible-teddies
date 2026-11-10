@@ -2,15 +2,29 @@
 // down, so the first hand is not a row of empty frames. Thumbs only: the
 // board draws those, and the full plates are several times the size.
 
+// A card id is a positive integer, or an expansion slug such as ma-1.
+// Anything else (a path, a blank, a joke string) is not a file we will ask for.
 const SLUG = /^[a-z]{2,6}-[a-z0-9-]{1,40}$/;
 const THUMB = /^\/cards\/thumbs\/(\d+|[a-z]{2,6}-[a-z0-9-]{1,40})\.webp$/;
 
-/** The thumb URL for a card id, or null when the id is not a card id. */
-export const thumbUrl = (id) => {
-  if (typeof id === 'string' && SLUG.test(id)) return `/cards/thumbs/${id}.webp`;
+/** The id as a filename stem, or null when it is not a card id. */
+export const cardArtId = (id) => {
+  if (typeof id === 'string' && SLUG.test(id)) return id;
   const n = Number(id);
   if (!Number.isInteger(n) || n <= 0) return null;
-  return `/cards/thumbs/${n}.webp`;
+  return String(n);
+};
+
+/** The thumb URL for a card id, or null when the id is not a card id. */
+export const thumbUrl = (id) => {
+  const safe = cardArtId(id);
+  return safe ? `/cards/thumbs/${safe}.webp` : null;
+};
+
+/** The full-plate URL for a card id, or null when the id is not a card id. */
+export const fullArtUrl = (id) => {
+  const safe = cardArtId(id);
+  return safe ? `/cards/${safe}.webp` : null;
 };
 
 /**

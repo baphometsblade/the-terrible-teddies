@@ -53,7 +53,7 @@ const FIELD =
   'placeholder:font-semibold placeholder:text-base placeholder:tracking-normal placeholder:text-plush-300 caret-brass-300 ' +
   'bg-night-950/70 bg-clip-padding border border-white/10 hover:border-white/20 focus-visible:border-brass-300/60 transition-colors ' +
   'aria-[invalid=true]:border-red-400/70 ' +
-  'autofill:shadow-[inset_0_0_0_1000px_#1b1328] autofill:[-webkit-text-fill-color:#ece6f2] ' +
+  'autofill:shadow-[inset_0_0_0_1000px_#1c1612] autofill:[-webkit-text-fill-color:#f7f1e8] ' +
   FOCUS_OUTLINE;
 
 // The date form. The date lives in this component's state for as long as it
