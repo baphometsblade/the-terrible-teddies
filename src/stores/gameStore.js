@@ -16,7 +16,7 @@ import { LAST_ORDERS_CARDS } from '@/data/expansion-last-orders';
 import { MORNING_AFTER_CARDS } from '@/data/expansionMorningAfter';
 import { resolveLogin, weekCoinBonus } from '@/lib/loginStreak';
 import { comebackFor } from '@/lib/comeback';
-import { normalizeRerolls, rerollPatch, weekKeyOf } from '@/lib/questReroll';
+import { DAILY_POOL, WEEKLY_POOL, normalizeRerolls, replacementFor, rerollPatch, visibleChallenges, weekKeyOf } from '@/lib/questReroll';
 import { bookOf, normalizeClaimedSets } from '@/lib/collectionBook';
 import { titleById } from '@/lib/titles';
 import {
@@ -26,12 +26,20 @@ import {
 import { clampVolume } from '@/lib/audioMix';
 import { eventAt, eventSpentKey, isEventId, scaleReward } from '@/lib/houseEvents';
 import { crawlStatus, CRAWL_UNLOCK_BATTLES } from '@/lib/barCrawl';
+import {
+  bonusForOpen, cardsByRarity, openAllowed, rollPack, settlePull, streakCoins,
+} from '@/lib/packEconomy';
+import {
+  CRAWL_SKIPS_PER_DAY, CRAWL_STOP_WAIT_MS, PAID_REROLLS_PER_DAY, REROLL_GEMS,
+  convenienceById, crawlBoard, deckSlotsFor, storageSlotsFor,
+} from '@/lib/convenience';
 import { nextStarTarget, starCost, starSetReady, starringUnlocked, normalizeStars, STAR_CAP } from '@/lib/cardStars';
 import { morningAfterDue, MORNING_AFTER } from '@/lib/morningAfter';
 import { trackRow } from '@/lib/levelTrack';
 import { catchUpFor } from '@/lib/catchUp';
 import { storyChapters, STORY_CHAPTERS } from '@/lib/storyCampaign';
 import { plaqueById, plaqueBonus } from '@/lib/plaques';
+import { syncConvenience, syncPackOpen } from '@/lib/packSync';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
@@ -195,8 +203,8 @@ export const SHOP_ITEMS = [
   { id: 'pack_1', name: 'Card Pack', description: '5 filthy cards. Open in a stall.', short: '5 cards. Open in a stall.', icon: '📦', price: 200, currency: 'coins', type: 'pack', quantity: 1 },
   { id: 'pack_5', name: '5 Card Packs', description: '25 random cards (10% off). Hide the keys.', short: '25 cards · 10% off. Hide the keys.', icon: '📦', price: 900, currency: 'coins', type: 'pack', quantity: 5 },
   { id: 'pack_10', name: '10 Card Packs', description: '50 random cards (20% off). Call in sick.', short: '50 cards · 20% off. Call in sick.', icon: '📦📦', price: 1600, currency: 'coins', type: 'pack', quantity: 10 },
-  { id: 'premium_pack', name: 'Premium Pack', description: 'Guaranteed rare or better. Uncut.', short: 'Rare or better. Uncut.', icon: '💎', price: 50, currency: 'gems', type: 'premium', quantity: 1 },
-  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards, guaranteed legendary. Hide it.', short: '10 cards · 1 legendary. Hide it.', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
+  { id: 'premium_pack', name: 'Premium Pack', description: '5 cards. Same odds as a Card Pack.', short: '5 cards. Same odds.', icon: '💎', price: 50, currency: 'gems', type: 'premium', quantity: 1 },
+  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards. Same odds as a Card Pack.', short: '10 cards. Same odds.', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
   { id: 'coins_small', name: 'Small Coin Bag', description: '+500 coins. For the cheap rounds.', icon: '💰', price: 10, currency: 'gems', type: 'coins', quantity: 500 },
   { id: 'coins_large', name: 'Large Coin Bag', description: '+3,000 coins. Unmarked. Like you.', icon: '💰', price: 50, currency: 'gems', type: 'coins', quantity: 3000 },
   // Timed booster rather than a lump sum: pays out only as you play, so it
@@ -206,26 +214,18 @@ export const SHOP_ITEMS = [
   { id: 'coin_doubler', name: 'Coin Doubler', description: 'Double battle coins for 24h. Sin.', icon: '🪙', price: 25, currency: 'gems', type: 'booster', durationHours: 24 },
 ];
 
-// The odds of every pack slot, as weights out of 100, best rarity first (the
-// roll walks them in this order). One table for both the roll and what the
-// screens post: the Shop sells two of these tiers for gems, which are bought
-// with real money, so the posted odds must be the ones the roll uses — and
-// when they were string literals beside the roll, nothing kept them in step.
+// One odds table for every pack. Gem packs and earned-coin packs roll this
+// same table, share one pity timer and one sell-back. Gems buy time, not cards.
 export const PACK_ODDS = {
-  // Every slot of a standard pack, and every slot after the first elsewhere.
   standard: [['legendary', 1], ['epic', 5], ['rare', 15], ['uncommon', 30], ['common', 49]],
-  // The first card of a Premium pack: rare or better.
-  premiumFirst: [['legendary', 5], ['epic', 20], ['rare', 75]],
-  // The first card of a Legendary pack: legendary outright.
-  legendaryFirst: [['legendary', 100]],
 };
 
-// What each tier holds: how many cards, and which table its first card rolls
-// on. Every other card rolls on PACK_ODDS.standard.
+// What each tier holds. The size is the only difference, and it is posted.
+// Every card, including the first, rolls on PACK_ODDS.standard.
 export const PACK_SLOTS = {
   regular: { size: 5, first: 'standard' },
-  premium: { size: 5, first: 'premiumFirst' },
-  legendary: { size: 10, first: 'legendaryFirst' },
+  premium: { size: 5, first: 'standard' },
+  legendary: { size: 10, first: 'standard' },
 };
 
 /**
@@ -302,6 +302,30 @@ const initialState = {
   ownedCards: [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42],
   currentDeck: [1, 2, 3, 4, 5, 6, 30, 40, 41, 42],
   savedDecks: [],
+  // Pack ledger. Pity, the day's sell-back and the day's opens live here so a
+  // reload cannot reset them. Gem packs use the same numbers.
+  packPity: 0,
+  packOpens: 0,
+  packCoinSpent: 0,
+  packCoinBack: 0,
+  sellbackToday: 0,
+  sellbackDay: null,
+  earnedOpensToday: 0,
+  earnedOpensDay: null,
+  packStreakDay: null,
+  instantOpen: false,
+  decksUnlocked: false,
+  storageUnlocked: false,
+  bonusDeckSlot: false,
+  firstConvenience: false,
+  skipDay: null,
+  skipsToday: 0,
+  shieldBoughtDay: null,
+  paidRerollDay: null,
+  paidRerollsToday: 0,
+  crawlTimer: false,
+  crawlGateUntil: 0,
+  crawlGatedStop: null,
   // All-time stats
   totalWins: 0,
   totalLosses: 0,
@@ -608,12 +632,28 @@ export const normalizeSave = (persisted) => {
     'legendaryPacks', 'weekWins', 'weekCoinsEarned', 'weekStreak', 'weekBestStreak', 'weekNewCards',
     'consecutiveLogins', 'totalWins', 'totalLosses', 'currentWinStreak', 'bestWinStreak',
     'lastSyncedServerGems', 'cloudRev', 'gemDebt', 'dailyStreak', 'dailyBest',
-    'comebackWins', 'streakShields', 'weekBattles', 'weekDamage', 'weekCards']) {
+    'comebackWins', 'streakShields', 'weekBattles', 'weekDamage', 'weekCards',
+    'packPity', 'packOpens', 'packCoinSpent', 'packCoinBack', 'sellbackToday',
+    'earnedOpensToday', 'skipsToday', 'paidRerollsToday', 'crawlGateUntil']) {
     if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];
   }
   s.comebackWins = Math.max(0, Math.floor(s.comebackWins));
   // One shield, or none. A forged 9 is still one.
   s.streakShields = s.streakShields >= 1 ? 1 : 0;
+  s.instantOpen = persisted?.instantOpen === true;
+  s.decksUnlocked = persisted?.decksUnlocked === true;
+  s.storageUnlocked = persisted?.storageUnlocked === true;
+  s.bonusDeckSlot = persisted?.bonusDeckSlot === true;
+  s.firstConvenience = persisted?.firstConvenience === true;
+  s.crawlTimer = persisted?.crawlTimer === true;
+  const dayish = (value) => (typeof value === 'string' && value.length > 0 && value.length < 48 ? value : null);
+  s.sellbackDay = dayish(persisted?.sellbackDay);
+  s.earnedOpensDay = dayish(persisted?.earnedOpensDay);
+  s.packStreakDay = dayish(persisted?.packStreakDay);
+  s.skipDay = dayish(persisted?.skipDay);
+  s.shieldBoughtDay = dayish(persisted?.shieldBoughtDay);
+  s.paidRerollDay = dayish(persisted?.paidRerollDay);
+  s.crawlGatedStop = dayish(persisted?.crawlGatedStop);
   // A debt is a count of gems: never negative, which would be a credit.
   s.gemDebt = Math.max(0, s.gemDebt);
   // The sync bookkeeping is nullable like the booster's expiry: anything
@@ -678,6 +718,15 @@ let gameState = null;
 const keepGameState = (creator) => {
   gameState = creator;
   return creator;
+};
+
+const scriptedPack = (size) => {
+  const queue = globalThis.__TEDDIES_PACK_SCRIPT;
+  if (!Array.isArray(queue) || queue.length < size) return null;
+  const cards = queue.slice(0, size).map((id) => ALL_CARDS.find((card) => card.id === id));
+  if (cards.some((card) => !card)) return null;
+  globalThis.__TEDDIES_PACK_SCRIPT = queue.slice(size);
+  return cards;
 };
 
 export const useGameStore = create(
@@ -843,7 +892,10 @@ export const useGameStore = create(
           lastServerCredit = {
             serverBalance, ownerUserId: state.ownerUserId, toDebt: delta - toBalance, toBalance,
           };
-          set({ ...credit, lastSyncedServerGems: serverBalance });
+          // The first time bought gems land, the house adds one saved-deck
+          // slot. It is a shelf, not a card.
+          const bonus = state.firstConvenience ? {} : { firstConvenience: true, bonusDeckSlot: true };
+          set({ ...credit, ...bonus, lastSyncedServerGems: serverBalance });
         } else if (delta < 0) {
           // The server total moved DOWN. Only one thing moves it down:
           // reverse_gem_purchase, the refund/chargeback clawback
@@ -1118,9 +1170,14 @@ export const useGameStore = create(
         set((state) => ({ currentDeck: cardIds.filter(id => state.ownedCards.includes(id)) })),
 
       saveDeck: (name, cardIds) => {
-        set((state) => ({
-          savedDecks: [...state.savedDecks.filter(d => d.name !== name), { name, cards: cardIds }]
+        const state = get();
+        const cap = deckSlotsFor(state.totalWins || 0, state.decksUnlocked === true, state.bonusDeckSlot === true);
+        const replacing = state.savedDecks.some((deck) => deck.name === name);
+        if (!replacing && state.savedDecks.length >= cap) return false;
+        set((s) => ({
+          savedDecks: [...s.savedDecks.filter(d => d.name !== name), { name, cards: cardIds }]
         }));
+        return true;
       },
 
       deleteDeck: (name) => {
@@ -1204,6 +1261,29 @@ export const useGameStore = create(
         if (dailyReset) newClaimedChallenges = newClaimedChallenges.filter(id => !id.startsWith('d'));
         if (weeklyReset) newClaimedChallenges = newClaimedChallenges.filter(id => !id.startsWith('w'));
 
+        const beforeCrawl = crawlStatus(state, weekKey);
+        const afterCrawl = crawlStatus({
+          ...state,
+          totalBattles: newTotalBattles,
+          weekBattles: newWeekBattles,
+          weekWins: newWeekWins,
+          weekDamage: newWeekDamage,
+          weekCards: newWeekCards,
+        }, weekKey);
+        const newlyMet = afterCrawl.stops.find((stop, i) => stop.met && !beforeCrawl.stops[i].met);
+        let nextTimer = state.crawlTimer === true;
+        let nextGate = state.crawlGateUntil || 0;
+        let nextGated = state.crawlGatedStop || null;
+        if (weeklyReset) {
+          nextTimer = true;
+          nextGate = 0;
+          nextGated = null;
+        }
+        if (nextTimer && newlyMet && nextGate <= Date.now()) {
+          nextGate = Date.now() + CRAWL_STOP_WAIT_MS;
+          nextGated = newlyMet.id;
+        }
+
         set({
           // All-time
           totalBattles: newTotalBattles,
@@ -1235,6 +1315,9 @@ export const useGameStore = create(
           eventSpent: nextSpent,
           // Re-claimable challenges after a period rollover
           claimedChallenges: newClaimedChallenges,
+          crawlTimer: nextTimer,
+          crawlGateUntil: nextGate,
+          crawlGatedStop: nextGated,
         });
 
         const baseXp = won ? BATTLE_XP.win : BATTLE_XP.loss;
@@ -1444,7 +1527,10 @@ export const useGameStore = create(
         if (!row?.complete) return null;
         if (state.claimedSets.includes(setId)) return null;
         set({ claimedSets: [...state.claimedSets, setId] });
-        if (row.reward.coins) get().addCoins(row.reward.coins);
+        if (row.reward.coins) {
+          get().addCoins(row.reward.coins);
+          set((s) => ({ packCoinBack: (s.packCoinBack || 0) + row.reward.coins }));
+        }
         if (row.reward.packs) get().addCardPack(row.reward.packs);
         return { ...row.reward };
       },
@@ -1480,12 +1566,90 @@ export const useGameStore = create(
         const state = get();
         if ((state.totalBattles || 0) < CRAWL_UNLOCK_BATTLES) return null;
         const key = weekKeyOf(new Date());
-        const status = crawlStatus(state, key);
-        if (!status.done || status.claimed) return null;
+        const status = crawlBoard(state, new Date());
+        if (!status.done || status.claimed || status.waiting) return null;
         set({ crawlClaimedWeek: key });
         if (status.reward.coins) get().addCoins(status.reward.coins);
         if (status.reward.packs) get().addCardPack(status.reward.packs);
         return { ...status.reward };
+      },
+
+      skipCrawlTimer: () => {
+        const state = get();
+        const now = new Date();
+        const today = now.toDateString();
+        const board = crawlBoard(state, now);
+        if (!board.waiting) return { ok: false, reason: 'clear' };
+        const skips = state.skipDay === today ? state.skipsToday : 0;
+        if (skips >= CRAWL_SKIPS_PER_DAY) return { ok: false, reason: 'cap' };
+        if (state.gems < board.skipGems) return { ok: false, reason: 'short' };
+        set({
+          gems: state.gems - board.skipGems,
+          crawlGateUntil: 0,
+          skipDay: today,
+          skipsToday: skips + 1,
+        });
+        syncConvenience(`crawl-${today}-${skips}`, 'crawl_skip');
+        return { ok: true, gems: board.skipGems };
+      },
+
+      buyConvenience: (id) => {
+        const item = convenienceById(id);
+        if (!item) return { ok: false, reason: 'unknown' };
+        const state = get();
+        const today = new Date().toDateString();
+        if (state.gems < item.gems) return { ok: false, reason: 'short' };
+        if (id === 'instant_open') {
+          if (state.instantOpen) return { ok: false, reason: 'owned' };
+          set({ gems: state.gems - item.gems, instantOpen: true });
+        } else if (id === 'deck_slots') {
+          if (state.decksUnlocked) return { ok: false, reason: 'owned' };
+          set({ gems: state.gems - item.gems, decksUnlocked: true });
+        } else if (id === 'storage') {
+          if (state.storageUnlocked) return { ok: false, reason: 'owned' };
+          set({ gems: state.gems - item.gems, storageUnlocked: true });
+        } else if (id === 'streak_shield') {
+          if (state.streakShields >= 1) return { ok: false, reason: 'full' };
+          if (state.shieldBoughtDay === today) return { ok: false, reason: 'cap' };
+          set({ gems: state.gems - item.gems, streakShields: 1, shieldBoughtDay: today });
+        } else {
+          return { ok: false, reason: 'unknown' };
+        }
+        syncConvenience(`${id}-${today}`, id);
+        return { ok: true };
+      },
+
+      // A reroll past the free one. Same swap the free reroll would make.
+      // Three a day, priced in gems, and it does not change the quest's reward.
+      buyQuestReroll: (period, fromId) => {
+        const state = get();
+        const today = new Date().toDateString();
+        const used = state.paidRerollDay === today ? state.paidRerollsToday : 0;
+        if (used >= PAID_REROLLS_PER_DAY) return null;
+        if (state.gems < REROLL_GEMS) return null;
+        const date = new Date();
+        const weekly = period === 'weekly';
+        if (period !== 'daily' && !weekly) return null;
+        const view = visibleChallenges(state, date);
+        const shown = weekly ? view.weekly : view.daily;
+        const target = shown.find((challenge) => challenge.id === fromId);
+        if (!target) return null;
+        const pool = weekly ? WEEKLY_POOL : DAILY_POOL;
+        const key = weekly ? weekKeyOf(date) : today;
+        const swap = replacementFor(pool, shown, fromId, `paid|${key}|${used}`);
+        if (!swap) return null;
+        const prev = normalizeRerolls(state.questRerolls);
+        const next = weekly
+          ? { ...prev, weeklyKey: key, weeklyUsed: 1, weeklySwap: swap }
+          : { ...prev, dailyKey: key, dailyUsed: 1, dailySwap: swap };
+        set({
+          gems: state.gems - REROLL_GEMS,
+          questRerolls: next,
+          paidRerollDay: today,
+          paidRerollsToday: used + 1,
+        });
+        syncConvenience(`reroll-${today}-${used}`, 'quest_reroll');
+        return swap;
       },
 
       // Spend the dupe price to take one more card in the set home again.
@@ -1577,57 +1741,99 @@ export const useGameStore = create(
       openCardPack: (requestedType = 'regular') => {
         // Atomically claim exactly one pack inside a single update so rapid
         // double-clicks can't open two packs or drive a counter negative.
-        // Resolve the requested type if available, else fall back to any pack
-        // (legendary > premium > regular).
+        // The daily open cap is checked in that same update: a second tap
+        // cannot slip a pack out past it. Instant open is the gem skip.
         const field = { legendary: 'legendaryPacks', premium: 'premiumPacks', regular: 'cardPacks' };
+        const today = new Date().toDateString();
         let packType = null;
+        let blocked = false;
         set((s) => {
           for (const t of [requestedType, 'legendary', 'premium', 'regular']) {
             const key = field[t];
             if (key && s[key] > 0) {
               packType = t;
+              if (!openAllowed({
+                earnedOpensToday: s.earnedOpensToday,
+                earnedOpensDay: s.earnedOpensDay,
+                today,
+                instant: s.instantOpen === true,
+              })) {
+                blocked = true;
+                return {};
+              }
               return { [key]: s[key] - 1 };
             }
           }
           return {};
         });
-        if (!packType) return null; // No packs available
+        if (!packType) return null;
+        if (blocked) return { blocked: 'cap', cards: [], dupeCoins: 0 };
 
         const state = get();
-
-        // The first card rolls on its tier's table (that IS what the Premium
-        // and Legendary packs are sold on); the rest roll on the standard one.
         const slots = PACK_SLOTS[packType];
-        const pulledCards = [];
-
-        for (let i = 0; i < slots.size; i++) {
-          const rarity = rollRarity(PACK_ODDS[i === 0 ? slots.first : 'standard']);
-
-          let cardsOfRarity = ALL_CARDS.filter(c => c.rarity === rarity);
-
-          // Fallback: if no cards exist for this rarity, try lower rarities
-          if (cardsOfRarity.length === 0) {
-            const rarityFallback = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
-            const currentIndex = rarityFallback.indexOf(rarity);
-            for (let j = currentIndex + 1; j < rarityFallback.length; j++) {
-              cardsOfRarity = ALL_CARDS.filter(c => c.rarity === rarityFallback[j]);
-              if (cardsOfRarity.length > 0) break;
-            }
-          }
-
-          // If still no cards found, skip this slot (shouldn't happen with proper card pool)
-          if (cardsOfRarity.length === 0) continue;
-
-          const randomCard = cardsOfRarity[Math.floor(Math.random() * cardsOfRarity.length)];
-          pulledCards.push({
-            ...randomCard,
-            isNew: !state.ownedCards.includes(randomCard.id) && !pulledCards.find(pc => pc.id === randomCard.id),
+        const script = scriptedPack(slots.size);
+        let rolledCards;
+        let nextPity = state.packPity || 0;
+        if (script) {
+          rolledCards = script;
+        } else {
+          const rolled = rollPack({
+            size: slots.size,
+            table: PACK_ODDS.standard,
+            rng: Math.random,
+            pity: nextPity,
+            cardsByRarity: cardsByRarity(ALL_CARDS),
           });
+          rolledCards = rolled.cards;
+          nextPity = rolled.pity;
         }
 
-        const dupeCoins = get().addCards(pulledCards.map(c => c.id));
-
-        return { cards: pulledCards, dupeCoins };
+        const ownedBefore = new Set(state.ownedCards);
+        const storage = storageSlotsFor(state.totalWins || 0, state.storageUnlocked === true, ALL_CARDS.length);
+        const soldToday = state.sellbackDay === today ? state.sellbackToday : 0;
+        const settled = settlePull({
+          cards: rolledCards,
+          owned: ownedBefore,
+          soldToday,
+          storageLeft: Math.max(0, storage - ownedBefore.size),
+        });
+        const openNo = (state.packOpens || 0) + 1;
+        let dupeCoins = settled.coins + bonusForOpen(openNo);
+        if (state.packStreakDay !== today) {
+          dupeCoins += streakCoins(Math.min(7, Math.max(1, state.consecutiveLogins || 1)));
+        }
+        const seenNew = new Set();
+        const pulledCards = rolledCards.map((card) => {
+          const isNew = settled.keptIds.includes(card.id) && !ownedBefore.has(card.id) && !seenNew.has(card.id);
+          if (isNew) seenNew.add(card.id);
+          return { ...card, isNew };
+        });
+        const fresh = settled.keptIds.filter((id) => !ownedBefore.has(id));
+        set({
+          ownedCards: [...settled.owned],
+          coins: state.coins + dupeCoins,
+          weekNewCards: state.weekNewCards + fresh.length,
+          packPity: nextPity,
+          packOpens: openNo,
+          packCoinBack: (state.packCoinBack || 0) + dupeCoins,
+          sellbackToday: settled.soldToday,
+          sellbackDay: today,
+          earnedOpensToday: (state.earnedOpensDay === today ? state.earnedOpensToday : 0) + 1,
+          earnedOpensDay: today,
+          packStreakDay: today,
+        });
+        if (fresh.length > 0) {
+          const n = settled.owned.size;
+          get().checkAchievement('collect_20', n >= 20);
+          get().checkAchievement('collect_40', n >= 40);
+          get().checkAchievement('collect_55', n >= 55);
+          get().checkAchievement('collect_all', n >= ALL_CARDS.length);
+        }
+        const nonce = `pack-${openNo}-${today.replace(/\s/g, '')}`;
+        syncPackOpen(nonce, packType, pulledCards.map((c) => c.id), dupeCoins, (delta) => {
+          get().addCoins(delta);
+        });
+        return { cards: pulledCards, dupeCoins, pity: nextPity };
       },
 
       // Helper to get total available packs of all types
@@ -1645,6 +1851,21 @@ export const useGameStore = create(
         return null;
       },
 
+      // Every pack on the shelf, in the order a one-by-one open would take
+      // them. Instant open is what allows it. The rolls are the same rolls.
+      openAllPacks: () => {
+        if (get().instantOpen !== true) return null;
+        const opened = [];
+        for (let i = 0; i < 40; i += 1) {
+          const next = get().getNextPackType();
+          if (!next) break;
+          const result = get().openCardPack(next);
+          if (!result || result.blocked) break;
+          opened.push(result);
+        }
+        return opened;
+      },
+
       buyShopItem: (itemId) => {
         const state = get();
         const item = SHOP_ITEMS.find(i => i.id === itemId);
@@ -1652,7 +1873,8 @@ export const useGameStore = create(
 
         if (item.currency === 'coins') {
           if (state.coins < item.price) return { success: false, message: "Not enough coins" };
-          set({ coins: state.coins - item.price });
+          const spentPack = item.type === 'pack' ? item.price : 0;
+          set({ coins: state.coins - item.price, packCoinSpent: (state.packCoinSpent || 0) + spentPack });
         } else if (item.currency === 'gems') {
           if (state.gems < item.price) return { success: false, message: "Not enough gems" };
           set({ gems: state.gems - item.price });

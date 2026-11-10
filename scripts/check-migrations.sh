@@ -1638,4 +1638,89 @@ BEGIN
 END $$;
 SQL
 
+  RAISE NOTICE 'retention mark assertions passed';
+END $$;
+SQL
+
+echo "==> Pack economy: same sell-back, no cash-out, idempotent shortcuts"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_buyer UUID := 'a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a1a1';
+  v_other UUID := 'b2b2b2b2-b2b2-42b2-82b2-b2b2b2b2b2b2';
+  v_row   JSONB;
+  v_gems  INTEGER;
+  v_sold  INTEGER;
+BEGIN
+  INSERT INTO auth.users (id) VALUES (v_buyer), (v_other) ON CONFLICT DO NOTHING;
+  INSERT INTO public.user_gems (user_id, gems) VALUES (v_buyer, 100)
+  ON CONFLICT (user_id) DO UPDATE SET gems = 100;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'settle_pack_open'
+      AND has_function_privilege('anon', p.oid, 'EXECUTE')
+  ) THEN
+    RAISE EXCEPTION 'anon can EXECUTE settle_pack_open';
+  END IF;
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_buyer::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+
+  v_row := public.settle_pack_open('pack-nonce-1', 'regular', ARRAY[1]);
+  IF (v_row->>'coins')::int <> 0 THEN
+    RAISE EXCEPTION 'a new card paid % coins', v_row->>'coins';
+  END IF;
+  v_row := public.settle_pack_open('pack-nonce-2', 'premium', ARRAY[1]);
+  IF (v_row->>'coins')::int <> 15 THEN
+    RAISE EXCEPTION 'a duplicate common paid %', v_row->>'coins';
+  END IF;
+  v_row := public.settle_pack_open('pack-nonce-2', 'legendary', ARRAY[20]);
+  IF (v_row->>'replay')::boolean IS NOT TRUE OR (v_row->>'coins')::int <> 15 THEN
+    RAISE EXCEPTION 'replay changed the receipt %', v_row;
+  END IF;
+
+  RESET ROLE;
+  SELECT sellback_coins INTO v_sold FROM public.pack_wallet WHERE user_id = v_buyer;
+  IF v_sold <> 15 THEN RAISE EXCEPTION 'sell-back was counted twice: %', v_sold; END IF;
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_buyer::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    PERFORM public.settle_pack_open('pack-nonce-3', 'regular', ARRAY[99999]);
+    RAISE EXCEPTION 'an unknown card was priced';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL;
+  END;
+
+  v_row := public.buy_convenience('conv-nonce-1', 'instant_open');
+  IF (v_row->>'gems')::int <> 80 THEN RAISE EXCEPTION 'instant open priced %', v_row; END IF;
+  v_row := public.buy_convenience('conv-nonce-1', 'instant_open');
+  IF (v_row->>'replay')::boolean IS NOT TRUE THEN RAISE EXCEPTION 'shortcut replay charged again'; END IF;
+  BEGIN
+    PERFORM public.buy_convenience('conv-nonce-2', 'instant_open');
+    RAISE EXCEPTION 'instant open was sold twice';
+  EXCEPTION WHEN SQLSTATE 'PT403' THEN NULL;
+  END;
+  BEGIN
+    PERFORM public.buy_convenience('conv-nonce-3', 'cash_out');
+    RAISE EXCEPTION 'a cash-out sku was accepted';
+  EXCEPTION WHEN invalid_parameter_value THEN NULL;
+  END;
+
+  RESET ROLE;
+  SELECT gems INTO v_gems FROM public.user_gems WHERE user_id = v_buyer;
+  IF v_gems <> 20 THEN RAISE EXCEPTION 'gems were not 80 less, or were refunded: %', v_gems; END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'user_gems' AND column_name = 'withdrawable'
+  ) THEN
+    RAISE EXCEPTION 'gems grew a withdrawable balance';
+  END IF;
+
+  RAISE NOTICE 'pack economy assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"

@@ -336,11 +336,11 @@ describe('openCardPack atomicity', () => {
     expect(get().cardPacks).toBe(0);
   });
 
-  it('legendary pack pulls 10 with a guaranteed legendary first and consumes one', () => {
+  it('legendary pack pulls 10 cards on the shared table and consumes one', () => {
     useGameStore.setState({ cardPacks: 0, premiumPacks: 0, legendaryPacks: 1 });
     const { cards } = get().openCardPack('legendary');
     expect(cards).toHaveLength(10);
-    expect(cards[0].rarity).toBe('legendary');
+    expect(PACK_SLOTS.legendary.first).toBe('standard');
     expect(get().legendaryPacks).toBe(0);
   });
 
@@ -401,10 +401,6 @@ describe('pack odds: openCardPack rolls on PACK_ODDS', () => {
     expect(rollRarity(std, 50.99)).toBe('uncommon');
     expect(rollRarity(std, 51)).toBe('common');
     expect(rollRarity(std, 99.99)).toBe('common');
-    // Premium's first card: 5 / 25.
-    expect(rollRarity(PACK_ODDS.premiumFirst, 4.99)).toBe('legendary');
-    expect(rollRarity(PACK_ODDS.premiumFirst, 5)).toBe('epic');
-    expect(rollRarity(PACK_ODDS.premiumFirst, 25)).toBe('rare');
   });
 
   it('every table sums to 100, so each weight IS its posted percentage', () => {
@@ -420,13 +416,11 @@ describe('pack odds: openCardPack rolls on PACK_ODDS', () => {
     expect(cards.map((c) => c.rarity)).toEqual(Array(PACK_SLOTS.regular.size).fill('epic'));
   });
 
-  it("a retuned first-card table changes a Premium pack's first card only", () => {
-    retune('premiumFirst', [['legendary', 100]]);
+  it('a premium pack rolls the same table as a card pack', () => {
     retune('standard', [['common', 100]]);
     useGameStore.setState({ cardPacks: 0, premiumPacks: 1, legendaryPacks: 0 });
     const { cards } = get().openCardPack('premium');
-    expect(cards[0].rarity).toBe('legendary');
-    expect(cards.slice(1).every((c) => c.rarity === 'common')).toBe(true);
+    expect(cards.every((c) => c.rarity === 'common')).toBe(true);
   });
 
   it('pack sizes come from PACK_SLOTS', () => {

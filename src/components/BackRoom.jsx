@@ -3,7 +3,7 @@ import { DoorOpen } from 'lucide-react';
 import { useGameStore } from '../stores/gameStore';
 import { eventAt } from '@/lib/houseEvents';
 import { weekKeyOf } from '@/lib/questReroll';
-import { crawlStatus } from '@/lib/barCrawl';
+import { crawlBoard } from '@/lib/convenience';
 import { catchUpFor } from '@/lib/catchUp';
 import { storyChapters } from '@/lib/storyCampaign';
 import { LEVEL_TRACK, levelMark } from '@/lib/levelTrack';
@@ -48,7 +48,7 @@ const BackRoom = ({ onClose }) => {
   const now = new Date();
   const live = eventAt(now);
   const weekKey = weekKeyOf(now);
-  const crawl = crawlStatus(store, weekKey);
+  const crawl = crawlBoard(store, now);
   const chapters = storyChapters(store);
   const offer = catchUpFor(store, now, weekKey);
   const unlocks = houseUnlocks(store);
@@ -101,6 +101,15 @@ const BackRoom = ({ onClose }) => {
                       </li>
                     ))}
                   </ul>
+                  {crawl.waiting && (
+                    <Action onClick={() => {
+                      const skipped = store.skipCrawlTimer();
+                      say(skipped.ok ? `Walk skipped. ${skipped.gems} gems. The stops did not get easier.` : 'The walk stays.');
+                    }}
+                    >
+                      {`Skip the walk · ${crawl.skipGems} gems`}
+                    </Action>
+                  )}
                   {crawl.done && !crawl.claimed && (
                     <Action brass onClick={() => {
                       const paid = store.claimBarCrawl();

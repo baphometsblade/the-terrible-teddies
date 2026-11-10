@@ -22,6 +22,11 @@ async function seed(page, patch) {
     const stored = raw ? JSON.parse(raw) : { state: {}, version: 3 };
     Object.assign(stored.state, p);
     localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
+    // Legendary packs no longer guarantee a legendary. The reveal tests that
+    // watch the gold card get a scripted pull, which the store consumes once.
+    if ((p.legendaryPacks || 0) > 0) {
+      window.__TEDDIES_PACK_SCRIPT = [1, 2, 3, 4, 5, 6, 7, 8, 9, 20];
+    }
   }, patch);
   await page.reload();
   await expect(page.getByRole('button', { name: 'Battle', exact: true })).toBeVisible(SLOW);
@@ -473,7 +478,8 @@ test("the Shop's odds open in their own dialog, and Escape closes only that", as
   for (const tier of ['Card Pack', 'Premium Pack', 'Legendary Pack']) {
     await expect(odds.getByRole('region', { name: tier })).toBeVisible();
   }
-  await expect(odds.getByRole('region', { name: 'Premium Pack' })).toContainText('First card');
+  await expect(odds.getByRole('region', { name: 'Premium Pack' })).toContainText('Every card');
+  await expect(odds).toContainText('same odds');
   await page.keyboard.press('Escape');
   await expect(odds).toHaveCount(0);
   await expect(shop).toBeVisible();

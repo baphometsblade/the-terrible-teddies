@@ -349,10 +349,12 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
     // The "Set as Current Deck" button calls this too, and must never
     // perform a named save just because a stale name lingers in state.
     if (showSaveDialog && deckName.trim()) {
-      saveDeck(deckName.trim(), cardIds);
+      const saved = saveDeck(deckName.trim(), cardIds);
       setShowSaveDialog(false);
       setDeckName('');
-      toast({ title: "Got their number", description: `"${deckName.trim()}" saved.` });
+      toast(saved === false
+        ? { title: "The shelf is full", description: "Win a few more, or buy the extra slots. The battle deck is unchanged.", variant: "destructive" }
+        : { title: "Got their number", description: `"${deckName.trim()}" saved.` });
     } else {
       toast({ title: "Stories straight", description: "Current deck updated." });
     }

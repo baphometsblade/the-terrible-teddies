@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { PACK_ODDS, PACK_SLOTS } from '@/stores/gameStore';
+import { SELLBACK_RATE } from '@/lib/packEconomy';
 import { RARITY, RARITY_METAL, RARITY_ORDER } from '@/lib/rarity';
 import { useDialog } from '@/hooks/useDialog';
 import { SCRIM_PAD } from '@/lib/safeArea';
@@ -61,13 +62,11 @@ export const OddsRow = ({ rows, className = '' }) => (
 );
 
 /**
- * The Card Packs drop-rate guide: the standard table once, then each better
- * tier's first card. The guaranteed slot IS what those tiers are sold on, so
- * posting the standard table alone understated exactly what was being paid for.
+ * The Card Packs drop-rate guide. Gem packs and earned packs share this
+ * table, the pity timer and the sell-back, so it is posted once and said so.
  */
 export const PackOddsGuide = () => {
   const standard = describePackOdds('regular');
-  const better = TIERS.filter((t) => PACK_SLOTS[t].first !== 'standard').map((t) => describePackOdds(t));
   return (
     <div className="text-center">
       <h3 className="label-caps tracking-[0.1em] sm:tracking-[0.16em] text-plush-300 mb-2.5">Drop rates — per card</h3>
@@ -76,18 +75,10 @@ export const PackOddsGuide = () => {
           {`${TIER_NAME.regular} · every card`}
         </dt>
         <dd><OddsRow rows={standard.lines[0].rows} /></dd>
-        {better.map((d) => (
-          <div key={d.tier} className="contents">
-            <dt className="text-[11px] font-semibold text-plush-200">{`${TIER_NAME[d.tier]} · first card`}</dt>
-            <dd>
-              <OddsRow rows={d.lines[0].rows} />
-              <span className="block mt-0.5 text-[11px] text-plush-300">
-                {`${d.lines[1].label} as a ${TIER_NAME.regular} · ${d.size} cards in all`}
-              </span>
-            </dd>
-          </div>
-        ))}
       </dl>
+      <p className="mx-auto mt-2 max-w-md text-[11px] leading-relaxed text-plush-300">
+        Premium Pack and Legendary Pack use these same odds, the same pity and the same sell-back. Gems buy time, not better cards.
+      </p>
     </div>
   );
 };
@@ -147,8 +138,7 @@ export const PackOddsDialog = ({ onClose }) => {
           })}
         </div>
         <p className="mt-4 text-xs leading-relaxed text-plush-300">
-          Every card is rolled on its own. Within a rarity each card is equally likely, and a card you
-          already own pays out coins instead.
+          {`Every card is rolled on this one table, whichever pack you bought. A rare or better lands at least every ${10} packs. Duplicates sell back at ${Math.round(SELLBACK_RATE * 100)}% of the bar price, less after the day’s cap. Every 6th pack pays a coin bonus. Gem packs use these same odds, the same pity and the same sell-back. They do not roll better cards.`}
         </p>
       </div>
     </div>
