@@ -2344,6 +2344,32 @@ BEGIN
   EXECUTE 'RESET ROLE';
   EXECUTE 'REVOKE SELECT ON public.push_outbox FROM authenticated';
 
+  -- Subscriptions stay on their owner even if SELECT is granted later.
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_b::text, 'role', 'authenticated')::text, true);
+  v_json := public.save_push_subscription('https://push.example/bea', 'abcdefghij', 'klmnopqrst');
+  IF v_json->>'ok' <> 'true' THEN RAISE EXCEPTION 'could not save a subscription: %', v_json; END IF;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  PERFORM public.save_push_subscription('https://push.example/ada', 'abcdefghij', 'klmnopqrst');
+  EXECUTE 'GRANT SELECT ON public.push_subscriptions TO authenticated';
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO v_n FROM public.push_subscriptions;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'subscription RLS returned % rows', v_n; END IF;
+  IF EXISTS (SELECT 1 FROM public.push_subscriptions WHERE endpoint LIKE '%bea%') THEN
+    RAISE EXCEPTION 'a player read someone else''s push subscription';
+  END IF;
+  EXECUTE 'RESET ROLE';
+  EXECUTE 'REVOKE SELECT ON public.push_subscriptions FROM authenticated';
+  v_denied := FALSE;
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    PERFORM public.drop_push_endpoint('https://push.example/bea');
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_denied := TRUE;
+  END;
+  EXECUTE 'RESET ROLE';
+  IF NOT v_denied THEN RAISE EXCEPTION 'a player could prune someone else''s subscription'; END IF;
+
   RAISE NOTICE 'push notification assertions passed';
 END $$;
 SQL

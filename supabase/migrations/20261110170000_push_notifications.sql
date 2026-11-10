@@ -1,7 +1,8 @@
 -- Push notifications. Opt-in. One transaction.
 --
--- Web Push is sent by the edge function send-push (verify_jwt = true, and
--- the function itself refuses any JWT that is not the service role). A row
+-- Web Push is sent by the edge function send-push (verify_jwt = true). The
+-- function constant-time compares the bearer to the service role key, so a
+-- player's JWT cannot call it. A row
 -- in push_outbox is the job. A Database Webhook on INSERT of that table,
 -- or pg_net when it is installed and app.push_webhook_url is set, calls
 -- the function. See docs/PUSH_SETUP.md.
@@ -108,9 +109,16 @@ ALTER TABLE public.push_hourly ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.player_focus ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.player_presence ENABLE ROW LEVEL SECURITY;
 
--- The open game reads its own toasts. Nothing else is client-readable.
+-- The open game reads its own toasts. A subscription is readable only by
+-- its owner, and only if a later GRANT appears. Clients are not granted
+-- the table: save and delete go through functions that bind auth.uid().
 DROP POLICY IF EXISTS push_inbox_own ON public.push_inbox;
 CREATE POLICY push_inbox_own ON public.push_inbox
+  FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS push_subscriptions_own ON public.push_subscriptions;
+CREATE POLICY push_subscriptions_own ON public.push_subscriptions
   FOR SELECT TO authenticated
   USING (auth.uid() = user_id);
 
