@@ -29,9 +29,6 @@ const AchievementBadge = ({ achievement, unlocked }) => {
   );
 };
 
-// The avatar ring the menu's player chip wears.
-const AVATAR_RING = 'linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24)';
-
 // Module scope (not inside PlayerStats), so a re-render updates the tiles in
 // place instead of remounting them. The icon carries the colour; the number
 // stays white so the grid reads as one set.
@@ -75,7 +72,7 @@ const PlayerStats = ({ onClose }) => {
     playerName, setPlayerName, level, xp, getXPForNextLevel, equippedLine,
     coins, gems, totalWins, totalLosses, currentWinStreak, bestWinStreak,
     totalDamageDealt, totalHealingDone, totalBattles, ownedCards,
-    completedAchievements, consecutiveLogins, equippedTitle, equipTitle,
+    completedAchievements, consecutiveLogins, equippedTitle, equipTitle, equippedAvatar,
   } = useGameStore();
 
   const [editingName, setEditingName] = useState(false);
@@ -188,8 +185,8 @@ const PlayerStats = ({ onClose }) => {
           <div className="flex flex-col items-center gap-3 text-center md:flex-row md:gap-4 md:pr-14 md:text-left">
             <div
               aria-hidden="true"
-              className="h-16 w-16 shrink-0 rounded-full p-[3px] shadow-[0_8px_20px_-8px_rgba(0,0,0,0.8)] md:h-[72px] md:w-[72px]"
-              style={{ background: AVATAR_RING }}
+              className="avatar-ring h-16 w-16 shrink-0 rounded-full p-[3px] shadow-[0_8px_20px_-8px_rgba(0,0,0,0.8)] md:h-[72px] md:w-[72px]"
+              data-avatar={equippedAvatar}
             >
               <div className="grid h-full w-full place-items-center rounded-full bg-night-800 text-3xl md:text-4xl">🧸</div>
             </div>
