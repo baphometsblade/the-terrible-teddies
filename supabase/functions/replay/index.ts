@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
 import { playLog } from "../../../src/lib/replay/codec.js";
+import { userIdFromAuth } from "../_shared/jwt.ts";
 
 const url = Deno.env.get("SUPABASE_URL") ?? "";
 const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -23,13 +24,7 @@ function cors(origin: string | null) {
 }
 
 async function userId(header: string | null) {
-  if (!header?.startsWith("Bearer ")) return null;
-  const client = createClient(url, anon, {
-    global: { headers: { Authorization: header } },
-    auth: { persistSession: false },
-  });
-  const { data } = await client.auth.getUser();
-  return data.user?.id || null;
+  return userIdFromAuth(header, anon, url);
 }
 
 serve(async (req) => {
