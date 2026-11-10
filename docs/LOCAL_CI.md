@@ -73,6 +73,10 @@ The steps, matching the GitHub workflow, are:
    installing the Chromium browser
 7. The `e2e-prod` job: build with the test `VITE_SUPABASE_URL` and
    `VITE_SUPABASE_ANON_KEY`, then `E2E_PREVIEW=1 npx playwright test smoke.spec.js`
+
+Playwright listens on `127.0.0.1:8090` by default. If that port is already
+in use, set `E2E_PORT` to a free port instead of killing the process that
+owns 8090.
 8. `./scripts/check-migrations.sh` against a throwaway PostgreSQL 16
 9. Lighthouse, only if you passed `--lighthouse` or `--step lighthouse`
 

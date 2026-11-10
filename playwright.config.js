@@ -7,6 +7,8 @@ import { defineConfig, devices } from '@playwright/test';
  * project, and every network call to it is stubbed inside the tests
  * (see e2e/smoke.spec.js), so no .env file or real backend is needed.
  */
+const e2ePort = process.env.E2E_PORT || '8090';
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -14,7 +16,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:8090',
+    baseURL: `http://127.0.0.1:${e2ePort}`,
     trace: 'off',
     // The app honors this via <MotionConfig reducedMotion="user">, so parallel
     // workers run without the continuous Framer Motion animations — lighter CPU
@@ -32,7 +34,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // Port 8090 on IPv4 — the repo's default dev port (8080) may be in use.
+    // Port 8090 on IPv4 by default (override with E2E_PORT) — the repo's default dev port (8080) may be in use.
     //
     // E2E_PREVIEW=1 serves a prebuilt dist/ via `vite preview` instead of the
     // dev server, so the suite also exercises the minified production bundle
@@ -41,9 +43,9 @@ export default defineConfig({
     // done first with the VITE_ vars below baked in; `vite preview` reads those
     // baked values, so the env block here only affects the dev-server path.
     command: process.env.E2E_PREVIEW
-      ? 'npx vite preview --host 127.0.0.1 --port 8090'
-      : 'npx vite --host 127.0.0.1 --port 8090',
-    url: 'http://127.0.0.1:8090',
+      ? `npx vite preview --host 127.0.0.1 --port ${e2ePort}`
+      : `npx vite --host 127.0.0.1 --port ${e2ePort}`,
+    url: `http://127.0.0.1:${e2ePort}`,
     reuseExistingServer: false,
     timeout: 120_000,
     env: {
