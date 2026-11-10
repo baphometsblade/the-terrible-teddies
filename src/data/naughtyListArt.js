@@ -5,13 +5,13 @@
 export const NAUGHTY_LIST_ART = {
   'xm-desk': {
     fur: 'pitch-black',
-    visual: 'adult plush bear peeking from under a desk, pencil skirt, red lace garter, one kicked-off stiletto',
-    scene: 'Low under-desk angle in the mahogany kneehole, fairy-light spill, Uma peeking toward the lens.',
+    visual: 'adult plush bear peeking from under a desk among tangled cables and fairy lights, a tiny doll stiletto on the carpet',
+    scene: 'Floor-level shot into a mahogany kneehole, monitor-blue spill and gold fairy lights, Uma peeking out.',
   },
   'xm-reply': {
     fur: 'printer-paper white',
-    visual: 'adult plush bear, toner smudges, undone blouse, phone glow, photocopier spitting identical teddies',
-    scene: 'High copy-room angle under harsh fluorescents, a tinsel-taped copier trailing Rita copies.',
+    visual: 'adult plush bear mid-panic, paws to her head, glowing laptop, a blizzard of blank envelopes in the air',
+    scene: 'Dutch tilt in a dark cubicle, cold laptop light, toner-smudged Rita in a flood of mail.',
   },
   'xm-ozzy': {
     fur: 'bourbon-amber',
@@ -29,14 +29,14 @@ export const NAUGHTY_LIST_ART = {
     scene: 'High over a steaming cut-glass punchbowl on a sticky banquet table, nutmeg in the air.',
   },
   'xm-elf': {
-    fur: 'forest-green',
-    visual: 'grown adult plush bear, elf costume off one shoulder, striped stockings, punch card, pole',
-    scene: 'Low stage-front shot on a cheap North-Pole dive stage, time clock punched OUT, tip jar.',
+    fur: 'cream-tan',
+    visual: 'grown adult plush bear in a rumpled green elf costume and slouched hat, raising a pint under a punch clock',
+    scene: 'Straight-on workplace shot at a wall punch clock, forest-green costume, beer amber highlight, no typography on the housing.',
   },
   'xm-secret': {
     fur: 'kraft-paper brown',
-    visual: 'adult plush bear, crooked too-small Santa hat, lumpy present, gift tag crossed out and rewritten',
-    scene: 'Flash snapshot under a sparse desk tree, mixed-up Secret Santa gifts, the swapped tag in front.',
+    visual: 'adult plush bear in a tiny trench coat and sunglasses, handing over a bottle-shaped wrapped parcel',
+    scene: 'Low noir angle in a wet brick alley, sodium lamp and steam, a clandestine Secret Santa handoff.',
   },
   'xm-mistletoe': {
     fur: 'berry-red',
