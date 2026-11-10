@@ -3,7 +3,7 @@ import { HOUSE_RULES } from '@/lib/houseRules';
 import { mvpLine } from '@/lib/matchNight';
 import { newActionId, POLL_MS, pvpPost, watchViews } from '@/lib/pvp/client';
 import { cardsFor, knownDeck } from '@/lib/pvp/decks';
-import { fieldingProblem, isCardAvailable } from '@/lib/collectiblePool';
+import { isCardAvailable, refreshPackSeasons } from '@/lib/seasons';
 import { toGhostId } from '@/lib/social/ghostDeck';
 import { drawGhost, slipUrl, ticketFrom } from '@/lib/social/client';
 import { TAUNTS } from '@/lib/social/taunts';
@@ -45,16 +45,18 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
   const booked = useRef(false);
   const viewRef = useRef(null);
   const queueRef = useRef(null);
-  const [seasons, setSeasons] = useState([]);
   const [attackerId, setAttackerId] = useState(null);
   viewRef.current = view;
   queueRef.current = queue;
 
   const deck = decks[deckIndex] || decks[0];
   const ownedIds = deck?.cards || [];
-  const filedCards = cardsFor(ownedIds.map((id) => toGhostId(id)).filter((id) => id != null));
-  const deckError = knownDeck(ownedIds)
-    || fieldingProblem(filedCards, { owned: ownedCards, seasons });
+  const filedCards = cardsFor(ownedIds.map((id) => toGhostId(id)).filter((id) => id != null)) || [];
+  const ownedSet = new Set((ownedCards || []).map(String));
+  const unfieldable = filedCards.some((card) => (
+    !isCardAvailable(card.id) || !(ownedSet.has(String(card.id)) || (card.filed != null && ownedSet.has(String(card.filed))))
+  ));
+  const deckError = knownDeck(ownedIds) || (unfieldable ? 'That deck has a card you cannot field.' : null);
   const deckIds = ownedIds.map((id) => toGhostId(id)).filter((id) => id != null);
 
   useEffect(() => {
@@ -66,11 +68,7 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
   }, []);
 
   useEffect(() => {
-    let live = true;
-    supabase.from('card_seasons').select('card_ids, starts_at, ends_at').then(({ data }) => {
-      if (live && Array.isArray(data)) setSeasons(data);
-    }).catch(() => {});
-    return () => { live = false; };
+    refreshPackSeasons();
   }, []);
 
   useEffect(() => {
@@ -198,9 +196,7 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
     const drawn = await drawGhost();
     const ticket = ticketFrom(drawn);
     const cards = ticket ? cardsFor(ticket.deck) : null;
-    const closed = cards && cards.some((card) => !isCardAvailable(card, {
-      seasons, requireOwned: false,
-    }));
+    const closed = cards && cards.some((card) => !isCardAvailable(card.id));
     if (ticket && cards && !closed && onGhost) onGhost(ticket);
     else setNotice(drawn?.reason === 'empty' || closed ? 'Nobody left a deck that is in season.' : 'No ghost on the bar.');
   };

@@ -3,9 +3,10 @@
 // player functions and off for pvp-timeout, which checks PVP_CRON_SECRET.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
+import { userIdFromAuth } from "./jwt.ts";
 import { createMatch, projectFor, pvpRules, stateHash } from "../../../src/lib/combat/engine.js";
 import { cardsFor, knownDeck } from "../../../src/lib/pvp/decks.js";
-import { fieldingProblem } from "../../../src/lib/collectiblePool.js";
+import { BUNDLED_SEASON_IDS } from "../../../src/data/seasonsCatalog.js";
 import { acceptAction } from "../../../src/lib/pvp/authority.js";
 import {
   GHOST_OFFER_MS, HEARTBEAT_STALE_MS, MULLIGAN_MS, TURN_MS,
@@ -50,34 +51,44 @@ function json(body: unknown, status: number, headers: Record<string, string>) {
 }
 
 async function userId(authHeader: string | null) {
-  if (!authHeader?.startsWith("Bearer ")) return null;
-  const client = createClient(url, anon, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false },
-  });
-  const { data, error } = await client.auth.getUser();
-  if (error || !data.user) return null;
-  return data.user.id;
+  return userIdFromAuth(authHeader, anon, url);
 }
 
-const STARTERS = ['1', '2', '3', '4', '5', '6', '30', '31', '40', '41', '42'];
+const STARTERS = ["1", "2", "3", "4", "5", "6", "30", "31", "40", "41", "42"];
+
+function inPool(id: string, seasons: { card_ids?: string[]; status?: string }[]) {
+  let seasonal = BUNDLED_SEASON_IDS.has(id);
+  let active = false;
+  for (const season of seasons) {
+    if (!(season.card_ids || []).map(String).includes(id)) continue;
+    seasonal = true;
+    if (season.status === "active") active = true;
+  }
+  return !seasonal || active;
+}
+
+function owns(owned: string[], card: { id: string | number; filed?: number | null }) {
+  const have = new Set(owned.map(String));
+  return have.has(String(card.id)) || (card.filed != null && have.has(String(card.filed)));
+}
 
 async function fieldable(user: string, deckIds: number[]) {
   const problem = knownDeck(deckIds);
   if (problem) return problem;
   const cards = cardsFor(deckIds);
-  if (!cards) return 'That deck has a card the bar does not serve.';
-  const save = await rpc('pvp_save_of', { p_uid: user });
-  const owned = Array.isArray(save?.ownedCards) ? [...save.ownedCards] : [];
-  const packed = await service.from('pack_owned').select('card_id').eq('user_id', user);
+  if (!cards) return "That deck has a card the bar does not serve.";
+  const save = await rpc("pvp_save_of", { p_uid: user });
+  const owned = Array.isArray(save?.ownedCards) ? save.ownedCards.map(String) : [];
+  const packed = await service.from("pack_owned").select("card_id").eq("user_id", user);
   if (!packed.error) {
-    for (const row of packed.data || []) owned.push(row.card_id);
+    for (const row of packed.data || []) owned.push(String(row.card_id));
   }
-  const seasons = await service.from('card_seasons').select('card_ids, starts_at, ends_at');
-  const open = seasons.error ? [] : (seasons.data || []);
+  const snap = await service.rpc("open_card_pack");
+  const seasons = Array.isArray(snap.data?.seasons) ? snap.data.seasons : [];
   const hasRecord = (save && Array.isArray(save.ownedCards)) || (!packed.error && (packed.data || []).length > 0);
   const collection = hasRecord ? owned : STARTERS;
-  return fieldingProblem(cards, { owned: collection, seasons: open });
+  const blocked = cards.some((card) => !owns(collection, card) || !inPool(String(card.id), seasons));
+  return blocked ? "That deck has a card you cannot field." : null;
 }
 
 async function rpc(name: string, args: Record<string, unknown>) {

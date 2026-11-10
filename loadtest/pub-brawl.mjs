@@ -71,10 +71,10 @@ async function ensureUser(index) {
   const email = `pvp-load-${index}@teddies.test`;
   const password = `Load-${index}-Stool-99`;
   const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
-  if (created.error && !String(created.error.message).includes('already')) {
-    // A rerun finds the user by signing in.
+  if (created.error && !/already/i.test(String(created.error.message || ''))) {
+    throw new Error(created.error.message);
   }
-  const client = createClient(url, anon, { auth: { persistSession: false } });
+  const client = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
   const signed = await client.auth.signInWithPassword({ email, password });
   if (signed.error) throw new Error(signed.error.message);
   return { email, token: signed.data.session.access_token, id: signed.data.user.id, client };
@@ -117,7 +117,10 @@ async function playOne(user, role) {
     })
     .subscribe();
 
-  const deadline = Date.now() + Math.max(turnHint * 8, 20_000);
+  // A full fight of real plays. The server clock stays at its production
+  // default (90s) unless PVP_TURN_MS says otherwise. The budget is long
+  // enough for that clock, and short enough that a stuck seat is visible.
+  const deadline = Date.now() + Math.max(turnHint, 90_000) + 60_000;
   let reconnects = 0;
   let reconnectOk = 0;
   let idle = Math.random() < idleRate;
@@ -131,7 +134,7 @@ async function playOne(user, role) {
     }
     if (view?.phase === 'over') break;
     if (idle && view) {
-      await new Promise((resolve) => setTimeout(resolve, Math.min(turnHint + 500, 4000)));
+      await new Promise((resolve) => setTimeout(resolve, 800));
       idle = false;
     }
     if (dropAt === movesSent && view?.matchId) {
@@ -192,11 +195,15 @@ async function tick() {
   }).catch(() => {});
 }
 
-async function diverged() {
+async function diverged(matchIds) {
+  const wanted = new Set(matchIds.filter(Boolean));
   const { data, error } = await admin.from('pvp_matches').select('id, setup, state, state_hash').eq('status', 'finished');
   if (error) return { error: error.message, checked: 0, bad: 0 };
   let bad = 0;
+  let checked = 0;
   for (const row of data || []) {
+    if (wanted.size && !wanted.has(row.id)) continue;
+    checked += 1;
     const { data: actions } = await admin.from('pvp_actions')
       .select('intent, user_id, created_at')
       .eq('match_id', row.id)
@@ -212,7 +219,7 @@ async function diverged() {
     const played = replay(row.setup, script);
     if (!played.ok || played.hash !== row.state_hash || played.hash !== stateHash(row.state)) bad += 1;
   }
-  return { checked: (data || []).length, bad };
+  return { checked, bad };
 }
 
 async function locks() {
@@ -247,7 +254,7 @@ const reconnectOk = results.reduce((sum, row) => sum + row.reconnectOk, 0);
 const completed = results.filter((row) => row.over).length;
 const reasons = {};
 for (const row of results) if (row.reason) reasons[row.reason] = (reasons[row.reason] || 0) + 1;
-const audit = await diverged();
+const audit = await diverged(results.map((row) => row.matchId));
 
 const report = {
   players,
