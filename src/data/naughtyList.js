@@ -6,7 +6,9 @@
 // also carries a ladderId in the xm- band (181-190), at or under MAX_CARD_ID.
 
 export const NAUGHTY_LIST_CARDS = [
-  { id: 'xm-desk', ladderId: 181, art: '/cards/xm-desk.webp', artThumb: '/cards/thumbs/xm-desk.webp', name: 'Under-Desk Uma', attack: 1, defense: 2, type: 'action', cost: 1, ability: 'stealth', rarity: 'common', description: 'HR thinks she left at five. The desk, and the garter, disagree.' },
+  // 1/1. Two health in this pool pushed Lap-Dance Lila over the after-hours
+  // cap and left Crush Cora on the night-two floor.
+  { id: 'xm-desk', ladderId: 181, art: '/cards/xm-desk.webp', artThumb: '/cards/thumbs/xm-desk.webp', name: 'Under-Desk Uma', attack: 1, defense: 1, type: 'action', cost: 1, ability: 'stealth', rarity: 'common', description: 'HR thinks she left at five. The desk, and the garter, disagree.' },
   { id: 'xm-reply', ladderId: 182, art: '/cards/xm-reply.webp', artThumb: '/cards/thumbs/xm-reply.webp', name: 'Reply-All Rita', attack: 2, defense: 2, type: 'action', cost: 2, ability: 'swarm', rarity: 'common', description: 'One of her is a mistake. The rest of the thread shows up cheaper.' },
   { id: 'xm-ozzy', ladderId: 183, art: '/cards/xm-ozzy.webp', artThumb: '/cards/thumbs/xm-ozzy.webp', name: 'Open-Bar Ozzy', attack: 2, defense: 2, type: 'action', cost: 2, ability: 'fury', rarity: 'common', description: 'The open bar was a suggestion. He heard a dare and kept the glass.' },
   { id: 'xm-holly', ladderId: 184, art: '/cards/xm-holly.webp', artThumb: '/cards/thumbs/xm-holly.webp', name: 'HR Holly', attack: 1, defense: 3, type: 'action', cost: 2, ability: 'taunt', rarity: 'common', description: 'You have to talk to her. She has a form and not much else on.' },

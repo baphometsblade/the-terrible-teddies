@@ -2233,7 +2233,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
         const next = attack === c.attack ? c : { ...c, attack };
         return hungoverSwung.includes(c.instanceId) ? { ...next, pendingHangover: true } : next;
       })));
-      const oppTip = tabTip([...opponentSide.field, ...playedThisTurn]);
+      const oppTip = tabTip(opponentSide.field);
       if (oppTip) {
         setOpponentHealth((hp) => Math.min(opponentMaxHealth, hp + oppTip));
         logs.push(`The tab tops ${OPPONENT_NAME} up. +${oppTip} HP.`);

@@ -11,6 +11,7 @@ import { NAUGHTY_LIST_CARDS, NAUGHTY_LIST_SEASON, toLadderId, fromLadderId } fro
 import { fromLadderId as registryFrom, toLadderId as registryTo } from '@/data/cardRegistry';
 import { MAX_CARD_ID, deckProblem } from '@/lib/social/ladder';
 import { cardsFromIds } from '@/lib/social/ghostDeck';
+import { simulateField } from '@/utils/battleSim';
 import { thumbUrl } from '@/lib/preloadArt';
 import { normalizeStars, starCost } from '@/lib/cardStars';
 
@@ -79,5 +80,17 @@ describe('The Naughty List', () => {
     expect(registryFrom(190)).toBe('xm-santa');
     expect(fromLadderId(190)).toBe('xm-santa');
     expect(registryFrom(200)).toBe('hd-luxe');
+  });
+
+  it('keeps every new card between 45% and 58% over the field', () => {
+    const { rows } = simulateField({ games: 2400, seed: 20261107, deckSize: 10 });
+    const ids = new Set(NAUGHTY_LIST_CARDS.map((card) => card.id));
+    const mine = rows.filter((row) => ids.has(row.id));
+    expect(mine).toHaveLength(NAUGHTY_LIST_CARDS.length);
+    const report = mine.map((row) => `${row.name} ${(row.rate * 100).toFixed(1)}% (${row.wins}/${row.games})`).join('\n');
+    for (const row of mine) {
+      expect(row.rate, `${row.name} is outside 45–58%.\n${report}`).toBeGreaterThanOrEqual(0.45);
+      expect(row.rate, `${row.name} is outside 45–58%.\n${report}`).toBeLessThanOrEqual(0.58);
+    }
   });
 });
