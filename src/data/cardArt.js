@@ -17,6 +17,7 @@
 
 import { QUICKIE_ART } from './quickieArt';
 import { NIGHT_TWO_ART } from './nightTwoArt';
+import { LAST_ORDERS_ART } from './lastOrdersArt';
 
 export const CARD_ART = {
   1: { fur: "chocolate brown", visual: "barrel-chested bear, torn ear, novelty condom necklace, brass knuckles gripped in one paw", scene: "Low hero angle on the bar top under amber jukebox glow, Ted cracking a beer bottle over a rival's head mid-swing." },
@@ -101,6 +102,7 @@ export const CARD_ART = {
   95: { fur: "linen white", visual: "neat bear in a waistcoat, ice bucket, folded towel, knowing butler smile", scene: "Dutch tilt in a hotel corridor under warm sconce light, the tray held at a shut door." },
   ...QUICKIE_ART,
   ...NIGHT_TWO_ART,
+  ...LAST_ORDERS_ART,
 };
 
 export default CARD_ART;
