@@ -15,6 +15,10 @@ const VALID_SPECIAL_EFFECTS = ['heal', 'draw', 'buff'];
 // Opponent goon deck ids reserved in GameBoard.jsx (101-108) — player catalog
 // ids must stay below this range so card art/keys never collide.
 const OPPONENT_GOON_ID_FLOOR = 100;
+// Parallel expansions use a two-letter prefix (`ma-1`) so their ids cannot
+// collide with each other or with the numbered catalog. Numbered cards stay
+// below the goon floor.
+const EXPANSION_ID = /^[a-z]{2}-[1-9]\d*$/;
 
 const label = (card) => `card "${card?.name}" (id: ${card?.id})`;
 
@@ -101,21 +105,28 @@ describe('ALL_CARDS catalog shape', () => {
   it('CARD_ART has no entries for ids that no longer exist in ALL_CARDS', () => {
     const validIds = new Set(ALL_CARDS.map((c) => c.id));
     for (const idKey of Object.keys(CARD_ART)) {
+      const id = /^\d+$/.test(idKey) ? Number(idKey) : idKey;
       expect(
-        validIds.has(Number(idKey)),
+        validIds.has(id),
         `CARD_ART has an entry for id ${idKey}, which does not exist in ALL_CARDS — delete the orphaned entry`
       ).toBe(true);
     }
   });
 
-  it('every card has a unique integer id below the reserved goon-deck range (101-108)', () => {
+  it('every card has a unique id: an integer below the goon range, or an expansion id', () => {
     const seen = new Map();
     for (const card of ALL_CARDS) {
-      expect(Number.isInteger(card.id), `${label(card)} must have an integer id`).toBe(true);
+      const expansion = typeof card.id === 'string' && EXPANSION_ID.test(card.id);
       expect(
-        card.id < OPPONENT_GOON_ID_FLOOR,
-        `${label(card)} has id ${card.id}, which collides with the opponent goon deck's reserved range (101-108)`
+        Number.isInteger(card.id) || expansion,
+        `${label(card)} must have an integer id or an expansion id like ma-1`
       ).toBe(true);
+      if (Number.isInteger(card.id)) {
+        expect(
+          card.id > 0 && card.id < OPPONENT_GOON_ID_FLOOR,
+          `${label(card)} has id ${card.id}, which collides with the opponent goon deck's reserved range (101-108)`
+        ).toBe(true);
+      }
 
       const dupe = seen.get(card.id);
       expect(dupe, `duplicate id ${card.id} shared by "${dupe?.name}" and "${card.name}"`).toBeUndefined();

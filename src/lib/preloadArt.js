@@ -2,13 +2,19 @@
 // down, so the first hand is not a row of empty frames. Thumbs only: the
 // board draws those, and the full plates are several times the size.
 
-const THUMB = /^\/cards\/thumbs\/(\d+)\.webp$/;
+const CARD_ID = /^(?:[1-9]\d*|[a-z]{2}-[1-9]\d*)$/;
+const THUMB = /^\/cards\/thumbs\/(?:[1-9]\d*|[a-z]{2}-[1-9]\d*)\.webp$/;
 
 /** The thumb URL for a card id, or null when the id is not a card id. */
 export const thumbUrl = (id) => {
-  const n = Number(id);
-  if (!Number.isInteger(n) || n <= 0) return null;
-  return `/cards/thumbs/${n}.webp`;
+  const s = String(id ?? '');
+  if (!CARD_ID.test(s)) return null;
+  if (/^\d+$/.test(s)) {
+    const n = Number(s);
+    if (!Number.isInteger(n) || n <= 0) return null;
+    return `/cards/thumbs/${n}.webp`;
+  }
+  return `/cards/thumbs/${s}.webp`;
 };
 
 /**

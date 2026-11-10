@@ -19,7 +19,7 @@ export const starCost = (cardId, stars, coinsFor) => {
 export const nextStarTarget = (cards, ownedIds, stars, setId) => {
   const owned = new Set(ownedIds || []);
   const open = (cards || []).filter((card) => card.rarity === setId && owned.has(card.id) && starCount(stars, card.id) < STAR_CAP);
-  open.sort((a, b) => starCount(stars, a.id) - starCount(stars, b.id) || a.id - b.id);
+  open.sort((a, b) => starCount(stars, a.id) - starCount(stars, b.id) || compareCardId(a.id, b.id));
   return open[0] || null;
 };
 
@@ -33,9 +33,23 @@ export const starSetReady = (cards, ownedIds, stars, setId) => {
 
 export const starringUnlocked = (ownedIds) => (ownedIds || []).length >= STAR_UNLOCK_CARDS;
 
+const EXPANSION_ID = /^[a-z]{2}-[1-9]\d*$/;
+
+const compareCardId = (a, b) => {
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  if (typeof a === 'number') return -1;
+  if (typeof b === 'number') return 1;
+  return String(a).localeCompare(String(b));
+};
+
 const asId = (id) => {
-  const n = Number(id);
-  return Number.isInteger(n) && n > 0 ? n : null;
+  if (typeof id === 'number' && Number.isInteger(id) && id > 0) return id;
+  const s = String(id ?? '');
+  if (/^[1-9]\d*$/.test(s)) {
+    const n = Number(s);
+    return Number.isInteger(n) && n > 0 ? n : null;
+  }
+  return EXPANSION_ID.test(s) ? s : null;
 };
 
 /** A saved star map: known cards, 1 to 3, string keys. */
