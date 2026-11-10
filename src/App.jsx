@@ -32,6 +32,8 @@ import { FOCUS_OUTLINE } from './lib/focus';
 import { SCREEN_PAD } from './lib/safeArea';
 import { holdBack } from './lib/historyGuard';
 import { dailyFightFor, resolveCrew } from './lib/dailyFight';
+import { seasonCrew } from './lib/seasons';
+import { useSeasonSnapshot } from './hooks/useSeasonSnapshot';
 import { focusWhenReady } from './lib/screenFocus';
 import { achievementToasts } from './lib/achievementAnnouncements';
 import { levelUpToast } from './lib/levelUpToast';
@@ -273,6 +275,8 @@ function App() {
   const [socialReceipt, setSocialReceipt] = useState(null);
   const [showChallenges, setShowChallenges] = useState(false);
   const [showDaily, setShowDaily] = useState(false);
+  const seasonSnap = useSeasonSnapshot();
+  const nightlyCrew = seasonCrew(seasonSnap);
   const [showWardrobe, setShowWardrobe] = useState(false);
   const [dailySpec, setDailySpec] = useState(null);
 
@@ -747,6 +751,7 @@ function App() {
             onSettings={() => setShowSettings(true)}
             onDailyRewards={() => setShowDailyRewards(true)}
             onShop={() => openShop()}
+            onSeason={() => openShop('season')}
             onBattlePass={() => setShowBattlePass(true)}
             onLeaderboard={() => setShowLeaderboard(true)}
             onChallenges={() => setShowChallenges(true)}
@@ -850,11 +855,11 @@ function App() {
                 {showDaily && (
                   <DailyFight
                     key="nightly"
-                    fight={dailyFightFor()}
+                    fight={dailyFightFor(new Date(), nightlyCrew)}
                     record={{ dailyKey, dailyResult, dailyStreak, dailyBest }}
                     onClose={() => setShowDaily(false)}
                     onStart={() => {
-                      const fight = dailyFightFor();
+                      const fight = dailyFightFor(new Date(), nightlyCrew);
                       setDailySpec({
                         key: fight.key,
                         modifier: fight.modifier,

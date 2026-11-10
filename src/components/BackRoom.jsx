@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { DoorOpen } from 'lucide-react';
 import { useGameStore } from '../stores/gameStore';
-import { eventAt } from '@/lib/houseEvents';
+import { displayEvent } from '@/lib/houseEvents';
 import { weekKeyOf } from '@/lib/questReroll';
 import { crawlBoard } from '@/lib/convenience';
+import { crawlFacing } from '@/lib/barCrawl';
+import { useVisibleSeasons } from '@/hooks/useSeasonSnapshot';
+import { questReady, questState, questsFor } from '@/lib/seasonQuests';
 import { catchUpFor } from '@/lib/catchUp';
 import { storyChapters } from '@/lib/storyCampaign';
 import { LEVEL_TRACK, levelMark } from '@/lib/levelTrack';
@@ -46,9 +49,13 @@ const BackRoom = ({ onClose }) => {
   useEffect(() => { useGameStore.getState().syncPeriods(); }, []);
   const [said, setSaid] = useState('');
   const now = new Date();
-  const live = eventAt(now);
+  const seasons = useVisibleSeasons();
+  const live = displayEvent(now, seasons);
   const weekKey = weekKeyOf(now);
-  const crawl = crawlBoard(store, now);
+  const party = seasons.find((season) => season.status === 'active' || season.status === 'preview') || null;
+  const crawl = crawlFacing(crawlBoard(store, now), party);
+  const quests = party ? questsFor(party.id) : [];
+  const questProgress = questState(store.seasonQuest, party);
   const chapters = storyChapters(store);
   const offer = catchUpFor(store, now, weekKey);
   const unlocks = houseUnlocks(store);
@@ -79,7 +86,10 @@ const BackRoom = ({ onClose }) => {
               <p className="mt-1 text-sm text-plush-200">
                 {live ? live.blurb : 'Nothing special is on. Come back when the room is louder.'}
               </p>
-              {live && !spent && (
+              {live?.preview && (
+                <p className="mt-2 text-sm text-plush-300">The room is dressed. The payout waits for the server.</p>
+              )}
+              {live && !live.preview && !spent && (
                 <Action brass={!armed} pressed={armed} onClick={() => {
                   const armedNow = store.armHouseEvent();
                   say(armedNow ? `${live.name} is on. One fight, then it is spent.` : 'Not tonight.');
@@ -91,7 +101,38 @@ const BackRoom = ({ onClose }) => {
               {live && spent && <p className="mt-2 text-sm text-plush-300">You already took tonight’s round.</p>}
             </Block>
 
-            <Block title="Bar crawl">
+            {party && quests.length > 0 && (
+              <Block title={`${party.name} quests`}>
+                <ul className="mt-2 space-y-3">
+                  {quests.map((quest) => {
+                    const done = questProgress.claimed.includes(quest.id);
+                    const ready = party.status === 'active' && questReady(quest, questProgress);
+                    const have = questProgress[quest.stat] || 0;
+                    return (
+                      <li key={quest.id} className="text-sm text-plush-200">
+                        <span className="font-semibold text-white">{quest.name}. </span>
+                        {quest.line} {have}/{quest.target}.
+                        {ready && (
+                          <Action brass onClick={() => {
+                            const paid = store.claimSeasonQuest(quest.id);
+                            say(paid ? `${quest.name} paid.` : 'Not yet.');
+                          }}
+                          >
+                            Take {quest.name}
+                          </Action>
+                        )}
+                        {done && <span className="mt-1 block text-plush-300">Taken.</span>}
+                        {party.status !== 'active' && !done && (
+                          <span className="mt-1 block text-plush-300">The server has not opened this list.</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Block>
+            )}
+
+            <Block title={crawl.title || 'Bar crawl'}>
               {crawl.unlocked ? (
                 <>
                   <ul className="mt-2 space-y-1">

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "xm-desk",
+    "type": "card",
+    "target": "public/cards/xm-desk.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy with a mischievous grown face, moody neon-lit dive bar dressed for an office Christmas party, warm amber, hot magenta, festive red and green neon, cinematic shallow depth of field. An adult bear peeking from under an office desk, pencil skirt and garter, party lights smeared behind her, cheeky and suggestive. Stuffed plush only. No humans, no minors, no text."
+  },
+  {
+    "id": "xm-reply",
+    "type": "card",
+    "target": "public/cards/xm-reply.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, copy room of a moody neon dive bar at an office Christmas party, warm amber, hot magenta, festive red and green neon, cinematic shallow depth of field. An adult bear with her blouse undone, phone glow on a grin, one more copy sliding out, suggestive and tongue-in-cheek. Stuffed plush only. No humans, no minors, no text."
+  },
+  {
+    "id": "xm-ozzy",
+    "type": "card",
+    "target": "public/cards/xm-ozzy.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, open bar in a moody neon dive bar at an office Christmas party, warm amber, hot magenta, festive red and green neon, cinematic shallow depth of field. An adult bear with a loosened tie and two glasses, already furious, bottles a soft neon blur. Suggestive, tongue-in-cheek, stuffed plush only. No humans, no minors, no text."
+  },
+  {
+    "id": "xm-holly",
+    "type": "card",
+    "target": "public/cards/xm-holly.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, doorway of a moody neon dive bar at an office Christmas party, warm amber, hot magenta, festive red and green neon, cinematic shallow depth of field. An adult bear with a clipboard and a holly crown, very little else, a stern wink. Suggestive, tongue-in-cheek, stuffed plush only. No humans, no minors, no text."
+  },
+  {
+    "id": "xm-nog",
+    "type": "card",
+    "target": "public/cards/xm-nog.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, sticky bar top in a moody neon dive bar at an office Christmas party, warm amber, hot magenta, festive red and green neon, cinematic shallow depth of field. An adult bear in a stained apron raising a ladle over a steaming punchbowl, guilty toast. Suggestive, tongue-in-cheek, stuffed plush only. No humans, no minors, no text."
+  },
+  {
+    "id": "xm-elf",
+    "type": "card",
+    "target": "public/cards/xm-elf.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, strip-club stage inside a moody neon dive bar at an office Christmas party, warm amber, hot magenta, festive red and green neon, cinematic shallow depth of field. An adult elf performer bear, striped stockings, costume half off, bored professional smile, one paw on a pole. Suggestive, tongue-in-cheek, stuffed plush only. No humans, no minors, no text."
+  },
+  {
+    "id": "xm-secret",
+    "type": "card",
+    "target": "public/cards/xm-secret.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, dark booth in a moody neon dive bar at an office Christmas party, warm amber, hot magenta, festive red and green neon, cinematic shallow depth of field. An adult bear in a crooked Santa hat holding a badly wrapped present with the tag swapped, suggestive and tongue-in-cheek. Stuffed plush only. No humans, no minors, no text."
+  },
+  {
+    "id": "xm-mistletoe",
+    "type": "card",
+    "target": "public/cards/xm-mistletoe.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, moody neon dive bar at an office Christmas party, warm amber, hot magenta, festive red and green neon, cinematic shallow depth of field. An adult bear under a mistletoe sprig, lipstick mark, grabbing another adult bear's lapel as they trade seats. Suggestive, tongue-in-cheek, stuffed plush only. No humans, no minors, no text."
+  },
+  {
+    "id": "xm-list",
+    "type": "card",
+    "target": "public/cards/xm-list.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, hostess stand in a moody neon dive bar at an office Christmas party, warm amber, hot magenta, festive red and green neon, cinematic shallow depth of field. An adult bear in tiny spectacles flipping a coin over a long naughty list, knowing grin. Suggestive, tongue-in-cheek, stuffed plush only. No humans, no minors, no text."
+  },
+  {
+    "id": "xm-santa",
+    "type": "card",
+    "target": "public/cards/xm-santa.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, bar stool in a moody neon dive bar at an office Christmas party, warm amber, hot magenta, festive red and green neon, cinematic shallow depth of field. An adult sleazy Santa bear, coat open, sack at his feet, cigar, holiday grin. Suggestive, tongue-in-cheek, stuffed plush only. No humans, no minors, no text."
+  },
+  {
+    "id": "naughty-list-banner",
+    "type": "banner",
+    "target": "public/seasons/naughty-list-banner.webp",
+    "aspect": "1344*768",
+    "prompt": "Wide cinematic photograph of a photoreal plush teddy bear, clearly a grown adult toy, hosting an office Christmas party inside a moody neon dive bar, warm amber, hot magenta, festive red and green neon, shallow depth of field. An adult sleazy Santa bear on a bar stool, coat open, sack beside him, mistletoe and a punchbowl in the soft background. Suggestive, tongue-in-cheek, stuffed plush only. No humans, no minors, no text."
+  },
+  {
+    "id": "naughty-list-bg",
+    "type": "background",
+    "target": "public/seasons/naughty-list-bg.webp",
+    "aspect": "1344*768",
+    "prompt": "Wide cinematic photograph of an empty moody neon dive bar set for an office Christmas party, warm amber, hot magenta, festive red and green neon, cinematic shallow depth of field. Mistletoe over the bar, a punchbowl, a sack, tinsel catching the neon, no people and no bears in the foreground, the room waiting. No humans, no minors, no text."
+  }
+]

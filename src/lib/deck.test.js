@@ -15,6 +15,11 @@ describe('deck identity', () => {
     expect(deckKey([10, 2, 1])).toBe('1,2,10');
   });
 
+  it('keeps a prefixed id beside the numbers', () => {
+    expect(sameDeck(['xm-santa', 2], [2, 'xm-santa'])).toBe(true);
+    expect(deckKey([10, 'xm-santa', 2])).toBe('2,10,xm-santa');
+  });
+
   it('treats a missing deck as empty and never mutates its input', () => {
     expect(deckKey(undefined)).toBe('');
     const ids = [3, 1, 2];

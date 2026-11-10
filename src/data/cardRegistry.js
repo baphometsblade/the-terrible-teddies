@@ -5,11 +5,13 @@
 import { toLadderId as chuckTo, fromLadderId as chuckFrom } from '@/data/chuckCrew';
 import { toLadderId as ordersTo, fromLadderId as ordersFrom } from '@/data/expansion-last-orders';
 import { toLadderId as henTo, fromLadderId as henFrom } from '@/data/henDoHavoc';
+import { toLadderId as naughtyTo, fromLadderId as naughtyFrom } from '@/data/naughtyList';
 
 const SETS = Object.freeze([
   Object.freeze({ toLadderId: chuckTo, fromLadderId: chuckFrom }),
   Object.freeze({ toLadderId: ordersTo, fromLadderId: ordersFrom }),
   Object.freeze({ toLadderId: henTo, fromLadderId: henFrom }),
+  Object.freeze({ toLadderId: naughtyTo, fromLadderId: naughtyFrom }),
 ]);
 
 /** Catalog id to the integer a published deck can carry. */

@@ -14,6 +14,7 @@ import { HEN_DO_CARDS } from '@/data/henDoHavoc';
 import { CHUCK_CATALOG } from '@/data/chuckCrew';
 import { LAST_ORDERS_CARDS } from '@/data/expansion-last-orders';
 import { MORNING_AFTER_CARDS } from '@/data/expansionMorningAfter';
+import { NAUGHTY_LIST_CARDS } from '@/data/naughtyList';
 import { resolveLogin, weekCoinBonus } from '@/lib/loginStreak';
 import { comebackFor } from '@/lib/comeback';
 import { DAILY_POOL, WEEKLY_POOL, normalizeRerolls, replacementFor, rerollPatch, visibleChallenges, weekKeyOf } from '@/lib/questReroll';
@@ -40,6 +41,9 @@ import { catchUpFor } from '@/lib/catchUp';
 import { storyChapters, STORY_CHAPTERS } from '@/lib/storyCampaign';
 import { plaqueById, plaqueBonus } from '@/lib/plaques';
 import { syncConvenience, syncPackWin, requestPackRoll } from '@/lib/packSync';
+import { collectiblePool, getSeasonSnapshot, isCardAvailable } from '@/lib/seasons';
+import { BUNDLED_SEASON_IDS, evergreenCards } from '@/data/seasonsCatalog';
+import { bumpSeasonQuest, normalizeSeasonQuest, questReady, questsFor } from '@/lib/seasonQuests';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
@@ -134,6 +138,7 @@ export const ALL_CARDS = [
   ...LAST_ORDERS_CARDS,
   ...MORNING_AFTER_CARDS,
   ...CHUCK_CATALOG,
+  ...NAUGHTY_LIST_CARDS,
 ];
 
 // The HP at which the night is nearly over for a side. One number for the
@@ -472,6 +477,8 @@ const initialState = {
   cloudRev: 0,
   cloudSyncedHash: null,
   cloudSyncedAt: null,
+  // The seasonal quest line. Only the server-active season moves it.
+  seasonQuest: { seasonId: '', wins: 0, cards: 0, packs: 0, claimed: [] },
 };
 
 /**
@@ -604,6 +611,7 @@ export const normalizeSave = (persisted) => {
   s.eventSpent = typeof persisted?.eventSpent === 'string' && persisted.eventSpent.length <= 80 ? persisted.eventSpent : null;
   s.cardStars = normalizeStars(persisted?.cardStars, ALL_CARDS.map((card) => card.id));
   s.claimedStarSets = normalizeClaimedSets(persisted?.claimedStarSets);
+  s.seasonQuest = normalizeSeasonQuest(persisted?.seasonQuest);
   s.crawlClaimedWeek = typeof persisted?.crawlClaimedWeek === 'string' ? persisted.crawlClaimedWeek : null;
   s.lastBattleDate = typeof persisted?.lastBattleDate === 'string' ? persisted.lastBattleDate : null;
   s.morningAfterDate = typeof persisted?.morningAfterDate === 'string' ? persisted.morningAfterDate : null;
@@ -1111,6 +1119,13 @@ export const useGameStore = create(
             get().addCardPack(reward.amount);
             return { packs: reward.amount };
           case 'card': {
+            // Same gate as a pack: a seasonal card the server has not marked
+            // active is not handed over. The tile still pays, as coins.
+            if (!isCardAvailable(reward.cardId)) {
+              const coins = 50;
+              get().addCoins(coins);
+              return { withheld: true, coins };
+            }
             const card = { id: reward.cardId, name: reward.name };
             const dupeCoins = get().addCard(reward.cardId);
             return dupeCoins > 0 ? { card, alreadyOwned: true, coins: dupeCoins } : { card };
@@ -1187,7 +1202,11 @@ export const useGameStore = create(
           get().checkAchievement('collect_20', newOwnedCards.length >= 20);
           get().checkAchievement('collect_40', newOwnedCards.length >= 40);
           get().checkAchievement('collect_55', newOwnedCards.length >= 55);
-          get().checkAchievement('collect_all', newOwnedCards.length >= ALL_CARDS.length);
+          // Seasonal cards are extra. A set that has left packs must not make
+          // "collect all" impossible for a regular who missed the party.
+          const evergreen = ALL_CARDS.filter((card) => !BUNDLED_SEASON_IDS.has(card.id)).length;
+          const ownedEvergreen = newOwnedCards.filter((id) => !BUNDLED_SEASON_IDS.has(id)).length;
+          get().checkAchievement('collect_all', ownedEvergreen >= evergreen);
         }
         return dupeCoins;
       },
@@ -1244,7 +1263,7 @@ export const useGameStore = create(
         let nextArmed = state.eventArmed || null;
         let nextSpent = state.eventSpent || null;
         if (nextArmed) {
-          const live = eventAt(now);
+          const live = eventAt(now, getSeasonSnapshot().seasons);
           if (live && live.id === nextArmed && nextSpent !== eventSpentKey(now, live.id)) {
             coinsThisBattle = scaleReward(coinsThisBattle, live.coins, live.coinsDen);
             eventApplied = live;
@@ -1311,6 +1330,11 @@ export const useGameStore = create(
           nextGate = Date.now() + CRAWL_STOP_WAIT_MS;
           nextGated = newlyMet.id;
         }
+        const activeSeason = (getSeasonSnapshot().seasons || []).find((season) => season.status === 'active') || null;
+        const nextSeasonQuest = bumpSeasonQuest(state.seasonQuest, activeSeason, {
+          wins: won ? 1 : 0,
+          cards: cardsPlayed,
+        });
 
         set({
           // All-time
@@ -1346,6 +1370,7 @@ export const useGameStore = create(
           crawlTimer: nextTimer,
           crawlGateUntil: nextGate,
           crawlGatedStop: nextGated,
+          seasonQuest: nextSeasonQuest,
         });
 
         const baseXp = won ? BATTLE_XP.win : BATTLE_XP.loss;
@@ -1502,7 +1527,7 @@ export const useGameStore = create(
         // which card it was.
         let cardIds = [];
         if (reward.cards > 0) {
-          const availableCards = ALL_CARDS.filter(c => !state.ownedCards.includes(c.id));
+          const availableCards = collectiblePool(ALL_CARDS).filter(c => !state.ownedCards.includes(c.id));
           const randomCards = shuffleDeck(availableCards)
             .slice(0, reward.cards)
             .map(c => c.id);
@@ -1547,12 +1572,13 @@ export const useGameStore = create(
         return period === 'weekly' ? next.weeklySwap : next.dailySwap;
       },
 
-      // The collection book's reward for owning every card of one rarity.
+      // The collection book's reward for owning every evergreen card of one
+      // rarity. Seasonal cards are a separate list and never block this.
       // Coins and ordinary packs only: a premium or legendary pack would
       // survive a reset while the claim ledger would not, and mint another.
       claimCollectionSet: (setId) => {
         const state = get();
-        const row = bookOf(ALL_CARDS, state.ownedCards).find((set) => set.id === setId);
+        const row = bookOf(evergreenCards(ALL_CARDS), state.ownedCards).find((set) => set.id === setId);
         if (!row?.complete) return null;
         if (state.claimedSets.includes(setId)) return null;
         set({ claimedSets: [...state.claimedSets, setId] });
@@ -1581,7 +1607,7 @@ export const useGameStore = create(
       // Say you are in for tonight's limited night. One fight spends it.
       armHouseEvent: () => {
         const now = new Date();
-        const live = eventAt(now);
+        const live = eventAt(now, getSeasonSnapshot().seasons);
         if (!live) return null;
         const state = get();
         if (state.eventSpent === eventSpentKey(now, live.id)) return null;
@@ -1710,7 +1736,7 @@ export const useGameStore = create(
       raiseCardStar: (setId) => {
         const state = get();
         if (!starringUnlocked(state.ownedCards)) return null;
-        const card = nextStarTarget(ALL_CARDS, state.ownedCards, state.cardStars, setId);
+        const card = nextStarTarget(evergreenCards(ALL_CARDS), state.ownedCards, state.cardStars, setId);
         if (!card) return null;
         const cost = starCost(card.id, state.cardStars, coinsForDuplicate);
         if (cost == null || state.coins < cost) return null;
@@ -1725,7 +1751,7 @@ export const useGameStore = create(
       claimStarSet: (setId) => {
         const state = get();
         if (state.claimedStarSets.includes(setId)) return null;
-        if (!starSetReady(ALL_CARDS, state.ownedCards, state.cardStars, setId)) return null;
+        if (!starSetReady(evergreenCards(ALL_CARDS), state.ownedCards, state.cardStars, setId)) return null;
         const reward = { coins: 300, packs: 1 };
         set({ claimedStarSets: [...state.claimedStarSets, setId] });
         get().addCoins(reward.coins);
@@ -1794,7 +1820,7 @@ export const useGameStore = create(
         }
       },
 
-      openCardPack: (requestedType = 'regular') => {
+      openCardPack: (requestedType = 'regular', random = Math.random) => {
         // Atomically claim exactly one pack inside a single update so rapid
         // double-clicks can't open two packs or drive a counter negative.
         // The daily open cap is checked in that same update: a second tap
@@ -1833,12 +1859,14 @@ export const useGameStore = create(
         if (script) {
           rolledCards = script;
         } else {
+          // Offline fallback only. A signed-in open uses settle_pack_open.
+          // Seasonal ids stay out until that server snapshot says active.
           const rolled = rollPack({
             size: slots.size,
             table: PACK_ODDS.standard,
-            rng: Math.random,
+            rng: random,
             pity: nextPity,
-            cardsByRarity: cardsByRarity(ALL_CARDS),
+            cardsByRarity: cardsByRarity(collectiblePool(ALL_CARDS)),
           });
           rolledCards = rolled.cards;
           nextPity = rolled.pity;
@@ -1880,10 +1908,16 @@ export const useGameStore = create(
         });
         if (fresh.length > 0) {
           const n = settled.owned.size;
+          const evergreenCount = ALL_CARDS.filter((card) => !BUNDLED_SEASON_IDS.has(card.id)).length;
+          const ownedEvergreen = [...settled.owned].filter((id) => !BUNDLED_SEASON_IDS.has(id)).length;
           get().checkAchievement('collect_20', n >= 20);
           get().checkAchievement('collect_40', n >= 40);
           get().checkAchievement('collect_55', n >= 55);
-          get().checkAchievement('collect_all', n >= ALL_CARDS.length);
+          get().checkAchievement('collect_all', ownedEvergreen >= evergreenCount);
+        }
+        const activeSeason = (getSeasonSnapshot().seasons || []).find((season) => season.status === 'active') || null;
+        if (activeSeason) {
+          set({ seasonQuest: bumpSeasonQuest(get().seasonQuest, activeSeason, { packs: 1 }) });
         }
         return { cards: pulledCards, dupeCoins, pity: nextPity };
       },
@@ -1947,6 +1981,10 @@ export const useGameStore = create(
           packStreakDay: today,
           packPity: Number.isFinite(receipt.pity) ? receipt.pity : state.packPity,
         });
+        const activeSeason = (getSeasonSnapshot().seasons || []).find((season) => season.status === 'active') || null;
+        if (activeSeason) {
+          set({ seasonQuest: bumpSeasonQuest(get().seasonQuest, activeSeason, { packs: 1 }) });
+        }
         return { cards: pulledCards, dupeCoins, pity: receipt.pity };
       },
 
@@ -1961,6 +1999,23 @@ export const useGameStore = create(
           set({ pendingGemCharges: pending });
         }
         get().noteServerGemSpend(data.balance);
+      },
+
+      claimSeasonQuest: (questId) => {
+        const active = (getSeasonSnapshot().seasons || []).find((season) => season.status === 'active') || null;
+        const quest = questsFor(active?.id).find((row) => row.id === questId);
+        if (!quest) return null;
+        const state = get();
+        const progress = state.seasonQuest?.seasonId === active.id
+          ? state.seasonQuest
+          : { seasonId: active.id, wins: 0, cards: 0, packs: 0, claimed: [] };
+        if (!questReady(quest, progress)) return null;
+        set({
+          seasonQuest: { ...progress, claimed: [...progress.claimed, quest.id] },
+          coins: state.coins + (quest.reward.coins || 0),
+          cardPacks: state.cardPacks + (quest.reward.packs || 0),
+        });
+        return { ...quest.reward };
       },
 
       // Helper to get total available packs of all types

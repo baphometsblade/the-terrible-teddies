@@ -439,8 +439,14 @@ test("the pull's art is fetched before the first card turns, and faces load eage
 
   await dialog.getByRole('button', { name: 'Reveal all' }).click();
   await expect(dialog.getByRole('button', { name: 'Done' })).toBeVisible(SLOW);
-  const faces = async () => page.locator('[data-reveal-card] img').evaluateAll(
-    (imgs) => imgs.map((i) => ({ src: i.getAttribute('src'), loading: i.getAttribute('loading') }))
+  // A plate that is not on disk yet falls back to the emoji, so a card in
+  // the wave may have no img. Every img that did render was eager, and its
+  // thumb was asked for before the first card turned.
+  const faces = async () => page.locator('[data-reveal-card]').evaluateAll(
+    (cards) => cards.map((card) => {
+      const img = card.querySelector('img');
+      return img ? { src: img.getAttribute('src'), loading: img.getAttribute('loading') } : null;
+    })
   );
   // A card whose plate is not in the repo yet falls back off the <img>
   // (emoji, or a drawn stand-in). The photos that did load were still
@@ -448,11 +454,12 @@ test("the pull's art is fetched before the first card turns, and faces load eage
   const shown = [...await faces()];
   await dialog.getByRole('button', { name: 'Cards 1–5' }).click();
   shown.push(...await faces());
-  expect(shown.length).toBeGreaterThan(0);
-  for (const { src, loading } of shown) {
-    expect(loading).toBe('eager');
-    const id = src.match(/\/cards\/thumbs\/([A-Za-z0-9-]+)\.webp/)?.[1];
-    expect(id, `face art ${src} is not a thumb`).toBeTruthy();
+  expect(shown.filter(Boolean).length).toBeGreaterThan(0);
+  for (const face of shown) {
+    if (!face) continue;
+    expect(face.loading).toBe('eager');
+    const id = face.src.match(/\/cards\/thumbs\/([A-Za-z0-9-]+)\.webp/)?.[1];
+    expect(id, `face art ${face.src} is not a thumb`).toBeTruthy();
     expect(beforeFirstTurn.has(id), `card ${id}'s art was not fetched before the first turn`).toBe(true);
   }
 });

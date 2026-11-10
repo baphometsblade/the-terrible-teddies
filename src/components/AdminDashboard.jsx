@@ -6,6 +6,7 @@ import { FOCUS_OUTLINE } from '@/lib/focus';
 import { SCREEN_PAD } from '@/lib/safeArea';
 import { withRetry } from '@/lib/retry';
 import { accountActionMessage } from '@/lib/accountData';
+import { readSeasonPreview, setSeasonPreview } from '@/lib/seasons';
 
 const LINK = `inline-flex min-h-11 items-center underline underline-offset-4 decoration-brass-300/70 ${FOCUS_OUTLINE}`;
 const BUTTON = `btn-glass inline-flex h-11 items-center justify-center rounded-xl px-4 font-display text-base font-bold ${FOCUS_OUTLINE}`;
@@ -29,6 +30,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
   const [ticket, setTicket] = useState(0);
+  const [preview, setPreview] = useState(() => readSeasonPreview());
 
   useEffect(() => {
     document.title = 'Staff desk · Terrible Teddies';
@@ -118,6 +120,24 @@ const AdminDashboard = () => {
               );
             })}
           </dl>
+        )}
+
+        {(phase === 'ready' || import.meta.env.DEV) && (
+          <div className="panel-glass mt-6 p-5">
+            <h2 className="font-display text-xl font-extrabold text-white">Season preview</h2>
+            <p className="mt-2 text-sm text-plush-200">
+              Dress this browser for The Naughty List before the window. Packs still open when the server says so.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <button
+                type="button"
+                className={BUTTON}
+                onClick={() => { setSeasonPreview(preview ? '' : 'naughty-list'); setPreview(readSeasonPreview()); }}
+              >
+                {preview === 'naughty-list' ? 'Clear the preview' : 'Preview The Naughty List'}
+              </button>
+            </div>
+          </div>
         )}
 
         <div className="mt-6 flex flex-wrap gap-x-5 gap-y-3">

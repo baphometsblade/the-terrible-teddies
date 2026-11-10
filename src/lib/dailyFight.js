@@ -88,11 +88,11 @@ export const CREWS = Object.freeze([
   { id: 'chuck', name: "Chuck's Own", cards: ['ck-chuck', 'ck-closing', 'ck-offduty', 'ck-rita', 'ck-tabitha', 'ck-last-orders', 'ck-top-up', 'ck-quiet-word'] },
 ]);
 
-export const dailyFightFor = (date = new Date()) => {
+export const dailyFightFor = (date = new Date(), seasonCrew = null) => {
   const key = localDateKey(date);
   const h = hashKey(key);
   const modifier = MODIFIERS[h % MODIFIERS.length];
-  const crew = CREWS[(h >>> 8) % CREWS.length];
+  const crew = seasonCrew?.cards?.length ? seasonCrew : CREWS[(h >>> 8) % CREWS.length];
   return { key, modifier, crew };
 };
 

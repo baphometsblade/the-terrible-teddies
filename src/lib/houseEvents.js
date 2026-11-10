@@ -49,10 +49,39 @@ export const HOUSE_EVENTS = Object.freeze([
   },
 ].map((row) => Object.freeze(row)));
 
-const IDS = new Set(HOUSE_EVENTS.map((event) => event.id));
+// The office party, while the server says The Naughty List is active.
+// Same shape as the other nights: one fight, half again, not a better pack.
+export const CHRISTMAS_PARTY = Object.freeze({
+  id: 'naughty_list',
+  name: 'Naughty List Night',
+  blurb: 'The office party took the back room. One fight pays half again.',
+  xp: 3,
+  xpDen: 2,
+  coins: 3,
+  coinsDen: 2,
+});
 
-/** The night that is on, special days ahead of happy hour. */
-export const eventAt = (date = new Date()) => HOUSE_EVENTS.find((event) => event.live(date)) || null;
+const IDS = new Set([...HOUSE_EVENTS.map((event) => event.id), CHRISTMAS_PARTY.id]);
+
+/**
+ * The night that is on. A season the server marked active beats the weekly
+ * calendar. The date still picks stag night and happy hour when no season
+ * is up. Pass the snapshot's seasons; do not invent one from the clock.
+ */
+export const eventAt = (date = new Date(), seasons = []) => {
+  const party = (seasons || []).find((season) => season.status === 'active' && season.theme === 'christmas-party');
+  if (party) return CHRISTMAS_PARTY;
+  return HOUSE_EVENTS.find((event) => event.live(date)) || null;
+};
+
+/** What the back room shows, including a preview that does not pay. */
+export const displayEvent = (date = new Date(), seasons = []) => {
+  const party = (seasons || []).find((season) => (
+    (season.status === 'active' || season.status === 'preview') && season.theme === 'christmas-party'
+  ));
+  if (party) return { ...CHRISTMAS_PARTY, preview: party.status === 'preview' };
+  return eventAt(date, seasons);
+};
 
 export const isEventId = (id) => IDS.has(id);
 

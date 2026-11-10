@@ -12,6 +12,7 @@ import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
 import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, canSwingFace, readyCreatures, gainedFuryStack, getValidTargets, describeBlockedTarget, attackAuraNote, pickBlackoutTarget, stampSwing } from '../../utils/battleUtils';
 import { applyInterest, commitBarSpecial, energyAfterCut, payTab, pourExtra, tabTip } from '@/lib/barService';
+import { resolveArrival } from '@/lib/arrivals';
 import { pickQuip, startPoolFor, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { pickResultCopy, RESULT_TITLES, RESULT_SUBLINES } from '../../utils/resultLines';
 import { LAST_CALL_BANNER, lastCallLog, BOARD_LINES, fillLine, pickLine } from '@/lib/houseLines';
@@ -1536,9 +1537,19 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       ...(card.type === 'action' ? { summoningSick: true } : {}),
       ...(card.ability === 'stealth' ? { stealthActive: true } : {}),
     };
+    const arrival = card.type === 'action'
+      ? resolveArrival({
+        card: cardToPlay,
+        ownField: [...playerField, cardToPlay],
+        enemyField: opponentField,
+        ownHp: playerHealth,
+        enemyHp: opponentHealth,
+        maxHp: PLAYER_MAX_HEALTH,
+      })
+      : null;
 
     cancelTargeting();
-    setPlayerField(prev => [...prev, cardToPlay]);
+    setPlayerField(arrival ? arrival.ownField : (prev) => [...prev, cardToPlay]);
     setPlayerHand(prev => prev.filter(c => c.instanceId !== card.instanceId));
     setPlayerEnergy(prev => prev - cost);
     setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 1));
@@ -1564,6 +1575,18 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     }
 
     addToBattleLog(`Played ${card.name}${card.ability && card.ability !== 'none' ? ` (${card.ability})` : ''}`);
+    if (arrival) {
+      setOpponentField(arrival.enemyField);
+      if (arrival.ownHp !== playerHealth) {
+        setPlayerHealth(arrival.ownHp);
+        battleStatsRef.current.healingDone += arrival.healing;
+      }
+      if (arrival.enemyHp !== opponentHealth) {
+        setOpponentHealth(arrival.enemyHp);
+        battleStatsRef.current.damageDealt += arrival.damageToEnemy;
+      }
+      arrival.logs.forEach(addToBattleLog);
+    }
     return true;
   };
 
@@ -2004,10 +2027,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       enemyField: readyCreatures(playerField),
       ownHp: opponentHealth,
     });
-    // Creatures the opponent plays THIS turn. A Quickie can swing at creatures
-    // immediately; everyone else is summoning-sick. A royal among them still
-    // projects its aura this turn, the way a royal the player just played does.
-    let playedThisTurn = [];
+    // Bar specials settle first. Creatures the opponent plays this turn then
+    // run their arrivals on a ready copy of the player's field, so a kiss or
+    // an eggnog survives the wave's write-back.
     let opponentSide = {
       health: owed.paid ? owed.health : opponentHealth,
       maxHealth: opponentMaxHealth,
@@ -2033,21 +2055,42 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       if (committed.due) barRef.current.opponentTab += committed.due;
       addToBattleLog(committed.log);
     }
-    if (opponentSide.health !== (owed.paid ? owed.health : opponentHealth)) {
-      setOpponentHealth(opponentSide.health);
+    let wavePlayer = readyCreatures(playerField);
+    let waveOpp = [...opponentSide.field];
+    let wavePlayerHp = playerHealth;
+    let waveOppHp = opponentSide.health;
+    for (const raw of bodies) {
+      const card = {
+        ...withHp(raw),
+        summoningSick: raw.type === 'action',
+        ...(raw.ability === 'stealth' ? { stealthActive: true } : {}),
+      };
+      if (card.type !== 'action') {
+        waveOpp = [...waveOpp, card];
+        continue;
+      }
+      const arrival = resolveArrival({
+        card,
+        ownField: [...waveOpp, card],
+        enemyField: wavePlayer,
+        ownHp: waveOppHp,
+        enemyHp: wavePlayerHp,
+        maxHp: opponentMaxHealth,
+      });
+      waveOpp = arrival.ownField;
+      wavePlayer = arrival.enemyField;
+      waveOppHp = arrival.ownHp;
+      wavePlayerHp = arrival.enemyHp;
+      if (arrival.damageToEnemy) battleStatsRef.current.damageTaken += arrival.damageToEnemy;
+      arrival.logs.forEach(addToBattleLog);
     }
-    if (opponentSide.field !== activeOpponentField) {
-      setOpponentField(opponentSide.field);
-    }
-    if (bodies.length > 0 || plays.length > 0) {
+    opponentSide = { ...opponentSide, health: waveOppHp, field: waveOpp };
+    if (plays.length > 0) {
       setOpponentDeck(opponentSide.deck);
-      const played = bodies.map(c => ({
-        ...withHp(c),
-        summoningSick: true,
-        ...(c.ability === 'stealth' ? { stealthActive: true } : {}),
-      }));
-      playedThisTurn = played;
-      if (played.length) setOpponentField(prev => [...prev, ...played]);
+      setOpponentField(waveOpp);
+      setPlayerField(wavePlayer);
+      if (waveOppHp !== opponentHealth) setOpponentHealth(waveOppHp);
+      if (wavePlayerHp !== playerHealth) setPlayerHealth(wavePlayerHp);
       playSound('cardPlay');
       plays.forEach(c => addToBattleLog(fillLine(boardLine('chuckPlays'), { card: c.name })));
       speak('oppPlays');
@@ -2062,7 +2105,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       // below would otherwise restore them — bricking any attacker that
       // survives an opponent turn as permanently Exhausted, and any creature
       // played last turn as permanently summoning-sick.
-      let livePlayerField = readyCreatures(playerField);
+      let livePlayerField = wavePlayer;
       let faceDamage = 0;
       let trapDamageToOpponent = 0;
       let killedPlayerCreature = false;
@@ -2077,11 +2120,10 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       // Aura field for royal: the pre-existing board PLUS what was just played,
       // so a royal the opponent dropped this turn buffs its other attackers.
       // Quickies played this turn join the wave; other arrivals stay sick.
-      const auraField = [...opponentSide.field, ...playedThisTurn];
-      const rushArrivals = playedThisTurn.filter((c) => c.type === 'action' && c.ability === 'rush');
+      const auraField = waveOpp;
       const swingers = orderAttackers({
         difficulty: dealtDifficultyRef.current,
-        attackers: [...opponentSide.field, ...rushArrivals].filter(canAttack),
+        attackers: waveOpp.filter(canAttack),
         attackerField: auraField,
         enemyField: livePlayerField,
       });
@@ -2191,7 +2233,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
         const next = attack === c.attack ? c : { ...c, attack };
         return hungoverSwung.includes(c.instanceId) ? { ...next, pendingHangover: true } : next;
       })));
-      const oppTip = tabTip([...opponentSide.field, ...playedThisTurn]);
+      const oppTip = tabTip(opponentSide.field);
       if (oppTip) {
         setOpponentHealth((hp) => Math.min(opponentMaxHealth, hp + oppTip));
         logs.push(`The tab tops ${OPPONENT_NAME} up. +${oppTip} HP.`);

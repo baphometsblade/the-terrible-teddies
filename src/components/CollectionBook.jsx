@@ -3,6 +3,10 @@ import { Check, BookOpen } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useGameStore, ALL_CARDS, coinsForDuplicate } from '../stores/gameStore';
 import { bookOf } from '@/lib/collectionBook';
+import { BUNDLED_SEASON_IDS, evergreenCards } from '@/data/seasonsCatalog';
+import { showInAlbum } from '@/lib/seasons';
+import { useVisibleSeasons } from '@/hooks/useSeasonSnapshot';
+import VaultMark from './VaultMark';
 import { nextStarTarget, starCost, starSetReady, starringUnlocked, starCount } from '@/lib/cardStars';
 import { starMark } from '@/lib/retentionMarks';
 import { claimRetentionMark } from '@/utils/supabaseClient';
@@ -111,7 +115,12 @@ const CollectionBook = () => {
     ownedCards, claimedSets, claimCollectionSet, cardStars, coins, claimedStarSets,
     raiseCardStar, claimStarSet,
   } = useGameStore();
-  const rows = bookOf(ALL_CARDS, ownedCards);
+  const seasons = useVisibleSeasons();
+  const evergreen = evergreenCards(ALL_CARDS);
+  const rows = bookOf(evergreen, ownedCards);
+  const seasonal = ALL_CARDS.filter((card) => (
+    BUNDLED_SEASON_IDS.has(card.id) && showInAlbum(card.id, ownedCards.includes(card.id), seasons, BUNDLED_SEASON_IDS)
+  ));
   const [said, setSaid] = useState('');
   const starsOpen = starringUnlocked(ownedCards);
 
@@ -145,10 +154,27 @@ const CollectionBook = () => {
         </p>
       </div>
       <div role="status" className="sr-only">{said}</div>
+      {seasonal.length > 0 && (
+        <section className="panel-glass rounded-2xl p-4">
+          <h2 className="font-display text-lg font-extrabold text-white">The Naughty List</h2>
+          <p className="mt-1 text-sm text-plush-200">Office party. They leave the packs when the night does. Copies you own stay.</p>
+          <ul className="mt-3 space-y-2">
+            {seasonal.map((card) => (
+              <li key={card.id} className="text-sm text-plush-200">
+                <span className="font-semibold text-white">{card.name}</span>
+                <span className="text-plush-300"> · {card.rarity} · {card.cost} cost · {card.attack}/{card.defense}</span>
+                {ownedCards.includes(card.id) ? <span className="text-plush-300"> · owned</span> : null}
+                <span className="mt-1 block"><VaultMark cardId={card.id} seasons={seasons} /></span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {rows.map((row) => {
-        const target = starsOpen ? nextStarTarget(ALL_CARDS, ownedCards, cardStars, row.id) : null;
+        const target = starsOpen ? nextStarTarget(evergreen, ownedCards, cardStars, row.id) : null;
         const cost = target ? starCost(target.id, cardStars, coinsForDuplicate) : null;
-        const starred = (ALL_CARDS.filter((card) => card.rarity === row.id && ownedCards.includes(card.id)))
+        const starred = evergreen
+          .filter((card) => card.rarity === row.id && ownedCards.includes(card.id))
           .reduce((n, card) => n + (starCount(cardStars, card.id) > 0 ? 1 : 0), 0);
         return (
           <SetRow

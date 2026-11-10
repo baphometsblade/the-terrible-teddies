@@ -14,7 +14,7 @@ export const previewStrike = (attacker, target, attackerField, ctx) => {
     kills: survivor == null,
     overkill,
     hpLeft: survivor ? survivor.currentHp : 0,
-    halved: target?.ability === 'shield' && attacker?.ability !== 'piercing' && raw > dmg,
+    halved: target?.ability === 'shield' && attacker?.ability !== 'piercing' && attacker?.ability !== 'strip' && raw > dmg,
     fury: gainedFuryStack(target, survivor),
   };
 };

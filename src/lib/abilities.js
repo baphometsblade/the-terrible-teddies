@@ -25,6 +25,12 @@ export const ABILITY_LABELS = {
   orders: 'Last Orders',
   cutoff: 'Cutoff',
   tab: 'Tab',
+  eggnog: 'Eggnog',
+  strip: 'Encore',
+  regift: 'Regift',
+  mistletoe: 'Mistletoe',
+  naughty: 'Naughty or Nice',
+  sack: 'The Sack',
 };
 
 export const abilityLabel = (ability) => (
@@ -48,6 +54,12 @@ export const ABILITY_RULES = {
   orders: 'Gets +2 attack while you are at 5 HP or less',
   cutoff: 'A creature that survives this hit cannot attack on its next turn',
   tab: 'At the end of your turn, you regain 1 HP',
+  eggnog: 'On arrival, flips a coin. Naughty sits a random enemy out. Nice gives this card +1 attack',
+  strip: 'Ignores Shield, and a Shield that survives the hit comes off',
+  regift: 'On arrival, swaps attack with a random enemy creature',
+  mistletoe: 'On arrival, kisses the enemy opposite and the two trade seats',
+  naughty: 'On arrival, flips a coin: Nice is +2 attack, Naughty deals 2 to the enemy face',
+  sack: 'On arrival, flips a coin: Nice heals you 3, Naughty deals 3 to the enemy face',
 };
 
 /** The chip on a bear that just sat down. Quickie can already swing. */
@@ -111,7 +123,8 @@ export const describeCard = (card, { cost, attack, aura } = {}) => {
   const rules = abilityRules(card.ability);
   const label = abilityLabel(card.ability);
   if (rules && label) parts.push(`${label}: ${rules}.`);
-  if (card.hungover) parts.push('Hungover.');
+  if (card.kissed) parts.push('Kissed.');
+  else if (card.hungover) parts.push('Hungover.');
   else if (card.hasAttacked) parts.push('Exhausted.');
   else if (card.summoningSick && card.ability === 'rush') parts.push('Other bears only, this turn.');
   else if (card.summoningSick) parts.push('Warming Up.');

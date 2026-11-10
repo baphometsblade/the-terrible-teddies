@@ -1820,6 +1820,150 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting card seasons: clients get the server clock, not their own"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_start  timestamptz;
+  v_end    timestamptz;
+  v_json   jsonb;
+  v_row    jsonb;
+  v_raised boolean;
+  v_role   text;
+  v_xm     CONSTANT UUID := 'c3c3c3c3-c3c3-43c3-83c3-c3c3c3c3c3c3';
+BEGIN
+  SELECT starts_at, ends_at INTO v_start, v_end
+  FROM public.card_seasons WHERE id = 'naughty-list';
+  IF v_start IS DISTINCT FROM (timestamp '2026-12-01 00:00:00' AT TIME ZONE 'Australia/Brisbane') THEN
+    RAISE EXCEPTION 'naughty list does not open at Brisbane midnight (%)', v_start;
+  END IF;
+  IF v_end IS DISTINCT FROM (timestamp '2027-01-07 00:00:00' AT TIME ZONE 'Australia/Brisbane') THEN
+    RAISE EXCEPTION 'naughty list does not close at the next Brisbane midnight (%)', v_end;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'open_card_pack' AND p.prosecdef
+      AND EXISTS (SELECT 1 FROM unnest(p.proconfig) c WHERE c LIKE 'search_path=%')
+  ) THEN
+    RAISE EXCEPTION 'open_card_pack is not SECURITY DEFINER with a pinned search_path';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'card_seasons_snapshot'
+      AND (has_function_privilege('anon', p.oid, 'EXECUTE')
+        OR has_function_privilege('authenticated', p.oid, 'EXECUTE'))
+  ) THEN
+    RAISE EXCEPTION 'a client role can EXECUTE card_seasons_snapshot';
+  END IF;
+
+  FOREACH v_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    v_raised := FALSE;
+    BEGIN
+      EXECUTE format('SET LOCAL ROLE %I', v_role);
+      PERFORM public.card_seasons_snapshot(pg_catalog.now());
+    EXCEPTION WHEN insufficient_privilege THEN
+      v_raised := TRUE;
+    END;
+    RESET ROLE;
+    IF NOT v_raised THEN
+      RAISE EXCEPTION '% could call card_seasons_snapshot', v_role;
+    END IF;
+  END LOOP;
+
+  -- now() is the transaction start, so these bounds do not race the clock.
+  -- ends_at is exclusive: equal to now() is already ended.
+  UPDATE public.card_seasons
+  SET starts_at = pg_catalog.now() - interval '1 day',
+      ends_at = pg_catalog.now()
+  WHERE id = 'naughty-list';
+
+  FOREACH v_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    EXECUTE format('SET LOCAL ROLE %I', v_role);
+    SELECT public.open_card_pack() INTO v_json;
+    RESET ROLE;
+    IF NOT EXISTS (
+      SELECT 1 FROM jsonb_array_elements(v_json->'seasons') s
+      WHERE s->>'id' = 'naughty-list' AND s->>'status' = 'ended'
+    ) THEN
+      RAISE EXCEPTION '% open_card_pack treated the exclusive end as still open (%)', v_role, v_json;
+    END IF;
+  END LOOP;
+
+  UPDATE public.card_seasons
+  SET starts_at = pg_catalog.now() - interval '1 day',
+      ends_at = pg_catalog.now() + interval '1 day'
+  WHERE id = 'naughty-list';
+
+  FOREACH v_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    EXECUTE format('SET LOCAL ROLE %I', v_role);
+    SELECT public.open_card_pack() INTO v_json;
+    RESET ROLE;
+    IF NOT EXISTS (
+      SELECT 1 FROM jsonb_array_elements(v_json->'seasons') s
+      WHERE s->>'id' = 'naughty-list' AND s->>'status' = 'active'
+    ) THEN
+      RAISE EXCEPTION '% open_card_pack did not return the active season (%)', v_role, v_json;
+    END IF;
+  END LOOP;
+
+  -- Only xm-santa is legendary, and the season window is still in the future,
+  -- so a legendary-only pack cannot come back with an xm- id.
+  CREATE TEMP TABLE xm_cat_bak AS SELECT id, rarity FROM public.pack_catalog;
+  CREATE TEMP TABLE xm_odds_bak AS SELECT rarity, weight FROM public.pack_odds;
+  UPDATE public.pack_catalog SET rarity = 'common';
+  UPDATE public.pack_catalog SET rarity = 'legendary' WHERE id = 'xm-santa';
+  UPDATE public.pack_odds SET weight = CASE WHEN rarity = 'legendary' THEN 100 ELSE 0 END;
+  UPDATE public.card_seasons
+  SET starts_at = pg_catalog.now() + interval '2 days',
+      ends_at = pg_catalog.now() + interval '9 days'
+  WHERE id = 'naughty-list';
+
+  INSERT INTO auth.users (id) VALUES (v_xm) ON CONFLICT DO NOTHING;
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_xm::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_row := public.settle_pack_open('xm-before-window', 'regular');
+  RESET ROLE;
+  IF EXISTS (
+    SELECT 1 FROM jsonb_array_elements_text(v_row->'card_ids') AS rolled(id)
+    WHERE rolled.id LIKE 'xm-%'
+  ) THEN
+    RAISE EXCEPTION 'a closed naughty list still rolled %', v_row->'card_ids';
+  END IF;
+
+  UPDATE public.card_seasons
+  SET starts_at = pg_catalog.now() - interval '1 day',
+      ends_at = pg_catalog.now() + interval '1 day'
+  WHERE id = 'naughty-list';
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_xm::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_row := public.settle_pack_open('xm-inside-window', 'regular');
+  RESET ROLE;
+  IF NOT (v_row->'card_ids' ? 'xm-santa') THEN
+    RAISE EXCEPTION 'an open naughty list did not roll xm-santa: %', v_row->'card_ids';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.pack_owned WHERE user_id = v_xm AND card_id = 'xm-santa'
+  ) THEN
+    RAISE EXCEPTION 'xm-santa was rolled but not stored';
+  END IF;
+
+  UPDATE public.pack_catalog c SET rarity = b.rarity FROM xm_cat_bak b WHERE c.id = b.id;
+  UPDATE public.pack_odds o SET weight = b.weight FROM xm_odds_bak b WHERE o.rarity = b.rarity;
+  DROP TABLE xm_cat_bak;
+  DROP TABLE xm_odds_bak;
+
+  UPDATE public.card_seasons
+  SET starts_at = v_start, ends_at = v_end
+  WHERE id = 'naughty-list';
+
+  RAISE NOTICE 'card season assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"
 
 # Every card the client can roll has a catalog row. A future set that is
@@ -1838,9 +1982,15 @@ NODE
 )"
 server_ids="$(psql "$DB" -tA -c "SELECT id FROM public.pack_catalog ORDER BY id")"
 missing="$(comm -23 <(printf '%s\n' "$client_ids") <(printf '%s\n' "$server_ids"))"
+client_count="$(printf '%s\n' "$client_ids" | grep -c .)"
+server_count="$(psql "$DB" -tA -c "SELECT count(*) FROM public.pack_catalog")"
+if [ "$client_count" -ne 140 ] || [ "$server_count" -ne 140 ]; then
+  echo "pack_catalog should hold all 140 client card ids (client ${client_count}, server ${server_count})" >&2
+  exit 1
+fi
 if [ -n "$missing" ]; then
   echo "pack_catalog is missing client card ids:" >&2
   printf '%s\n' "$missing" >&2
   exit 1
 fi
-echo "==> pack_catalog holds every client card id"
+echo "==> pack_catalog holds all 140 client card ids"

@@ -8,6 +8,7 @@ import { ALL_CARDS } from '@/stores/gameStore';
 import {
   canAttack, canSwingFace, effectiveAttack, getValidTargets, pickBlackoutTarget, readyCreatures, resolveCreatureHit,
 } from '@/utils/battleUtils';
+import { resolveArrival } from '@/lib/arrivals';
 import { chooseAttackTarget, chooseOpponentPlays } from '@/utils/opponentAI';
 import { energyForTurn, MAX_FIELD_SIZE } from '@/components/GameBoard/turn';
 import { applyInterest, commitBarSpecial, energyAfterCut, payTab, tabTip } from '@/lib/barService';
@@ -100,8 +101,25 @@ const takeTurn = (actor, defender, turn, random) => {
   );
   actor.deck = remainingDeck;
   for (const card of plays) {
-    if (card.type === 'special') applySpecial(actor, defender, card);
-    else actor.field.push(stamp(card, card.instanceId));
+    if (card.type === 'special') {
+      applySpecial(actor, defender, card);
+    } else if (card.type !== 'action') {
+      actor.field.push(stamp(card, card.instanceId));
+    } else {
+      const stamped = stamp(card, card.instanceId);
+      const arrival = resolveArrival({
+        card: stamped,
+        ownField: [...actor.field, stamped],
+        enemyField: defender.field,
+        ownHp: actor.hp,
+        enemyHp: defender.hp,
+        random,
+      });
+      actor.field = arrival.ownField;
+      defender.field = arrival.enemyField;
+      actor.hp = arrival.ownHp;
+      defender.hp = arrival.enemyHp;
+    }
   }
   const attackers = actor.field.filter(canAttack);
   for (const attacker of attackers) {

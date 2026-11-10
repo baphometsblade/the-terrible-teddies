@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Store, Package, Gem, Star, Coins, Timer, Sparkles, ShieldCheck, Percent, Check } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { playerFacingError } from '@/lib/network';
-import { useGameStore, SHOP_ITEMS } from '../stores/gameStore';
+import { useGameStore, SHOP_ITEMS, ALL_CARDS } from '../stores/gameStore';
+import { useSeasonOnTheFloor } from '@/hooks/useSeasonSnapshot';
+import { abilityLabel } from '@/lib/abilities';
 import analytics from '../utils/analytics';
 import { redirectToCheckout, fetchOnePerAccountHoldings } from '../utils/stripe';
 import { paymentProvider, checkoutFunctionName, PAYMENT_PROCESSOR_LABEL } from '@/lib/paymentProvider';
@@ -190,7 +192,11 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
   // was on has just been replaced by the claimed note.
   const starterClaimedRef = useRef(null);
   const focusStarterClaimed = useRef(false);
-  const [activeTab, setActiveTab] = useState(TABS.some((t) => t.id === initialTab) ? initialTab : 'packs');
+  const season = useSeasonOnTheFloor();
+  const tabs = season
+    ? [...TABS, { id: 'season', label: 'Naughty List', icon: Sparkles }]
+    : TABS;
+  const [activeTab, setActiveTab] = useState(tabs.some((t) => t.id === initialTab) ? initialTab : 'packs');
   const [showOdds, setShowOdds] = useState(false);
   const [showTab, setShowTab] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -362,7 +368,7 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
             than its neighbours'. */}
         <div className="relative px-4 sm:px-6">
           <div className="seg-well flex gap-1">
-            {TABS.map(tab => {
+            {tabs.map(tab => {
               const active = activeTab === tab.id;
               return (
                 <button
@@ -490,6 +496,36 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
                       does not exist. */}
                   <p>If a payment is fully refunded or charged back, the gems it bought are taken back, from future gems if they were already spent.</p>
                 </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'season' && season && (
+              <motion.div key="season" {...TAB_MOTION}>
+                <div className="panel-glass rounded-2xl p-5">
+                  <p className="label-caps text-red-200">Limited</p>
+                  <h3 className="mt-1 font-display text-2xl font-extrabold text-white">{season.name}</h3>
+                  <p className="mt-2 text-sm text-plush-200">
+                    In every pack while the party is on. A pack you buy and a pack you earn use the same odds.
+                  </p>
+                  {season.preview && (
+                    <p className="mt-2 text-sm text-plush-300">Preview. The server has not put them in packs yet.</p>
+                  )}
+                  <ul className="mt-4 space-y-2">
+                    {season.card_ids.map((id) => {
+                      const card = ALL_CARDS.find((row) => row.id === id);
+                      if (!card) return null;
+                      return (
+                        <li key={id} className="flex flex-wrap items-baseline justify-between gap-2 text-sm text-plush-100">
+                          <span className="font-semibold text-white">{card.name}</span>
+                          <span className="text-plush-300">
+                            {card.rarity} · {card.cost} cost · {card.attack}/{card.defense}
+                            {card.ability && card.ability !== 'none' ? ` · ${abilityLabel(card.ability)}` : ''}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
               </motion.div>
             )}
