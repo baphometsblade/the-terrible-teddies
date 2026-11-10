@@ -18,7 +18,8 @@ describe('send-push bearer check', () => {
 
   it('rejects a forged payload that merely claims service_role', () => {
     const forged = forgedServiceRole();
-    expect(forged).toContain('service_role');
+    const payload = JSON.parse(Buffer.from(forged.split('.')[1], 'base64url').toString());
+    expect(payload.role).toBe('service_role');
     expect(serviceRoleAuthorized(`Bearer ${forged}`, SERVICE_KEY)).toBe(false);
   });
 
