@@ -5,7 +5,7 @@
 import { supabase } from '../supabase.js';
 import { playerFacingError } from '../network.js';
 import { PUBLIC_ORIGIN } from './ladder.js';
-import { toLadderId } from '@/data/henDoHavoc';
+import { toLadderId } from '@/data/cardRegistry';
 
 const MISSING = new Set(['PGRST202', 'PGRST205', '42883', '42P01']);
 

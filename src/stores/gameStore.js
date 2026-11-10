@@ -11,6 +11,7 @@ import { AFTER_HOURS_CARDS } from '@/data/afterHoursCards';
 import { QUICKIE_CARDS } from '@/data/quickieCards';
 import { NIGHT_TWO_CARDS } from '@/data/nightTwoCards';
 import { HEN_DO_CARDS } from '@/data/henDoHavoc';
+import { CHUCK_CATALOG } from '@/data/chuckCrew';
 import { resolveLogin, weekCoinBonus } from '@/lib/loginStreak';
 import { comebackFor } from '@/lib/comeback';
 import { normalizeRerolls, rerollPatch, weekKeyOf } from '@/lib/questReroll';
@@ -27,7 +28,7 @@ import { nextStarTarget, starCost, starSetReady, starringUnlocked, normalizeStar
 import { morningAfterDue, MORNING_AFTER } from '@/lib/morningAfter';
 import { trackRow } from '@/lib/levelTrack';
 import { catchUpFor } from '@/lib/catchUp';
-import { storyChapters } from '@/lib/storyCampaign';
+import { storyChapters, STORY_CHAPTERS } from '@/lib/storyCampaign';
 import { plaqueById, plaqueBonus } from '@/lib/plaques';
 
 export const ALL_CARDS = [
@@ -120,6 +121,7 @@ export const ALL_CARDS = [
   ...QUICKIE_CARDS,
   ...NIGHT_TWO_CARDS,
   ...HEN_DO_CARDS,
+  ...CHUCK_CATALOG,
 ];
 
 // The HP at which the night is nearly over for a side. One number for the
@@ -575,8 +577,9 @@ export const normalizeSave = (persisted) => {
   s.claimedPlaques = Array.isArray(persisted?.claimedPlaques)
     ? persisted.claimedPlaques.filter((id) => plaqueById(id))
     : [];
+  const chapterIds = new Set(STORY_CHAPTERS.map((chapter) => chapter.id));
   s.claimedChapters = Array.isArray(persisted?.claimedChapters)
-    ? persisted.claimedChapters.filter((id) => id === 'story_first_round' || id === 'story_lock_in')
+    ? persisted.claimedChapters.filter((id) => chapterIds.has(id))
     : [];
   // A save from before comeback wins were counted: the one-off achievement
   // means they have done it at least once. Only when the field is absent, so

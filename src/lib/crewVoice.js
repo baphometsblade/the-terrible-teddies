@@ -7,6 +7,7 @@ const VOICES = [
   [/karaoke|tequila|drunk|hair/i, 'They warmed up in the car. Badly.'],
   [/last-call|closing|walk|shame/i, 'They were asked to leave somewhere else first.'],
   [/staff|door|bouncer/i, 'They work here. That is not a comfort.'],
+  [/chuck/i, 'He poured for them first. You are next, if you behave.'],
 ];
 
 const FALLBACK = 'They came dressed for trouble and underdressed for the cold.';

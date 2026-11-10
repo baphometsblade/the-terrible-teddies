@@ -3,7 +3,7 @@
 // its owner saved, not a harder Chuck. Unknown ids are dropped. The caller
 // refuses a list that comes back shorter than a real fight.
 
-import { fromLadderId } from '@/data/henDoHavoc';
+import { fromLadderId } from '@/data/cardRegistry';
 
 /** @param {unknown[]} ids @param {{ id: number | string }[]} catalog */
 export const cardsFromIds = (ids, catalog) => {

@@ -10,8 +10,8 @@ import { RARITY_ORDER } from '@/lib/rarity';
 // they must keep holding as the catalog grows.
 
 const VALID_TYPES = ['action', 'trap', 'special'];
-const VALID_ABILITIES = ['none', 'taunt', 'piercing', 'shield', 'stealth', 'protect', 'fury', 'swarm', 'royal', 'rush', 'hungover', 'smitten', 'blackout'];
-const VALID_SPECIAL_EFFECTS = ['heal', 'draw', 'buff'];
+const VALID_ABILITIES = ['none', 'taunt', 'piercing', 'shield', 'stealth', 'protect', 'fury', 'swarm', 'royal', 'rush', 'hungover', 'smitten', 'blackout', 'pour', 'orders', 'cutoff', 'tab'];
+const VALID_SPECIAL_EFFECTS = ['heal', 'draw', 'buff', 'topUp', 'lastOrders', 'cutOff', 'onTab'];
 // Opponent goon deck ids reserved in GameBoard.jsx (101-108) — player catalog
 // ids must stay below this range so card art/keys never collide.
 const OPPONENT_GOON_ID_FLOOR = 100;
@@ -238,12 +238,10 @@ describe('ALL_CARDS catalog shape', () => {
       expect(specialCards.length).toBeGreaterThan(0);
     });
 
-    // applySpecialEffect in GameBoard.jsx only implements 'heal', 'draw', and
-    // 'buff' — any other effect value falls through silently and the card
-    // does nothing when played. That silent no-op is the bug this guard exists
-    // to catch, so effect must be constrained to exactly these three values,
-    // each with a positive integer amount.
-    it("have effect one of 'heal' | 'draw' | 'buff' with an integer amount > 0", () => {
+    // applySpecialEffect only implements the effects in VALID_SPECIAL_EFFECTS.
+    // Anything else falls through and the card does nothing. The guard exists
+    // to catch that, so a new effect has to be listed here and played for real.
+    it('have an effect the battle engine resolves, with an integer amount > 0', () => {
       for (const card of specialCards) {
         expect(
           VALID_SPECIAL_EFFECTS.includes(card.effect),

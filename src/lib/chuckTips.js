@@ -9,6 +9,7 @@ const TIPS = Object.freeze({
   broke: 'Skint already. The bar has seen this act before.',
   look: 'The wardrobe is open. What you wear is a confession.',
   regular: 'You came back. I told them you would.',
+  crew: 'His crew is in your case. He will be unbearable.',
 });
 
 export const CHUCK_TIPS = Object.freeze(Object.values(TIPS));
@@ -19,8 +20,10 @@ export const chuckTip = (state = {}) => {
   if (!state.tutorialCompleted && battles === 0) return TIPS.first;
   if ((Number(state.currentWinStreak) || 0) >= 3) return TIPS.streak;
   if ((Number(state.coins) || 0) < 80) return TIPS.broke;
-  const owned = Array.isArray(state.unlockedCosmetics) ? state.unlockedCosmetics : [];
-  const dressed = owned.some((id) => id !== 'house-back' && id !== 'house-board');
+  const cosmetics = Array.isArray(state.unlockedCosmetics) ? state.unlockedCosmetics : [];
+  const dressed = cosmetics.some((id) => id !== 'house-back' && id !== 'house-board');
   if (!dressed && state.equippedCardBack === 'house-back' && state.equippedBoard === 'house-board') return TIPS.look;
+  const cards = Array.isArray(state.ownedCards) ? state.ownedCards : [];
+  if (cards.some((id) => String(id).startsWith('ck-'))) return TIPS.crew;
   return TIPS.regular;
 };

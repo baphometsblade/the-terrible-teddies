@@ -11,6 +11,7 @@ import { playSound as playSoundEffect } from '@/utils/sounds';
 import { useGameStore, ALL_CARDS } from '../../stores/gameStore';
 import { celebrate } from '@/lib/celebrate';
 import { resolveCreatureHit, rallyField, effectiveCost, effectiveAttack, canAttack, canSwingFace, readyCreatures, gainedFuryStack, getValidTargets, describeBlockedTarget, attackAuraNote, pickBlackoutTarget, stampSwing } from '../../utils/battleUtils';
+import { applyInterest, commitBarSpecial, energyAfterCut, payTab, pourExtra, tabTip } from '@/lib/barService';
 import { pickQuip, startPoolFor, OPPONENT_NAME } from '../../utils/teddyTalk';
 import { pickResultCopy, RESULT_TITLES, RESULT_SUBLINES } from '../../utils/resultLines';
 import { LAST_CALL_BANNER, lastCallLog, BOARD_LINES, fillLine, pickLine } from '@/lib/houseLines';
@@ -613,6 +614,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     dailySettledRef.current = true;
     useGameStore.getState().recordDailyResult(won, spec.key);
   };
+  // Cuts and tabs Chuck's drinks leave for the next round. Refs, because the
+  // opponent's turn is a timeout and must see what this turn just wrote.
+  const barRef = useRef({ playerCut: 0, opponentCut: 0, playerTab: 0, opponentTab: 0 });
   const battleStatsRef = useRef({
     damageDealt: 0, healingDone: 0, cardsPlayed: 0, damageTaken: 0, fatigueTaken: 0, fatigueDealt: 0,
   });
@@ -1171,6 +1175,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
   // hand, a new crew for Chuck at full HP and the log restarted, while the
   // table and the turn stayed as they were.
   useEffect(() => {
+    barRef.current = { playerCut: 0, opponentCut: 0, playerTab: 0, opponentTab: 0 };
     const { currentDeck, difficulty: aiDifficulty } = useGameStore.getState();
     const brawlSpec = brawlRef.current;
     // A saved deck is piloted at normal, whatever the player has Chuck set to.
@@ -1568,14 +1573,46 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
   // a toast. A toast is for the case the board cannot show: a legal play
   // that did nothing.
   const applySpecialEffect = (card) => {
+    const bar = commitBarSpecial({
+      health: playerHealth,
+      maxHealth: PLAYER_MAX_HEALTH,
+      field: playerField,
+      deck: playerDeck,
+      hand: playerHand.filter((c) => c.instanceId !== card.instanceId),
+      handRoom: Math.max(0, MAX_HAND_SIZE - Math.max(0, playerHand.length - 1)),
+    }, card);
+    if (bar) {
+      if (bar.healed > 0) {
+        setPlayerHealth(bar.health);
+        battleStatsRef.current.healingDone += bar.healed;
+        pushFx([{ face: 'player', tone: 'heal', text: `+${bar.healed}` }]);
+        setTurnSlip((slip) => noteHeal(slip, bar.healed));
+        playSound('heal');
+      }
+      if (bar.topped > 0 || bar.buff > 0) setPlayerField(bar.field);
+      if (bar.drawn > 0) {
+        setPlayerHand(bar.hand);
+        setPlayerDeck(bar.deck);
+        playSound('draw');
+      }
+      if (bar.energyCut) barRef.current.opponentCut += bar.energyCut;
+      if (bar.due) barRef.current.playerTab += bar.due;
+      addToBattleLog(bar.log);
+      if (!bar.healed && !bar.topped && !bar.buff && !bar.drawn && !bar.energyCut && !bar.due) {
+        toast({ title: 'Already fully stuffed', description: bar.log });
+      }
+      return;
+    }
     switch (card.effect) {
       case 'heal': {
         // Credit the healing that actually landed, not the card's face value.
         // Healing caps at 30, so playing a +10 heal at 28 HP restores 2 — but
         // the full 10 was being counted toward the 'Medic Bear' achievement and
         // the daily healing challenge, letting both be farmed at full HP.
-        const healed = Math.min(PLAYER_MAX_HEALTH, playerHealth + card.amount) - playerHealth;
-        setPlayerHealth(prev => Math.min(PLAYER_MAX_HEALTH, prev + card.amount));
+        // Chuck behind the bar tops the pour.
+        const amount = card.amount + pourExtra(playerField);
+        const healed = Math.min(PLAYER_MAX_HEALTH, playerHealth + amount) - playerHealth;
+        setPlayerHealth(prev => Math.min(PLAYER_MAX_HEALTH, prev + amount));
         battleStatsRef.current.healingDone += healed;
         playSound('heal');
         if (healed > 0) {
@@ -1709,7 +1746,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // The outcome is drawn on the table (the lunge, the hit, the number, the
     // crumple) and written to the log, so it gets no toast: a toast for every
     // hit covered the log and the table to repeat them.
-    const { survivor, overkill, dmg } = resolveCreatureHit(attacker, struck, playerField, houseRule.damage || 0);
+    const { survivor, overkill, dmg } = resolveCreatureHit(attacker, struck, playerField, houseRule.damage || 0, { health: playerHealth });
     const impact = classifyHit({ dmg, killed: !survivor, overkill });
     playSound('attack');
     battleStatsRef.current.damageDealt += dmg;
@@ -1735,6 +1772,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
           : `${struck.name} is already as furious as they get — capped at +3.`);
       }
       addToBattleLog(`${attacker.name} smacked ${struck.name} for ${dmg} (${survivor.currentHp} HP left)`);
+      if (attacker.ability === 'cutoff' && survivor.hungover) {
+        addToBattleLog(`${attacker.name} cut ${struck.name} off. They can watch the next one.`);
+      }
     } else {
       setOpponentField(prev => prev.filter(c => c.instanceId !== struck.instanceId));
       if (overkill > 0) setOpponentHealth(prev => Math.max(0, prev - overkill));
@@ -1791,6 +1831,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // instead of hitting face — so traps stay meaningful without permanently
     // gating the attack: the next strike gets through.
     const trap = opponentField.find(c => c.type === 'trap');
+    let interestAttack = null;
     if (trap) {
       const trapDamage = trap.amount || 3;
       pushFx([
@@ -1802,10 +1843,15 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       setOpponentField(prev => prev.filter(c => c.instanceId !== trap.instanceId));
       playSound('trap');
       addToBattleLog(`${trap.name} sprang! ${trapDamage} damage, right in your pride`);
+      const taxed = applyInterest(attacker, trap);
+      if (taxed.attack !== attacker.attack) {
+        interestAttack = taxed.attack;
+        addToBattleLog(`${trap.name} takes ${trap.interest} off ${attacker.name}. The tab collects.`);
+      }
     } else {
       // The attacker was re-read above, so a Rally mid-targeting is already
       // in `attacker`. effectiveAttack folds in any royal ally on top.
-      const faceDamage = effectiveAttack(attacker, playerField) + (houseRule.damage || 0);
+      const faceDamage = effectiveAttack(attacker, playerField, { health: playerHealth }) + (houseRule.damage || 0);
       const impact = classifyHit({ dmg: faceDamage, killed: faceDamage >= opponentHealth, overkill: 0 });
       playSound('attack');
       const flavor = hitFlavor({ dmg: faceDamage, killed: faceDamage >= opponentHealth, overkill: 0 });
@@ -1828,7 +1874,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     }
 
     setPlayerField(prev => prev.map(c => (
-      c.instanceId === selectedCard.instanceId ? stampSwing(c) : c
+      c.instanceId === selectedCard.instanceId
+        ? stampSwing(interestAttack === null ? c : { ...c, attack: interestAttack })
+        : c
     )));
 
     setPlayerMomentum(prev => Math.min(MOMENTUM_MAX, prev + 3));
@@ -1848,6 +1896,13 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // End Turn leaves the screen for Chuck's turn; from the keyboard, the
     // focus goes back to it when it returns.
     if (viaKeys(e)) refocusRef.current = { kind: 'turn' };
+    const tip = tabTip(playerField);
+    if (tip && playerHealth < PLAYER_MAX_HEALTH) {
+      const gained = Math.min(tip, PLAYER_MAX_HEALTH - playerHealth);
+      setPlayerHealth((prev) => Math.min(PLAYER_MAX_HEALTH, prev + tip));
+      battleStatsRef.current.healingDone += gained;
+      addToBattleLog(`The tab tops you up. +${gained} HP.`);
+    }
     setPlayerField(prev => readyCreatures(prev));
     setSelectedCard(null);
     setTargetingMode(false);
@@ -1924,9 +1979,20 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // budget (difficulty-scaled) while the field has room. Only played cards
     // leave the deck, so a full board never mills it.
     // At the difficulty this game was dealt at, not the live setting.
-    const energyBudget = (OPPONENT_ENERGY_BY_DIFFICULTY[dealtDifficultyRef.current] ?? OPPONENT_ENERGY_BY_DIFFICULTY.normal)
+    const owed = payTab(opponentHealth, barRef.current.opponentTab);
+    barRef.current.opponentTab = 0;
+    if (owed.paid) {
+      setOpponentHealth(owed.health);
+      addToBattleLog(`${OPPONENT_NAME} pays the tab. -${owed.paid} HP.`);
+      if (owed.health <= 0) return;
+    }
+    const energyBudget = energyAfterCut(
+      (OPPONENT_ENERGY_BY_DIFFICULTY[dealtDifficultyRef.current] ?? OPPONENT_ENERGY_BY_DIFFICULTY.normal)
       + ((dailyRef.current?.modifier.extraEnergy && turnCount === 1) ? dailyRef.current.modifier.extraEnergy : 0)
-      + (houseRule.energy || 0);
+      + (houseRule.energy || 0),
+      barRef.current.opponentCut,
+    );
+    barRef.current.opponentCut = 0;
     // Pass activeOpponentField so a 'swarm' card in the opponent's hand is
     // budgeted at its discounted cost under the same rule the player follows.
     const { plays, remainingDeck } = planOpponentPlays({
@@ -1942,15 +2008,46 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
     // immediately; everyone else is summoning-sick. A royal among them still
     // projects its aura this turn, the way a royal the player just played does.
     let playedThisTurn = [];
-    if (plays.length > 0) {
-      setOpponentDeck(remainingDeck);
-      const played = plays.map(c => ({
+    let opponentSide = {
+      health: owed.paid ? owed.health : opponentHealth,
+      maxHealth: opponentMaxHealth,
+      field: activeOpponentField,
+      deck: remainingDeck,
+      hand: [],
+      handRoom: 0,
+    };
+    const bodies = [];
+    for (const c of plays) {
+      const committed = commitBarSpecial(opponentSide, c);
+      if (!committed) {
+        bodies.push(c);
+        continue;
+      }
+      opponentSide = {
+        ...opponentSide,
+        health: committed.health,
+        field: committed.field,
+        deck: committed.deck,
+      };
+      if (committed.energyCut) barRef.current.playerCut += committed.energyCut;
+      if (committed.due) barRef.current.opponentTab += committed.due;
+      addToBattleLog(committed.log);
+    }
+    if (opponentSide.health !== (owed.paid ? owed.health : opponentHealth)) {
+      setOpponentHealth(opponentSide.health);
+    }
+    if (opponentSide.field !== activeOpponentField) {
+      setOpponentField(opponentSide.field);
+    }
+    if (bodies.length > 0 || plays.length > 0) {
+      setOpponentDeck(opponentSide.deck);
+      const played = bodies.map(c => ({
         ...withHp(c),
         summoningSick: true,
         ...(c.ability === 'stealth' ? { stealthActive: true } : {}),
       }));
       playedThisTurn = played;
-      setOpponentField(prev => [...prev, ...played]);
+      if (played.length) setOpponentField(prev => [...prev, ...played]);
       playSound('cardPlay');
       plays.forEach(c => addToBattleLog(fillLine(boardLine('chuckPlays'), { card: c.name })));
       speak('oppPlays');
@@ -1971,6 +2068,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       let killedPlayerCreature = false;
       const logs = [];
       const hungoverSwung = [];
+      const interestHits = new Map();
       // The wave's combat feedback, fired together once it has resolved —
       // before the write-back below, while every card it names (the dead
       // included) is still on screen to be measured.
@@ -1979,11 +2077,11 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       // Aura field for royal: the pre-existing board PLUS what was just played,
       // so a royal the opponent dropped this turn buffs its other attackers.
       // Quickies played this turn join the wave; other arrivals stay sick.
-      const auraField = [...activeOpponentField, ...playedThisTurn];
+      const auraField = [...opponentSide.field, ...playedThisTurn];
       const rushArrivals = playedThisTurn.filter((c) => c.type === 'action' && c.ability === 'rush');
       const swingers = orderAttackers({
         difficulty: dealtDifficultyRef.current,
-        attackers: [...activeOpponentField, ...rushArrivals].filter(canAttack),
+        attackers: [...opponentSide.field, ...rushArrivals].filter(canAttack),
         attackerField: auraField,
         enemyField: livePlayerField,
       });
@@ -2004,7 +2102,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
               attackerField: auraField,
             });
           if (card.ability === 'hungover') hungoverSwung.push(card.instanceId);
-          const { survivor, overkill, dmg } = resolveCreatureHit(card, target, auraField, houseRule.damage || 0);
+          const { survivor, overkill, dmg } = resolveCreatureHit(card, target, auraField, houseRule.damage || 0, { health: opponentSide.health });
           const impact = classifyHit({ dmg, killed: !survivor, overkill });
           const flavor = hitFlavor({ dmg, killed: !survivor, overkill });
           const mark = (event) => withImpact(flavor ? { ...event, flavor } : event, impact);
@@ -2021,6 +2119,9 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                 : `${target.name} is capped out at +3 fury — poke away.`);
             }
             logs.push(fillLine(boardLine('oppHit'), { attacker: card.name, target: target.name, dmg, hp: survivor.currentHp }));
+            if (card.ability === 'cutoff' && survivor.hungover) {
+              logs.push(`${card.name} cut ${target.name} off. They can watch the next one.`);
+            }
           } else {
             livePlayerField = livePlayerField.filter(c => c.instanceId !== target.instanceId);
             faceDamage += overkill;
@@ -2050,11 +2151,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
           livePlayerField = livePlayerField.filter(c => c.instanceId !== trap.instanceId);
           playSound('trap');
           logs.push(`Your ${trap.name} sprang! ${OPPONENT_NAME} ate ${trapDamage} damage. Delicious.`);
+          const taxed = applyInterest(card, trap);
+          if (taxed.attack !== card.attack) {
+            interestHits.set(card.instanceId, taxed.attack);
+            logs.push(`${trap.name} takes ${trap.interest} off ${card.name}. The tab collects.`);
+          }
         } else {
           // Include a 'royal' ally's aura in the opponent's face damage too, not
           // just its creature-vs-creature hits. Uses auraField so a royal played
           // this turn counts. Mirrors the player-side fix at attackOpponentDirectly.
-          const oppFaceDamage = effectiveAttack(card, auraField) + (houseRule.damage || 0);
+          const oppFaceDamage = effectiveAttack(card, auraField, { health: opponentSide.health }) + (houseRule.damage || 0);
           const faceKill = oppFaceDamage >= Math.max(0, playerHealth - faceDamage);
           const impact = classifyHit({ dmg: oppFaceDamage, killed: faceKill, overkill: 0 });
           const flavor = hitFlavor({ dmg: oppFaceDamage, killed: faceKill, overkill: 0 });
@@ -2080,9 +2186,16 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       // the opener, and whatever he just slammed down — is settled and free to
       // swing next turn. Done after the wave rather than before it so cards
       // played this turn still sit out the turn they arrived.
-      setOpponentField(prev => readyCreatures(prev.map((c) => (
-        hungoverSwung.includes(c.instanceId) ? { ...c, pendingHangover: true } : c
-      ))));
+      setOpponentField(prev => readyCreatures(prev.map((c) => {
+        const attack = interestHits.has(c.instanceId) ? interestHits.get(c.instanceId) : c.attack;
+        const next = attack === c.attack ? c : { ...c, attack };
+        return hungoverSwung.includes(c.instanceId) ? { ...next, pendingHangover: true } : next;
+      })));
+      const oppTip = tabTip([...opponentSide.field, ...playedThisTurn]);
+      if (oppTip) {
+        setOpponentHealth((hp) => Math.min(opponentMaxHealth, hp + oppTip));
+        logs.push(`The tab tops ${OPPONENT_NAME} up. +${oppTip} HP.`);
+      }
       if (faceDamage > 0) {
         setPlayerHealth(prev => Math.max(0, prev - faceDamage));
         battleStatsRef.current.damageTaken += faceDamage;
@@ -2102,7 +2215,18 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
         setTurnCount(prev => prev + 1);
         // turnCount is still the pre-increment value in this closure — use +1
         // so energy tracks the turn the player is about to take.
-        setPlayerEnergy(Math.min(MAX_ENERGY, energyForTurn(turnCount + 1) + (houseRule.energy || 0)));
+        const due = barRef.current.playerTab;
+        barRef.current.playerTab = 0;
+        if (due) {
+          setPlayerHealth((hp) => payTab(hp, due).health);
+          addToBattleLog('The tab comes due.');
+        }
+        const nextEnergy = energyAfterCut(
+          Math.min(MAX_ENERGY, energyForTurn(turnCount + 1) + (houseRule.energy || 0)),
+          barRef.current.playerCut,
+        );
+        barRef.current.playerCut = 0;
+        setPlayerEnergy(nextEnergy);
         setPhase('draw');
         addToBattleLog(boardLine('yourTurn'));
         noteBooth(addToBattleLog, lastBoothRef);
@@ -2280,6 +2404,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
       defenderField: opponentField,
       focusId: aimId,
       foeName: OPPONENT_NAME,
+      health: playerHealth,
     })
     : null;
   const latestLog = battleLog.length > 0 ? battleLog[battleLog.length - 1].message : '';
@@ -3060,7 +3185,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                             variant="board"
                             side="opponent"
                             tauntActive={card.ability === 'taunt' && !card.stealthActive}
-                            attackDelta={effectiveAttack(card, opponentField) - card.attack}
+                            attackDelta={effectiveAttack(card, opponentField, { health: opponentHealth }) - card.attack}
                             raisedNote={attackAuraNote(card, opponentField) || 'a Royal ally'}
                             nameless={fieldZoom < NAMELESS_BELOW}
                             zoom={fieldZoom}
@@ -3076,7 +3201,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                           <StatusChip zoom={fieldZoom} marked={coachCardId === card.instanceId && coachStep === 'warming'}>{arrivalChip(card)}</StatusChip>
                         )}
                         <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
-                          {describeCard(card, { attack: effectiveAttack(card, opponentField), aura: attackAuraNote(card, opponentField) })}
+                          {describeCard(card, { attack: effectiveAttack(card, opponentField, { health: opponentHealth }), aura: attackAuraNote(card, opponentField, { health: opponentHealth }) })}
                         </CardWords>
                         {hittable && (
                           <span data-target-mark="" className="absolute -top-2.5 -right-2.5 z-20 grid h-7 w-7 place-items-center rounded-full bg-red-600 ring-2 ring-red-200 shadow-lg" aria-hidden="true">
@@ -3257,7 +3382,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                             side="player"
                             resting={resting}
                             tauntActive={card.ability === 'taunt' && !card.stealthActive}
-                            attackDelta={effectiveAttack(card, playerField) - card.attack}
+                            attackDelta={effectiveAttack(card, playerField, { health: playerHealth }) - card.attack}
                             raisedNote={attackAuraNote(card, playerField) || 'a Royal ally'}
                             nameless={fieldZoom < NAMELESS_BELOW}
                             zoom={fieldZoom}
@@ -3270,7 +3395,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                           <StatusChip zoom={fieldZoom} marked={coachCardId === card.instanceId && coachStep === 'warming'}>{arrivalChip(card)}</StatusChip>
                         )}
                         <CardWords id={`desc-field-${card.instanceId}`} card={card} press={press}>
-                          {describeCard(card, { attack: effectiveAttack(card, playerField), aura: attackAuraNote(card, playerField) })}
+                          {describeCard(card, { attack: effectiveAttack(card, playerField, { health: playerHealth }), aura: attackAuraNote(card, playerField, { health: playerHealth }) })}
                         </CardWords>
                       </div>
                     </FieldSlot>
@@ -3375,7 +3500,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                   // A hand card is not on the table yet, so no aura reaches it.
                   attackDelta={previewTarget.from === 'hand'
                     ? 0
-                    : effectiveAttack(previewCard, previewTarget.from === 'player' ? playerField : opponentField) - previewCard.attack}
+                    : effectiveAttack(previewCard, previewTarget.from === 'player' ? playerField : opponentField, { health: previewTarget.from === 'player' ? playerHealth : opponentHealth }) - previewCard.attack}
                   raisedNote={previewTarget.from === 'hand'
                     ? 'a Royal ally'
                     : (attackAuraNote(previewCard, previewTarget.from === 'player' ? playerField : opponentField) || 'a Royal ally')}

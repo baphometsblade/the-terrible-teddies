@@ -4,6 +4,7 @@
  * that HP pool — halved by the defender's `shield` unless the attacker has
  * `piercing` (which cuts through the shield).
  */
+import { applyCutoff, ordersBonus } from '@/lib/barService';
 
 // Identity check for aura math: cards on a live field are copies stamped with
 // a stable `instanceId`, so two different objects can represent "the same
@@ -99,19 +100,20 @@ export const effectiveCost = (card, field = []) => {
  */
 const friendOn = (card, field, pred) => field.some((c) => !isSameCard(c, card) && pred(c));
 
-export const effectiveAttack = (card, field = []) => {
+export const effectiveAttack = (card, field = [], ctx) => {
   const royal = friendOn(card, field, (c) => c.ability === 'royal' && c.type === 'action');
   const smitten = card.ability === 'smitten' && friendOn(card, field, (c) => c.type === 'action');
   const table = card.tribe && friendOn(card, field, (c) => c.type === 'action' && c.tribe === card.tribe);
-  return card.attack + (royal ? 1 : 0) + (smitten ? 1 : 0) + (table ? 1 : 0);
+  return card.attack + (royal ? 1 : 0) + (smitten ? 1 : 0) + (table ? 1 : 0) + ordersBonus(card, ctx?.health);
 };
 
 /** Why the attack badge is up, for the card's words. Empty when it is not. */
-export const attackAuraNote = (card, field = []) => {
+export const attackAuraNote = (card, field = [], ctx) => {
   const notes = [];
   if (friendOn(card, field, (c) => c.ability === 'royal' && c.type === 'action')) notes.push('a Royal ally');
   if (card.ability === 'smitten' && friendOn(card, field, (c) => c.type === 'action')) notes.push('company');
   if (card.tribe && friendOn(card, field, (c) => c.type === 'action' && c.tribe === card.tribe)) notes.push('the table');
+  if (ordersBonus(card, ctx?.health)) notes.push('last orders');
   return notes.join(' and ');
 };
 
@@ -131,8 +133,10 @@ export const pickBlackoutTarget = (targets, random = Math.random) => {
  *   before — plain `attacker.attack`, no aura.
  * @returns {number} raw HP damage this hit deals (>= 0)
  */
-export const damageToCreatureHp = (attacker, target, attackerField, bonus = 0) => {
-  let dmg = attackerField ? effectiveAttack(attacker, attackerField) : attacker.attack;
+export const damageToCreatureHp = (attacker, target, attackerField, bonus = 0, ctx) => {
+  let dmg = attackerField
+    ? effectiveAttack(attacker, attackerField, ctx)
+    : attacker.attack + ordersBonus(attacker, ctx?.health);
   if (target.ability === 'shield' && attacker.ability !== 'piercing') {
     dmg = Math.floor(dmg / 2);
   }
@@ -157,13 +161,13 @@ export const damageToCreatureHp = (attacker, target, attackerField, bonus = 0) =
  * @param {object[]} [attackerField] - optional: see damageToCreatureHp.
  * @returns {{ survivor: object|null, overkill: number, dmg: number }}
  */
-export const resolveCreatureHit = (attacker, target, attackerField, bonus = 0) => {
-  const dmg = damageToCreatureHp(attacker, target, attackerField, bonus);
+export const resolveCreatureHit = (attacker, target, attackerField, bonus = 0, ctx) => {
+  const dmg = damageToCreatureHp(attacker, target, attackerField, bonus, ctx);
   const hpBefore = target.currentHp ?? target.defense ?? 0;
   const hpAfter = hpBefore - dmg;
 
   if (hpAfter > 0) {
-    const survivor = { ...target, currentHp: hpAfter };
+    let survivor = { ...target, currentHp: hpAfter };
     if (target.ability === 'fury') {
       // Recompute from a de-furied "base" attack (attack minus the bonus
       // already applied) so the cap is exact no matter how many times this
@@ -174,6 +178,7 @@ export const resolveCreatureHit = (attacker, target, attackerField, bonus = 0) =
       survivor.furyStacks = stacks;
       survivor.attack = target.attack - priorStacks + stacks;
     }
+    survivor = applyCutoff(attacker, survivor);
     return { survivor, overkill: 0, dmg };
   }
 
