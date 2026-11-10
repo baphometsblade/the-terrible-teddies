@@ -1,12 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
 import webpush from "npm:web-push@3.6.7";
+import { serviceRoleAuthorized } from "./auth.js";
 import { deliverOutbox, outboxFromRequest } from "./deliver.js";
 
-// Database webhooks call this with the service role JWT. config.toml keeps
-// verify_jwt = true, so the gateway rejects a missing or bad token. A
-// player's own JWT would still pass that gate, so this refuses any role
-// other than service_role before it touches a subscription.
+// Database webhooks call this with the service role key. config.toml keeps
+// verify_jwt = true, so the gateway rejects a missing or bad token. The
+// function also compares the bearer, in constant time, to
+// SUPABASE_SERVICE_ROLE_KEY. Decoding the payload is not a check: a forged
+// token can claim role=service_role, and a deploy with --no-verify-jwt
+// would otherwise let it through.
 
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), {
@@ -14,23 +17,12 @@ const json = (obj: unknown, status = 200) =>
     headers: { "Content-Type": "application/json" },
   });
 
-const jwtRole = (req: Request) => {
-  const header = req.headers.get("Authorization") || "";
-  const token = header.replace(/^Bearer\s+/i, "");
-  const part = token.split(".")[1];
-  if (!part) return "";
-  try {
-    const padded = part.replace(/-/g, "+").replace(/_/g, "/");
-    const parsed = JSON.parse(atob(padded));
-    return String(parsed.role || "");
-  } catch {
-    return "";
-  }
-};
-
 serve(async (req) => {
   if (req.method !== "POST") return json({ ok: false, reason: "method" }, 405);
-  if (jwtRole(req) !== "service_role") return json({ ok: false, reason: "forbidden" }, 401);
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!serviceRoleAuthorized(req.headers.get("Authorization"), serviceKey)) {
+    return json({ ok: false, reason: "forbidden" }, 401);
+  }
 
   const publicKey = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
   const privateKey = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";

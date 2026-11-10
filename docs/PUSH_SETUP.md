@@ -45,8 +45,10 @@ does not ask for permission.
 Name: `send-push`.
 
 `verify_jwt` is `true` (`supabase/config.toml`). The gateway rejects a
-missing or bad token. The function then refuses any JWT whose `role` is
-not `service_role`, so a player's own token cannot send a ping.
+missing or bad token. The function also compares the bearer, in constant
+time, to the `SUPABASE_SERVICE_ROLE_KEY` secret. A player's JWT, or a
+token whose payload merely claims `service_role`, does not match that
+secret, so a deploy with `--no-verify-jwt` still cannot send a ping.
 
 Deploy:
 
