@@ -17,6 +17,7 @@
 
 import { QUICKIE_ART } from './quickieArt';
 import { NIGHT_TWO_ART } from './nightTwoArt';
+import { HEN_DO_ART } from './henDoArt';
 import { MORNING_AFTER_ART } from './morningAfterArt';
 
 export const CARD_ART = {
@@ -102,6 +103,7 @@ export const CARD_ART = {
   95: { fur: "linen white", visual: "neat bear in a waistcoat, ice bucket, folded towel, knowing butler smile", scene: "Dutch tilt in a hotel corridor under warm sconce light, the tray held at a shut door." },
   ...QUICKIE_ART,
   ...NIGHT_TWO_ART,
+  ...HEN_DO_ART,
   ...MORNING_AFTER_ART,
 };
 

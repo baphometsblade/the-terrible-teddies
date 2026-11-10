@@ -12,7 +12,7 @@ const MORNING_AFTER_LIST = [
     id: 'ma-1',
     name: 'Heels-in-Hand Holly',
     attack: 2,
-    defense: 3,
+    defense: 2,
     type: 'action',
     cost: 2,
     ability: 'stealth',
@@ -59,7 +59,7 @@ const MORNING_AFTER_LIST = [
   {
     id: 'ma-5',
     name: 'Kebab Aristotle',
-    attack: 3,
+    attack: 4,
     defense: 3,
     type: 'action',
     cost: 4,
@@ -139,4 +139,5 @@ export const morningAfterArtFile = (id) => `public/cards/${id}.webp`;
 export const MORNING_AFTER_CARDS = MORNING_AFTER_LIST.map((card) => ({
   ...card,
   art: `/cards/${card.id}.webp`,
+  artThumb: `/cards/thumbs/${card.id}.webp`,
 }));

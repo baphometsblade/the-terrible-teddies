@@ -132,10 +132,11 @@ export const deckProblem = (ids, known) => {
   if (!Array.isArray(ids) || ids.length !== DECK_SIZE) return 'A published deck is 10 cards.';
   const counts = new Map();
   for (const id of ids) {
-    // Expansion ids (`ma-1`) file as the integer the deck column already
-    // accepts. The catalog check stays on the id the player actually owns.
+    // Prefixed ids file as the integer the deck column already accepts.
+    // The catalog check stays on the id the player actually owns.
     const filed = toGhostId(id);
-    if (filed == null || filed < 1 || filed > MAX_CARD_ID || (known && !known.has(id))) {
+    const listed = known ? known.has(id) : filed != null;
+    if (!listed || filed == null || filed < 1 || filed > MAX_CARD_ID) {
       return 'That deck has a card the bar does not serve.';
     }
     const n = (counts.get(filed) || 0) + 1;

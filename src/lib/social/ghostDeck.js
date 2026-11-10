@@ -3,9 +3,12 @@
 // its owner saved, not a harder Chuck. Unknown ids are dropped. The caller
 // refuses a list that comes back shorter than a real fight.
 //
-// The deck column is still an integer array. Morning After ids (`ma-1` …
-// `ma-10`) file as 151–160, a gap no catalog id uses, and come back as those
-// numbers. A real catalog id always wins over that alias.
+// The deck column is still an integer array. Hen Do ids file through
+// toLadderId (191–200). Morning After ids (`ma-1` … `ma-10`) file as
+// 151–160, a gap no catalog id uses. A real catalog id always wins over
+// either alias.
+
+import { fromLadderId, toLadderId } from '@/data/henDoHavoc';
 
 const EXPANSION = /^([a-z]{2})-([1-9]\d*)$/;
 
@@ -14,6 +17,8 @@ export const GHOST_FILE = Object.freeze({ ma: 150 });
 
 /** The integer a deck column can store, or null when this id cannot be filed. */
 export const toGhostId = (id) => {
+  const listed = toLadderId(id);
+  if (listed !== id) return listed;
   if (typeof id === 'number' && Number.isInteger(id)) return id;
   if (typeof id === 'string' && /^[1-9]\d*$/.test(id)) return Number(id);
   const match = typeof id === 'string' ? EXPANSION.exec(id) : null;
@@ -24,8 +29,10 @@ export const toGhostId = (id) => {
   return base + n;
 };
 
-/** The expansion id a filed integer stands for, or null. */
+/** The catalog id a filed integer stands for, or null when it is not an alias. */
 export const fromGhostId = (id) => {
+  const listed = fromLadderId(id);
+  if (listed !== id) return listed;
   const n = typeof id === 'number'
     ? id
     : (typeof id === 'string' && /^[1-9]\d*$/.test(id) ? Number(id) : NaN);
@@ -52,13 +59,9 @@ export const cardsFromIds = (ids, catalog) => {
     let card = byId.get(raw);
     if (!card) {
       const n = numericId(raw);
-      if (Number.isInteger(n)) {
-        card = byId.get(n);
-        if (!card) {
-          const expansion = fromGhostId(n);
-          if (expansion) card = byId.get(expansion);
-        }
-      }
+      const alias = Number.isInteger(n) ? fromGhostId(n) : fromGhostId(raw);
+      if (alias != null) card = byId.get(alias);
+      if (!card && Number.isInteger(n)) card = byId.get(n);
     }
     if (!card) return;
     cards.push({ ...card, instanceId: `g-${card.id}-${idx}` });

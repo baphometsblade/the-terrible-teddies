@@ -29,7 +29,7 @@ export const loadSocial = () => call('my_social');
 
 /** Publish the deck the player is fighting with. */
 export const publishGhost = (deck, label) => call('publish_ghost', {
-  p_deck: Array.isArray(deck) ? deck.map((id) => toGhostId(id)) : deck,
+  p_deck: (deck || []).map(toGhostId),
   p_label: label,
 });
 

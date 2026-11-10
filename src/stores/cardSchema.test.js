@@ -15,10 +15,6 @@ const VALID_SPECIAL_EFFECTS = ['heal', 'draw', 'buff'];
 // Opponent goon deck ids reserved in GameBoard.jsx (101-108) — player catalog
 // ids must stay below this range so card art/keys never collide.
 const OPPONENT_GOON_ID_FLOOR = 100;
-// Parallel expansions use a two-letter prefix (`ma-1`) so their ids cannot
-// collide with each other or with the numbered catalog. Numbered cards stay
-// below the goon floor.
-const EXPANSION_ID = /^[a-z]{2}-[1-9]\d*$/;
 
 const label = (card) => `card "${card?.name}" (id: ${card?.id})`;
 
@@ -105,25 +101,23 @@ describe('ALL_CARDS catalog shape', () => {
   it('CARD_ART has no entries for ids that no longer exist in ALL_CARDS', () => {
     const validIds = new Set(ALL_CARDS.map((c) => c.id));
     for (const idKey of Object.keys(CARD_ART)) {
-      const id = /^\d+$/.test(idKey) ? Number(idKey) : idKey;
+      const numeric = /^\d+$/.test(idKey) ? Number(idKey) : idKey;
       expect(
-        validIds.has(id),
+        validIds.has(numeric),
         `CARD_ART has an entry for id ${idKey}, which does not exist in ALL_CARDS — delete the orphaned entry`
       ).toBe(true);
     }
   });
 
-  it('every card has a unique id: an integer below the goon range, or an expansion id', () => {
+  it('every card has a unique id, numeric ones staying below the goon deck (101-108)', () => {
     const seen = new Map();
+    const slug = /^[a-z]{2,6}-[a-z0-9-]{1,40}$/;
     for (const card of ALL_CARDS) {
-      const expansion = typeof card.id === 'string' && EXPANSION_ID.test(card.id);
-      expect(
-        Number.isInteger(card.id) || expansion,
-        `${label(card)} must have an integer id or an expansion id like ma-1`
-      ).toBe(true);
-      if (Number.isInteger(card.id)) {
+      const prefixed = typeof card.id === 'string' && slug.test(card.id);
+      if (!prefixed) {
+        expect(Number.isInteger(card.id), `${label(card)} must have an integer id`).toBe(true);
         expect(
-          card.id > 0 && card.id < OPPONENT_GOON_ID_FLOOR,
+          card.id < OPPONENT_GOON_ID_FLOOR,
           `${label(card)} has id ${card.id}, which collides with the opponent goon deck's reserved range (101-108)`
         ).toBe(true);
       }

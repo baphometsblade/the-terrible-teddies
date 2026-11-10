@@ -66,24 +66,10 @@ const getTeddyEmoji = (teddy) => {
     common: ['🧸', '🐻'],
   };
   const options = rarityEmojis[teddy.rarity] || ['🧸', '🐻'];
-  const seed = typeof teddy.id === 'number'
+  const n = typeof teddy.id === 'number'
     ? teddy.id
-    : [...String(teddy.id ?? '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-  return options[Math.abs(seed) % options.length];
-};
-
-// Where this card's picture lives. `art` wins when a set names its own file
-// (the Morning After plates); everyone else still resolves from the id.
-export const cardArtPaths = (teddy) => {
-  if (teddy?.art) {
-    const full = teddy.art;
-    const thumb = full.includes('/cards/') ? full.replace('/cards/', '/cards/thumbs/') : '';
-    return { full, thumb };
-  }
-  return {
-    full: teddy?.id ? `/cards/${teddy.id}.webp` : '',
-    thumb: teddy?.id ? `/cards/thumbs/${teddy.id}.webp` : '',
-  };
+    : [...String(teddy.id || '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  return options[Math.abs(n) % options.length];
 };
 
 // Card art slot: shows the generated illustration for this card if one has
@@ -152,7 +138,8 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   // Once the thumb has failed for this card, fall through to the full
   // image regardless of the requested variant — that's the whole point of
   // the fallback chain.
-  const { thumb, full } = cardArtPaths(teddy);
+  const thumb = teddy.artThumb || `/cards/thumbs/${teddy.id}.webp`;
+  const full = teddy.art || `/cards/${teddy.id}.webp`;
   const box = variant === 'full' ? ART_INTRINSIC.full : ART_INTRINSIC.thumb;
   const priority = loading === 'eager' ? 'high' : undefined;
   if (variant === 'responsive' && !responsiveFailed && !thumbFailed) {
