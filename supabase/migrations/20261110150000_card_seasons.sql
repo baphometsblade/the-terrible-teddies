@@ -3,12 +3,12 @@
 -- evergreen pool. A new season is a row. The client does not need a
 -- redeploy to learn the window.
 --
--- open_card_pack() is the pack-opening clock. It reads pg_catalog.now()
--- and does not take a timestamp, so a caller cannot open a season with
--- their own clock. It does not spend a pack or grant a card: the save
--- still owns the economy. The client rolls PACK_ODDS, then weights the
--- cards this function says are active. Paid packs and earned packs ask
--- the same function.
+-- open_card_pack() is the season clock the client may ask. It reads
+-- pg_catalog.now() and does not take a timestamp, so a caller cannot open
+-- a season with their own clock. It does not spend a pack or grant a card.
+-- settle_pack_open rolls the cards. pack_card_in_pool already keeps a
+-- card_seasons id out of that roll until the window is open. This file
+-- adds the Naughty List row and its ten catalog ids.
 --
 -- card_seasons_snapshot(timestamptz) is the same query with the clock
 -- passed in, so a migration test can pin a window. Clients cannot call
@@ -64,6 +64,23 @@ ON CONFLICT (id) DO UPDATE SET
   ends_at = EXCLUDED.ends_at,
   card_ids = EXCLUDED.card_ids,
   pack_weight_boost = EXCLUDED.pack_weight_boost;
+
+-- Rarities match src/data/naughtyList.js. ON CONFLICT DO NOTHING so a
+-- catalog row already applied in production is left alone. pack_card_in_pool
+-- reads card_seasons, so these ids stay out of settle_pack_open until the
+-- window above is open.
+INSERT INTO public.pack_catalog (id, rarity) VALUES
+  ('xm-desk', 'common'),
+  ('xm-reply', 'common'),
+  ('xm-ozzy', 'common'),
+  ('xm-holly', 'common'),
+  ('xm-nog', 'uncommon'),
+  ('xm-elf', 'uncommon'),
+  ('xm-secret', 'rare'),
+  ('xm-mistletoe', 'rare'),
+  ('xm-list', 'epic'),
+  ('xm-santa', 'legendary')
+ON CONFLICT (id) DO NOTHING;
 
 CREATE OR REPLACE FUNCTION public.card_seasons_snapshot(p_at timestamptz)
 RETURNS jsonb

@@ -1827,8 +1827,10 @@ DECLARE
   v_start  timestamptz;
   v_end    timestamptz;
   v_json   jsonb;
+  v_row    jsonb;
   v_raised boolean;
   v_role   text;
+  v_xm     CONSTANT UUID := 'c3c3c3c3-c3c3-43c3-83c3-c3c3c3c3c3c3';
 BEGIN
   SELECT starts_at, ends_at INTO v_start, v_end
   FROM public.card_seasons WHERE id = 'naughty-list';
@@ -1906,6 +1908,54 @@ BEGIN
     END IF;
   END LOOP;
 
+  -- Only xm-santa is legendary, and the season window is still in the future,
+  -- so a legendary-only pack cannot come back with an xm- id.
+  CREATE TEMP TABLE xm_cat_bak AS SELECT id, rarity FROM public.pack_catalog;
+  CREATE TEMP TABLE xm_odds_bak AS SELECT rarity, weight FROM public.pack_odds;
+  UPDATE public.pack_catalog SET rarity = 'common';
+  UPDATE public.pack_catalog SET rarity = 'legendary' WHERE id = 'xm-santa';
+  UPDATE public.pack_odds SET weight = CASE WHEN rarity = 'legendary' THEN 100 ELSE 0 END;
+  UPDATE public.card_seasons
+  SET starts_at = pg_catalog.now() + interval '2 days',
+      ends_at = pg_catalog.now() + interval '9 days'
+  WHERE id = 'naughty-list';
+
+  INSERT INTO auth.users (id) VALUES (v_xm) ON CONFLICT DO NOTHING;
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_xm::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_row := public.settle_pack_open('xm-before-window', 'regular');
+  RESET ROLE;
+  IF EXISTS (
+    SELECT 1 FROM jsonb_array_elements_text(v_row->'card_ids') AS rolled(id)
+    WHERE rolled.id LIKE 'xm-%'
+  ) THEN
+    RAISE EXCEPTION 'a closed naughty list still rolled %', v_row->'card_ids';
+  END IF;
+
+  UPDATE public.card_seasons
+  SET starts_at = pg_catalog.now() - interval '1 day',
+      ends_at = pg_catalog.now() + interval '1 day'
+  WHERE id = 'naughty-list';
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_xm::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_row := public.settle_pack_open('xm-inside-window', 'regular');
+  RESET ROLE;
+  IF NOT (v_row->'card_ids' ? 'xm-santa') THEN
+    RAISE EXCEPTION 'an open naughty list did not roll xm-santa: %', v_row->'card_ids';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.pack_owned WHERE user_id = v_xm AND card_id = 'xm-santa'
+  ) THEN
+    RAISE EXCEPTION 'xm-santa was rolled but not stored';
+  END IF;
+
+  UPDATE public.pack_catalog c SET rarity = b.rarity FROM xm_cat_bak b WHERE c.id = b.id;
+  UPDATE public.pack_odds o SET weight = b.weight FROM xm_odds_bak b WHERE o.rarity = b.rarity;
+  DROP TABLE xm_cat_bak;
+  DROP TABLE xm_odds_bak;
+
   UPDATE public.card_seasons
   SET starts_at = v_start, ends_at = v_end
   WHERE id = 'naughty-list';
@@ -1932,9 +1982,15 @@ NODE
 )"
 server_ids="$(psql "$DB" -tA -c "SELECT id FROM public.pack_catalog ORDER BY id")"
 missing="$(comm -23 <(printf '%s\n' "$client_ids") <(printf '%s\n' "$server_ids"))"
+client_count="$(printf '%s\n' "$client_ids" | grep -c .)"
+server_count="$(psql "$DB" -tA -c "SELECT count(*) FROM public.pack_catalog")"
+if [ "$client_count" -ne 140 ] || [ "$server_count" -ne 140 ]; then
+  echo "pack_catalog should hold all 140 client card ids (client ${client_count}, server ${server_count})" >&2
+  exit 1
+fi
 if [ -n "$missing" ]; then
   echo "pack_catalog is missing client card ids:" >&2
   printf '%s\n' "$missing" >&2
   exit 1
 fi
-echo "==> pack_catalog holds every client card id"
+echo "==> pack_catalog holds all 140 client card ids"

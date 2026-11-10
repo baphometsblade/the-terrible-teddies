@@ -1861,17 +1861,12 @@ export const useGameStore = create(
         } else {
           // Offline fallback only. A signed-in open uses settle_pack_open.
           // Seasonal ids stay out until that server snapshot says active.
-          const seasons = getSeasonSnapshot().seasons || [];
-          const liveCards = ALL_CARDS.filter((card) => {
-            if (!BUNDLED_SEASON_IDS.has(card.id)) return true;
-            return seasons.some((season) => season.status === 'active' && (season.card_ids || []).includes(card.id));
-          });
           const rolled = rollPack({
             size: slots.size,
             table: PACK_ODDS.standard,
-            rng: Math.random,
+            rng: random,
             pity: nextPity,
-            cardsByRarity: cardsByRarity(liveCards),
+            cardsByRarity: cardsByRarity(collectiblePool(ALL_CARDS)),
           });
           rolledCards = rolled.cards;
           nextPity = rolled.pity;
@@ -1986,6 +1981,10 @@ export const useGameStore = create(
           packStreakDay: today,
           packPity: Number.isFinite(receipt.pity) ? receipt.pity : state.packPity,
         });
+        const activeSeason = (getSeasonSnapshot().seasons || []).find((season) => season.status === 'active') || null;
+        if (activeSeason) {
+          set({ seasonQuest: bumpSeasonQuest(get().seasonQuest, activeSeason, { packs: 1 }) });
+        }
         return { cards: pulledCards, dupeCoins, pity: receipt.pity };
       },
 
