@@ -45,14 +45,14 @@
       "camera": "dutch tilt, action freeze-frame"
     },
     "5": {
-      "render": "black and white film-noir toy photography of a stuffed teddy bear, no people in frame",
-      "gag": "Stitches the Snitch, a scrawny patchwork stuffed teddy bear toy held together with huge visible cross-stitches, sitting alone at an interrogation table whispering into an old tape recorder",
-      "fur_build": "patchwork fur of plum, grey and tartan patches with huge cross-stitches, scrawny",
-      "outfit_props": "cracked glasses, informant wire taped on his chest, a sewing needle behind his ear",
-      "setting": "bare interrogation room with a metal table",
+      "render": "black-and-white tabletop toy photography of a patchwork stuffed teddy sitting on a metal table, visible fabric texture and cotton stuffing, no people in frame",
+      "gag": "Stitches the Snitch, a scrawny patchwork stuffed teddy bear toy held together with huge visible cross-stitches and button eyes, sitting on an interrogation table and whispering into an oversized tape recorder",
+      "fur_build": "patchwork plush fur of plum, grey and tartan fabric patches with huge cross-stitches, scrawny stuffed body, button eyes, stitched muzzle",
+      "outfit_props": "tiny cracked doll glasses on his plush snout, informant wire taped to his stuffed chest, a sewing needle tucked behind one round plush ear",
+      "setting": "bare interrogation room with a metal table, the stuffed toy is the only figure",
       "palette": "monochrome black and white with silver tones",
-      "lighting": "single hanging lamp, hard shadows, venetian blind stripes",
-      "camera": "high angle over the table"
+      "lighting": "single hanging lamp, hard shadows, venetian blind stripes across the table",
+      "camera": "high angle showing the whole stuffed teddy on the table"
     },
     "6": {
       "render": "glossy talk-show TV still, saturated",
@@ -387,14 +387,14 @@
       "camera": "wide low angle by the sand"
     },
     "61": {
-      "render": "wedding-album toy photography of a stuffed teddy bear, no people in frame",
-      "gag": "Snitchslap Sue, a stuffed teddy bear toy mid-slap with one plush paw, a tiny wire microphone poking out of her doll-sized cardigan, a toppled wedding cake beside her",
-      "fur_build": "dusty rose fur, lanky, fresh black eye",
-      "outfit_props": "doll-sized torn cardigan over a doll-sized bridesmaid dress on her plush bear body, wire mic",
-      "setting": "wedding reception with toppled cake",
+      "render": "tabletop toy photography at a ruined wedding dessert table, stuffed animal product photo, no people in frame",
+      "gag": "Snitchslap Sue, a lanky dusty-rose stuffed teddy bear toy mid-slap with one plush paw, a tiny wire microphone poking out of her doll cardigan, standing on a toppled wedding cake",
+      "fur_build": "dusty rose plush fur, lanky stuffed body, button eyes, a stitched black eye, visible seams",
+      "outfit_props": "tiny torn doll cardigan over a tiny doll bridesmaid dress fitted to a stuffed bear body, wire mic clipped to the fur",
+      "setting": "wedding dessert table with a smashed cake, the stuffed toy is the only figure",
       "palette": "ivory, blush and gold",
       "lighting": "bright wedding uplighting",
-      "camera": "dynamic medium shot"
+      "camera": "medium shot of the whole stuffed teddy on the cake"
     },
     "62": {
       "render": "noir-ish smoky alley photo, heavy haze",
@@ -437,14 +437,14 @@
       "camera": "low wide angle"
     },
     "66": {
-      "render": "1950s magazine-advert toy photography of a stuffed teddy bear, no people in frame",
-      "gag": "Mama Mauls, a big over-stuffed teddy bear toy brandishing a rolling pin like a club while wearing a sweet floral apron",
-      "fur_build": "caramel blonde fur, over-stuffed motherly build, claw marks on muzzle",
-      "outfit_props": "floral apron, pearls, rolling pin",
-      "setting": "retro pastel kitchen with a pie on the sill",
+      "render": "1950s tabletop toy photography in a pastel doll kitchen, stuffed animal as the only figure, no people in frame",
+      "gag": "Mama Mauls, a big over-stuffed caramel teddy bear toy standing on a kitchen counter, brandishing a rolling pin in one plush paw, sweet floral apron around her stuffed belly",
+      "fur_build": "caramel plush fur, over-stuffed round teddy body, button eyes, claw-mark stitches on the muzzle, visible seams",
+      "outfit_props": "floral doll apron tied around the stuffed belly, tiny pearl necklace, wooden rolling pin in a paw",
+      "setting": "retro pastel kitchen with a pie on the sill, stuffed toy on the counter",
       "palette": "mint green, cherry red and caramel",
       "lighting": "bright cheerful kitchen light",
-      "camera": "medium low angle"
+      "camera": "medium low angle showing the whole stuffed teddy"
     },
     "67": {
       "render": "stained-glass church photo, hushed",
@@ -497,14 +497,14 @@
       "camera": "low angle on the carpet"
     },
     "82": {
-      "render": "citrus-bright product photography of a stuffed teddy bear toy, no people in frame",
-      "gag": "Whiskey-Sour Walt, a squat stuffed teddy bear toy with a puckered plush face from a sour drink, lemon wedges stuck on his round bear ears",
-      "fur_build": "citrus yellow fur, squat, puckered scowl",
-      "outfit_props": "lemon wedge earrings, salt on his snout, whiskey glass",
-      "setting": "lemon grove picnic table",
+      "render": "citrus-bright tabletop toy photography of a stuffed teddy on a picnic table, no people in frame",
+      "gag": "Whiskey-Sour Walt, a squat citrus-yellow stuffed teddy bear toy with a puckered stitched muzzle from a sour drink, lemon wedges clipped to his round plush ears, sitting among lemons",
+      "fur_build": "citrus yellow plush fur, squat stuffed body, puckered stitched scowl, button eyes, visible seams",
+      "outfit_props": "lemon wedges clipped to round plush ears, salt crystals on his fabric snout, a whiskey glass beside the toy",
+      "setting": "lemon grove picnic table covered in lemons",
       "palette": "lemon yellow and lime green",
       "lighting": "bright midday sun",
-      "camera": "tight close-up"
+      "camera": "medium shot of the whole stuffed teddy, not a face crop"
     },
     "83": {
       "render": "Wes Anderson style symmetrical photo, pastel",
@@ -517,14 +517,14 @@
       "camera": "perfectly symmetrical centred"
     },
     "84": {
-      "render": "Las Vegas cabaret-styled toy photography of a fuzzy stuffed teddy bear, no people in frame",
-      "gag": "Lap-Dance Lila, a chubby fuzzy pink stuffed teddy bear toy with round bear ears and button eyes sitting on a giant velvet armchair, waving a pink feather fan, feathers flying",
-      "fur_build": "stage pink fuzzy plush fur, round chubby stuffed body",
-      "outfit_props": "sequin bow tie, feather fan, garter of play-money notes on a plush leg",
-      "setting": "Vegas cabaret stage",
+      "render": "stage toy photography of a pink stuffed teddy on an oversized velvet armchair, no people in frame",
+      "gag": "Lap-Dance Lila, a chubby fuzzy pink stuffed teddy bear toy with round bear ears and button eyes sitting in a giant velvet armchair that dwarfs her, waving a pink feather fan, feathers flying",
+      "fur_build": "stage pink fuzzy plush fur, round chubby stuffed teddy body, button eyes, stitched smile, visible seams",
+      "outfit_props": "tiny sequin bow tie on the stuffed neck, feather fan held in a paw, garter of play-money notes on a plush leg",
+      "setting": "Vegas cabaret stage with an oversized armchair, stuffed toy is the only figure",
       "palette": "flamingo pink and showgirl gold",
       "lighting": "spotlight and sparkle",
-      "camera": "low hero angle"
+      "camera": "low hero angle showing the whole stuffed teddy in the chair"
     },
     "85": {
       "render": "low-budget DIY renovation photo",
@@ -577,14 +577,14 @@
       "camera": "wide shot through glass"
     },
     "90": {
-      "render": "1970s soft-focus toy photography of a stuffed teddy bear, no people in frame",
-      "gag": "Cougar Carol, a mature stuffed teddy bear toy with round bear ears reclining on a chaise like a big cat, leopard-print robe, cigarette holder",
-      "fur_build": "wine red fur, mature broad build",
-      "outfit_props": "leopard-print silk robe, cigarette holder, pearls",
-      "setting": "seventies sunken living room with shag carpet",
+      "render": "1970s tabletop toy photography of a stuffed teddy on a chaise, soft lamp light, no people in frame",
+      "gag": "Cougar Carol, a wine-red stuffed teddy bear toy with round bear ears reclining on a doll-sized chaise like a lounge lizard, leopard-print fabric robe, toy cigarette holder in one paw",
+      "fur_build": "wine red plush fur, overstuffed slightly worn teddy body, button eyes, stitched smirk, visible seams",
+      "outfit_props": "leopard-print fabric robe on the stuffed body, toy cigarette holder, tiny pearls",
+      "setting": "seventies sunken living room with shag carpet, stuffed toy on the chaise, no people",
       "palette": "leopard gold, wine red and brown",
-      "lighting": "warm soft-focus lamp light",
-      "camera": "reclining medium shot"
+      "lighting": "warm soft lamp light",
+      "camera": "medium shot of the whole stuffed teddy reclining on the chaise"
     },
     "91": {
       "render": "early-morning street photography, cold",
@@ -757,24 +757,24 @@
       "camera": "low angle"
     },
     "ck-chuck": {
-      "render": "warm 1970s Kodachrome toy photography of a stuffed teddy bear, no people in frame",
-      "gag": "Chuck, a stuffed plush teddy bear toy bartender behind the bar, chucking a dirty bar towel over his shoulder while pouring a shot he will lie about",
-      "fur_build": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth",
-      "outfit_props": "damp bar towel, bottle mid-pour",
-      "setting": "his own mahogany pub bar with brass taps",
+      "render": "warm 1970s Kodachrome tabletop toy photography of a stuffed teddy behind a bar, no people in frame",
+      "gag": "Chuck, a honey-brown stuffed plush teddy bear toy bartender behind his bar, a dirty bar towel over one stuffed shoulder, pouring a shot from a bottle with a plush paw",
+      "fur_build": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth, stuffed body with visible seams",
+      "outfit_props": "tiny loosened black bow tie, teal doll short-sleeve shirt on the stuffed body, one gold tooth stitch, damp bar towel, bottle mid-pour in a paw",
+      "setting": "his own mahogany pub bar with brass taps, the stuffed toy is the only figure",
       "palette": "mahogany, brass and teal",
       "lighting": "warm brass pendant lamps",
-      "camera": "eye-level across the bar"
+      "camera": "medium shot across the bar showing the whole stuffed teddy"
     },
     "ck-closing": {
-      "render": "harsh closing-time toy photography of a stuffed teddy bear, fluorescent house lights, no people in frame",
-      "gag": "Closing-Time Chuck, a stuffed plush teddy bear toy bartender ringing a huge brass last-orders bell with a threatening grin, chairs stacked on tables",
-      "fur_build": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth",
-      "outfit_props": "brass bell, mop bucket",
-      "setting": "empty pub at closing with chairs on tables",
+      "render": "harsh closing-time tabletop toy photography of a stuffed teddy in an empty pub, fluorescent house lights, no people in frame",
+      "gag": "Closing-Time Chuck, a honey-brown stuffed plush teddy bear toy bartender ringing a huge brass last-orders bell with both paws, a threatening stitched grin, chairs stacked on tables behind him",
+      "fur_build": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth, stuffed body with visible seams",
+      "outfit_props": "tiny loosened black bow tie, teal doll short-sleeve shirt, brass bell bigger than his head, mop bucket beside the toy",
+      "setting": "empty pub at closing with chairs on tables, stuffed toy is the only figure",
       "palette": "fluorescent white and teal",
       "lighting": "flat harsh house lights",
-      "camera": "wide shot from the door"
+      "camera": "wide shot from the door showing the whole stuffed teddy"
     },
     "ck-offduty": {
       "render": "golden-hour rooftop lifestyle photo",
@@ -787,14 +787,14 @@
       "camera": "low angle"
     },
     "ck-rita": {
-      "render": "1940s pin-up styled toy photography of a stuffed teddy bear, no people in frame",
-      "gag": "Regular Rita, a curvy russet stuffed teddy bear toy with round bear ears perched on her reserved bar stool, plush legs crossed, owning the place",
-      "fur_build": "russet fur, curvy",
-      "outfit_props": "doll-sized polka-dot dress on her plush bear body, red lipstick stitched on her muzzle",
-      "setting": "corner of a neighbourhood pub with her named stool",
+      "render": "neighbourhood-pub tabletop toy photography of a stuffed teddy on a bar stool, no people in frame",
+      "gag": "Regular Rita, a curvy russet stuffed teddy bear toy with round bear ears perched on her reserved bar stool, plush legs dangling, owning the place",
+      "fur_build": "russet plush fur, curvy stuffed teddy body, button eyes, stitched smile, visible seams",
+      "outfit_props": "tiny polka-dot doll dress on her stuffed bear body, red thread lipstick stitched on her muzzle",
+      "setting": "corner of a neighbourhood pub with her named stool, stuffed toy is the only figure",
       "palette": "polka-dot red and cream",
       "lighting": "soft warm key light",
-      "camera": "three-quarter pin-up pose"
+      "camera": "medium three-quarter shot of the whole stuffed teddy on the stool"
     },
     "ck-tabitha": {
       "render": "Victorian ledger still-life portrait look",
@@ -817,14 +817,14 @@
       "camera": "fisheye inside limo"
     },
     "hd-veil": {
-      "render": "dreamy hazy toy photography of a stuffed teddy bear, no people in frame",
-      "gag": "Veil of Bad Ideas, a lavender stuffed teddy bear toy peeking from behind a sheer veil draped over her round bear ears, holding a hotel key and a long hotel bill",
-      "fur_build": "lavender fur, sly",
-      "outfit_props": "sheer veil over bear ears, doll-sized hotel robe",
-      "setting": "hotel lift with mirrored walls",
+      "render": "dreamy tabletop toy photography of a stuffed teddy in a hotel lift, no people in frame",
+      "gag": "Veil of Bad Ideas, a lavender stuffed teddy bear toy with a tiny sheer veil perched on her round bear ears, button eyes peeking out, holding an oversized hotel key and a long hotel bill in her paws",
+      "fur_build": "lavender plush fur, sly stuffed teddy body, button eyes, visible seams",
+      "outfit_props": "tiny tulle veil on the round bear ears, tiny doll hotel robe on the stuffed body",
+      "setting": "hotel lift with mirrored walls, stuffed toy is the only figure",
       "palette": "lavender and mirror silver",
       "lighting": "soft lift downlight",
-      "camera": "mirror reflection shot"
+      "camera": "medium shot of the whole stuffed teddy, veil not covering the bear face"
     },
     "hd-chorus": {
       "render": "Broadway musical stage photo",
@@ -847,24 +847,24 @@
       "camera": "macro freeze-frame"
     },
     "hd-lap": {
-      "render": "burlesque-styled toy photography of a fuzzy stuffed teddy bear, no people in frame",
-      "gag": "Lap-Line Lola, a chubby rose-gold stuffed teddy bear toy with round bear ears guarding a velvet rope in front of a queue of little teddy bears, feather boa round her neck",
-      "fur_build": "rose-gold fuzzy plush fur, round stuffed body",
-      "outfit_props": "feather boa, velvet rope, sequin bow",
-      "setting": "burlesque theatre",
+      "render": "stage toy photography of a stuffed teddy beside a velvet rope, no people in frame",
+      "gag": "Lap-Line Lola, a chubby rose-gold stuffed teddy bear toy with round bear ears and button eyes guarding a velvet rope in front of a queue of smaller teddy bear toys, a feather boa around her stuffed neck",
+      "fur_build": "rose-gold fuzzy plush fur, round stuffed teddy body, button eyes, stitched smile, visible seams",
+      "outfit_props": "feather boa around the stuffed neck, velvet rope in a paw, tiny sequin bow",
+      "setting": "burlesque theatre doorway, only stuffed toys in frame",
       "palette": "rose gold and black",
       "lighting": "warm theatrical spot",
-      "camera": "low angle"
+      "camera": "low angle showing the whole stuffed teddy"
     },
     "hd-bree": {
-      "render": "over-saturated wedding toy photography of a stuffed teddy bear, no people in frame",
-      "gag": "Bridesmaid Bree, a seafoam stuffed teddy bear toy showing off on a reception table in an awful puffy doll-sized bridesmaid dress, bouquet raised",
-      "fur_build": "seafoam green fur, show-off",
-      "outfit_props": "puffy doll-sized seafoam dress on her plush bear body, bouquet",
-      "setting": "garden marquee reception",
+      "render": "over-saturated tabletop toy photography of a stuffed teddy on a wedding reception table, no people in frame",
+      "gag": "Bridesmaid Bree, a seafoam stuffed teddy bear toy showing off while standing on a reception table in an awful puffy doll-sized bridesmaid dress, bouquet raised in a plush paw",
+      "fur_build": "seafoam green plush fur, show-off stuffed teddy body, button eyes, seafoam fur on the head and paws clearly visible, visible seams",
+      "outfit_props": "puffy doll-sized seafoam dress on her stuffed bear body, tiny bouquet in a paw",
+      "setting": "garden marquee reception table, stuffed toy is the only figure",
       "palette": "seafoam and blush",
       "lighting": "fairy-light glow",
-      "camera": "low hero angle"
+      "camera": "low hero angle showing the whole stuffed teddy on the table"
     },
     "hd-honour": {
       "render": "morning-after hotel corridor photo",
@@ -887,14 +887,14 @@
       "camera": "through-the-curtain gap"
     },
     "hd-bride": {
-      "render": "regal portrait-styled toy photography of a stuffed teddy bear, no people in frame",
-      "gag": "The Bride Says So, a pearl-white stuffed teddy bear toy bride on a throne at the head table, one plush paw raised, a row of little teddy guests obeying",
-      "fur_build": "pearl white fur, commanding",
-      "outfit_props": "tiny veil and tiara on her round bear ears, pearl necklace, champagne-flute sceptre",
-      "setting": "palace-style ballroom",
+      "render": "regal tabletop toy photography of a stuffed teddy on a toy throne, no people in frame",
+      "gag": "The Bride Says So, a pearl-white stuffed teddy bear toy bride sitting on a toy throne at the head table, one plush paw raised, a row of smaller teddy bear guests obeying",
+      "fur_build": "pearl white plush fur, commanding stuffed teddy body, button eyes, stitched smile, visible seams",
+      "outfit_props": "tiny veil and tiara perched on her round bear ears, pearl necklace, champagne-flute sceptre in a paw",
+      "setting": "palace-style ballroom head table, only stuffed toys in frame",
       "palette": "pearl white and royal blue",
       "lighting": "chandelier light",
-      "camera": "low regal angle"
+      "camera": "low regal angle showing the whole stuffed teddy on the throne"
     },
     "hd-luxe": {
       "render": "arena rock concert photo",
@@ -967,14 +967,14 @@
       "camera": "wide shot"
     },
     "lo-lights-down": {
-      "render": "strobe-lit nightclub toy photography of a stuffed teddy bear, no people in frame",
-      "gag": "Lights-Down Dana, a stuffed teddy bear toy with glow-in-the-dark green fur swinging a plush paw in a power cut, lit only by her own glowing fur",
-      "fur_build": "glow-in-the-dark green fur",
-      "outfit_props": "doll-sized satin dress slipped off one plush shoulder",
-      "setting": "pitch-black dance floor",
+      "render": "dark nightclub tabletop toy photography of a self-luminous stuffed teddy, no people in frame",
+      "gag": "Lights-Down Dana, a stuffed teddy bear toy with glow-in-the-dark green plush fur swinging a plush paw in a power cut, the toy itself glowing in the dark",
+      "fur_build": "glow-in-the-dark green plush fur, stuffed teddy body, button eyes, visible seams, the fabric itself glows",
+      "outfit_props": "tiny doll satin dress slipped off one stuffed shoulder",
+      "setting": "pitch-black dance floor, stuffed toy is the only figure",
       "palette": "glow green on black",
-      "lighting": "self-luminous glow only",
-      "camera": "dutch tilt"
+      "lighting": "self-luminous glow from the fur only",
+      "camera": "dutch tilt showing the whole glowing stuffed teddy"
     },
     "lo-cut-the-line": {
       "render": "bank heist movie still",
@@ -1057,11 +1057,11 @@
       "camera": "low statuesque angle"
     },
     "ma-6": {
-      "render": "sunny brunch café photo, overexposed",
+      "render": "sunny brunch caf\u00e9 photo, overexposed",
       "gag": "Blackout Brunch in sunglasses face-planting into eggs benedict with a bloody mary",
       "fur_build": "honey fur",
       "outfit_props": "oversized borrowed shirt, sunglasses",
-      "setting": "outdoor brunch café",
+      "setting": "outdoor brunch caf\u00e9",
       "palette": "egg yolk yellow and tomato red",
       "lighting": "harsh bright brunch sun",
       "camera": "top-down flat lay"
