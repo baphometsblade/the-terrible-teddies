@@ -19,7 +19,12 @@ export const starCost = (cardId, stars, coinsFor) => {
 export const nextStarTarget = (cards, ownedIds, stars, setId) => {
   const owned = new Set(ownedIds || []);
   const open = (cards || []).filter((card) => card.rarity === setId && owned.has(card.id) && starCount(stars, card.id) < STAR_CAP);
-  open.sort((a, b) => starCount(stars, a.id) - starCount(stars, b.id) || a.id - b.id);
+  const idOrder = (a, b) => (
+    typeof a.id === 'number' && typeof b.id === 'number'
+      ? a.id - b.id
+      : String(a.id).localeCompare(String(b.id))
+  );
+  open.sort((a, b) => starCount(stars, a.id) - starCount(stars, b.id) || idOrder(a, b));
   return open[0] || null;
 };
 
@@ -33,9 +38,11 @@ export const starSetReady = (cards, ownedIds, stars, setId) => {
 
 export const starringUnlocked = (ownedIds) => (ownedIds || []).length >= STAR_UNLOCK_CARDS;
 
-const asId = (id) => {
-  const n = Number(id);
-  return Number.isInteger(n) && n > 0 ? n : null;
+const asId = (key, allowed) => {
+  if (allowed.has(key)) return key;
+  const n = Number(key);
+  if (Number.isInteger(n) && n > 0 && allowed.has(n)) return n;
+  return null;
 };
 
 /** A saved star map: known cards, 1 to 3, string keys. */
@@ -44,7 +51,7 @@ export const normalizeStars = (raw, cardIds) => {
   const out = {};
   if (!raw || typeof raw !== 'object') return out;
   for (const [key, value] of Object.entries(raw)) {
-    const id = asId(key);
+    const id = asId(key, allowed);
     const stars = Math.floor(Number(value));
     if (id == null || !allowed.has(id)) continue;
     if (stars >= 1 && stars <= STAR_CAP) out[String(id)] = stars;
