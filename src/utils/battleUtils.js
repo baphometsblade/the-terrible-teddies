@@ -31,7 +31,7 @@ const isSameCard = (a, b) => {
  * @returns {boolean} whether `card` may declare an attack right now
  */
 export const canAttack = (card) =>
-  card.type === 'action' && !card.hasAttacked && !card.hungover
+  card.type === 'action' && !card.hasAttacked && !card.hungover && !card.kissed
   && (!card.summoningSick || card.ability === 'rush');
 
 /**
@@ -58,6 +58,8 @@ export const readyCreatures = (field) =>
     // A Hungover bear sits out the turn after it swings, then wakes up.
     hungover: !!c.pendingHangover,
     pendingHangover: false,
+    // A kiss lasts until this side is readied again.
+    kissed: false,
   }));
 
 /** Stamp a swing. Hungover bears book the morning after. */
@@ -137,7 +139,9 @@ export const damageToCreatureHp = (attacker, target, attackerField, bonus = 0, c
   let dmg = attackerField
     ? effectiveAttack(attacker, attackerField, ctx)
     : attacker.attack + ordersBonus(attacker, ctx?.health);
-  if (target.ability === 'shield' && attacker.ability !== 'piercing') {
+  // Strip takes the costume and the halving with it. Piercing only the halving.
+  const cutsShield = attacker.ability === 'piercing' || attacker.ability === 'strip';
+  if (target.ability === 'shield' && !cutsShield) {
     dmg = Math.floor(dmg / 2);
   }
   return Math.max(0, dmg + (bonus || 0));
@@ -168,6 +172,9 @@ export const resolveCreatureHit = (attacker, target, attackerField, bonus = 0, c
 
   if (hpAfter > 0) {
     let survivor = { ...target, currentHp: hpAfter };
+    if (attacker.ability === 'strip' && target.ability === 'shield') {
+      survivor.ability = 'none';
+    }
     if (target.ability === 'fury') {
       // Recompute from a de-furied "base" attack (attack minus the bonus
       // already applied) so the cap is exact no matter how many times this

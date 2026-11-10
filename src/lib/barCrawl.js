@@ -22,5 +22,19 @@ export const crawlStatus = (state = {}, weekKey = '') => {
   });
   const done = stops.every((stop) => stop.met);
   const claimed = Boolean(weekKey) && state.crawlClaimedWeek === weekKey;
-  return { stops, done, claimed, reward: CRAWL_REWARD, unlocked: (state.totalBattles || 0) >= CRAWL_UNLOCK_BATTLES };
+  return { stops, done, claimed, reward: CRAWL_REWARD, unlocked: (state.totalBattles || 0) >= CRAWL_UNLOCK_BATTLES, title: 'Bar crawl' };
+};
+
+/** The same crawl, dressed for the office party. The stops and the reward do not change. */
+export const crawlFacing = (status, season) => {
+  if (!season) return status;
+  return {
+    ...status,
+    title: 'Office-party crawl',
+    stops: status.stops.map((stop) => (
+      stop.id === 'song'
+        ? { ...stop, line: 'Play 8 cards. The playlist is carols and worse ideas.' }
+        : stop
+    )),
+  };
 };

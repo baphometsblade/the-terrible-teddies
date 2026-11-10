@@ -1820,6 +1820,100 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting card seasons: clients get the server clock, not their own"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_start  timestamptz;
+  v_end    timestamptz;
+  v_json   jsonb;
+  v_raised boolean;
+  v_role   text;
+BEGIN
+  SELECT starts_at, ends_at INTO v_start, v_end
+  FROM public.card_seasons WHERE id = 'naughty-list';
+  IF v_start IS DISTINCT FROM (timestamp '2026-12-01 00:00:00' AT TIME ZONE 'Australia/Brisbane') THEN
+    RAISE EXCEPTION 'naughty list does not open at Brisbane midnight (%)', v_start;
+  END IF;
+  IF v_end IS DISTINCT FROM (timestamp '2027-01-07 00:00:00' AT TIME ZONE 'Australia/Brisbane') THEN
+    RAISE EXCEPTION 'naughty list does not close at the next Brisbane midnight (%)', v_end;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'open_card_pack' AND p.prosecdef
+      AND EXISTS (SELECT 1 FROM unnest(p.proconfig) c WHERE c LIKE 'search_path=%')
+  ) THEN
+    RAISE EXCEPTION 'open_card_pack is not SECURITY DEFINER with a pinned search_path';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'card_seasons_snapshot'
+      AND (has_function_privilege('anon', p.oid, 'EXECUTE')
+        OR has_function_privilege('authenticated', p.oid, 'EXECUTE'))
+  ) THEN
+    RAISE EXCEPTION 'a client role can EXECUTE card_seasons_snapshot';
+  END IF;
+
+  FOREACH v_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    v_raised := FALSE;
+    BEGIN
+      EXECUTE format('SET LOCAL ROLE %I', v_role);
+      PERFORM public.card_seasons_snapshot(pg_catalog.now());
+    EXCEPTION WHEN insufficient_privilege THEN
+      v_raised := TRUE;
+    END;
+    RESET ROLE;
+    IF NOT v_raised THEN
+      RAISE EXCEPTION '% could call card_seasons_snapshot', v_role;
+    END IF;
+  END LOOP;
+
+  -- now() is the transaction start, so these bounds do not race the clock.
+  -- ends_at is exclusive: equal to now() is already ended.
+  UPDATE public.card_seasons
+  SET starts_at = pg_catalog.now() - interval '1 day',
+      ends_at = pg_catalog.now()
+  WHERE id = 'naughty-list';
+
+  FOREACH v_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    EXECUTE format('SET LOCAL ROLE %I', v_role);
+    SELECT public.open_card_pack() INTO v_json;
+    RESET ROLE;
+    IF NOT EXISTS (
+      SELECT 1 FROM jsonb_array_elements(v_json->'seasons') s
+      WHERE s->>'id' = 'naughty-list' AND s->>'status' = 'ended'
+    ) THEN
+      RAISE EXCEPTION '% open_card_pack treated the exclusive end as still open (%)', v_role, v_json;
+    END IF;
+  END LOOP;
+
+  UPDATE public.card_seasons
+  SET starts_at = pg_catalog.now() - interval '1 day',
+      ends_at = pg_catalog.now() + interval '1 day'
+  WHERE id = 'naughty-list';
+
+  FOREACH v_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    EXECUTE format('SET LOCAL ROLE %I', v_role);
+    SELECT public.open_card_pack() INTO v_json;
+    RESET ROLE;
+    IF NOT EXISTS (
+      SELECT 1 FROM jsonb_array_elements(v_json->'seasons') s
+      WHERE s->>'id' = 'naughty-list' AND s->>'status' = 'active'
+    ) THEN
+      RAISE EXCEPTION '% open_card_pack did not return the active season (%)', v_role, v_json;
+    END IF;
+  END LOOP;
+
+  UPDATE public.card_seasons
+  SET starts_at = v_start, ends_at = v_end
+  WHERE id = 'naughty-list';
+
+  RAISE NOTICE 'card season assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"
 
 # Every card the client can roll has a catalog row. A future set that is

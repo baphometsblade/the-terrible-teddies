@@ -7,6 +7,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { countClaimable } from '../stores/challenges';
 import { visibleChallenges } from '@/lib/questReroll';
+import SeasonBanner from './SeasonBanner';
 import { titleById } from '@/lib/titles';
 import { useGameStore, ALL_CARDS } from '../stores/gameStore';
 import { pressable } from '@/lib/a11y';
@@ -109,6 +110,7 @@ const MainMenu = ({
   onChallenges,
   onNightly,
   onWardrobe,
+  onSeason,
 }) => {
   const {
     playerName, level, xp, getXPForNextLevel,
@@ -438,6 +440,8 @@ const MainMenu = ({
           </motion.div>
         </div>
       </section>
+
+      <SeasonBanner onOpen={onSeason} />
 
       {/* Everywhere else. One material, one icon style, one accent: tiles that
           are asking for attention get the brass trim instead of a different

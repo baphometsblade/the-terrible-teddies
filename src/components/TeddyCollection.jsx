@@ -15,6 +15,10 @@ import { buildVisibleOrder, staggerDelay } from '@/lib/collectionOrder';
 import { CARD_ZOOM_QUERY, gridArtVariant } from '@/lib/cardZoom';
 import { abilityRules } from '@/lib/abilities';
 import { effectLabel, effectRules } from '@/lib/effects';
+import { BUNDLED_SEASON_IDS } from '@/data/seasonsCatalog';
+import { showInAlbum } from '@/lib/seasons';
+import { useVisibleSeasons } from '@/hooks/useSeasonSnapshot';
+import VaultMark from './VaultMark';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { CLEARANCE, isKeyboardFocus, revealBetween } from '@/lib/keepClear';
 import CollectionBook from './CollectionBook';
@@ -233,6 +237,7 @@ const CardDetailDialog = ({ cards, index, onIndex, onClose }) => {
 
         <div className="w-full min-w-0 flex-1">
           <FlavorLine card={card} />
+          <div className="mt-2"><VaultMark cardId={card.id} seasons={card.seasons} /></div>
 
           <dl className="mt-4 grid grid-cols-2 gap-2">
             <Stat label="Type"><span className="capitalize text-white">{card.type}</span></Stat>
@@ -322,9 +327,11 @@ const TeddyCollection = () => {
     if (isKeyboardFocus(e.target)) e.target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   };
 
+  const seasons = useVisibleSeasons();
   const allCardsWithOwnership = ALL_CARDS.map(card => ({
     ...card,
     owned: ownedCards.includes(card.id),
+    seasons,
   }));
 
   // The full catalog, sorted once. Filtering hides tiles rather than removing
@@ -334,6 +341,7 @@ const TeddyCollection = () => {
   });
 
   const matchesFilters = (card) => {
+    if (!showInAlbum(card.id, card.owned, seasons, BUNDLED_SEASON_IDS)) return false;
     if (showOwned && !card.owned) return false;
     if (!showOwned && card.owned) return false;
     if (filter !== 'all' && card.type !== filter) return false;
@@ -352,14 +360,16 @@ const TeddyCollection = () => {
   const visibleCards = sortedCards.filter((c) => visibleOrder.has(c.id));
   const selectedIndex = visibleCards.findIndex((c) => c.id === selectedId);
 
-  const totalOwned = ownedCards.length;
-  const totalCards = ALL_CARDS.length;
+  const album = allCardsWithOwnership.filter((card) => showInAlbum(card.id, card.owned, seasons, BUNDLED_SEASON_IDS));
+  const totalOwned = album.filter((card) => card.owned).length;
+  const totalCards = album.length;
   const completion = (totalOwned / totalCards) * 100;
   const completionPercent = completion.toFixed(1);
 
   const rarityStats = RARITY_ORDER.map(rarity => {
-    const total = ALL_CARDS.filter(c => c.rarity === rarity).length;
-    const owned = allCardsWithOwnership.filter(c => c.rarity === rarity && c.owned).length;
+    const inTier = album.filter(c => c.rarity === rarity);
+    const total = inTier.length;
+    const owned = inTier.filter(c => c.owned).length;
     return { rarity, total, owned };
   });
 
