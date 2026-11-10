@@ -13,6 +13,7 @@ import { cardsFromIds } from '@/lib/social/ghostDeck';
 import { collectiblePool } from '@/lib/seasons';
 import {
   loadSocial, loadWeekly, loadCard, publishGhost, drawGhost, openChallenge, forfeitOpen, ticketFrom, reasonText, slipUrl,
+  loadFriendGhosts, loadFriendsBoard, challengeFriend,
 } from '@/lib/social/client';
 import SocialRoom from './SocialRoom';
 import {
@@ -30,14 +31,17 @@ const TABS = [
 
 const btn = `inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 font-display font-bold ${FOCUS_OUTLINE}`;
 
-const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', receipt = null }) => {
+const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', initialTab = '', receipt = null }) => {
   const dialogRef = useDialog(onClose);
   const bodyRef = useRef(null);
   const canvasRef = useRef(null);
   const specRef = useRef(null);
-  const [tab, setTab] = useState(initialCode ? 'brawl' : 'card');
+  const [tab, setTab] = useState(initialCode ? 'brawl' : (initialTab || 'card'));
   const [mine, setMine] = useState(null);
   const [week, setWeek] = useState([]);
+  const [weekOf, setWeekOf] = useState('house');
+  const [friendsWeek, setFriendsWeek] = useState([]);
+  const [ghosts, setGhosts] = useState([]);
   const [weekError, setWeekError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState(null);
@@ -46,9 +50,13 @@ const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', receipt = null }
   const [rival, setRival] = useState(null);
 
   const refresh = useCallback(async () => {
-    const [standing, board] = await Promise.all([loadSocial(), loadWeekly()]);
+    const [standing, board, palBoard, palGhosts] = await Promise.all([
+      loadSocial(), loadWeekly(), loadFriendsBoard(), loadFriendGhosts(),
+    ]);
     setMine(standing);
     setWeek(board.rows || []);
+    setFriendsWeek(palBoard.rows || []);
+    setGhosts(palGhosts.rows || []);
     setWeekError(board.error || (board.unavailable ? reasonText({ reason: 'unavailable' }) : null));
     setLoading(false);
   }, []);
@@ -128,6 +136,13 @@ const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', receipt = null }
     if (!absolute) { setNotice('Leave a deck on the bar first.'); return; }
     const ok = await copyText(absolute);
     setNotice(ok ? 'Dare copied. Send it to someone with terrible judgment.' : absolute);
+  });
+
+  const onFriendGhost = (row) => run(async () => {
+    const result = await challengeFriend(row.user_id, 'ghost');
+    const ticket = result.ticket || ticketFrom(result);
+    if (!ticket) { setNotice(reasonText(result)); return; }
+    deal(ticket);
   });
 
   const onDraw = () => run(async () => {
@@ -311,12 +326,36 @@ const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', receipt = null }
 
           {!loading && !unavailable && tab === 'week' && !rival && (
             <div>
-              {weekError && <p className="text-plush-200">{weekError}</p>}
-              {!weekError && week.length === 0 && (
-                <p className="text-plush-200">Quiet week. Leave a deck out and ruin it.</p>
+              <div className="seg-well mb-3 grid grid-cols-2 gap-1" role="tablist" aria-label="Whose week">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={weekOf === 'house'}
+                  onClick={() => setWeekOf('house')}
+                  className={`h-11 rounded-lg text-sm font-bold ${weekOf === 'house' ? 'seg-on' : 'seg-off'} ${FOCUS_OUTLINE}`}
+                >
+                  The house
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={weekOf === 'friends'}
+                  onClick={() => setWeekOf('friends')}
+                  className={`h-11 rounded-lg text-sm font-bold ${weekOf === 'friends' ? 'seg-on' : 'seg-off'} ${FOCUS_OUTLINE}`}
+                >
+                  Friends
+                </button>
+              </div>
+              {weekOf === 'house' && weekError && <p className="text-plush-200">{weekError}</p>}
+              {(weekOf === 'house' ? week : friendsWeek).length === 0 && !(weekOf === 'house' && weekError) && (
+                <p className="text-plush-200">
+                  {weekOf === 'friends'
+                    ? 'Quiet among your pals. Drag one in.'
+                    : 'Quiet week. Leave a deck out and ruin it.'}
+                </p>
               )}
               <ol className="space-y-2">
-                {week.map((row) => (
+                {(weekOf === 'house' ? week : friendsWeek).map((row) => (
                   <li key={`${row.place}-${row.username}`}>
                     <button
                       type="button"
@@ -404,6 +443,23 @@ const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', receipt = null }
               </button>
               {standing?.code && (
                 <p className="break-all text-xs text-plush-300">{standing.code}</p>
+              )}
+              {ghosts.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-plush-200">Pals left these out. Strangers can wait.</p>
+                  {ghosts.map((row) => (
+                    <button
+                      key={row.user_id}
+                      type="button"
+                      onClick={() => onFriendGhost(row)}
+                      disabled={busy}
+                      className={`${btn} btn-glass w-full justify-between`}
+                    >
+                      <span className="truncate">{safeName(row.username, 'A pal')}</span>
+                      <span className="shrink-0 text-xs">{row.tier}</span>
+                    </button>
+                  ))}
+                </div>
               )}
               <button type="button" onClick={onDraw} disabled={busy} className={`${btn} btn-glass w-full`}>
                 <Swords aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />

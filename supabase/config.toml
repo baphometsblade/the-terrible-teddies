@@ -35,3 +35,11 @@ verify_jwt = false
 # when set). The gateway JWT check would 401 every post before it ran.
 [functions.ccbill-webhook]
 verify_jwt = false
+
+# Database webhooks POST here with the service role key as the bearer. The
+# gateway check stays on so an anonymous call is rejected. send-push also
+# compares that bearer, in constant time, to SUPABASE_SERVICE_ROLE_KEY, so a
+# player's token or a forged role claim cannot send a ping even if the
+# function is deployed with --no-verify-jwt.
+[functions.send-push]
+verify_jwt = true

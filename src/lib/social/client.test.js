@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { supabase } from '../supabase.js';
-import { reportLadderResult, ticketFrom, reasonText, isMissingRpc, loadWeekly } from './client.js';
+import { challengeFriend, reportLadderResult, ticketFrom, reasonText, isMissingRpc, loadWeekly } from './client.js';
 
 vi.mock('../supabase.js', () => ({ supabase: { rpc: vi.fn() } }));
 
@@ -39,5 +39,28 @@ describe('ladder client', () => {
     expect(ticketFrom({ ok: false, reason: 'empty' })).toBeNull();
     expect(reasonText({ reason: 'capped' })).toMatch(/enough/);
     expect(reasonText({ reason: 'server', message: 'Deck must be 10 cards' })).toBe('Deck must be 10 cards');
+  });
+
+  it('deals a ghost challenge now and leaves a live one for PvP', async () => {
+    supabase.rpc.mockResolvedValueOnce({
+      data: {
+        ok: true, mode: 'ghost', match_id: 'm', rival_name: 'Ada', label: 'Saved deck',
+        deck: [1, 2], rival_rating: 1000, your_rating: 1000, kind: 'challenge',
+        seam: 'ladder_matches',
+      },
+      error: null,
+    });
+    const ghost = await challengeFriend('friend-1', 'ghost');
+    expect(supabase.rpc).toHaveBeenCalledWith('challenge_friend', { p_friend: 'friend-1', p_mode: 'ghost' });
+    expect(ghost.ticket.deck).toEqual([1, 2]);
+
+    supabase.rpc.mockResolvedValueOnce({
+      data: { ok: true, mode: 'live', challenge_id: 'c', status: 'open', seam: 'friend_challenges' },
+      error: null,
+    });
+    const live = await challengeFriend('friend-1', 'LIVE');
+    expect(live.seam).toBe('friend_challenges');
+    expect(live.ticket).toBeUndefined();
+    expect(live.deck).toBeUndefined();
   });
 });

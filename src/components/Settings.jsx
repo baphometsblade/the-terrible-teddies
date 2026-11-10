@@ -20,6 +20,10 @@ import {
 } from '@/lib/cloudSave';
 import AccountData from '@/components/AccountData';
 import { isInstalled, listenForInstall } from '@/lib/pwa';
+import {
+  browserCanPush, disablePushSubscription, enablePushSubscription, loadNotificationPrefs,
+  needsHomeScreen, pushConfigured, saveNotificationPrefs,
+} from '@/lib/push/client';
 
 // The save's state, as an icon beside its words (describeSaveStatus).
 const SAVE_ICON = {
@@ -199,6 +203,132 @@ const InstallBlock = () => {
         </p>
       )}
       {note && <p role="status" className="mt-2 text-xs text-plush-300">{note}</p>}
+    </div>
+  );
+};
+
+const PingSwitch = ({ id, label, description, checked, onChange, disabled }) => (
+  <SettingRow icon={Smartphone} label={label} description={description} htmlFor={id}>
+    <Switch
+      checked={checked}
+      onCheckedChange={onChange}
+      disabled={disabled}
+      id={id}
+      aria-labelledby={`${id}-label`}
+      aria-describedby={`${id}-desc`}
+      className={SWITCH}
+    />
+  </SettingRow>
+);
+
+// Permission is asked here, on the tap, never when Settings opens.
+const NotificationBlock = () => {
+  const [prefs, setPrefs] = useState(null);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let dead = false;
+    loadNotificationPrefs().then((result) => {
+      if (dead || result.ok === false) return;
+      setPrefs({
+        enabled: Boolean(result.enabled),
+        friendsOnline: result.friends_online !== false,
+        challenges: result.challenges !== false,
+        yourTurn: result.your_turn !== false,
+        quietEnabled: result.quiet_enabled !== false,
+        quietStart: result.quiet_start,
+        quietEnd: result.quiet_end,
+      });
+    });
+    return () => { dead = true; };
+  }, []);
+
+  const write = async (next, subscribe) => {
+    if (busy) return;
+    setBusy(true);
+    setNote('');
+    try {
+      if (subscribe && next.enabled) {
+        if (needsHomeScreen()) {
+          setNote('Add to Home Screen to get pings. Safari only rings an installed app.');
+          return;
+        }
+        const sub = await enablePushSubscription();
+        if (sub.reason === 'install') {
+          setNote('Add to Home Screen to get pings. Safari only rings an installed app.');
+          return;
+        }
+        if (sub.reason === 'denied') {
+          setNote('The browser said no. The toggle stays off.');
+          return;
+        }
+        if (sub.ok === false) {
+          setNote('The bar could not keep that subscription.');
+          return;
+        }
+      }
+      if (!next.enabled) await disablePushSubscription();
+      const saved = await saveNotificationPrefs(next);
+      if (saved.ok === false) {
+        setNote(saved.reason === 'unavailable' ? 'Pings are not open on this server yet.' : 'The bar could not save that.');
+        return;
+      }
+      setPrefs(next);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!pushConfigured()) {
+    return <p className="text-sm leading-snug text-plush-200">Pings are not switched on for this bar yet.</p>;
+  }
+  if (!prefs) return <p className="text-sm text-plush-200">Checking the bell.</p>;
+  const home = needsHomeScreen();
+  return (
+    <div>
+      {home && (
+        <p className="mb-2 text-sm leading-snug text-plush-200">
+          Add to Home Screen to get pings. Safari only rings an installed app.
+        </p>
+      )}
+      {!browserCanPush() && !home && (
+        <p className="mb-2 text-sm leading-snug text-plush-200">This browser does not take pings.</p>
+      )}
+      <div className="panel-glass rounded-xl">
+        <PingSwitch
+          id="ping-master"
+          label="Pings"
+          description="Off until you say so. Nothing asks on its own."
+          checked={prefs.enabled}
+          disabled={busy}
+          onChange={(enabled) => write({ ...prefs, enabled }, true)}
+        />
+        <PingSwitch
+          id="ping-online"
+          label="They walked in"
+          description="Once every few hours, not every time they blink."
+          checked={prefs.enabled && prefs.friendsOnline}
+          disabled={busy || !prefs.enabled}
+          onChange={(friendsOnline) => write({ ...prefs, friendsOnline })}
+        />
+        <PingSwitch
+          id="ping-challenge"
+          label="Dares"
+          description="A challenge, or someone saying yes."
+          checked={prefs.enabled && prefs.challenges}
+          disabled={busy || !prefs.enabled}
+          onChange={(challenges) => write({ ...prefs, challenges })}
+        />
+        <PingSwitch
+          id="ping-turn"
+          label="Your turn"
+          description="Only when this tab is in the background."
+          checked={prefs.enabled && prefs.yourTurn}
+          disabled={busy || !prefs.enabled}
+          onChange={(yourTurn) => write({ ...prefs, yourTurn })}
+        />
+      </div>
+      {note && <p role="status" className="mt-2 text-sm text-plush-200">{note}</p>}
     </div>
   );
 };
@@ -452,6 +582,11 @@ const Settings = ({ onClose }) => {
                 />
               </SettingRow>
             </div>
+          </section>
+
+          <section>
+            <SectionHeading>Pings</SectionHeading>
+            <NotificationBlock />
           </section>
 
           <section>

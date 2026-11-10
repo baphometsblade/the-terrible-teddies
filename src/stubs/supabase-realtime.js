@@ -2,8 +2,8 @@
 //
 // supabase-js imports RealtimeClient at module top level and constructs it in
 // the SupabaseClient constructor, so the whole websocket/presence engine ships
-// in the entry chunk whether or not you use it. This app never opens a channel
-// — its only `unsubscribe()` calls are on the AUTH state listener — so that was
+// in the entry chunk whether or not you use it. The entry client never opens a
+// channel — its only `unsubscribe()` calls are on the AUTH state listener — so that was
 // dead weight on every player's first paint. Aliased away in vite.config.js;
 // see src/stubs/supabase-stubs.test.js, which fails if supabase-js ever starts
 // importing something these stubs do not provide.

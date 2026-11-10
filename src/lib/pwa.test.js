@@ -51,6 +51,9 @@ describe('the installable shell', () => {
     expect(sw).toContain("event.request.mode !== 'navigate'");
     expect(sw).toContain('fetch(event.request)');
     expect(sw).toContain('Could not reach the bar');
+    expect(sw).toContain("addEventListener('push'");
+    expect(sw).toContain('showNotification');
+    expect(sw).toContain("addEventListener('notificationclick'");
     const manifest = JSON.parse(read('public/manifest.json'));
     expect(manifest.display).toBe('standalone');
     expect(manifest.icons.map((icon) => icon.sizes)).toEqual(
