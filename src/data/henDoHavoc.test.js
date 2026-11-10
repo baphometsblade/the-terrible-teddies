@@ -67,7 +67,9 @@ describe('Hen Do Havoc', () => {
         aspect: '896*1152',
       });
       expect(entry.prompt).toMatch(/adult/i);
-      expect(entry.prompt).toMatch(/neon/i);
+      // Per-bear art direction (docs/ART_DIRECTION.md): no shared bar or neon, only the plush guard.
+      expect(entry.prompt).toMatch(/stuffed plush teddy bear toy/i);
+      expect(entry.prompt).toMatch(/not a human/i);
       expect(card.art).toBe(`/${entry.target.replace(/^public\//, '')}`);
       expect(card.artThumb).toBe(`/cards/thumbs/${card.id}.webp`);
       expect(thumbUrl(card.id)).toBe(card.artThumb);

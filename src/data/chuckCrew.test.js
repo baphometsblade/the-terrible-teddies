@@ -45,7 +45,14 @@ describe("Chuck's Crew", () => {
         aspect: '896*1152',
       });
       expect(entry.prompt).toMatch(/adult/i);
-      expect(entry.prompt).toMatch(/neon/i);
+      // Bears follow the per-bear art direction (docs/ART_DIRECTION.md): the
+      // plush guard is shared, the bar and neon are not. Object plates keep the bar.
+      if (card.type === 'action') {
+        expect(entry.prompt).toMatch(/stuffed plush teddy bear toy/i);
+        expect(entry.prompt).toMatch(/not a human/i);
+      } else {
+        expect(entry.prompt).toMatch(/neon/i);
+      }
       expect(entry.prompt).not.toMatch(BANNED);
       expect(card.art).toBe(`/cards/${card.id}.webp`);
       expect(thumbUrl(card.id)).toBe(card.artThumb);

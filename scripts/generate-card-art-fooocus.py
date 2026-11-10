@@ -204,7 +204,7 @@ def call_fooocus(base, entry, prompt):
     body = {
         "prompt": prompt,
         "negative_prompt": entry.get("negative_prompt") or "",
-        "style_selections": ["Fooocus V2", "Fooocus Sharp"],
+        "style_selections": entry.get("styles") or ["Fooocus V2", "Fooocus Sharp"],
         "performance_selection": entry.get("performance") or "Speed",
         "aspect_ratios_selection": entry["aspect_ratio"],
         "image_number": 1,
