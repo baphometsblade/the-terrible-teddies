@@ -1649,7 +1649,7 @@ html[data-cb="safe"] [data-rarity-gem="legendary"] {
 .avatar-ring,
 .avatar-ring[data-avatar="bare-ring"] { background: linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24); }
 .avatar-ring[data-avatar="lipstick"] { background: linear-gradient(145deg, #ffe4e6, #fb7185 40%, #9f1239); }
-.avatar-ring[data-avatar="high-roller"] { background: linear-gradient(145deg, #fde68a, #ff2f86 42%, #e9d5ff 72%, #7e22ce); }
+.avatar-ring[data-avatar="high-roller"] { background: linear-gradient(145deg, #fde68a, theme("colors.neon.pink.glow") 42%, #e9d5ff 72%, #7e22ce); }
 .card-profile-ring {
   position: absolute;
   inset: 0;

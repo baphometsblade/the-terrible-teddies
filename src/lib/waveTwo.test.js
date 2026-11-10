@@ -27,7 +27,8 @@ describe('limited nights', () => {
     expect(eventAt(at(2026, 11, 4, 12))).toBeNull();
     expect(scaleReward(30, 3, 2)).toBe(45);
     expect(scaleReward(50, 2, 1)).toBe(100);
-    expect(HOUSE_EVENTS.map((event) => event.id)).toEqual(['stag_do', 'ladies_night', 'happy_hour']);
+    expect(HOUSE_EVENTS.map((event) => event.id)).toEqual(['stag_do', 'ladies_night', 'last_orders', 'happy_hour']);
+    expect(eventAt(at(2026, 11, 3, 18)).id).toBe('last_orders');
   });
 });
 
@@ -38,7 +39,7 @@ describe('bar crawl', () => {
     const early = crawlStatus({
       totalBattles: CRAWL_UNLOCK_BATTLES, weekBattles: 1, weekWins: 1, weekDamage: 10, weekCards: 2,
     }, 'week');
-    expect(early.stops.map((stop) => stop.met)).toEqual([true, true, false, false]);
+    expect(early.stops.map((stop) => stop.met)).toEqual([true, true, false, false, false]);
     const done = crawlStatus({
       totalBattles: 4, weekBattles: 2, weekWins: 1, weekDamage: 40, weekCards: 8,
     }, 'week');

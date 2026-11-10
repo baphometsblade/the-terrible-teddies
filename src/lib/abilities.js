@@ -21,6 +21,10 @@ export const ABILITY_LABELS = {
   hungover: 'Hungover',
   smitten: 'Smitten',
   blackout: 'Blackout',
+  pour: 'Pour',
+  orders: 'Last Orders',
+  cutoff: 'Cutoff',
+  tab: 'Tab',
 };
 
 export const abilityLabel = (ability) => (
@@ -40,6 +44,10 @@ export const ABILITY_RULES = {
   hungover: 'After it attacks, it cannot attack on its next turn',
   smitten: 'Gets +1 attack while you control another creature',
   blackout: 'Picks its own legal target. You do not',
+  pour: 'Heals restore 2 extra HP while this bear is on your side',
+  orders: 'Gets +2 attack while you are at 5 HP or less',
+  cutoff: 'A creature that survives this hit cannot attack on its next turn',
+  tab: 'At the end of your turn, you regain 1 HP',
 };
 
 /** The chip on a bear that just sat down. Quickie can already swing. */
@@ -57,12 +65,18 @@ export const abilityRules = (ability) =>
 const effectLine = (card) => {
   const n = card.amount;
   if (card.type === 'trap') {
-    return `Springs when an enemy attacks with no creature to hit: ${n || 3} damage to the attacker's side`;
+    const interest = Math.floor(Number(card.interest) || 0);
+    const bite = interest ? `, and the attacker loses ${interest} attack` : '';
+    return `Springs when an enemy attacks with no creature to hit: ${n || 3} damage to the attacker's side${bite}`;
   }
   switch (card.effect) {
     case 'heal': return `Heals you for up to ${n} HP`;
     case 'draw': return `Draw ${n} ${n === 1 ? 'card' : 'cards'}`;
     case 'buff': return `Every creature you have on the table gets +${n} attack`;
+    case 'topUp': return `Restores ${n} HP to you and to each wounded creature of yours`;
+    case 'lastOrders': return `At 5 HP or less, heals ${n} and gives your creatures +1 attack. Otherwise heals ${Math.ceil(n / 2)}`;
+    case 'cutOff': return `The opponent's next turn has ${n} less energy`;
+    case 'onTab': return `Draw ${n} cards. You lose ${n} HP at the start of your next turn`;
     default: return '';
   }
 };

@@ -3,7 +3,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { motion } from 'framer-motion';
 import {
   Shield, Crosshair, ShieldHalf, Ghost, Castle, Flame, Bug, Crown, Rabbit, Beer, Heart, Moon,
-  Layers, Bomb, Swords, Sparkles,
+  Layers, Bomb, Swords, Sparkles, Wine, Clock, Ban, Receipt,
 } from 'lucide-react';
 import { abilityLabel } from '@/lib/abilities';
 import { RARITY, RARITY_METAL } from '@/lib/rarity';
@@ -45,12 +45,20 @@ const ABILITY_ICONS = {
   hungover: Beer,
   smitten: Heart,
   blackout: Moon,
+  pour: Wine,
+  orders: Clock,
+  cutoff: Ban,
+  tab: Receipt,
 };
 const EFFECT_ICONS = {
   heal: Heart,
   draw: Layers,
   damage: Bomb,
   buff: Swords,
+  topUp: Wine,
+  lastOrders: Clock,
+  cutOff: Ban,
+  onTab: Receipt,
 };
 
 const getTeddyEmoji = (teddy) => {
@@ -266,6 +274,10 @@ const rulesFor = (teddy) => {
     draw: `Draw ${teddy.amount}`,
     damage: `${teddy.amount} DMG`,
     buff: `+${teddy.amount} ATK`,
+    topUp: `Top ${teddy.amount}`,
+    lastOrders: `Orders ${teddy.amount}`,
+    cutOff: `−${teddy.amount} NRG`,
+    onTab: `Tab ${teddy.amount}`,
   }[teddy.effect];
   return { Icon, label };
 };

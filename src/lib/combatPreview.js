@@ -6,9 +6,9 @@ import {
   canSwingFace, effectiveAttack, gainedFuryStack, getValidTargets, resolveCreatureHit,
 } from '@/utils/battleUtils';
 
-export const previewStrike = (attacker, target, attackerField) => {
-  const { survivor, overkill, dmg } = resolveCreatureHit(attacker, target, attackerField);
-  const raw = attackerField ? effectiveAttack(attacker, attackerField) : attacker.attack;
+export const previewStrike = (attacker, target, attackerField, ctx) => {
+  const { survivor, overkill, dmg } = resolveCreatureHit(attacker, target, attackerField, 0, ctx);
+  const raw = attackerField ? effectiveAttack(attacker, attackerField, ctx) : attacker.attack;
   return {
     dmg,
     kills: survivor == null,
@@ -19,9 +19,9 @@ export const previewStrike = (attacker, target, attackerField) => {
   };
 };
 
-export const previewFace = (attacker, attackerField) => {
+export const previewFace = (attacker, attackerField, ctx) => {
   if (!canSwingFace(attacker)) return { blocked: 'creatures', dmg: 0 };
-  return { blocked: null, dmg: effectiveAttack(attacker, attackerField) };
+  return { blocked: null, dmg: effectiveAttack(attacker, attackerField, ctx) };
 };
 
 const lastName = (card) => {
@@ -39,7 +39,9 @@ export const strikePrompt = ({
   defenderField = [],
   focusId = null,
   foeName = 'Chuck',
+  health = null,
 } = {}) => {
+  const ctx = Number.isFinite(health) ? { health } : undefined;
   if (!attacker) return { tail: '', full: '' };
   const targets = getValidTargets(attackerField, defenderField);
   const focused = focusId && focusId !== 'face'
@@ -48,7 +50,7 @@ export const strikePrompt = ({
   const subject = focused || (focusId === 'face' ? null : targets[0]);
 
   if (subject) {
-    const hit = previewStrike(attacker, subject, attackerField);
+    const hit = previewStrike(attacker, subject, attackerField, ctx);
     if (attacker.ability === 'blackout') {
       return {
         tail: `${hit.dmg} dmg, they pick`,
@@ -65,7 +67,7 @@ export const strikePrompt = ({
     return { tail, full: bits.join(' ') };
   }
 
-  const face = previewFace(attacker, attackerField);
+  const face = previewFace(attacker, attackerField, ctx);
   if (face.blocked) {
     return {
       tail: 'creatures only',

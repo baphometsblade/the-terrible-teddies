@@ -37,7 +37,15 @@ const scoreCard = (card, field, enemyField, ownHp, already) => {
   }
   if (card.type === 'special' && card.effect === 'heal') score += ownHp < 20 ? 6 : -6;
   if (card.type === 'special' && card.effect === 'buff') score += board.some((c) => c.type === 'action') ? 5 : -8;
-  if (card.type === 'trap') score += 2;
+  if (card.type === 'special' && card.effect === 'topUp') score += ownHp < 25 ? 5 : 1;
+  if (card.type === 'special' && card.effect === 'lastOrders') score += ownHp <= 5 ? 8 : 2;
+  if (card.type === 'special' && card.effect === 'cutOff') score += 4;
+  if (card.type === 'special' && card.effect === 'onTab') score += ownHp > 8 ? 3 : -4;
+  if (card.ability === 'pour') score += 2;
+  if (card.ability === 'orders') score += ownHp <= 5 ? 5 : 1;
+  if (card.ability === 'cutoff') score += 2;
+  if (card.ability === 'tab') score += 2;
+  if (card.type === 'trap') score += card.interest ? 3 : 2;
   return score;
 };
 

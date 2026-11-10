@@ -10,6 +10,7 @@ export const CRAWL_STOPS = Object.freeze([
   { id: 'loss', name: 'Someone loses', line: 'Win one this week.', met: (s) => (s.weekWins || 0) >= 1 },
   { id: 'mess', name: 'Make a mess', line: 'Deal 40 damage this week.', met: (s) => (s.weekDamage || 0) >= 40 },
   { id: 'song', name: 'Stay for the song', line: 'Play 8 cards this week.', met: (s) => (s.weekCards || 0) >= 8 },
+  { id: 'chuck', name: 'His round', line: 'Own one of his crew, or play 8 cards.', met: (s) => (s.weekCards || 0) >= 8 || (s.ownedCards || []).some((id) => String(id).startsWith('ck-')) },
 ].map((row) => Object.freeze(row)));
 
 export const crawlStatus = (state = {}, weekKey = '') => {

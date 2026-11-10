@@ -29,6 +29,10 @@ export const effectLabel = (card) => {
     case 'heal': return `Heal ${card.amount}`;
     case 'draw': return `Draw ${card.amount}`;
     case 'buff': return `+${card.amount} attack`;
+    case 'topUp': return `Top up ${card.amount}`;
+    case 'lastOrders': return `Last orders ${card.amount}`;
+    case 'cutOff': return `Cut off ${card.amount}`;
+    case 'onTab': return `Tab ${card.amount}`;
     default: return '';
   }
 };
@@ -41,7 +45,9 @@ export const effectRules = (card) => {
   if (!card) return '';
   if (card.type === 'trap') {
     const damage = card.amount || TRAP_DEFAULT_DAMAGE;
-    return `Springs on the next attack aimed straight at you: the attack is stopped and your opponent takes ${damage} damage. Then it's spent.`;
+    const interest = Math.floor(Number(card.interest) || 0);
+    const bite = interest ? ` The attacker loses ${interest} attack.` : '';
+    return `Springs on the next attack aimed straight at you: the attack is stopped and your opponent takes ${damage} damage.${bite} Then it's spent.`;
   }
   if (card.type !== 'special') return '';
   switch (card.effect) {
@@ -51,6 +57,14 @@ export const effectRules = (card) => {
       return `Draws ${plural(card.amount, 'card', 'cards')} from your deck.`;
     case 'buff':
       return `Every creature you have on the table gains +${card.amount} attack for the rest of the battle.`;
+    case 'topUp':
+      return `Restores ${card.amount} HP to you and to each of your wounded creatures, up to full. A Pour on your side adds 2 more to you.`;
+    case 'lastOrders':
+      return `If you are at 5 HP or less, restores ${card.amount} HP and your creatures get +1 attack. Otherwise restores ${Math.ceil(card.amount / 2)}. A Pour on your side adds 2 more.`;
+    case 'cutOff':
+      return `Your opponent's next turn has ${card.amount} less energy. He took the bottle.`;
+    case 'onTab':
+      return `Draws ${card.amount} cards. At the start of your next turn you lose ${card.amount} HP. The tab comes due either way.`;
     default:
       return '';
   }

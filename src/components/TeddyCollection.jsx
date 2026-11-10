@@ -18,6 +18,7 @@ import { effectLabel, effectRules } from '@/lib/effects';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { CLEARANCE, isKeyboardFocus, revealBetween } from '@/lib/keepClear';
 import CollectionBook from './CollectionBook';
+import { cardMatchesQuery } from '@/lib/cardQuery';
 
 // Collection sorts and lists rarest-first.
 const RARITY_ORDER = [...RARITY_ORDER_ASC].reverse();
@@ -294,6 +295,7 @@ const TeddyCollection = () => {
   // so the view pages through the live album and reads current ownership.
   const [selectedId, setSelectedId] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [query, setQuery] = useState('');
   const [rarityFilter, setRarityFilter] = useState('all');
   const [showOwned, setShowOwned] = useState(true);
   const [bookOpen, setBookOpen] = useState(false);
@@ -335,6 +337,7 @@ const TeddyCollection = () => {
     if (!showOwned && card.owned) return false;
     if (filter !== 'all' && card.type !== filter) return false;
     if (rarityFilter !== 'all' && card.rarity !== rarityFilter) return false;
+    if (!cardMatchesQuery(card, query)) return false;
     return true;
   };
 
@@ -465,6 +468,14 @@ const TeddyCollection = () => {
         className="dialog-panel sticky top-[env(safe-area-inset-top)] z-20 mb-4 rounded-2xl px-2 py-2 sm:mb-6 sm:px-4 sm:py-3"
       >
         <div onFocus={revealFilterKey} className="flex scroll-px-6 gap-4 overflow-x-auto pr-6 [mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] [scrollbar-color:rgba(255,255,255,0.18)_transparent] [scrollbar-width:thin] sm:flex-wrap sm:justify-center sm:gap-x-6 sm:gap-y-2 sm:overflow-visible sm:pr-0 sm:[mask-image:none]">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search"
+            aria-label="Search cards"
+            className="hidden h-11 w-36 shrink-0 rounded-lg bg-night-950/60 px-3 text-sm text-white ring-1 ring-inset ring-white/10 placeholder:text-plush-400 sm:block"
+          />
           <FilterGroup id="collection-filter-show" label="Show">
             <button
               type="button"

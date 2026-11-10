@@ -6,6 +6,7 @@ export const PACK_CEREMONY = Object.freeze([
   'Open it slow. He likes to watch the good ones land.',
   'If it is a dud, blame the night. He already is.',
   'Hands off his until yours is face up. Those are the rules.',
+  'If his own face turns up, he buys the round.',
 ]);
 
 export const PACK_CEREMONY_MAX = 64;

@@ -27,6 +27,13 @@ export const cardWouldDoSomething = (card, { field, health, maxHealth, deckSize 
     // The card being played frees its own slot, so the hand always has room.
     case 'draw': return deckSize > 0;
     case 'buff': return field.some((c) => c.type === 'action');
+    case 'topUp':
+      return health < maxHealth || field.some((c) => c.type === 'action' && (c.currentHp ?? c.defense) < c.defense);
+    case 'lastOrders':
+      return health < maxHealth || (health <= 5 && field.some((c) => c.type === 'action'));
+    case 'cutOff':
+    case 'onTab':
+      return true;
     default: return true;
   }
 };

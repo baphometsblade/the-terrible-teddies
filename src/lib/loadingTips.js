@@ -14,6 +14,7 @@ export const LOADING_TIPS = Object.freeze([
   'Last call is a suggestion. Chuck treats it like a dare.',
   'Sit close. He does not do well with an empty chair.',
   'The house band knows one song. It is not a hymn.',
+  'His crew is in the packs. He pretends not to look.',
 ]);
 
 /** One tip. `random` returns a number in [0, 1). */

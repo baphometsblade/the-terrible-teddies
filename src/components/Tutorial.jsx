@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, ChevronRight, Swords, Target, RefreshCw, Layers, Zap, ScrollText, Rocket, Trophy,
   Bomb, Sparkles, Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown, Rabbit, Beer, Heart, Moon,
+  Wine, Clock, Ban, Receipt,
 } from 'lucide-react';
 import TeddyCard from './TeddyCard';
 import { ALL_CARDS } from '../stores/gameStore';
@@ -66,10 +67,10 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "Rap Sheets (Abilities)",
-    content: "Catcall (Taunt) — talks so much shit, enemies HAVE to hit them first\nUncut (Piercing) — cuts straight through Shield. No foreplay.\nRubber (Shield) — takes 50% less damage, the coward\nPeep (Stealth) — untargetable for a turn (currently hiding in your hamper)\nWhiskey (Fury) — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nWingman (Protect) — while they're upright, nothing else on their side can be touched. Getting them horizontal comes first.\nPile-on (Swarm) — costs 1 less once you've already got someone on the table, and its cost disc turns green to say so. Bad decisions are cheaper in groups.\nPatron (Royal) — struts around giving everyone ELSE +1 Attack. Never itself.\nQuickie (Rush) — they can go the moment they sit down, but only with the other bears. The face is a second round.\nHungover — one good swing, then they spend the next turn apologising to the floor.\nSmitten — hits harder once somebody else is on the table. They need an audience.\nBlackout — they pick the bear. You just send them.",
+    content: "Catcall (Taunt) — talks so much shit, enemies HAVE to hit them first\nUncut (Piercing) — cuts straight through Shield. No foreplay.\nRubber (Shield) — takes 50% less damage, the coward\nPeep (Stealth) — untargetable for a turn (currently hiding in your hamper)\nWhiskey (Fury) — every hit they survive is +1 Attack, up to +3. After that they've peaked, like everyone else in here.\nWingman (Protect) — while they're upright, nothing else on their side can be touched. Getting them horizontal comes first.\nPile-on (Swarm) — costs 1 less once you've already got someone on the table, and its cost disc turns green to say so. Bad decisions are cheaper in groups.\nPatron (Royal) — struts around giving everyone ELSE +1 Attack. Never itself.\nQuickie (Rush) — they can go the moment they sit down, but only with the other bears. The face is a second round.\nHungover — one good swing, then they spend the next turn apologising to the floor.\nSmitten — hits harder once somebody else is on the table. They need an audience.\nBlackout — they pick the bear. You just send them.\nPour — while they are behind the bar, your heals come back 2 HP stronger. He tops you up.\nOrders — +2 attack once you are at 5 HP or under. The night gets honest.\nCutoff — a bear that lives through the hit sits the next one out. He took the bottle.\nTab — at the end of your turn you gain 1 HP. She is writing it down.",
     icon: ScrollText,
     list: true,
-    icons: [Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown, Rabbit, Beer, Heart, Moon],
+    icons: [Shield, Crosshair, ShieldHalf, Ghost, Flame, Castle, Bug, Crown, Rabbit, Beer, Heart, Moon, Wine, Clock, Ban, Receipt],
     columns: true,
   },
   {

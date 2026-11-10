@@ -22,5 +22,10 @@ describe('Chuck on the menu', () => {
       tutorialCompleted: true, totalBattles: 2, coins: 400,
       unlockedCosmetics: ['velvet-rope'], equippedCardBack: 'velvet-rope', equippedBoard: 'house-board',
     })).toMatch(/came back/);
+    expect(chuckTip({
+      tutorialCompleted: true, totalBattles: 2, coins: 400,
+      unlockedCosmetics: ['velvet-rope'], equippedCardBack: 'velvet-rope', equippedBoard: 'house-board',
+      ownedCards: ['ck-chuck'],
+    })).toMatch(/crew/);
   });
 });
