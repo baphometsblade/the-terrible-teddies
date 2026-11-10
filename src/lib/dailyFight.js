@@ -84,6 +84,7 @@ export const CREWS = Object.freeze([
   { id: 'door', name: 'The Door Staff', cards: [56, 6, 54, 20, 63, 8, 33, 40] },
   { id: 'royals', name: 'The Disgraced', cards: [16, 14, 18, 66, 67, 64, 60, 43] },
   { id: 'closing', name: 'The Closing Shift', cards: [69, 21, 68, 65, 62, 61, 34, 41] },
+  { id: 'hendo', name: 'The Hen Do', cards: ['hd-sash', 'hd-veil', 'hd-chorus', 'hd-shot', 'hd-lap', 'hd-bree', 'hd-honour', 'hd-petra'] },
 ]);
 
 export const dailyFightFor = (date = new Date()) => {

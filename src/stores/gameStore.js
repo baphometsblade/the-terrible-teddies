@@ -10,6 +10,7 @@ import { nextDailyRecord } from '@/lib/dailyFight';
 import { AFTER_HOURS_CARDS } from '@/data/afterHoursCards';
 import { QUICKIE_CARDS } from '@/data/quickieCards';
 import { NIGHT_TWO_CARDS } from '@/data/nightTwoCards';
+import { HEN_DO_CARDS } from '@/data/henDoHavoc';
 import { LAST_ORDERS_CARDS } from '@/data/expansion-last-orders';
 import { resolveLogin, weekCoinBonus } from '@/lib/loginStreak';
 import { comebackFor } from '@/lib/comeback';
@@ -119,6 +120,7 @@ export const ALL_CARDS = [
   ...AFTER_HOURS_CARDS,
   ...QUICKIE_CARDS,
   ...NIGHT_TWO_CARDS,
+  ...HEN_DO_CARDS,
   ...LAST_ORDERS_CARDS,
 ];
 

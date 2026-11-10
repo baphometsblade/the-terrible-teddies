@@ -67,11 +67,10 @@ const getTeddyEmoji = (teddy) => {
     common: ['🧸', '🐻'],
   };
   const options = rarityEmojis[teddy.rarity] || ['🧸', '🐻'];
-  const n = Number(teddy.id);
-  const index = Number.isInteger(n)
-    ? n
-    : String(teddy.id ?? '').split('').reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-  return options[Math.abs(index) % options.length];
+  const n = typeof teddy.id === 'number'
+    ? teddy.id
+    : [...String(teddy.id || '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  return options[Math.abs(n) % options.length];
 };
 
 // Card art slot: shows the generated illustration for this card if one has

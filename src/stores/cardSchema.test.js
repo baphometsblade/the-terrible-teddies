@@ -101,21 +101,26 @@ describe('ALL_CARDS catalog shape', () => {
   it('CARD_ART has no entries for ids that no longer exist in ALL_CARDS', () => {
     const validIds = new Set(ALL_CARDS.map((c) => c.id));
     for (const idKey of Object.keys(CARD_ART)) {
+      const numeric = /^\d+$/.test(idKey) ? Number(idKey) : idKey;
       expect(
-        validIds.has(Number(idKey)),
+        validIds.has(numeric),
         `CARD_ART has an entry for id ${idKey}, which does not exist in ALL_CARDS — delete the orphaned entry`
       ).toBe(true);
     }
   });
 
-  it('every card has a unique integer id below the reserved goon-deck range (101-108)', () => {
+  it('every card has a unique id, numeric ones staying below the goon deck (101-108)', () => {
     const seen = new Map();
+    const slug = /^[a-z]{2,6}-[a-z0-9-]{1,40}$/;
     for (const card of ALL_CARDS) {
-      expect(Number.isInteger(card.id), `${label(card)} must have an integer id`).toBe(true);
-      expect(
-        card.id < OPPONENT_GOON_ID_FLOOR,
-        `${label(card)} has id ${card.id}, which collides with the opponent goon deck's reserved range (101-108)`
-      ).toBe(true);
+      const prefixed = typeof card.id === 'string' && slug.test(card.id);
+      if (!prefixed) {
+        expect(Number.isInteger(card.id), `${label(card)} must have an integer id`).toBe(true);
+        expect(
+          card.id < OPPONENT_GOON_ID_FLOOR,
+          `${label(card)} has id ${card.id}, which collides with the opponent goon deck's reserved range (101-108)`
+        ).toBe(true);
+      }
 
       const dupe = seen.get(card.id);
       expect(dupe, `duplicate id ${card.id} shared by "${dupe?.name}" and "${card.name}"`).toBeUndefined();
