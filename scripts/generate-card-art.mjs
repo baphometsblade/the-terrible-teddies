@@ -183,11 +183,12 @@ const negativeFor = (card) =>
 
 const seedFor = (id) => {
   // Numbered cards keep the seeds they were rendered with. A prefixed id
-  // (`ma-1`) hashes to its own stable seed instead of becoming NaN.
-  const n = typeof id === 'number' && Number.isInteger(id)
-    ? id
-    : [...String(id)].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-  return 40_000 + n * 97;
+  // hashes to its own stable seed instead of becoming NaN.
+  if (typeof id === 'number' && Number.isFinite(id)) return 40_000 + id * 97;
+  let h = 2166136261;
+  const text = String(id);
+  for (let i = 0; i < text.length; i += 1) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return 40_000 + (h >>> 0) % 1_000_000;
 };
 
 // ---------------------------------------------------------------------------

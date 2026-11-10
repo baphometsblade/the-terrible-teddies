@@ -7,6 +7,8 @@ import { SCRIM_PAD } from '@/lib/safeArea';
 import { Medallion, DialogClose } from '@/components/ui/game-chrome';
 import { useGameStore, ALL_CARDS } from '@/stores/gameStore';
 import { deckProblem, challengeUrl, safeName, cleanCode, TIER_ASIDES } from '@/lib/social/ladder';
+import { toLadderId as toHenDo } from '@/data/henDoHavoc';
+import { toLadderId as toLastOrders } from '@/data/expansion-last-orders';
 import { cardsFromIds } from '@/lib/social/ghostDeck';
 import {
   loadSocial, loadWeekly, loadCard, publishGhost, drawGhost, openChallenge, forfeitOpen, ticketFrom, reasonText, slipUrl,
@@ -113,7 +115,8 @@ const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', receipt = null }
     const ids = useGameStore.getState().currentDeck;
     const problem = deckProblem(ids, KNOWN);
     if (problem) { setNotice(problem); return; }
-    const result = await publishGhost(ids, 'Saved deck');
+    const stored = ids.map((id) => toLastOrders(toHenDo(id)));
+    const result = await publishGhost(stored, 'Saved deck');
     if (result.ok === false) { setNotice(reasonText(result)); return; }
     setNotice('On the bar. Try not to hover.');
     await refresh();

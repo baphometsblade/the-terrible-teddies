@@ -10,6 +10,7 @@ import { RARITY, RARITY_METAL } from '@/lib/rarity';
 import { BrassCoin } from '@/components/ui/coin';
 import { COSMETIC_FRAMES } from '@/lib/cosmetics';
 import { cardBackId } from '@/lib/wardrobe';
+import { hasLastOrdersArt, LastOrdersFigure } from './LastOrdersArt';
 
 // Dark-face fallbacks for cards without a rarity (typed opponent cards).
 const TYPE_STYLES = {
@@ -131,13 +132,22 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   // stay off until the age gate has set data-content="nsfw". An unset flag
   // (unit tests, a story) still shows the picture.
   const heldBack = typeof document !== 'undefined' && document.documentElement.dataset.content === 'sfw';
-  if (!teddy.id || fullFailed || heldBack) {
+  if (!teddy.id || heldBack) {
+    return <div className={emojiClassName}>{getTeddyEmoji(teddy)}</div>;
+  }
+  // A Last Orders plate that never arrived still draws. The photo, when the
+  // file is there, wins. Both stay behind the age gate above.
+  if (fullFailed && hasLastOrdersArt(teddy.id)) {
+    return <LastOrdersFigure id={teddy.id} className={imgClassName} />;
+  }
+  if (fullFailed) {
     return <div className={emojiClassName}>{getTeddyEmoji(teddy)}</div>;
   }
 
   // Once the thumb has failed for this card, fall through to the full
   // image regardless of the requested variant — that's the whole point of
-  // the fallback chain.
+  // the fallback chain. A card may name its own plate; everyone else uses
+  // public/cards/<id>.webp.
   const thumb = teddy.artThumb || `/cards/thumbs/${teddy.id}.webp`;
   const full = teddy.art || `/cards/${teddy.id}.webp`;
   const box = variant === 'full' ? ART_INTRINSIC.full : ART_INTRINSIC.thumb;
