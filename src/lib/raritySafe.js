@@ -1,10 +1,10 @@
 // Colourblind-safe rarity inks. The default palette leans on green, blue and
 // purple, which collapse together for a lot of players. These five stay apart
 // under a deuteranopia simulation (see raritySafe.test.js) and each clears
-// 4.5:1 on the night panel (#1a1226). index.css paints them when
+// 4.5:1 on the night panel (#1a1410, night-900). index.css paints them when
 // html[data-cb="safe"] is set; the hexes here are the source those rules copy.
 
-export const NIGHT_PANEL = '#1a1226';
+export const NIGHT_PANEL = '#1a1410';
 
 export const SAFE_INK = Object.freeze({
   common: '#d6d3d1',

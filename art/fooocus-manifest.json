@@ -1,0 +1,2738 @@
+{
+  "style_prefix": {
+    "bear": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek",
+    "object": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW"
+  },
+  "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+  "cards": [
+    {
+      "id": "1",
+      "name": "Shitstarter Ted",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/1.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, chocolate brown fur, barrel-chested bear, torn ear, novelty condom necklace, brass knuckles gripped in one paw. Low hero angle on the bar top under amber jukebox glow, Ted cracking a beer bottle over a rival's head mid-swing. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/1.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/1.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Feral Tim",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/2.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, ash grey fur, feral runt teddy, wild bristling matted plush, crazed mismatched button eyes, snarling stitched mouth, fingerless gloves, chewed leash. Wide full-body shot under a single bare bulb, hunched low on the bar top, ready to pounce. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/2.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/2.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Fluffy McFuckface",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/3.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, cream white fur, squat fat bear, chubby cheeks, mismatched button eyes, stained bowling shirt unbuttoned dangerously low. Reflection in a cracked bathroom-stall mirror under sickly green fluorescent light, Fluffy flexing for an audience of nobody. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/3.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/3.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "name": "Bar-Fight Barry",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/4.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, rust red fur, lanky bear, black eye, missing teeth, sleeveless flannel unbuttoned over a regrettable tattoo. Dutch tilt over the pool table under amber jukebox glow, Barry mid-swing with a snapped pool cue. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/4.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/4.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Stitches the Snitch",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/5.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, faded plum fur, scrawny bear, stitched muzzle scar, cracked glasses, snitch's clipboard, informant's wire taped to his chest. Shot through a doorway into bachelor-party wreckage under a swinging bare bulb, Stitches hiding under a table clutching his clipboard. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/5.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/5.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Shit-Talk Sally",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/6.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, faded pink fur, lanky teddy, round felt ears, stitched snarl, popped-collar leather jacket, paw cocked like a threat. Medium shot on the karaoke stage under hot pink neon, the bear jabbing a paw at an off-frame rival, mic in the other. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/6.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/6.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Peeping Pete",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/7.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, moss green fur, scrawny moth-eaten bear, trench coat collar turned up, binoculars around his neck, someone else's bra in one pocket. Over-the-shoulder shot in a filthy bathroom stall lit by a red exit-sign glow, Pete peering through the gap. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/7.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/7.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Chokehold Cuddles",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/8.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, charcoal grey fur, barrel-chested bear, cauliflower ear, duct-taped cardboard breastplate, wrestling singlet riding up uncomfortably. Wide full-body shot over the pool table under sickly green fluorescent light, Cuddles mid-suplex hoisting a rival overhead. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/8.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/8.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Shiv-in-a-Pillow",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/9.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, dirty white fur, squat bear, cracked plastic nose, torn pillowcase seam, rusty shiv, prison-shower flip-flops. Low hero angle in a seedy motel room under a single bare bulb, Shiv lunging with a blade from the pillowcase. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/9.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/9.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Anger-Management Gus",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/10.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, mustard yellow fur, hulking bear, bloodshot eyes, torn straightjacket sleeves, crumpled therapy pamphlet clenched in his teeth. Dutch tilt across the casino floor under hot pink neon, Gus flipping a card table in a rage. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/10.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/10.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Restraining-Order Randy",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/11.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, slate grey fur, broad bear, one eye missing, neck brace, court papers stapled across his chest like a sash. Shot through the courtroom doorway under sickly green fluorescent light, Randy standing arms-out, blocking anyone from entering. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/11.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/11.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "name": "'Roid-Rage Reggie",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/12.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, brick red fur, hulking bear, bulging veins, ripped gym cut-off, chalk-dusted paws, chest oiled for no good reason. Tight profile at the bar top under amber jukebox glow, Reggie arm-wrestling and cracking the table in half. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/12.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/12.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "13",
+      "name": "The F-Bomb",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/13.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, jet black fur, scrawny bear, singed fur, wild eyes, bandolier of tiny liquor bottles rattling with every step. Low hero angle outside a motel room under blue-and-red cop lights, The F-Bomb kicking the door clean off its hinges. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/13.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/13.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "14",
+      "name": "Slumlord Cotton",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/14.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, cotton white fur, squat bear, smug grin, ill-fitting suit unbuttoned, gold rings, key ring jangling at his belt. Handheld shaky cam in a seedy motel room under amber jukebox glow, Cotton counting rent cash on a stained mattress. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/14.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/14.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "15",
+      "name": "Tax-Fraud Teddy",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/15.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, dusty plum fur, lanky bear, shifty glance, briefcase handcuffed to his wrist, sunglasses indoors, tie loosened like a noose. Paparazzi flash in a parking lot under blue-and-red cop lights, Teddy shredding documents while backing toward the fire exit. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/15.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/15.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "16",
+      "name": "Lord Fluffington, Disgraced",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/16.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, ash blonde fur, hulking bear, cracked monocle, dented armor breastplate under a torn velvet coat, tiara bent sideways. Security-camera angle on a strip-club stage lit by hot pink neon, Fluffington dragged out by two bouncers by the collar. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/16.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/16.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "name": "Blackout Bjorn",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/17.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, dark auburn fur, hulking bear, glazed unfocused eyes, shredded Hawaiian shirt, empty liquor bottles strung as a necklace, one shoe missing. Worm's-eye view of a parking lot under moonlight through a broken window, Bjorn passed out face-down in a spreading beer puddle. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/17.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/17.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "18",
+      "name": "Grandpa Warcrimes",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/18.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, gunmetal silver fur, broad old teddy, stitched seams, bandaged head, tattered army-surplus jacket heavy with medals, dentures in a shirt pocket. Harsh overhead light in an empty church pew at dawn, the old bear alone mid war-story beside a burst pillow. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/18.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/18.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "19",
+      "name": "The Seam Reaper",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/19.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, bone pale fur, lanky bear, stitched-shut eye, tattered black hooded robe, rusty sewing-scissors scythe, court summons pinned to his chest. Extreme close-up on the face in a drunk tank under a red exit-sign glow, The Seam Reaper looming over a chalk outline. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/19.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/19.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "20",
+      "name": "The Godfluffer",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/20.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, oxblood brown fur, over-stuffed bear, gold chains, pinstripe suit straining at the seams, fat cigar, pinky ring the size of a doughnut. Over-the-shoulder shot on the casino floor under a spinning disco ball, The Godfluffer holding court from a corner booth. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/20.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/20.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "21",
+      "name": "Fluffpocalypse Now",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/21.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, soot blackened fur, hulking bear, cracked aviator sunglasses, bandolier of grenades, camo headband, cigar clenched like a general. Shot through a smoke-filled doorway in a back alley under flickering strip light, Fluffpocalypse wading out in slow motion. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/21.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/21.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "22",
+      "name": "Hungover Hank",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/22.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, stale beer brown fur, broad adult bear, sunglasses indoors, wrinkled shirt, one shoe, a coffee he is not drinking. Overhead shot on a bar stool at dawn, Hank face-down beside an empty glass. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/22.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/22.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "23",
+      "name": "Morning-After May",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/23.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, smudged rose fur, tall adult bear, smeared mascara, hotel robe, ice pack, a wink she regrets. Doorway of a motel room at morning, May holding the ice to her head. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/23.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/23.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "24",
+      "name": "Smitten Sid",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/24.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, blush pink fur, lean adult bear, loosened tie, heart-shaped cufflink, hopeful grin. Medium shot at the bar under pink neon, Sid buying a round he cannot afford. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/24.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/24.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "25",
+      "name": "Crush Cora",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/25.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, apron black fur, curvy adult bear, bartender waistcoat, cherry stem, knowing smile. Low angle behind the bar, Cora sliding a drink toward an off-frame regular. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/25.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/25.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "26",
+      "name": "Blackout Bea",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/26.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, midnight blue fur, lean adult bear, blindfold pushed up, empty shot glass, unsteady grin. Dutch tilt on the dance floor under a dead disco ball, Bea mid-swing. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/26.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/26.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "27",
+      "name": "Lights-Out Lou",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/27.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, power-cut black fur, hulking adult bear, unbuttoned shirt, one gold chain, no idea where he is. Security-camera angle in a dark hallway, Lou throwing a punch at a coat rack. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/27.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/27.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "30",
+      "name": "Honey Trap",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/30.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, amber honey jar rigged with a hidden spring-loaded bear trap tucked under a lace garter. Extreme macro shot on a motel nightstand, honey jar lit by a pulsing red exit-sign glow.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/30.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/30.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "31",
+      "name": "Hug With Consequences",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/31.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, one-armed teddy bear stuffed with a switchblade, a fuzzy pink handcuff dangling from its paw. Extreme macro on a strip-club dressing table, bear lit by flickering hot pink neon glow.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/31.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/31.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "32",
+      "name": "Premature Detonation",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/32.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, half-spent dynamite stick taped beside a deflated whoopee cushion on a torn teddy's belly. Low-angle shot of the dynamite in a police evidence bag, lit by a bare swinging bulb overhead.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/32.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/32.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "33",
+      "name": "Full Metal Buttons",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/33.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, cracked button eye rewired into a sparking novelty peep-show viewer, wires frayed and smoking. Dutch-tilt shot on a pawn-shop counter under sickly green fluorescent tubes, sparks arcing off the wires.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/33.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/33.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "34",
+      "name": "Cuddle Homicide",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/34.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, stained honeymoon-suite armchair with a garrote wire hidden inside its frayed tassel fringe. Shot through a cracked motel mirror, the armchair glowing under a flickering red exit-sign light.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/34.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/34.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "40",
+      "name": "Emergency Fluff Job",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/40.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, cracked-open first-aid kit crammed with cotton batting, threaded needle, and a foil condom packet. Overhead flash on a chipped hospital tray, kit contents lit by flickering sickly green fluorescent light.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/40.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/40.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "41",
+      "name": "Honey on the Rocks",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/41.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, rocks glass of honey whiskey with a lipstick-stained rim and one glinting ice cube. Extreme macro on green casino felt, whiskey glass glowing under hot pink neon reflections.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/41.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/41.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "42",
+      "name": "Bloodshot Button Eyes",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/42.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, cracked glass button eye, veined red and bloodshot, resting in a chipped ashtray. Extreme macro on a filthy bar-bathroom sink edge, eye lit by one flickering bare bulb.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/42.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/42.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "43",
+      "name": "Back-Alley Surgery",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/43.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, rusty toolbox spilling open on a bar stool, needle, thread, and cotton stuffing. Dutch-tilt shot in the grimy alley behind the bar, toolbox lit by a dim red exit-sign glow.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/43.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/43.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "44",
+      "name": "Profanity Pep Talk",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/44.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, battered bar PA microphone with a flashing red CENSORED bleep-light zip-tied to the stand. Low angle on a smoke-hazed dive-bar stage, microphone lit by pulsing hot pink neon signage.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/44.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/44.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "45",
+      "name": "Fluffing Bender",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/45.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, pile of empty mini liquor bottles scattered across a spread of dog-eared playing cards. Overhead flash on a cluttered motel nightstand, bottles and cards lit by sickly green fluorescent glow.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/45.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/45.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "46",
+      "name": "The Full Refluff",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/46.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, surgical sewing kit beside a stack of fresh cotton stuffing and a torn fabric patch. Extreme macro on a stainless hospital tray, stuffing and thread lit by one bare swinging bulb.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/46.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/46.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "47",
+      "name": "Last Call Blessing",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/47.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, dusty bottle of top-shelf whiskey pouring into a row of gleaming lipstick-rimmed shot glasses. Dutch-tilt shot atop a church collection plate, glasses lit by a single harsh camera flash.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/47.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/47.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "50",
+      "name": "Dumpster Dave",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/50.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, olive green fur, squat grimy bear, flies circling his head, trash-bag poncho, banana peel stuck to one paw. Worm's-eye view from inside a dumpster under a red exit-sign glow, Dumpster Dave crawling out headfirst into the alley. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/50.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/50.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "51",
+      "name": "Mange Marvin",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/51.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, burnt orange fur, scrawny patchy bear, bald mange spots, scabby skin, frayed rope leash, flea collar worn as a bracelet. Tight profile shot in a back alley under flickering strip light, Mange Marvin scratching furiously against a doorframe. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/51.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/51.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "52",
+      "name": "Two-Beer Tina",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/52.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, honey blonde fur, squat bear, smeared lipstick, tipsy grin, tank top riding up, dented beer can crushed in one paw. Handheld shaky cam on the karaoke stage under a spinning disco ball, Two-Beer Tina dancing badly on a table. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/52.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/52.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "53",
+      "name": "Coupon Carl",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/53.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, dull khaki fur, lanky bear, permanent scowl, coupon-stuffed fanny pack, cheap plastic visor, calculator gripped like a weapon. Extreme close-up on the face in a kebab shop at 3am under sickly green fluorescent light, Carl haggling over a crumpled receipt. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/53.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/53.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "54",
+      "name": "Sticky Mickey",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/54.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, golden amber fur, squat bear, fur matted with dried honey, sticky handprints, honey-crusted apron, flies buzzing near his ears. Wide full-body shot in a kebab shop at 3am under a single bare bulb, Mickey with one paw stuck fast to the counter. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/54.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/54.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "55",
+      "name": "Ashtray Annie",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/55.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, smoky blue-grey fur, lanky bear, cigarette dangling from a stitched mouth, plastic hair curlers, threadbare bathrobe, ash smudges everywhere. Tight profile shot on the karaoke stage under hot pink neon, Ashtray Annie slumped over a barstool, cigarette still lit. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/55.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/55.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "56",
+      "name": "Bouncer Bruno",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/56.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, espresso brown fur, barrel-chested bear, cauliflower ear, referee-stripe armband, sunglasses at midnight, earpiece coiled like he matters. Harsh overhead light on a strip-club stage lit by camera flash, Bouncer Bruno blocking the velvet rope with crossed arms. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/56.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/56.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "57",
+      "name": "Hairball Harriet",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/57.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, ginger shaggy fur, scrawny bear, hacking cough, cracked pool cue gripped like a spear, fish-bone necklace, mystery hairball in a napkin. Paparazzi flash over the pool table under a red exit-sign glow, Harriet hacking mid-cough while swinging her pool cue. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/57.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/57.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "58",
+      "name": "Prison-Wine Pierre",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/58.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, wine maroon fur, squat bear, crude jailhouse tattoos across his chest, torn prison jumpsuit, bottle-cap necklace, unhinged grin. Security-camera angle inside a drunk tank under blue-and-red cop lights, Pierre toasting through the bars with a bottle of toilet-wine. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/58.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/58.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "59",
+      "name": "Glitter Lungs",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/59.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, teal glitter-flecked fur, tiny runt bear, hood pulled low, sequins scattered everywhere, darting eyes, glitter-stained fingertips. Fisheye lens on a strip-club stage under a spinning disco ball, Glitter Lungs hiding in the shadow it casts. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/59.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/59.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "60",
+      "name": "Beargaritaville",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/60.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, turquoise blue fur, barrel-chested bear, peeling sunburn patches, foam pool-noodle armor, salt-rimmed margarita glass, novelty straw behind one ear. Handheld shaky cam amid bachelor-party wreckage at dawn through the blinds, Beargaritaville floating in a kiddie pool of margarita. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/60.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/60.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "61",
+      "name": "Snitchslap Sue",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/61.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, dusty rose fur, lanky bear, fresh black eye, informant's wire taped under a torn cardigan, paw raised mid-slap. Over-the-shoulder shot amid bachelor-party wreckage under camera flash, Sue delivering an open-palm slap across the table. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/61.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/61.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "62",
+      "name": "Chainsmoke Chad",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/62.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, nicotine yellow fur, hulking bear, chain wallet swinging, cigarette burns peppering his chest, eyes wild with the shakes. Dutch tilt in a parking lot under blue-and-red cop lights, Chad lighting a cigarette off a burning card table. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/62.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/62.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "63",
+      "name": "Bail-Money Bonnie",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/63.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, rich plum fur, broad bear, gold tooth glinting, oversized fur coat, phone clamped to one ear, other paw braced protectively. Paparazzi flash catches Bonnie on the casino floor as dawn light leaks through the blinds, stuffing cash into her garter mid-phone-call. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/63.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/63.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "64",
+      "name": "Sgt. Snuggles, Dishonorable",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/64.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, olive drab fur, hulking bear, ripped-off medal patches, dented trash-can-lid shield, ankle monitor blinking under torn fatigues. Harsh overhead light in a courtroom at dawn through the blinds, Sgt. Snuggles standing rigid at attention in the dock. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/64.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/64.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "65",
+      "name": "The Debt Collector",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/65.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, smoke black fur, lanky bear, cracked plastic nose, tire iron on one shoulder, debt clipboard, brass knuckles as a keychain. Worm's-eye view of a hospital corridor under moonlight through a broken window, The Debt Collector kicking open a door. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/65.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/65.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "66",
+      "name": "Mama Mauls",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/66.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, caramel blonde fur, over-stuffed bear, claw marks across her muzzle, blood-stained floral apron, tiny teeth necklace, rolling pin in her apron pocket. Fisheye lens in a kebab shop at 3am under flickering strip light, Mama Mauls roaring over an upturned table. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/66.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/66.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "67",
+      "name": "Whiskey Priest",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/67.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, dove grey fur, broad bear, glassy eyes, torn priest collar, whiskey flask tucked in his cassock, rosary made of bottle caps. Reflection in a church-pew puddle under moonlight through broken stained glass, Whiskey Priest giving last rites over a passed-out drunk. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/67.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/67.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "68",
+      "name": "Duke of Dumpsterfire",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/68.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, charred black fur, hulking bear, singed crown of bottle caps, tattered fur-trimmed cape, lit matchbook, gasoline can labeled party favors. Fisheye lens in a back alley lit by camera flash, The Duke of Dumpsterfire torching a trash can with a lit matchbook. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/68.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/68.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "69",
+      "name": "Big Spoon, Last Warning",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/69.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, battleship grey fur, hulking over-stuffed bear, chest scars, spiked collar, ankle monitor, hospital gown flapping open in back. Security-camera angle in a hospital room under flickering strip lights, Big Spoon pinning a rival in a suffocating bear hug. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/69.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/69.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "70",
+      "name": "Glass in the Gummy Bears",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/70.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, glass bowl of gummy bears spiked with a jagged shard beside a torn condom wrapper. Extreme macro on a filthy bar-bathroom sink ledge, hard camera flash bouncing off the glass shard.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/70.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/70.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "71",
+      "name": "Wet Floor, No Sign",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/71.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, spilled beer and glitter puddle on sticky tile floor, wet-floor sign knocked flat nearby. Low angle near stacked back-alley crates, puddle lit by one bare swinging bulb overhead.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/71.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/71.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "72",
+      "name": "Loaded Claw Machine",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/72.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, arcade claw machine loaded with grenades and a snagged bachelorette sash instead of plush toys. Dutch-tilt shot on a casino floor, claw machine bathed in buzzing hot pink neon light.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/72.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/72.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "73",
+      "name": "Last Call Stampede",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/73.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, row of lipstick-stained shot glasses tipping and shattering off a packed bar rail. Low-angle shot along the bar top, glasses caught mid-shatter in a blinding camera flash.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/73.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/73.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "74",
+      "name": "The Ol' Honey Bucket",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/74.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, rusted mop bucket brimming with honey, bent nails, and a lost bachelor-party necktie. Dutch-tilt shot beside a back-alley dumpster, bucket contents lit by sickly green fluorescent spill light.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/74.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/74.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "75",
+      "name": "Hair of the Bear",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/75.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, shaggy tuft of bear fur floating in a tall glass of flat morning-after beer. Extreme macro on a motel nightstand, flat beer glass lit by one bare swinging bulb.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/75.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/75.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "76",
+      "name": "Minibar Raid",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/76.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tiny hotel minibar fridge hanging open, rows of miniature liquor bottles drained and toppled. Low angle inside a motel room, minibar glowing faintly under a red exit-sign light.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/76.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/76.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "77",
+      "name": "The Group Chat Leaks",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/77.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, cracked phone face-up on wet bar wood, screen lit with a wall of damning texts. Overhead flash on a police desk, phone bagged as evidence, screen glaring under harsh camera flash.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/77.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/77.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "78",
+      "name": "Bar-Top Baptism",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/78.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, teddy bear dunked headfirst into an overflowing pitcher of foaming beer, arms flailing. Shot through a cracked bar mirror, the dunked bear lit by hot pink neon signage.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/78.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/78.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "79",
+      "name": "Suspicious Brownies",
+      "type": "card",
+      "prefix": "object",
+      "path": "public/cards/79.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, plate of lumpy green-tinged pot brownies with one bite missing and a rolled receipt. Extreme macro on a pawn-shop counter, brownies glowing sickly under flickering green fluorescent light.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/79.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/79.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "80",
+      "name": "Nightcap Ned",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/80.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, stale ale brown fur, scrawny bear, undone bow tie, one shoe missing, motel keycard between his teeth. Low angle in a motel hallway under a red exit sign, Ned toasting a minibar bottle. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/80.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/80.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "81",
+      "name": "Velvet Rope Vicky",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/81.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, burgundy plush fur, tall bear in a backless black dress, velvet rope in one paw, unimpressed stare. Medium shot at a strip-club rope under hot pink neon, Vicky blocking the velvet line. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/81.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/81.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "82",
+      "name": "Whiskey-Sour Walt",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/82.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, citrus yellow fur, squat bear, puckered scowl, salt on his snout, crushed whiskey glass in one paw. Tight profile at the bar under amber jukebox light, Walt slamming an empty sour glass. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/82.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/82.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "83",
+      "name": "Motel-Bible Mara",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/83.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, parchment cream fur, lanky bear in a rumpled slip, hollowed motel bible, lipstick on the pages. Over-the-shoulder shot on a motel bed under one bare bulb, Mara hiding cash in the bible. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/83.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/83.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "84",
+      "name": "Lap-Dance Lila",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/84.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, stage pink fur, curvy bear, sequin bra top, garter of dollar bills, bored professional smile. Low hero angle on a strip-club stage under a spinning disco ball, Lila mid-spin on a pole. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/84.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/84.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "85",
+      "name": "Glory-Hole Gus",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/85.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, smoke grey fur, lean bear, trench coat, sunglasses indoors, one paw pressed to a plywood glory wall. Dutch tilt in a dive-bar back room under a red bulb, Gus leaning through a crude partition. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/85.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/85.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "86",
+      "name": "Safe-Word Sandy",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/86.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, latex black fur, broad bear, rubber collar, brass whistle, calm open palm held up like a stop. Wide shot in a private booth under warm practical light, Sandy calling a halt with one paw. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/86.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/86.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "87",
+      "name": "Afterparty Andre",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/87.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, confetti gold fur, hulking bear, shirt snagged on a ceiling fan, glitter in his chest fur, wild grin. Fisheye lens in a wrecked hotel suite at dawn, Andre dancing on a coffee table. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/87.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/87.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "88",
+      "name": "Open-Tab Omar",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/88.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, cash green fur, squat bear, open shirt, gold tooth, thick receipt roll used as a sash. Handheld shot on casino felt under pink neon, Omar buying a round with someone else's card. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/88.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/88.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "89",
+      "name": "Last-Call Lana",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/89.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, last-call amber fur, tall bear, smeared mascara, one heel in her paw, dress strap fallen. Shot through the bar door at closing under harsh house lights, Lana walking out anyway. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/89.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/89.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "90",
+      "name": "Cougar Carol",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/90.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, wine red fur, mature broad bear, silk robe, cigarette holder, paw hooked in a date's loosened tie. Medium shot in a piano-bar booth under low amber light, Carol choosing the next round. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/90.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/90.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "91",
+      "name": "Walk of Shame",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/91.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, walk-of-shame beige fur, disheveled bear, one heel in her paw, dress strap down, taxi receipt stuck to her thigh. Low angle by the bar exit under a flickering exit sign, she limping out at dawn. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/91.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/91.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "92",
+      "name": "Spiked Punchbowl",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/92.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, punch red fur, squat bear, cherry stem behind one ear, stained tuxedo shirt, bowl of spiked punch in both paws. Wide shot at a banquet table under sickly fluorescent light, him toasting too hard. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/92.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/92.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "93",
+      "name": "The Morning After",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/93.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, hangover grey fur, bleary bear, sunglasses indoors, aspirin bottle, phone lighting a guilty face. Overhead shot on a motel bed at dawn, the bear texting with one eye shut. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/93.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/93.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "94",
+      "name": "Booty Call",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/94.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, midnight plum fur, lean bear in a trench coat over nothing decent, phone in one paw, impatient grin. Doorway shot in a motel corridor under a red bulb, her knocking at 2am. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/94.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/94.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "95",
+      "name": "Room Service",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/95.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, linen white fur, neat bear in a waistcoat, ice bucket, folded towel, knowing butler smile. Dutch tilt in a hotel corridor under warm sconce light, the tray held at a shut door. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/95.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/95.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "96",
+      "name": "Quickie Quinn",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/96.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, hot pink fur, lean adult bear in a rumpled cocktail dress, bow tie undone, alley door behind her. Dutch tilt in a bar alley under a red bulb, Quinn retying her bow with a wink. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/96.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/96.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "97",
+      "name": "Backseat Benny",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/97.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, taxi yellow fur, squat adult bear, shirt half off, seatbelt across his chest, smug grin. Shot through a cab window at night, Benny grinning from a rumpled back seat. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/97.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/97.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "98",
+      "name": "Last-Round Rita",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/98.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, closing-time red fur, tall adult bear, one heel in her paw, smeared lipstick, empty shot glass. Low angle at the bar rail under harsh house lights, Rita toasting past closing. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/98.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/98.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "99",
+      "name": "One-Night Otto",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/99.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, hotel white fur, broad adult bear, undone tuxedo, room key in his teeth, coat over one arm. Doorway of a hotel corridor at dawn, Otto leaving a lipstick mark and no number. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/99.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/99.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "101",
+      "name": "Repo Ted",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/101.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, gunmetal grey fur, burly adult bear, hi-vis work vest unzipped, bolt cutters, repossession clipboard. Low angle in a parking lot under blue-and-red neon, towing a car mid-argument. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/101.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/101.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "102",
+      "name": "Loan-Shark Larry",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/102.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, silver white fur, sleek adult bear, pinstripe suit open, gold tooth, fat cigar, pinky rings. Over-the-shoulder in a casino back office under a green banker lamp and magenta spill, counting a fat roll of cash. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/102.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/102.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "103",
+      "name": "Off-the-Grid Greg",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/103.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, sand beige fur, twitchy adult bear, tinfoil beanie, mismatched goggles, hand-drawn conspiracy map. Fisheye in a cluttered bunker under a flickering camp lantern, pinning string to a corkboard. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/103.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/103.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "104",
+      "name": "Unhinged Cuddles",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/104.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, bubblegum pink fur, adult bear with a too-wide stitched grin, popped seams, torn singlet. Extreme close-up in a padded room under harsh white strip light and a pink neon exit, grinning into the lens. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/104.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/104.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "105",
+      "name": "Whiskey Whiskers",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/105.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, russet ginger fur, grizzled adult bear, greying muzzle, half-moon glasses, tiny tumbler. Tight profile at the far end of the bar under amber lamplight, staring into his last drink. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/cards/105.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/105.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "106",
+      "name": "Landlord Lucifur",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/106.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, crimson black fur, horned adult bear, velvet smoking jacket, eviction notice, ring of keys. Low hero angle in a condemned stairwell under a red exit-sign glow, nailing a notice to a door. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/106.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/106.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "108",
+      "name": "Void Where Prohibited",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/108.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, matte void black fur, adult bear dissolving into static at the edges, hollow glowing eye sockets, loosened tie. Dutch tilt in a pitch-dark room lit only by a buzzing broken TV, half-eaten by static. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/108.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/108.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "109",
+      "name": "Door-Staff Donna",
+      "type": "card",
+      "prefix": "bear",
+      "path": "public/cards/109.webp",
+      "width": 768,
+      "height": 1024,
+      "aspect_ratio": "896*1152",
+      "performance": "Speed",
+      "prompt": "RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek, jet black fur, tall adult bear, leather waistcoat, velvet rope, headset, gold name tag, unimpressed stare. Low angle at a dive-bar door under magenta neon, Donna holding the rope shut. Clearly a grown bear.",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, brown fur, tan fur, beige fur",
+      "outputs": [
+        {
+          "path": "public/cards/109.webp",
+          "width": 768,
+          "height": 1024,
+          "format": "webp"
+        },
+        {
+          "path": "public/cards/thumbs/109.webp",
+          "width": 192,
+          "height": 256,
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "id": "pwa-icon",
+      "name": "App icon",
+      "type": "icon",
+      "prefix": "icon",
+      "path": "public/icon-512.png",
+      "width": 512,
+      "height": 512,
+      "aspect_ratio": "1024*1024",
+      "performance": "Quality",
+      "prompt": "App icon, RAW photo, one adult plush teddy bear bartender, teal shirt, holding a playing card, photoreal worn fur, wood dive bar, warm amber practical light, magenta neon sign, cinematic shallow depth of field, rich saturated colour, tongue-in-cheek, no text, no letters",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/icon-512.png",
+          "width": 512,
+          "height": 512,
+          "format": "png"
+        },
+        {
+          "path": "public/icon-192.png",
+          "width": 192,
+          "height": 192,
+          "format": "png"
+        },
+        {
+          "path": "public/apple-touch-icon.png",
+          "width": 180,
+          "height": 180,
+          "format": "png"
+        },
+        {
+          "path": "public/favicon.png",
+          "width": 48,
+          "height": 48,
+          "format": "png"
+        },
+        {
+          "path": "public/favicon.ico",
+          "width": 32,
+          "height": 32,
+          "format": "ico"
+        },
+        {
+          "path": "public/icon-maskable-512.png",
+          "width": 512,
+          "height": 512,
+          "format": "png",
+          "inset": 0.8,
+          "background": "#100e0c"
+        },
+        {
+          "path": "public/icon-maskable-192.png",
+          "width": 192,
+          "height": 192,
+          "format": "png",
+          "inset": 0.8,
+          "background": "#100e0c"
+        }
+      ]
+    },
+    {
+      "id": "og-image",
+      "name": "Share image",
+      "type": "social",
+      "prefix": "scene",
+      "path": "public/og-image.jpg",
+      "width": 1200,
+      "height": 630,
+      "aspect_ratio": "1408*704",
+      "performance": "Quality",
+      "prompt": "Wide cinematic RAW photo, adult plush teddy bears closing a dive bar, photoreal worn fur, warm amber practicals, magenta and cyan neon, sticky wood bar, cinematic shallow depth of field, rich saturated colour, raunchy NSFW, tongue-in-cheek, no text, no letters",
+      "negative_prompt": "cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "outputs": [
+        {
+          "path": "public/og-image.jpg",
+          "width": 1200,
+          "height": 630,
+          "format": "jpeg",
+          "quality": 82
+        }
+      ]
+    }
+  ]
+}

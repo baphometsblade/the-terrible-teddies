@@ -2,9 +2,10 @@
 
 Drop card illustrations here as `<cardId>.webp` (player cards use their
 `ALL_CARDS` ids; Chuck's goons use their opponent ids 101–106 and 108).
-`TeddyCard`'s `ArtOrEmoji` slot picks them up automatically — any card
-without a file here (or whose image fails to load) falls back to the emoji
-cast, so partial art is safe to ship.
+`TeddyCard`'s `ArtOrEmoji` slot picks them up automatically. A card with
+no file, or a file that fails to load, keeps the night-felt card back
+instead of a broken image. The age gate still holds the photos and shows
+the emoji cast while `data-content` is `sfw`.
 
 ## Thumbnails (`thumbs/`)
 
@@ -16,7 +17,7 @@ full-res file there wastes about 9x the bytes actually displayable, which
 adds up fast when the collection view renders all 64 cards at once (~6.4
 MB of full-res art vs ~0.6 MB of thumbs). `ArtOrEmoji` requests
 `thumbs/<id>.webp` by default (`variant="thumb"`) and only falls back to
-the full-res file, then the emoji, if the thumb is missing or fails to
+the full-res file, then the card back, if the thumb is missing or fails to
 load; the handful of spots that render art large — e.g. the collection
 detail modal — pass `variant="full"` to skip straight to the full-res
 file.

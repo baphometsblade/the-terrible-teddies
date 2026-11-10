@@ -72,7 +72,7 @@ const describeReward = (reward, owned = null) => {
 const EMOTE_ICON = { quip: Drama, confetti: PartyPopper };
 const CARDS_BY_ID = new Map(ALL_CARDS.map((c) => [c.id, c]));
 // The face under a mini frame's art, as a padding-box layer.
-const FACE = 'linear-gradient(#1a1226, #1a1226) padding-box';
+const FACE = 'linear-gradient(#1a1410, #1a1410) padding-box';
 
 const RewardArt = ({ reward }) => {
   switch (reward.type) {

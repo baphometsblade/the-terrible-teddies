@@ -71,8 +71,10 @@ const getTeddyEmoji = (teddy) => {
 
 // Card art slot: shows the generated illustration for this card if one has
 // been shipped under public/cards/<id>.webp (or its small-viewport twin at
-// public/cards/thumbs/<id>.webp), and silently falls back to the emoji cast
-// when no file loads — art can never break a card. alt="" keeps the art
+// public/cards/thumbs/<id>.webp). The picture stays invisible until it
+// decodes, over the night-felt back, so a missing file never flashes a
+// broken icon. The age gate still swaps the photo for the emoji cast.
+// alt="" keeps the art
 // decorative so accessible names don't change.
 //
 // `variant` picks the source: 'thumb' (default) serves the 192x256
@@ -90,9 +92,10 @@ const getTeddyEmoji = (teddy) => {
 // A standard-density screen still downloads only the thumbnail.
 //
 // Fallback is two-stage: a failed thumb retries the full-res image before
-// giving up on the emoji, so a missing/stale thumbs/ entry never regresses
-// a card that does have full art. A failed responsive image drops to that
-// same chain.
+// leaving the night-felt back, so a missing/stale thumbs/ entry never
+// regresses a card that does have full art. A failed responsive image drops
+// to that same chain. The picture is opacity 0 until onLoad, so the broken
+// icon never shows.
 //
 // `loading` is lazy by default, for the long grids; a card that is shown the
 // moment it mounts (a pack reveal's face) passes 'eager'. Decoding is async
@@ -119,61 +122,83 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   // thumb failure for this card must not be confused with a full-image
   // failure for it.
   const [failed, setFailed] = useState({ id: null, stage: null });
+  // The id whose picture has decoded. Until then the plate stays invisible,
+  // so a 404 never paints the browser's broken-image icon over the frame.
+  const [ready, setReady] = useState(null);
 
   const thumbFailed = failed.id === teddy.id && failed.stage === 'thumb';
   const fullFailed = failed.id === teddy.id && failed.stage === 'full';
   const responsiveFailed = failed.id === teddy.id && failed.stage === 'responsive';
+  const photoReady = ready === teddy.id;
 
   // SFW is the default on the document. Card photos are adult art, so they
   // stay off until the age gate has set data-content="nsfw". An unset flag
   // (unit tests, a story) still shows the picture.
   const heldBack = typeof document !== 'undefined' && document.documentElement.dataset.content === 'sfw';
-  if (!teddy.id || fullFailed || heldBack) {
+  const safeId = /^(?:[1-9]\d*|[A-Za-z]{2}-[A-Za-z0-9-]+)$/.test(String(teddy.id ?? ''));
+  if (!teddy.id || !safeId || heldBack) {
     return <div className={emojiClassName}>{getTeddyEmoji(teddy)}</div>;
   }
 
   // Once the thumb has failed for this card, fall through to the full
   // image regardless of the requested variant — that's the whole point of
-  // the fallback chain.
+  // the fallback chain. When the full plate fails too, the night-felt back
+  // stays and the <img> is gone.
   const thumb = `/cards/thumbs/${teddy.id}.webp`;
   const full = `/cards/${teddy.id}.webp`;
   const box = variant === 'full' ? ART_INTRINSIC.full : ART_INTRINSIC.thumb;
   const priority = loading === 'eager' ? 'high' : undefined;
-  if (variant === 'responsive' && !responsiveFailed && !thumbFailed) {
+  const frame = photoReady ? null : (
+    <CardBack className="absolute inset-0 h-full w-full" mini framed />
+  );
+  const markReady = () => setReady(teddy.id);
+  const hidden = photoReady ? '' : 'opacity-0';
+
+  if (!fullFailed && variant === 'responsive' && !responsiveFailed && !thumbFailed) {
     return (
-      <img
-        src={thumb}
-        srcSet={`${thumb} 192w, ${full} 768w`}
-        sizes={sizes}
-        alt=""
-        width={box.width}
-        height={box.height}
-        loading={loading}
-        fetchPriority={priority}
-        decoding="async"
-        draggable={false}
-        className={`pointer-events-none ${imgClassName}`}
-        onError={() => setFailed({ id: teddy.id, stage: 'responsive' })}
-      />
+      <>
+        {frame}
+        <img
+          src={thumb}
+          srcSet={`${thumb} 192w, ${full} 768w`}
+          sizes={sizes}
+          alt=""
+          width={box.width}
+          height={box.height}
+          loading={loading}
+          fetchPriority={priority}
+          decoding="async"
+          draggable={false}
+          className={`pointer-events-none ${hidden} ${imgClassName}`}
+          onLoad={markReady}
+          onError={() => setFailed({ id: teddy.id, stage: 'responsive' })}
+        />
+      </>
     );
   }
-  const useFull = variant === 'full' || thumbFailed;
+  const useFull = variant === 'full' || thumbFailed || responsiveFailed;
   const src = useFull ? full : thumb;
   const shown = useFull ? ART_INTRINSIC.full : ART_INTRINSIC.thumb;
 
   return (
-    <img
-      src={src}
-      alt=""
-      width={shown.width}
-      height={shown.height}
-      loading={loading}
-      fetchPriority={priority}
-      decoding="async"
-      draggable={false}
-      className={`pointer-events-none ${imgClassName}`}
-      onError={() => setFailed({ id: teddy.id, stage: useFull ? 'full' : 'thumb' })}
-    />
+    <>
+      {frame}
+      {!fullFailed && (
+        <img
+          src={src}
+          alt=""
+          width={shown.width}
+          height={shown.height}
+          loading={loading}
+          fetchPriority={priority}
+          decoding="async"
+          draggable={false}
+          className={`pointer-events-none ${hidden} ${imgClassName}`}
+          onLoad={markReady}
+          onError={() => setFailed({ id: teddy.id, stage: useFull ? 'full' : 'thumb' })}
+        />
+      )}
+    </>
   );
 };
 
@@ -188,12 +213,13 @@ const BACK_MARK = {
   'brass-knuckles': '👊',
 };
 
-export const CardBack = ({ className = 'w-24 h-36', mini = false, look }) => {
+export const CardBack = ({ className = 'w-24 h-36', mini = false, look, framed = false }) => {
   const equipped = useGameStore((s) => s.equippedCardBack);
   const id = cardBackId(look || equipped);
   return (
     <div
       data-card-back={id}
+      data-art-frame={framed ? '' : undefined}
       className={`${className} card-back rounded-lg border-2 stitched-plush relative overflow-hidden grid place-items-center shadow-lg shadow-black/40`}
     >
       <div className="card-back-glow absolute inset-0 opacity-10" />
@@ -453,10 +479,10 @@ const TeddyCard = ({
           border: '2px solid transparent',
           // The face (padding-box) under the metal (border-box): the standard
           // way to give a rounded element a gradient border.
-          background: `linear-gradient(#120c1c, #120c1c) padding-box, ${metal} border-box`,
+          background: `linear-gradient(#100e0c, #100e0c) padding-box, ${metal} border-box`,
           // The selection ring lives in this same value: a Tailwind ring-2 is
           // a box-shadow too, and an inline boxShadow silently replaced it.
-          boxShadow: `${isSelected ? '0 0 0 2px #1a1226, 0 0 0 4px #fcd34d, ' : ''}0 6px 14px -4px rgba(0,0,0,0.7)${cosmetic ? `, ${cosmetic.glow}` : ''}`,
+          boxShadow: `${isSelected ? '0 0 0 2px #1a1410, 0 0 0 4px #fcd34d, ' : ''}0 6px 14px -4px rgba(0,0,0,0.7)${cosmetic ? `, ${cosmetic.glow}` : ''}`,
         }}
         onClick={!isDisabled ? onClick : undefined}
       >

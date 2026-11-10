@@ -99,16 +99,16 @@ describe('the contrast the block\'s comment records', () => {
   const night = (hex, opacity) => ratio(over(rgb(hex), NIGHT_950, opacity), NIGHT_950);
   const recorded = [
     // [what, computed, the number the comment gives]
-    ['pink core on night-950', ratio(rgb(colors.neon.pink.core), NIGHT_950), '15.99'],
-    ['teal core on night-950', ratio(rgb(colors.neon.teal.core), NIGHT_950), '18.00'],
-    ['amber core on night-950', ratio(rgb(colors.neon.amber.core), NIGHT_950), '17.28'],
-    ['red core on night-950', ratio(rgb(colors.neon.red.core), NIGHT_950), '13.20'],
-    ['pink at the flicker dip on night-950', night(colors.neon.pink.core, flickerDip), '10.36'],
-    ['pink at the flicker dip on the backdrop top', ratio(over(rgb(colors.neon.pink.core), BACKDROP_TOP, flickerDip), BACKDROP_TOP), '7.21'],
-    ['red half lit on night-950', night(colors.neon.red.core, halfLit), '7.71'],
-    ['red half lit on night-900', ratio(over(rgb(colors.neon.red.core), NIGHT_900, halfLit), NIGHT_900), '7.43'],
-    ['plush-100 on steel', ratio(rgb(colors.plush[100]), STEEL), '8.52'],
-    ['plush-200 on steel', ratio(rgb(colors.plush[200]), STEEL), '6.55'],
+    ['pink core on night-950', ratio(rgb(colors.neon.pink.core), NIGHT_950), '16.06'],
+    ['teal core on night-950', ratio(rgb(colors.neon.teal.core), NIGHT_950), '18.08'],
+    ['amber core on night-950', ratio(rgb(colors.neon.amber.core), NIGHT_950), '17.36'],
+    ['red core on night-950', ratio(rgb(colors.neon.red.core), NIGHT_950), '13.26'],
+    ['pink at the flicker dip on night-950', night(colors.neon.pink.core, flickerDip), '10.40'],
+    ['pink at the flicker dip on the backdrop top', ratio(over(rgb(colors.neon.pink.core), BACKDROP_TOP, flickerDip), BACKDROP_TOP), '7.16'],
+    ['red half lit on night-950', night(colors.neon.red.core, halfLit), '7.73'],
+    ['red half lit on night-900', ratio(over(rgb(colors.neon.red.core), NIGHT_900, halfLit), NIGHT_900), '7.47'],
+    ['plush-100 on steel', ratio(rgb(colors.plush[100]), STEEL), '9.28'],
+    ['plush-200 on steel', ratio(rgb(colors.plush[200]), STEEL), '7.52'],
     ['red-200 on steel', ratio(rgb('#fecaca'), STEEL), '7.20'],
     ['brass-300 on steel', ratio(rgb(colors.brass[300]), STEEL), '6.24'],
     ['note ink on paper', ratio(rgb('#2a2219'), rgb('#f3e9c8')), '12.90'],
@@ -120,8 +120,8 @@ describe('the contrast the block\'s comment records', () => {
 
   it('names the backdrop\'s lightest stop it measured on', () => {
     const [r, g, b] = BACKDROP_TOP.map(Math.round);
-    expect(`#${[r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')}`).toBe('#452f2e');
-    expect(materials).toContain('#452f2e');
+    expect(`#${[r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')}`).toBe('#473114');
+    expect(materials).toContain('#473114');
   });
 
   // A .btn-glass key on the steel, and the year field's well, are what the
@@ -129,12 +129,12 @@ describe('the contrast the block\'s comment records', () => {
   it('records the key and the field at the colours they really are', () => {
     const glass = /\.btn-glass\s*\{[^}]*linear-gradient\(180deg,\s*rgba\((\d+),\s*(\d+),\s*(\d+),\s*([0-9.]+)\)/.exec(css);
     const key = over([+glass[1], +glass[2], +glass[3]], STEEL, +glass[4]);
-    expect(two(ratio(rgb(colors.plush[100]), key))).toBe('9.21');
-    expect(materials).toContain('9.21');
+    expect(two(ratio(rgb(colors.plush[100]), key))).toBe('10.39');
+    expect(materials).toContain('10.39');
     const door = readFileSync(resolve(root, 'src/components/TheDoor.jsx'), 'utf8');
     const alpha = Number(/bg-night-950\/(\d+)/.exec(door)[1]) / 100;
-    expect(two(ratio(rgb(colors.plush[100]), over(NIGHT_950, STEEL, alpha)))).toBe('13.72');
-    expect(materials).toContain('13.72');
+    expect(two(ratio(rgb(colors.plush[100]), over(NIGHT_950, STEEL, alpha)))).toBe('15.00');
+    expect(materials).toContain('15.00');
   });
 });
 
