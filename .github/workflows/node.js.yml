@@ -1,4 +1,11 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# Source of truth for these checks is scripts/ci-local.sh (and `npm run ci:local`).
+# Every job below calls that script with --step so a laptop and GitHub run the
+# exact same commands. GitHub Actions on this account may be billing-locked;
+# when it is, local CI is what must pass before merge. Leave this workflow in
+# place — it will run again if Actions is unlocked.
+#
+# This workflow will do a clean installation of node dependencies, cache/restore
+# them, build the source code and run tests across different versions of node.
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
 name: Node.js CI
@@ -8,6 +15,12 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+
+# Cancel superseded runs on the same branch or pull-request ref, so a new
+# push does not pile onto a still-running suite.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 # Least-privilege default: neither job writes to the repo, comments on PRs, or
 # publishes anything — they only check out, build, and test. Without this,
@@ -34,11 +47,11 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    - run: npm ci
-    - run: npm run lint
-    - run: npm run typecheck
-    - run: npm run build --if-present
-    - run: npm test
+    - run: bash scripts/ci-local.sh --step install
+    - run: bash scripts/ci-local.sh --no-install --step lint
+    - run: bash scripts/ci-local.sh --no-install --step typecheck
+    - run: bash scripts/ci-local.sh --no-install --step build
+    - run: bash scripts/ci-local.sh --no-install --step unit
 
   e2e:
 
@@ -51,11 +64,9 @@ jobs:
       with:
         node-version: 20.x
         cache: 'npm'
-    - run: npm ci
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps chromium
+    - run: bash scripts/ci-local.sh --step install
     - name: Run e2e smoke tests
-      run: npm run test:e2e
+      run: bash scripts/ci-local.sh --no-install --step e2e
 
   # The e2e job above runs against `vite dev`, so a break that only shows in the
   # production bundle (minification, code-splitting, a stale CSP hash) ships
@@ -72,18 +83,9 @@ jobs:
       with:
         node-version: 20.x
         cache: 'npm'
-    - run: npm ci
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps chromium
-    - name: Build production bundle
-      env:
-        VITE_SUPABASE_URL: https://testproject.supabase.co
-        VITE_SUPABASE_ANON_KEY: test-anon-key
-      run: npm run build
+    - run: bash scripts/ci-local.sh --step install
     - name: Run smoke spec against the production preview
-      env:
-        E2E_PREVIEW: '1'
-      run: npx playwright test smoke.spec.js
+      run: bash scripts/ci-local.sh --no-install --step e2e-prod
 
   # A migration PostgreSQL refuses to apply is invisible to every other job
   # here: lint, build, vitest and playwright never execute SQL. A security
@@ -113,7 +115,7 @@ jobs:
     - name: Apply every migration and assert the security properties
       env:
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
-      run: ./scripts/check-migrations.sh
+      run: bash scripts/ci-local.sh --step migrations
 
   # The production page a crawler meets: the SFW landing, its weight, and the
   # web-vitals budget in lighthouserc.json. Desktop, one run — mobile
@@ -129,18 +131,6 @@ jobs:
       with:
         node-version: 20.x
         cache: 'npm'
-    - run: npm ci
-    - name: Build production bundle
-      env:
-        VITE_SUPABASE_URL: https://testproject.supabase.co
-        VITE_SUPABASE_ANON_KEY: test-anon-key
-      run: npm run build
+    - run: bash scripts/ci-local.sh --step install
     - name: Lighthouse against the preview
-      run: |
-        npx vite preview --host 127.0.0.1 --port 4173 &
-        for _ in $(seq 1 40); do
-          curl -sf -o /dev/null http://127.0.0.1:4173 && break
-          sleep 1
-        done
-        curl -sf -o /dev/null http://127.0.0.1:4173
-        npx --yes @lhci/cli@0.14.0 autorun
+      run: bash scripts/ci-local.sh --no-install --step lighthouse
