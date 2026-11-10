@@ -39,7 +39,7 @@ import { trackRow } from '@/lib/levelTrack';
 import { catchUpFor } from '@/lib/catchUp';
 import { storyChapters, STORY_CHAPTERS } from '@/lib/storyCampaign';
 import { plaqueById, plaqueBonus } from '@/lib/plaques';
-import { syncConvenience, syncPackOpen } from '@/lib/packSync';
+import { syncConvenience, syncPackWin, requestPackRoll } from '@/lib/packSync';
 
 export const ALL_CARDS = [
   // Common (Starter Cards)
@@ -203,8 +203,11 @@ export const SHOP_ITEMS = [
   { id: 'pack_1', name: 'Card Pack', description: '5 filthy cards. Open in a stall.', short: '5 cards. Open in a stall.', icon: '📦', price: 200, currency: 'coins', type: 'pack', quantity: 1 },
   { id: 'pack_5', name: '5 Card Packs', description: '25 random cards (10% off). Hide the keys.', short: '25 cards · 10% off. Hide the keys.', icon: '📦', price: 900, currency: 'coins', type: 'pack', quantity: 5 },
   { id: 'pack_10', name: '10 Card Packs', description: '50 random cards (20% off). Call in sick.', short: '50 cards · 20% off. Call in sick.', icon: '📦📦', price: 1600, currency: 'coins', type: 'pack', quantity: 10 },
-  { id: 'premium_pack', name: 'Premium Pack', description: '5 cards. Same odds as a Card Pack.', short: '5 cards. Same odds.', icon: '💎', price: 50, currency: 'gems', type: 'premium', quantity: 1 },
-  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards. Same odds as a Card Pack.', short: '10 cards. Same odds.', icon: '⭐', price: 200, currency: 'gems', type: 'legendary', quantity: 1 },
+  // Gem packs match the small coin bag: 10 gems buy 500 coins, and a pack is
+  // 200 coins, so one pack is 4 gems and two packs are 8. The large bag is
+  // the better coins-per-gem. Same odds either way. See the PR value table.
+  { id: 'premium_pack', name: 'Premium Pack', description: '5 cards. Same odds as a Card Pack.', short: '5 cards. Same odds.', icon: '💎', price: 4, currency: 'gems', type: 'premium', quantity: 1 },
+  { id: 'legendary_pack', name: 'Legendary Pack', description: '10 cards. Same odds as a Card Pack.', short: '10 cards. Same odds.', icon: '⭐', price: 8, currency: 'gems', type: 'legendary', quantity: 1 },
   { id: 'coins_small', name: 'Small Coin Bag', description: '+500 coins. For the cheap rounds.', icon: '💰', price: 10, currency: 'gems', type: 'coins', quantity: 500 },
   { id: 'coins_large', name: 'Large Coin Bag', description: '+3,000 coins. Unmarked. Like you.', icon: '💰', price: 50, currency: 'gems', type: 'coins', quantity: 3000 },
   // Timed booster rather than a lump sum: pays out only as you play, so it
@@ -318,6 +321,7 @@ const initialState = {
   storageUnlocked: false,
   bonusDeckSlot: false,
   firstConvenience: false,
+  starterOfferDismissed: false,
   skipDay: null,
   skipsToday: 0,
   shieldBoughtDay: null,
@@ -645,6 +649,7 @@ export const normalizeSave = (persisted) => {
   s.storageUnlocked = persisted?.storageUnlocked === true;
   s.bonusDeckSlot = persisted?.bonusDeckSlot === true;
   s.firstConvenience = persisted?.firstConvenience === true;
+  s.starterOfferDismissed = persisted?.starterOfferDismissed === true;
   s.crawlTimer = persisted?.crawlTimer === true;
   const dayish = (value) => (typeof value === 'string' && value.length > 0 && value.length < 48 ? value : null);
   s.sellbackDay = dayish(persisted?.sellbackDay);
@@ -927,6 +932,14 @@ export const useGameStore = create(
             lastSyncedServerGems: serverBalance,
           });
         }
+      },
+      // A convenience purchase already took the gems locally, and the server
+      // took the same gems from user_gems. Move the high-water mark to that
+      // balance so the next reconcile does not read the drop as a chargeback
+      // and take them a second time.
+      noteServerGemSpend: (balance) => {
+        if (typeof balance !== 'number' || Number.isNaN(balance)) return;
+        set({ lastSyncedServerGems: balance });
       },
       spendGems: (amount) => {
         const state = get();
@@ -1328,6 +1341,7 @@ export const useGameStore = create(
         // would drift from the figure weekCoinsEarned tracks the moment any
         // multiplier (like the Coin Doubler) applies.
         get().addCoins(coinsThisBattle);
+        if (won) syncPackWin().catch(() => {});
 
         get().checkAchievement('first_win', newWins >= 1);
         get().checkAchievement('win_10', newWins >= 10);
@@ -1589,7 +1603,9 @@ export const useGameStore = create(
           skipDay: today,
           skipsToday: skips + 1,
         });
-        syncConvenience(`crawl-${today}-${skips}`, 'crawl_skip');
+        syncConvenience(`crawl-${today}-${skips}`, 'crawl_skip')
+          .then((data) => get().adoptConvenienceReceipt(data, board.skipGems))
+          .catch(() => {});
         return { ok: true, gems: board.skipGems };
       },
 
@@ -1615,7 +1631,9 @@ export const useGameStore = create(
         } else {
           return { ok: false, reason: 'unknown' };
         }
-        syncConvenience(`${id}-${today}`, id);
+        syncConvenience(`${id}-${today}`, id)
+          .then((data) => get().adoptConvenienceReceipt(data, item.gems))
+          .catch(() => {});
         return { ok: true };
       },
 
@@ -1648,7 +1666,9 @@ export const useGameStore = create(
           paidRerollDay: today,
           paidRerollsToday: used + 1,
         });
-        syncConvenience(`reroll-${today}-${used}`, 'quest_reroll');
+        syncConvenience(`reroll-${today}-${used}`, 'quest_reroll')
+          .then((data) => get().adoptConvenienceReceipt(data, REROLL_GEMS))
+          .catch(() => {});
         return swap;
       },
 
@@ -1704,6 +1724,8 @@ export const useGameStore = create(
         set({ claimedPlaques: [...state.claimedPlaques, id], coins: state.coins + plaque.coins });
         return { id: plaque.id, coins: plaque.coins, name: plaque.name };
       },
+
+      dismissStarterOffer: () => set({ starterOfferDismissed: true }),
 
       claimStory: (id) => {
         const chapter = storyChapters(get()).find((row) => row.id === id);
@@ -1829,14 +1851,76 @@ export const useGameStore = create(
           get().checkAchievement('collect_55', n >= 55);
           get().checkAchievement('collect_all', n >= ALL_CARDS.length);
         }
-        const postedIds = pulledCards.map((c) => c.id).filter((id) => Number.isInteger(id));
-        if (postedIds.length === pulledCards.length) {
-          const nonce = `pack-${openNo}-${today.replace(/\s/g, '')}`;
-          syncPackOpen(nonce, packType, postedIds, dupeCoins, (delta) => {
-            get().addCoins(delta);
-          });
-        }
         return { cards: pulledCards, dupeCoins, pity: nextPity };
+      },
+
+      // Signed-in opens ask the server to roll. The client does not send card
+      // ids. Offline, and a quiet server, use the same local rules.
+      openCardPackFromServer: async (requestedType = 'regular') => {
+        const today = new Date().toDateString();
+        const state = get();
+        if (!openAllowed({
+          earnedOpensToday: state.earnedOpensToday,
+          earnedOpensDay: state.earnedOpensDay,
+          today,
+          instant: state.instantOpen === true,
+        })) {
+          const field = { legendary: 'legendaryPacks', premium: 'premiumPacks', regular: 'cardPacks' };
+          const has = [requestedType, 'legendary', 'premium', 'regular'].some((t) => state[field[t]] > 0);
+          return has ? { blocked: 'cap', cards: [], dupeCoins: 0 } : null;
+        }
+        const nonce = `pack-${Date.now().toString(36)}-${requestedType}`;
+        try {
+          const receipt = await requestPackRoll(nonce, requestedType);
+          if (receipt) return get().applyServerPack(requestedType, receipt);
+        } catch { /* the local roll still opens the pack */ }
+        return get().openCardPack(requestedType);
+      },
+
+      applyServerPack: (packType, receipt) => {
+        const field = { legendary: 'legendaryPacks', premium: 'premiumPacks', regular: 'cardPacks' };
+        const today = new Date().toDateString();
+        let opened = false;
+        set((s) => {
+          const key = field[packType];
+          if (!key || s[key] <= 0) return {};
+          opened = true;
+          return { [key]: s[key] - 1 };
+        });
+        if (!opened) return null;
+        const ids = Array.isArray(receipt.card_ids) ? receipt.card_ids : [];
+        const kept = new Set(Array.isArray(receipt.kept_ids) ? receipt.kept_ids : []);
+        const state = get();
+        const owned = new Set(state.ownedCards);
+        const pulledCards = [];
+        for (const id of ids) {
+          const card = ALL_CARDS.find((c) => c.id === id);
+          if (!card) continue;
+          const isNew = kept.has(id) && !owned.has(id);
+          if (isNew) owned.add(id);
+          pulledCards.push({ ...card, isNew });
+        }
+        const dupeCoins = Math.max(0, Math.floor(Number(receipt.coins) || 0));
+        const openNo = (state.packOpens || 0) + 1;
+        set({
+          ownedCards: [...owned],
+          coins: state.coins + dupeCoins,
+          packOpens: openNo,
+          packCoinBack: (state.packCoinBack || 0) + dupeCoins,
+          earnedOpensToday: (state.earnedOpensDay === today ? state.earnedOpensToday : 0) + 1,
+          earnedOpensDay: today,
+          packStreakDay: today,
+          packPity: Number.isFinite(receipt.pity) ? receipt.pity : state.packPity,
+        });
+        return { cards: pulledCards, dupeCoins, pity: receipt.pity };
+      },
+
+      adoptConvenienceReceipt: (data, quoted) => {
+        if (!data || typeof data.balance !== 'number') return;
+        if (!data.replay && typeof data.charged === 'number' && data.charged !== quoted) {
+          set((s) => ({ gems: s.gems + (quoted - data.charged) }));
+        }
+        get().noteServerGemSpend(data.balance);
       },
 
       // Helper to get total available packs of all types
@@ -1856,13 +1940,13 @@ export const useGameStore = create(
 
       // Every pack on the shelf, in the order a one-by-one open would take
       // them. Instant open is what allows it. The rolls are the same rolls.
-      openAllPacks: () => {
+      openAllPacks: async () => {
         if (get().instantOpen !== true) return null;
         const opened = [];
         for (let i = 0; i < 40; i += 1) {
           const next = get().getNextPackType();
           if (!next) break;
-          const result = get().openCardPack(next);
+          const result = await get().openCardPackFromServer(next);
           if (!result || result.blocked) break;
           opened.push(result);
         }

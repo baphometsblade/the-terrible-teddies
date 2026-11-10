@@ -265,6 +265,9 @@ describe('the posted pack odds are the rolled odds', () => {
     }));
     // The sell-back rate is posted beside the odds. It is not a drop rate.
     allowed.add(`${Math.round(0.4 * 100)}%`);
+    // Gem bundles, unchanged prices. Each step up is more gems per dollar
+    // than the $0.99 pack: +6, +9, +39, +49.
+    for (const pct of ['6%', '9%', '39%', '49%']) allowed.add(pct);
     const screens = {
       'Card Packs': textOf(renderCardPacks()),
       'odds dialog': textOf(renderOddsDialog()),

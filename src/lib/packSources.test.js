@@ -19,7 +19,7 @@ describe('nextGemPack', () => {
     const gemPacks = SHOP_ITEMS.filter((i) => ['pack', 'premium', 'legendary'].includes(i.type) && i.currency === 'gems');
     const cheapest = gemPacks.reduce((a, b) => (a.price <= b.price ? a : b));
     expect(nextGemPack(0).item).toBe(cheapest);
-    expect(nextGemPack(10).short).toBe(cheapest.price - 10);
+    expect(nextGemPack(10).short).toBe(Math.max(0, cheapest.price - 10));
     expect(nextGemPack(cheapest.price).short).toBe(0);
     // Coin bags are sold for gems too, but they are not packs.
     expect(nextGemPack(0, SHOP_ITEMS.filter((i) => i.type === 'coins'))).toBeNull();

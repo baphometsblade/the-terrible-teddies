@@ -131,15 +131,28 @@ describe('reconcileServerGems (closes the gem-respend exploit)', () => {
     expect(get().buyShopItem('premium_pack').success).toBe(true);
     expect(get().buyShopItem('coins_large').success).toBe(true);
     for (let i = 0; i < 4; i += 1) expect(get().buyShopItem('coins_small').success).toBe(true);
-    expect(get().gems).toBe(10);                          // 540 spent
+    // 8+8+4+50+40 = 110. The 440 left is what a won dispute gives back.
+    expect(get().gems).toBe(440);
     expect(get().legendaryPacks).toBe(2);
 
     get().reconcileServerGems(0);                         // charged back
-    expect([get().gems, get().gemDebt]).toEqual([0, 540]);
+    expect([get().gems, get().gemDebt]).toEqual([0, 110]);
 
     get().reconcileServerGems(550);                       // dispute won
-    expect([get().gems, get().gemDebt]).toEqual([10, 0]);  // the 10 it took, no more
+    expect([get().gems, get().gemDebt]).toEqual([440, 0]);
     expect(get().lastSyncedServerGems).toBe(550);
+  });
+
+  it('charges a shortcut once and does not raise a debt when the server agrees', () => {
+    useGameStore.setState({ gems: 100, lastSyncedServerGems: 100, gemDebt: 0, instantOpen: false });
+    expect(get().buyConvenience('instant_open')).toMatchObject({ ok: true });
+    expect(get().gems).toBe(20);
+    // The RPC reported the server balance after its own deduction.
+    get().noteServerGemSpend(20);
+    get().reconcileServerGems(20);
+    expect(get().gems).toBe(20);
+    expect(get().gemDebt).toBe(0);
+    expect(get().instantOpen).toBe(true);
   });
 
   it('takes what is owed from earned gems too, before any reach the balance', () => {

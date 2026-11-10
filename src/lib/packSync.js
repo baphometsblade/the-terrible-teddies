@@ -1,32 +1,33 @@
-// Posts a pack the client already rolled so the server can recompute the
-// coins from the card ids. The local result stands when nobody is signed in
-// or the books are quiet. A receipt that comes back with a different coin
-// figure is applied as a delta, so the server total wins when it answers.
-// The nonce makes a retry pay once.
+// The server rolls a pack and prices a shortcut. The client never sends
+// card ids. When nobody is signed in, or the books are quiet, the caller
+// keeps the local result.
 
 import { supabase } from '@/utils/supabaseClient';
 
-export const syncPackOpen = (nonce, source, cardIds, localCoins, adjust) => {
-  const run = async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData?.session) return;
-    const { data } = await supabase.rpc('settle_pack_open', {
-      p_nonce: nonce,
-      p_source: source,
-      p_card_ids: cardIds,
-    });
-    if (!data || typeof data.coins !== 'number') return;
-    const delta = data.coins - localCoins;
-    if (delta) adjust(delta);
-  };
-  run().catch(() => {});
+export const requestPackRoll = async (nonce, source) => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData?.session) return null;
+  const { data, error } = await supabase.rpc('settle_pack_open', {
+    p_nonce: nonce,
+    p_source: source,
+  });
+  if (error || !data || !Array.isArray(data.card_ids)) return null;
+  return data;
 };
 
-export const syncConvenience = (nonce, sku) => {
-  const run = async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData?.session) return;
-    await supabase.rpc('buy_convenience', { p_nonce: nonce, p_sku: sku });
-  };
-  run().catch(() => {});
+export const syncConvenience = async (nonce, sku) => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData?.session) return null;
+  const { data, error } = await supabase.rpc('buy_convenience', {
+    p_nonce: nonce,
+    p_sku: sku,
+  });
+  if (error || !data) return null;
+  return data;
+};
+
+export const syncPackWin = async () => {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData?.session) return;
+  await supabase.rpc('record_pack_win');
 };

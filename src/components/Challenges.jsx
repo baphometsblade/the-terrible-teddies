@@ -495,10 +495,11 @@ const Challenges = ({ onClose }) => {
           return (
             <button
               type="button"
+              aria-label="Buy reroll"
               onClick={() => buyQuestReroll(activeTab === 'daily' ? 'daily' : 'weekly', open.id)}
               className="relative mx-4 mt-2 min-h-11 rounded-xl px-3 text-left text-xs font-semibold text-brass-200 sm:mx-6"
             >
-              {`Reroll past the free one · ${REROLL_GEMS} gems. You have ${gems}. ${PAID_REROLLS_PER_DAY - used} left today.`}
+              {`Buy reroll · ${REROLL_GEMS} gems. You have ${gems}. ${PAID_REROLLS_PER_DAY - used} left today.`}
             </button>
           );
         })()}

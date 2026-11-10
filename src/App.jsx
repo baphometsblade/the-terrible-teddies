@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { useSupabaseAuth } from './hooks/useSupabaseAuth';
 import Auth from './components/Auth';
 import MainMenu from './components/MainMenu';
+import { StarterOffer } from './components/StarterOffer';
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/components/ui/use-toast";
 import ErrorBoundary from './components/ErrorBoundary';
@@ -775,6 +776,7 @@ function App() {
                 {renderScreen()}
               </motion.div>
             </AnimatePresence>
+            {onBareMenu && <StarterOffer />}
 
             <DialogErrorBoundary resetKey={dialogFlags.join()} onDismiss={closeAllDialogs}>
             <Suspense fallback={<DialogLoader onCancel={closeAllDialogs} />}>

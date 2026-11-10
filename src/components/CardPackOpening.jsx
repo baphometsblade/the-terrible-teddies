@@ -65,7 +65,7 @@ const reducedMotion = () => !useGameStore.getState().animationsEnabled
 // onGetGems / onBattlePass / onDailyRewards (from App) are the empty table's
 // routes to where packs come from; each closes this dialog and opens that one.
 const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) => {
-  const { cardPacks, premiumPacks, legendaryPacks, openCardPack, openAllPacks, coins, gems, gemDebt, getNextPackType, instantOpen } = useGameStore();
+  const { cardPacks, premiumPacks, legendaryPacks, openCardPackFromServer, openAllPacks, coins, gems, gemDebt, getNextPackType, instantOpen } = useGameStore();
   // A gem-priced buy waits for its confirm (confirmNode, rendered last).
   const { requestBuy, confirmNode } = useStoreBuy();
   const [isOpening, setIsOpening] = useState(false);
@@ -341,11 +341,10 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
     // until the reveal ends, rather than letting it fall out of the dialog.
     stageRef.current?.focus({ preventScroll: true });
 
-    later(() => {
+    later(async () => {
       setShowPack(false);
-      // Open the next available pack type (prioritizes legendary > premium > regular)
       const packType = getNextPackType();
-      const result = openCardPack(packType);
+      const result = await openCardPackFromServer(packType);
       // The store claims the pack atomically; if none remain (e.g. a lost race),
       // it returns null — bail without crashing the reveal animation.
       if (!result || result.blocked) {
@@ -774,8 +773,8 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
               {!pulledCards && !isOpening && instantOpen && totalPacks > 1 && (
                 <button
                   type="button"
-                  onClick={() => {
-                    const opened = openAllPacks();
+                  onClick={async () => {
+                    const opened = await openAllPacks();
                     if (!opened?.length) return;
                     const coinsBack = opened.reduce((n, pack) => n + (pack.dupeCoins || 0), 0);
                     const shown = opened.flatMap((pack) => pack.cards).slice(0, 10);

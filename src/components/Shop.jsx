@@ -45,6 +45,10 @@ const ACTION =
   `inline-flex items-center justify-center gap-2 rounded-xl font-display font-bold whitespace-nowrap ${FOCUS_OUTLINE} ` +
   'disabled:opacity-50 disabled:cursor-not-allowed';
 
+const gemsPerDollar = (bundle) => (bundle.gems + bundle.bonus) / bundle.price;
+const BASE_GEMS_PER_DOLLAR = gemsPerDollar(GEM_BUNDLES[0]);
+const extraGemsPct = (bundle) => Math.round((gemsPerDollar(bundle) / BASE_GEMS_PER_DOLLAR - 1) * 100);
+
 const CHECKOUT_STATUS = 'Opening secure checkout…';
 
 // Card payments stay shut until VITE_PAYMENT_PROVIDER is ccbill or stripe.
@@ -112,6 +116,11 @@ const GemBundle = ({ bundle, tier, processing, onBuy }) => {
         {bundle.gems.toLocaleString()}
       </span>
       {bundle.bonus > 0 && <span id={`${id}-bonus`} className="relative mt-2 text-emerald-300 text-xs font-bold tracking-wide">+{bundle.bonus.toLocaleString()} BONUS</span>}
+      {extraGemsPct(bundle) > 0 && (
+        <span className="relative mt-1 text-emerald-300 text-[11px] font-bold">
+          {`+${extraGemsPct(bundle)}% more gems per dollar`}
+        </span>
+      )}
       {bundle.bonus > 0 && <span id={`${id}-total`} className="relative text-plush-300 text-[11px] mt-0.5">{(bundle.gems + bundle.bonus).toLocaleString()} total</span>}
       {GEM_CAPTIONS[bundle.id] && <span id={`${id}-caption`} className="relative mt-2 text-balance text-plush-300 text-xs leading-snug">{GEM_CAPTIONS[bundle.id]}</span>}
       <span className="relative mt-auto pt-4">
@@ -139,7 +148,7 @@ const TAB_MOTION = {
 // `initialTab` is the tab it opens on: App sends a route to gems (the Battle
 // Pass confirm, the empty Card Packs table) straight to "Buy Gems".
 const Shop = ({ onClose, initialTab = 'packs' }) => {
-  const { coins, gems, gemDebt, cardPacks, premiumPacks, legendaryPacks, coinDoublerExpiresAt } = useGameStore();
+  const { coins, gems, gemDebt, cardPacks, premiumPacks, legendaryPacks, coinDoublerExpiresAt, dismissStarterOffer } = useGameStore();
   // Purchases re-render via the store subscription, but time ELAPSING is not a
   // store write — a dialog left open across the expiry would keep advertising
   // an "Active" booster that recordBattleResult (which recomputes from
@@ -170,10 +179,13 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
     if (!userId) return undefined;
     let live = true;
     fetchOnePerAccountHoldings(userId).then((held) => {
-      if (live && held?.has('starter_bundle')) setStarterClaimed(true);
+      if (live && held?.has('starter_bundle')) {
+        setStarterClaimed(true);
+        dismissStarterOffer();
+      }
     });
     return () => { live = false; };
-  }, [userId]);
+  }, [userId, dismissStarterOffer]);
   // Where focus goes when a tap on Buy Now comes back refused: the button it
   // was on has just been replaced by the claimed note.
   const starterClaimedRef = useRef(null);
@@ -484,7 +496,6 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
 
             {activeTab === 'special' && (
               <motion.div key="special" {...TAB_MOTION}>
-                {/* The headline offer: brass-trimmed, the only brass button on the tab. */}
                 <div className="panel-glass trim-brass relative overflow-hidden rounded-2xl p-5 sm:p-6 mb-4">
                   <div aria-hidden="true" className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_60%_90%_at_0%_0%,rgba(251,191,36,0.2),transparent_70%)]" />
                   <div className="relative flex flex-col md:flex-row md:items-center gap-5 md:gap-8">

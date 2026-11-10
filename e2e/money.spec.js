@@ -126,27 +126,27 @@ test('a held Enter on a gem tile asks once, spends nothing, and Buy spends the p
   await page.getByRole('button', { name: 'Shop', exact: true }).click();
   const shop = page.getByRole('dialog', { name: 'Shop' });
   await expect(shop).toBeVisible(SLOW);
-  const tile = shop.getByRole('button', { name: 'Buy Legendary Pack for 200 gems' });
+  const tile = shop.getByRole('button', { name: 'Buy Legendary Pack for 8 gems' });
   await tile.focus();
   await holdEnter(page, 15);
 
   const confirm = page.getByRole('dialog', { name: 'Buy Legendary Pack?' });
   await expect(confirm).toBeVisible(SLOW);
   await expect(confirm.getByRole('button', { name: 'Cancel' })).toBeFocused();
-  await expect(confirm).toContainText('You have 1,000 gems · 800 after');
+  await expect(confirm).toContainText('You have 1,000 gems · 992 after');
   expect((await saved(page)).gems).toBe(1000);
   await expectNoAxeViolations(page, 'gem spend confirm');
 
   // Held again on Buy itself: the first press buys, the repeats land on the
   // tile focus returns to, and buy nothing.
-  await confirm.getByRole('button', { name: 'Buy for 200 gems' }).focus();
+  await confirm.getByRole('button', { name: 'Buy for 8 gems' }).focus();
   await holdEnter(page, 15);
   await expect(confirm).toHaveCount(0);
   await expect(tile).toBeFocused();
   await expect.poll(async () => {
     const s = await saved(page);
     return [s.gems, s.legendaryPacks];
-  }).toEqual([800, 1]);
+  }).toEqual([992, 1]);
   await expect(page.getByRole('dialog', { name: 'Buy Legendary Pack?' })).toHaveCount(0);
 
   // Escape backs out of the confirm and leaves the Shop open. (Past the
@@ -157,7 +157,7 @@ test('a held Enter on a gem tile asks once, spends nothing, and Buy spends the p
   await page.keyboard.press('Escape');
   await expect(confirm).toHaveCount(0);
   await expect(shop).toBeVisible();
-  expect((await saved(page)).gems).toBe(800);
+  expect((await saved(page)).gems).toBe(992);
 });
 
 test('a double-click on a coin tile buys one pack', async ({ page }) => {
@@ -219,7 +219,7 @@ test.describe('a double press on a gem tile that the confirm opens over', () => 
       await page.getByRole('button', { name: 'Shop', exact: true }).click();
       const shop = page.getByRole('dialog', { name: 'Shop' });
       await expect(shop).toBeVisible(SLOW);
-      const tile = shop.getByRole('button', { name: 'Buy Legendary Pack for 200 gems' });
+      const tile = shop.getByRole('button', { name: 'Buy Legendary Pack for 8 gems' });
       const at = await pointUnderBuy(page, tile, 'Buy Legendary Pack?');
       // The layout this guards: if Buy ever stops sitting over the tile, the
       // case needs a new tile, not a pass.
@@ -235,12 +235,12 @@ test.describe('a double press on a gem tile that the confirm opens over', () => 
       expect((await saved(page)).legendaryPacks).toBe(0);
 
       // A deliberate Buy, once the moment has passed, still buys.
-      await confirm.getByRole('button', { name: 'Buy for 200 gems' }).click();
+      await confirm.getByRole('button', { name: 'Buy for 8 gems' }).click();
       await expect(confirm).toHaveCount(0);
       await expect.poll(async () => {
         const s = await saved(page);
         return [s.gems, s.legendaryPacks];
-      }).toEqual([800, 1]);
+      }).toEqual([992, 1]);
     });
   });
 

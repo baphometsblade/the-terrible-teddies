@@ -16,8 +16,8 @@ export const nextCoinPack = (coins, items = SHOP_ITEMS) => {
 };
 
 /**
- * The cheapest pack sold for gems (a guaranteed-rarity pack), and how far
- * `gems` is from it: the source a "Get gems" route leads to.
+ * The cheapest pack sold for gems, at the same odds as a coin pack, and how
+ * far `gems` is from it.
  */
 export const nextGemPack = (gems, items = SHOP_ITEMS) => {
   let item = null;
