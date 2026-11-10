@@ -2,7 +2,8 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState }
 import { HOUSE_RULES } from '@/lib/houseRules';
 import { mvpLine } from '@/lib/matchNight';
 import { newActionId, POLL_MS, pvpPost, watchViews } from '@/lib/pvp/client';
-import { knownDeck } from '@/lib/pvp/decks';
+import { cardsFor, knownDeck } from '@/lib/pvp/decks';
+import { fieldingProblem, isCardAvailable } from '@/lib/collectiblePool';
 import { toGhostId } from '@/lib/social/ghostDeck';
 import { drawGhost, slipUrl, ticketFrom } from '@/lib/social/client';
 import { TAUNTS } from '@/lib/social/taunts';
@@ -21,6 +22,7 @@ function secondsLeft(deadline, now) {
 
 const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLeave }, ref) {
   const playerName = useGameStore((s) => s.playerName);
+  const ownedCards = useGameStore((s) => s.ownedCards);
   const currentDeck = useGameStore((s) => s.currentDeck);
   const savedDecks = useGameStore((s) => s.savedDecks);
   const recordLiveBrawl = useGameStore((s) => s.recordLiveBrawl);
@@ -43,13 +45,16 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
   const booked = useRef(false);
   const viewRef = useRef(null);
   const queueRef = useRef(null);
+  const [seasons, setSeasons] = useState([]);
   const [attackerId, setAttackerId] = useState(null);
   viewRef.current = view;
   queueRef.current = queue;
 
   const deck = decks[deckIndex] || decks[0];
   const ownedIds = deck?.cards || [];
-  const deckError = knownDeck(ownedIds);
+  const filedCards = cardsFor(ownedIds.map((id) => toGhostId(id)).filter((id) => id != null));
+  const deckError = knownDeck(ownedIds)
+    || fieldingProblem(filedCards, { owned: ownedCards, seasons });
   const deckIds = ownedIds.map((id) => toGhostId(id)).filter((id) => id != null);
 
   useEffect(() => {
@@ -57,6 +62,14 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
     supabase.auth.getSession().then(({ data }) => {
       if (live) setUserId(data.session?.user?.id || '');
     });
+    return () => { live = false; };
+  }, []);
+
+  useEffect(() => {
+    let live = true;
+    supabase.from('card_seasons').select('card_ids, starts_at, ends_at').then(({ data }) => {
+      if (live && Array.isArray(data)) setSeasons(data);
+    }).catch(() => {});
     return () => { live = false; };
   }, []);
 
@@ -184,8 +197,12 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
     await leaveQueue();
     const drawn = await drawGhost();
     const ticket = ticketFrom(drawn);
-    if (ticket && onGhost) onGhost(ticket);
-    else setNotice(drawn?.reason === 'empty' ? 'Nobody left a deck out.' : 'No ghost on the bar.');
+    const cards = ticket ? cardsFor(ticket.deck) : null;
+    const closed = cards && cards.some((card) => !isCardAvailable(card, {
+      seasons, requireOwned: false,
+    }));
+    if (ticket && cards && !closed && onGhost) onGhost(ticket);
+    else setNotice(drawn?.reason === 'empty' || closed ? 'Nobody left a deck that is in season.' : 'No ghost on the bar.');
   };
 
   const createInvite = async (kind) => {

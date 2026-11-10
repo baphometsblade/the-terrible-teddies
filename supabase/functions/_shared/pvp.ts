@@ -4,7 +4,8 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
 import { createMatch, projectFor, pvpRules, stateHash } from "../../../src/lib/combat/engine.js";
-import { cardsFor, knownDeck, saveAllows } from "../../../src/lib/pvp/decks.js";
+import { cardsFor, knownDeck } from "../../../src/lib/pvp/decks.js";
+import { fieldingProblem } from "../../../src/lib/collectiblePool.js";
 import { acceptAction } from "../../../src/lib/pvp/authority.js";
 import {
   GHOST_OFFER_MS, HEARTBEAT_STALE_MS, MULLIGAN_MS, TURN_MS,
@@ -57,6 +58,26 @@ async function userId(authHeader: string | null) {
   const { data, error } = await client.auth.getUser();
   if (error || !data.user) return null;
   return data.user.id;
+}
+
+const STARTERS = ['1', '2', '3', '4', '5', '6', '30', '31', '40', '41', '42'];
+
+async function fieldable(user: string, deckIds: number[]) {
+  const problem = knownDeck(deckIds);
+  if (problem) return problem;
+  const cards = cardsFor(deckIds);
+  if (!cards) return 'That deck has a card the bar does not serve.';
+  const save = await rpc('pvp_save_of', { p_uid: user });
+  const owned = Array.isArray(save?.ownedCards) ? [...save.ownedCards] : [];
+  const packed = await service.from('pack_owned').select('card_id').eq('user_id', user);
+  if (!packed.error) {
+    for (const row of packed.data || []) owned.push(row.card_id);
+  }
+  const seasons = await service.from('card_seasons').select('card_ids, starts_at, ends_at');
+  const open = seasons.error ? [] : (seasons.data || []);
+  const hasRecord = (save && Array.isArray(save.ownedCards)) || (!packed.error && (packed.data || []).length > 0);
+  const collection = hasRecord ? owned : STARTERS;
+  return fieldingProblem(cards, { owned: collection, seasons: open });
 }
 
 async function rpc(name: string, args: Record<string, unknown>) {
@@ -240,10 +261,8 @@ export async function handleQueue(user: string, body: Record<string, unknown>) {
   }
 
   const deck = Array.isArray(body.deck) ? body.deck.map((id) => Number(id)) : [];
-  const problem = knownDeck(deck);
+  const problem = await fieldable(user, deck);
   if (problem) return { ok: false, error: "deck", message: problem };
-  const save = await rpc("pvp_save_of", { p_uid: user });
-  if (save && !saveAllows(save, deck)) return { ok: false, error: "deck", message: "Queue the deck you saved." };
   const rating = await rpc("pvp_rating_of", { p_uid: user });
   const name = safeName(body.name, "A rival");
   const queued = await rpc("pvp_enqueue", {
@@ -406,10 +425,8 @@ export async function handleInvite(user: string, body: Record<string, unknown>) 
   const op = String(body.op || "preview");
   if (op === "preview") return rpc("pvp_invite_get", { p_code: String(body.code || "") });
   const deck = Array.isArray(body.deck) ? body.deck.map((id) => Number(id)) : [];
-  const problem = knownDeck(deck);
+  const problem = await fieldable(user, deck);
   if (problem) return { ok: false, error: "deck", message: problem };
-  const save = await rpc("pvp_save_of", { p_uid: user });
-  if (save && !saveAllows(save, deck)) return { ok: false, error: "deck", message: "That deck is not one you saved." };
   const rating = await rpc("pvp_rating_of", { p_uid: user });
   const name = safeName(body.name, "A rival");
   if (op === "create") {
