@@ -147,12 +147,26 @@ describe('reconcileServerGems (closes the gem-respend exploit)', () => {
     useGameStore.setState({ gems: 100, lastSyncedServerGems: 100, gemDebt: 0, instantOpen: false });
     expect(get().buyConvenience('instant_open')).toMatchObject({ ok: true });
     expect(get().gems).toBe(20);
-    // The RPC reported the server balance after its own deduction.
-    get().noteServerGemSpend(20);
+    get().adoptConvenienceReceipt({ ok: true, charged: 80, balance: 20, replay: false }, 80);
     get().reconcileServerGems(20);
     expect(get().gems).toBe(20);
     expect(get().gemDebt).toBe(0);
     expect(get().instantOpen).toBe(true);
+  });
+
+  it('does not treat a lost convenience receipt as a chargeback', () => {
+    useGameStore.setState({
+      gems: 100, lastSyncedServerGems: 100, gemDebt: 0, instantOpen: false, pendingGemCharges: [],
+    });
+    expect(get().buyConvenience('instant_open')).toMatchObject({ ok: true });
+    expect(get().pendingGemCharges).toEqual([80]);
+    // The RPC committed and the response never arrived. The next reconcile
+    // reads the same 80 the client already spent.
+    get().reconcileServerGems(20);
+    expect(get().gems).toBe(20);
+    expect(get().gemDebt).toBe(0);
+    expect(get().pendingGemCharges).toEqual([]);
+    expect(get().lastSyncedServerGems).toBe(20);
   });
 
   it('takes what is owed from earned gems too, before any reach the balance', () => {

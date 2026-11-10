@@ -1690,6 +1690,40 @@ BEGIN
   END IF;
 
   RESET ROLE;
+  CREATE TEMP TABLE pack_cat_bak AS SELECT id, rarity FROM public.pack_catalog;
+  CREATE TEMP TABLE pack_odds_bak AS SELECT rarity, weight FROM public.pack_odds;
+  UPDATE public.pack_catalog SET rarity = 'common';
+  UPDATE public.pack_catalog SET rarity = 'legendary' WHERE id = 'ma-1';
+  UPDATE public.pack_odds SET weight = CASE WHEN rarity = 'legendary' THEN 100 ELSE 0 END;
+  INSERT INTO public.card_seasons (id, name, theme, starts_at, ends_at, card_ids, pack_weight_boost)
+  VALUES ('ma-shut', 'Shut', 'test', pg_catalog.now() + interval '10 days', pg_catalog.now() + interval '20 days', ARRAY['ma-1'], 1);
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_buyer::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_row := public.settle_pack_open('pack-nonce-shut', 'regular');
+  IF v_row->'card_ids' ? 'ma-1' THEN
+    RAISE EXCEPTION 'a closed season still dropped %', v_row->'card_ids';
+  END IF;
+  RESET ROLE;
+  DELETE FROM public.card_seasons WHERE id = 'ma-shut';
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_buyer::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_row := public.settle_pack_open('pack-nonce-string', 'regular');
+  IF NOT (v_row->'card_ids' ? 'ma-1') THEN
+    RAISE EXCEPTION 'an open string-id card was not rolled: %', v_row->'card_ids';
+  END IF;
+  RESET ROLE;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.pack_owned WHERE user_id = v_buyer AND card_id = 'ma-1'
+  ) THEN
+    RAISE EXCEPTION 'ma-1 was rolled but not stored';
+  END IF;
+  UPDATE public.pack_catalog c SET rarity = b.rarity FROM pack_cat_bak b WHERE c.id = b.id;
+  UPDATE public.pack_odds o SET weight = b.weight FROM pack_odds_bak b WHERE o.rarity = b.rarity;
+  DROP TABLE pack_cat_bak;
+  DROP TABLE pack_odds_bak;
+
   DELETE FROM public.pack_owned WHERE user_id = v_buyer;
   INSERT INTO public.pack_owned (user_id, card_id)
   SELECT v_buyer, id FROM public.pack_catalog ORDER BY id LIMIT 36;
@@ -1710,7 +1744,7 @@ BEGIN
   v_row := public.settle_pack_open('pack-nonce-pity', 'regular');
   RESET ROLE;
   SELECT count(*) INTO v_rares FROM public.pack_catalog
-  WHERE id = ANY (ARRAY(SELECT jsonb_array_elements_text(v_row->'card_ids')::int))
+  WHERE id = ANY (ARRAY(SELECT jsonb_array_elements_text(v_row->'card_ids')))
     AND rarity = 'rare';
   IF v_rares < 1 THEN RAISE EXCEPTION 'pity did not place a rare: %', v_row; END IF;
   SELECT pity INTO v_pity FROM public.pack_wallet WHERE user_id = v_buyer;
@@ -1722,6 +1756,11 @@ BEGIN
   PERFORM set_config('request.jwt.claims',
     json_build_object('sub', v_buyer::text, 'role', 'authenticated')::text, true);
   EXECUTE 'SET LOCAL ROLE authenticated';
+  BEGIN
+    PERFORM public.buy_convenience('conv-no-walk', 'crawl_skip');
+    RAISE EXCEPTION 'a skip with no walk was charged';
+  EXCEPTION WHEN SQLSTATE 'PT403' THEN NULL;
+  END;
   v_row := public.buy_convenience('conv-nonce-1', 'instant_open');
   IF (v_row->>'charged')::int <> 80 OR (v_row->>'balance')::int <> 20 THEN
     RAISE EXCEPTION 'instant open priced %', v_row;
@@ -1763,8 +1802,45 @@ BEGIN
     RAISE EXCEPTION 'gems grew a withdrawable balance';
   END IF;
 
+  UPDATE public.user_gems SET gems = 40 WHERE user_id = v_buyer;
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_buyer::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM public.buy_convenience('reroll-1', 'quest_reroll');
+  PERFORM public.buy_convenience('reroll-2', 'quest_reroll');
+  PERFORM public.buy_convenience('reroll-3', 'quest_reroll');
+  BEGIN
+    PERFORM public.buy_convenience('reroll-4', 'quest_reroll');
+    RAISE EXCEPTION 'a fourth reroll cleared the daily cap';
+  EXCEPTION WHEN SQLSTATE 'PT429' THEN NULL;
+  END;
+  RESET ROLE;
+
   RAISE NOTICE 'pack economy assertions passed';
 END $$;
 SQL
 
 echo "==> Migrations apply cleanly and the security properties hold"
+
+# Every card the client can roll has a catalog row. A future set that is
+# only in the client fails here until its migration adds the rows.
+client_ids="$(node --input-type=module <<'NODE'
+import { readFileSync, readdirSync } from 'node:fs';
+const files = ['src/stores/gameStore.js', ...readdirSync('src/data').map((n) => `src/data/${n}`)];
+const ids = new Set();
+const pat = /\{\s*id:\s*(\d+|'[^']+')[\s\S]*?rarity:\s*'(\w+)'/g;
+for (const f of files) {
+  const src = readFileSync(f, 'utf8');
+  for (const m of src.matchAll(pat)) ids.add(m[1].replace(/'/g, ''));
+}
+process.stdout.write([...ids].sort().join('\n'));
+NODE
+)"
+server_ids="$(psql "$DB" -tA -c "SELECT id FROM public.pack_catalog ORDER BY id")"
+missing="$(comm -23 <(printf '%s\n' "$client_ids") <(printf '%s\n' "$server_ids"))"
+if [ -n "$missing" ]; then
+  echo "pack_catalog is missing client card ids:" >&2
+  printf '%s\n' "$missing" >&2
+  exit 1
+fi
+echo "==> pack_catalog holds every client card id"

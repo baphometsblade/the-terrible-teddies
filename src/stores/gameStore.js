@@ -302,6 +302,11 @@ const initialState = {
   // so a buy, spend, chargeback, won dispute cannot end with the goods and
   // the gems both. Never negative; while it is above 0, gems is 0.
   gemDebt: 0,
+  // Convenience spends already taken off the local balance whose server
+  // receipt has not been applied yet. A reconcile that sees the server drop
+  // by one of these amounts moves the high-water mark and does not treat it
+  // as a chargeback, which is what happened when the receipt response was lost.
+  pendingGemCharges: [],
   ownedCards: [1, 2, 3, 4, 5, 6, 30, 31, 40, 41, 42],
   currentDeck: [1, 2, 3, 4, 5, 6, 30, 40, 41, 42],
   savedDecks: [],
@@ -522,6 +527,7 @@ export const keptThroughReset = (state, now = new Date()) => {
   return {
     gems: owed > 0 ? state.gems : Math.max(STARTING_GEMS, state.gems),
     gemDebt: owed,
+    pendingGemCharges: Array.isArray(state.pendingGemCharges) ? state.pendingGemCharges : [],
     premiumPacks: state.premiumPacks,
     legendaryPacks: state.legendaryPacks,
     coinDoublerExpiresAt: doublerRunning ? state.coinDoublerExpiresAt : null,
@@ -661,6 +667,9 @@ export const normalizeSave = (persisted) => {
   s.crawlGatedStop = dayish(persisted?.crawlGatedStop);
   // A debt is a count of gems: never negative, which would be a credit.
   s.gemDebt = Math.max(0, s.gemDebt);
+  s.pendingGemCharges = Array.isArray(persisted?.pendingGemCharges)
+    ? persisted.pendingGemCharges.filter((n) => typeof n === 'number' && n > 0 && n < 100000).slice(0, 20)
+    : [];
   // The sync bookkeeping is nullable like the booster's expiry: anything
   // malformed means "never in step", which at worst sends the save again.
   s.cloudSyncedHash = typeof persisted?.cloudSyncedHash === 'string' ? persisted.cloudSyncedHash : null;
@@ -692,6 +701,25 @@ export const creditGems = (state, amount) => {
   const owed = state.gemDebt > 0 ? state.gemDebt : 0;
   const pay = Math.min(owed, n);
   return { gems: state.gems + n - pay, gemDebt: owed - pay };
+};
+
+// Which pending convenience spends add up to a server drop. Null when the
+// drop is not one of those spends (a chargeback, or a mix this cannot see).
+const consumePendingCharges = (pending, drop) => {
+  const amounts = (Array.isArray(pending) ? pending : []).filter((n) => typeof n === 'number' && n > 0);
+  if (amounts.length === 0 || drop <= 0 || amounts.length > 20) return null;
+  const reach = new Map([[0, 0]]);
+  for (let i = 0; i < amounts.length; i += 1) {
+    const entries = [...reach.entries()];
+    for (const [sum, mask] of entries) {
+      const next = sum + amounts[i];
+      if (next > drop || reach.has(next)) continue;
+      reach.set(next, mask | (1 << i));
+    }
+  }
+  if (!reach.has(drop)) return null;
+  const mask = reach.get(drop);
+  return { left: amounts.filter((_, i) => (mask & (1 << i)) === 0) };
 };
 
 // How the last server credit on this page was split between what was owed
@@ -902,35 +930,22 @@ export const useGameStore = create(
           const bonus = state.firstConvenience ? {} : { firstConvenience: true, bonusDeckSlot: true };
           set({ ...credit, ...bonus, lastSyncedServerGems: serverBalance });
         } else if (delta < 0) {
-          // The server total moved DOWN. Only one thing moves it down:
-          // reverse_gem_purchase, the refund/chargeback clawback
-          // (20260718000200). Every other writer of user_gems is additive, and
-          // spending is purely local — spendGems never touches the server — so
-          // a negative delta is unambiguously "a payment was reversed".
-          //
-          // This branch used to update only the high-water mark and leave the
-          // local balance alone, on the reasoning that the server "shouldn't"
-          // move down. The result was that the clawback landed on user_gems and
-          // never reached the balance the game actually spends from, so a player
-          // could buy gems, charge back, and keep every one of them. Worse, it
-          // was repeatable: the mark was reset to the post-reversal total, so
-          // the next purchase credited in full again.
-          //
-          // The balance floors at zero, but the clawback does not shrink to
-          // fit it. The gems may already be spent (on packs that are not
-          // taken back), and a floor alone made the reversal partial while
-          // the restore after a won dispute (restore_gem_purchase) is whole:
-          // buy 550, spend 540, charge back (10 taken), win (550 back) left
-          // 550 gems and every pack. What the balance cannot cover is owed
-          // (gemDebt) and paid from the next gems in (creditGems), so a
-          // restore only ever gives back what was actually taken.
-          const after = state.gems + delta;
-          const owed = state.gemDebt > 0 ? state.gemDebt : 0;
-          set({
-            gems: Math.max(0, after),
-            gemDebt: owed + Math.max(0, -after),
-            lastSyncedServerGems: serverBalance,
-          });
+          // A drop that matches convenience spends whose receipt never came
+          // back is the server applying those spends, not a chargeback.
+          const drop = -delta;
+          const pending = Array.isArray(state.pendingGemCharges) ? state.pendingGemCharges : [];
+          const usable = consumePendingCharges(pending, drop);
+          if (usable) {
+            set({ pendingGemCharges: usable.left, lastSyncedServerGems: serverBalance });
+          } else {
+            const after = state.gems + delta;
+            const owed = state.gemDebt > 0 ? state.gemDebt : 0;
+            set({
+              gems: Math.max(0, after),
+              gemDebt: owed + Math.max(0, -after),
+              lastSyncedServerGems: serverBalance,
+            });
+          }
         }
       },
       // A convenience purchase already took the gems locally, and the server
@@ -1602,6 +1617,7 @@ export const useGameStore = create(
           crawlGateUntil: 0,
           skipDay: today,
           skipsToday: skips + 1,
+          pendingGemCharges: [...(state.pendingGemCharges || []), board.skipGems].slice(-20),
         });
         syncConvenience(`crawl-${today}-${skips}`, 'crawl_skip')
           .then((data) => get().adoptConvenienceReceipt(data, board.skipGems))
@@ -1617,17 +1633,34 @@ export const useGameStore = create(
         if (state.gems < item.gems) return { ok: false, reason: 'short' };
         if (id === 'instant_open') {
           if (state.instantOpen) return { ok: false, reason: 'owned' };
-          set({ gems: state.gems - item.gems, instantOpen: true });
+          set({
+            gems: state.gems - item.gems,
+            instantOpen: true,
+            pendingGemCharges: [...(state.pendingGemCharges || []), item.gems].slice(-20),
+          });
         } else if (id === 'deck_slots') {
           if (state.decksUnlocked) return { ok: false, reason: 'owned' };
-          set({ gems: state.gems - item.gems, decksUnlocked: true });
+          set({
+            gems: state.gems - item.gems,
+            decksUnlocked: true,
+            pendingGemCharges: [...(state.pendingGemCharges || []), item.gems].slice(-20),
+          });
         } else if (id === 'storage') {
           if (state.storageUnlocked) return { ok: false, reason: 'owned' };
-          set({ gems: state.gems - item.gems, storageUnlocked: true });
+          set({
+            gems: state.gems - item.gems,
+            storageUnlocked: true,
+            pendingGemCharges: [...(state.pendingGemCharges || []), item.gems].slice(-20),
+          });
         } else if (id === 'streak_shield') {
           if (state.streakShields >= 1) return { ok: false, reason: 'full' };
           if (state.shieldBoughtDay === today) return { ok: false, reason: 'cap' };
-          set({ gems: state.gems - item.gems, streakShields: 1, shieldBoughtDay: today });
+          set({
+            gems: state.gems - item.gems,
+            streakShields: 1,
+            shieldBoughtDay: today,
+            pendingGemCharges: [...(state.pendingGemCharges || []), item.gems].slice(-20),
+          });
         } else {
           return { ok: false, reason: 'unknown' };
         }
@@ -1665,6 +1698,7 @@ export const useGameStore = create(
           questRerolls: next,
           paidRerollDay: today,
           paidRerollsToday: used + 1,
+          pendingGemCharges: [...(state.pendingGemCharges || []), REROLL_GEMS].slice(-20),
         });
         syncConvenience(`reroll-${today}-${used}`, 'quest_reroll')
           .then((data) => get().adoptConvenienceReceipt(data, REROLL_GEMS))
@@ -1889,15 +1923,16 @@ export const useGameStore = create(
         });
         if (!opened) return null;
         const ids = Array.isArray(receipt.card_ids) ? receipt.card_ids : [];
-        const kept = new Set(Array.isArray(receipt.kept_ids) ? receipt.kept_ids : []);
+        const keptIds = (Array.isArray(receipt.kept_ids) ? receipt.kept_ids : []).map((id) => String(id));
         const state = get();
         const owned = new Set(state.ownedCards);
         const pulledCards = [];
         for (const id of ids) {
-          const card = ALL_CARDS.find((c) => c.id === id);
+          const card = ALL_CARDS.find((c) => String(c.id) === String(id));
           if (!card) continue;
-          const isNew = kept.has(id) && !owned.has(id);
-          if (isNew) owned.add(id);
+          const isNew = keptIds.includes(String(card.id))
+            && ![...owned].some((held) => String(held) === String(card.id));
+          if (isNew) owned.add(card.id);
           pulledCards.push({ ...card, isNew });
         }
         const dupeCoins = Math.max(0, Math.floor(Number(receipt.coins) || 0));
@@ -1917,8 +1952,13 @@ export const useGameStore = create(
 
       adoptConvenienceReceipt: (data, quoted) => {
         if (!data || typeof data.balance !== 'number') return;
+        const pending = [...(get().pendingGemCharges || [])];
+        const at = pending.indexOf(quoted);
+        if (at >= 0) pending.splice(at, 1);
         if (!data.replay && typeof data.charged === 'number' && data.charged !== quoted) {
-          set((s) => ({ gems: s.gems + (quoted - data.charged) }));
+          set((s) => ({ gems: s.gems + (quoted - data.charged), pendingGemCharges: pending }));
+        } else {
+          set({ pendingGemCharges: pending });
         }
         get().noteServerGemSpend(data.balance);
       },
