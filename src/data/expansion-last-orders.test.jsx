@@ -93,7 +93,9 @@ describe('Last Orders cards', () => {
       expect(entry.aspect).toBe('896*1152');
       expect(entry.target).toBe(artTargetFor(card.id));
       expect(entry.prompt).toMatch(/adult/i);
-      expect(entry.prompt).toMatch(/neon/i);
+      // Per-bear art direction (docs/ART_DIRECTION.md): no shared bar or neon, only the plush guard.
+      expect(entry.prompt).toMatch(/stuffed plush teddy bear toy/i);
+      expect(entry.prompt).toMatch(/not a human/i);
       expect(entry.prompt).not.toMatch(BANNED);
     }
     document.documentElement.dataset.content = 'nsfw';

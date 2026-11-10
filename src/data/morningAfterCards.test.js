@@ -60,9 +60,15 @@ describe('Morning After cards', () => {
       expect(card.art).toBe(`/${entry.target.replace(/^public\//, '')}`);
       expect(thumbUrl(entry.id)).toBe(`/cards/thumbs/${entry.id}.webp`);
       expect(entry.prompt).toMatch(style);
-      expect(entry.prompt).toMatch(bar);
-      expect(entry.prompt).toMatch(/amber/i);
-      expect(entry.prompt).toMatch(/magenta/i);
+      if (card.type === 'action') {
+        // Per-bear art direction (docs/ART_DIRECTION.md): only the plush guard is shared.
+        expect(entry.prompt).toMatch(/stuffed plush teddy bear toy/i);
+        expect(entry.prompt).toMatch(/not a human/i);
+      } else {
+        expect(entry.prompt).toMatch(bar);
+        expect(entry.prompt).toMatch(/amber/i);
+        expect(entry.prompt).toMatch(/magenta/i);
+      }
       expect(entry.prompt).toMatch(/no children/i);
       expect(entry.prompt).toMatch(/no cubs/i);
       expect(entry.prompt).not.toMatch(/underage|teenager|loli|shota/i);

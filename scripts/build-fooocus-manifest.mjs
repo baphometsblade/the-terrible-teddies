@@ -7,6 +7,7 @@
  * art/fooocus-manifest.d/*.json so a rebuild of this file cannot wipe them.
  */
 import { writeFileSync } from 'node:fs';
+import { BEAR_GUARD, composePrompt, composeNegative } from './bear-bibles.mjs';
 
 globalThis.localStorage ??= {
   getItem: () => null,
@@ -18,7 +19,8 @@ const { ALL_CARDS } = await import('@/stores/gameStore');
 const { CARD_ART } = await import('@/data/cardArt');
 const { BOSS_CARD } = await import('@/lib/houseRules');
 
-const BEAR = 'RAW photo, adult plush teddy bear, photoreal worn fur, cinematic shallow depth of field, moody neon-lit dive bar, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tongue-in-cheek';
+// Bears share only the plush guard. Everything else comes from art/bear-bibles.json.
+const BEAR = BEAR_GUARD;
 const OBJECT = 'RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW';
 const NEGATIVE = 'cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border';
 const BROWNISH = /brown|tan|chocolate|espresso|caramel|amber|auburn|khaki|russet|beige|oxblood/i;
@@ -72,8 +74,8 @@ const cardEntry = (card, art = {}) => {
     height: 1024,
     aspect_ratio: '896*1152',
     performance: 'Speed',
-    prompt: `${bear ? BEAR : OBJECT}, ${specifics}`,
-    negative_prompt: negativeFor({ ...card, ...art, fur }),
+    prompt: (bear && composePrompt(card.id)) || `${bear ? BEAR : OBJECT}, ${specifics}`,
+    negative_prompt: (bear && composeNegative(card.id)) || negativeFor({ ...card, ...art, fur }),
     outputs: cardOutputs(card.id),
   };
 };

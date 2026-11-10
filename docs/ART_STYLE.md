@@ -1,5 +1,7 @@
 # Art style
 
+Bear character plates no longer share this look. Each bear has his own art bible, so see [ART_DIRECTION.md](ART_DIRECTION.md). The rest of this page covers the chrome, the object plates, the icon and the share image.
+
 One look for the whole game. The reference is a photoreal plush teddy in a moody neon dive bar: warm amber practicals, magenta neon, a little cyan tubing, cinematic shallow depth of field, rich saturated colour. Wood-black, not nursery purple. Every character is a grown bear. The age gate still holds the photographs until the door is passed.
 
 Code paints the chrome from the tokens below. Photographs (cards, the app icon, the share image) are regenerated on a local Fooocus install from `art/fooocus-manifest.json`. Thumbs are a resize of the full plate, not a second prompt.

@@ -1,0 +1,1080 @@
+{
+  "version": 1,
+  "shared": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human",
+  "negative": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones",
+  "negative_photo_extra": "anime, 3d render, cgi, plastic",
+  "bears": {
+    "1": {
+      "render": "1970s grindhouse movie still, heavy film grain",
+      "gag": "Shitstarter Ted grinning as he lights the fuse on a powder keg under a bar stool with a giant match, sparks flying",
+      "fur_build": "chocolate brown short-pile fur, barrel-chested, torn ear",
+      "outfit_props": "stained wifebeater, brass knuckles, novelty condom necklace",
+      "setting": "saloon-style western bar with swinging doors",
+      "palette": "burnt orange, mustard yellow and brown",
+      "lighting": "hot low sunset light through slatted doors, dust in the air",
+      "camera": "low hero angle, wide lens"
+    },
+    "2": {
+      "render": "wildlife-documentary night-vision photo look, grainy flash",
+      "gag": "Feral Tim, a wild matted teddy bear crouched on a tipped bin, snarling at the camera with a pizza crust in his teeth",
+      "fur_build": "ash grey matted wild fur sticking out in clumps, wild-eyed mismatched button eyes, wiry hunched build",
+      "outfit_props": "chewed leash collar, fingerless gloves",
+      "setting": "rain-slick back alley full of overflowing bins",
+      "palette": "sodium orange and sickly olive",
+      "lighting": "single harsh camera flash, raccoon eyeshine glowing in the dark",
+      "camera": "low wide angle at bin level"
+    },
+    "3": {
+      "render": "pastel toy-catalogue product photo of a plush toy",
+      "gag": "Fluffy McFuckface, an absurdly over-fluffed teddy bear toy shaped like a giant puffball of candy-floss fur, rudely raising one middle paw",
+      "fur_build": "enormous cloud of fluffy baby-pink and cream plush fur, round chubby plush toy body, tiny button eyes",
+      "outfit_props": "tiny sparkly bow on one ear, open bowling shirt",
+      "setting": "seamless pastel candy studio with floating marshmallows",
+      "palette": "baby pink, mint and lavender pastels",
+      "lighting": "soft bright high-key studio light",
+      "camera": "centered symmetrical front portrait"
+    },
+    "4": {
+      "render": "1980s action movie poster look, airbrushed dramatic",
+      "gag": "Bar-Fight Barry swinging a bar stool overhead mid-brawl, splinters and peanuts flying",
+      "fur_build": "rust red scruffy fur, lanky but wiry, black eye, missing tooth",
+      "outfit_props": "sleeveless flannel, bandaged knuckles",
+      "setting": "wrecked Irish pub with an upturned table and broken dartboard",
+      "palette": "emerald green and rust red",
+      "lighting": "warm tungsten pub light with a hard rim light",
+      "camera": "dutch tilt, action freeze-frame"
+    },
+    "5": {
+      "render": "black and white film-noir toy photography of a stuffed teddy bear, no people in frame",
+      "gag": "Stitches the Snitch, a scrawny patchwork stuffed teddy bear toy held together with huge visible cross-stitches, sitting alone at an interrogation table whispering into an old tape recorder",
+      "fur_build": "patchwork fur of plum, grey and tartan patches with huge cross-stitches, scrawny",
+      "outfit_props": "cracked glasses, informant wire taped on his chest, a sewing needle behind his ear",
+      "setting": "bare interrogation room with a metal table",
+      "palette": "monochrome black and white with silver tones",
+      "lighting": "single hanging lamp, hard shadows, venetian blind stripes",
+      "camera": "high angle over the table"
+    },
+    "6": {
+      "render": "glossy talk-show TV still, saturated",
+      "gag": "Shit-Talk Sally leaning into a microphone, a cartoonishly huge stitched mouth mid-insult, audience reeling",
+      "fur_build": "faded pink plush, lanky, smug raised brow",
+      "outfit_props": "popped-collar leather jacket, hoop earrings, microphone",
+      "setting": "daytime trash-TV talk-show set with a thrown chair",
+      "palette": "hot pink, electric blue and white",
+      "lighting": "bright broadcast studio lighting with a spotlight",
+      "camera": "medium shot from the audience"
+    },
+    "7": {
+      "render": "telephoto paparazzi photo look, soft background blur",
+      "gag": "Peeping Pete peeking out of an overflowing laundry hamper with binoculars, a lace bra on his head",
+      "fur_build": "moss green moth-eaten fur, scrawny",
+      "outfit_props": "turned-up trench coat collar, binoculars",
+      "setting": "suburban laundry room with a washing machine",
+      "palette": "moss green and laundry-blue",
+      "lighting": "harsh fluorescent laundry light",
+      "camera": "view through a gap in the hamper lid"
+    },
+    "8": {
+      "render": "pro wrestling event photo, flash and sweat",
+      "gag": "Chokehold Cuddles giving a 'hug' that is plainly a sleeper hold on a smaller plush, heart-shaped belt on",
+      "fur_build": "charcoal grey dense fur, barrel-chested, cauliflower ear",
+      "outfit_props": "spandex wrestling singlet with hearts, championship belt",
+      "setting": "wrestling ring with ropes and a roaring dark crowd",
+      "palette": "royal blue, red and gold",
+      "lighting": "overhead ring lights, haze",
+      "camera": "low angle from the ring apron"
+    },
+    "9": {
+      "render": "gritty prison documentary photo, desaturated",
+      "gag": "Shiv-in-a-Pillow, a bear sewn into a fluffy pillow body with a toothbrush shiv poking out of the pillow seam",
+      "fur_build": "dirty white fluffy pillow-stuffed body, squat, innocent face",
+      "outfit_props": "pillowcase body, toothbrush shiv, prison flip-flops",
+      "setting": "concrete prison cell with a steel bunk",
+      "palette": "concrete grey and prison orange",
+      "lighting": "cold daylight from a barred window",
+      "camera": "straight-on mugshot framing"
+    },
+    "10": {
+      "render": "comic-book splash style photo, motion lines of fury",
+      "gag": "Anger-Management Gus tearing a stress ball in half, steam literally puffing out of his ears",
+      "fur_build": "mustard yellow fur bristling, hulking",
+      "outfit_props": "torn straitjacket sleeves, therapy name sticker, crumpled pamphlet",
+      "setting": "beige group-therapy circle with plastic chairs flying",
+      "palette": "mustard yellow and beige with red accents",
+      "lighting": "flat office light with a red rage glow",
+      "camera": "extreme low angle, wide lens"
+    },
+    "11": {
+      "render": "courtroom sketch artist look, pastel and charcoal texture",
+      "gag": "Restraining-Order Randy standing exactly on a taped line on the floor, measuring tape stretched toward everyone",
+      "fur_build": "slate grey fur, broad, one button eye missing",
+      "outfit_props": "neck brace, court papers stapled across his chest like a sash, tape measure",
+      "setting": "wood-panelled courtroom",
+      "palette": "slate grey and oak brown",
+      "lighting": "soft window light through tall court windows",
+      "camera": "wide shot from the gallery",
+      "painterly": true
+    },
+    "12": {
+      "render": "bodybuilding-magazine styled toy photography of a stuffed teddy bear",
+      "gag": "'Roid-Rage Reggie, a fuzzy brick-red stuffed teddy bear toy flexing comically over-stuffed plush arms, seams straining and white stuffing bursting from one arm",
+      "fur_build": "brick red fuzzy plush fur, chunky over-stuffed plush body",
+      "outfit_props": "ripped gym tank top, lifting belt, a giant protein shaker",
+      "setting": "old-fashioned iron gym with chalk dust",
+      "palette": "brick red, chalk white and steel",
+      "lighting": "hard top light, chalk dust haze",
+      "camera": "low angle hero flex"
+    },
+    "13": {
+      "render": "war movie explosion still, debris frozen mid-air",
+      "gag": "The F-Bomb, a round bomb-shaped bear with a lit fuse sprouting from his head, mouth wide open swearing",
+      "fur_build": "jet black singed fur, round bomb-like body",
+      "outfit_props": "bandolier of tiny liquor bottles, fuse sparking",
+      "setting": "bomb crater in a demolished street",
+      "palette": "black, fiery orange and smoke grey",
+      "lighting": "explosion backlight and sparks",
+      "camera": "center frame, slight low angle"
+    },
+    "14": {
+      "render": "real-estate brochure photo, overly bright and fake",
+      "gag": "Slumlord Cotton, a smug bear made of raw cotton bolls, counting rent money in a moldy apartment",
+      "fur_build": "fluffy raw white cotton fur, squat smug build",
+      "outfit_props": "cheap ill-fitting suit, gold rings, giant key ring",
+      "setting": "moldy studio apartment with a leaking ceiling and bucket",
+      "palette": "sickly mold green and nicotine cream",
+      "lighting": "over-exposed flash, wide angle distortion",
+      "camera": "wide angle real-estate shot"
+    },
+    "15": {
+      "render": "1990s corporate VHS camcorder still",
+      "gag": "Tax-Fraud Teddy feeding receipts into a shredder while sweating, paper confetti everywhere",
+      "fur_build": "dusty plum fur, lanky, shifty glance",
+      "outfit_props": "sunglasses indoors, loosened tie, briefcase cuffed to wrist",
+      "setting": "cramped accountant office with filing cabinets",
+      "palette": "beige, manila and plum",
+      "lighting": "flickering office fluorescent light",
+      "camera": "slightly high security-angle"
+    },
+    "16": {
+      "render": "Rembrandt-style oil painting look, chiaroscuro, cracked varnish",
+      "gag": "Lord Fluffington, Disgraced, a faded aristocrat teddy bear posing for his portrait in a moth-eaten velvet smoking jacket, cracked monocle, pawn tickets spilling from his pocket",
+      "fur_build": "ash blonde fur gone patchy and moth-eaten, portly",
+      "outfit_props": "moth-eaten burgundy velvet smoking jacket, cracked monocle, bent coronet",
+      "setting": "crumbling candlelit manor with peeling wallpaper and dust sheets",
+      "palette": "burgundy, tarnished gold and umber",
+      "lighting": "candlelight chiaroscuro",
+      "camera": "formal three-quarter portrait",
+      "painterly": true
+    },
+    "17": {
+      "render": "Viking saga film still, cold and misty",
+      "gag": "Blackout Bjorn passed out on a longship deck, drinking horn still in his paw, horned helmet slipping over one eye",
+      "fur_build": "dark auburn shaggy fur, hulking",
+      "outfit_props": "horned helmet, fur cloak, drinking horn",
+      "setting": "Viking longship deck in a misty fjord",
+      "palette": "icy blue and steel grey with auburn",
+      "lighting": "cold overcast diffused light",
+      "camera": "high overhead angle"
+    },
+    "18": {
+      "render": "sepia World War Two archive photograph, scratched film grain",
+      "gag": "Grandpa Warcrimes in a retirement-home armchair telling war stories, a dented bedpan helmet and a jar of dentures among his medals",
+      "fur_build": "gunmetal silver thin old fur, stooped broad frame, bandaged head",
+      "outfit_props": "army jacket heavy with mismatched medals, bedpan helmet, walking frame",
+      "setting": "retirement home lounge with floral armchairs",
+      "palette": "sepia, olive drab and faded floral",
+      "lighting": "soft window light",
+      "camera": "eye-level documentary shot"
+    },
+    "19": {
+      "render": "gothic horror film still, fog",
+      "gag": "The Seam Reaper, a teddy bear dressed as the grim reaper, his plush bear face and round ears under the hood, holding a scythe whose blade is a giant sewing needle, stuffing spilling out of his seams",
+      "fur_build": "bone pale grey fur, tall skeletal-thin, stitched-shut eye",
+      "outfit_props": "tattered black hooded robe, needle scythe, spool of thread on his belt",
+      "setting": "foggy gothic graveyard with crooked headstones",
+      "palette": "cold grey, black and bone white",
+      "lighting": "cold grey moonlight through fog",
+      "camera": "low angle looming"
+    },
+    "20": {
+      "render": "1970s Godfather-style film still, warm sepia",
+      "gag": "The Godfluffer, an over-stuffed mafia don teddy bear in a leather chair, offering his paw ring to be kissed",
+      "fur_build": "oxblood brown fur, over-stuffed round don body",
+      "outfit_props": "pinstripe suit, pinky ring, red rose in lapel",
+      "setting": "dark wood mafia study with venetian blinds",
+      "palette": "deep brown, blood red and gold",
+      "lighting": "low warm top light leaving the eyes in shadow",
+      "camera": "slow push-in medium shot"
+    },
+    "21": {
+      "render": "Vietnam war film still, smoky orange napalm sky, grain",
+      "gag": "Fluffpocalypse Now, a battle-crazed commander standing in a burning field of torn teddy stuffing, helicopters behind",
+      "fur_build": "soot blackened fur, hulking",
+      "outfit_props": "cracked aviators, camo headband, bandolier, cavalry hat",
+      "setting": "jungle river at dawn with palm trees",
+      "palette": "napalm orange and jungle green",
+      "lighting": "hazy backlit sunrise through smoke",
+      "camera": "wide cinematic low angle"
+    },
+    "22": {
+      "render": "bleak overexposed morning photo, washed-out",
+      "gag": "Hungover Hank face-down in a bowl of cereal at a kitchen table, an ice pack on his head and sunglasses on",
+      "fur_build": "stale beer brown flattened fur, broad and slumped",
+      "outfit_props": "wrinkled shirt, one sock, sunglasses, untouched coffee",
+      "setting": "messy bachelor kitchen with a mountain of dishes",
+      "palette": "washed-out white, pale yellow and beer brown",
+      "lighting": "blinding morning sun through the window",
+      "camera": "overhead top-down shot"
+    },
+    "23": {
+      "render": "soft romantic boudoir photo, hazy",
+      "gag": "Morning-After May peeking out from behind half-closed curtains with smeared mascara and a sly regretful wink",
+      "fur_build": "smudged rose pink fur, tall and curvy",
+      "outfit_props": "fluffy hotel robe slipping off one shoulder, ice pack",
+      "setting": "sunlit hotel bedroom with rumpled sheets",
+      "palette": "dusty rose and cream",
+      "lighting": "soft diffused dawn light through sheer curtains",
+      "camera": "intimate medium close-up"
+    },
+    "24": {
+      "render": "1950s Technicolor romance film still",
+      "gag": "Smitten Sid with cartoon hearts popping off his head, clutching a wilted bouquet on bended knee",
+      "fur_build": "blush pink fur, lean, lovesick eyes",
+      "outfit_props": "loose tie, heart cufflinks, bouquet",
+      "setting": "park bench under cherry blossom",
+      "palette": "cherry blossom pink and powder blue",
+      "lighting": "dreamy soft focus backlight",
+      "camera": "medium shot with heart-shaped bokeh"
+    },
+    "25": {
+      "render": "1960s Mad Men cocktail lounge photo look",
+      "gag": "Crush Cora crushing a cocktail glass in her paw while flashing a sweet smile, ice cubes bursting",
+      "fur_build": "jet black glossy fur, curvy",
+      "outfit_props": "white bartender waistcoat, red bow tie, cherry stem in her mouth",
+      "setting": "mid-century modern cocktail lounge with teak and orange chairs",
+      "palette": "teak, tangerine and teal",
+      "lighting": "warm globe-lamp light",
+      "camera": "low angle across the bar"
+    },
+    "26": {
+      "render": "blacklight UV party photo, fluorescent glow",
+      "gag": "Blackout Bea dancing blindfolded with glow paint splattered on her fur",
+      "fur_build": "midnight blue fur with UV glow-paint splatters, lean",
+      "outfit_props": "blindfold, glow-stick bracelets, empty shot glass",
+      "setting": "warehouse rave under blacklight",
+      "palette": "ultraviolet purple and acid green",
+      "lighting": "UV blacklight glow",
+      "camera": "dutch tilt, motion blur"
+    },
+    "27": {
+      "render": "night-vision green security footage look",
+      "gag": "Lights-Out Lou swinging a punch in a pitch-black corridor while flipping off the light switch with his other paw",
+      "fur_build": "power-cut black fur, hulking",
+      "outfit_props": "unbuttoned shirt, one gold chain",
+      "setting": "dark office corridor during a blackout",
+      "palette": "monochrome night-vision green",
+      "lighting": "only a torch beam cutting the darkness",
+      "camera": "high corner camera angle"
+    },
+    "50": {
+      "render": "muddy grunge documentary photo",
+      "gag": "Dumpster Dave lounging in a dumpster like a jacuzzi, wearing a banana-peel crown, flies circling",
+      "fur_build": "olive green grimy matted fur, squat",
+      "outfit_props": "trash-bag poncho, banana-peel crown, fish skeleton",
+      "setting": "full dumpster behind a fish market",
+      "palette": "slime green and garbage brown",
+      "lighting": "overcast drizzle light",
+      "camera": "view from inside the dumpster looking up"
+    },
+    "51": {
+      "render": "veterinary clinic photo, clinical",
+      "gag": "Mange Marvin with comically bald patches, wearing a vet cone of shame and scratching",
+      "fur_build": "burnt orange patchy fur with bald patches, scrawny",
+      "outfit_props": "plastic cone collar, flea collar bracelet",
+      "setting": "sterile vet waiting room",
+      "palette": "clinical white, surgical teal and burnt orange",
+      "lighting": "flat cold clinic light",
+      "camera": "eye-level straight-on"
+    },
+    "52": {
+      "render": "drunken party snapshot, on-camera flash, red-eye",
+      "gag": "Two-Beer Tina with two beers taped to her paws, dancing on a picnic table",
+      "fur_build": "honey blonde fur, squat, tipsy grin",
+      "outfit_props": "tank top, denim cut-offs, two beers duct-taped to her paws",
+      "setting": "backyard barbecue with string lights",
+      "palette": "sunset gold and picnic red gingham",
+      "lighting": "golden-hour light and flash",
+      "camera": "low angle from the grass"
+    },
+    "53": {
+      "render": "harsh supermarket fluorescent photo look",
+      "gag": "Coupon Carl wielding scissors like a sword atop a cart overflowing with coupons",
+      "fur_build": "dull khaki fur, lanky, permanent scowl",
+      "outfit_props": "plastic visor, fanny pack stuffed with coupons, giant scissors",
+      "setting": "discount supermarket aisle",
+      "palette": "supermarket red and fluorescent white",
+      "lighting": "buzzing fluorescent overhead",
+      "camera": "wide aisle perspective shot"
+    },
+    "54": {
+      "render": "macro food photography, glossy honey drips",
+      "gag": "Sticky Mickey stuck to a wall by honey, dripping, flies buzzing",
+      "fur_build": "golden amber fur glistening with honey, squat",
+      "outfit_props": "honey-crusted apron, honey dipper",
+      "setting": "beekeeper's shed with honeycomb frames",
+      "palette": "honey gold and beeswax yellow",
+      "lighting": "warm backlight through dripping honey",
+      "camera": "macro close-up"
+    },
+    "55": {
+      "render": "1987 Polaroid photo look, faded colour",
+      "gag": "Ashtray Annie with an ashtray balanced on her head as a hat, cigarette in her mouth, curlers in her fur",
+      "fur_build": "smoky blue-grey fur, lanky",
+      "outfit_props": "plastic hair curlers, threadbare floral bathrobe, slippers",
+      "setting": "1980s trailer kitchen with wood panelling",
+      "palette": "faded teal, nicotine brown and avocado",
+      "lighting": "smoky window light, haze",
+      "camera": "medium snapshot framing"
+    },
+    "56": {
+      "render": "Soviet-poster styled toy photography of a stuffed teddy bear",
+      "gag": "Bouncer Bruno, a stuffed teddy bear toy so wide he fills the whole steel doorway, arms crossed, an empty clipboard guest list",
+      "fur_build": "espresso brown dense fur, enormously wide barrel chest",
+      "outfit_props": "black bomber jacket, earpiece, sunglasses at midnight, clipboard",
+      "setting": "red-painted steel door in a white brick wall",
+      "palette": "bold poster red and ice white",
+      "lighting": "flat graphic light against a red wall",
+      "camera": "low angle, door fills frame"
+    },
+    "57": {
+      "render": "1950s pageant photo, flash",
+      "gag": "Hairball Harriet coughing up a giant hairball onto a satin pageant cushion with a winner rosette",
+      "fur_build": "ginger long shaggy fur, scrawny",
+      "outfit_props": "fish-bone necklace, rosette",
+      "setting": "pageant stage with satin cushions",
+      "palette": "ginger orange and satin pink",
+      "lighting": "bright show flash",
+      "camera": "eye-level close-up"
+    },
+    "58": {
+      "render": "French new-wave toy photography of a stuffed teddy bear",
+      "gag": "Prison-Wine Pierre, a squat stuffed teddy bear toy in a striped prison shirt and beret sniffing wine from a toilet bowl like a sommelier",
+      "fur_build": "wine maroon fur, squat, jailhouse tattoos",
+      "outfit_props": "striped prison shirt, beret, sommelier tastevin on a bottle-cap chain",
+      "setting": "whitewashed prison cell with a porcelain toilet",
+      "palette": "Breton navy stripes, wine maroon and porcelain white",
+      "lighting": "bright overhead daylight from a skylight",
+      "camera": "close medium shot"
+    },
+    "59": {
+      "render": "glam rock album cover photo look",
+      "gag": "Glitter Lungs coughing out a cloud of glitter in a sparkly explosion",
+      "fur_build": "teal fur caked in glitter, tiny scrawny runt",
+      "outfit_props": "sequin hoodie, glitter-stained paws",
+      "setting": "craft store aisle exploded with glitter",
+      "palette": "teal, silver and holographic rainbow",
+      "lighting": "sparkling backlight through glitter haze",
+      "camera": "centred close-up"
+    },
+    "60": {
+      "render": "sun-bleached 1970s beach postcard photo look",
+      "gag": "Beargaritaville lounging in a giant margarita glass like a hot tub, lime slice on his head",
+      "fur_build": "turquoise fur with peeling sunburn, barrel-chested",
+      "outfit_props": "Hawaiian shirt open, pool-noodle, novelty straw",
+      "setting": "tropical beach bar with palm trees",
+      "palette": "turquoise, lime green and salt white",
+      "lighting": "bright tropical sun",
+      "camera": "wide low angle by the sand"
+    },
+    "61": {
+      "render": "wedding-album toy photography of a stuffed teddy bear, no people in frame",
+      "gag": "Snitchslap Sue, a stuffed teddy bear toy mid-slap with one plush paw, a tiny wire microphone poking out of her doll-sized cardigan, a toppled wedding cake beside her",
+      "fur_build": "dusty rose fur, lanky, fresh black eye",
+      "outfit_props": "doll-sized torn cardigan over a doll-sized bridesmaid dress on her plush bear body, wire mic",
+      "setting": "wedding reception with toppled cake",
+      "palette": "ivory, blush and gold",
+      "lighting": "bright wedding uplighting",
+      "camera": "dynamic medium shot"
+    },
+    "62": {
+      "render": "noir-ish smoky alley photo, heavy haze",
+      "gag": "Chainsmoke Chad smoking ten cigarettes at once, a chain wrapped around him",
+      "fur_build": "nicotine yellow fur with burn holes, hulking",
+      "outfit_props": "chain wallet, leather jacket, ten cigarettes",
+      "setting": "smoking area of a bowling alley",
+      "palette": "nicotine yellow and smoky grey",
+      "lighting": "thick haze lit from behind",
+      "camera": "dutch tilt"
+    },
+    "63": {
+      "render": "glossy hip-hop video still",
+      "gag": "Bail-Money Bonnie throwing stacks of bail cash from a bail-bonds counter",
+      "fur_build": "rich plum fur, broad",
+      "outfit_props": "oversized fur coat, gold tooth, phone clamped to ear",
+      "setting": "bail-bonds office with bullet-proof glass",
+      "palette": "plum purple and money green",
+      "lighting": "harsh office light with gold reflections",
+      "camera": "low angle"
+    },
+    "64": {
+      "render": "1960s military recruitment poster photo look",
+      "gag": "Sgt. Snuggles, Dishonorable, saluting with his medals ripped off, a heart-shaped ankle monitor blinking",
+      "fur_build": "olive drab fur, hulking",
+      "outfit_props": "torn fatigues, ripped patches, trash-can-lid shield",
+      "setting": "military parade ground",
+      "palette": "olive drab, khaki and flag blue",
+      "lighting": "flat bright noon sun",
+      "camera": "straight-on symmetrical"
+    },
+    "65": {
+      "render": "cold blue thriller film still",
+      "gag": "The Debt Collector calmly counting kneecap-shaped plush pillows on a ledger",
+      "fur_build": "smoke black fur, lanky",
+      "outfit_props": "long black coat, tire iron, ledger",
+      "setting": "underground parking garage",
+      "palette": "steel blue and concrete grey",
+      "lighting": "cold fluorescent strips",
+      "camera": "low wide angle"
+    },
+    "66": {
+      "render": "1950s magazine-advert toy photography of a stuffed teddy bear, no people in frame",
+      "gag": "Mama Mauls, a big over-stuffed teddy bear toy brandishing a rolling pin like a club while wearing a sweet floral apron",
+      "fur_build": "caramel blonde fur, over-stuffed motherly build, claw marks on muzzle",
+      "outfit_props": "floral apron, pearls, rolling pin",
+      "setting": "retro pastel kitchen with a pie on the sill",
+      "palette": "mint green, cherry red and caramel",
+      "lighting": "bright cheerful kitchen light",
+      "camera": "medium low angle"
+    },
+    "67": {
+      "render": "stained-glass church photo, hushed",
+      "gag": "Whiskey Priest pouring whiskey into a chalice, rosary of bottle caps",
+      "fur_build": "dove grey fur, broad, glassy eyes",
+      "outfit_props": "priest collar, cassock, hip flask",
+      "setting": "old stone church interior",
+      "palette": "stained-glass jewel tones, ruby and sapphire",
+      "lighting": "coloured light through stained glass",
+      "camera": "low angle from the pews"
+    },
+    "68": {
+      "render": "fire-lit epic fantasy film still",
+      "gag": "Duke of Dumpsterfire seated on a flaming dumpster throne, crown of bottle caps",
+      "fur_build": "charred black fur, hulking",
+      "outfit_props": "tattered fur-trimmed cape, bottle-cap crown, sceptre made of a plunger",
+      "setting": "dumpster fire in a junkyard",
+      "palette": "fire orange and charcoal black",
+      "lighting": "flickering fire light",
+      "camera": "low regal angle"
+    },
+    "69": {
+      "render": "hospital horror film still, sterile",
+      "gag": "Big Spoon, Last Warning, a gigantic bear holding a giant ladle-sized metal spoon, arms open for a mandatory cuddle",
+      "fur_build": "battleship grey fur, enormous over-stuffed build",
+      "outfit_props": "hospital gown open at the back, spiked collar, giant spoon",
+      "setting": "hospital room",
+      "palette": "hospital mint green and steel",
+      "lighting": "flickering fluorescent",
+      "camera": "wide shot from the doorway"
+    },
+    "80": {
+      "render": "cozy Victorian bedtime storybook photo look",
+      "gag": "Nightcap Ned in a striped nightcap and nightgown, raising a nightcap glass of whisky, candle in hand",
+      "fur_build": "stale ale brown fur, scrawny",
+      "outfit_props": "striped nightcap, nightgown, candle holder, whisky glass",
+      "setting": "Victorian attic bedroom with a brass bed",
+      "palette": "midnight navy and candle gold",
+      "lighting": "single candle glow",
+      "camera": "medium shot"
+    },
+    "81": {
+      "render": "red-carpet premiere photo, camera flashes",
+      "gag": "Velvet Rope Vicky draped in a dress made of velvet rope, blocking the carpet with a raised paw",
+      "fur_build": "deep burgundy velvety plush, tall and elegant",
+      "outfit_props": "backless black gown, velvet rope boa, gold stanchion",
+      "setting": "red carpet with paparazzi flashes",
+      "palette": "burgundy velvet and gold",
+      "lighting": "flash-bulb bursts",
+      "camera": "low angle on the carpet"
+    },
+    "82": {
+      "render": "citrus-bright product photography of a stuffed teddy bear toy, no people in frame",
+      "gag": "Whiskey-Sour Walt, a squat stuffed teddy bear toy with a puckered plush face from a sour drink, lemon wedges stuck on his round bear ears",
+      "fur_build": "citrus yellow fur, squat, puckered scowl",
+      "outfit_props": "lemon wedge earrings, salt on his snout, whiskey glass",
+      "setting": "lemon grove picnic table",
+      "palette": "lemon yellow and lime green",
+      "lighting": "bright midday sun",
+      "camera": "tight close-up"
+    },
+    "83": {
+      "render": "Wes Anderson style symmetrical photo, pastel",
+      "gag": "Motel-Bible Mara hiding cash inside a hollowed-out motel bible",
+      "fur_build": "parchment cream fur, lanky",
+      "outfit_props": "rumpled silk slip, reading glasses",
+      "setting": "pastel motel room with a symmetrical bed",
+      "palette": "pastel pink and mint",
+      "lighting": "flat even pastel light",
+      "camera": "perfectly symmetrical centred"
+    },
+    "84": {
+      "render": "Las Vegas cabaret-styled toy photography of a fuzzy stuffed teddy bear, no people in frame",
+      "gag": "Lap-Dance Lila, a chubby fuzzy pink stuffed teddy bear toy with round bear ears and button eyes sitting on a giant velvet armchair, waving a pink feather fan, feathers flying",
+      "fur_build": "stage pink fuzzy plush fur, round chubby stuffed body",
+      "outfit_props": "sequin bow tie, feather fan, garter of play-money notes on a plush leg",
+      "setting": "Vegas cabaret stage",
+      "palette": "flamingo pink and showgirl gold",
+      "lighting": "spotlight and sparkle",
+      "camera": "low hero angle"
+    },
+    "85": {
+      "render": "low-budget DIY renovation photo",
+      "gag": "Glory-Hole Gus peeking through a hole in a plywood wall with a cheeky grin, toolbelt on",
+      "fur_build": "smoke grey fur, lean",
+      "outfit_props": "trench coat over a tool belt, safety goggles",
+      "setting": "half-renovated room with plywood walls",
+      "palette": "plywood tan and safety orange",
+      "lighting": "work lamp light",
+      "camera": "straight-on wall shot"
+    },
+    "86": {
+      "render": "sleek dungeon-chic fashion photo, high contrast",
+      "gag": "Safe-Word Sandy holding up a giant red stop sign paddle, calm and in charge",
+      "fur_build": "glossy latex-black plush, broad",
+      "outfit_props": "patent leather corset, rubber collar, whistle",
+      "setting": "dark luxe boudoir with red velvet",
+      "palette": "black, scarlet and chrome",
+      "lighting": "hard contrast key light",
+      "camera": "medium shot"
+    },
+    "87": {
+      "render": "disposable camera party photo, flash",
+      "gag": "Afterparty Andre dangling from a ceiling fan by his shirt, confetti everywhere",
+      "fur_build": "confetti gold fur with glitter, hulking",
+      "outfit_props": "shirt snagged on the fan, party hat",
+      "setting": "trashed penthouse suite at dawn",
+      "palette": "gold, silver and sunrise peach",
+      "lighting": "dawn light through floor-to-ceiling windows",
+      "camera": "fisheye from below"
+    },
+    "88": {
+      "render": "casino high-roller photo, money green",
+      "gag": "Open-Tab Omar unrolling an impossibly long receipt down a casino",
+      "fur_build": "cash green fur, squat",
+      "outfit_props": "open silk shirt, gold tooth, receipt sash",
+      "setting": "baccarat table in a high-roller room",
+      "palette": "felt green and gold",
+      "lighting": "green banker lamp light",
+      "camera": "long lens down the table"
+    },
+    "89": {
+      "render": "Edward Hopper styled toy photography of a stuffed teddy bear",
+      "gag": "Last-Call Lana, a tall stuffed teddy bear toy walking out of an empty diner at closing with one heel in her plush paw as the lights snap on",
+      "fur_build": "amber plush fur, tall",
+      "outfit_props": "slinky dress, one heel, smeared mascara",
+      "setting": "empty all-night diner",
+      "palette": "diner teal, mint and cream",
+      "lighting": "cold fluorescent spilling onto a dark street",
+      "camera": "wide shot through glass"
+    },
+    "90": {
+      "render": "1970s soft-focus toy photography of a stuffed teddy bear, no people in frame",
+      "gag": "Cougar Carol, a mature stuffed teddy bear toy with round bear ears reclining on a chaise like a big cat, leopard-print robe, cigarette holder",
+      "fur_build": "wine red fur, mature broad build",
+      "outfit_props": "leopard-print silk robe, cigarette holder, pearls",
+      "setting": "seventies sunken living room with shag carpet",
+      "palette": "leopard gold, wine red and brown",
+      "lighting": "warm soft-focus lamp light",
+      "camera": "reclining medium shot"
+    },
+    "91": {
+      "render": "early-morning street photography, cold",
+      "gag": "Walk of Shame limping down a long empty street at sunrise, shoes in paw, a taxi receipt stuck to her",
+      "fur_build": "beige fur, dishevelled",
+      "outfit_props": "crumpled dress, one heel in paw, taxi receipt",
+      "setting": "empty city street at sunrise with pigeons",
+      "palette": "pale lilac dawn and cold grey",
+      "lighting": "low raking sunrise light",
+      "camera": "long telephoto down the street"
+    },
+    "92": {
+      "render": "prom photo look, 1980s, flash",
+      "gag": "Spiked Punchbowl, a bear with a punchbowl for a belly and spiky punk hair, ladle in paw",
+      "fur_build": "punch red fur, squat, spiked mohawk",
+      "outfit_props": "stained tux shirt, punchbowl belly, ladle",
+      "setting": "banquet hall with balloons",
+      "palette": "punch red and balloon silver",
+      "lighting": "flash with disco ball sparkles",
+      "camera": "straight-on flash"
+    },
+    "93": {
+      "render": "grey rainy-window melancholy photo",
+      "gag": "The Morning After lying in bed under a raincloud prop raining on him, aspirin bottle",
+      "fur_build": "hangover grey fur, bleary",
+      "outfit_props": "sunglasses, aspirin bottle, phone",
+      "setting": "dim bedroom with rain on the window",
+      "palette": "rain grey and pale blue",
+      "lighting": "dull rainy-day light",
+      "camera": "overhead top-down"
+    },
+    "94": {
+      "render": "film noir rainy doorway photo, colour",
+      "gag": "Booty Call standing in a doorway with a giant boot-shaped phone, trench coat, impatient",
+      "fur_build": "midnight plum fur, lean",
+      "outfit_props": "trench coat, thigh-high boots, boot-shaped phone",
+      "setting": "apartment doorway in the rain",
+      "palette": "plum and wet asphalt black",
+      "lighting": "streetlamp rim light, rain streaks",
+      "camera": "doorway framing"
+    },
+    "95": {
+      "render": "luxury hotel advertisement photo look",
+      "gag": "Room Service pushing a silver cart where the cloche lid hides only a pair of fluffy handcuffs",
+      "fur_build": "linen white fur, neat",
+      "outfit_props": "butler waistcoat, white gloves, silver cloche",
+      "setting": "opulent hotel corridor",
+      "palette": "ivory, champagne and navy",
+      "lighting": "warm sconce light",
+      "camera": "dutch tilt"
+    },
+    "96": {
+      "render": "speed-blur sports photo look",
+      "gag": "Quickie Quinn sprinting out of a storeroom with a stopwatch, bow askew, motion blur",
+      "fur_build": "hot pink fur, lean",
+      "outfit_props": "rumpled cocktail dress, stopwatch, undone bow tie",
+      "setting": "back storeroom door with crates",
+      "palette": "hot pink and crate brown",
+      "lighting": "streaky motion light",
+      "camera": "panning motion blur shot"
+    },
+    "97": {
+      "render": "1970s taxi cab movie still",
+      "gag": "Backseat Benny sprawled in a taxi back seat with his shirt off, meter running",
+      "fur_build": "taxi yellow fur, squat, smug",
+      "outfit_props": "shirt half off, seatbelt sash",
+      "setting": "inside a checker cab at night",
+      "palette": "taxi yellow and checker black",
+      "lighting": "passing streetlight streaks",
+      "camera": "through-the-window shot"
+    },
+    "98": {
+      "render": "Western saloon showdown film still",
+      "gag": "Last-Round Rita slamming a shot like a gunslinger at a wild west bar",
+      "fur_build": "closing-time red fur, tall",
+      "outfit_props": "cowgirl hat, one heel, empty shot glass",
+      "setting": "dusty frontier saloon",
+      "palette": "dusty red and sepia",
+      "lighting": "sun shafts through dusty windows",
+      "camera": "low showdown angle"
+    },
+    "99": {
+      "render": "sleek 1960s spy film still",
+      "gag": "One-Night Otto sneaking out of a hotel window with a room key in his teeth",
+      "fur_build": "hotel white fur, broad",
+      "outfit_props": "undone tuxedo, room key",
+      "setting": "hotel window ledge high above a city",
+      "palette": "midnight blue and white",
+      "lighting": "moonlight and city glow",
+      "camera": "high angle down the building"
+    },
+    "101": {
+      "render": "gritty tow-truck reality TV still",
+      "gag": "Repo Ted hooking a tiny toy car to his tow truck while a plush owner protests",
+      "fur_build": "gunmetal grey fur, burly",
+      "outfit_props": "hi-vis vest, bolt cutters, clipboard",
+      "setting": "suburban driveway at night",
+      "palette": "hi-vis yellow and gunmetal",
+      "lighting": "tow-truck amber beacon light",
+      "camera": "low angle"
+    },
+    "102": {
+      "render": "underwater shark-documentary photo look",
+      "gag": "Loan-Shark Larry wearing a shark-fin hat, counting cash in an aquarium-lit office",
+      "fur_build": "silver white sleek fur",
+      "outfit_props": "pinstripe suit, shark fin, cigar, pinky rings",
+      "setting": "office with a giant shark tank wall",
+      "palette": "aquarium blue and silver",
+      "lighting": "rippling water caustics",
+      "camera": "over-the-shoulder"
+    },
+    "103": {
+      "render": "paranoid found-footage photo",
+      "gag": "Off-the-Grid Greg wrapped in tinfoil, ripping out a phone line, conspiracy strings behind",
+      "fur_build": "sand beige fur, twitchy",
+      "outfit_props": "tinfoil hat and cape, goggles",
+      "setting": "underground bunker with corkboard",
+      "palette": "tinfoil silver and lantern yellow",
+      "lighting": "flickering lantern light",
+      "camera": "fisheye"
+    },
+    "104": {
+      "render": "creepy carnival photo look",
+      "gag": "Unhinged Cuddles grinning a too-wide stitched grin, arms open for a hug, seams popping",
+      "fur_build": "bubblegum pink fur, popped seams",
+      "outfit_props": "torn singlet, party balloons",
+      "setting": "abandoned carnival",
+      "palette": "bubblegum pink and carnival red",
+      "lighting": "eerie carnival bulb lights",
+      "camera": "extreme close-up"
+    },
+    "105": {
+      "render": "old library sepia photo",
+      "gag": "Whiskey Whiskers stroking enormous whiskey-soaked whiskers like a professor",
+      "fur_build": "russet ginger fur, grizzled, huge handlebar whiskers",
+      "outfit_props": "tweed jacket, half-moon glasses, tumbler",
+      "setting": "old library with leather armchairs",
+      "palette": "russet, leather brown and green",
+      "lighting": "warm reading-lamp glow",
+      "camera": "tight profile"
+    },
+    "106": {
+      "render": "hellfire horror film still",
+      "gag": "Landlord Lucifur collecting rent with a pitchfork, horns and a ring of keys",
+      "fur_build": "crimson black fur, horned",
+      "outfit_props": "velvet smoking jacket, pitchfork, keys",
+      "setting": "hellish basement boiler room",
+      "palette": "crimson red and black",
+      "lighting": "fiery underglow",
+      "camera": "low hero angle"
+    },
+    "108": {
+      "render": "glitch art, VHS static",
+      "gag": "Void Where Prohibited, a bear dissolving into TV static, hollow glowing eyes",
+      "fur_build": "matte void black fur",
+      "outfit_props": "loosened tie",
+      "setting": "pitch-dark room with an old CRT TV",
+      "palette": "static grey and cyan",
+      "lighting": "TV glow only",
+      "camera": "dutch tilt"
+    },
+    "109": {
+      "render": "fashion editorial photo, cool tones",
+      "gag": "Door-Staff Donna holding a door shut with one paw, unimpressed stare, headset on",
+      "fur_build": "jet black fur, tall",
+      "outfit_props": "leather waistcoat, headset, velvet rope",
+      "setting": "brutalist concrete club entrance",
+      "palette": "concrete grey and ice blue",
+      "lighting": "cool overhead downlight",
+      "camera": "low angle"
+    },
+    "ck-chuck": {
+      "render": "warm 1970s Kodachrome toy photography of a stuffed teddy bear, no people in frame",
+      "gag": "Chuck, a stuffed plush teddy bear toy bartender behind the bar, chucking a dirty bar towel over his shoulder while pouring a shot he will lie about",
+      "fur_build": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth",
+      "outfit_props": "damp bar towel, bottle mid-pour",
+      "setting": "his own mahogany pub bar with brass taps",
+      "palette": "mahogany, brass and teal",
+      "lighting": "warm brass pendant lamps",
+      "camera": "eye-level across the bar"
+    },
+    "ck-closing": {
+      "render": "harsh closing-time toy photography of a stuffed teddy bear, fluorescent house lights, no people in frame",
+      "gag": "Closing-Time Chuck, a stuffed plush teddy bear toy bartender ringing a huge brass last-orders bell with a threatening grin, chairs stacked on tables",
+      "fur_build": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth",
+      "outfit_props": "brass bell, mop bucket",
+      "setting": "empty pub at closing with chairs on tables",
+      "palette": "fluorescent white and teal",
+      "lighting": "flat harsh house lights",
+      "camera": "wide shot from the door"
+    },
+    "ck-offduty": {
+      "render": "golden-hour rooftop lifestyle photo",
+      "gag": "Off-Duty Chuck, shirt half off, lounging in a deckchair, swigging a bottle he confiscated from someone else",
+      "fur_build": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth",
+      "outfit_props": "deckchair, confiscated bottle",
+      "setting": "city rooftop at sunset",
+      "palette": "sunset coral and teal",
+      "lighting": "golden-hour backlight",
+      "camera": "low angle"
+    },
+    "ck-rita": {
+      "render": "1940s pin-up styled toy photography of a stuffed teddy bear, no people in frame",
+      "gag": "Regular Rita, a curvy russet stuffed teddy bear toy with round bear ears perched on her reserved bar stool, plush legs crossed, owning the place",
+      "fur_build": "russet fur, curvy",
+      "outfit_props": "doll-sized polka-dot dress on her plush bear body, red lipstick stitched on her muzzle",
+      "setting": "corner of a neighbourhood pub with her named stool",
+      "palette": "polka-dot red and cream",
+      "lighting": "soft warm key light",
+      "camera": "three-quarter pin-up pose"
+    },
+    "ck-tabitha": {
+      "render": "Victorian ledger still-life portrait look",
+      "gag": "Tabitha writing names in a giant bar tab ledger with a quill, a lipstick kiss on the page",
+      "fur_build": "burgundy fur, sly",
+      "outfit_props": "unbuttoned blouse, quill pen, reading glasses",
+      "setting": "back office with ledgers and an old safe",
+      "palette": "burgundy, ink black and parchment",
+      "lighting": "green-shaded desk lamp",
+      "camera": "over-the-shoulder"
+    },
+    "hd-sash": {
+      "render": "glossy party toy photography of a stuffed teddy bear, no people in frame",
+      "gag": "Sash-Snatch Sue, a cheeky white stuffed teddy bear toy running off with a stolen bride sash, wearing five satin sashes at once over her plush bear body",
+      "fur_build": "white fluffy fur, cheeky",
+      "outfit_props": "five satin sashes, tiny lace garter on a plush leg",
+      "setting": "limo interior with champagne",
+      "palette": "satin white and champagne gold",
+      "lighting": "limo LED strip light",
+      "camera": "fisheye inside limo"
+    },
+    "hd-veil": {
+      "render": "dreamy hazy toy photography of a stuffed teddy bear, no people in frame",
+      "gag": "Veil of Bad Ideas, a lavender stuffed teddy bear toy peeking from behind a sheer veil draped over her round bear ears, holding a hotel key and a long hotel bill",
+      "fur_build": "lavender fur, sly",
+      "outfit_props": "sheer veil over bear ears, doll-sized hotel robe",
+      "setting": "hotel lift with mirrored walls",
+      "palette": "lavender and mirror silver",
+      "lighting": "soft lift downlight",
+      "camera": "mirror reflection shot"
+    },
+    "hd-chorus": {
+      "render": "Broadway musical stage photo",
+      "gag": "Chorus of Yes, a kick-line of identical bears all mid-kick",
+      "fur_build": "matching coral fur bears",
+      "outfit_props": "sequin leotards, top hats",
+      "setting": "theatre stage with red curtains",
+      "palette": "coral and red curtain velvet",
+      "lighting": "footlights and follow spots",
+      "camera": "wide stage shot"
+    },
+    "hd-shot": {
+      "render": "slow-motion beverage advert photo",
+      "gag": "Shot-Glass Shannon downing a shot as liquid splashes in slow motion",
+      "fur_build": "tangerine fur, energetic",
+      "outfit_props": "half-undone bow, shot glass bandolier",
+      "setting": "tropical tiki bar",
+      "palette": "tangerine and tiki bamboo",
+      "lighting": "splash backlight",
+      "camera": "macro freeze-frame"
+    },
+    "hd-lap": {
+      "render": "burlesque-styled toy photography of a fuzzy stuffed teddy bear, no people in frame",
+      "gag": "Lap-Line Lola, a chubby rose-gold stuffed teddy bear toy with round bear ears guarding a velvet rope in front of a queue of little teddy bears, feather boa round her neck",
+      "fur_build": "rose-gold fuzzy plush fur, round stuffed body",
+      "outfit_props": "feather boa, velvet rope, sequin bow",
+      "setting": "burlesque theatre",
+      "palette": "rose gold and black",
+      "lighting": "warm theatrical spot",
+      "camera": "low angle"
+    },
+    "hd-bree": {
+      "render": "over-saturated wedding toy photography of a stuffed teddy bear, no people in frame",
+      "gag": "Bridesmaid Bree, a seafoam stuffed teddy bear toy showing off on a reception table in an awful puffy doll-sized bridesmaid dress, bouquet raised",
+      "fur_build": "seafoam green fur, show-off",
+      "outfit_props": "puffy doll-sized seafoam dress on her plush bear body, bouquet",
+      "setting": "garden marquee reception",
+      "palette": "seafoam and blush",
+      "lighting": "fairy-light glow",
+      "camera": "low hero angle"
+    },
+    "hd-honour": {
+      "render": "morning-after hotel corridor photo",
+      "gag": "Maid of Honour in a maid's apron negotiating with the carpet, crooked tiara",
+      "fur_build": "pale yellow fur, rumpled",
+      "outfit_props": "frilly maid apron over a gown, crooked tiara, ice pack",
+      "setting": "patterned hotel carpet corridor",
+      "palette": "pale yellow and patterned maroon",
+      "lighting": "flat dawn corridor light",
+      "camera": "top-down on the carpet"
+    },
+    "hd-petra": {
+      "render": "intimate red-curtain boudoir photo",
+      "gag": "Private-Dance Petra peeking from behind a velvet curtain with a silk blindfold pushed up",
+      "fur_build": "copper fur",
+      "outfit_props": "silk blindfold, lace robe",
+      "setting": "private booth with crimson curtains",
+      "palette": "crimson and copper",
+      "lighting": "single red bulb",
+      "camera": "through-the-curtain gap"
+    },
+    "hd-bride": {
+      "render": "regal portrait-styled toy photography of a stuffed teddy bear, no people in frame",
+      "gag": "The Bride Says So, a pearl-white stuffed teddy bear toy bride on a throne at the head table, one plush paw raised, a row of little teddy guests obeying",
+      "fur_build": "pearl white fur, commanding",
+      "outfit_props": "tiny veil and tiara on her round bear ears, pearl necklace, champagne-flute sceptre",
+      "setting": "palace-style ballroom",
+      "palette": "pearl white and royal blue",
+      "lighting": "chandelier light",
+      "camera": "low regal angle"
+    },
+    "hd-luxe": {
+      "render": "arena rock concert photo",
+      "gag": "Last-Dance Luxe taking an encore bow as her shirt flies off into a sea of lighters",
+      "fur_build": "platinum fur, glamorous",
+      "outfit_props": "sequin bodysuit, lost shirt mid-air",
+      "setting": "arena stage with pyrotechnics",
+      "palette": "platinum and electric violet",
+      "lighting": "stage lasers and pyro",
+      "camera": "wide from the crowd"
+    },
+    "lo-velvet-rope": {
+      "render": "1920s art deco speakeasy photo",
+      "gag": "Velvet Rope Vera lifting a velvet rope with one claw, eyeing you up through a door peephole slot",
+      "fur_build": "deep emerald plush fur, broad, knowing smirk",
+      "outfit_props": "unbuttoned velvet waistcoat, gold chain, rope",
+      "setting": "art deco speakeasy door with a peephole",
+      "palette": "emerald green and deco gold",
+      "lighting": "warm gas-lamp glow",
+      "camera": "through the peephole slot"
+    },
+    "lo-two-for-one": {
+      "render": "mirror-image double exposure photo",
+      "gag": "Two-for-One Tess with a twin reflection, both pushing two cocktails forward, winking",
+      "fur_build": "peach fur, curvy",
+      "outfit_props": "undone blouse, two cocktails",
+      "setting": "mirrored bar with infinity mirrors",
+      "palette": "peach and mirror chrome",
+      "lighting": "soft pink-peach key light",
+      "camera": "mirror reflection framing"
+    },
+    "lo-last-pour": {
+      "render": "bowling-alley lane photo look",
+      "gag": "Last Pour Lola sliding a drink down a long bowling lane like a bowling ball",
+      "fur_build": "copper fur",
+      "outfit_props": "open copper waistcoat, bowling shoes",
+      "setting": "retro bowling alley",
+      "palette": "cherry red and bowling-lane maple",
+      "lighting": "bright lane lights",
+      "camera": "low angle down the lane"
+    },
+    "lo-on-the-house": {
+      "render": "Wes Anderson style pastel hotel photo",
+      "gag": "On the House Hope literally sitting on a house roof offering a free drink",
+      "fur_build": "sky blue fur",
+      "outfit_props": "bow tie undone, shirt open, tray of drinks",
+      "setting": "rooftop of a pastel cottage",
+      "palette": "sky blue and buttercup yellow",
+      "lighting": "soft pastel daylight",
+      "camera": "symmetrical wide"
+    },
+    "lo-firm-hand": {
+      "render": "boxing gym photo, gritty",
+      "gag": "Firm Hand Frankie with a giant oversized foam hand raised like a stop sign",
+      "fur_build": "charcoal fur, broad, calm",
+      "outfit_props": "shirt open to the chest fluff, whistle, foam hand",
+      "setting": "old boxing gym with a ring",
+      "palette": "charcoal and boxing-glove red",
+      "lighting": "hard top light",
+      "camera": "low angle"
+    },
+    "lo-sorry-mate": {
+      "render": "Aussie outback photo, dusty",
+      "gag": "Sorry Mate Mack apologising sheepishly to a cactus he just threw someone into",
+      "fur_build": "sandy fur, rumpled, guilty grin",
+      "outfit_props": "untucked shirt, one shoe, akubra hat",
+      "setting": "outback roadhouse with red dirt",
+      "palette": "red earth and sky blue",
+      "lighting": "harsh midday outback sun",
+      "camera": "wide shot"
+    },
+    "lo-lights-down": {
+      "render": "strobe-lit nightclub toy photography of a stuffed teddy bear, no people in frame",
+      "gag": "Lights-Down Dana, a stuffed teddy bear toy with glow-in-the-dark green fur swinging a plush paw in a power cut, lit only by her own glowing fur",
+      "fur_build": "glow-in-the-dark green fur",
+      "outfit_props": "doll-sized satin dress slipped off one plush shoulder",
+      "setting": "pitch-black dance floor",
+      "palette": "glow green on black",
+      "lighting": "self-luminous glow only",
+      "camera": "dutch tilt"
+    },
+    "lo-cut-the-line": {
+      "render": "bank heist movie still",
+      "gag": "Cut-the-Line Cole snipping a velvet rope with giant bolt cutters, smirking",
+      "fur_build": "lean slate-blue fur",
+      "outfit_props": "open collar, black gloves, bolt cutters",
+      "setting": "marble bank lobby with queue ropes",
+      "palette": "marble white and slate blue",
+      "lighting": "cold lobby downlight",
+      "camera": "low angle"
+    },
+    "lo-still-standing": {
+      "render": "boxing-poster photo, triumphant",
+      "gag": "Still Standing Sal standing in a boxing ring surrounded by knocked-out plush, smiling harder",
+      "fur_build": "teal fur, broad stance",
+      "outfit_props": "torn evening dress, boxing gloves",
+      "setting": "boxing ring under a single spotlight",
+      "palette": "teal and spotlight white",
+      "lighting": "single overhead spotlight",
+      "camera": "low hero angle"
+    },
+    "lo-owners-round": {
+      "render": "1920s gangster ballroom photo",
+      "gag": "The Owner's Round, a broad owner bear buying the round from a throne-like booth",
+      "fur_build": "silver-grey fur, broad, in charge",
+      "outfit_props": "open silk robe, gold ring, champagne bottle",
+      "setting": "grand art nouveau booth",
+      "palette": "plum and gold",
+      "lighting": "warm chandelier light",
+      "camera": "low angle"
+    },
+    "ma-1": {
+      "render": "Parisian dawn street photo",
+      "gag": "Heels-in-Hand Holly limping over cobblestones at dawn with stilettos in her paw",
+      "fur_build": "lilac fur, full figure",
+      "outfit_props": "open coat over short dress, stilettos in paw",
+      "setting": "cobbled lane at dawn",
+      "palette": "lilac and cobble grey",
+      "lighting": "soft pink sunrise",
+      "camera": "long lens"
+    },
+    "ma-2": {
+      "render": "phone-screen lit night photo",
+      "gag": "Sent-at-3am Tess wincing at her glowing phone at 3am in bed",
+      "fur_build": "cobalt blue fur",
+      "outfit_props": "silk robe, phone",
+      "setting": "dark bedroom with clock at 3",
+      "palette": "cobalt blue and screen white",
+      "lighting": "phone glow only",
+      "camera": "close-up"
+    },
+    "ma-3": {
+      "render": "greasy food photography",
+      "gag": "Sauce-Stain Sam covered in chilli sauce stains, kebab in paw, hopeful grin",
+      "fur_build": "cream fur stained with red sauce",
+      "outfit_props": "open collar shirt, kebab",
+      "setting": "late-night takeaway counter",
+      "palette": "chilli red and greasy yellow",
+      "lighting": "harsh takeaway fluorescent",
+      "camera": "tight medium"
+    },
+    "ma-4": {
+      "render": "moody taxi interior photo, rain",
+      "gag": "Cab-of-Shame Cara slumped in a taxi while the meter racks up a huge fare",
+      "fur_build": "plum-rose fur",
+      "outfit_props": "last night's cocktail dress",
+      "setting": "back of a taxi in the rain",
+      "palette": "rain blue and meter red",
+      "lighting": "streetlight streaks through rain",
+      "camera": "through the window"
+    },
+    "ma-5": {
+      "render": "classical Greek statue photo look",
+      "gag": "Kebab Aristotle in a toga lecturing with a kebab skewer like a philosopher",
+      "fur_build": "marble white fur, broad",
+      "outfit_props": "toga, laurel wreath, kebab skewer",
+      "setting": "Greek temple ruins",
+      "palette": "marble white and olive gold",
+      "lighting": "golden Mediterranean sun",
+      "camera": "low statuesque angle"
+    },
+    "ma-6": {
+      "render": "sunny brunch café photo, overexposed",
+      "gag": "Blackout Brunch in sunglasses face-planting into eggs benedict with a bloody mary",
+      "fur_build": "honey fur",
+      "outfit_props": "oversized borrowed shirt, sunglasses",
+      "setting": "outdoor brunch café",
+      "palette": "egg yolk yellow and tomato red",
+      "lighting": "harsh bright brunch sun",
+      "camera": "top-down flat lay"
+    },
+    "ma-7": {
+      "render": "soft-focus 1970s bedroom photo",
+      "gag": "Still-Warm Stella sitting up in rumpled sheets with steam rising off the warm sheets",
+      "fur_build": "warm terracotta fur",
+      "outfit_props": "open robe",
+      "setting": "sunlit bedroom",
+      "palette": "terracotta and linen white",
+      "lighting": "warm late-morning sun",
+      "camera": "medium shot"
+    }
+  }
+}
