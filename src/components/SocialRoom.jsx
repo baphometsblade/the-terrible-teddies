@@ -264,7 +264,7 @@ const SocialRoom = ({ onStartBrawl }) => {
             <li key={row.tag} className="flex min-h-11 items-center gap-3 rounded-xl btn-glass px-3">
               <span className="w-8 font-display font-extrabold tabular-nums">{row.place}</span>
               <span className="min-w-0 flex-1 truncate font-display font-bold text-white">{row.tag} · {row.name}</span>
-              <span className="text-xs text-plush-200">{row.members} · {row.rating}</span>
+              <span className="text-xs text-plush-200">{row.members} · {row.rating}{row.pvp_wins ? ` · ${row.pvp_wins} live` : ''}</span>
             </li>
           ))}
         </ol>

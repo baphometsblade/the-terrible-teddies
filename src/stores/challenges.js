@@ -22,6 +22,7 @@ export const STAT_TO_STORE_FIELD = {
   weeklyBestStreak: 'weekBestStreak',
   weeklyNewCards: 'weekNewCards',
   weeklyCoinsEarned: 'weekCoinsEarned',
+  weeklyPvpWins: 'weekPvpWins',
 };
 
 // Each `icon` is drawn as the challenge's emoji (Challenges.jsx), so it must be
@@ -72,6 +73,7 @@ export const WEEKLY_POOL = [
   { id: 'w8', name: "Rattle The Tip Jar", description: 'Earn 250 coins from battles', target: 250, reward: { type: 'pack', amount: 1 }, icon: '💸', stat: 'weeklyCoinsEarned' },
   { id: 'w9', name: 'Chuck Paid Cash', description: 'Earn 500 coins from battles', target: 500, reward: { type: 'legendaryPack', amount: 1 }, icon: '🤑', stat: 'weeklyCoinsEarned' },
   { id: 'w10', name: 'Rob The Whole Register', description: 'Earn 1,000 coins from battles', target: 1000, reward: { type: 'gems', amount: 75 }, icon: '💰', stat: 'weeklyCoinsEarned' },
+  { id: 'w11', name: 'Three Live Brawls', description: 'Win 3 live brawls', target: 3, reward: { type: 'coins', amount: 200 }, icon: '🍻', stat: 'weeklyPvpWins' },
 ];
 
 const DAILY_PICK_COUNT = 4;

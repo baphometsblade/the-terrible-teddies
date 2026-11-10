@@ -20,8 +20,8 @@ major_version = 15
 enabled = true
 port = 54323
 
-[functions]
-verify_jwt = true
+# Edge functions verify the caller JWT unless a function block below turns it
+# off. There is no global boolean: the CLI reads each [functions.<name>] map.
 
 # Stripe calls this endpoint with a Stripe-Signature header and NO Supabase JWT.
 # It authenticates via Stripe webhook signature verification instead, so the
@@ -43,3 +43,18 @@ verify_jwt = false
 # function is deployed with --no-verify-jwt.
 [functions.send-push]
 verify_jwt = true
+
+# Live Pub Brawl. Players send intents with their session JWT.
+[functions.pvp-queue]
+verify_jwt = true
+
+[functions.pvp-action]
+verify_jwt = true
+
+[functions.pvp-invite]
+verify_jwt = true
+
+# The clock. A scheduler calls it with x-pvp-cron-secret, not a user JWT.
+# Matches also time out lazily on the next sync or move.
+[functions.pvp-timeout]
+verify_jwt = false

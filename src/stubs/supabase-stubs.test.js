@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import * as realtimeStub from './supabase-realtime.js';
+import { RealtimeClient } from '@supabase/realtime-js';
 import * as storageStub from './supabase-storage.js';
 
-// vite.config.js aliases @supabase/realtime-js and @supabase/storage-js to the
-// stubs in this directory, to keep ~85 kB of unused websocket and file-storage
-// code out of the entry chunk.
+// vite.config.js aliases @supabase/storage-js to the stub in this directory.
+// Realtime is the live package: Pub Brawl subscribes to match views. Storage
+// stays stubbed.
 //
 // That trade is only safe while the stubs satisfy everything supabase-js
 // actually imports from those packages. A supabase-js upgrade that reaches for
@@ -40,8 +40,10 @@ describe('supabase realtime/storage stubs still cover what supabase-js needs', (
       return [...new Set(names)];
     };
 
+    const vite = readFileSync(resolve(process.cwd(), 'vite.config.js'), 'utf8');
+    expect(vite.includes('@supabase/realtime-js'), 'Pub Brawl needs the real Realtime client').toBe(false);
+
     for (const [pkg, stub] of [
-      ['@supabase/realtime-js', realtimeStub],
       ['@supabase/storage-js', storageStub],
     ]) {
       const needed = importsFrom(pkg);
@@ -56,34 +58,20 @@ describe('supabase realtime/storage stubs still cover what supabase-js needs', (
     }
   });
 
-  it('provides every RealtimeClient method supabase-js calls', () => {
-    // These are invoked on the live client — setAuth in particular runs on
-    // every auth state change — so a missing one is a production-only crash.
+  it('provides every RealtimeClient method supabase-js calls, on the real client', () => {
     const called = [...new Set(
       [...source.matchAll(/this\.realtime\.([a-zA-Z]+)/g)].map((m) => m[1])
     )];
     expect(called.length, 'parsed no this.realtime.* calls — regex drift?').toBeGreaterThan(0);
-
-    const instance = new realtimeStub.RealtimeClient();
+    const instance = new RealtimeClient('ws://127.0.0.1:1/socket', { params: { apikey: 'test' } });
     for (const method of called) {
-      expect(
-        typeof instance[method],
-        `supabase-js calls realtime.${method}(), which the stub does not implement.`
-      ).toBe('function');
+      expect(typeof instance[method], `realtime.${method}`).toBe('function');
     }
+    instance.disconnect();
   });
 
-  it('constructs silently, because supabase-js builds both eagerly', () => {
-    // Both are constructed in the SupabaseClient constructor, so a throwing
-    // constructor would break every client creation, not just unused features.
-    expect(() => new realtimeStub.RealtimeClient()).not.toThrow();
+  it('constructs storage silently and refuses a bucket read', () => {
     expect(() => new storageStub.StorageClient()).not.toThrow();
-    // setAuth is on the auth path and must be a silent no-op.
-    expect(() => new realtimeStub.RealtimeClient().setAuth('token')).not.toThrow();
-  });
-
-  it('still fails loudly if the app ever actually uses these features', () => {
-    expect(() => new realtimeStub.RealtimeClient().channel('x')).toThrow(/not bundled/i);
     expect(() => new storageStub.StorageClient().from('bucket')).toThrow(/not bundled/i);
   });
 });

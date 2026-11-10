@@ -394,6 +394,8 @@ const initialState = {
   weekBattles: 0,
   weekDamage: 0,
   weekCards: 0,
+  // Live Pub Brawl wins this week. The ladder rating itself lives on the server.
+  weekPvpWins: 0,
   crawlClaimedWeek: null,
   // Card stars, keyed by id string, 1 to 3. Dupes still pay coins.
   cardStars: {},
@@ -652,7 +654,7 @@ export const normalizeSave = (persisted) => {
     'lastSyncedServerGems', 'cloudRev', 'gemDebt', 'dailyStreak', 'dailyBest',
     'comebackWins', 'streakShields', 'weekBattles', 'weekDamage', 'weekCards',
     'packPity', 'packOpens', 'packCoinSpent', 'packCoinBack', 'sellbackToday',
-    'earnedOpensToday', 'skipsToday', 'paidRerollsToday', 'crawlGateUntil']) {
+    'earnedOpensToday', 'skipsToday', 'paidRerollsToday', 'crawlGateUntil', 'weekPvpWins']) {
     if (typeof s[k] !== 'number' || Number.isNaN(s[k])) s[k] = initialState[k];
   }
   s.comebackWins = Math.max(0, Math.floor(s.comebackWins));
@@ -1360,6 +1362,7 @@ export const useGameStore = create(
           weekBattles: newWeekBattles,
           weekDamage: newWeekDamage,
           weekCards: newWeekCards,
+          weekPvpWins: weeklyReset ? 0 : (state.weekPvpWins || 0),
           weeklyStatsDate: weekKey,
           comebackWins: newComebacks,
           lastBattleDate: today,
@@ -1402,6 +1405,67 @@ export const useGameStore = create(
         // `progress` is addXP's account of the XP (level, bar, bonus coins,
         // season XP), for the game-over panel.
         return { xpGain, coinsGain: coinsThisBattle, progress, event: eventApplied ? eventApplied.id : null };
+      },
+
+      // A finished live brawl. Same week and crawl counters as a house fight.
+      // No Coin Doubler and no gem: the deck was the whole argument. A themed
+      // night the server named still scales the purse, the way the poster said.
+      recordLiveBrawl: ({ won, damage = 0, healing = 0, cards = 0, finalHP = 30, night = null }) => {
+        const state = get();
+        const now = new Date();
+        const today = now.toDateString();
+        const weekKey = getWeekKey();
+        const dailyReset = state.dailyStatsDate !== today;
+        const weeklyReset = state.weeklyStatsDate !== weekKey;
+        const baseCoins = won ? 25 : 5;
+        let coinsThisBattle = baseCoins;
+        let eventApplied = null;
+        const live = night && eventAt(now);
+        if (live && live.id === night.id) {
+          coinsThisBattle = scaleReward(coinsThisBattle, live.coins, live.coinsDen);
+          eventApplied = live;
+        }
+        const newWins = won ? state.totalWins + 1 : state.totalWins;
+        const newLosses = won ? state.totalLosses : state.totalLosses + 1;
+        const newStreak = won ? state.currentWinStreak + 1 : 0;
+        let claimed = state.claimedChallenges;
+        if (dailyReset) claimed = claimed.filter((id) => !id.startsWith('d'));
+        if (weeklyReset) claimed = claimed.filter((id) => !id.startsWith('w'));
+        const weekStreak = won ? (weeklyReset ? 0 : (state.weekStreak ?? 0)) + 1 : 0;
+        set({
+          totalBattles: state.totalBattles + 1,
+          totalWins: newWins,
+          totalLosses: newLosses,
+          currentWinStreak: newStreak,
+          bestWinStreak: Math.max(state.bestWinStreak, newStreak),
+          totalDamageDealt: state.totalDamageDealt + damage,
+          totalHealingDone: state.totalHealingDone + healing,
+          todayWins: (dailyReset ? 0 : state.todayWins) + (won ? 1 : 0),
+          todayBattles: (dailyReset ? 0 : state.todayBattles) + 1,
+          todayDamageDealt: (dailyReset ? 0 : state.todayDamageDealt) + damage,
+          todayCardsPlayed: (dailyReset ? 0 : state.todayCardsPlayed) + cards,
+          dailyStatsDate: today,
+          weekWins: (weeklyReset ? 0 : state.weekWins) + (won ? 1 : 0),
+          weekCoinsEarned: (weeklyReset ? 0 : state.weekCoinsEarned) + coinsThisBattle,
+          weekStreak,
+          weekBestStreak: Math.max(weeklyReset ? 0 : state.weekBestStreak, weekStreak),
+          weekNewCards: weeklyReset ? 0 : state.weekNewCards,
+          weekBattles: (weeklyReset ? 0 : (state.weekBattles || 0)) + 1,
+          weekDamage: (weeklyReset ? 0 : (state.weekDamage || 0)) + Math.max(0, damage || 0),
+          weekCards: (weeklyReset ? 0 : (state.weekCards || 0)) + Math.max(0, cards || 0),
+          weekPvpWins: (weeklyReset ? 0 : (state.weekPvpWins || 0)) + (won ? 1 : 0),
+          weeklyStatsDate: weekKey,
+          lastBattleDate: today,
+          claimedChallenges: claimed,
+        });
+        const baseXp = won ? BATTLE_XP.win : BATTLE_XP.loss;
+        const xpGain = eventApplied ? scaleReward(baseXp, eventApplied.xp, eventApplied.xpDen) : baseXp;
+        const progress = get().addXP(xpGain);
+        get().addCoins(coinsThisBattle);
+        get().checkAchievement('first_win', newWins >= 1);
+        get().checkAchievement('win_10', newWins >= 10);
+        get().checkAchievement('play_100', get().totalBattles >= 100);
+        return { xpGain, coinsGain: coinsThisBattle, progress, finalHP };
       },
 
       checkAchievement: (achievementId, condition) => {
@@ -1476,7 +1540,7 @@ export const useGameStore = create(
           claimed = claimed.filter(id => !id.startsWith('w'));
           Object.assign(patch, {
             weekWins: 0, weekCoinsEarned: 0, weekStreak: 0, weekBestStreak: 0, weekNewCards: 0,
-            weekBattles: 0, weekDamage: 0, weekCards: 0,
+            weekBattles: 0, weekDamage: 0, weekCards: 0, weekPvpWins: 0,
             weeklyStatsDate: weekKey,
           });
         } else if (weeklyStamp) {
