@@ -12,6 +12,7 @@ import { Medallion, SectionHeading, WalletChips, BrassCoin, DialogClose } from '
 import { Progress } from '@/components/ui/progress';
 import { PACK_LOOK, HeroPack } from './PackArt';
 import { ignoreKeyRepeat } from '@/lib/keyRepeat';
+import { thumbUrl } from '@/lib/preloadArt';
 import { StoreTile, storeItems, bestValuePackId, useStoreBuy } from './StoreTile';
 import { PackOddsGuide } from './PackOdds';
 import { pickRevealLines, freshLine, dupesLine } from '@/lib/packLines';
@@ -359,9 +360,11 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
       const art = new Map();
       for (const c of shown) {
         if (art.has(c.id)) continue;
+        const src = thumbUrl(c.id);
+        if (!src) continue;
         const img = new Image();
         img.decoding = 'async';
-        img.src = `/cards/thumbs/${c.id}.webp`;
+        img.src = src;
         art.set(c.id, img);
       }
       preloadRef.current = art;

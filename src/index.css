@@ -1592,50 +1592,77 @@ html[data-cb="safe"] [data-rarity-gem="legendary"] {
   background: radial-gradient(circle, #1a1410 42%, #fde047 44%) !important;
 }
 
-/* Rarity gleam and the wet-look holo. Transform and opacity only, and both
-   stop with the Animations switch and with reduced motion. */
+/* Rarity gleam and the wet-look holo. The gleam pulses opacity. The holo band
+   is a child that only translates and fades, so a hand of cards does not
+   repaint a gradient every frame. Both stop with the Animations switch and
+   with reduced motion. Amber and magenta, the bar's two tubes. */
 .rarity-gleam {
   position: absolute;
   inset: 0;
   z-index: 4;
   pointer-events: none;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(255, 154, 44, 0.55);
   animation: rarity-gleam 3.6s ease-in-out infinite;
 }
-.rarity-gleam[data-gleam="rare"] { box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.55); }
-.rarity-gleam[data-gleam="epic"] { box-shadow: inset 0 0 0 1px rgba(232, 121, 249, 0.55); }
-.rarity-gleam[data-gleam="legendary"] { box-shadow: inset 0 0 0 1px rgba(253, 230, 138, 0.7); }
+.rarity-gleam[data-gleam="rare"] { box-shadow: inset 0 0 0 1px rgba(255, 154, 44, 0.7); }
+.rarity-gleam[data-gleam="epic"] { box-shadow: inset 0 0 0 1px rgba(255, 47, 134, 0.72); }
+.rarity-gleam[data-gleam="legendary"] {
+  box-shadow: inset 0 0 0 1px rgba(255, 154, 44, 0.9), inset 0 0 12px rgba(255, 47, 134, 0.45);
+}
 .card-holo {
   position: absolute;
   inset: 0;
   z-index: 4;
+  overflow: hidden;
   pointer-events: none;
   border-radius: inherit;
-  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.16) 44%, rgba(103, 232, 249, 0.42) 50%, rgba(249, 168, 212, 0.32) 56%, transparent 70%);
-  background-size: 220% 100%;
-  mix-blend-mode: screen;
-  animation: holo-shift 4.5s linear infinite;
+}
+.card-holo::after {
+  content: "";
+  position: absolute;
+  inset: -50% -70%;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 154, 44, 0.5) 48%, rgba(255, 47, 134, 0.42) 55%, transparent 64%);
+  transform: translateX(-55%);
+  opacity: 0.8;
+  animation: holo-sweep 4.8s ease-in-out infinite;
 }
 @keyframes rarity-gleam {
   0%, 100% { opacity: 0.35; }
   50% { opacity: 0.9; }
 }
-@keyframes holo-shift {
-  from { background-position: 0% 0; }
-  to { background-position: 100% 0; }
+@keyframes holo-sweep {
+  0%, 100% { transform: translateX(-55%); opacity: 0.45; }
+  50% { transform: translateX(55%); opacity: 0.95; }
 }
 [data-motion="off"] .rarity-gleam,
-[data-motion="off"] .card-holo,
+[data-motion="off"] .card-holo::after,
 [data-motion="off"] .bar-lamp { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .rarity-gleam, .card-holo, .bar-lamp { animation: none; }
+  .rarity-gleam, .card-holo::after, .bar-lamp { animation: none; }
 }
 
-/* Profile rings. The bare one is the brass the menu already wore. */
-.avatar-ring { background: linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24); }
+/* Profile rings. The same three the wardrobe sells, on the menu chip, the
+   player sheet, and every card that is yours. Bare is brass, lipstick is the
+   kiss, high roller is the magenta tube with an amber edge. #e9d5ff stays in
+   the high-roller gradient: it is that ring's swatch. */
+.avatar-ring,
+.avatar-ring[data-avatar="bare-ring"] { background: linear-gradient(145deg, #fde68a, #b45309 45%, #fbbf24); }
 .avatar-ring[data-avatar="lipstick"] { background: linear-gradient(145deg, #ffe4e6, #fb7185 40%, #9f1239); }
-.avatar-ring[data-avatar="high-roller"] { background: linear-gradient(145deg, #faf5ff, #e9d5ff 35%, #7e22ce); }
+.avatar-ring[data-avatar="high-roller"] { background: linear-gradient(145deg, #fde68a, #ff2f86 42%, #e9d5ff 72%, #7e22ce); }
+.card-profile-ring {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px rgba(251, 191, 36, 0.8);
+}
+.card-profile-ring[data-avatar="bare-ring"] { box-shadow: inset 0 0 0 2px rgba(251, 191, 36, 0.8); }
+.card-profile-ring[data-avatar="lipstick"] { box-shadow: inset 0 0 0 2px rgba(251, 113, 133, 0.9); }
+.card-profile-ring[data-avatar="high-roller"] {
+  box-shadow: inset 0 0 0 2px rgba(255, 47, 134, 0.85), inset 0 0 10px rgba(255, 154, 44, 0.4);
+}
 
 /* The living bar, desktop and tablet only, so a phone's Battle button
    does not move. Bottles and a lamp, decoration. */

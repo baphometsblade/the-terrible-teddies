@@ -3057,6 +3057,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                           <TeddyCard
                             teddy={card}
                             lift={false}
+                            wearRing={false}
                             variant="board"
                             side="opponent"
                             tauntActive={card.ability === 'taunt' && !card.stealthActive}
@@ -3380,6 +3381,7 @@ const GameBoard = forwardRef(function GameBoard({ onBackToMenu, onOpenShop, dail
                     ? 'a Royal ally'
                     : (attackAuraNote(previewCard, previewTarget.from === 'player' ? playerField : opponentField) || 'a Royal ally')}
                   cosmeticBorder={previewTarget.from === 'opponent' ? null : cosmeticBorder}
+                  wearRing={previewTarget.from !== 'opponent'}
                 />
               )}
             </div>

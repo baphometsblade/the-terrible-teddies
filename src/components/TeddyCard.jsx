@@ -10,6 +10,8 @@ import { RARITY, RARITY_METAL } from '@/lib/rarity';
 import { BrassCoin } from '@/components/ui/coin';
 import { COSMETIC_FRAMES } from '@/lib/cosmetics';
 import { cardBackId } from '@/lib/wardrobe';
+import { gleamFor, ringId, wearsHolo } from '@/lib/cardFinish';
+import { hasLastOrdersArt, LastOrdersFigure } from './LastOrdersArt';
 
 // Dark-face fallbacks for cards without a rarity (typed opponent cards).
 const TYPE_STYLES = {
@@ -141,6 +143,12 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   const safeId = /^(?:[1-9]\d*|[A-Za-z]{2}-[A-Za-z0-9-]+)$/.test(String(teddy.id ?? ''));
   if (!teddy.id || !safeId || heldBack) {
     return <div className={emojiClassName}>{getTeddyEmoji(teddy)}</div>;
+  }
+  // A Last Orders plate that never arrived still draws. The photo, when the
+  // file is there, wins. Both stay behind the age gate above. Every other
+  // missing plate keeps the night-felt back instead of the emoji.
+  if (fullFailed && hasLastOrdersArt(teddy.id)) {
+    return <LastOrdersFigure id={teddy.id} className={imgClassName} />;
   }
 
   // Once the thumb has failed for this card, fall through to the full
@@ -418,7 +426,7 @@ const TeddyCard = ({
   teddy, onClick, isSelected = false, isDisabled = false, cosmeticBorder = null,
   lift = true, artVariant = 'thumb', artLoading = 'lazy', dimmed = false,
   variant = 'hand', costDelta = 0, attackDelta = 0, raisedNote = 'a Royal ally', side = 'player', tauntActive, resting = false,
-  nameless = false, zoom = 1,
+  nameless = false, zoom = 1, wearRing = true,
 }) => {
   const board = variant === 'board';
   const legible = (px) => (board ? legibleSize(px, zoom) : px);
@@ -438,8 +446,9 @@ const TeddyCard = ({
   const rules = rulesFor(teddy);
   const foil = teddy.rarity === 'legendary' ? 'foil' : teddy.rarity === 'epic' ? 'foil foil-epic' : '';
   const finish = useGameStore((s) => s.equippedFinish);
-  const holo = finish === 'wet-look';
-  const gleam = teddy.rarity === 'rare' || teddy.rarity === 'epic' || teddy.rarity === 'legendary';
+  const avatar = useGameStore((s) => s.equippedAvatar);
+  const holo = wearsHolo(finish);
+  const gleam = gleamFor(teddy.rarity);
   const cost = teddy.cost !== undefined ? teddy.cost + costDelta : undefined;
   const discounted = costDelta < 0;
   const taunt = board && (tauntActive ?? teddy.ability === 'taunt')
@@ -510,8 +519,9 @@ const TeddyCard = ({
 
         {/* Foil sweep (epic+) — above the art, below the text. */}
         {foil && !dimmed && !resting && <div className={`absolute inset-0 rounded-[8px] pointer-events-none ${foil}`} />}
-        {gleam && !dimmed && <div className="rarity-gleam" data-gleam={teddy.rarity} aria-hidden="true" />}
-        {holo && !dimmed && <div className="card-holo" aria-hidden="true" />}
+        {gleam && <div className="rarity-gleam" data-gleam={gleam} aria-hidden="true" />}
+        {holo && <div className="card-holo" aria-hidden="true" />}
+        {wearRing && <div className="card-profile-ring" data-avatar={ringId(avatar)} aria-hidden="true" />}
 
         {/* Taunt's frame: a band of its side's metal just inside the rarity
             frame, lit inward, so a guarded card reads as walled in. Inside
