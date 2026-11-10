@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { bearerToken, serviceRoleAuthorized, timingSafeEqualString } from './auth.js';
+import { bearerToken, serviceRoleAuthorized, serviceRoleAuthorizedAny, timingSafeEqualString } from './auth.js';
 
 const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.service-role-key-not-a-real-secret.sig';
 
@@ -51,5 +51,23 @@ describe('send-push bearer check', () => {
     expect(toml).toMatch(/\[functions\.send-push\]\s+verify_jwt = true/);
     expect(example).toContain('VITE_VAPID_PUBLIC_KEY=');
     expect(example).not.toMatch(/BEGIN PRIVATE KEY/);
+  });
+
+  it('accepts a bearer that matches any of several secrets', () => {
+    const legacyJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.legacy-jwt.sig';
+    const newSecret = 'sb_secret_not-a-real-key';
+    expect(serviceRoleAuthorizedAny(`Bearer ${legacyJwt}`, [legacyJwt, newSecret])).toBe(true);
+    expect(serviceRoleAuthorizedAny(`Bearer ${newSecret}`, [legacyJwt, newSecret])).toBe(true);
+    expect(serviceRoleAuthorizedAny(`Bearer ${legacyJwt}`, ['', legacyJwt])).toBe(true);
+    expect(serviceRoleAuthorizedAny(`Bearer ${SERVICE_KEY}`, [legacyJwt, newSecret])).toBe(false);
+    expect(serviceRoleAuthorizedAny(`Bearer ${legacyJwt}`, ['', ''])).toBe(false);
+    expect(serviceRoleAuthorizedAny('Bearer forged', [legacyJwt, newSecret])).toBe(false);
+  });
+
+  it('still compares the bearer in index.ts and also reads PUSH_SERVICE_ROLE_JWT', () => {
+    const source = readFileSync(resolve(process.cwd(), 'supabase/functions/send-push/index.ts'), 'utf8');
+    expect(source).toContain('serviceRoleAuthorizedAny');
+    expect(source).toContain('PUSH_SERVICE_ROLE_JWT');
+    expect(source).toContain('SUPABASE_SERVICE_ROLE_KEY');
   });
 });
