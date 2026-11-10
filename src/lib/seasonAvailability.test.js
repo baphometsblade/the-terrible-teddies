@@ -8,6 +8,7 @@ import { rollPack } from '@/lib/packRoll';
 import { buildOpponentDeck } from '@/utils/opponentDeck';
 import { cardsFromIds } from '@/lib/social/ghostDeck';
 import { deckProblem } from '@/lib/social/ladder';
+import { evergreenCards } from '@/data/seasonsCatalog';
 
 const get = () => useGameStore.getState();
 const XM = NAUGHTY_LIST_CARDS.map((card) => card.id);
@@ -194,4 +195,25 @@ describe('seasonal cards stay out of grants and sampled decks until the server o
     expect(cardsFromIds(NAUGHTY_LIST_CARDS.map((card) => card.ladderId), pool).map((card) => card.id)).toEqual(XM);
     expect(deckProblem(XM, known)).toBeNull();
   });
+
+  it.each(['upcoming', 'active', 'ended'])(
+    'an evergreen rarity set pays with no xm- cards owned while %s',
+    (status) => {
+      load(status);
+      const commons = evergreenCards(ALL_CARDS).filter((card) => card.rarity === 'common');
+      const owned = commons.map((card) => card.id);
+      useGameStore.setState({
+        ownedCards: owned,
+        coins: 0,
+        cardPacks: 0,
+        claimedSets: [],
+        claimedStarSets: [],
+        cardStars: Object.fromEntries(owned.map((id) => [String(id), 1])),
+      });
+      expect(xmOf(get().ownedCards)).toEqual([]);
+      expect(get().claimCollectionSet('common')).toEqual({ coins: 250, packs: 0 });
+      expect(get().claimStarSet('common')).toEqual({ coins: 300, packs: 1 });
+      expect(xmOf(get().ownedCards)).toEqual([]);
+    },
+  );
 });

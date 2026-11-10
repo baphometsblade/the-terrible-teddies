@@ -42,7 +42,7 @@ import { storyChapters, STORY_CHAPTERS } from '@/lib/storyCampaign';
 import { plaqueById, plaqueBonus } from '@/lib/plaques';
 import { syncConvenience, syncPackWin, requestPackRoll } from '@/lib/packSync';
 import { collectiblePool, getSeasonSnapshot, isCardAvailable } from '@/lib/seasons';
-import { BUNDLED_SEASON_IDS } from '@/data/seasonsCatalog';
+import { BUNDLED_SEASON_IDS, evergreenCards } from '@/data/seasonsCatalog';
 import { bumpSeasonQuest, normalizeSeasonQuest, questReady, questsFor } from '@/lib/seasonQuests';
 
 export const ALL_CARDS = [
@@ -1572,12 +1572,13 @@ export const useGameStore = create(
         return period === 'weekly' ? next.weeklySwap : next.dailySwap;
       },
 
-      // The collection book's reward for owning every card of one rarity.
+      // The collection book's reward for owning every evergreen card of one
+      // rarity. Seasonal cards are a separate list and never block this.
       // Coins and ordinary packs only: a premium or legendary pack would
       // survive a reset while the claim ledger would not, and mint another.
       claimCollectionSet: (setId) => {
         const state = get();
-        const row = bookOf(ALL_CARDS, state.ownedCards).find((set) => set.id === setId);
+        const row = bookOf(evergreenCards(ALL_CARDS), state.ownedCards).find((set) => set.id === setId);
         if (!row?.complete) return null;
         if (state.claimedSets.includes(setId)) return null;
         set({ claimedSets: [...state.claimedSets, setId] });
@@ -1735,7 +1736,7 @@ export const useGameStore = create(
       raiseCardStar: (setId) => {
         const state = get();
         if (!starringUnlocked(state.ownedCards)) return null;
-        const card = nextStarTarget(ALL_CARDS, state.ownedCards, state.cardStars, setId);
+        const card = nextStarTarget(evergreenCards(ALL_CARDS), state.ownedCards, state.cardStars, setId);
         if (!card) return null;
         const cost = starCost(card.id, state.cardStars, coinsForDuplicate);
         if (cost == null || state.coins < cost) return null;
@@ -1750,7 +1751,7 @@ export const useGameStore = create(
       claimStarSet: (setId) => {
         const state = get();
         if (state.claimedStarSets.includes(setId)) return null;
-        if (!starSetReady(ALL_CARDS, state.ownedCards, state.cardStars, setId)) return null;
+        if (!starSetReady(evergreenCards(ALL_CARDS), state.ownedCards, state.cardStars, setId)) return null;
         const reward = { coins: 300, packs: 1 };
         set({ claimedStarSets: [...state.claimedStarSets, setId] });
         get().addCoins(reward.coins);

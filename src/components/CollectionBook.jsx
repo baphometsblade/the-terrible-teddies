@@ -3,7 +3,7 @@ import { Check, BookOpen } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useGameStore, ALL_CARDS, coinsForDuplicate } from '../stores/gameStore';
 import { bookOf } from '@/lib/collectionBook';
-import { BUNDLED_SEASON_IDS } from '@/data/seasonsCatalog';
+import { BUNDLED_SEASON_IDS, evergreenCards } from '@/data/seasonsCatalog';
 import { showInAlbum } from '@/lib/seasons';
 import { useVisibleSeasons } from '@/hooks/useSeasonSnapshot';
 import VaultMark from './VaultMark';
@@ -116,7 +116,7 @@ const CollectionBook = () => {
     raiseCardStar, claimStarSet,
   } = useGameStore();
   const seasons = useVisibleSeasons();
-  const evergreen = ALL_CARDS.filter((card) => !BUNDLED_SEASON_IDS.has(card.id));
+  const evergreen = evergreenCards(ALL_CARDS);
   const rows = bookOf(evergreen, ownedCards);
   const seasonal = ALL_CARDS.filter((card) => (
     BUNDLED_SEASON_IDS.has(card.id) && showInAlbum(card.id, ownedCards.includes(card.id), seasons, BUNDLED_SEASON_IDS)
@@ -171,9 +171,10 @@ const CollectionBook = () => {
         </section>
       )}
       {rows.map((row) => {
-        const target = starsOpen ? nextStarTarget(ALL_CARDS, ownedCards, cardStars, row.id) : null;
+        const target = starsOpen ? nextStarTarget(evergreen, ownedCards, cardStars, row.id) : null;
         const cost = target ? starCost(target.id, cardStars, coinsForDuplicate) : null;
-        const starred = (ALL_CARDS.filter((card) => card.rarity === row.id && ownedCards.includes(card.id)))
+        const starred = evergreen
+          .filter((card) => card.rarity === row.id && ownedCards.includes(card.id))
           .reduce((n, card) => n + (starCount(cardStars, card.id) > 0 ? 1 : 0), 0);
         return (
           <SetRow
