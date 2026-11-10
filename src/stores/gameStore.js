@@ -1829,10 +1829,13 @@ export const useGameStore = create(
           get().checkAchievement('collect_55', n >= 55);
           get().checkAchievement('collect_all', n >= ALL_CARDS.length);
         }
-        const nonce = `pack-${openNo}-${today.replace(/\s/g, '')}`;
-        syncPackOpen(nonce, packType, pulledCards.map((c) => c.id), dupeCoins, (delta) => {
-          get().addCoins(delta);
-        });
+        const postedIds = pulledCards.map((c) => c.id).filter((id) => Number.isInteger(id));
+        if (postedIds.length === pulledCards.length) {
+          const nonce = `pack-${openNo}-${today.replace(/\s/g, '')}`;
+          syncPackOpen(nonce, packType, postedIds, dupeCoins, (delta) => {
+            get().addCoins(delta);
+          });
+        }
         return { cards: pulledCards, dupeCoins, pity: nextPity };
       },
 

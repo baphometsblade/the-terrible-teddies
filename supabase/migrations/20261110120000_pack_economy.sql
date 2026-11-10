@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS public.pack_catalog (
 );
 
 INSERT INTO public.pack_catalog (id, rarity) VALUES
-(1, 'common'),
+  (1, 'common'),
   (2, 'common'),
   (3, 'common'),
   (4, 'common'),
@@ -95,6 +95,12 @@ INSERT INTO public.pack_catalog (id, rarity) VALUES
   (19, 'epic'),
   (20, 'legendary'),
   (21, 'legendary'),
+  (22, 'uncommon'),
+  (23, 'rare'),
+  (24, 'common'),
+  (25, 'uncommon'),
+  (26, 'rare'),
+  (27, 'epic'),
   (30, 'common'),
   (31, 'common'),
   (32, 'uncommon'),
@@ -157,13 +163,7 @@ INSERT INTO public.pack_catalog (id, rarity) VALUES
   (96, 'common'),
   (97, 'uncommon'),
   (98, 'rare'),
-  (99, 'epic'),
-  (22, 'uncommon'),
-  (23, 'rare'),
-  (24, 'common'),
-  (25, 'uncommon'),
-  (26, 'rare'),
-  (27, 'epic')
+  (99, 'epic')
 ON CONFLICT (id) DO UPDATE SET rarity = EXCLUDED.rarity;
 
 CREATE TABLE IF NOT EXISTS public.pack_owned (
