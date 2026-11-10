@@ -25,6 +25,16 @@ export const HOUSE_EVENTS = Object.freeze([
     live: (date) => date.getDay() === 4,
   },
   {
+    id: 'last_orders',
+    name: 'Last Orders',
+    blurb: 'Tuesday belongs to Chuck. One fight pays half again.',
+    xp: 3,
+    xpDen: 2,
+    coins: 3,
+    coinsDen: 2,
+    live: (date) => date.getDay() === 2,
+  },
+  {
     id: 'happy_hour',
     name: 'Happy Hour',
     blurb: 'Five till eight. One fight pays double XP.',

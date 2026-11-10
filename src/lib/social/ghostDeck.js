@@ -3,13 +3,12 @@
 // its owner saved, not a harder Chuck. Unknown ids are dropped. The caller
 // refuses a list that comes back shorter than a real fight.
 //
-// The deck column is still an integer array. Hen Do ids file through
-// toLadderId (191–200). Morning After ids (`ma-1` … `ma-10`) file as
-// 151–160, a gap no catalog id uses. A real catalog id always wins over
-// either alias.
+// The deck column is still an integer array. Named sets file through their
+// own ladder ids (the registry). Morning After ids (`ma-1` … `ma-10`) file
+// as 151–160, a gap no catalog id uses. A real catalog id always wins over
+// an alias.
 
-import { fromLadderId, toLadderId } from '@/data/henDoHavoc';
-import { fromLadderId as fromLastOrders, toLadderId as toLastOrders } from '@/data/expansion-last-orders';
+import { fromLadderId, toLadderId } from '@/data/cardRegistry';
 
 const EXPANSION = /^([a-z]{2})-([1-9]\d*)$/;
 
@@ -18,8 +17,6 @@ export const GHOST_FILE = Object.freeze({ ma: 150 });
 
 /** The integer a deck column can store, or null when this id cannot be filed. */
 export const toGhostId = (id) => {
-  const orders = toLastOrders(id);
-  if (orders !== id) return orders;
   const listed = toLadderId(id);
   if (listed !== id) return listed;
   if (typeof id === 'number' && Number.isInteger(id)) return id;
@@ -34,8 +31,6 @@ export const toGhostId = (id) => {
 
 /** The catalog id a filed integer stands for, or null when it is not an alias. */
 export const fromGhostId = (id) => {
-  const orders = fromLastOrders(id);
-  if (orders !== id) return orders;
   const listed = fromLadderId(id);
   if (listed !== id) return listed;
   const n = typeof id === 'number'

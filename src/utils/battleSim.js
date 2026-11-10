@@ -10,6 +10,7 @@ import {
 } from '@/utils/battleUtils';
 import { chooseAttackTarget, chooseOpponentPlays } from '@/utils/opponentAI';
 import { energyForTurn, MAX_FIELD_SIZE } from '@/components/GameBoard/turn';
+import { applyInterest, commitBarSpecial, energyAfterCut, payTab, tabTip } from '@/lib/barService';
 
 export const SIM_MAX_TURNS = 30;
 const START_HP = 30;
@@ -53,7 +54,24 @@ const makeSide = (cards, side, random) => {
   };
 };
 
-const applySpecial = (side, card) => {
+const applySpecial = (side, foe, card) => {
+  const bar = commitBarSpecial({
+    health: side.hp,
+    maxHealth: START_HP,
+    field: side.field,
+    deck: side.deck,
+    hand: [],
+    handRoom: 0,
+  }, card);
+  if (bar) {
+    side.hp = bar.health;
+    side.field = bar.field;
+    side.deck = bar.deck;
+    // Cut off is the other side's next round. The tab is yours.
+    if (bar.energyCut) foe.energyCut = (foe.energyCut || 0) + bar.energyCut;
+    side.tabDue = (side.tabDue || 0) + bar.due;
+    return;
+  }
   if (card.effect === 'heal') side.hp = Math.min(START_HP, side.hp + (card.amount || 0));
   if (card.effect === 'buff') {
     side.field = side.field.map((c) => (
@@ -69,33 +87,43 @@ const takeTurn = (actor, defender, turn, random) => {
     actor.hp -= actor.fatigue;
     if (actor.hp <= 0) return;
   }
-  const energy = energyForTurn(turn);
+  if (actor.tabDue) {
+    const bill = payTab(actor.hp, actor.tabDue);
+    actor.hp = bill.health;
+    actor.tabDue = 0;
+    if (actor.hp <= 0) return;
+  }
+  const energy = energyAfterCut(energyForTurn(turn), actor.energyCut || 0);
+  actor.energyCut = 0;
   const { plays, remainingDeck } = chooseOpponentPlays(
     actor.deck, actor.field.length, energy, MAX_FIELD_SIZE, actor.field,
   );
   actor.deck = remainingDeck;
   for (const card of plays) {
-    if (card.type === 'special') applySpecial(actor, card);
+    if (card.type === 'special') applySpecial(actor, defender, card);
     else actor.field.push(stamp(card, card.instanceId));
   }
   const attackers = actor.field.filter(canAttack);
   for (const attacker of attackers) {
     if (actor.hp <= 0 || defender.hp <= 0) break;
     const targets = getValidTargets(actor.field, defender.field);
+    let interestAttack = null;
     if (targets.length === 0) {
       // Quickie can hit a creature the turn it arrives, and nothing else.
       if (!canSwingFace(attacker)) continue;
       const trap = defender.field.find((c) => c.type === 'trap');
       if (trap) {
         actor.hp -= trap.amount || 3;
+        const taxed = applyInterest(attacker, trap);
+        if (taxed.attack !== attacker.attack) interestAttack = taxed.attack;
         defender.field = defender.field.filter((c) => c.instanceId !== trap.instanceId);
       }
-      defender.hp -= effectiveAttack(attacker, actor.field);
+      defender.hp -= effectiveAttack(attacker, actor.field, { health: actor.hp });
     } else {
       const target = attacker.ability === 'blackout'
         ? pickBlackoutTarget(targets, random)
         : chooseAttackTarget(targets, attacker, actor.field);
-      const hit = resolveCreatureHit(attacker, target, actor.field);
+      const hit = resolveCreatureHit(attacker, target, actor.field, 0, { health: actor.hp });
       defender.hp -= hit.overkill;
       defender.field = defender.field.flatMap((c) => (
         c.instanceId === target.instanceId ? (hit.survivor ? [hit.survivor] : []) : [c]
@@ -103,10 +131,17 @@ const takeTurn = (actor, defender, turn, random) => {
     }
     actor.field = actor.field.map((c) => (
       c.instanceId === attacker.instanceId
-        ? { ...c, hasAttacked: true, ...(c.ability === 'hungover' ? { pendingHangover: true } : {}) }
+        ? {
+          ...c,
+          attack: interestAttack ?? c.attack,
+          hasAttacked: true,
+          ...(c.ability === 'hungover' ? { pendingHangover: true } : {}),
+        }
         : c
     ));
   }
+  const tip = tabTip(actor.field);
+  if (tip) actor.hp = Math.min(START_HP, actor.hp + tip);
   actor.field = readyCreatures(actor.field);
 };
 

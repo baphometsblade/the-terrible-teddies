@@ -41,7 +41,7 @@ BEGIN
        'plaque_10', 'plaque_25', 'plaque_50',
        'level_2', 'level_3', 'level_5', 'level_8', 'level_10',
        'level_15', 'level_20', 'level_25', 'level_35', 'level_50',
-       'story_first_round', 'story_lock_in',
+       'story_first_round', 'story_lock_in', 'story_chucks_crew',
        'star_common', 'star_uncommon', 'star_rare', 'star_epic', 'star_legendary'
      ) THEN
     RAISE EXCEPTION 'unknown mark' USING ERRCODE = '22023';

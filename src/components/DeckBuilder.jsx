@@ -13,6 +13,7 @@ import { useDialog } from '@/hooks/useDialog';
 import { bestOwnedBorder } from '@/lib/cosmetics';
 import { CARD_ZOOM_QUERY, gridArtVariant } from '@/lib/cardZoom';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { cardMatchesQuery } from '@/lib/cardQuery';
 import { deckKey, sameDeck } from '@/lib/deck';
 import { CLEARANCE, isKeyboardFocus, revealBetween } from '@/lib/keepClear';
 
@@ -208,6 +209,7 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
   // draws an empty deck (and a spurious "Unsaved changes") for a frame.
   const [deck, setDeck] = useState(() => toEditorDeck(currentDeck));
   const [filter, setFilter] = useState('all');
+  const [query, setQuery] = useState('');
   const [deckName, setDeckName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showDiscard, setShowDiscard] = useState(false);
@@ -276,8 +278,8 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
   }, []);
 
   const filteredCards = ownedCardObjects.filter(card => {
-    if (filter === 'all') return true;
-    return card.type === filter;
+    if (filter !== 'all' && card.type !== filter) return false;
+    return cardMatchesQuery(card, query);
   });
 
   const addToDeck = (card) => {
@@ -438,6 +440,14 @@ const DeckBuilder = forwardRef(function DeckBuilder({ onBackToMenu }, ref) {
                 Your Cards <span className="font-bold text-plush-300">({ownedCardObjects.length})</span>
               </h2>
 
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search"
+                aria-label="Search cards"
+                className="h-11 w-full rounded-lg bg-night-950/60 px-3 text-sm text-white ring-1 ring-inset ring-white/10 placeholder:text-plush-400 sm:w-40"
+              />
               <div
                 role="group"
                 aria-label="Filter by type"

@@ -52,6 +52,7 @@ export const DAILY_POOL = [
   { id: 'd10', name: 'Strip Poker', description: 'Play 5 cards in battles', target: 5, reward: { type: 'coins', amount: 50 }, icon: '🎴', stat: 'dailyCardsPlayed' },
   { id: 'd11', name: 'Dealing Dirty', description: 'Play 10 cards in battles', target: 10, reward: { type: 'pack', amount: 1 }, icon: '🃏', stat: 'dailyCardsPlayed' },
   { id: 'd12', name: 'Card Shark Behavior', description: 'Play 20 cards in battles', target: 20, reward: { type: 'gems', amount: 25 }, icon: '🦈', stat: 'dailyCardsPlayed' },
+  { id: 'd13', name: 'Chuck Counts Cards', description: 'Play 6 cards in battles. He is pouring.', target: 6, reward: { type: 'coins', amount: 70 }, icon: '🎴', stat: 'dailyCardsPlayed' },
 ];
 
 // --- Weekly pool (10 candidates across the 4 tracked weekly stats) -------
@@ -66,6 +67,7 @@ export const WEEKLY_POOL = [
   // weeklyNewCards (weekNewCards)
   { id: 'w6', name: 'Fresh Meat For The Deck', description: 'Add 3 new cards to your collection', target: 3, reward: { type: 'gems', amount: 20 }, icon: '🆕', stat: 'weeklyNewCards' },
   { id: 'w7', name: 'Take Five Strangers Home', description: 'Add 5 new cards to your collection', target: 5, reward: { type: 'gems', amount: 30 }, icon: '📚', stat: 'weeklyNewCards' },
+  { id: 'w11', name: 'Bring His Crew Home', description: 'Add 2 new cards to your collection. Make them his.', target: 2, reward: { type: 'gems', amount: 15 }, icon: '🥃', stat: 'weeklyNewCards' },
   // weeklyCoinsEarned (weekCoinsEarned)
   { id: 'w8', name: "Rattle The Tip Jar", description: 'Earn 250 coins from battles', target: 250, reward: { type: 'pack', amount: 1 }, icon: '💸', stat: 'weeklyCoinsEarned' },
   { id: 'w9', name: 'Chuck Paid Cash', description: 'Earn 500 coins from battles', target: 500, reward: { type: 'legendaryPack', amount: 1 }, icon: '🤑', stat: 'weeklyCoinsEarned' },

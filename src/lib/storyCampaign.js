@@ -36,6 +36,20 @@ export const STORY_CHAPTERS = Object.freeze([
       Object.freeze({ id: 'damage', label: 'Deal 200 damage', met: damage(200) }),
     ]),
   },
+  {
+    id: 'story_chucks_crew',
+    name: 'The House Pour',
+    opening: 'He started pouring for the ones he keeps. You noticed.',
+    closing: 'A stool has your name. Do not propose from it.',
+    requires: 'story_lock_in',
+    coins: 250,
+    packs: 1,
+    beats: Object.freeze([
+      Object.freeze({ id: 'crew', label: 'Own one of his crew', met: (state) => (state.ownedCards || []).some((id) => String(id).startsWith('ck-')) }),
+      Object.freeze({ id: 'wins', label: 'Win twelve fights', met: win(12) }),
+      Object.freeze({ id: 'level', label: 'Reach level 8', met: level(8) }),
+    ]),
+  },
 ].map((row) => Object.freeze(row)));
 
 export const storyChapters = (state = {}) => {

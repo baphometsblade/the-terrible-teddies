@@ -1,0 +1,72 @@
+[
+  {
+    "id": "ck-chuck",
+    "type": "card",
+    "target": "public/cards/ck-chuck.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, moody neon-lit dive bar, warm amber and hot magenta neon, cinematic shallow depth of field. The same honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth, pouring a shot he will lie about, damp bar towel over one paw, a filthy little smile. Suggestive, tongue-in-cheek, stuffed plush only. Adults only. No text."
+  },
+  {
+    "id": "ck-closing",
+    "type": "card",
+    "target": "public/cards/ck-closing.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, moody neon-lit dive bar at last call, warm amber and hot magenta neon, cinematic shallow depth of field. The same honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth, shirt open further, keys in one paw, flipping the closed sign with the other, promising one more round. Suggestive, tongue-in-cheek, stuffed plush only. Adults only. No text."
+  },
+  {
+    "id": "ck-offduty",
+    "type": "card",
+    "target": "public/cards/ck-offduty.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, moody neon-lit alley behind a dive bar, warm amber spill and hot magenta neon, cinematic shallow depth of field. The same honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth, the shirt off one shoulder under a leather jacket, pocketing a bottle he told someone they could not have. Suggestive, tongue-in-cheek, stuffed plush only. Adults only. No text."
+  },
+  {
+    "id": "ck-rita",
+    "type": "card",
+    "target": "public/cards/ck-rita.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, moody neon-lit dive bar, warm amber and hot magenta neon, cinematic shallow depth of field. An adult russet bear in a low-cut dress, lipstick, one leg crossed on a reserved stool, looking the bartender up and down like she pays rent here. Suggestive, tongue-in-cheek, stuffed plush only. Adults only. No text."
+  },
+  {
+    "id": "ck-tabitha",
+    "type": "card",
+    "target": "public/cards/ck-tabitha.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal plush teddy bear, clearly a grown adult toy, moody neon-lit dive bar, warm amber lamp and hot magenta neon, cinematic shallow depth of field. An adult burgundy bear in an unbuttoned blouse, writing a name in a bar ledger with a smirk, a lipstick print beside the figure. Suggestive, tongue-in-cheek, stuffed plush only. Adults only. No text."
+  },
+  {
+    "id": "ck-last-orders",
+    "type": "card",
+    "target": "public/cards/ck-last-orders.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal still life, moody neon-lit dive bar, warm amber and hot magenta neon, cinematic shallow depth of field. A last-call bell, a full shot glass, and a napkin with a lipstick kiss, the glass sweating on dark wood. Suggestive, tongue-in-cheek, no people. Adults only. No text."
+  },
+  {
+    "id": "ck-top-up",
+    "type": "card",
+    "target": "public/cards/ck-top-up.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal still life, moody neon-lit dive bar, warm amber and hot magenta neon, cinematic shallow depth of field. A bottle pouring into a short glass, the liquid catching the neon, a bar towel beside it, intimate and a little indecent about the pour. Suggestive, tongue-in-cheek, no people. Adults only. No text."
+  },
+  {
+    "id": "ck-cut-off",
+    "type": "card",
+    "target": "public/cards/ck-cut-off.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal still life, moody neon-lit dive bar, warm amber and hot magenta neon, cinematic shallow depth of field. A bottle pulled back from an empty glass, a damp bar towel, the glass left wanting. Suggestive, tongue-in-cheek, no people. Adults only. No text."
+  },
+  {
+    "id": "ck-on-the-tab",
+    "type": "card",
+    "target": "public/cards/ck-on-the-tab.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal still life, moody neon-lit dive bar, warm amber lamp and hot magenta neon, cinematic shallow depth of field. A handwritten bar tab, two playing cards, a pen, and a lipstick kiss on the paper. Suggestive, tongue-in-cheek, no people. Adults only. No text."
+  },
+  {
+    "id": "ck-quiet-word",
+    "type": "card",
+    "target": "public/cards/ck-quiet-word.webp",
+    "aspect": "896*1152",
+    "prompt": "Photoreal still life, moody neon-lit dive bar, warm amber and hot magenta neon, cinematic shallow depth of field. A folded note, a matchbook, and a single earring on the bar, the note close enough to be a proposition. Suggestive, tongue-in-cheek, no people. Adults only. No text."
+  }
+]
