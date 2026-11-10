@@ -3,6 +3,7 @@ import { HOUSE_RULES } from '@/lib/houseRules';
 import { mvpLine } from '@/lib/matchNight';
 import { newActionId, POLL_MS, pvpPost, watchViews } from '@/lib/pvp/client';
 import { knownDeck } from '@/lib/pvp/decks';
+import { toGhostId } from '@/lib/social/ghostDeck';
 import { drawGhost, slipUrl, ticketFrom } from '@/lib/social/client';
 import { TAUNTS } from '@/lib/social/taunts';
 import { FOCUS_OUTLINE } from '@/lib/focus';
@@ -47,8 +48,9 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
   queueRef.current = queue;
 
   const deck = decks[deckIndex] || decks[0];
-  const deckIds = (deck?.cards || []).map((id) => Number(id));
-  const deckError = knownDeck(deckIds);
+  const ownedIds = deck?.cards || [];
+  const deckError = knownDeck(ownedIds);
+  const deckIds = ownedIds.map((id) => toGhostId(id)).filter((id) => id != null);
 
   useEffect(() => {
     let live = true;

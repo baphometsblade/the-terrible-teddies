@@ -17,6 +17,7 @@ import {
 } from '../../utils/battleUtils.js';
 import { PLAYER_MAX_HEALTH, TRAP_DEFAULT_DAMAGE } from '../effects.js';
 import { fatigueForEmptyDraw } from '../fatigue.js';
+import { energyAfterCut, commitBarSpecial, payTab } from '../barService.js';
 import { applyMulligan } from '../mulligan.js';
 import { pickMvp } from '../matchNight.js';
 import { hashString, nextRandom } from './rng.js';
@@ -155,8 +156,26 @@ function beginTurn(state, seat) {
   state.turnNumber += 1;
   state.phase = 'main';
   const side = state.seats[seat];
+  const owed = payTab(side.health, side.tab || 0);
+  side.tab = 0;
+  if (owed.paid) {
+    side.health = owed.health;
+    pushLog(state, `${side.name} pays the tab. −${owed.paid}.`);
+    if (side.health <= 0) {
+      state.phase = 'over';
+      state.turn = null;
+      state.winner = OTHER[seat];
+      state.reason = 'hp';
+      pushLog(state, `${side.name} is done. The tab won.`);
+      return;
+    }
+  }
   side.field = side.field.map((card) => ({ ...card, stealthActive: false }));
-  side.energy = Math.min(MAX_ENERGY, energyForTurn(state.turnNumber) + (state.rules.energy || 0));
+  side.energy = energyAfterCut(
+    Math.min(MAX_ENERGY, energyForTurn(state.turnNumber) + (state.rules.energy || 0)),
+    side.cut || 0,
+  );
+  side.cut = 0;
   if (side.deck.length === 0) {
     const amount = fatigueForEmptyDraw(side.fatigue);
     side.fatigue = amount;
@@ -222,7 +241,7 @@ function hitCreature(state, seat, attacker, targetId) {
     target = valid.length ? pickBlackoutTarget(valid, () => roll(state)) : null;
   }
   if (!target) return { ok: false, error: 'blocked' };
-  const hit = resolveCreatureHit(attacker, target, me.field, state.rules.damage || 0);
+  const hit = resolveCreatureHit(attacker, target, me.field, state.rules.damage || 0, { health: me.health });
   me.stats.damage += hit.dmg;
   noteMvp(state, attacker, hit.dmg);
   me.momentum = Math.min(MOMENTUM_MAX, me.momentum + 2);
@@ -262,7 +281,7 @@ function hitFace(state, seat, attacker) {
     killCheck(state, foe);
     return { ok: true };
   }
-  const damage = effectiveAttack(attacker, me.field) + (state.rules.damage || 0);
+  const damage = effectiveAttack(attacker, me.field, { health: me.health }) + (state.rules.damage || 0);
   const dealt = Math.max(0, damage);
   them.health = Math.max(0, them.health - dealt);
   me.stats.damage += dealt;
@@ -301,6 +320,28 @@ function playCard(state, seat, instanceId) {
 
 function applySpecial(state, seat, card) {
   const side = state.seats[seat];
+  const bar = commitBarSpecial({
+    health: side.health,
+    maxHealth: side.maxHealth,
+    field: side.field,
+    deck: side.deck,
+    hand: side.hand,
+    handRoom: Math.max(0, MAX_HAND_SIZE - side.hand.length),
+  }, card);
+  if (bar) {
+    side.health = bar.health;
+    side.stats.healing += bar.healed || 0;
+    if (bar.field) side.field = bar.field;
+    if (bar.hand) side.hand = bar.hand;
+    if (bar.deck) side.deck = bar.deck;
+    if (bar.energyCut) {
+      const foe = state.seats[OTHER[seat]];
+      foe.cut = (foe.cut || 0) + bar.energyCut;
+    }
+    if (bar.due) side.tab = (side.tab || 0) + bar.due;
+    pushLog(state, bar.log);
+    return;
+  }
   if (card.effect === 'heal') {
     const room = Math.max(0, side.maxHealth - side.health);
     const healed = Math.min(room, card.amount || 0);

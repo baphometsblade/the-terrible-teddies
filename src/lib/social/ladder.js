@@ -7,7 +7,7 @@
 // so a test can fail when the two drift. The SQL assertions in
 // scripts/check-migrations.sh pin the same boundaries and the same Elo steps.
 
-import { toGhostId } from './ghostDeck';
+import { toGhostId } from './ghostDeck.js';
 
 export const LADDER_START = 1000;
 export const LADDER_FLOOR = 100;

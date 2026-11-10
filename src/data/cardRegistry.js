@@ -2,10 +2,10 @@
 // its own block. Adding a set is one line here, and the ghost deal reads
 // this before the prefix table.
 
-import { toLadderId as chuckTo, fromLadderId as chuckFrom } from '@/data/chuckCrew';
-import { toLadderId as ordersTo, fromLadderId as ordersFrom } from '@/data/expansion-last-orders';
-import { toLadderId as henTo, fromLadderId as henFrom } from '@/data/henDoHavoc';
-import { toLadderId as naughtyTo, fromLadderId as naughtyFrom } from '@/data/naughtyList';
+import { toLadderId as chuckTo, fromLadderId as chuckFrom } from './chuckCrew.js';
+import { toLadderId as ordersTo, fromLadderId as ordersFrom } from './expansion-last-orders.js';
+import { toLadderId as henTo, fromLadderId as henFrom } from './henDoHavoc.js';
+import { toLadderId as naughtyTo, fromLadderId as naughtyFrom } from './naughtyList.js';
 
 const SETS = Object.freeze([
   Object.freeze({ toLadderId: chuckTo, fromLadderId: chuckFrom }),
