@@ -24,8 +24,15 @@ The edge function `send-push` reads three Supabase secrets:
 npx supabase secrets set \
   VAPID_PUBLIC_KEY="the public key" \
   VAPID_PRIVATE_KEY="the private key" \
-  VAPID_SUBJECT="mailto:you@example.com"
+  VAPID_SUBJECT="mailto:you@example.com" \
+  PUSH_SERVICE_ROLE_JWT="the legacy service_role JWT"
 ```
+
+Hosted projects that have been migrated to the new `sb_secret_` API keys
+inject that new key as `SUPABASE_SERVICE_ROLE_KEY`. It is not a JWT, so it
+cannot pass `verify_jwt`. `send-push` also accepts `PUSH_SERVICE_ROLE_JWT`,
+which is the legacy `service_role` JWT the database webhook sends as the
+bearer. Do not put that JWT in the repo.
 
 `VAPID_SUBJECT` is a `mailto:` address or an `https://` URL for the push
 service. It is not shown to players.

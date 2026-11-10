@@ -35,3 +35,17 @@ export const serviceRoleAuthorized = (authorizationHeader, serviceRoleKey) => {
   if (!token || !key) return false;
   return timingSafeEqualString(token, key);
 };
+
+/**
+ * True when the bearer matches any of the provided secrets. Empty entries are
+ * skipped. Every non-empty secret is compared so the work does not shrink
+ * after the first match.
+ */
+export const serviceRoleAuthorizedAny = (authorizationHeader, serviceRoleKeys) => {
+  const keys = Array.isArray(serviceRoleKeys) ? serviceRoleKeys : [serviceRoleKeys];
+  let ok = false;
+  for (const key of keys) {
+    if (serviceRoleAuthorized(authorizationHeader, key)) ok = true;
+  }
+  return ok;
+};

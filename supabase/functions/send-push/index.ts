@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
 import webpush from "npm:web-push@3.6.7";
-import { serviceRoleAuthorized } from "./auth.js";
+import { serviceRoleAuthorizedAny } from "./auth.js";
 import { deliverOutbox, outboxFromRequest } from "./deliver.js";
 
 // Database webhooks call this with the service role key. config.toml keeps
@@ -19,8 +19,15 @@ const json = (obj: unknown, status = 200) =>
 
 serve(async (req) => {
   if (req.method !== "POST") return json({ ok: false, reason: "method" }, 405);
+  // The platform now injects the new sb_secret_ key as
+  // SUPABASE_SERVICE_ROLE_KEY. That value is not a JWT, so it cannot pass
+  // the gateway's verify_jwt check. The database webhook therefore sends
+  // the legacy service_role JWT, stored as PUSH_SERVICE_ROLE_JWT. The
+  // supabase-js client below still uses SUPABASE_SERVICE_ROLE_KEY, which
+  // is the working admin key on this project.
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  if (!serviceRoleAuthorized(req.headers.get("Authorization"), serviceKey)) {
+  const webhookJwt = Deno.env.get("PUSH_SERVICE_ROLE_JWT") ?? "";
+  if (!serviceRoleAuthorizedAny(req.headers.get("Authorization"), [webhookJwt, serviceKey])) {
     return json({ ok: false, reason: "forbidden" }, 401);
   }
 
