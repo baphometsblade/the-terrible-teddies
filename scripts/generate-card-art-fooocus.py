@@ -132,11 +132,31 @@ def prompt_for(entry, style):
     return prompt
 
 
+def normalize(entry, default_negative):
+    """Accept this repo's rows and the expansion files (target + aspect)."""
+    path = entry.get("path") or entry.get("target")
+    aspect = entry.get("aspect_ratio") or entry.get("aspect")
+    if not path or not aspect:
+        raise SystemExit(f"{entry.get('id')}: needs a path and an aspect ratio")
+    row = dict(entry)
+    row["path"] = path
+    row["aspect_ratio"] = aspect
+    row.setdefault("negative_prompt", default_negative)
+    if row.get("type") == "card" and not row.get("outputs"):
+        plate = path
+        thumb = f"public/cards/thumbs/{Path(path).stem}.webp"
+        row["outputs"] = [
+            {"path": plate, "width": row.get("width") or 768, "height": row.get("height") or 1024, "format": "webp"},
+            {"path": thumb, "width": 192, "height": 256, "format": "webp"},
+        ]
+    return row
+
+
 def outputs_for(entry):
     outs = entry.get("outputs")
     if isinstance(outs, list) and outs:
         return outs
-    path = entry.get("path")
+    path = entry.get("path") or entry.get("target")
     if not path:
         raise SystemExit(f"{entry.get('id')}: missing path")
     ext = Path(path).suffix.lower().lstrip(".")
@@ -229,9 +249,9 @@ def main():
         entries = [entry for entry in entries if str(entry["id"]) in only]
 
     done = skipped = failed = 0
-    for entry in entries:
+    for raw in entries:
+        entry = normalize(raw, default_negative)
         ident = str(entry["id"])
-        entry.setdefault("negative_prompt", default_negative)
         outs = outputs_for(entry)
         for out in outs:
             if ".." in Path(out["path"]).parts or out["path"].startswith(("/", "\\")):

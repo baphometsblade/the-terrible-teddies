@@ -5,6 +5,7 @@
 import { supabase } from '../supabase.js';
 import { playerFacingError } from '../network.js';
 import { PUBLIC_ORIGIN } from './ladder.js';
+import { toGhostId } from './ghostDeck.js';
 
 const MISSING = new Set(['PGRST202', 'PGRST205', '42883', '42P01']);
 
@@ -27,7 +28,10 @@ async function call(name, args) {
 export const loadSocial = () => call('my_social');
 
 /** Publish the deck the player is fighting with. */
-export const publishGhost = (deck, label) => call('publish_ghost', { p_deck: deck, p_label: label });
+export const publishGhost = (deck, label) => call('publish_ghost', {
+  p_deck: (deck || []).map(toGhostId),
+  p_label: label,
+});
 
 /** Draw a stranger's saved deck. May come back as the ticket already open. */
 export const drawGhost = () => call('draw_ghost');

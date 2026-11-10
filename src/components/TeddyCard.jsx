@@ -66,7 +66,10 @@ const getTeddyEmoji = (teddy) => {
     common: ['🧸', '🐻'],
   };
   const options = rarityEmojis[teddy.rarity] || ['🧸', '🐻'];
-  return options[(teddy.id || 0) % options.length];
+  const n = typeof teddy.id === 'number'
+    ? teddy.id
+    : [...String(teddy.id || '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  return options[Math.abs(n) % options.length];
 };
 
 // Card art slot: shows the generated illustration for this card if one has
@@ -143,9 +146,10 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   // Once the thumb has failed for this card, fall through to the full
   // image regardless of the requested variant — that's the whole point of
   // the fallback chain. When the full plate fails too, the night-felt back
-  // stays and the <img> is gone.
-  const thumb = `/cards/thumbs/${teddy.id}.webp`;
-  const full = `/cards/${teddy.id}.webp`;
+  // stays and the <img> is gone. art / artThumb override the id path for a
+  // set that does not live at /cards/<id>.webp.
+  const thumb = teddy.artThumb || `/cards/thumbs/${teddy.id}.webp`;
+  const full = teddy.art || `/cards/${teddy.id}.webp`;
   const box = variant === 'full' ? ART_INTRINSIC.full : ART_INTRINSIC.thumb;
   const priority = loading === 'eager' ? 'high' : undefined;
   const frame = photoReady ? null : (
@@ -244,7 +248,7 @@ const rulesFor = (teddy) => {
   if (teddy.ability && teddy.ability !== 'none') {
     return {
       Icon: ABILITY_ICONS[teddy.ability] || Sparkles,
-      label: abilityLabel(teddy.ability),
+      label: teddy.epithet || abilityLabel(teddy.ability),
     };
   }
   const Icon = EFFECT_ICONS[teddy.effect];

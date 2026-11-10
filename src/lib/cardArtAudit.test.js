@@ -39,10 +39,18 @@ const manifestFiles = () => {
   return [main, ...extra];
 };
 
-const manifest = manifestFiles().flatMap(readManifest);
+const mainDoc = JSON.parse(readFileSync(resolve(root, 'art/fooocus-manifest.json'), 'utf8'));
+const manifest = manifestFiles().flatMap(readManifest).map((entry) => ({
+  ...entry,
+  path: entry.path || entry.target,
+  aspect_ratio: entry.aspect_ratio || entry.aspect,
+  negative_prompt: entry.negative_prompt || mainDoc.negative_prompt,
+}));
 const byId = new Map(manifest.map((entry) => [String(entry.id), entry]));
 
 const BANNED = /\b(child|children|kid|kids|cubs?|minor|minors|school|teen|teens|underage|loli|shota|toddler|infant|preteen|jailbait)\b/i;
+// "no children" is a refusal, not a request. Strip those before the check.
+const NEGATED = /\bno\s+(?:child(?:ren)?|kids?|cubs?|minors?|teens?)\b/gi;
 const ASPECT = /^\d+\*\d+$/;
 
 const isWebp = (file) => {
@@ -82,7 +90,7 @@ describe('the Fooocus manifest covers the raster set', () => {
       expect(entry.aspect_ratio, entry.id).toMatch(ASPECT);
       expect(entry.prompt.length, entry.id).toBeGreaterThan(40);
       expect(entry.negative_prompt.length, entry.id).toBeGreaterThan(20);
-      expect(entry.prompt, entry.id).not.toMatch(BANNED);
+      expect(entry.prompt.replace(NEGATED, ''), entry.id).not.toMatch(BANNED);
       expect(entry.prompt, entry.id).not.toMatch(/https?:\/\//);
     }
   });

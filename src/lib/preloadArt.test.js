@@ -28,6 +28,8 @@ describe('preloading a fight\'s pictures', () => {
     expect(thumbUrl('lo-velvet')).toBe('/cards/thumbs/lo-velvet.webp');
     expect(thumbUrl('hd-1')).toBe('/cards/thumbs/hd-1.webp');
     expect(thumbUrl('ma-last-call')).toBe('/cards/thumbs/ma-last-call.webp');
+    expect(thumbUrl('ma-1')).toBe('/cards/thumbs/ma-1.webp');
+    expect(isThumbUrl('/cards/thumbs/ma-1.webp')).toBe(true);
     expect(thumbUrl('../x')).toBeNull();
     expect(thumbUrl('nope')).toBeNull();
   });
