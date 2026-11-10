@@ -3,7 +3,7 @@
 // are seasonal at all, so a missing answer keeps them out of packs instead
 // of letting the laptop clock decide.
 
-import { NAUGHTY_LIST_SEASON } from './naughtyList';
+import { NAUGHTY_LIST_SEASON } from './naughtyList.js';
 
 export const BUNDLED_SEASONS = Object.freeze([NAUGHTY_LIST_SEASON]);
 

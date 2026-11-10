@@ -152,7 +152,7 @@ async function playOne(user, role) {
       continue;
     }
     if (intent.type === 'heartbeat') {
-      await new Promise((resolve) => setTimeout(resolve, 80));
+      await new Promise((resolve) => setTimeout(resolve, 400));
       const sync = await post(user.token, 'pvp-action', { op: 'sync', matchId: view.matchId });
       if (sync.payload?.view) view = sync.payload.view;
       continue;
@@ -165,11 +165,16 @@ async function playOne(user, role) {
       version: view.version,
       intent,
     });
-    moves.push(sent.ms);
     movesSent += 1;
-    if (sent.payload?.view) view = sent.payload.view;
-    else if (sent.payload?.error && sent.payload.error !== 'out_of_turn' && sent.payload.error !== 'stale') {
-      errors[sent.payload.error] = (errors[sent.payload.error] || 0) + 1;
+    if (sent.payload?.view) {
+      moves.push(sent.ms);
+      view = sent.payload.view;
+    } else {
+      const code = sent.payload?.error;
+      if (code && code !== 'out_of_turn' && code !== 'stale') {
+        errors[code] = (errors[code] || 0) + 1;
+      }
+      await new Promise((resolve) => setTimeout(resolve, code === 'slow' ? 1000 : 150));
     }
     if (view?.phase === 'over') break;
   }
