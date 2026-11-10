@@ -1077,24 +1077,24 @@
       "camera": "medium shot"
     },
     "xm-desk": {
-      "render": "cinematic low-angle tabletop toy photography, a narrative scene not a packshot, no people in frame",
-      "gag": "Under-Desk Uma, a pitch-black stuffed teddy bear toy hiding UNDER a large mahogany office desk in the dark kneehole, only her black plush head and one plush leg with a red lace garter poking out from under the desk, a stiletto kicked off on the carpet in the foreground, she peeks toward the camera from below the desktop, not sitting on top of the desk",
+      "render": "dramatic cinematic floor-level tabletop toy photography looking into a desk kneehole, not a packshot, no people in frame",
+      "gag": "Under-Desk Uma, a pitch-black stuffed teddy bear toy peeking her plush bear head and one plush paw out from the dark kneehole under a large mahogany office desk, tangled computer cables and a mess of warm fairy lights around her stuffed body, a tiny doll stiletto shoe lying on its side on the carpet in the foreground",
       "fur_build": "pitch-black short-pile plush fur, slim stuffed teddy body, sly button eyes, one ear bent, visible seams, black fur not beige",
-      "outfit_props": "tiny doll pencil skirt on the stuffed body, red lace garter clearly visible on a plush leg, one discarded stiletto on the carpet in the foreground",
-      "setting": "the dark kneehole UNDER a mahogany office desk at a Christmas party, wrapping paper on the carpet, fairy lights visible beyond the desk legs, stuffed toy is the only figure",
-      "palette": "mahogany, sheer stocking nude, and garter red",
-      "lighting": "deep under-desk shadow with a spill of warm fairy lights from the room beyond",
-      "camera": "floor-level shot looking under the desk at the whole stuffed teddy peeking out, desktop above her, not a face-on portrait"
+      "outfit_props": "tiny doll pencil skirt on the stuffed body, tangled cables and fairy lights around the toy, a tiny doll stiletto on the carpet",
+      "setting": "the dark kneehole under a mahogany office desk, cables and fairy lights, stuffed toy is the only figure",
+      "palette": "pitch black, mahogany, monitor blue and fairy gold",
+      "lighting": "deep under-desk shadow, cool monitor-blue spill over the desk edge, gold fairy-light sparks",
+      "camera": "floor-level shot looking into the kneehole at the whole stuffed teddy peeking out, desktop above her"
     },
     "xm-reply": {
-      "render": "harsh fluorescent office photo, papers frozen mid-air, a narrative scene not a packshot, no people in frame",
-      "gag": "Reply-All Rita, a printer-white stuffed teddy bear toy with toner-grey smudges standing beside a large office photocopier that is spitting out a long trail of identical smaller white teddy copies, she grins in the glow of a phone in her paw, the whole reply-all thread coming to life as a row of copy teddies",
-      "fur_build": "printer-paper white plush fur with toner-grey smudges, lanky stuffed teddy body, button eyes, stitched smirk, visible seams, white fur not blue or beige",
-      "outfit_props": "tiny doll blouse unbuttoned at the stuffed neck, glowing phone in one paw, a stack of warm paper copies and tiny identical white teddies sliding from the copier",
-      "setting": "cramped office copy room buried in printouts, a sad sprig of tinsel taped to the copier, only stuffed toys in frame",
-      "palette": "paper white, toner black, and copier teal",
-      "lighting": "harsh fluorescent tubes plus the cold white glow of the phone screen",
-      "camera": "slightly high copy-room angle showing the whole stuffed teddy, the photocopier and the trail of copies"
+      "render": "dramatic dutch-tilt cubicle photograph at night, papers frozen mid-flight, a narrative scene not a packshot, no people in frame",
+      "gag": "Reply-All Rita, a printer-white stuffed teddy bear toy with toner-grey smudges mid-panic in a cramped night-time office cubicle, both plush paws to her stuffed head, a glowing laptop blasting cold screen light across her muzzle, a blizzard of blank paper envelopes swirling through the air around her",
+      "fur_build": "printer-paper white plush fur with toner-grey smudges, lanky stuffed teddy body, button eyes, panicked stitched expression, visible seams, white fur not beige or teal",
+      "outfit_props": "tiny doll blouse on the stuffed body, glowing laptop on the desk, a flood of blank envelopes in mid-air",
+      "setting": "cramped night-time office cubicle with a dying plant and a cubicle wall, stuffed toy is the only figure",
+      "palette": "paper white, toner grey, laptop cyan and panic-red standby LED",
+      "lighting": "cold laptop-screen key light in a dark cubicle, papers catching the glow",
+      "camera": "dutch tilt of the whole stuffed teddy at the desk, envelopes filling the air, no readable writing"
     },
     "xm-ozzy": {
       "render": "chaotic on-camera-flash party photo, liquid spills frozen mid-air, a narrative scene not a packshot, no people in frame",
@@ -1127,24 +1127,24 @@
       "camera": "medium shot of the whole stuffed teddy in front of the bowl, ladle and coin clearly visible"
     },
     "xm-elf": {
-      "render": "weary adult burlesque stage photo, cheap spot and grain, a narrative scene not a packshot, no people in frame",
-      "gag": "Clocked-Out Elf, a grown adult stuffed teddy bear toy with forest-green fur and a cream muzzle, an adult elf performer costume slipped off one shoulder, one paw on a dance pole, the other punching a wall time clock to OUT, candy-cane striped stockings, one curled shoe dangling, bored professional smile, no red nose, not a cute mall elf",
-      "fur_build": "forest-green plush fur with a cream muzzle, lean adult stuffed teddy body, world-weary button eyes, visible seams, grown toy proportions, green fur not brown, no red nose",
-      "outfit_props": "adult elf costume slipped off one stuffed shoulder, candy-cane striped stockings, one curled-toe shoe hanging off a plush foot, punch card in a paw, a dance pole, a glowing time clock on the wall",
-      "setting": "a cheap North-Pole-themed dive-bar stage with a dance pole and a glowing time clock punched OUT, a song-list tip jar, stuffed toy is the only figure",
-      "palette": "candy-cane red and white, forest green, and time-clock amber",
-      "lighting": "cheap pink stage spotlight and the amber glow of the time clock",
-      "camera": "low stage-front angle showing the whole stuffed teddy, the pole and the punch clock, adult proportions, no red nose"
+      "render": "workplace photograph at a wall-mounted punch clock, a narrative scene not a packshot, no people in frame",
+      "gag": "Clocked-Out Elf, a cream-tan stuffed teddy bear toy in a rumpled forest-green adult doll elf costume and a slouched green felt elf hat, red bow tie and black belt, raising a pint of dark beer in one plush paw under an industrial punch clock whose analogue hands sit near the end of a shift",
+      "fur_build": "cream-tan plush fur with a darker muzzle, round plush ears, button eyes, visible seams, grown stuffed-toy proportions, no red nose, no pointed elf ears",
+      "outfit_props": "forest-green doll elf jacket and slouched elf hat, red bow tie, black belt with a gold buckle, a pint of beer in one paw",
+      "setting": "a green factory door or corridor wall with a wall-mounted punch clock, stuffed toy is the only figure",
+      "palette": "cream tan, forest green, beer amber and industrial sage",
+      "lighting": "even workplace light on a painted factory door, no studio sweep",
+      "camera": "straight-on slightly low angle showing the whole stuffed teddy, the pint and the punch clock, no readable writing on the clock housing"
     },
     "xm-secret": {
-      "render": "awkward office-party snapshot with on-camera flash, a narrative scene not a packshot, no people in frame, no readable writing",
-      "gag": "Secret Santa Stan, a kraft-brown stuffed teddy bear toy holding a badly wrapped lumpy present out toward the camera with both paws, the gift tag is clearly crossed out and rewritten, his too-small Santa hat is crooked, shifty stitched grin, the present is the main prop",
+      "render": "gritty film-noir alley photograph, wet asphalt, a narrative scene not a packshot, no people in frame",
+      "gag": "Secret Santa Stan, a kraft-brown stuffed teddy bear toy in a tiny doll trench coat and tiny dark sunglasses, secretly handing over a badly wrapped, suspiciously bottle-shaped present with both plush paws in a dim wet brick alley, a crooked too-small Santa hat barely perched on one ear, shifty stitched grin",
       "fur_build": "kraft-paper brown short plush fur, lanky stuffed teddy body, shifty button eyes, visible seams",
-      "outfit_props": "crooked too-small Santa hat perched on one ear, a badly wrapped lumpy present held in both paws, a gift tag that is scribbled over, no other cute bow",
-      "setting": "a circle of mixed-up office Secret Santa gifts under a sparse desk Christmas tree, stuffed toy is the only figure",
-      "palette": "kraft brown, bargain-bin red ribbon, and sticky-note yellow",
-      "lighting": "cheap desk-tree fairy lights with one burnt-out bulb, hard on-camera flash",
-      "camera": "three-quarter shot of the whole stuffed teddy holding the present, the swapped tag in the foreground, not a plain studio backdrop"
+      "outfit_props": "tiny doll trench coat, tiny dark sunglasses on the plush snout, crooked too-small Santa hat, a lumpy bottle-shaped wrapped parcel in both paws",
+      "setting": "dim wet brick alley with a sodium streetlamp and steam from a grate, stuffed toy is the only figure",
+      "palette": "kraft paper brown, trench khaki, wet asphalt and sodium orange",
+      "lighting": "one sodium streetlamp raking across wet bricks, steam in the light",
+      "camera": "low three-quarter angle on the clandestine handoff, whole stuffed teddy in frame"
     },
     "xm-mistletoe": {
       "render": "romantic-comedy mid-swap film still, motion and lipstick, a narrative scene with two stuffed teddies, not a packshot, no people in frame",
