@@ -1362,7 +1362,9 @@
       "name_gag": "Backseat Benny: sprawled shirtless across the back seat at the drive-in like he owns it",
       "medium": "Fauvist painting",
       "medium_detail": "wild unnatural colours, thick expressive brushstrokes, flat bold shapes",
-      "styles": [],
+      "styles": [
+        "Fauvism"
+      ],
       "palette": [
         "Fauve red",
         "emerald green",
@@ -1373,9 +1375,9 @@
       "prop": "a fogged-up window with a paw-drawn heart",
       "setting": "the back seat of a cherry-red convertible at a drive-in movie under the stars",
       "lighting": "wild unnatural colour",
-      "camera": "over the front seat, looking back",
+      "camera": "wide view from outside the open-top car, the giant drive-in screen behind",
       "pose": "sprawled shirtless with his arms behind his head like he owns the back seat",
-      "gag": "(a squat smug emerald-green stuffed plush teddy bear toy lying sprawled on his back across the back seat, bare plush belly, arms folded behind his head:1.4), the back seat of a cherry-red convertible at a drive-in movie, his shirt tossed over the headrest, a fogged-up window with a paw-drawn heart, stars and a glowing movie screen beyond",
+      "gag": "(a squat smug emerald-green stuffed plush teddy bear toy lying sprawled on his back across the back seat of an open-top cherry-red convertible, bare plush belly, arms folded behind his head:1.4), parked at a drive-in movie under the stars, his shirt tossed over the headrest, a huge glowing movie screen showing a pink heart",
       "painterly": true,
       "negative_extra": "(taxi, cab, meter, human, man, yellow bear, winnie the pooh, t-shirt, shirt on body, clothes on body, sitting upright:1.6)"
     },
