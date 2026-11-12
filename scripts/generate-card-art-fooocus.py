@@ -453,6 +453,9 @@ def run(args):
                     "gpu_samples": sampler.samples,
                     "raw_sha256": hashlib.sha256(raw_bytes).hexdigest(),
                 }
+                for key in ("guidance_scale", "sharpness", "base_model_name"):
+                    if key in body:
+                        render[key] = body[key]
                 gpu_note = ""
                 if check_gpu:
                     gpu_note = f", gpu peak {sampler.peak_util}% / {sampler.peak_mem} MiB"
