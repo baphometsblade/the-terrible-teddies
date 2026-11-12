@@ -16,8 +16,8 @@ export const NAUGHTY_LIST_ART = {
   },
   'xm-ozzy': {
     fur: 'bourbon-amber',
-    visual: 'adult plush bear as a debauched Bacchus, grape-leaf and tinsel crown, a goblet raised in each paw, loosened tie',
-    scene: 'Caravaggio-style Baroque oil, one candle, burgundy and gold on black, a toppled banquet table.',
+    visual: 'adult plush bear as a debauched Bacchus, fur of purple grapes, a huge swirling goblet held up',
+    scene: '1960s psychedelic poster, acid orange, electric purple and lime swirls, no lettering.',
   },
   'xm-holly': {
     fur: 'holly-leaf green',

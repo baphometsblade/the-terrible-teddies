@@ -58,9 +58,9 @@ export const LAST_ORDERS_ART = {
     scene: 'Last one standing in a ring of flopped-over teddies with dizzy stars.',
   },
   'lo-owners-round': {
-    medium: 'Edwardian society portrait',
+    medium: 'high-key luxury advert photo',
     fur: 'silver grey',
-    visual: 'adult broad bear in a velvet dinner jacket waving a fat wallet',
-    scene: 'Lounging in an oxblood wingback over a tray of full glasses.',
+    visual: 'adult broad bear in a black dinner jacket and bow tie, champagne in paw',
+    scene: 'Lounging in a white leather chair on a white seamless set, champagne for the round.',
   },
 };

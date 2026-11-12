@@ -158,7 +158,9 @@ def prompt_for(entry, style):
         raise SystemExit(f"{entry.get('id')}: missing prompt")
     key = entry.get("prefix")
     prefix = style.get(key, "") if isinstance(style, dict) else ""
-    if prefix and not prompt.startswith(prefix):
+    # Bear prompts carry the guard after the medium and the gag (see
+    # scripts/bear-bibles.mjs), so it is only added when it is missing.
+    if prefix and prefix not in prompt:
         return f"{prefix}, {prompt}"
     return prompt
 
@@ -232,10 +234,11 @@ def image_bytes(payload, base):
 
 
 def request_body(entry, prompt):
-    return {
+    body = {
         "prompt": prompt,
         "negative_prompt": entry.get("negative_prompt") or "",
-        "style_selections": entry.get("styles") or ["Fooocus V2", "Fooocus Sharp"],
+        # An explicit empty list means no Fooocus style at all (no V2 expansion).
+        "style_selections": entry["styles"] if isinstance(entry.get("styles"), list) else ["Fooocus V2", "Fooocus Sharp"],
         "performance_selection": entry.get("performance") or "Speed",
         "aspect_ratios_selection": entry["aspect_ratio"],
         "image_number": 1,
@@ -243,6 +246,11 @@ def request_body(entry, prompt):
         "require_base64": True,
         "async_process": False,
     }
+    # Optional per-entry sampler knobs. Fooocus-API's defaults apply when unset.
+    for key in ("guidance_scale", "sharpness", "base_model_name"):
+        if entry.get(key) is not None:
+            body[key] = entry[key]
+    return body
 
 
 def call_fooocus(base, entry, prompt):
@@ -445,6 +453,9 @@ def run(args):
                     "gpu_samples": sampler.samples,
                     "raw_sha256": hashlib.sha256(raw_bytes).hexdigest(),
                 }
+                for key in ("guidance_scale", "sharpness", "base_model_name"):
+                    if key in body:
+                        render[key] = body[key]
                 gpu_note = ""
                 if check_gpu:
                     gpu_note = f", gpu peak {sampler.peak_util}% / {sampler.peak_mem} MiB"
@@ -565,9 +576,18 @@ def self_test(args):
             failures.append(f"expected 1 Fooocus call, saw {len(seen)}")
         else:
             path, body = seen[0]
-            for key in ("prompt", "negative_prompt", "style_selections", "aspect_ratios_selection"):
+            for key in ("prompt", "negative_prompt", "aspect_ratios_selection"):
                 if not body.get(key):
                     failures.append(f"request is missing {key}")
+            # An empty list is valid: a bear with no Fooocus preset sends none.
+            if not isinstance(body.get("style_selections"), list):
+                failures.append("request is missing style_selections")
+            want = card.get("styles") if isinstance(card.get("styles"), list) else None
+            if want is not None and body.get("style_selections") != want:
+                failures.append("request did not send the entry's own styles")
+            for key in ("performance", "guidance_scale"):
+                if card.get(key) is not None and body.get({"performance": "performance_selection"}.get(key, key)) != card[key]:
+                    failures.append(f"request did not send the entry's {key}")
             if body.get("require_base64") is not True:
                 failures.append("request must ask for base64")
         if record:
