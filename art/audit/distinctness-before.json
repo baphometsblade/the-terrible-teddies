@@ -1,0 +1,1145 @@
+{
+ "date": "2026-11-12",
+ "art": "main at dbf6b12 (live)",
+ "method": "0.6*CLIP ViT-B-32 + 0.25*HSV histogram + 0.15*pHash; scripts/art-distinctness-audit.py",
+ "stats": {
+  "max_combined": 0.7788,
+  "mean_top20": 0.7467,
+  "max_clip": 0.846
+ },
+ "top_pairs": [
+  {
+   "a": "65",
+   "b": "ck-chuck",
+   "an": "The Debt Collector",
+   "bn": "Chuck",
+   "clip": 0.7975,
+   "colour": 0.8451,
+   "phash": 0.5938,
+   "combined": 0.7788
+  },
+  {
+   "a": "68",
+   "b": "106",
+   "an": "Duke of Dumpsterfire",
+   "bn": "Landlord Lucifur",
+   "clip": 0.8178,
+   "colour": 0.8212,
+   "phash": 0.5312,
+   "combined": 0.7757
+  },
+  {
+   "a": "4",
+   "b": "68",
+   "an": "Bar-Fight Barry",
+   "bn": "Duke of Dumpsterfire",
+   "clip": 0.8066,
+   "colour": 0.8706,
+   "phash": 0.4688,
+   "combined": 0.7719
+  },
+  {
+   "a": "14",
+   "b": "ck-rita",
+   "an": "Slumlord Cotton",
+   "bn": "Regular Rita",
+   "clip": 0.7894,
+   "colour": 0.7972,
+   "phash": 0.625,
+   "combined": 0.7667
+  },
+  {
+   "a": "4",
+   "b": "106",
+   "an": "Bar-Fight Barry",
+   "bn": "Landlord Lucifur",
+   "clip": 0.782,
+   "colour": 0.8617,
+   "phash": 0.4688,
+   "combined": 0.7549
+  },
+  {
+   "a": "106",
+   "b": "ck-chuck",
+   "an": "Landlord Lucifur",
+   "bn": "Chuck",
+   "clip": 0.8011,
+   "colour": 0.7593,
+   "phash": 0.5625,
+   "combined": 0.7548
+  },
+  {
+   "a": "105",
+   "b": "ck-rita",
+   "an": "Whiskey Whiskers",
+   "bn": "Regular Rita",
+   "clip": 0.8198,
+   "colour": 0.7595,
+   "phash": 0.4688,
+   "combined": 0.7521
+  },
+  {
+   "a": "65",
+   "b": "ck-tabitha",
+   "an": "The Debt Collector",
+   "bn": "Tabitha",
+   "clip": 0.7637,
+   "colour": 0.7608,
+   "phash": 0.6562,
+   "combined": 0.7468
+  },
+  {
+   "a": "20",
+   "b": "xm-ozzy",
+   "an": "The Godfluffer",
+   "bn": "Open-Bar Ozzy",
+   "clip": 0.7603,
+   "colour": 0.8423,
+   "phash": 0.5312,
+   "combined": 0.7464
+  },
+  {
+   "a": "23",
+   "b": "hd-lap",
+   "an": "Morning-After May",
+   "bn": "Lap-Line Lola",
+   "clip": 0.7516,
+   "colour": 0.8028,
+   "phash": 0.625,
+   "combined": 0.7454
+  },
+  {
+   "a": "67",
+   "b": "xm-ozzy",
+   "an": "Whiskey Priest",
+   "bn": "Open-Bar Ozzy",
+   "clip": 0.7526,
+   "colour": 0.8467,
+   "phash": 0.5312,
+   "combined": 0.7429
+  },
+  {
+   "a": "21",
+   "b": "68",
+   "an": "Fluffpocalypse Now",
+   "bn": "Duke of Dumpsterfire",
+   "clip": 0.7746,
+   "colour": 0.7949,
+   "phash": 0.5,
+   "combined": 0.7385
+  },
+  {
+   "a": "ck-chuck",
+   "b": "xm-ozzy",
+   "an": "Chuck",
+   "bn": "Open-Bar Ozzy",
+   "clip": 0.7379,
+   "colour": 0.8174,
+   "phash": 0.5938,
+   "combined": 0.7361
+  },
+  {
+   "a": "51",
+   "b": "62",
+   "an": "Mange Marvin",
+   "bn": "Chainsmoke Chad",
+   "clip": 0.7462,
+   "colour": 0.8135,
+   "phash": 0.5625,
+   "combined": 0.7355
+  },
+  {
+   "a": "90",
+   "b": "ma-7",
+   "an": "Cougar Carol",
+   "bn": "Still-Warm Stella",
+   "clip": 0.846,
+   "colour": 0.5873,
+   "phash": 0.5312,
+   "combined": 0.7341
+  },
+  {
+   "a": "20",
+   "b": "ck-chuck",
+   "an": "The Godfluffer",
+   "bn": "Chuck",
+   "clip": 0.7814,
+   "colour": 0.7539,
+   "phash": 0.5,
+   "combined": 0.7323
+  },
+  {
+   "a": "91",
+   "b": "ma-1",
+   "an": "Walk of Shame",
+   "bn": "Heels-in-Hand Holly",
+   "clip": 0.7945,
+   "colour": 0.7012,
+   "phash": 0.5312,
+   "combined": 0.7317
+  },
+  {
+   "a": "14",
+   "b": "18",
+   "an": "Slumlord Cotton",
+   "bn": "Grandpa Warcrimes",
+   "clip": 0.7749,
+   "colour": 0.6667,
+   "phash": 0.6562,
+   "combined": 0.7301
+  },
+  {
+   "a": "105",
+   "b": "ck-closing",
+   "an": "Whiskey Whiskers",
+   "bn": "Closing Time Chuck",
+   "clip": 0.7554,
+   "colour": 0.769,
+   "phash": 0.5625,
+   "combined": 0.7299
+  },
+  {
+   "a": "23",
+   "b": "24",
+   "an": "Morning-After May",
+   "bn": "Smitten Sid",
+   "clip": 0.7739,
+   "colour": 0.7227,
+   "phash": 0.5625,
+   "combined": 0.7294
+  },
+  {
+   "a": "18",
+   "b": "ck-rita",
+   "an": "Grandpa Warcrimes",
+   "bn": "Regular Rita",
+   "clip": 0.7682,
+   "colour": 0.7508,
+   "phash": 0.5312,
+   "combined": 0.7283
+  },
+  {
+   "a": "105",
+   "b": "ck-chuck",
+   "an": "Whiskey Whiskers",
+   "bn": "Chuck",
+   "clip": 0.7889,
+   "colour": 0.7327,
+   "phash": 0.4688,
+   "combined": 0.7269
+  },
+  {
+   "a": "18",
+   "b": "lo-owners-round",
+   "an": "Grandpa Warcrimes",
+   "bn": "The Owner's Round",
+   "clip": 0.797,
+   "colour": 0.6148,
+   "phash": 0.625,
+   "combined": 0.7257
+  },
+  {
+   "a": "20",
+   "b": "ck-tabitha",
+   "an": "The Godfluffer",
+   "bn": "Tabitha",
+   "clip": 0.7939,
+   "colour": 0.6181,
+   "phash": 0.625,
+   "combined": 0.7246
+  },
+  {
+   "a": "98",
+   "b": "xm-ozzy",
+   "an": "Last-Round Rita",
+   "bn": "Open-Bar Ozzy",
+   "clip": 0.7013,
+   "colour": 0.8358,
+   "phash": 0.625,
+   "combined": 0.7235
+  },
+  {
+   "a": "ck-closing",
+   "b": "ck-rita",
+   "an": "Closing Time Chuck",
+   "bn": "Regular Rita",
+   "clip": 0.7428,
+   "colour": 0.7652,
+   "phash": 0.5625,
+   "combined": 0.7214
+  },
+  {
+   "a": "24",
+   "b": "hd-lap",
+   "an": "Smitten Sid",
+   "bn": "Lap-Line Lola",
+   "clip": 0.719,
+   "colour": 0.876,
+   "phash": 0.4688,
+   "combined": 0.7207
+  },
+  {
+   "a": "20",
+   "b": "106",
+   "an": "The Godfluffer",
+   "bn": "Landlord Lucifur",
+   "clip": 0.7549,
+   "colour": 0.7751,
+   "phash": 0.4688,
+   "combined": 0.717
+  },
+  {
+   "a": "23",
+   "b": "ma-1",
+   "an": "Morning-After May",
+   "bn": "Heels-in-Hand Holly",
+   "clip": 0.7991,
+   "colour": 0.6469,
+   "phash": 0.5,
+   "combined": 0.7162
+  },
+  {
+   "a": "ck-chuck",
+   "b": "ck-closing",
+   "an": "Chuck",
+   "bn": "Closing Time Chuck",
+   "clip": 0.7866,
+   "colour": 0.6201,
+   "phash": 0.5938,
+   "combined": 0.716
+  }
+ ],
+ "nearest_per_bear": {
+  "65": {
+   "nearest": "ck-chuck",
+   "clip": 0.7975,
+   "colour": 0.8451,
+   "phash": 0.5938,
+   "combined": 0.7788
+  },
+  "ck-chuck": {
+   "nearest": "65",
+   "clip": 0.7975,
+   "colour": 0.8451,
+   "phash": 0.5938,
+   "combined": 0.7788
+  },
+  "68": {
+   "nearest": "106",
+   "clip": 0.8178,
+   "colour": 0.8212,
+   "phash": 0.5312,
+   "combined": 0.7757
+  },
+  "106": {
+   "nearest": "68",
+   "clip": 0.8178,
+   "colour": 0.8212,
+   "phash": 0.5312,
+   "combined": 0.7757
+  },
+  "4": {
+   "nearest": "68",
+   "clip": 0.8066,
+   "colour": 0.8706,
+   "phash": 0.4688,
+   "combined": 0.7719
+  },
+  "14": {
+   "nearest": "ck-rita",
+   "clip": 0.7894,
+   "colour": 0.7972,
+   "phash": 0.625,
+   "combined": 0.7667
+  },
+  "ck-rita": {
+   "nearest": "14",
+   "clip": 0.7894,
+   "colour": 0.7972,
+   "phash": 0.625,
+   "combined": 0.7667
+  },
+  "105": {
+   "nearest": "ck-rita",
+   "clip": 0.8198,
+   "colour": 0.7595,
+   "phash": 0.4688,
+   "combined": 0.7521
+  },
+  "ck-tabitha": {
+   "nearest": "65",
+   "clip": 0.7637,
+   "colour": 0.7608,
+   "phash": 0.6562,
+   "combined": 0.7468
+  },
+  "20": {
+   "nearest": "xm-ozzy",
+   "clip": 0.7603,
+   "colour": 0.8423,
+   "phash": 0.5312,
+   "combined": 0.7464
+  },
+  "xm-ozzy": {
+   "nearest": "20",
+   "clip": 0.7603,
+   "colour": 0.8423,
+   "phash": 0.5312,
+   "combined": 0.7464
+  },
+  "23": {
+   "nearest": "hd-lap",
+   "clip": 0.7516,
+   "colour": 0.8028,
+   "phash": 0.625,
+   "combined": 0.7454
+  },
+  "hd-lap": {
+   "nearest": "23",
+   "clip": 0.7516,
+   "colour": 0.8028,
+   "phash": 0.625,
+   "combined": 0.7454
+  },
+  "67": {
+   "nearest": "xm-ozzy",
+   "clip": 0.7526,
+   "colour": 0.8467,
+   "phash": 0.5312,
+   "combined": 0.7429
+  },
+  "21": {
+   "nearest": "68",
+   "clip": 0.7746,
+   "colour": 0.7949,
+   "phash": 0.5,
+   "combined": 0.7385
+  },
+  "51": {
+   "nearest": "62",
+   "clip": 0.7462,
+   "colour": 0.8135,
+   "phash": 0.5625,
+   "combined": 0.7355
+  },
+  "62": {
+   "nearest": "51",
+   "clip": 0.7462,
+   "colour": 0.8135,
+   "phash": 0.5625,
+   "combined": 0.7355
+  },
+  "90": {
+   "nearest": "ma-7",
+   "clip": 0.846,
+   "colour": 0.5873,
+   "phash": 0.5312,
+   "combined": 0.7341
+  },
+  "ma-7": {
+   "nearest": "90",
+   "clip": 0.846,
+   "colour": 0.5873,
+   "phash": 0.5312,
+   "combined": 0.7341
+  },
+  "91": {
+   "nearest": "ma-1",
+   "clip": 0.7945,
+   "colour": 0.7012,
+   "phash": 0.5312,
+   "combined": 0.7317
+  },
+  "ma-1": {
+   "nearest": "91",
+   "clip": 0.7945,
+   "colour": 0.7012,
+   "phash": 0.5312,
+   "combined": 0.7317
+  },
+  "18": {
+   "nearest": "14",
+   "clip": 0.7749,
+   "colour": 0.6667,
+   "phash": 0.6562,
+   "combined": 0.7301
+  },
+  "ck-closing": {
+   "nearest": "105",
+   "clip": 0.7554,
+   "colour": 0.769,
+   "phash": 0.5625,
+   "combined": 0.7299
+  },
+  "24": {
+   "nearest": "23",
+   "clip": 0.7739,
+   "colour": 0.7227,
+   "phash": 0.5625,
+   "combined": 0.7294
+  },
+  "lo-owners-round": {
+   "nearest": "18",
+   "clip": 0.797,
+   "colour": 0.6148,
+   "phash": 0.625,
+   "combined": 0.7257
+  },
+  "98": {
+   "nearest": "xm-ozzy",
+   "clip": 0.7013,
+   "colour": 0.8358,
+   "phash": 0.625,
+   "combined": 0.7235
+  },
+  "hd-bride": {
+   "nearest": "90",
+   "clip": 0.7117,
+   "colour": 0.7791,
+   "phash": 0.625,
+   "combined": 0.7156
+  },
+  "80": {
+   "nearest": "89",
+   "clip": 0.7248,
+   "colour": 0.7463,
+   "phash": 0.625,
+   "combined": 0.7152
+  },
+  "89": {
+   "nearest": "80",
+   "clip": 0.7248,
+   "colour": 0.7463,
+   "phash": 0.625,
+   "combined": 0.7152
+  },
+  "16": {
+   "nearest": "65",
+   "clip": 0.7292,
+   "colour": 0.7408,
+   "phash": 0.5938,
+   "combined": 0.7118
+  },
+  "ma-4": {
+   "nearest": "90",
+   "clip": 0.7608,
+   "colour": 0.6737,
+   "phash": 0.5625,
+   "combined": 0.7093
+  },
+  "13": {
+   "nearest": "64",
+   "clip": 0.7308,
+   "colour": 0.7568,
+   "phash": 0.5312,
+   "combined": 0.7074
+  },
+  "64": {
+   "nearest": "13",
+   "clip": 0.7308,
+   "colour": 0.7568,
+   "phash": 0.5312,
+   "combined": 0.7074
+  },
+  "66": {
+   "nearest": "95",
+   "clip": 0.7156,
+   "colour": 0.8247,
+   "phash": 0.4688,
+   "combined": 0.7059
+  },
+  "95": {
+   "nearest": "66",
+   "clip": 0.7156,
+   "colour": 0.8247,
+   "phash": 0.4688,
+   "combined": 0.7059
+  },
+  "58": {
+   "nearest": "14",
+   "clip": 0.7073,
+   "colour": 0.6471,
+   "phash": 0.75,
+   "combined": 0.6986
+  },
+  "61": {
+   "nearest": "ma-4",
+   "clip": 0.7796,
+   "colour": 0.6162,
+   "phash": 0.5,
+   "combined": 0.6968
+  },
+  "7": {
+   "nearest": "18",
+   "clip": 0.6958,
+   "colour": 0.7772,
+   "phash": 0.5625,
+   "combined": 0.6961
+  },
+  "11": {
+   "nearest": "18",
+   "clip": 0.7225,
+   "colour": 0.7281,
+   "phash": 0.5312,
+   "combined": 0.6952
+  },
+  "9": {
+   "nearest": "xm-list",
+   "clip": 0.7032,
+   "colour": 0.7305,
+   "phash": 0.5938,
+   "combined": 0.6936
+  },
+  "xm-list": {
+   "nearest": "9",
+   "clip": 0.7032,
+   "colour": 0.7305,
+   "phash": 0.5938,
+   "combined": 0.6936
+  },
+  "50": {
+   "nearest": "65",
+   "clip": 0.6834,
+   "colour": 0.7745,
+   "phash": 0.5938,
+   "combined": 0.6927
+  },
+  "5": {
+   "nearest": "109",
+   "clip": 0.7248,
+   "colour": 0.6812,
+   "phash": 0.5625,
+   "combined": 0.6896
+  },
+  "109": {
+   "nearest": "5",
+   "clip": 0.7248,
+   "colour": 0.6812,
+   "phash": 0.5625,
+   "combined": 0.6896
+  },
+  "104": {
+   "nearest": "lo-lights-down",
+   "clip": 0.733,
+   "colour": 0.6417,
+   "phash": 0.5938,
+   "combined": 0.6893
+  },
+  "lo-lights-down": {
+   "nearest": "104",
+   "clip": 0.733,
+   "colour": 0.6417,
+   "phash": 0.5938,
+   "combined": 0.6893
+  },
+  "hd-petra": {
+   "nearest": "20",
+   "clip": 0.7479,
+   "colour": 0.6582,
+   "phash": 0.5,
+   "combined": 0.6883
+  },
+  "lo-still-standing": {
+   "nearest": "lo-lights-down",
+   "clip": 0.7747,
+   "colour": 0.5625,
+   "phash": 0.5312,
+   "combined": 0.6852
+  },
+  "1": {
+   "nearest": "14",
+   "clip": 0.7296,
+   "colour": 0.7447,
+   "phash": 0.4062,
+   "combined": 0.6849
+  },
+  "84": {
+   "nearest": "hd-lap",
+   "clip": 0.7757,
+   "colour": 0.4929,
+   "phash": 0.625,
+   "combined": 0.6824
+  },
+  "69": {
+   "nearest": "109",
+   "clip": 0.7506,
+   "colour": 0.6228,
+   "phash": 0.5,
+   "combined": 0.681
+  },
+  "hd-shot": {
+   "nearest": "xm-ozzy",
+   "clip": 0.7382,
+   "colour": 0.6703,
+   "phash": 0.4688,
+   "combined": 0.6808
+  },
+  "hd-veil": {
+   "nearest": "ma-1",
+   "clip": 0.7561,
+   "colour": 0.5502,
+   "phash": 0.5938,
+   "combined": 0.6803
+  },
+  "63": {
+   "nearest": "80",
+   "clip": 0.6903,
+   "colour": 0.7249,
+   "phash": 0.5625,
+   "combined": 0.6798
+  },
+  "56": {
+   "nearest": "5",
+   "clip": 0.7157,
+   "colour": 0.6787,
+   "phash": 0.5312,
+   "combined": 0.6788
+  },
+  "lo-velvet-rope": {
+   "nearest": "lo-cut-the-line",
+   "clip": 0.7718,
+   "colour": 0.5243,
+   "phash": 0.5625,
+   "combined": 0.6785
+  },
+  "lo-cut-the-line": {
+   "nearest": "lo-velvet-rope",
+   "clip": 0.7718,
+   "colour": 0.5243,
+   "phash": 0.5625,
+   "combined": 0.6785
+  },
+  "lo-sorry-mate": {
+   "nearest": "84",
+   "clip": 0.6893,
+   "colour": 0.7569,
+   "phash": 0.5,
+   "combined": 0.6778
+  },
+  "xm-nog": {
+   "nearest": "66",
+   "clip": 0.7012,
+   "colour": 0.7265,
+   "phash": 0.5,
+   "combined": 0.6773
+  },
+  "26": {
+   "nearest": "27",
+   "clip": 0.7622,
+   "colour": 0.5954,
+   "phash": 0.4688,
+   "combined": 0.6765
+  },
+  "27": {
+   "nearest": "26",
+   "clip": 0.7622,
+   "colour": 0.5954,
+   "phash": 0.4688,
+   "combined": 0.6765
+  },
+  "54": {
+   "nearest": "4",
+   "clip": 0.6823,
+   "colour": 0.7253,
+   "phash": 0.5625,
+   "combined": 0.6751
+  },
+  "108": {
+   "nearest": "109",
+   "clip": 0.7486,
+   "colour": 0.6002,
+   "phash": 0.5,
+   "combined": 0.6742
+  },
+  "59": {
+   "nearest": "hd-veil",
+   "clip": 0.6825,
+   "colour": 0.6631,
+   "phash": 0.6562,
+   "combined": 0.6737
+  },
+  "10": {
+   "nearest": "62",
+   "clip": 0.7121,
+   "colour": 0.7009,
+   "phash": 0.4688,
+   "combined": 0.6728
+  },
+  "25": {
+   "nearest": "59",
+   "clip": 0.7357,
+   "colour": 0.6092,
+   "phash": 0.5,
+   "combined": 0.6687
+  },
+  "22": {
+   "nearest": "10",
+   "clip": 0.6494,
+   "colour": 0.8129,
+   "phash": 0.5,
+   "combined": 0.6679
+  },
+  "103": {
+   "nearest": "ma-7",
+   "clip": 0.6458,
+   "colour": 0.7829,
+   "phash": 0.5625,
+   "combined": 0.6675
+  },
+  "hd-sash": {
+   "nearest": "59",
+   "clip": 0.6835,
+   "colour": 0.6727,
+   "phash": 0.5938,
+   "combined": 0.6673
+  },
+  "15": {
+   "nearest": "92",
+   "clip": 0.7101,
+   "colour": 0.6642,
+   "phash": 0.5,
+   "combined": 0.6671
+  },
+  "92": {
+   "nearest": "15",
+   "clip": 0.7101,
+   "colour": 0.6642,
+   "phash": 0.5,
+   "combined": 0.6671
+  },
+  "52": {
+   "nearest": "22",
+   "clip": 0.701,
+   "colour": 0.6382,
+   "phash": 0.5625,
+   "combined": 0.6646
+  },
+  "19": {
+   "nearest": "63",
+   "clip": 0.6081,
+   "colour": 0.8611,
+   "phash": 0.5625,
+   "combined": 0.6645
+  },
+  "94": {
+   "nearest": "108",
+   "clip": 0.7275,
+   "colour": 0.6023,
+   "phash": 0.5,
+   "combined": 0.6621
+  },
+  "6": {
+   "nearest": "4",
+   "clip": 0.7314,
+   "colour": 0.5927,
+   "phash": 0.5,
+   "combined": 0.662
+  },
+  "17": {
+   "nearest": "20",
+   "clip": 0.6712,
+   "colour": 0.6475,
+   "phash": 0.625,
+   "combined": 0.6584
+  },
+  "88": {
+   "nearest": "108",
+   "clip": 0.7144,
+   "colour": 0.5412,
+   "phash": 0.625,
+   "combined": 0.6577
+  },
+  "81": {
+   "nearest": "ma-4",
+   "clip": 0.735,
+   "colour": 0.5275,
+   "phash": 0.5625,
+   "combined": 0.6572
+  },
+  "ck-offduty": {
+   "nearest": "22",
+   "clip": 0.6699,
+   "colour": 0.6994,
+   "phash": 0.5312,
+   "combined": 0.6565
+  },
+  "2": {
+   "nearest": "19",
+   "clip": 0.6013,
+   "colour": 0.8046,
+   "phash": 0.625,
+   "combined": 0.6557
+  },
+  "55": {
+   "nearest": "87",
+   "clip": 0.6613,
+   "colour": 0.6862,
+   "phash": 0.5625,
+   "combined": 0.6527
+  },
+  "87": {
+   "nearest": "55",
+   "clip": 0.6613,
+   "colour": 0.6862,
+   "phash": 0.5625,
+   "combined": 0.6527
+  },
+  "97": {
+   "nearest": "4",
+   "clip": 0.6744,
+   "colour": 0.649,
+   "phash": 0.5625,
+   "combined": 0.6512
+  },
+  "ma-3": {
+   "nearest": "62",
+   "clip": 0.6369,
+   "colour": 0.7335,
+   "phash": 0.5625,
+   "combined": 0.6499
+  },
+  "96": {
+   "nearest": "hd-chorus",
+   "clip": 0.6931,
+   "colour": 0.5987,
+   "phash": 0.5625,
+   "combined": 0.6499
+  },
+  "hd-chorus": {
+   "nearest": "96",
+   "clip": 0.6931,
+   "colour": 0.5987,
+   "phash": 0.5625,
+   "combined": 0.6499
+  },
+  "hd-bree": {
+   "nearest": "hd-luxe",
+   "clip": 0.7415,
+   "colour": 0.4826,
+   "phash": 0.5625,
+   "combined": 0.6499
+  },
+  "hd-luxe": {
+   "nearest": "hd-bree",
+   "clip": 0.7415,
+   "colour": 0.4826,
+   "phash": 0.5625,
+   "combined": 0.6499
+  },
+  "8": {
+   "nearest": "ck-tabitha",
+   "clip": 0.6959,
+   "colour": 0.6101,
+   "phash": 0.5312,
+   "combined": 0.6497
+  },
+  "83": {
+   "nearest": "98",
+   "clip": 0.6285,
+   "colour": 0.7874,
+   "phash": 0.5,
+   "combined": 0.649
+  },
+  "lo-two-for-one": {
+   "nearest": "xm-mistletoe",
+   "clip": 0.6645,
+   "colour": 0.6839,
+   "phash": 0.5,
+   "combined": 0.6447
+  },
+  "xm-mistletoe": {
+   "nearest": "lo-two-for-one",
+   "clip": 0.6645,
+   "colour": 0.6839,
+   "phash": 0.5,
+   "combined": 0.6447
+  },
+  "ma-5": {
+   "nearest": "106",
+   "clip": 0.6631,
+   "colour": 0.6393,
+   "phash": 0.5625,
+   "combined": 0.642
+  },
+  "102": {
+   "nearest": "55",
+   "clip": 0.6646,
+   "colour": 0.5921,
+   "phash": 0.625,
+   "combined": 0.6405
+  },
+  "xm-elf": {
+   "nearest": "108",
+   "clip": 0.6962,
+   "colour": 0.5722,
+   "phash": 0.5312,
+   "combined": 0.6405
+  },
+  "53": {
+   "nearest": "20",
+   "clip": 0.7047,
+   "colour": 0.5686,
+   "phash": 0.5,
+   "combined": 0.6399
+  },
+  "12": {
+   "nearest": "98",
+   "clip": 0.6572,
+   "colour": 0.67,
+   "phash": 0.5,
+   "combined": 0.6368
+  },
+  "lo-last-pour": {
+   "nearest": "52",
+   "clip": 0.6188,
+   "colour": 0.7144,
+   "phash": 0.5625,
+   "combined": 0.6343
+  },
+  "lo-firm-hand": {
+   "nearest": "hd-shot",
+   "clip": 0.5617,
+   "colour": 0.8321,
+   "phash": 0.5938,
+   "combined": 0.6341
+  },
+  "xm-secret": {
+   "nearest": "25",
+   "clip": 0.5934,
+   "colour": 0.7716,
+   "phash": 0.5625,
+   "combined": 0.6333
+  },
+  "ma-2": {
+   "nearest": "87",
+   "clip": 0.5864,
+   "colour": 0.7782,
+   "phash": 0.5625,
+   "combined": 0.6308
+  },
+  "82": {
+   "nearest": "10",
+   "clip": 0.7051,
+   "colour": 0.4969,
+   "phash": 0.5312,
+   "combined": 0.6269
+  },
+  "86": {
+   "nearest": "25",
+   "clip": 0.6622,
+   "colour": 0.5997,
+   "phash": 0.5312,
+   "combined": 0.6269
+  },
+  "ma-6": {
+   "nearest": "ma-3",
+   "clip": 0.548,
+   "colour": 0.834,
+   "phash": 0.5938,
+   "combined": 0.6264
+  },
+  "93": {
+   "nearest": "ma-7",
+   "clip": 0.7168,
+   "colour": 0.4303,
+   "phash": 0.5312,
+   "combined": 0.6174
+  },
+  "xm-santa": {
+   "nearest": "4",
+   "clip": 0.6581,
+   "colour": 0.5158,
+   "phash": 0.5938,
+   "combined": 0.6129
+  },
+  "3": {
+   "nearest": "23",
+   "clip": 0.7504,
+   "colour": 0.3226,
+   "phash": 0.5312,
+   "combined": 0.6106
+  },
+  "60": {
+   "nearest": "lo-two-for-one",
+   "clip": 0.5697,
+   "colour": 0.664,
+   "phash": 0.5312,
+   "combined": 0.5875
+  },
+  "57": {
+   "nearest": "87",
+   "clip": 0.5529,
+   "colour": 0.6795,
+   "phash": 0.5625,
+   "combined": 0.586
+  },
+  "99": {
+   "nearest": "92",
+   "clip": 0.5617,
+   "colour": 0.6749,
+   "phash": 0.5312,
+   "combined": 0.5854
+  },
+  "xm-desk": {
+   "nearest": "lo-velvet-rope",
+   "clip": 0.675,
+   "colour": 0.4716,
+   "phash": 0.4062,
+   "combined": 0.5838
+  },
+  "xm-reply": {
+   "nearest": "25",
+   "clip": 0.5672,
+   "colour": 0.5411,
+   "phash": 0.6875,
+   "combined": 0.5787
+  },
+  "101": {
+   "nearest": "52",
+   "clip": 0.5244,
+   "colour": 0.6936,
+   "phash": 0.5625,
+   "combined": 0.5724
+  },
+  "xm-holly": {
+   "nearest": "lo-two-for-one",
+   "clip": 0.6463,
+   "colour": 0.4004,
+   "phash": 0.5625,
+   "combined": 0.5723
+  },
+  "lo-on-the-house": {
+   "nearest": "ck-rita",
+   "clip": 0.6033,
+   "colour": 0.4224,
+   "phash": 0.5938,
+   "combined": 0.5566
+  },
+  "hd-honour": {
+   "nearest": "93",
+   "clip": 0.5693,
+   "colour": 0.5224,
+   "phash": 0.5,
+   "combined": 0.5472
+  },
+  "85": {
+   "nearest": "ck-offduty",
+   "clip": 0.5728,
+   "colour": 0.3885,
+   "phash": 0.5625,
+   "combined": 0.5252
+  }
+ },
+ "text_rank_worst": {
+  "55": 4,
+  "61": 3,
+  "14": 2,
+  "27": 2,
+  "56": 2,
+  "1": 1,
+  "2": 1,
+  "3": 1,
+  "4": 1,
+  "5": 1
+ }
+}
