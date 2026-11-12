@@ -433,24 +433,27 @@
     },
     "21": {
       "name": "Fluffpocalypse Now",
-      "name_gag": "Fluffpocalypse Now: standing heroically in a burning field of torn teddy stuffing that drifts like smoke",
+      "name_gag": "Fluffpocalypse Now: rising out of a misty jungle river with his face camo-painted, torn stuffing drifting like smoke",
       "medium": "1970s jungle war-movie film still",
-      "medium_detail": "anamorphic widescreen grain, a blazing sunset, black helicopter silhouettes",
-      "styles": [],
-      "palette": [
-        "Napalm orange",
-        "sun yellow",
-        "black silhouette"
+      "medium_detail": "anamorphic widescreen grain, cold misty dawn, black helicopter silhouettes",
+      "styles": [
+        "SAI Cinematic"
       ],
-      "fur": "soot-blackened hulking fur",
+      "palette": [
+        "jungle green",
+        "river-mist grey",
+        "khaki"
+      ],
+      "fur": "mud-caked hulking dark plush fur with camouflage face paint",
       "outfit": "cavalry hat, open shirt, ladle tucked in belt",
       "prop": "cavalry hat",
-      "setting": "burning field of drifting torn stuffing, helicopter silhouettes",
-      "lighting": "blazing orange sunset backlight",
-      "camera": "anamorphic low wide",
-      "pose": "standing heroically in a burning field of torn teddy stuffing that drifts like smoke",
-      "gag": "a hulking soot-blackened plush teddy bear commander in a cavalry hat and open shirt, standing heroically in a burning field of torn teddy stuffing that drifts like smoke, a ladle tucked in his belt, helicopter silhouettes crossing a huge orange sun behind him",
-      "painterly": false
+      "setting": "a misty jungle river at dawn with torn stuffing drifting like smoke",
+      "lighting": "cold green dawn mist",
+      "camera": "low wide at water level",
+      "pose": "rising head and shoulders out of a misty jungle river, face painted with camouflage",
+      "gag": "a hulking mud-caked stuffed plush teddy bear toy commander rising head and shoulders out of a misty jungle river at dawn, face painted with camouflage, a cavalry hat on his head, torn teddy stuffing drifting like smoke over the water, helicopter silhouettes in the mist",
+      "painterly": false,
+      "negative_extra": "(human, man, soldier, fire, orange sunset:1.5)"
     },
     "22": {
       "name": "Hungover Hank",
@@ -476,44 +479,49 @@
     "23": {
       "name": "Morning-After May",
       "name_gag": "Morning-After May: peeking from the curtains at dawn with last night's mascara smeared",
-      "medium": "French Impressionist oil painting",
-      "medium_detail": "broken dabs of colour, dawn light through gauzy curtains",
-      "styles": [],
-      "palette": [
-        "Rose pink",
-        "dawn gold",
-        "pale lilac"
+      "medium": "cyanotype print",
+      "medium_detail": "sun-printed Prussian-blue photogram on rough watercolour paper, white silhouettes, soft exposure edges",
+      "styles": [
+        "Mk Cyanotype Print"
       ],
-      "fur": "smudged rose-pink plush fur",
+      "palette": [
+        "Prussian blue",
+        "paper white"
+      ],
+      "fur": "rumpled pale plush fur in cyanotype white",
       "outfit": "a sequin dress slipping off one shoulder",
       "prop": "an empty champagne coupe",
       "setting": "half-drawn gauzy curtains at dawn",
-      "lighting": "pale dawn backlight",
-      "camera": "close three-quarter portrait",
+      "lighting": "early sun exposure glow",
+      "camera": "close portrait, the bear filling most of the frame",
       "pose": "peeking out from behind half-drawn gauzy curtains with smeared mascara and a sly regretful wink",
-      "gag": "a tall curvy smudged-rose-pink plush teddy bear peeking out from behind half-drawn gauzy curtains with smeared mascara and a sly regretful wink, last night's sequin dress slipping off one shoulder, a pair of heels and an empty champagne coupe on the sill",
-      "painterly": true
+      "gag": "a tall curvy stuffed plush teddy bear toy wrapped in a rumpled bedsheet, peeking out from behind half-drawn gauzy curtains at dawn with smeared mascara and a sly regretful wink, last night's sequin dress slipping off one shoulder, a pair of heels and an empty champagne coupe on the sill",
+      "painterly": true,
+      "negative_extra": "(woman, girl, human face, pink:1.4)"
     },
     "24": {
       "name": "Smitten Sid",
       "name_gag": "Smitten Sid: a lean blush-pink plush teddy bear with lovesick button eyes on bended knee, clutching a wilted bouquet",
-      "medium": "Victorian Valentine card chromolithograph with embossed lace-paper doily edges",
-      "medium_detail": "scrap roses and love hearts, no lettering",
-      "styles": [],
-      "palette": [
-        "Blush pink",
-        "lace white",
-        "rose red"
+      "medium": "Lite-Brite glowing peg art",
+      "medium_detail": "glowing translucent plastic pegs on a black pegboard, pixel-dot outlines, bright backlit colour",
+      "styles": [
+        "Mk Lite Brite Art"
       ],
-      "fur": "blush-pink lean fur, heart-shaped button eyes",
+      "palette": [
+        "electric cyan",
+        "peg red",
+        "pegboard black"
+      ],
+      "fur": "peg-red lovesick plush fur, heart-shaped button eyes",
       "outfit": "open ring box",
       "prop": "wilted bouquet",
-      "setting": "embossed paper-lace doily frame with scrap roses",
-      "lighting": "soft printed chromolithograph colour",
-      "camera": "centred valentine vignette",
+      "setting": "a black pegboard sky of glowing peg love hearts",
+      "lighting": "backlit glowing pegs in the dark",
+      "camera": "centred, the bear filling the frame",
       "pose": "clutching a wilted bouquet",
-      "gag": "a lean blush-pink plush teddy bear with lovesick button eyes on bended knee, clutching a wilted bouquet, cartoon love-hearts popping off his head like steam, a ring box open in the other paw, framed in paper lace",
-      "painterly": true
+      "gag": "a lean stuffed plush teddy bear toy with lovesick button eyes down on one bended knee, clutching a wilted bouquet, glowing love-hearts popping off his head like steam, a ring box open in the other paw",
+      "painterly": true,
+      "negative_extra": "(human, man, woman, lettering:1.4)"
     },
     "25": {
       "name": "Crush Cora",
@@ -685,7 +693,9 @@
       "name_gag": "Ashtray Annie wears the ashtray as a hat",
       "medium": "1950s jazz record sleeve photograph",
       "medium_detail": "deep blue duotone, smoky high-contrast print, bold off-centre composition, no lettering",
-      "styles": [],
+      "styles": [
+        "SAI Photographic"
+      ],
       "palette": [
         "deep jazz blue",
         "smoke white",
@@ -696,11 +706,11 @@
       "prop": "an overflowing glass ashtray worn on her head like a pillbox hat",
       "setting": "scorched old mattress",
       "lighting": "smoky high-contrast blue duotone",
-      "camera": "off-centre sleeve portrait",
+      "camera": "tight off-centre head-and-shoulders portrait",
       "pose": "blowing a perfect smoke ring through a long cigarette holder",
-      "gag": "a curvy ash-grey stuffed plush teddy bear toy with round plush ears, button eyes and big curlers, wearing an overflowing glass ashtray on her head as a pillbox hat, blowing a perfect smoke ring through a long cigarette holder",
+      "gag": "(an overflowing glass ashtray full of cigarette butts balanced on her head as a pillbox hat:1.3), a curvy ash-grey stuffed plush teddy bear toy with round plush ears, button eyes and big curlers, blowing a perfect smoke ring through a long cigarette holder",
       "painterly": false,
-      "negative_extra": "(woman, girl, pin-up model, female face, lips:1.6)"
+      "negative_extra": "(woman, girl, pin-up model, female face, lips, afro hair, big hair:1.6)"
     },
     "56": {
       "name": "Bouncer Bruno",
@@ -808,23 +818,26 @@
     "61": {
       "name": "Snitchslap Sue",
       "name_gag": "Snitchslap Sue snitches and slaps in the same breath, wire and all",
-      "medium": "Telenovela dramatic freeze-frame",
-      "medium_detail": "glossy soap-opera lighting, extreme dramatic zoom, lens flare",
-      "styles": [],
+      "medium": "felt hand-puppet soap opera stage",
+      "medium_detail": "handmade felt puppets with stitched seams, a little puppet-theatre set with dramatic spotlights",
+      "styles": [
+        "SAI Craft Clay"
+      ],
       "palette": [
         "Dusty rose",
-        "melodrama magenta"
+        "melodrama magenta",
+        "curtain gold"
       ],
       "fur": "dusty-rose lanky fur",
       "outfit": "bridesmaid dress, teddy groom in a bow tie",
       "prop": "a tiny wire microphone peeking from her neckline",
-      "setting": "soap-opera glow with lens flare",
-      "lighting": "glossy melodrama light",
-      "camera": "extreme dramatic zoom",
+      "setting": "a tiny puppet-theatre wedding stage with gold-fringed curtains",
+      "lighting": "hard theatrical spotlight",
+      "camera": "wide stage view, both bears filling the frame",
       "pose": "mid-slap with one plush paw, tears and champagne flying in slow motion",
-      "gag": "two stuffed plush teddy bear toys: a lanky dusty-rose plush teddy bear in a bridesmaid dress mid-slap, a smaller plush teddy groom's head snapping sideways, a tiny wire microphone peeking from her neckline, tears and champagne flying",
+      "gag": "two stuffed plush teddy bear toys on a puppet-theatre stage: a lanky dusty-rose plush teddy bear in a bridesmaid dress slapping a smaller plush teddy groom across the face, his head snapping sideways, a tiny wire microphone peeking from her neckline, felt tears and champagne flying",
       "painterly": false,
-      "negative_extra": "(woman, girl, bride, actress, female face:1.6)"
+      "negative_extra": "(woman, girl, bride, actress, female face, human hands, puppeteer:1.6)"
     },
     "62": {
       "name": "Chainsmoke Chad",
@@ -907,7 +920,7 @@
       "prop": "a giant red rubber mallet",
       "setting": "a paper doorway with a nervous little paper teddy peeking out, paper coins and an open ledger",
       "lighting": "backlit paper glow from behind each layer",
-      "camera": "straight-on shadow-box view, the bear off-centre on the left",
+      "camera": "close medium shot, the bear filling most of the frame in a deep crowded paper scene",
       "pose": "looming in the doorway, tapping the mallet against his paw with a thin smile",
       "gag": "a gaunt gunmetal-grey plush teddy bear debt collector in a bowler hat and green visor looming in a paper doorway, tapping a giant red rubber mallet, kneecap-shaped plush pillows weighed on a brass balance scale beside an open ledger",
       "painterly": true
@@ -1351,24 +1364,25 @@
     },
     "97": {
       "name": "Backseat Benny",
-      "name_gag": "Backseat Benny: sprawled shirtless across the back seat like he owns it",
+      "name_gag": "Backseat Benny: sprawled shirtless across the back seat at the drive-in like he owns it",
       "medium": "Fauvist painting",
       "medium_detail": "wild unnatural colours, thick expressive brushstrokes, flat bold shapes",
       "styles": [],
       "palette": [
         "Fauve red",
         "emerald green",
-        "taxi yellow"
+        "drive-in violet"
       ],
-      "fur": "taxi-yellow squat smug fur",
+      "fur": "mustard-yellow squat smug fur",
       "outfit": "shirt hung on the headrest",
-      "prop": "glowing taxi meter",
-      "setting": "a back seat at night, the city in wild colours through the windows",
+      "prop": "a fogged-up window with a paw-drawn heart",
+      "setting": "the back seat of a cherry-red convertible at a drive-in movie under the stars",
       "lighting": "wild unnatural colour",
-      "camera": "inside the cab",
+      "camera": "over the front seat, looking back",
       "pose": "sprawled shirtless with his arms behind his head like he owns the back seat",
-      "gag": "a squat smug taxi-yellow plush teddy bear sprawled shirtless across the back seat of a taxi with his arms behind his head, the taxi meter glowing, his shirt hanging off the headrest, a city night through the windows in wild colours",
-      "painterly": true
+      "gag": "a squat smug mustard-yellow stuffed plush teddy bear toy sprawled shirtless across the back seat of a cherry-red convertible at a drive-in movie with his arms behind his head, his shirt hanging off the headrest, a fogged-up window with a paw-drawn heart, stars and a glowing movie screen beyond",
+      "painterly": true,
+      "negative_extra": "(taxi, cab, meter, human, man:1.5)"
     },
     "98": {
       "name": "Last-Round Rita",
@@ -1536,9 +1550,9 @@
       "fur": "glossy devil-red plush fur with stitched felt horns and a pointed felt tail",
       "outfit": "open silk shirt and a gold chain",
       "prop": "an enormous ring of brass apartment keys",
-      "setting": "a sun-baked pink apartment block with tiny plush tenants on every balcony",
+      "setting": "the doorway of a sun-baked pink apartment block with tiny plush tenants on the balconies above",
       "lighting": "hot desert noon with heat shimmer",
-      "camera": "low hero angle, the bear filling the right half",
+      "camera": "tight low-angle close-up, the bear filling two-thirds of the frame",
       "pose": "leaning on a pitchfork and jangling the key ring with a smug grin",
       "gag": "a glossy devil-red stuffed plush teddy bear toy landlord with felt horns and a pointed felt tail, leaning on a pitchfork and jangling an enormous ring of apartment keys in front of a pink apartment block full of tiny plush tenants",
       "painterly": true,
@@ -1786,7 +1800,9 @@
       "name_gag": "Lap-Line Lola: kicking off a satin slipper as a crowd of plush teddy courtiers in powdered wigs gasp behind their fans",
       "medium": "Rococo pastel painting",
       "medium_detail": "frothy powdered pinks and blues, gilded swirls, flirtatious garden mood",
-      "styles": [],
+      "styles": [
+        "Rococo"
+      ],
       "palette": [
         "Rose gold",
         "powder blue",
@@ -1797,9 +1813,9 @@
       "prop": "gilded swing",
       "setting": "powder-blue garden with teddy courtiers",
       "lighting": "frothy pastel daylight",
-      "camera": "low, looking up at the swing",
+      "camera": "low, looking up at the swing, the bear filling the upper frame",
       "pose": "kicking off a satin slipper as a crowd of plush teddy courtiers in powdered wigs gasp behind their fans",
-      "gag": "a chubby rose-gold plush teddy bear on a gilded swing over a velvet rope, kicking off a satin slipper as a crowd of plush teddy courtiers in powdered wigs gasp behind their fans",
+      "gag": "a chubby rose-gold stuffed plush teddy bear toy in a frilly powder-blue dress on a gilded flower swing in a Fragonard garden, kicking off a satin slipper as a crowd of plush teddy courtiers in powdered wigs gasp behind their fans",
       "painterly": true
     },
     "hd-bree": {
