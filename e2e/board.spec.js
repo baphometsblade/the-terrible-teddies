@@ -3,7 +3,7 @@
 // panel says about XP. Each test names the defect it pins.
 import AxeBuilder from '@axe-core/playwright';
 import { ABILITY_RULES, abilityLabel } from '../src/lib/abilities.js';
-import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
+import { test, expect, bootToMainMenu, SLOW, slowOpener } from './helpers/session.js';
 import { getDailyChallenges } from '../src/stores/challenges.js';
 import { getCurrentSeason } from '../src/utils/season.js';
 import { QUIPS } from '../src/utils/teddyTalk.js';
@@ -324,6 +324,7 @@ test.describe('with a mouse and a keyboard', () => {
   // ability and the state on the card face never reached it at all.
   test('every card control carries the card in words: cost, attack, HP, ability and state', async ({ page }) => {
     await seed(page, { currentDeck: [4, 4, 4, 6, 6, 6] }); // Barry (1), Sally (Taunt, 2)
+    await slowOpener(page); // Barry has to live through Chuck's first turn
     await page.reload();
     await toBattle(page);
     await expect(page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first())
@@ -356,6 +357,7 @@ test.describe('with a mouse and a keyboard', () => {
   // log's, and nobody could count lethal.
   test('a Royal ally\'s +1 shows on the badge it raises, in the preview and in the card\'s words', async ({ page }) => {
     await seed(page, { currentDeck: [14, 4, 4, 4, 4, 4] }); // Slumlord Cotton (Royal, 4) + Barry
+    await slowOpener(page); // Barry has to live through Chuck's first turn
     await page.reload();
     await toBattle(page);
     await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
@@ -475,6 +477,7 @@ test.describe('with a mouse and a keyboard', () => {
   test('a keyboard-opened preview keeps clear of the focused card\'s row, and Escape closes it until focus moves', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4] });
+    await slowOpener(page); // Barry has to live through Chuck's first turn
     await page.reload();
     await toBattle(page);
     await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
@@ -642,6 +645,7 @@ test.describe('with a mouse and a keyboard', () => {
   test('at 768x1024 one click on a target attacks, with the attacker\'s preview never in the way', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await seed(page, { currentDeck: [4, 4, 4, 4, 4, 4] });
+    await slowOpener(page); // Barry has to live through Chuck's first turn
     await page.reload();
     await toBattle(page);
     await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
@@ -675,6 +679,7 @@ test.describe('with a mouse and a keyboard', () => {
     test(`at ${viewport.width}x${viewport.height} picking an attacker clears the ability callout off the prompt`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await seed(page, { currentDeck: [4, 4, 4, 6, 6, 6] }); // Barry, and Sally (Taunt)
+      await slowOpener(page); // Barry has to live through Chuck's first turn
       await page.reload();
       await toBattle(page);
       await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();

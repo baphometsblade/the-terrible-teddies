@@ -521,8 +521,13 @@ test.describe('announcements', () => {
     await expect(toasts.filter({ hasText: 'First news' })).toHaveCount(0);
     // News the player did not ask for waits for a pause in the speech: read
     // assertively, it cut off whatever was being read (the result dialog).
+    // Radix fills the second region a frame after the toast mounts, so on a
+    // loaded machine it can still be empty when the toast is first visible:
+    // wait for it rather than read once.
+    await expect.poll(() => page.evaluate(() => window.__announced.length), {
+      message: 'both announcements reach a live region', timeout: 5000,
+    }).toBeGreaterThanOrEqual(2);
     const heard = await page.evaluate(() => window.__announced);
-    expect(heard.length, 'neither announcement reached a live region').toBeGreaterThanOrEqual(2);
     expect(heard.map((a) => a.live)).toEqual(heard.map(() => 'polite'));
   });
 

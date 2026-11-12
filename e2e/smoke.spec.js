@@ -9,7 +9,7 @@
 // e2e/a11y.spec.js can reuse the identical hermetic boot.
 import { getDailyChallenges } from '../src/stores/challenges.js';
 import { QUIPS } from '../src/utils/teddyTalk.js';
-import { test, expect, bootToMainMenu, SLOW } from './helpers/session.js';
+import { test, expect, bootToMainMenu, SLOW, sickChips, settledSpeech, slowOpener } from './helpers/session.js';
 
 test.beforeEach(async ({ page }) => {
   // Main menu is the shared starting point for every test.
@@ -142,7 +142,7 @@ test('asking to leave clears a leftover toast, so nothing sits on the question',
   await page.getByRole('button', { name: 'Battle', exact: true }).click();
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
   await page.getByRole('button', { name: /^Play / }).first().click();
-  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2);
+  await expect(sickChips(page)).toHaveCount(2);
 
   const toasts = page.locator('.toast-viewport > li');
   // Up for about six seconds on its own (its duration scales with its length),
@@ -572,6 +572,7 @@ test('manifest app shortcuts (?action=) route to the right screen', async ({ pag
 });
 
 test('a played creature waits a turn to attack, then exhausts and recovers', async ({ page, pageErrors }) => {
+  await slowOpener(page); // the creature played has to live through Chuck's first turn
   // Force a deck of pure cheap action cards so the first play is always an
   // attack-capable creature (the default deck shuffles in traps/specials).
   //
@@ -598,12 +599,12 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
   // the opener would get a free turn-1 swing the player cannot answer.
   // (Exact, here and below: each card's description for a screen reader says
   // its state in the same words, and these count the chips.)
-  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(1);
+  await expect(sickChips(page)).toHaveCount(1);
 
   // Turn 1 — play a creature. It arrives summoning-sick, so it must NOT be
   // able to swing this turn: selecting it never opens targeting.
   await page.getByRole('button', { name: /^Play / }).first().click();
-  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2); // Chuck's opener + the new arrival
+  await expect(sickChips(page)).toHaveCount(2); // Chuck's opener + the new arrival
 
   // The player's turn is one phase (cards and attacks in any order), so a
   // creature is offered as an attacker the moment it can attack, and a
@@ -635,7 +636,7 @@ test('a played creature waits a turn to attack, then exhausts and recovers', asy
   // turn 1.
   await endTurn.click();
   await expect(page.getByText(/Turn 2/)).toBeVisible(SLOW);
-  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(0);
+  await expect(sickChips(page)).toHaveCount(0);
   const attacker = page.getByRole('button', { name: /^Select .+ to attack$/ }).first();
   await expect(attacker).toBeVisible(SLOW);
   await attacker.click();
@@ -800,7 +801,7 @@ test('playing a plain card raises no toast: the card landing is the news', async
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
 
   await page.getByRole('button', { name: /^Play / }).first().click();
-  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2);
+  await expect(sickChips(page)).toHaveCount(2);
   await expect(page.getByRole('region', { name: 'Battle log' }).getByText('Played Bar-Fight Barry')).toBeVisible();
   // Counted once, not polled: a retrying toHaveCount(0) would simply wait out
   // a toast's few seconds on screen and then pass.
@@ -847,21 +848,6 @@ test('a heal at full HP says it did nothing, in a toast that covers no log, cont
   expect(covered, `the toast covers ${covered.join(', ')}`).toEqual([]);
 });
 
-// Every visible speech element (Chuck's quip, the player's emote) that
-// overlaps a card on the table, as "speaker over N card(s)".
-const speechOverCards = (page) => page.evaluate(() => {
-  const shown = (el) => {
-    const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
-  };
-  const over = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-  const cards = [...document.querySelectorAll('[data-field]')].map((c) => c.getBoundingClientRect());
-  return [...document.querySelectorAll('[data-speech]')].filter(shown).map((s) => {
-    const box = s.getBoundingClientRect();
-    return `${s.dataset.speech} over ${cards.filter((c) => over(box, c)).length} card(s)`;
-  });
-});
-
 for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 }]) {
   test(`at ${viewport.width}px Chuck's quip and the player's emote never cover a card`, async ({ page }) => {
     // Chuck speaks at every deal, and his bubble was pinned to the felt's
@@ -877,18 +863,19 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 
       localStorage.setItem('terrible-teddies-storage', JSON.stringify(stored));
     });
     await page.reload();
+    // Chuck speaks at the deal, which is before the mulligan and End Turn:
+    // watch for his line from the click, not from End Turn (settledSpeech).
+    const chuck = settledSpeech(page, 'opponent');
     await page.getByRole('button', { name: 'Battle', exact: true }).click();
+    expect((await chuck).over).toEqual(['opponent over 0 card(s)']);
     await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
 
-    await expect(page.locator('[data-speech="opponent"]:visible')).toHaveCount(1, SLOW);
-    expect(await speechOverCards(page)).toEqual(['opponent over 0 card(s)']);
-
     await page.getByRole('button', { name: /^Play / }).first().click();
-    await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2);
+    await expect(sickChips(page)).toHaveCount(2);
+    const emote = settledSpeech(page, 'player');
     await page.getByRole('button', { name: 'Trash Talk emote' }).click();
-    await expect(page.locator('[data-speech="player"]:visible')).toHaveCount(1, SLOW);
-    const placed = await speechOverCards(page);
-    expect(placed.length).toBeGreaterThan(0);
+    const placed = (await emote).over;
+    expect(placed).toContain('player over 0 card(s)');
     expect(placed.filter((p) => !p.endsWith('over 0 card(s)'))).toEqual([]);
   });
 }
@@ -901,38 +888,23 @@ test("at 320px a quip shows whole on the centre line, and Chuck's are logged", a
   // phone the end of the line was nowhere, and a screen reader (every bubble
   // is aria-hidden) never heard one.
   await page.setViewportSize({ width: 320, height: 640 });
+  // Every line either side can say on the table (the result screen's parting
+  // shots are not shown here), set in a copy of the pill at the pill's own
+  // maximum width: none may be clipped. Measured in the frame the pill is
+  // read in (settledSpeech): it is taken down 3.2 s after the deal.
+  const lines = Object.entries(QUIPS)
+    .filter(([pool]) => pool !== 'oppWins' && pool !== 'oppLoses')
+    .flatMap(([, pool]) => pool);
+  const chuck = settledSpeech(page, 'opponent', { lines });
   await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  const { text, clipped } = await chuck;
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
-
-  const pill = page.locator('[data-speech="opponent"]:visible');
-  await expect(pill).toHaveCount(1, SLOW);
-  const said = (await pill.textContent()).replace('🧸', '').trim();
+  const said = text.replace('🧸', '').trim();
   // The opener follows the player's clock: between midnight and five Chuck
   // opens from the late pool, so the suite passes at any hour.
   expect([...QUIPS.gameStart, ...QUIPS.gameStartLate]).toContain(said);
   await expect(page.locator('[role="log"][aria-live="polite"] > *')
     .filter({ hasText: `🧸 Chuck: "${said}"` })).toHaveCount(1);
-
-  // Every line either side can say on the table (the result screen's parting
-  // shots are not shown here), set in a copy of the pill at the pill's own
-  // maximum width: none may be clipped.
-  const lines = Object.entries(QUIPS)
-    .filter(([pool]) => pool !== 'oppWins' && pool !== 'oppLoses')
-    .flatMap(([, pool]) => pool);
-  const clipped = await pill.evaluate((el, texts) => {
-    const centre = el.parentElement.parentElement; // the pill's max-width is the centre line's
-    const probe = el.cloneNode(true);
-    Object.assign(probe.style, { position: 'absolute', left: '0', top: '0', visibility: 'hidden', transform: 'none' });
-    centre.appendChild(probe);
-    const icon = probe.firstElementChild;
-    const out = [];
-    for (const text of texts) {
-      probe.replaceChildren(icon, document.createTextNode(text));
-      if (probe.scrollHeight > probe.clientHeight + 1 || probe.scrollWidth > probe.clientWidth + 1) out.push(text);
-    }
-    probe.remove();
-    return out;
-  }, lines);
   expect(clipped).toEqual([]);
 });
 

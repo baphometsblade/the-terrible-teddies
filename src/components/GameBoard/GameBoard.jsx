@@ -432,12 +432,13 @@ const RaisedHint = ({ children }) => (
 // card's own dimming, so it keeps its contrast on a resting card. Hidden from
 // a screen reader, which hears the state in the card's words (CardWords); the
 // e2e suite counts these chips by their exact text, since those words say it
-// too, in a longer line. `zoom` is the row's: the words grow to stay at 8px
+// too, in a longer line, and by data-status-chip, since a rush card's
+// ability badge reads "Quickie" as well. `zoom` is the row's: the words grow to stay at 8px
 // on screen (legibleSize), onto two lines where one no longer fits.
 const StatusChip = ({ children, zoom = 1, marked = false }) => {
   const size = legibleSize(10, zoom);
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-[37px] z-10 flex justify-center">
+    <div aria-hidden="true" data-status-chip="" className="pointer-events-none absolute inset-x-0 bottom-[37px] z-10 flex justify-center">
       <span
         className={`max-w-full rounded-full bg-night-950/90 px-2 py-0.5 text-center text-[10px] leading-[14px] font-semibold text-plush-100 shadow-[0_2px_6px_rgba(0,0,0,0.6)] ${marked ? 'ring-2 ring-brass-300' : 'ring-1 ring-white/15'}`}
         // Grown, it gives up most of its side padding, so "Warming Up" keeps

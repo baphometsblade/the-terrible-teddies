@@ -13,6 +13,7 @@ import { test as base, expect } from '@playwright/test';
 // The door's storage contract, from the same pure module the app reads it with.
 import { DOOR_KEY, doorRecord } from '../../src/lib/door.js';
 import { CONSENT_KEY, consentRecord } from '../../src/lib/consent.js';
+import { arrivalChip } from '../../src/lib/abilities.js';
 
 export const REF = 'testproject'; // first host label of VITE_SUPABASE_URL
 
@@ -86,15 +87,28 @@ export const test = base.extend({
   // wait for End Turn, which is the turn after Keep hand. This presses Keep
   // whenever it is up, so those specs still land on the fight. A spec that
   // wants the mulligan itself can click before this poll, or not use it.
+  //
+  // It presses with a dispatched click, not a mouse click. This runs in the
+  // background, beside whatever the spec is doing, and a real click moves
+  // the mouse onto Keep hand and the focus into it; Keep hand then unmounts
+  // and the focus falls to <body>. A spec asserting where the focus is (a
+  // battle opens on its heading) failed whenever this landed after the app
+  // had placed the focus, and a spec in the middle of its own pointer moves
+  // (hover a card, then click a target) could have the mouse taken from
+  // under it. A dispatched click runs the same onClick and touches neither.
+  // One press at a time: two overlapping ticks both saw the button and both
+  // pressed.
   page: async ({ page }, use) => {
     let stopped = false;
+    let busy = false;
     const timer = setInterval(() => {
-      if (stopped) return;
+      if (stopped || busy) return;
+      busy = true;
       const keep = page.getByRole('button', { name: 'Keep hand' });
-      keep.isVisible().then((visible) => {
-        if (visible && !stopped) return keep.click({ timeout: 1000 }).catch(() => {});
-        return undefined;
-      }).catch(() => {});
+      keep.isVisible()
+        .then((visible) => (visible && !stopped ? keep.dispatchEvent('click', undefined, { timeout: 1000 }) : undefined))
+        .catch(() => {})
+        .finally(() => { busy = false; });
     }, 150);
     await use(page);
     stopped = true;
@@ -173,5 +187,84 @@ export async function passTheLanding(page) {
     await page.mouse.move(0, 0);
   }
 }
+
+// The status chips of creatures that sat down this turn. arrivalChip
+// (src/lib/abilities.js) labels most "Warming Up" and a Quickie (rush)
+// "Quickie". Chuck's opener is drawn from a shuffled crew, and in about one
+// fight in thirty on easy it is a Quickie, so a count of exact "Warming Up"
+// chips that included the opener came up one short. Exact, so the cards'
+// screen-reader descriptions, which say the same words, are not counted.
+export const SICK_CHIP = new RegExp(`^(${arrivalChip({})}|${arrivalChip({ ability: 'rush' })})$`);
+// The chip, not the ability badge: a rush card's badge says "Quickie" too.
+export const sickChips = (scope) => scope.locator('[data-status-chip]').filter({ hasText: SICK_CHIP });
+
+// Chuck's opener is dealt at random, and sometimes (about 1 easy fight in 30
+// by a unit probe, and more often with the 1-health decks these specs seed)
+// it is a rush card that swings on his first turn. He swings at creatures
+// first, so it can kill the creature a spec played on turn 1 before turn 2
+// asks for it. Pinning Math.random, as the last-call specs do, fixes the
+// deal: at 0.85 he opens with Loan-Shark Larry, who has to wait a turn.
+// (0.5 will not do: it deals him Quickie Quinn.) Call before the reload.
+export const slowOpener = (page) => page.addInitScript(() => { Math.random = () => 0.85; });
+// A just-played creature of the player's: their own row, so Chuck's draw
+// cannot change the count.
+export const playerWarmingUp = (page) => page.locator('[data-field="player"]').getByText(arrivalChip({}), { exact: true });
+
+// A line of speech on the table, read once it has been up for `after` ms of
+// the page's own time, and measured in the same frame.
+//
+// Chuck's quip and the player's emote are taken down by a timer (3.2 s and
+// 3.5 s). Chuck speaks at the deal, before the opening mulligan, so a spec
+// that waited for End Turn first and then looked for the bubble raced that
+// timer against however long Keep hand and the draw took on a loaded
+// machine, and lost now and then. This waits in the page (polling on
+// animation frames), counts from when the line first showed, and returns
+// everything the spec checks in that one frame, so nothing can expire
+// between the look and the measurement. Start it before the step that makes
+// the line appear and await it after.
+//
+// Returns { text, over, clipped }: the line's text; every visible speech
+// element as "speaker over N card(s)"; and, when `lines` is given, the ones
+// that would be clipped if set in this element at its own maximum width.
+export const settledSpeech = (page, who, { after = 400, lines = null, timeout = 30_000 } = {}) => page.waitForFunction(
+  ({ who: speaker, after: wait, lines: texts }) => {
+    const visible = (el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+    };
+    const el = [...document.querySelectorAll(`[data-speech="${speaker}"]`)].find(visible);
+    if (!el) return false;
+    window.__speechSeen ??= new WeakMap();
+    const seen = window.__speechSeen.get(el) ?? performance.now();
+    window.__speechSeen.set(el, seen);
+    if (performance.now() - seen < wait) return false;
+
+    const over = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+    const cards = [...document.querySelectorAll('[data-field]')].map((c) => c.getBoundingClientRect());
+    const placed = [...document.querySelectorAll('[data-speech]')].filter(visible).map((s) => {
+      const box = s.getBoundingClientRect();
+      return `${s.dataset.speech} over ${cards.filter((c) => over(box, c)).length} card(s)`;
+    });
+
+    let clipped = null;
+    if (texts) {
+      const centre = el.parentElement.parentElement; // the pill's max-width is the centre line's
+      const probe = el.cloneNode(true);
+      probe.removeAttribute('data-speech');
+      Object.assign(probe.style, { position: 'absolute', left: '0', top: '0', visibility: 'hidden', transform: 'none' });
+      centre.appendChild(probe);
+      const icon = probe.firstElementChild;
+      clipped = [];
+      for (const text of texts) {
+        probe.replaceChildren(icon, document.createTextNode(text));
+        if (probe.scrollHeight > probe.clientHeight + 1 || probe.scrollWidth > probe.clientWidth + 1) clipped.push(text);
+      }
+      probe.remove();
+    }
+    return { text: el.textContent, over: placed, clipped };
+  },
+  { who, after, lines },
+  { timeout, polling: 'raf' },
+).then((handle) => handle.jsonValue());
 
 export { expect };
