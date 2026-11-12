@@ -1964,6 +1964,210 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting the Naughty List pack boost: 3x inside its window, nothing outside it"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_start   timestamptz;
+  v_end     timestamptz;
+  v_boost   numeric;
+  v_xm      text;
+  v_fn      text;
+  v_role    text;
+  v_users   uuid[] := ARRAY[]::uuid[];
+  v_uid     uuid;
+  v_row     jsonb;
+  v_i       integer;
+  v_j       integer;
+  v_hits    integer;
+  v_total   integer;
+  v_pick    text;
+  v_raised  boolean;
+BEGIN
+  SELECT starts_at, ends_at, pack_weight_boost INTO v_start, v_end, v_boost
+  FROM public.card_seasons WHERE id = 'naughty-list';
+  IF v_boost IS DISTINCT FROM 3 THEN
+    RAISE EXCEPTION 'naughty list boost is % not 3', v_boost;
+  END IF;
+
+  -- The helpers take a clock. A client must not be able to call them.
+  FOREACH v_fn IN ARRAY ARRAY['pack_card_weight', 'pack_pick_card'] LOOP
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public' AND p.proname = v_fn
+    ) THEN
+      RAISE EXCEPTION '% was never created', v_fn;
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public' AND p.proname = v_fn
+        AND (has_function_privilege('anon', p.oid, 'EXECUTE')
+          OR has_function_privilege('authenticated', p.oid, 'EXECUTE'))
+    ) THEN
+      RAISE EXCEPTION 'a client role can EXECUTE %', v_fn;
+    END IF;
+  END LOOP;
+  FOREACH v_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    v_raised := FALSE;
+    BEGIN
+      EXECUTE format('SET LOCAL ROLE %I', v_role);
+      PERFORM public.pack_pick_card('legendary', v_start);
+    EXCEPTION WHEN insufficient_privilege THEN
+      v_raised := TRUE;
+    END;
+    RESET ROLE;
+    IF NOT v_raised THEN
+      RAISE EXCEPTION '% could call pack_pick_card with its own clock', v_role;
+    END IF;
+  END LOOP;
+
+  -- settle_pack_open must roll through the weighted pick, not a flat random().
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'settle_pack_open'
+      AND p.prosrc LIKE '%public.pack_pick_card(v_rarity, v_now)%'
+      AND p.prosrc NOT LIKE '%ORDER BY pg_catalog.random()%'
+  ) THEN
+    RAISE EXCEPTION 'settle_pack_open does not roll through pack_pick_card';
+  END IF;
+
+  -- Weights at the real window edges. ends_at is exclusive.
+  FOR v_xm IN SELECT unnest(card_ids) FROM public.card_seasons WHERE id = 'naughty-list' LOOP
+    IF public.pack_card_weight(v_xm, v_start - interval '1 microsecond') <> 0
+       OR public.pack_card_weight(v_xm, v_start) <> 3
+       OR public.pack_card_weight(v_xm, v_start + interval '20 days') <> 3
+       OR public.pack_card_weight(v_xm, v_end - interval '1 microsecond') <> 3
+       OR public.pack_card_weight(v_xm, v_end) <> 0
+       OR public.pack_card_weight(v_xm, v_end + interval '300 days') <> 0 THEN
+      RAISE EXCEPTION '% has the wrong weight around the naughty list window', v_xm;
+    END IF;
+  END LOOP;
+  IF EXISTS (
+    SELECT 1 FROM public.pack_catalog c
+    WHERE c.id NOT LIKE 'xm-%'
+      AND (public.pack_card_weight(c.id, v_start - interval '1 day') <> 1
+        OR public.pack_card_weight(c.id, v_start + interval '1 day') <> 1)
+  ) THEN
+    RAISE EXCEPTION 'an evergreen card does not weigh 1 in and out of season';
+  END IF;
+
+  -- Statistical, on the real catalog: 38 evergreen commons and 4 xm-
+  -- commons. Boosted, xm- is 12/50 = 24% of commons; flat it would be
+  -- 4/42 = 9.5%. 5000 draws: mean 1200, sd 30. Accept +-5 sd.
+  SELECT count(*) FILTER (WHERE id NOT LIKE 'xm-%'), count(*) FILTER (WHERE id LIKE 'xm-%')
+    INTO v_i, v_j FROM public.pack_catalog WHERE rarity = 'common';
+  IF v_i <> 38 OR v_j <> 4 THEN
+    RAISE EXCEPTION 'common pool changed (% evergreen, % xm); update this test', v_i, v_j;
+  END IF;
+  v_hits := 0;
+  FOR v_i IN 1..5000 LOOP
+    v_pick := public.pack_pick_card('common', v_start + interval '10 days');
+    IF v_pick LIKE 'xm-%' THEN v_hits := v_hits + 1; END IF;
+  END LOOP;
+  IF v_hits < 1049 OR v_hits > 1351 THEN
+    RAISE EXCEPTION 'in season xm- commons came up %/5000, expected ~1200 (3x boost)', v_hits;
+  END IF;
+  RAISE NOTICE 'in season: xm- commons % of 5000 picks (boosted ~1200, flat ~476)', v_hits;
+  v_hits := 0;
+  FOR v_i IN 1..5000 LOOP
+    v_pick := public.pack_pick_card('common', v_start - interval '1 day');
+    IF v_pick LIKE 'xm-%' THEN v_hits := v_hits + 1; END IF;
+    v_pick := public.pack_pick_card(NULL, v_end);
+    IF v_pick LIKE 'xm-%' THEN v_hits := v_hits + 1; END IF;
+  END LOOP;
+  IF v_hits <> 0 THEN
+    RAISE EXCEPTION 'out of season an xm- card was picked % times', v_hits;
+  END IF;
+
+  -- End to end through settle_pack_open, as an authenticated player.
+  -- Legendary-only odds: the pool is 8 evergreen legendaries plus
+  -- xm-santa. Boosted, xm-santa is 3/11 = 27%; flat it is 1/9 = 11%.
+  -- 20 players x 10 legendary packs x 10 cards = 2000 cards: mean 545,
+  -- sd 20. Accept +-5 sd. Fresh players each run, 10 opens each, so the
+  -- pack_open rate limit (30 a minute) never trips.
+  CREATE TEMP TABLE boost_odds_bak AS SELECT rarity, weight FROM public.pack_odds;
+  UPDATE public.pack_odds SET weight = CASE WHEN rarity = 'legendary' THEN 100 ELSE 0 END;
+  FOR v_i IN 1..40 LOOP
+    v_uid := pg_catalog.gen_random_uuid();
+    INSERT INTO auth.users (id) VALUES (v_uid) ON CONFLICT DO NOTHING;
+    v_users := v_users || v_uid;
+  END LOOP;
+
+  UPDATE public.card_seasons
+  SET starts_at = pg_catalog.now() - interval '1 day',
+      ends_at = pg_catalog.now() + interval '1 day'
+  WHERE id = 'naughty-list';
+  v_hits := 0;
+  v_total := 0;
+  FOR v_i IN 1..20 LOOP
+    FOR v_j IN 1..10 LOOP
+      PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_users[v_i]::text, 'role', 'authenticated')::text, true);
+      EXECUTE 'SET LOCAL ROLE authenticated';
+      v_row := public.settle_pack_open(format('boost-in-%s-%s', v_i, v_j), 'legendary');
+      RESET ROLE;
+      SELECT v_hits + count(*) FILTER (WHERE x = 'xm-santa'), v_total + count(*)
+        INTO v_hits, v_total
+      FROM jsonb_array_elements_text(v_row->'card_ids') x;
+    END LOOP;
+  END LOOP;
+  IF v_total <> 2000 THEN
+    RAISE EXCEPTION 'expected 2000 rolled cards, got %', v_total;
+  END IF;
+  IF v_hits < 445 OR v_hits > 645 THEN
+    RAISE EXCEPTION 'in season settle_pack_open rolled xm-santa %/2000, expected ~545 (3x boost)', v_hits;
+  END IF;
+  RAISE NOTICE 'in season: settle_pack_open rolled xm-santa % of 2000 (boosted ~545, flat ~222)', v_hits;
+
+  -- Same pool, season not open yet, then already closed: never rolled.
+  v_hits := 0;
+  FOR v_i IN 21..40 LOOP
+    FOR v_j IN 1..10 LOOP
+      IF v_j <= 5 THEN
+        UPDATE public.card_seasons
+        SET starts_at = pg_catalog.now() + interval '1 day',
+            ends_at = pg_catalog.now() + interval '9 days'
+        WHERE id = 'naughty-list';
+      ELSE
+        UPDATE public.card_seasons
+        SET starts_at = pg_catalog.now() - interval '9 days',
+            ends_at = pg_catalog.now()
+        WHERE id = 'naughty-list';
+      END IF;
+      PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_users[v_i]::text, 'role', 'authenticated')::text, true);
+      EXECUTE 'SET LOCAL ROLE authenticated';
+      v_row := public.settle_pack_open(format('boost-out-%s-%s', v_i, v_j), 'legendary');
+      RESET ROLE;
+      SELECT v_hits + count(*) FILTER (WHERE x LIKE 'xm-%') INTO v_hits
+      FROM jsonb_array_elements_text(v_row->'card_ids') x;
+    END LOOP;
+  END LOOP;
+  IF v_hits <> 0 THEN
+    RAISE EXCEPTION 'out of season settle_pack_open rolled xm- cards % times', v_hits;
+  END IF;
+
+  -- A replayed nonce returns the stored cards; it does not reroll.
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_users[1]::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  v_row := public.settle_pack_open('boost-in-1-1', 'legendary');
+  RESET ROLE;
+  IF NOT (v_row->>'replay')::boolean OR (v_row->'card_ids') IS DISTINCT FROM (
+    SELECT to_jsonb(card_ids) FROM public.pack_receipts WHERE user_id = v_users[1] AND nonce = 'boost-in-1-1'
+  ) THEN
+    RAISE EXCEPTION 'a replayed pack nonce rerolled: %', v_row;
+  END IF;
+
+  UPDATE public.pack_odds o SET weight = b.weight FROM boost_odds_bak b WHERE o.rarity = b.rarity;
+  DROP TABLE boost_odds_bak;
+  UPDATE public.card_seasons SET starts_at = v_start, ends_at = v_end WHERE id = 'naughty-list';
+  DELETE FROM auth.users WHERE id = ANY (v_users);
+
+  RAISE NOTICE 'naughty list pack boost assertions passed';
+END $$;
+SQL
+
 echo "==> Asserting social links: friends, guild hashes, presence, invites, challenge seam"
 "${PSQL[@]}" <<'SQL'
 DO $$
