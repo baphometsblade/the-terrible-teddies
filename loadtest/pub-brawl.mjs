@@ -27,6 +27,9 @@ const serviceKey = arg('service', process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 const players = Number(arg('players', '100'));
 const disconnectRate = Number(arg('disconnect', '0.1'));
 const idleRate = Number(arg('idle', '0.05'));
+// Think time before each real move, in ms. 0 is a bot hammering the bar; a
+// person takes a second or more. Realtime lag is only meaningful when paced.
+const thinkMs = Number(arg('think', '0'));
 const secret = process.env.PVP_CRON_SECRET || 'local-pvp-cron';
 const turnHint = Number(process.env.PVP_TURN_MS || 90000);
 
@@ -97,6 +100,7 @@ function choose(view) {
 
 async function playOne(user, role) {
   const errors = {};
+  const rejected = {};
   const moves = [];
   const waits = [];
   const lags = [];
@@ -157,6 +161,7 @@ async function playOne(user, role) {
       if (sync.payload?.view) view = sync.payload.view;
       continue;
     }
+    if (thinkMs > 0) await new Promise((resolve) => setTimeout(resolve, thinkMs * (0.5 + Math.random())));
     const sent = await post(user.token, 'pvp-action', {
       op: 'act',
       matchId: view.matchId,
@@ -171,7 +176,14 @@ async function playOne(user, role) {
       view = sent.payload.view;
     } else {
       const code = sent.payload?.error;
-      if (code && code !== 'out_of_turn' && code !== 'stale') {
+      if (code === 'out_of_turn' || code === 'stale') {
+        // The same as the client: the stool moved, so look again before the
+        // next move. Without this a seat whose Realtime push was missed keeps
+        // offering the same stale version until its clock runs out.
+        rejected[code] = (rejected[code] || 0) + 1;
+        const sync = await post(user.token, 'pvp-action', { op: 'sync', matchId: view.matchId });
+        if (sync.payload?.view) view = sync.payload.view;
+      } else if (code) {
         errors[code] = (errors[code] || 0) + 1;
       }
       await new Promise((resolve) => setTimeout(resolve, code === 'slow' ? 1000 : 150));
@@ -181,6 +193,7 @@ async function playOne(user, role) {
   await user.client.removeChannel(channel);
   return {
     errors,
+    rejected,
     moves,
     waits,
     lags,
@@ -242,7 +255,7 @@ for (let i = 0; i < players; i += 1) {
 const ticker = setInterval(tick, 500);
 const started = Date.now();
 const results = await Promise.all(users.map((user, index) => playOne(user, index).catch((err) => ({
-  errors: { throw: 1, [err.message]: 1 }, moves: [], waits: [], lags: [], reconnects: 0, reconnectOk: 0, over: false,
+  errors: { throw: 1, [err.message]: 1 }, rejected: {}, moves: [], waits: [], lags: [], reconnects: 0, reconnectOk: 0, over: false,
 }))));
 clearInterval(ticker);
 await tick();
@@ -254,6 +267,10 @@ const errors = {};
 for (const row of results) {
   for (const [key, count] of Object.entries(row.errors)) errors[key] = (errors[key] || 0) + count;
 }
+const rejected = {};
+for (const row of results) {
+  for (const [key, count] of Object.entries(row.rejected || {})) rejected[key] = (rejected[key] || 0) + count;
+}
 const reconnects = results.reduce((sum, row) => sum + row.reconnects, 0);
 const reconnectOk = results.reduce((sum, row) => sum + row.reconnectOk, 0);
 const completed = results.filter((row) => row.over).length;
@@ -263,9 +280,11 @@ const audit = await diverged(results.map((row) => row.matchId));
 
 const report = {
   players,
+  thinkMs,
   elapsedMs: Date.now() - started,
   completed,
   errors,
+  rejected,
   reasons,
   moveMs: { p50: percentile(moves, 50), p95: percentile(moves, 95), p99: percentile(moves, 99), n: moves.length },
   queueMs: { p50: percentile(waits, 50), p95: percentile(waits, 95), p99: percentile(waits, 99), n: waits.length },
