@@ -4,77 +4,77 @@
     "type": "card",
     "target": "public/cards/ma-1.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Heels-in-Hand Holly, a full-figured lilac plush teddy bear in an open coat limping over cobblestones at dawn with her stilettos dangling from one paw, a doorway closing behind her:1.15). (plush teddy bear with lilac full-figured fur:1.2), open coat, stilettos in paw. Neo-impressionist pointillism painting, countless tiny dots of pure colour, soft dawn haze. Setting: cobbled street at dawn. Colour palette: Lilac, dawn apricot and cobblestone grey. Lighting: apricot dawn haze. Camera: full figure walking. Cheeky adult humour, no text. No humans, no children, no cubs.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Neo-impressionist pointillism painting, countless tiny dots of pure colour, soft dawn haze:1.35), (a full-figured lilac plush teddy bear in an open coat limping over cobblestones at dawn with her stilettos dangling from one paw, a doorway closing behind her:1.25), wearing open coat, stilettos in paw, signature prop: open coat, setting: cobbled street at dawn, colour palette of Lilac, dawn apricot, cobblestone grey, lighting: apricot dawn haze, camera: full figure walking. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: lilac full-figured fur. Cheeky adult humour, no text. No humans, no children, no cubs.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "ma-2",
     "type": "card",
     "target": "public/cards/ma-2.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Sent-at-3am Tess, a cobalt blue plush teddy bear in bed at 3am wincing at her own glowing phone screen, squinting through one eye, duvet pulled up, regret all over her face:1.15). (plush teddy bear with cobalt-blue fur:1.2), glowing phone, duvet. Phone front-camera selfie, wide angle distortion, dark bedroom lit only by the screen glow, grainy low light. Setting: dark bedroom. Colour palette: Cobalt blue and screen-glow cyan. Lighting: screen glow only. Camera: close selfie angle. Cheeky adult humour, no text. No humans, no children, no cubs.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Phone front-camera selfie, wide angle distortion, dark bedroom lit only by the screen glow, grainy low light:1.35), (a cobalt blue plush teddy bear in bed at 3am wincing at her own glowing phone screen, squinting through one eye, duvet pulled up, regret all over her face:1.25), wearing no clothes, bare plush fur, signature prop: glowing phone, setting: dark bedroom, colour palette of Cobalt blue, screen-glow cyan, lighting: screen glow only, camera: close selfie angle. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: cobalt-blue fur. Cheeky adult humour, no text. No humans, no children, no cubs.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "ma-3",
     "type": "card",
     "target": "public/cards/ma-3.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Sauce-Stain Sam, a cream plush teddy bear covered in chilli sauce stains holding a kebab with a hopeful grin, posed like the photo on a backlit kebab shop menu board, no words:1.15). (plush teddy bear with cream fur splotched with chilli sauce:1.2), loaded kebab wrap. Backlit takeaway menu photograph, oversaturated food photo, glossy fluorescent lightbox. Setting: glowing white lightbox. Colour palette: Chilli red, lightbox white and lettuce green. Lighting: flat backlight. Camera: straight-on menu shot. Cheeky adult humour, no text. No humans, no children, no cubs.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Backlit takeaway menu photograph, oversaturated food photo, glossy fluorescent lightbox:1.35), (a cream plush teddy bear covered in chilli sauce stains holding a kebab with a hopeful grin, posed like the photo on a backlit kebab shop menu board, no words:1.25), wearing no clothes, bare plush fur, signature prop: loaded kebab wrap, setting: glowing white lightbox, colour palette of Chilli red, lightbox white, lettuce green, lighting: flat backlight, camera: straight-on menu shot. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: cream fur splotched with chilli sauce. Cheeky adult humour, no text. No humans, no children, no cubs.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "ma-4",
     "type": "card",
     "target": "public/cards/ma-4.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Cab-of-Shame Cara, a plum-rose plush teddy bear in last night's dress slumped against a taxi window, city lights smearing past, the meter glowing with a huge fare:1.15). (plush teddy bear with plum-rose fur:1.2), sparkly dress, glitter heel. 1990s Hong Kong film still, step-printed motion smear, neon blur through glass, saturated grainy colour. Setting: taxi back seat at night. Colour palette: Plum rose, taxi red and neon smear green. Lighting: red dash glow, green neon smear. Camera: step-printed motion. Cheeky adult humour, no text. No humans, no children, no cubs.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(1990s Hong Kong film still, step-printed motion smear, neon blur through glass, saturated grainy colour:1.35), (a plum-rose plush teddy bear in last night's dress slumped against a taxi window, city lights smearing past, the meter glowing with a huge fare:1.25), slumped asleep against the rain-streaked window, mascara smudged, one glitter heel dangling from a toe, wearing sparkly dress, signature prop: a glitter heel dangling from one toe, setting: back seat of a red Hong Kong cab streaking through Mong Kok neon, colour palette of Plum rose, taxi red, neon smear green, lighting: red dash glow, green neon smear, camera: step-printed motion. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: plum-rose fur. Cheeky adult humour, no text. No humans, no children, no cubs.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "ma-5",
     "type": "card",
     "target": "public/cards/ma-5.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Kebab Aristotle, a broad marble white plush teddy bear in a toga lecturing a small crowd of plush teddy bears with a kebab skewer raised like a philosopher's pointer, all drawn as red-figure pottery:1.15). (plush teddy bear with terracotta-orange fur:1.2), toga, kebab skewer. Ancient Greek red-figure vase painting, terracotta figures on black glaze, meander border patterns. Setting: black glaze with meander bands. Colour palette: Terracotta orange and glaze black. Lighting: flat vase painting. Camera: frieze side-on. Cheeky adult humour, no text. No humans, no children, no cubs.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Ancient Greek red-figure vase painting, terracotta figures on black glaze, meander border patterns:1.35), (a broad marble white plush teddy bear in a toga lecturing a small crowd of plush teddy bears with a kebab skewer raised like a philosopher's pointer, all drawn as red-figure pottery:1.25), wearing toga, signature prop: kebab skewer, setting: black glaze with meander bands, colour palette of Terracotta orange, glaze black, lighting: flat vase painting, camera: frieze side-on. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: terracotta-orange fur. Cheeky adult humour, no text. No humans, no children, no cubs.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "ma-6",
     "type": "card",
     "target": "public/cards/ma-6.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Blackout Brunch, a honey plush teddy bear in sunglasses face-planted into a plate of eggs benedict, wearing someone else's oversized shirt, a bloody mary toppling over, a croissant in one paw:1.15). (plush teddy bear with honey plush fur:1.2), sunglasses, oversized striped shirt, croissant. Overexposed overhead brunch flat-lay photograph, blown-out white light, marble table, harsh shadows. Setting: white marble brunch table. Colour palette: Hollandaise yellow, tomato red and marble white. Lighting: blown-out daylight. Camera: overhead. Cheeky adult humour, no text. No humans, no children, no cubs.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Overexposed overhead brunch flat-lay photograph, blown-out white light, marble table, harsh shadows:1.35), (a honey plush teddy bear in sunglasses face-planted into a plate of eggs benedict, wearing someone else's oversized shirt, a bloody mary toppling over, a croissant in one paw:1.25), squinting into the sun over a brunch table, wearing someone else's oversized shirt, wearing sunglasses, oversized striped shirt, signature prop: croissant, setting: white marble brunch table, colour palette of Hollandaise yellow, tomato red, marble white, lighting: blown-out daylight, camera: overhead. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: honey plush fur. Cheeky adult humour, no text. No humans, no children, no cubs.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "ma-7",
     "type": "card",
     "target": "public/cards/ma-7.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Still-Warm Stella, a warm terracotta plush teddy bear sitting up in rumpled white sheets in a quiet room, steam curling off the warm bedding, one eye open, a pearl earring on her plush ear:1.15). (plush teddy bear with warm-terracotta fur:1.2), pearl earring, white sheets. Dutch Golden Age interior painting, soft window light from the left, quiet stillness, pearly detail. Setting: quiet room with a window and blue jar. Colour palette: Terracotta, ultramarine and soft window cream. Lighting: soft window light from the left. Camera: seated in bed. Cheeky adult humour, no text. No humans, no children, no cubs.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Dutch Golden Age interior painting, soft window light from the left, quiet stillness, pearly detail:1.35), (a warm terracotta plush teddy bear sitting up in rumpled white sheets in a quiet room, steam curling off the warm bedding, one eye open, a pearl earring on her plush ear:1.25), wearing pearl earring, signature prop: white sheets, setting: quiet room with a window and blue jar, colour palette of Terracotta, ultramarine, soft window cream, lighting: soft window light from the left, camera: seated in bed. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: warm-terracotta fur. Cheeky adult humour, no text. No humans, no children, no cubs.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "ma-8",

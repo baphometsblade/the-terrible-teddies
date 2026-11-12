@@ -4,109 +4,109 @@
     "type": "card",
     "target": "public/cards/hd-sash.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Sash-Snatch Sue, a cheeky white fluffy plush teddy bear sprinting across a rugby pitch like a try-scorer, clutching a stolen satin bride sash like a ball, five more sashes already slung over her shoulders, mud on her paws, triumphant grin:1.15). (plush teddy bear with snow-white fluffy fur, muddy paws:1.2), stolen pink satin bride sashes. Sports action photograph, telephoto lens, frozen motion, stadium floodlights, grass spray and motion blur in the background. Setting: floodlit rugby pitch. Colour palette: Pitch green, floodlight white and satin pink. Lighting: stadium floodlights. Camera: telephoto, frozen motion. Cheeky adult humour, no text.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Sports action photograph, telephoto lens, frozen motion, stadium floodlights, grass spray and motion blur in the background:1.35), (a cheeky white fluffy plush teddy bear sprinting across a rugby pitch like a try-scorer, clutching a stolen satin bride sash like a ball, five more sashes already slung over her shoulders, mud on her paws, triumphant grin:1.25), wearing no clothes, bare plush fur, signature prop: stolen pink satin bride sashes, setting: floodlit rugby pitch, colour palette of Pitch green, floodlight white, satin pink, lighting: stadium floodlights, camera: telephoto, frozen motion. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: snow-white fluffy fur, muddy paws. Cheeky adult humour, no text.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "hd-veil",
     "type": "card",
     "target": "public/cards/hd-veil.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Veil of Bad Ideas, a sly lavender plush teddy bear drifting through a moonlit garden of lilies with a tiny sheer veil perched on her round bear ears, a hotel room key glinting in one paw and a knowing sideways look:1.15). (plush teddy bear with lavender sly fur:1.2), tiny sheer veil, antique hotel key. Romantic Victorian painting in the medieval-revival style, jewel tones, lush flowing detail, rich glazed oil. Setting: moonlit lily garden. Colour palette: Lavender, moss green and moonlit silver. Lighting: silver moonlight, jewel-tone glaze. Camera: seated waist-up. Cheeky adult humour, no text.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Romantic Victorian painting in the medieval-revival style, jewel tones, lush flowing detail, rich glazed oil:1.35), (a sly lavender plush teddy bear drifting through a moonlit garden of lilies with a tiny sheer veil perched on her round bear ears, a hotel room key glinting in one paw and a knowing sideways look:1.25), wearing tiny sheer veil, signature prop: antique hotel key, setting: moonlit lily garden, colour palette of Lavender, moss green, moonlit silver, lighting: silver moonlight, jewel-tone glaze, camera: seated waist-up. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: lavender sly fur. Cheeky adult humour, no text.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "hd-chorus",
     "type": "card",
     "target": "public/cards/hd-chorus.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Chorus of Yes, a perfect circular kaleidoscope formation of identical coral plush teddy bears seen from directly above, all doing the same high kick in feather boas, the loudest one in the centre with her mouth wide open:1.15). (plush teddy bear with coral feather-boa fur:1.2), feather boas, mirrored dance floor. 1930s Hollywood kaleidoscope musical overhead shot, mirrored symmetry, black and white silver film with a coral tint. Setting: kaleidoscope stage from above. Colour palette: Coral, silver and film black. Lighting: silver-screen film light, coral tint. Camera: straight down overhead. Cheeky adult humour, no text.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(1930s Hollywood kaleidoscope musical overhead shot, mirrored symmetry, black and white silver film with a coral tint:1.35), (a perfect circular kaleidoscope formation of identical coral plush teddy bears seen from directly above, all doing the same high kick in feather boas, the loudest one in the centre with her mouth wide open:1.25), a ring of identical plush teddy showgirls kicking in unison, seen from directly above, wearing feather boas, signature prop: mirrored dance floor, setting: kaleidoscope stage from above, colour palette of Coral, silver, film black, lighting: silver-screen film light, coral tint, camera: straight down overhead. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: coral feather-boa fur. Cheeky adult humour, no text.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "hd-shot",
     "type": "card",
     "target": "public/cards/hd-shot.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Shot-Glass Shannon, an energetic tangerine plush teddy bear tossing back a shot while the liquid explodes around her head in a frozen crown splash, her other paw already swinging a feather boa:1.15). (plush teddy bear with tangerine energetic fur:1.2), shot glass, frozen liquid crown, orange feather boa. High-speed liquid splash studio photograph, frozen droplets, black backdrop, crisp strobe. Setting: pure black studio. Colour palette: Tangerine, liquid gold and jet black. Lighting: crisp strobe. Camera: close, centred. Cheeky adult humour, no text.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(High-speed liquid splash studio photograph, frozen droplets, black backdrop, crisp strobe:1.35), (an energetic tangerine plush teddy bear tossing back a shot while the liquid explodes around her head in a frozen crown splash, her other paw already swinging a feather boa:1.25), wearing frozen liquid crown, orange feather boa, signature prop: shot glass, setting: pure black studio, colour palette of Tangerine, liquid gold, jet black, lighting: crisp strobe, camera: close, centred. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: tangerine energetic fur. Cheeky adult humour, no text.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "hd-lap",
     "type": "card",
     "target": "public/cards/hd-lap.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Lap-Line Lola, a chubby rose-gold plush teddy bear on a gilded swing over a velvet rope, kicking off a satin slipper as a crowd of plush teddy courtiers in powdered wigs gasp behind their fans:1.15). (plush teddy bear with rose-gold chubby fur:1.2), frilly pink dress, satin slipper, gilded swing. Rococo pastel painting, frothy powdered pinks and blues, gilded swirls, flirtatious garden mood. Setting: powder-blue garden with teddy courtiers. Colour palette: Rose gold, powder blue and cream. Lighting: frothy pastel daylight. Camera: low, looking up at the swing. Cheeky adult humour, no text.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Rococo pastel painting, frothy powdered pinks and blues, gilded swirls, flirtatious garden mood:1.35), (a chubby rose-gold plush teddy bear on a gilded swing over a velvet rope, kicking off a satin slipper as a crowd of plush teddy courtiers in powdered wigs gasp behind their fans:1.25), wearing frilly pink dress, satin slipper, signature prop: gilded swing, setting: powder-blue garden with teddy courtiers, colour palette of Rose gold, powder blue, cream, lighting: frothy pastel daylight, camera: low, looking up at the swing. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: rose-gold chubby fur. Cheeky adult humour, no text.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "hd-bree",
     "type": "card",
     "target": "public/cards/hd-bree.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Bridesmaid Bree, a show-off seafoam plush teddy bear in an enormous puffed-sleeve satin bridesmaid dress striking a dramatic pose on top of a reception table, bouquet held high, glitter in the air:1.15). (plush teddy bear with seafoam show-off fur:1.2), puff-sleeve satin bridesmaid dress, bouquet. 1980s prom photograph, laser backdrop, soft focus, heavy film grain, posed studio flash. Setting: laser prom backdrop. Colour palette: Seafoam, laser purple and cerulean blue. Lighting: posed studio flash, soft focus. Camera: full figure, low. Cheeky adult humour, no text.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(1980s prom photograph, laser backdrop, soft focus, heavy film grain, posed studio flash:1.35), (a show-off seafoam plush teddy bear in an enormous puffed-sleeve satin bridesmaid dress striking a dramatic pose on top of a reception table, bouquet held high, glitter in the air:1.25), wearing puff-sleeve satin bridesmaid dress, signature prop: bouquet, setting: laser prom backdrop, colour palette of Seafoam, laser purple, cerulean blue, lighting: posed studio flash, soft focus, camera: full figure, low. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: seafoam show-off fur. Cheeky adult humour, no text.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "hd-honour",
     "type": "card",
     "target": "public/cards/hd-honour.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Maid of Honour, a rumpled pale yellow plush teddy bear in a maid's apron and crooked tiara lying face down negotiating with an ornate carpet, one paw raised to make a point, an empty glass rolling away:1.15). (plush teddy bear with pale-yellow rumpled fur:1.2), frilly apron, crooked tiara, empty glass. Dutch blue-and-white delftware tile painting, glazed ceramic, cobalt brushwork on white, a grid of tiles. Setting: tiled cobalt carpet and sky. Colour palette: Cobalt blue, glaze white and pale yellow. Lighting: glazed ceramic shine. Camera: floor level. Cheeky adult humour, no text.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Dutch blue-and-white delftware tile painting, glazed ceramic, cobalt brushwork on white, a grid of tiles:1.35), (a rumpled pale yellow plush teddy bear in a maid's apron and crooked tiara lying face down negotiating with an ornate carpet, one paw raised to make a point, an empty glass rolling away:1.25), wearing frilly apron, crooked tiara, signature prop: empty glass, setting: tiled cobalt carpet and sky, colour palette of Cobalt blue, glaze white, pale yellow, lighting: glazed ceramic shine, camera: floor level. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: pale-yellow rumpled fur. Cheeky adult humour, no text.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "hd-petra",
     "type": "card",
     "target": "public/cards/hd-petra.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Private-Dance Petra, a copper plush teddy bear peeking around a heavy gold-patterned curtain with a silk sleep mask pushed up on her brow, crooking one paw to beckon you in:1.15). (plush teddy bear with copper plush fur:1.2), emerald silk sleep mask, gold-spiral curtain. Vienna Secession gold-leaf painting, mosaic patterns, flat ornamental gold, swirling spirals. Setting: gold-leaf mosaic wall. Colour palette: Gold leaf, copper and emerald. Lighting: flat ornamental gold. Camera: close at the curtain edge. Cheeky adult humour, no text.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Vienna Secession gold-leaf painting, mosaic patterns, flat ornamental gold, swirling spirals:1.35), (a copper plush teddy bear peeking around a heavy gold-patterned curtain with a silk sleep mask pushed up on her brow, crooking one paw to beckon you in:1.25), wearing emerald silk sleep mask, signature prop: gold-spiral curtain, setting: gold-leaf mosaic wall, colour palette of Gold leaf, copper, emerald, lighting: flat ornamental gold, camera: close at the curtain edge. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: copper plush fur. Cheeky adult humour, no text.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "hd-bride",
     "type": "card",
     "target": "public/cards/hd-bride.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (The Bride Says So, a commanding pearl-white plush teddy bear bride sitting bolt upright on a carved throne at the head table, a huge ruff and pearl-encrusted gown, a sceptre made from a champagne flute, one eyebrow raised:1.15). (plush teddy bear with pearl-white commanding fur:1.2), ruff, pearl-encrusted gown, champagne flute. Tudor royal state portrait, flat formal pose, jewelled embroidery, dark background, gilded detail. Setting: carved gilt throne on black. Colour palette: Pearl white, Tudor black and ruby red. Lighting: formal flat portrait light. Camera: frontal state pose. Cheeky adult humour, no text.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Tudor royal state portrait, flat formal pose, jewelled embroidery, dark background, gilded detail:1.35), (a commanding pearl-white plush teddy bear bride sitting bolt upright on a carved throne at the head table, a huge ruff and pearl-encrusted gown, a sceptre made from a champagne flute, one eyebrow raised:1.25), wearing pearl-encrusted gown, signature prop: ruff, setting: carved gilt throne on black, colour palette of Pearl white, Tudor black, ruby red, lighting: formal flat portrait light, camera: frontal state pose. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: pearl-white commanding fur. Cheeky adult humour, no text.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   },
   {
     "id": "hd-luxe",
     "type": "card",
     "target": "public/cards/hd-luxe.webp",
     "aspect": "896*1152",
-    "prompt": "(stuffed plush teddy bear toy:1.4), (adult plush teddy bear:1.2) with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human. A plush teddy bear toy character: (Last-Dance Luxe, a glamorous platinum plush teddy bear taking an encore bow on a stage, flinging her sequin jacket into the crowd so it flies in a spotlight, a sea of tiny lighter flames held up by plush teddy bear paws below:1.15). (plush teddy bear with platinum glamorous fur:1.2), sequin gown, flying sequin jacket. Arena concert photograph, haze, sweeping spotlight beams, crowd of lighters, wide lens. Setting: arena stage over a teddy crowd. Colour palette: Platinum, spotlight violet and lighter amber. Lighting: violet spotlight beams through haze. Camera: wide from the pit. Cheeky adult humour, no text.",
-    "negative_prompt": "human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
-    "styles": [
-      "Fooocus V2"
-    ]
+    "prompt": "(Arena concert photograph, haze, sweeping spotlight beams, crowd of lighters, wide lens:1.35), (a glamorous platinum plush teddy bear taking an encore bow on a stage, flinging her sequin jacket into the crowd so it flies in a spotlight, a sea of tiny lighter flames held up by plush teddy bear paws below:1.25), wearing sequin gown, flying sequin jacket, signature prop: sequin gown, setting: arena stage over a teddy crowd, colour palette of Platinum, spotlight violet, lighter amber, lighting: violet spotlight beams through haze, camera: wide from the pit. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: platinum glamorous fur. Cheeky adult humour, no text.",
+    "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
+    "styles": [],
+    "performance": "Quality",
+    "guidance_scale": 6
   }
 ]
