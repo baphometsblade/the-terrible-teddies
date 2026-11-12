@@ -143,6 +143,7 @@ REVOKE ALL ON public.pvp_slips FROM PUBLIC, anon, authenticated;
 
 GRANT SELECT ON public.pvp_views TO authenticated;
 
+DROP POLICY IF EXISTS pvp_views_own ON public.pvp_views;
 CREATE POLICY pvp_views_own ON public.pvp_views
   FOR SELECT TO authenticated
   USING (user_id = auth.uid());
