@@ -76,6 +76,38 @@ Mark: "EVERY bear in the game looks too similar." The Naughty List finding held 
 
 The name drives everything else: the medium, palette, set, angle and joke. The only thing every bear shares is the adult plush-toy guard. The plates are generated in waves, and each wave's provenance is in `art/renders/roster-wave-N.json`.
 
+## The distinctness pass (Nov 2026)
+
+Goal: you can tell every bear from its art alone, and the art says its name.
+
+**Audit.** `scripts/art-distinctness-audit.py` scores every pair of bear plates
+with 0.6 × CLIP ViT-B-32 image cosine + 0.25 × HSV colour-histogram overlap +
+0.15 × pHash. It also checks how well each plate matches its own medium + gag
+text, ranked against all 117 plates. It writes an in-app-size contact sheet (a
+PIL replica of TeddyCard at 2×, with frame and scrims) and a thumbnail grid.
+Results: `art/audit/distinctness-before.json` and `art/audit/distinctness-after.json`.
+
+The lookalikes came from one cluster: warm, dark old-master oil and varnish
+in oxblood, umber and gold, with a centred honey-brown bear. Sixteen bears were
+flagged, by eye and by score.
+
+| | before | after |
+|---|---|---|
+| closest pair (combined) | 0.779 (65 ~ Chuck) | 0.745 (23 ~ hd-lap) |
+| mean of top 20 pairs | 0.747 | 0.709 |
+| closest CLIP pair | 0.846 | 0.799 |
+| bears whose nearest neighbour is > 0.75 / > 0.72 / > 0.70 | 8 / 26 / 35 | 0 / 7 / 17 |
+
+**Redone on Fooocus (13).** 4, 14, 18, 20, 65, 90, 91, 105, 106, ck-rita,
+ck-tabitha, lo-owners-round, xm-ozzy. The settings were Quality, guidance 6,
+juggernautXL v8, and each bear's own Fooocus style presets. A new plate was only
+kept if it read better by eye *and* its nearest-neighbour score dropped. Seeds,
+prompts and candidate scores are in `art/renders/distinct-pass.json`.
+
+**Kept live (3).** 23, 55 and 61. No candidate was clearly better: they drew
+humans, lost the gag, or read as blood. 23's signature was put back to match its
+live art. 55's and 61's new signatures are the target for a future render.
+
 ## Image backend: local Fooocus on the GPU only
 
 Mark's call (Nov 2026): every image goes through Fooocus-API on his own PC, on its NVIDIA GPU. No hosted generator (fal.ai or similar) is used, and nothing in the game, its Supabase functions or its Vercel project calls one at runtime. Card art is static files under `public/cards/`, so the live site never needs the art PC. `src/artPipeline.test.js` fails the suite if a hosted generator turns up in `src/`, `scripts/`, `supabase/` or the package files. `docs/` and `art/renders/` are exempt, because they hold the provenance of plates made before the switch.
@@ -119,10 +151,10 @@ Rules: adults only, cheeky and saucy, never explicit, no real people, no text in
 | 17 | Blackout Bjorn | Blackout Bjorn: a hulking dark-auburn shaggy plush teddy bear passed out on the deck of a stitched longship, a drinking horn still clutched in his paw | Medieval embroidered tapestry like the Bayeux Tapestry | Madder red, woad blue, ochre wool | drinking horn | stitched longship with shields, embroidered waves, a thieving gull | side-on tapestry frieze |
 | 18 | Grandpa Warcrimes | Grandpa Warcrimes draws his tall war stories as battle plans on the blackboard | chalkboard chalk drawing | chalk white, slate black, chalk red | a pointer stick and exaggerated chalk battle-plan arrows | a retirement-home blackboard covered in wild battle diagrams | straight-on, the bear in the lower left, the diagrams filling the rest |
 | 19 | The Seam Reaper | The Seam Reaper: a tall skeletal-thin bone-pale-grey plush teddy bear in a hooded reaper robe, round plush ears poking out of the hood | Medieval danse-macabre woodcut | bone white, woodcut black, aged-paper ochre | giant sewing scissors | conga line of nervous plush teddies, unspooled thread | procession frieze |
-| 20 | The Godfluffer | The Godfluffer is the don: kiss the ring | origami folded paper diorama | cream paper, jet black paper, gold foil | a fat gold-foil ring held out to be kissed | a folded paper wingback chair on a bright white table | low angle looking up at the throne |
+| 20 | The Godfluffer | The Godfluffer is the don: kiss the ring | papier-mache sculpture | cream paper, jet black paper, gold foil | a fat gold-foil ring held out to be kissed | a folded paper wingback chair on a bright white table | low angle looking up at the throne |
 | 21 | Fluffpocalypse Now | Fluffpocalypse Now: standing heroically in a burning field of torn teddy stuffing that drifts like smoke | 1970s jungle war-movie film still | Napalm orange, sun yellow, black silhouette | cavalry hat | burning field of drifting torn stuffing, helicopter silhouettes | anamorphic low wide |
 | 22 | Hungover Hank | Hungover Hank: a broad stale-beer-brown plush teddy bear with flattened fur, face-down in a bowl of cereal at a sunny kitchen table | 1950s magazine-cover illustration in the warm | Butter yellow, robin's-egg blue, breakfast warmth | ice pack on his head | sunny 1950s kitchen table with cereal bowl | homely eye-level table view |
-| 23 | Morning-After May | Morning-After May: last night's mascara literally runs down the page | alcohol ink painting | mascara black, champagne gold, blush rose | an empty champagne coupe | half-drawn gauzy curtains at dawn | close three-quarter portrait |
+| 23 | Morning-After May | Morning-After May: peeking from the curtains at dawn with last night's mascara smeared | French Impressionist oil painting | Rose pink, dawn gold, pale lilac | an empty champagne coupe | half-drawn gauzy curtains at dawn | close three-quarter portrait |
 | 24 | Smitten Sid | Smitten Sid: a lean blush-pink plush teddy bear with lovesick button eyes on bended knee, clutching a wilted bouquet | Victorian Valentine card chromolithograph with embossed lace-paper doily edges | Blush pink, lace white, rose red | wilted bouquet | embossed paper-lace doily frame with scrap roses | centred valentine vignette |
 | 25 | Crush Cora | Crush Cora: flashing a sweet sugary smile while effortlessly crushing a cocktail glass in her paw | 1920s Art Deco cocktail poster | Jet black, polished silver | pearl strands | Art Deco sunburst fans and chrome geometry | bold poster close-up |
 | 26 | Blackout Bea | Blackout Bea: a midnight-blue plush teddy bear splattered all over with glowing UV paint, dancing wildly blindfolded with her paws in the air | Ultraviolet blacklight rave photograph | UV violet, neon yellow-green | blindfold | rave dance floor with laser haze | low dancing angle |
@@ -172,7 +204,7 @@ Rules: adults only, cheeky and saucy, never explicit, no real people, no text in
 | 103 | Off-the-Grid Greg | Off-the-Grid Greg: a twitchy sand-beige plush teddy bear wrapped in tinfoil with a tinfoil hat, ripping a phone cord out of a wall with both paws | Harsh on-camera flash photograph of a conspiracy corkboard wall | Tinfoil silver, string red, corkboard tan | coiled phone cord | conspiracy corkboard with red string and maps | close and slightly overhead |
 | 104 | Unhinged Cuddles | Unhinged Cuddles: a bubblegum-pink plush teddy bear with a too-wide stitched grin and wide staring button eyes, arms flung open for a hug | 1980s horror VHS cover painting | Bubblegum pink, horror green, black | too-wide stitched grin | dark hallway | lunging toward the lens |
 | 105 | Whiskey Whiskers | Whiskey Whiskers has whiskers literally soaked in whiskey | scrimshaw engraving on whale-bone ivory | bone ivory, scrimshaw ink black, whiskey amber | a gigantic curling handlebar moustache dripping whiskey | a ship's porthole and a tiny whiskey cask | tight bust portrait, the moustache spanning the full width of the frame |
-| 106 | Landlord Lucifur | Landlord Lucifur is the landlord from hell: horns, pitchfork and the keys to every flat | Chicano lowrider airbrush mural | lava red, marigold orange, turquoise | an enormous ring of brass apartment keys | a sun-baked pink apartment block with tiny plush tenants on every balcony | low hero angle, the bear filling the right half |
+| 106 | Landlord Lucifur | Landlord Lucifur is the landlord from hell: horns, pitchfork and the keys to every flat | Chicano airbrush mural art | lava red, marigold orange, turquoise | an enormous ring of brass apartment keys | a sun-baked pink apartment block with tiny plush tenants on every balcony | low hero angle, the bear filling the right half |
 | 108 | Void Where Prohibited | Void Where Prohibited: a matte void-black plush teddy bear dissolving into TV static and corrupted pixels at the edges, hollow glowing white eye sockets | Glitch art | RGB glitch magenta, cyan, void black | glowing white eye sockets | black void | front-on |
 | 109 | Door-Staff Donna | Door-Staff Donna: a tall jet-black plush teddy bear in a puffer jacket with a headset, holding a club door shut with one paw and an unimpressed stare | Cyberpunk rain-soaked neon street photograph | Neon teal, signal red | headset | rain-soaked club door | low by the door |
 | ck-chuck | Chuck | Chuck: leaning on his bar with a gentle half-lidded smile, bar towel over one shoulder | 17th-century Dutch tavern genre painting | Tavern umber, ale gold, Chuck's teal | tankards | rowdy 17th-century tavern of plush regulars | across the bar |

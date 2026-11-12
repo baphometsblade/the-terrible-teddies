@@ -121,7 +121,7 @@ for r in pairs:
 # name readability: CLIP text-image score of "a picture of <gag>" vs the bear's own art rank
 tok = open_clip.get_tokenizer('ViT-B-32')
 with torch.no_grad():
-    tx = model.encode_text(tok([f"{bib[i]['render'].split(',')[0]}, {bib[i]['gag'][:200]}" for i in ids]))
+    tx = model.encode_text(tok([f"{(bib[i].get('medium') or bib[i]['render'].split(',')[0])}, {bib[i]['gag'][:200]}" for i in ids]))
     tx = tx/tx.norm(dim=-1, keepdim=True)
 ti = (emb@tx.T).numpy()  # image x text
 rank = {ids[k]: int((ti[:, k] > ti[k, k]).sum())+1 for k in range(n)}  # rank of own image among all for own text
