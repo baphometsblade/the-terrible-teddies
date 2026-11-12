@@ -90,3 +90,41 @@ function process and a single GoTrue, not of the match row. More than one
 function instance, and a longer clock than the 3 seconds used here, is what
 a thousand concurrent stools needs. The production default clock stays 90
 seconds.
+
+## Production clock, ES256 tokens (12 Nov 2026)
+
+The stack above was rebuilt with session tokens signed the way production
+signs them: GoTrue holds an ES256 key (`GOTRUE_JWT_KEYS`), PostgREST and
+Realtime verify against its JWKS, and the functions get `SUPABASE_JWKS` and no
+shared secret, which is what a hosted function sees. `PVP_TURN_MS` is unset,
+so the clock is the production 90 seconds. Postgres runs with the image's own
+config (`postgres -D /etc/postgresql`), so pg_cron, pg_net and logical
+replication are on.
+
+Why the earlier 100-player run only half finished:
+
+1. Every move asked GoTrue who the caller was. A hundred players at once made
+   GoTrue refuse calls, which came back as `auth`. Callers are now verified in
+   the function (`_shared/jwt.ts`) against the project's signing keys. The
+   first fix used an HS256 shared secret, which production does not sign
+   with and cannot be given (`SUPABASE_` names are reserved), so it would have
+   fallen back to GoTrue on every move in production.
+2. The run used a 3 second clock, so most fights ended on the clock.
+3. A move rejected as `stale` was retried with the same stale version and
+   never resynced, so a seat that missed a Realtime push sat until its clock
+   ran out. The harness now syncs first, as the client does.
+
+| Run | Completed | Ended by play | Errors | Move p50 / p95 / p99 | Queue p99 | Realtime p50 / p95 | Reconnect | Divergence | GoTrue /user calls | Deadlocks |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 100, no think time | 100 / 100 | 50 / 50 | 0 | 54 / 104 / 168 ms | 1.0 s | 2.0 / 4.6 s | 9 / 9 | 0 / 50 | 0 | 0 |
+| 100, `--think 1500` | 100 / 100 | 50 / 50 | 0 | 16 / 58 / 107 ms | 0.9 s | 0.3 / 0.6 s | 32 / 32 | 0 / 50 | 0 | 0 |
+| 100, no think time, final heads, CI suite running alongside | 100 / 100 | 50 / 50 | 0 | 107 / 232 / 337 ms | 1.7 s | 1.0 / 2.1 s | 11 / 11 | 0 / 50 | 0 | 0 |
+
+Realtime lag without think time is one local Realtime node fanning out about
+280 moves a second from bots that never pause. At a human pace it is under a
+second at p95, and the client polls as a fallback either way.
+
+Scheduling lives in `supabase/ops/pub_brawl_schedule.sql` (pg_cron calls
+pvp-timeout every minute and replay-prune daily, with the cron secret in
+Vault). It is not a migration because the scratch Postgres in CI has no
+pg_cron or Vault.
