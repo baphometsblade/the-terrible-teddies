@@ -169,7 +169,10 @@ const promptFor = (card) => {
     return `Product photo${ADULT}, single object filling the frame — ${subject}. ${scene}${tail}`;
   }
   const fur = card.fur ? `${card.fur} ` : '';
-  return `RAW photo, ${fur}plush teddy bear, ${fur}fur${ADULT} — ${subject}. ${scene}${tail}`;
+  // Each bear names its own medium (cartoon cel, woodblock, thermal camera...).
+  // A fixed "RAW photo" lead shot every bear as the same plush photograph.
+  const medium = card.medium || 'RAW photo';
+  return `${medium}, ${fur}plush teddy bear, ${fur}fur${ADULT} — ${subject}. ${scene}${tail}`;
 };
 
 // Non-brown bears fight the model's brown-plush prior, so they get an
