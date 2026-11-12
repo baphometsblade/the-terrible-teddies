@@ -3,23 +3,27 @@
 
 export const QUICKIE_ART = {
   96: {
+    medium: 'Italian Futurism painting',
     fur: 'hot pink',
-    visual: 'lean adult bear in a rumpled cocktail dress, bow tie undone, alley door behind her',
-    scene: 'Dutch tilt in a bar alley under a red bulb, Quinn retying her bow with a wink.',
+    visual: 'adult lean bear with a polka-dot bow and a stopwatch, body repeated in motion copies',
+    scene: 'Sprinting out of a storeroom in a blur of speed lines, a mop and bucket spinning behind.',
   },
   97: {
+    medium: 'Fauvist painting',
     fur: 'taxi yellow',
-    visual: 'squat adult bear, shirt half off, seatbelt across his chest, smug grin',
-    scene: 'Shot through a cab window at night, Benny grinning from a rumpled back seat.',
+    visual: 'adult squat smug shirtless bear, paws behind his head, shirt on the headrest',
+    scene: 'Sprawled across a taxi back seat by a glowing meter, the city outside in wild colour.',
   },
   98: {
+    medium: 'spaghetti-western close-up',
     fur: 'closing-time red',
-    visual: 'tall adult bear, one heel in her paw, smeared lipstick, empty shot glass',
-    scene: 'Low angle at the bar rail under harsh house lights, Rita toasting past closing.',
+    visual: 'adult tall bear in a poncho and flat-brimmed hat, eyes narrowed',
+    scene: 'Slamming down a shot glass like a gunslinger beside a row of empties lined up like bullets.',
   },
   99: {
+    medium: '60s caper title graphic',
     fur: 'hotel white',
-    visual: 'broad adult bear, undone tuxedo, room key in his teeth, coat over one arm',
-    scene: 'Doorway of a hotel corridor at dawn, Otto leaving a lipstick mark and no number.',
+    visual: 'adult broad bear in a striped tie, room key in his teeth, shoes in his paw',
+    scene: 'Climbing out of a hotel window down knotted bedsheets under a crescent moon, all cut-paper shapes.',
   },
 };

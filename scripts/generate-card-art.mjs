@@ -59,13 +59,13 @@ const { heatClause } = await import('@/lib/nsfwArt.js');
 // Chuck's goons (GameBoard.jsx opponent deck, base stats). They have no
 // descriptions in code, so the character lines live here.
 const GOONS = [
-  { id: 101, name: 'Repo Ted', type: 'action', fur: 'gunmetal grey', visual: 'burly bear, hi-vis work vest, bolt cutters, repossession clipboard', scene: 'Low angle in a parking lot under blue-and-red cop lights, towing a car mid-argument.' },
-  { id: 102, name: 'Loan-Shark Larry', type: 'action', fur: 'silver white', visual: 'sleek bear, pinstripe suit, gold tooth, fat cigar, pinky rings', scene: 'Over-the-shoulder in a casino back office under a green banker lamp, counting a fat roll of cash.' },
-  { id: 103, name: 'Off-the-Grid Greg', type: 'action', fur: 'sand beige', visual: 'twitchy bear, tinfoil beanie, mismatched goggles, hand-drawn conspiracy map', scene: 'Fisheye in a cluttered bunker under a flickering camp lantern, pinning string to a corkboard.' },
-  { id: 104, name: 'Unhinged Cuddles', type: 'action', fur: 'bubblegum pink', visual: 'bear with a too-wide stitched grin, popped seams leaking stuffing', scene: 'Extreme close-up in a padded room under harsh white strip light, grinning directly into the lens.' },
-  { id: 105, name: 'Whiskey Whiskers', type: 'action', fur: 'russet ginger', visual: 'grizzled bear, greying muzzle, half-moon glasses, tiny tumbler', scene: 'Tight profile at the far end of the bar under amber lamplight, staring into his last drink.' },
-  { id: 106, name: 'Landlord Lucifur', type: 'action', fur: 'crimson black', visual: 'horned bear, velvet smoking jacket, eviction notice, ring of keys', scene: 'Low hero angle in a condemned stairwell under a red exit-sign glow, nailing a notice to a door.' },
-  { id: 108, name: 'Void Where Prohibited', type: 'action', fur: 'matte void black', visual: 'bear dissolving into static at the edges, hollow glowing eye sockets', scene: 'Dutch tilt in a pitch-dark room lit only by a buzzing broken TV, half-eaten by static.' },
+  { id: 101, name: 'Repo Ted', type: 'action', medium: '80s toy-commercial VHS still', fur: 'gunmetal grey', visual: 'adult burly bear in a hi-vis vest and cap with a tow hook', scene: 'Hooking a tiny toy car onto his toy tow truck while a smaller teddy protests.' },
+  { id: 102, name: 'Loan-Shark Larry', type: 'action', medium: 'aquarium-glass photo', fur: 'silver white', visual: 'adult sleek bear in a shark-fin hat and pinstripe suit, gold tooth', scene: 'Counting a fat stack of cash at a desk while sharks circle in the tank wall behind.' },
+  { id: 103, name: 'Off-the-Grid Greg', type: 'action', medium: 'corkboard flash photo', fur: 'sand beige', visual: 'adult twitchy bear in tinfoil and a foil hat, mismatched button eyes', scene: 'Ripping a coiled phone cord from the wall in front of a corkboard of red string and maps.' },
+  { id: 104, name: 'Unhinged Cuddles', type: 'action', medium: '80s horror VHS cover', fur: 'bubblegum pink', visual: 'adult bear with a too-wide stitched grin, stuffing bursting from popped seams', scene: 'Lunging for a hug out of a dark green hallway on a scuffed tape cover.' },
+  { id: 105, name: 'Whiskey Whiskers', type: 'action', medium: 'Victorian caricature watercolour', fur: 'russet ginger', visual: 'adult grizzled big-headed bear with a vast whiskey-soaked handlebar moustache', scene: 'Stroking the moustache like a professor in a green leather club chair, a tiny tumbler in paw.' },
+  { id: 106, name: 'Landlord Lucifur', type: 'action', medium: 'Renaissance hellscape panel', fur: 'crimson black', visual: 'adult horned bear with a pitchfork and a huge ring of keys', scene: 'Collecting rent from a queue of tiny teddy tenants in a fiery underworld tenement.' },
+  { id: 108, name: 'Void Where Prohibited', type: 'action', medium: 'glitch art', fur: 'matte void black', visual: 'adult bear with glowing hollow eyes melting into corrupted pixels', scene: 'Perched on a broken TV leaking colour bars, half of him datamoshed away.' },
 ];
 
 // Kept terse on purpose: CLIP truncates at 77 tokens, so subject identity
