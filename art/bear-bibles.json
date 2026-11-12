@@ -451,9 +451,9 @@
       "lighting": "cold green dawn mist",
       "camera": "low wide at water level",
       "pose": "rising head and shoulders out of a misty jungle river, face painted with camouflage",
-      "gag": "a hulking mud-caked stuffed plush teddy bear toy commander rising head and shoulders out of a misty jungle river at dawn, face painted with camouflage, a cavalry hat on his head, torn teddy stuffing drifting like smoke over the water, helicopter silhouettes in the mist",
+      "gag": "(a hulking mud-caked stuffed plush teddy bear toy commander alone:1.3), rising head and shoulders out of a misty jungle river at dawn, face painted with camouflage, a cavalry hat on his head, torn teddy stuffing drifting like smoke over the water, two tiny black helicopter silhouettes far away in the mist",
       "painterly": false,
-      "negative_extra": "(human, man, soldier, fire, orange sunset:1.5)"
+      "negative_extra": "(human, man, person, people, soldier, human figure, crowd, pilot, fire, orange sunset:1.7)"
     },
     "22": {
       "name": "Hungover Hank",
@@ -691,8 +691,8 @@
     "55": {
       "name": "Ashtray Annie",
       "name_gag": "Ashtray Annie wears the ashtray as a hat",
-      "medium": "1950s jazz record sleeve photograph",
-      "medium_detail": "deep blue duotone, smoky high-contrast print, bold off-centre composition, no lettering",
+      "medium": "toy-shop product photograph",
+      "medium_detail": "seamless deep-blue paper backdrop, crisp studio softbox, a single plush toy centred like a catalogue shot",
       "styles": [
         "SAI Photographic"
       ],
@@ -704,13 +704,13 @@
       "fur": "ash-grey curvy fur, curlers",
       "outfit": "overflowing ashtray hat, smoke ring",
       "prop": "an overflowing glass ashtray worn on her head like a pillbox hat",
-      "setting": "scorched old mattress",
-      "lighting": "smoky high-contrast blue duotone",
-      "camera": "tight off-centre head-and-shoulders portrait",
-      "pose": "blowing a perfect smoke ring through a long cigarette holder",
-      "gag": "(an overflowing glass ashtray full of cigarette butts balanced on her head as a pillbox hat:1.3), a curvy ash-grey stuffed plush teddy bear toy with round plush ears, button eyes and big curlers, blowing a perfect smoke ring through a long cigarette holder",
+      "setting": "seamless deep jazz-blue paper backdrop",
+      "lighting": "crisp studio softbox with a curl of smoke",
+      "camera": "centred catalogue shot, the plush filling the frame",
+      "pose": "sitting upright with a smug half-lidded look, a curl of smoke rising",
+      "gag": "(a curvy ash-grey stuffed plush teddy bear toy sitting upright:1.3), (an overflowing glass ashtray full of cigarette butts worn on her head as a hat:1.35), plush curlers peeking out under it, a curl of smoke rising, smug half-lidded button eyes",
       "painterly": false,
-      "negative_extra": "(woman, girl, pin-up model, female face, lips, afro hair, big hair:1.6)"
+      "negative_extra": "(woman, girl, human, person, model, pin-up, female face, lips, hands, cigarette holder:1.7)"
     },
     "56": {
       "name": "Bouncer Bruno",
@@ -835,7 +835,7 @@
       "lighting": "hard theatrical spotlight",
       "camera": "wide stage view, both bears filling the frame",
       "pose": "mid-slap with one plush paw, tears and champagne flying in slow motion",
-      "gag": "two stuffed plush teddy bear toys on a puppet-theatre stage: a lanky dusty-rose plush teddy bear in a bridesmaid dress slapping a smaller plush teddy groom across the face, his head snapping sideways, a tiny wire microphone peeking from her neckline, felt tears and champagne flying",
+      "gag": "two stuffed plush teddy bear toys on a puppet-theatre stage: (a lanky dusty-rose plush teddy bear in a bridesmaid dress swinging her paw and slapping a smaller plush teddy groom across the cheek:1.4), (his head snapping sideways with felt tears flying:1.2), a tiny wire microphone peeking from her neckline, champagne spraying",
       "painterly": false,
       "negative_extra": "(woman, girl, bride, actress, female face, human hands, puppeteer:1.6)"
     },
@@ -1373,16 +1373,16 @@
         "emerald green",
         "drive-in violet"
       ],
-      "fur": "mustard-yellow squat smug fur",
+      "fur": "emerald-green squat smug plush fur",
       "outfit": "shirt hung on the headrest",
       "prop": "a fogged-up window with a paw-drawn heart",
       "setting": "the back seat of a cherry-red convertible at a drive-in movie under the stars",
       "lighting": "wild unnatural colour",
       "camera": "over the front seat, looking back",
       "pose": "sprawled shirtless with his arms behind his head like he owns the back seat",
-      "gag": "a squat smug mustard-yellow stuffed plush teddy bear toy sprawled shirtless across the back seat of a cherry-red convertible at a drive-in movie with his arms behind his head, his shirt hanging off the headrest, a fogged-up window with a paw-drawn heart, stars and a glowing movie screen beyond",
+      "gag": "(a squat smug emerald-green stuffed plush teddy bear toy, shirtless, no clothes on his body:1.3), sprawled across the back seat of a cherry-red convertible at a drive-in movie with his arms behind his head, his shirt hanging off the headrest, a fogged-up window with a paw-drawn heart, stars and a glowing movie screen beyond",
       "painterly": true,
-      "negative_extra": "(taxi, cab, meter, human, man:1.5)"
+      "negative_extra": "(taxi, cab, meter, human, man, yellow bear, winnie the pooh, red t-shirt:1.6)"
     },
     "98": {
       "name": "Last-Round Rita",
@@ -1554,9 +1554,9 @@
       "lighting": "hot desert noon with heat shimmer",
       "camera": "tight low-angle close-up, the bear filling two-thirds of the frame",
       "pose": "leaning on a pitchfork and jangling the key ring with a smug grin",
-      "gag": "a glossy devil-red stuffed plush teddy bear toy landlord with felt horns and a pointed felt tail, leaning on a pitchfork and jangling an enormous ring of apartment keys in front of a pink apartment block full of tiny plush tenants",
+      "gag": "(a glossy devil-red stuffed plush teddy bear toy with red felt horns and a pointed felt tail:1.4), the landlord leaning on a pitchfork and jangling an enormous ring of apartment keys at the blue door of a pink apartment block, tiny plush tenants peeking from the balconies",
       "painterly": true,
-      "negative_extra": "(car, lowrider car, vehicle, devil face, sun face:1.5)"
+      "negative_extra": "(car, lowrider car, vehicle, devil face, sun face, yellow bear, golden fur, human, man, person:1.5)"
     },
     "108": {
       "name": "Void Where Prohibited",

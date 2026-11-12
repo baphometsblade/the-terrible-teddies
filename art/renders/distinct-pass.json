@@ -193,6 +193,82 @@
    }
   },
   {
+   "id": "23",
+   "name": "Morning-After May",
+   "medium": "cyanotype print",
+   "seed": 2111,
+   "styles": [
+    "Mk Cyanotype Print"
+   ],
+   "performance": "Quality",
+   "guidance_scale": 6,
+   "prompt": "(cyanotype print, sun-printed Prussian-blue photogram on rough watercolour paper, white silhouettes, soft exposure edges:1.35), (a tall curvy stuffed plush teddy bear toy wrapped in a rumpled bedsheet, peeking out from behind half-drawn gauzy curtains at dawn with smeared mascara and a sly regretful wink, last night's sequin dress slipping off one shoulder, a pair of heels and an empty champagne coupe on the sill:1.25), peeking out from behind half-drawn gauzy curtains with smeared mascara and a sly regretful wink, wearing a sequin dress slipping off one shoulder, signature prop: an empty champagne coupe, setting: half-drawn gauzy curtains at dawn, colour palette of Prussian blue, paper white, lighting: early sun exposure glow, camera: close portrait, the bear filling most of the frame. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: rumpled pale plush fur in cyanotype white. Cheeky adult humour, no text.",
+   "negative_prompt": "(woman, girl, human face, pink:1.4), (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh, brown fur, tan fur, honey fur",
+   "gpu_peak_util": 99,
+   "elapsed_s": 29.22,
+   "raw_sha256": "70771a33172ae3b167cd4594c715243a8cc202a748f801c0fb4d4e7e554363cc",
+   "candidates": [
+    "23__s2111",
+    "23__s3222",
+    "23__s4333",
+    "23__s5444"
+   ],
+   "picked": "23__s2111",
+   "nearest_before": {
+    "nearest": "hd-lap",
+    "score": 0.7454,
+    "text": 0.2406
+   },
+   "nearest_after": {
+    "file": "23__s2111.png",
+    "nearest": "102",
+    "score": 0.5714,
+    "text": 0.3616
+   },
+   "files": {
+    "public/cards/23.webp": "4b684d2a9c7001775efea42c94c2733d719433c3a5aeb91eeae73ed231332796",
+    "public/cards/thumbs/23.webp": "0887b06f53dadc07c4c3ddf8fbb651df1e1aace4bb469ad4a6e91fcbd942835d"
+   }
+  },
+  {
+   "id": "24",
+   "name": "Smitten Sid",
+   "medium": "Lite-Brite glowing peg art",
+   "seed": 4333,
+   "styles": [
+    "Mk Lite Brite Art"
+   ],
+   "performance": "Quality",
+   "guidance_scale": 6,
+   "prompt": "(Lite-Brite glowing peg art, glowing translucent plastic pegs on a black pegboard, pixel-dot outlines, bright backlit colour:1.35), (a lean stuffed plush teddy bear toy with lovesick button eyes down on one bended knee, clutching a wilted bouquet, glowing love-hearts popping off his head like steam, a ring box open in the other paw:1.25), wearing open ring box, signature prop: wilted bouquet, setting: a black pegboard sky of glowing peg love hearts, colour palette of electric cyan, peg red, pegboard black, lighting: backlit glowing pegs in the dark, camera: centred, the bear filling the frame. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: peg-red lovesick plush fur, heart-shaped button eyes. Cheeky adult humour, no text.",
+   "negative_prompt": "(human, man, woman, lettering:1.4), (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh, brown fur, tan fur, honey fur",
+   "gpu_peak_util": 99,
+   "elapsed_s": 21.55,
+   "raw_sha256": "2690ba89c94840368abc281f6aebecd596d2decbefa4fb70b88e00b1298c52ea",
+   "candidates": [
+    "24__s2111",
+    "24__s3222",
+    "24__s4333",
+    "24__s5444"
+   ],
+   "picked": "24__s4333",
+   "nearest_before": {
+    "nearest": "23",
+    "score": 0.7294,
+    "text": 0.2694
+   },
+   "nearest_after": {
+    "file": "24__s4333.png",
+    "nearest": "xm-mistletoe",
+    "score": 0.6174,
+    "text": 0.3693
+   },
+   "files": {
+    "public/cards/24.webp": "6f2ac667d1b1069ce11101b78a3e92a7eeab8f5db0217b686fb6916b37cbbdc6",
+    "public/cards/thumbs/24.webp": "b004b54866b711a5533ff325e8fdae45d443cff4a443d62fc75ae571da88ca3f"
+   }
+  },
+  {
    "id": "4",
    "name": "Bar-Fight Barry",
    "medium": "1990s arcade fighting-game screenshot",
@@ -413,6 +489,44 @@
    "files": {
     "public/cards/ck-tabitha.webp": "813a12cc9de6dd47fcafe2bb117eee5e974760181d1e5f770ccf9dbf48fd5a3e",
     "public/cards/thumbs/ck-tabitha.webp": "29a7541ef79994831f6421049933dd8be82a9b4e8b23b14f407f78f8251ea815"
+   }
+  },
+  {
+   "id": "hd-lap",
+   "name": "Lap-Line Lola",
+   "medium": "Rococo pastel painting",
+   "seed": 5444,
+   "styles": [
+    "Rococo"
+   ],
+   "performance": "Quality",
+   "guidance_scale": 6,
+   "prompt": "(Rococo pastel painting, frothy powdered pinks and blues, gilded swirls, flirtatious garden mood:1.35), (a chubby rose-gold stuffed plush teddy bear toy in a frilly powder-blue dress on a gilded flower swing in a Fragonard garden, kicking off a satin slipper as a crowd of plush teddy courtiers in powdered wigs gasp behind their fans:1.25), wearing frilly pink dress, satin slipper, signature prop: gilded swing, setting: powder-blue garden with teddy courtiers, colour palette of Rose gold, powder blue, cream, lighting: frothy pastel daylight, camera: low, looking up at the swing, the bear filling the upper frame. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: rose-gold chubby fur. Cheeky adult humour, no text.",
+   "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh, brown fur, tan fur, honey fur",
+   "gpu_peak_util": 99,
+   "elapsed_s": 21.61,
+   "raw_sha256": "0beb9e9cc73f7b26da50dbb169fb5df33742b4b8d437b3ad7d2d0e45c283c205",
+   "candidates": [
+    "hd-lap__s2111",
+    "hd-lap__s3222",
+    "hd-lap__s4333",
+    "hd-lap__s5444"
+   ],
+   "picked": "hd-lap__s5444",
+   "nearest_before": {
+    "nearest": "23",
+    "score": 0.7454,
+    "text": 0.369
+   },
+   "nearest_after": {
+    "file": "hd-lap__s5444.png",
+    "nearest": "95",
+    "score": 0.5821,
+    "text": 0.4039
+   },
+   "files": {
+    "public/cards/hd-lap.webp": "0a5a8321646944325c2e9441a058e479239602f78ed3c1897cf862dd370afbaf",
+    "public/cards/thumbs/hd-lap.webp": "28332a475b69e772ec37c47eb37fe888f738c098abd998bba1ae6f4fd69a06e1"
    }
   },
   {
