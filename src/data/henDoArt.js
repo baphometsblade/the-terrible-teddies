@@ -27,10 +27,10 @@ export const HEN_DO_ART = {
     scene: 'Frozen crown of liquor bursting around her on black, boa swinging.',
   },
   'hd-lap': {
-    medium: 'Rococo pastel painting',
+    medium: 'Rococo plush portrait',
     fur: 'rose gold',
-    visual: 'adult chubby bear kicking off a satin slipper on a gilded swing',
-    scene: 'Swinging over a velvet rope while bewigged teddy courtiers gasp behind fans.',
+    visual: 'adult chubby bear in a frilly powder-blue gown on a gilded rope swing',
+    scene: 'Swinging high in a rose garden, one satin slipper about to fly.',
   },
   'hd-bree': {
     medium: '80s prom photo',
