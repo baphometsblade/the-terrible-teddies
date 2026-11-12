@@ -4,29 +4,34 @@
 
 export const CHUCK_ART = {
   'ck-chuck': {
+    medium: 'Dutch tavern genre painting',
     fur: 'honey brown',
-    visual: 'adult honey-brown bartender bear, teal shirt, gold tooth, bow tie, bar towel',
-    scene: 'Low angle behind the neon bar, amber and magenta, he pours a shot.',
+    visual: 'adult barrel-chested bartender bear, bow tie, teal shirt, gold tooth, bar towel on his shoulder',
+    scene: 'Leaning on the bar with a gentle smile that is plainly a lie as a rowdy tavern of teddies spills ale.',
   },
   'ck-closing': {
+    medium: 'public-works mural',
     fur: 'honey brown',
-    visual: 'adult honey-brown bartender bear, teal shirt open, gold tooth, keys in paw',
-    scene: 'Doorway at last call, magenta neon, he flips the sign and winks.',
+    visual: 'adult barrel-chested bartender bear, bow tie, teal shirt, gold tooth, ringing a huge brass bell',
+    scene: 'Heaving the last-orders bell like a heroic worker over a sea of empty glasses, a clock behind.',
   },
   'ck-offduty': {
+    medium: '60s pool painting',
     fur: 'honey brown',
-    visual: 'adult honey-brown bartender bear, teal shirt off one shoulder, gold tooth, jacket',
-    scene: 'Alley behind the bar, warm spill light, he pockets a bottle.',
+    visual: 'adult barrel-chested bartender bear, shirt half off, bow tie, sunglasses up, gold tooth',
+    scene: 'Swigging a confiscated bottle in a deckchair beside a turquoise pool with a big white splash.',
   },
   'ck-rita': {
+    medium: 'Impressionist pastel',
     fur: 'russet',
-    visual: 'adult russet plush bear, lipstick, low neckline, a reserved stool',
-    scene: 'Profile at the bar rail under amber neon, Rita crossing her legs.',
+    visual: 'adult curvy bear on her reserved bar stool, legs crossed, cocktail and raised eyebrow',
+    scene: 'Holding court in a gaslit café bar, a blank reserved plaque beside her and empty stools around.',
   },
   'ck-tabitha': {
+    medium: 'kabuki woodblock print',
     fur: 'burgundy',
-    visual: 'adult burgundy plush bear, ledger, pencil, knowing smile, unbuttoned cuff',
-    scene: 'Over the bar book under a warm lamp, she writes a name and smirks.',
+    visual: 'adult sly bear in a patterned robe with a long quill, kabuki glare',
+    scene: 'Writing in a giant tab ledger with a lipstick kiss on the page and an abacus beside her.',
   },
   'ck-last-orders': {
     visual: 'a last-call bell, a full shot glass, and a lipstick-marked napkin',
