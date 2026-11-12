@@ -22,16 +22,16 @@ export const CHUCK_ART = {
     scene: 'Swigging a confiscated bottle in a deckchair beside a turquoise pool with a big white splash.',
   },
   'ck-rita': {
-    medium: 'Impressionist pastel',
+    medium: 'cross-stitch sampler',
     fur: 'russet',
-    visual: 'adult curvy bear on her reserved bar stool, legs crossed, cocktail and raised eyebrow',
-    scene: 'Holding court in a gaslit café bar, a blank reserved plaque beside her and empty stools around.',
+    visual: 'adult curvy bear in a cherry-red cardigan on her reserved bar stool, legs crossed, cocktail',
+    scene: 'Stitched into a linen sampler in an embroidery hoop, cherries in the border.',
   },
   'ck-tabitha': {
-    medium: 'kabuki woodblock print',
+    medium: 'paper quilling art',
     fur: 'burgundy',
-    visual: 'adult sly bear in a patterned robe with a long quill, kabuki glare',
-    scene: 'Writing in a giant tab ledger with a lipstick kiss on the page and an abacus beside her.',
+    visual: 'adult sly bear made of coiled receipt-paper quills, burgundy curls',
+    scene: 'Sitting among spirals of quilled bar-tab paper on a pale backdrop.',
   },
   'ck-last-orders': {
     visual: 'a last-call bell, a full shot glass, and a lipstick-marked napkin',
