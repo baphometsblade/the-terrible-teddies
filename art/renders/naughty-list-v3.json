@@ -1,0 +1,248 @@
+{
+  "set": "naughty-list",
+  "pass": 3,
+  "date": "2026-11-12",
+  "why": "Fooocus (MatrixMonster) was offline; generated on fal.ai. Bibles in art/bear-bibles.json; see docs/ART_DIRECTION.md.",
+  "plates": [
+    {
+      "id": "xm-desk",
+      "endpoint": "google/nano-banana-2.1",
+      "input": {
+        "aspect_ratio": "3:4",
+        "resolution": "1K",
+        "num_images": 3,
+        "output_format": "png"
+      },
+      "prompt": "Grainy night-vision security-camera still: bright monochrome phosphor-green infrared CCTV frame, heavy sensor noise, scan lines, slight fisheye distortion, shot from a camera mounted low on the cubicle wall, looking down and close into the kneehole under one office desk. Under-Desk Uma, a pitch-black plush teddy bear, big in the frame and filling the middle of the picture, is caught on camera crouched in the kneehole under the desk, her button eyes glowing white with infrared eyeshine as she stares straight up into the lens, busted. One plush paw dangles a lacy garter beside her face; a kicked-off stiletto lies right beside her; tangled cables around her. Close medium shot, the bear's head and body take up at least half the frame. Colour palette: Monochrome phosphor green and deep black only. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "request_id": "01a1ce80-27c3-79f3-b497-b72f8c67f96d",
+      "picked_image": 0,
+      "crop_px": {
+        "top": 6,
+        "bottom": 6,
+        "left": 6,
+        "right": 6
+      },
+      "post": "centre-crop to 3:4, Lanczos to 768x1024, sharp webp q74 effort 6; thumb via npm run art:thumbs",
+      "sha256": {
+        "full": "ed15cf44b3d9417a285ba904169bc4e30522115b7d56526d65aac8e54f2439f8",
+        "thumb": "2d787f59cc3fcda75b9f3ad41c7a94442b760aa26b09b37665b0ab0a7ca1c984"
+      }
+    },
+    {
+      "id": "xm-reply",
+      "endpoint": "google/nano-banana-2.1",
+      "input": {
+        "aspect_ratio": "3:4",
+        "resolution": "1K",
+        "num_images": 3,
+        "output_format": "png"
+      },
+      "prompt": "Bold Swiss-modernist cut-paper collage poster: flat layered paper shapes with crisp cut edges and soft paper shadows, strict geometric radial composition, straight-on and symmetrical. Reply-All Rita, a printer-paper-white plush teddy bear with toner-black smudges, stands dead centre with both plush paws pressed to her cheeks in horror as hundreds of blank white paper envelopes explode outward from the open laptop at her feet in a perfect radial burst filling the whole frame, the reply-all disaster. Colour palette: Blinding paper white and toner black, with one alarm-red notification dot; white dominates. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "request_id": "01a1ce7d-5f47-7b42-859e-f2dee0366398",
+      "picked_image": 1,
+      "crop_px": {
+        "top": 34,
+        "bottom": 36,
+        "left": 34,
+        "right": 33
+      },
+      "post": "centre-crop to 3:4, Lanczos to 768x1024, sharp webp q74 effort 6; thumb via npm run art:thumbs",
+      "sha256": {
+        "full": "d85711248778989c083e4b0fa56a11c2ffc2b54ee5441c7c4e0115e24af1f9b3",
+        "thumb": "f8f870bd1f0ef8309ca272bb8ba51b750c3f1b20519decaf80e962e410987258"
+      }
+    },
+    {
+      "id": "xm-ozzy",
+      "endpoint": "google/nano-banana-2.1",
+      "input": {
+        "aspect_ratio": "3:4",
+        "resolution": "1K",
+        "num_images": 3,
+        "output_format": "png"
+      },
+      "prompt": "Baroque oil painting in the manner of Caravaggio: dramatic chiaroscuro, glazed oil paint, visible craquelure, a single candle-like light from the upper left, deep shadow. Open-Bar Ozzy, a shaggy bourbon-amber plush teddy bear posed as a debauched Bacchus, crowned with grape leaves and gold tinsel, sprawled across a draped banquet table of toppled bottles and spilled goblets, a brimming goblet raised in each plush paw, flushed cheeks, roguish grin, his loosened party tie over his chest fluff. Colour palette: Burgundy wine, oxblood, umber and candle gold on a near-black background. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "request_id": "01a1ce7d-5f4b-7271-bf85-51841588d0e0",
+      "picked_image": 0,
+      "crop_px": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "post": "centre-crop to 3:4, Lanczos to 768x1024, sharp webp q74 effort 6; thumb via npm run art:thumbs",
+      "sha256": {
+        "full": "05144d01b149cc77500d436072b1779b2055f118fa359eee61a384f94e8369b3",
+        "thumb": "7245c371a383f0b07ab4d1588489e3a6ec84713c39860325e804f91ae43abcbb"
+      }
+    },
+    {
+      "id": "xm-holly",
+      "endpoint": "google/nano-banana-2.1",
+      "input": {
+        "aspect_ratio": "3:4",
+        "resolution": "1K",
+        "num_images": 3,
+        "output_format": "png"
+      },
+      "prompt": "1950s mid-century corporate safety-poster illustration in flat gouache with dry-brush grain and limited flat colours, clean graphic shapes, a sunburst behind the figure, straight-on. HR Holly, a holly-leaf-green plush teddy bear, leans toward the viewer pointing one plush paw straight at you like a recruitment poster, a clipboard tucked under her other arm, a crown of holly and red berries on her ears, wearing nothing but an HR lanyard and a strategically draped berry garland, one stern eyebrow raised and a sly wink. Colour palette: Mint teal background, coral red and cream, with holly green fur. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "request_id": "01a1ce7d-5f42-7cc0-91e2-25794f18460f",
+      "picked_image": 1,
+      "crop_px": {
+        "top": 47,
+        "bottom": 43,
+        "left": 44,
+        "right": 44
+      },
+      "post": "centre-crop to 3:4, Lanczos to 768x1024, sharp webp q74 effort 6; thumb via npm run art:thumbs",
+      "sha256": {
+        "full": "1773f0131d93a76b3213856bff89f3065bf6429276238f898d195e1fcf01262c",
+        "thumb": "3346629b0706b6946fee970d879d36f359ca071e0a48bfdb5854d03483ea2bed"
+      }
+    },
+    {
+      "id": "xm-nog",
+      "endpoint": "google/nano-banana-2.1",
+      "input": {
+        "aspect_ratio": "3:4",
+        "resolution": "1K",
+        "num_images": 3,
+        "output_format": "png"
+      },
+      "prompt": "Handmade stop-motion animation still: a felt-and-fleece puppet with visible stitching on a miniature handcrafted set, tiny practical lights, tilt-shift miniature depth of field, high three-quarter overhead angle. Eggnog Eddie, a chubby eggnog-cream plush teddy bear speckled with nutmeg, wallowing waist-deep and blissful inside a giant cut-glass punchbowl of frothy eggnog, a ladle raised like a toast in one plush paw and a shiny gold coin flipping in the air above him, a nog moustache on his muzzle, a stained little apron. Colour palette: Butter yellow, custard cream, cinnamon and nutmeg, warm pastel miniature kitchen set. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "request_id": "01a1ce7d-6ee3-73c3-98dd-a6d1cc5dc10a",
+      "picked_image": 1,
+      "crop_px": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "post": "centre-crop to 3:4, Lanczos to 768x1024, sharp webp q74 effort 6; thumb via npm run art:thumbs",
+      "sha256": {
+        "full": "ca1558b1b3465b6adc15a88b493397b03bd2fd82c2bbbc10d5b7828c8b9c2399",
+        "thumb": "354fb0886b8ac6f85fd230f0ed944af5716123e1cb0f8915f210b5a7a7a0ec7e"
+      }
+    },
+    {
+      "id": "xm-elf",
+      "endpoint": "google/nano-banana-2.1",
+      "input": {
+        "aspect_ratio": "3:4",
+        "resolution": "1K",
+        "num_images": 3,
+        "output_format": "png"
+      },
+      "prompt": "1980s synthwave airbrush art: glossy chrome highlights, neon glow, a laser grid floor running to a striped neon sunset, low hero angle, VHS bloom. Clocked-Out Elf, a cream-tan plush teddy bear, finally off the clock: a punch card clenched in his teeth, his green elf costume flying off and tossed over a wall punch clock behind him, the pointed elf hat spinning in the air, wearing only striped elf stockings and a jingle-bell collar, mid-disco dance pose with one paw pointing up, a cheeky grin. Colour palette: Hot magenta, electric cyan and violet chrome. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "request_id": "01a1ce7d-6f53-70e1-ba82-851ffa4a9949",
+      "picked_image": 1,
+      "crop_px": {
+        "top": 16,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "post": "centre-crop to 3:4, Lanczos to 768x1024, sharp webp q74 effort 6; thumb via npm run art:thumbs",
+      "sha256": {
+        "full": "02a0590201bd80e2023da8a288eeaef959673a0db3709581299733a6f0e5a6c7",
+        "thumb": "f70bb2f3ed706cf66f585ae8ad488e8be815e78e21beacf11249a6d13725efb6"
+      }
+    },
+    {
+      "id": "xm-secret",
+      "endpoint": "google/nano-banana-2.1",
+      "input": {
+        "aspect_ratio": "3:4",
+        "resolution": "1K",
+        "num_images": 3,
+        "output_format": "png"
+      },
+      "prompt": "1940s black-and-white film noir still: high-contrast silver gelatin photograph, hard venetian-blind shadow stripes across everything, cigarette smoke, tight dutch-angle close-up. Secret Santa Stan, a plush teddy bear in a tiny trench coat, a fedora and tiny round dark sunglasses, leans over a desk in a dim detective office and slides a badly wrapped, suspiciously bottle-shaped gift across to the viewer with one plush paw, finger to his muzzle: shh. Colour palette: Strict black-and-white monochrome; the gift's ribbon is the only colour in the frame, a single blood-red ribbon. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "request_id": "01a1ce7d-6ecc-77f0-9edd-e82823ab0f7a",
+      "picked_image": 1,
+      "crop_px": {
+        "top": 0,
+        "bottom": 32,
+        "left": 0,
+        "right": 0
+      },
+      "post": "centre-crop to 3:4, Lanczos to 768x1024, sharp webp q74 effort 6; thumb via npm run art:thumbs",
+      "sha256": {
+        "full": "c5c950631cd802bf7243d6af6e0823c0f63b8acd32cb247e0daf3610b8fb999b",
+        "thumb": "5323989fe7e3b4f8644e1c4aaa7822c46bb29d0f48901b37c4806a48d9f65c20"
+      }
+    },
+    {
+      "id": "xm-mistletoe",
+      "endpoint": "google/nano-banana-2.1",
+      "input": {
+        "aspect_ratio": "3:4",
+        "resolution": "1K",
+        "num_images": 3,
+        "output_format": "png"
+      },
+      "prompt": "1960s pop-art romance comic panel: bold black ink outlines, giant visible Ben-Day halftone dots, flat primary colours, melodramatic close-up, no speech bubbles and no caption boxes. Mistletoe Mandy, a berry-red plush teddy bear with long lashes, holds a sprig of mistletoe high over her head and plants a big smooch on a startled smaller honey-coloured plush teddy bear, a bright red lipstick kiss print already on his cheek, little hearts popping around them. Colour palette: Primary red and lemon yellow with cyan halftone dots. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "request_id": "01a1ce7d-6f4f-7922-be5a-b16556ccdb40",
+      "picked_image": 1,
+      "crop_px": {
+        "top": 60,
+        "bottom": 62,
+        "left": 60,
+        "right": 60
+      },
+      "post": "centre-crop to 3:4, Lanczos to 768x1024, sharp webp q74 effort 6; thumb via npm run art:thumbs",
+      "sha256": {
+        "full": "4aa3db3aba67e1202b4b0cd27a18331c1813f96bfac5bb6b81c1085fcf49c519",
+        "thumb": "b7200a349c8e9060060c80dbc31a5c4fcd0f31c9fe0465e22da9f75ff9c6e188"
+      }
+    },
+    {
+      "id": "xm-list",
+      "endpoint": "google/nano-banana-2.1",
+      "input": {
+        "aspect_ratio": "3:4",
+        "resolution": "1K",
+        "num_images": 3,
+        "output_format": "png"
+      },
+      "prompt": "Medieval illuminated manuscript miniature: egg tempera on vellum, burnished raised gold leaf, flat gothic perspective, an ornate decorative border of holly vines and gold filigree framing the scene. The Naughty List, an ink-black plush teddy bear with a silver muzzle and tiny gold spectacles, large in the frame, seated in a gothic scriptorium chair and holding a quill, an impossibly long scroll unrolling from her lectern and spilling in loops toward the viewer, covered only in abstract decorative squiggle marks that are not letters, a gold coin balanced on one raised plush paw, a knowing smirk. Close framing: the bear's head and shoulders fill the upper middle of the picture, inside a slim illuminated border. Colour palette: Lapis lazuli blue and burnished gold leaf with vermilion accents on cream vellum. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "request_id": "01a1ce80-2807-79d2-92df-41cd65f00143",
+      "picked_image": 1,
+      "crop_px": {
+        "top": 24,
+        "bottom": 24,
+        "left": 24,
+        "right": 24
+      },
+      "post": "centre-crop to 3:4, Lanczos to 768x1024, sharp webp q74 effort 6; thumb via npm run art:thumbs",
+      "sha256": {
+        "full": "25a7204a93c3bda0bc0ad6a937412466d13179faf06e639aecf5d2a266d2f2c6",
+        "thumb": "39af4d906c36d509e4a36578ddfbcbda60aff51e3408cb1a6449fdfefd7f1d31"
+      }
+    },
+    {
+      "id": "xm-santa",
+      "endpoint": "google/nano-banana-2.1",
+      "input": {
+        "aspect_ratio": "3:4",
+        "resolution": "1K",
+        "num_images": 3,
+        "output_format": "png"
+      },
+      "prompt": "1970s black-velvet blacklight painting: luminous fluorescent paint glowing on deep black velvet, soft velvet nap texture, kitsch lounge-art glamour, low reclining three-quarter view. Sleazy Santa, a portly sooty-white plush teddy bear with yellowed fur and stitched stubble, reclines on a round shag-carpet lounge bed, his Santa coat wide open showing chest fluff and a chunky gold medallion, Santa hat tilted, half-lidded bedroom eyes, a cigar in one plush paw, a bulging sack at his side, a sleazy eyebrow raised. Colour palette: Glowing electric orange, hot red and gold on pitch-black velvet. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "request_id": "01a1ce7d-380c-7473-ae78-065be39767b4",
+      "picked_image": 1,
+      "crop_px": {
+        "top": 0,
+        "bottom": 0,
+        "left": 0,
+        "right": 0
+      },
+      "post": "centre-crop to 3:4, Lanczos to 768x1024, sharp webp q74 effort 6; thumb via npm run art:thumbs",
+      "sha256": {
+        "full": "8b71d84469a36d48b73f0bb96135a6f2181c1f7521017c0d84308c898a3b1153",
+        "thumb": "9c2fe12d7f0f29c6e36ba304214c3c86b0bb88c45109835ef1d2689eacd32a84"
+      }
+    }
+  ]
+}
