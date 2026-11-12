@@ -46,7 +46,7 @@ The third pass gives each bear its own medium as well as its own gag, and no two
 | The Naughty List | illuminated manuscript miniature | lapis blue and gold leaf |
 | Sleazy Santa | 1970s black-velvet blacklight painting | electric orange and red on black |
 
-Each plate keeps the bear's face and gag in the clean band between the two scrims, and is checked as a card face, not only as a full plate. Fooocus was offline for this pass, so the plates came from Nano Banana 2.1 on fal.ai. `art/renders/naughty-list-v3.json` records the exact prompts, request ids, the pick and the crop, and the Fooocus manifest rows are recomposed from the same bibles, so a later Fooocus run aims at the same look.
+Each plate keeps the bear's face and gag in the clean band between the two scrims, and is checked as a card face, not only as a full plate. Fooocus was offline for this pass, so these ten plates came from a hosted generator (fal.ai), the only time one was used. `art/renders/naughty-list-v3.json` records the exact prompts, request ids, the pick and the crop, and the Fooocus manifest rows are recomposed from the same bibles, so a later Fooocus run aims at the same look. Hosted generators are retired; see "Image backend" below.
 
 ## The whole roster, name-first pass (Nov 2026)
 
@@ -57,11 +57,22 @@ Mark: "EVERY bear in the game looks too similar." The Naughty List finding held 
 
 The name drives everything else: the medium, palette, set, angle and joke. The only thing every bear shares is the adult plush-toy guard. The plates are generated in waves, and each wave's provenance is in `art/renders/roster-wave-N.json`.
 
+## Image backend: local Fooocus on the GPU only
+
+Mark's call (Nov 2026): every image goes through Fooocus-API on his own PC, on its NVIDIA GPU. No hosted generator (fal.ai or similar) is used, and nothing in the game, its Supabase functions or its Vercel project calls one at runtime. Card art is static files under `public/cards/`, so the live site never needs the art PC. `src/artPipeline.test.js` fails the suite if a hosted generator turns up in `src/`, `scripts/`, `supabase/` or the package files. `docs/` and `art/renders/` are exempt, because they hold the provenance of plates made before the switch.
+
+Fooocus-API listens on `127.0.0.1:8888` on the art PC and is not exposed to the internet. Run the generator on that PC:
+
+- `npm run art:fooocus -- --only <ids> --force` renders into the repo.
+- Add `--out-root <dir>` to render a preview outside `public/`, and `--provenance <file>` to record each render's prompt, seed, timing, GPU and output sha256.
+- With a loopback endpoint the generator checks `nvidia-smi` first and refuses to run without an NVIDIA GPU. It also samples GPU load during each render and warns if the load never passes 30%, which is what a CPU fallback looks like. `--gpu-check require|off` overrides this.
+- `npm run art:fooocus -- --self-test` runs the whole path against a mock Fooocus-API, and the unit suite runs it too.
+
 ## Workflow
 
 1. Edit a bible in `art/bear-bibles.json`.
 2. Run `node scripts/bear-bibles.mjs` to write the composed prompts, negatives and styles into `art/fooocus-manifest.json` and `art/fooocus-manifest.d/*.json`. `scripts/build-fooocus-manifest.mjs` uses the same composer.
-3. On the Fooocus machine, run `python scripts/generate-card-art-fooocus.py --force --only <ids>`.
+3. On the Fooocus machine, run `python scripts/generate-card-art-fooocus.py --force --only <ids> --out-root ../art-preview --provenance ../art-preview/prov.json`, review the previews, then run again without `--out-root` to write into `public/cards/`.
 4. Check the result: no humans or real animals, the gag reads at thumbnail size, and the bear doesn't look like his neighbours.
 
 Rules: adults only, cheeky and saucy, never explicit, no real people, no text in the image. Object and item plates, the app icon and the share image still use the shared bar style in `docs/ART_STYLE.md`.

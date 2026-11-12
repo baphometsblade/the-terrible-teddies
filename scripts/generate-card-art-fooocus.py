@@ -15,18 +15,49 @@ Reads art/fooocus-manifest.json and every art/fooocus-manifest.d/*.json.
 An entry whose output files already exist is skipped, unless --force.
 When the primary file exists and a derived size does not, the derived size
 is resized from the primary and Fooocus is not called.
+
+This is the only image backend for the game's art. No hosted generator is
+used: every plate is rendered by Fooocus-API on the art PC's own GPU
+(src/artPipeline.test.js enforces it).
+
+GPU check. When the endpoint is on this machine (loopback), the script reads
+nvidia-smi before the first call and refuses to run without an NVIDIA GPU,
+then samples GPU load while each render is in flight and warns when the load
+never rises, which is what a CPU fallback looks like. --gpu-check require
+forces the preflight for a non-loopback host; --gpu-check off skips it.
+
+Previews. --out-root writes the outputs under another directory instead of
+the repo, so a test render never touches public/:
+
+    python3 scripts/generate-card-art-fooocus.py --only xm-desk --force \
+        --out-root ../art-preview --provenance ../art-preview/xm-desk.json
+
+--provenance records, per render: prompt, negative, styles, seed, timing,
+the GPU name and its peak load, and the sha256 of every file written.
+
+--self-test runs the whole pipeline against a built-in mock Fooocus-API
+(no GPU, no network) and exits non-zero on any failure.
 """
 
 from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
+import ipaddress
 import json
 import os
+import shutil
+import struct
 import subprocess
 import sys
 import tempfile
+import threading
+import time
+import zlib
+from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_BASE = "http://127.0.0.1:8888"
@@ -187,21 +218,21 @@ def image_bytes(payload, base):
     if isinstance(blob, str) and blob.startswith("http"):
         url = blob
         blob = None
+    seed = first.get("seed") if isinstance(first, dict) else None
     if isinstance(blob, str) and len(blob) > 100:
         if blob.startswith("data:"):
             blob = blob.split(",", 1)[1]
-        return base64.b64decode(blob)
+        return base64.b64decode(blob), seed
     if url:
         got = http().get(url, timeout=120)
         got.raise_for_status()
-        return got.content
+        return got.content, seed
     reason = first.get("finish_reason") if isinstance(first, dict) else "unknown"
     raise RuntimeError(f"Fooocus returned no image ({reason})")
 
 
-def call_fooocus(base, entry, prompt):
-    url = base.rstrip("/") + ENDPOINT
-    body = {
+def request_body(entry, prompt):
+    return {
         "prompt": prompt,
         "negative_prompt": entry.get("negative_prompt") or "",
         "style_selections": entry.get("styles") or ["Fooocus V2", "Fooocus Sharp"],
@@ -212,10 +243,107 @@ def call_fooocus(base, entry, prompt):
         "require_base64": True,
         "async_process": False,
     }
+
+
+def call_fooocus(base, entry, prompt):
+    """POST one render. Returns (image bytes, seed Fooocus used)."""
+    url = base.rstrip("/") + ENDPOINT
+    body = request_body(entry, prompt)
     res = http().post(url, json=body, timeout=600)
     if not res.ok:
         raise RuntimeError(f"Fooocus-API {res.status_code}: {res.text[:300]}")
     return image_bytes(res.json(), base)
+
+
+# --- GPU evidence -----------------------------------------------------------
+
+GPU_QUERY = [
+    "nvidia-smi",
+    "--query-gpu=name,utilization.gpu,memory.used,memory.total",
+    "--format=csv,noheader,nounits",
+]
+# A Fooocus render on an NVIDIA card drives it well past this; a CPU fallback
+# leaves it near idle for minutes.
+GPU_BUSY_PERCENT = 30
+
+
+def is_loopback(base):
+    host = (urlparse(base).hostname or "").strip("[]").lower()
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def gpu_snapshot():
+    """Every NVIDIA GPU nvidia-smi sees, or None when there is none."""
+    if not shutil.which("nvidia-smi"):
+        return None
+    try:
+        out = subprocess.run(GPU_QUERY, capture_output=True, text=True, timeout=15, check=True).stdout
+    except (subprocess.SubprocessError, OSError):
+        return None
+    gpus = []
+    for line in out.strip().splitlines():
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) != 4:
+            continue
+        try:
+            gpus.append({
+                "name": parts[0],
+                "util": int(float(parts[1])),
+                "mem_used_mib": int(float(parts[2])),
+                "mem_total_mib": int(float(parts[3])),
+            })
+        except ValueError:
+            continue
+    return gpus or None
+
+
+class GpuSampler:
+    """Polls nvidia-smi in the background while one render runs."""
+
+    def __init__(self, enabled, interval=0.5):
+        self.enabled = enabled
+        self.interval = interval
+        self.peak_util = None
+        self.peak_mem = None
+        self.samples = 0
+        self._stop = threading.Event()
+        self._thread = None
+
+    def _run(self):
+        while not self._stop.is_set():
+            snap = gpu_snapshot()
+            if snap:
+                self.samples += 1
+                util = max(gpu["util"] for gpu in snap)
+                mem = max(gpu["mem_used_mib"] for gpu in snap)
+                self.peak_util = util if self.peak_util is None else max(self.peak_util, util)
+                self.peak_mem = mem if self.peak_mem is None else max(self.peak_mem, mem)
+            self._stop.wait(self.interval)
+
+    def __enter__(self):
+        if self.enabled:
+            self._thread = threading.Thread(target=self._run, daemon=True)
+            self._thread.start()
+        return self
+
+    def __exit__(self, *exc):
+        self._stop.set()
+        if self._thread:
+            self._thread.join(timeout=20)
+        return False
+
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def finish(src: Path, jobs):
@@ -233,20 +361,42 @@ def finish(src: Path, jobs):
         )
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Generate card and brand art with local Fooocus")
-    parser.add_argument("--base-url", default=os.environ.get("FOOOCUS_URL", DEFAULT_BASE))
-    parser.add_argument("--manifest", default=str(ROOT / "art" / "fooocus-manifest.json"))
-    parser.add_argument("--manifest-dir", default=str(ROOT / "art" / "fooocus-manifest.d"))
-    parser.add_argument("--only", default="", help="comma-separated ids")
-    parser.add_argument("--force", action="store_true", help="regenerate even when the files exist")
-    parser.add_argument("--dry-run", action="store_true")
-    args = parser.parse_args()
+def resolve_out(out_root: Path, rel: str) -> Path:
+    if ".." in Path(rel).parts or rel.startswith(("/", "\\")) or Path(rel).is_absolute():
+        raise SystemExit(f"output path must stay inside the output root ({rel})")
+    return out_root / rel
 
+
+def run(args):
     entries, style, default_negative = load_entries(Path(args.manifest), Path(args.manifest_dir))
     only = {part.strip() for part in args.only.split(",") if part.strip()}
     if only:
         entries = [entry for entry in entries if str(entry["id"]) in only]
+        unknown = only - {str(entry["id"]) for entry in entries}
+        if unknown:
+            raise SystemExit(f"unknown manifest id(s): {', '.join(sorted(unknown))}")
+
+    out_root = Path(args.out_root).resolve() if args.out_root else ROOT
+    check_gpu = args.gpu_check == "require" or (args.gpu_check == "auto" and is_loopback(args.base_url))
+    gpu_name = None
+    if check_gpu and not args.dry_run:
+        gpus = gpu_snapshot()
+        if not gpus:
+            raise SystemExit(
+                "No NVIDIA GPU visible to nvidia-smi. Fooocus would fall back to the CPU. "
+                "Run this on the art PC, or pass --gpu-check off for a remote endpoint."
+            )
+        gpu_name = gpus[0]["name"]
+        print(f"gpu {gpu_name}: {gpus[0]['mem_used_mib']}/{gpus[0]['mem_total_mib']} MiB in use before rendering")
+
+    record = {
+        "generator": "fooocus-api",
+        "base_url": args.base_url,
+        "endpoint": ENDPOINT,
+        "date": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "gpu": gpu_name,
+        "renders": [],
+    }
 
     done = skipped = failed = 0
     for raw in entries:
@@ -254,10 +404,9 @@ def main():
         ident = str(entry["id"])
         outs = outputs_for(entry)
         for out in outs:
-            if ".." in Path(out["path"]).parts or out["path"].startswith(("/", "\\")):
-                raise SystemExit(f"{ident}: output path must stay inside the repo ({out['path']})")
-        missing = [out for out in outs if not (ROOT / out["path"]).exists()]
-        primary = ROOT / entry["path"]
+            resolve_out(out_root, out["path"])
+        missing = [out for out in outs if not resolve_out(out_root, out["path"]).exists()]
+        primary = resolve_out(out_root, entry["path"])
         if args.dry_run:
             state = "missing" if missing else "present"
             print(f"{ident}\t{entry.get('type')}\t{entry.get('aspect_ratio')}\t{entry['path']}\t{state}")
@@ -269,24 +418,60 @@ def main():
         src = None
         owns_src = False
         try:
+            render = None
             if args.force or not primary.exists():
-                raw = call_fooocus(args.base_url, entry, prompt_for(entry, style))
+                prompt = prompt_for(entry, style)
+                started = time.monotonic()
+                with GpuSampler(check_gpu) as sampler:
+                    raw_bytes, seed = call_fooocus(args.base_url, entry, prompt)
+                elapsed = round(time.monotonic() - started, 2)
                 with tempfile.NamedTemporaryFile(suffix=".img", delete=False) as handle:
-                    handle.write(raw)
+                    handle.write(raw_bytes)
                     src = Path(handle.name)
                 owns_src = True
                 targets = outs if args.force else missing
+                body = request_body(entry, prompt)
+                render = {
+                    "id": ident,
+                    "prompt": prompt,
+                    "negative_prompt": body["negative_prompt"],
+                    "styles": body["style_selections"],
+                    "performance": body["performance_selection"],
+                    "aspect_ratio": body["aspect_ratios_selection"],
+                    "seed": seed,
+                    "elapsed_s": elapsed,
+                    "gpu_peak_util": sampler.peak_util,
+                    "gpu_peak_mem_mib": sampler.peak_mem,
+                    "gpu_samples": sampler.samples,
+                    "raw_sha256": hashlib.sha256(raw_bytes).hexdigest(),
+                }
+                gpu_note = ""
+                if check_gpu:
+                    gpu_note = f", gpu peak {sampler.peak_util}% / {sampler.peak_mem} MiB"
+                    if sampler.peak_util is None or sampler.peak_util < GPU_BUSY_PERCENT:
+                        print(
+                            f"warning {ident}: GPU load peaked at {sampler.peak_util}% during the render. "
+                            "Fooocus may be running on the CPU.",
+                            file=sys.stderr,
+                        )
+                print(f"rendered {ident} in {elapsed}s (seed {seed}{gpu_note})")
             else:
                 src = primary
                 targets = missing
             absolute = []
             for out in targets:
                 job = dict(out)
-                job["path"] = str(ROOT / out["path"])
+                job["path"] = str(resolve_out(out_root, out["path"]))
                 absolute.append(job)
             finish(src, absolute)
+            if render is not None:
+                render["outputs"] = [
+                    {"path": out["path"], "sha256": sha256_file(resolve_out(out_root, out["path"]))}
+                    for out in targets
+                ]
+                record["renders"].append(render)
             done += 1
-            print(f"wrote {ident} -> {entry['path']}")
+            print(f"wrote {ident} -> {primary}")
         except (subprocess.CalledProcessError, RuntimeError, OSError) as err:
             failed += 1
             print(f"failed {ident}: {err}", file=sys.stderr)
@@ -299,10 +484,140 @@ def main():
 
     if args.dry_run:
         print(f"{len(entries)} assets")
-        return
+        return record
+    if args.provenance:
+        prov = Path(args.provenance)
+        prov.parent.mkdir(parents=True, exist_ok=True)
+        prov.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+        print(f"provenance -> {prov}")
     print(f"{done} generated, {skipped} skipped, {failed} failed")
     if failed:
         raise SystemExit(1)
+    return record
+
+
+# --- self-test --------------------------------------------------------------
+
+def tiny_png(width=96, height=128):
+    """A solid-colour RGB PNG, built by hand so the self-test needs no imaging library."""
+    rows = b"".join(b"\x00" + bytes((200, 60, 120)) * width for _ in range(height))
+
+    def chunk(kind, data):
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(rows))
+        + chunk(b"IEND", b"")
+    )
+
+
+def self_test(args):
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    seen = []
+    png = base64.b64encode(tiny_png()).decode()
+
+    class Mock(BaseHTTPRequestHandler):
+        def do_POST(self):  # noqa: N802 (http.server API)
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+            seen.append((self.path, body))
+            if self.path != ENDPOINT:
+                self.send_response(404)
+                self.end_headers()
+                return
+            payload = json.dumps([{"base64": png, "seed": 4242, "finish_reason": "SUCCESS"}]).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
+        def log_message(self, *_):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Mock)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    entries, _, _ = load_entries(Path(args.manifest), Path(args.manifest_dir))
+    card = next(entry for entry in entries if entry.get("type") == "card")
+    failures = []
+    with tempfile.TemporaryDirectory() as tmp:
+        prov_path = Path(tmp) / "prov.json"
+        test_args = argparse.Namespace(**{
+            **vars(args),
+            "base_url": f"http://127.0.0.1:{server.server_address[1]}",
+            "only": str(card["id"]),
+            "force": True,
+            "dry_run": False,
+            "out_root": str(Path(tmp) / "out"),
+            "provenance": str(prov_path),
+            "gpu_check": "off",
+        })
+        try:
+            record = run(test_args)
+        except SystemExit as err:
+            failures.append(f"run exited: {err}")
+            record = None
+        finally:
+            server.shutdown()
+        if len(seen) != 1:
+            failures.append(f"expected 1 Fooocus call, saw {len(seen)}")
+        else:
+            path, body = seen[0]
+            for key in ("prompt", "negative_prompt", "style_selections", "aspect_ratios_selection"):
+                if not body.get(key):
+                    failures.append(f"request is missing {key}")
+            if body.get("require_base64") is not True:
+                failures.append("request must ask for base64")
+        if record:
+            renders = record.get("renders") or []
+            if len(renders) != 1 or renders[0].get("seed") != 4242:
+                failures.append("provenance did not record the seed")
+            outs = renders[0].get("outputs", []) if renders else []
+            if len(outs) < 2:
+                failures.append("expected the plate and its thumb")
+            for out in outs:
+                written = Path(tmp) / "out" / out["path"]
+                if not written.exists() or written.stat().st_size == 0:
+                    failures.append(f"{out['path']} was not written under --out-root")
+                elif sha256_file(written) != out["sha256"]:
+                    failures.append(f"{out['path']} sha256 mismatch")
+            if not prov_path.exists():
+                failures.append("provenance file not written")
+            if any((ROOT / out["path"]).stat().st_mtime > time.time() - 5 for out in outs if (ROOT / out["path"]).exists()):
+                failures.append("--out-root render touched the repo copy")
+    if not is_loopback("http://127.0.0.1:8888") or not is_loopback("http://localhost:8888") or is_loopback("https://example.com"):
+        failures.append("is_loopback is wrong")
+    if failures:
+        for failure in failures:
+            print(f"self-test FAIL: {failure}", file=sys.stderr)
+        raise SystemExit(1)
+    print("self-test ok")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Generate card and brand art with local Fooocus on the GPU")
+    parser.add_argument("--base-url", default=os.environ.get("FOOOCUS_URL", DEFAULT_BASE))
+    parser.add_argument("--manifest", default=str(ROOT / "art" / "fooocus-manifest.json"))
+    parser.add_argument("--manifest-dir", default=str(ROOT / "art" / "fooocus-manifest.d"))
+    parser.add_argument("--only", default="", help="comma-separated ids")
+    parser.add_argument("--force", action="store_true", help="regenerate even when the files exist")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--out-root", default="", help="write outputs under this directory instead of the repo")
+    parser.add_argument("--provenance", default="", help="write a JSON record of every render here")
+    parser.add_argument(
+        "--gpu-check",
+        choices=("auto", "require", "off"),
+        default=os.environ.get("FOOOCUS_GPU_CHECK", "auto"),
+        help="auto: check the local GPU when the endpoint is loopback (default)",
+    )
+    parser.add_argument("--self-test", action="store_true", help="run against a built-in mock Fooocus-API")
+    args = parser.parse_args()
+    if args.self_test:
+        self_test(args)
+        return
+    run(args)
 
 
 if __name__ == "__main__":
