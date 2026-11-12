@@ -3,7 +3,7 @@
 // player functions and off for pvp-timeout, which checks PVP_CRON_SECRET.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
-import { userIdFromAuth } from "./jwt.ts";
+import { sameSecret, userIdFromAuth } from "./jwt.ts";
 import { createMatch, projectFor, pvpRules, stateHash } from "../../../src/lib/combat/engine.js";
 import { cardsFor, knownDeck } from "../../../src/lib/pvp/decks.js";
 import { BUNDLED_SEASON_IDS } from "../../../src/data/seasonsCatalog.js";
@@ -522,7 +522,7 @@ export async function servePvp(req: Request, kind: "queue" | "action" | "invite"
   try {
     if (kind === "timeout") {
       const secret = Deno.env.get("PVP_CRON_SECRET") || "";
-      if (!secret || req.headers.get("x-pvp-cron-secret") !== secret) {
+      if (!sameSecret(req.headers.get("x-pvp-cron-secret"), secret)) {
         return json({ ok: false, error: "auth" }, 401, headers);
       }
       return json(await handleTimeout(Date.now()), 200, headers);

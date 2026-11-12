@@ -1,0 +1,55 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@panva/jose@6": "6.2.17"
+  },
+  "jsr": {
+    "@panva/jose@6.2.17": {
+      "integrity": "1410fc825917a8fe47556cd10545685e20c4a6d44ba8a02436e927974a5f7cd9"
+    }
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@axe-core/playwright@^4.12.1",
+        "npm:@fontsource/baloo-2@^5.3.0",
+        "npm:@playwright/test@1.56",
+        "npm:@radix-ui/react-progress@^1.1.0",
+        "npm:@radix-ui/react-switch@^1.1.0",
+        "npm:@radix-ui/react-toast@^1.2.0",
+        "npm:@sentry/react@^11.11.0",
+        "npm:@supabase/supabase-js@^2.104.1",
+        "npm:@types/react-dom@^18.2.19",
+        "npm:@types/react@^18.2.56",
+        "npm:@vitejs/plugin-react@^5.2.0",
+        "npm:autoprefixer@^10.4.19",
+        "npm:canvas-confetti@^1.9.4",
+        "npm:class-variance-authority@0.7",
+        "npm:clsx@^2.1.0",
+        "npm:eslint-plugin-react-hooks@^4.6.0",
+        "npm:eslint-plugin-react-refresh@~0.4.5",
+        "npm:eslint-plugin-react@^7.33.2",
+        "npm:eslint@^8.56.0",
+        "npm:framer-motion@^11.11.8",
+        "npm:howler@^2.2.4",
+        "npm:jsdom@^25.0.1",
+        "npm:jsqr@^1.4.0",
+        "npm:lucide-react@0.417",
+        "npm:postcss@^8.4.38",
+        "npm:posthog-js@^1.166.0",
+        "npm:react-dom@^18.2.0",
+        "npm:react@^18.2.0",
+        "npm:sharp@~0.35.3",
+        "npm:tailwind-merge@^2.2.1",
+        "npm:tailwindcss-animate@^1.0.7",
+        "npm:tailwindcss@^3.4.4",
+        "npm:typescript@^7.0.2",
+        "npm:vite@^7.3.7",
+        "npm:vitest@^5.0.5",
+        "npm:web-push@^3.6.7",
+        "npm:web-vitals@^6.2.3",
+        "npm:zustand@^5.0.12"
+      ]
+    }
+  }
+}
