@@ -31,6 +31,7 @@ const loadCloudSave = () => import('./lib/cloudSave').then((m) => { cloudSave = 
 import { FOCUS_OUTLINE } from './lib/focus';
 import { SCREEN_PAD } from './lib/safeArea';
 import { holdBack } from './lib/historyGuard';
+import { onReplayOpen } from './lib/replay/client';
 import { dailyFightFor, resolveCrew } from './lib/dailyFight';
 import { seasonCrew } from './lib/seasons';
 import { useSeasonSnapshot } from './hooks/useSeasonSnapshot';
@@ -67,6 +68,8 @@ const Challenges = lazy(() => import('./components/Challenges'));
 const DailyFight = lazy(() => import('./components/DailyFight'));
 const PurchaseSuccess = lazy(() => import('./components/PurchaseSuccess'));
 const Wardrobe = lazy(() => import('./components/Wardrobe'));
+const PubBrawl = lazy(() => import('./components/PubBrawl'));
+const ReplayPlayer = lazy(() => import('./components/ReplayPlayer'));
 
 // Shown for the moment a lazy dialog or the board chunk is in flight. A CSS
 // spin (transform only, on the compositor) rather than the Framer Motion
@@ -122,6 +125,7 @@ const SCREEN_TITLES = {
   game: 'Battle · Terrible Teddies',
   collection: 'Card Collection · Terrible Teddies',
   deck: 'Deck Builder · Terrible Teddies',
+  pub: 'Pub Brawl · Terrible Teddies',
 };
 
 // The three drains below raise announcements (use-toast's `queue: true`):
@@ -219,7 +223,7 @@ function App() {
   // screen once they are closed. See src/lib/historyGuard.js.
   useEffect(() => {
     if (!signedIn || currentScreen === 'menu') return undefined;
-    const guard = { game: gameBoardRef, deck: deckBuilderRef }[currentScreen];
+    const guard = { game: gameBoardRef, deck: deckBuilderRef, pub: pubRef }[currentScreen];
     return holdBack(() => {
       if (guard?.current) guard.current.requestLeave();
       else navigateTo('menu');
@@ -287,6 +291,23 @@ function App() {
   const nightlyCrew = seasonCrew(seasonSnap);
   const [showWardrobe, setShowWardrobe] = useState(false);
   const [dailySpec, setDailySpec] = useState(null);
+  const [pubCode, setPubCode] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('pub') || '';
+  });
+  const pubRef = useRef(null);
+  const [replayTarget, setReplayTarget] = useState(null);
+  useEffect(() => onReplayOpen((target) => setReplayTarget(target)), []);
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('replay');
+    if (code) setReplayTarget({ code });
+    try {
+      const raw = sessionStorage.getItem('tt-replay');
+      if (raw) setReplayTarget({ log: JSON.parse(raw) });
+    } catch {
+      /* a bad tape stays closed */
+    }
+  }, []);
 
   // Close every dialog at once — used by DialogErrorBoundary to return the app
   // to a usable state when a dialog chunk fails to load. Its result also keys
@@ -834,6 +855,25 @@ function App() {
             </div>
           </div>
         );
+      case 'pub':
+        return (
+          <div className={`relative min-h-screen bar-backdrop ${SCREEN_PAD}`}>
+            <div className="fixed inset-0 grain pointer-events-none" aria-hidden="true" />
+            <BackButton onClick={() => (pubRef.current ? pubRef.current.requestLeave() : navigateTo('menu'))} />
+            <div className="relative pt-14">
+              <DialogErrorBoundary resetKey={currentScreen} onDismiss={() => navigateTo('menu')}>
+                <Suspense fallback={<DialogLoader />}>
+                  <PubBrawl
+                    ref={pubRef}
+                    initialCode={pubCode}
+                    onLeave={() => { setPubCode(''); navigateTo('menu'); }}
+                    onGhost={(ticket) => startBrawl(ticket)}
+                  />
+                </Suspense>
+              </DialogErrorBoundary>
+            </div>
+          </div>
+        );
       case 'collection':
         return (
           <div className={`relative min-h-screen bar-backdrop ${SCREEN_PAD}`}>
@@ -867,6 +907,7 @@ function App() {
             onChallenges={() => setShowChallenges(true)}
             onNightly={() => setShowDaily(true)}
             onWardrobe={() => setShowWardrobe(true)}
+            onPub={() => navigateTo('pub')}
           />
         );
     }
@@ -1016,6 +1057,17 @@ function App() {
         )}
 
         <Toaster />
+        {replayTarget && (
+          <DialogErrorBoundary resetKey={replayTarget.id || replayTarget.code || 'tape'} onDismiss={() => setReplayTarget(null)}>
+            <div className="dialog-scrim fixed inset-0 z-50 overflow-y-auto p-4">
+              <div className="mx-auto max-w-3xl dialog-panel rounded-2xl p-4">
+                <Suspense fallback={<DialogLoader />}>
+                  <ReplayPlayer target={replayTarget} onClose={() => setReplayTarget(null)} />
+                </Suspense>
+              </div>
+            </div>
+          </DialogErrorBoundary>
+        )}
       </div>
     </ErrorBoundary>
   );

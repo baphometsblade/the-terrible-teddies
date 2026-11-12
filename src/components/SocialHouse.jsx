@@ -15,6 +15,7 @@ import {
   loadSocial, loadWeekly, loadCard, publishGhost, drawGhost, openChallenge, forfeitOpen, ticketFrom, reasonText, slipUrl,
   loadFriendGhosts, loadFriendsBoard, challengeFriend,
 } from '@/lib/social/client';
+import { openReplay, replayForMatch } from '@/lib/replay/client';
 import SocialRoom from './SocialRoom';
 import {
   CARD_W, CARD_H, victorySpec, drawVictoryCard, canvasBlob, shareCard, saveBlob, copyText,
@@ -272,17 +273,28 @@ const SocialHouse = ({ onClose, onStartBrawl, initialCode = '', initialTab = '',
                   Now {receipt.tier}, {receipt.rating}.
                 </p>
                 {slipUrl(receipt.match_id) && (
-                  <button
-                    type="button"
-                    onClick={() => run(async () => {
-                      const url = slipUrl(receipt.match_id);
-                      const ok = await copyText(url);
-                      setNotice(ok ? 'Slip copied. The filthy version stays here.' : url);
-                    })}
-                    className={`${btn} btn-glass mt-2`}
-                  >
-                    Copy the slip
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => run(async () => {
+                        const url = slipUrl(receipt.match_id);
+                        const ok = await copyText(url);
+                        setNotice(ok ? 'Slip copied. The filthy version stays here.' : url);
+                      })}
+                      className={`${btn} btn-glass mt-2`}
+                    >
+                      Copy the slip
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => replayForMatch(receipt.match_id).then((found) => {
+                        if (found?.id) openReplay({ id: found.id });
+                      })}
+                      className={`${btn} btn-glass mt-2`}
+                    >
+                      Watch it back
+                    </button>
+                  </>
                 )}
               </div>
             )}

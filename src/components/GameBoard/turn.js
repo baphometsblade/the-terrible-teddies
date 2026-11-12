@@ -1,7 +1,7 @@
 // The turn's rules that more than one part of the board needs: how much
 // energy a turn grants, and whether the player still has anything worth doing
 // before ending it. Pure, so the board and its tests read the same answer.
-import { canAttack, effectiveCost } from '@/utils/battleUtils';
+import { canAttack, effectiveCost } from '../../utils/battleUtils.js';
 
 // Cap the hand so unbounded draw (per-turn + draw specials) can't overflow the
 // fixed-width hand layout into an unclickable, off-screen stack.

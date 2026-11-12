@@ -12,7 +12,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
  * @param {{ id?: string, name?: string|null, rival?: string|null, won?: boolean|null, tier?: string|null, taunt?: number|null }} slip
  */
-export function renderSlipPage({ id = '', name = null, rival = null, won = null, tier = null, taunt = null } = {}) {
+export function renderSlipPage({ id = '', name = null, rival = null, won = null, tier = null, taunt = null, replay = null } = {}) {
   const safeId = UUID.test(id) ? id.toLowerCase() : '';
   const who = name ? String(name) : 'Someone';
   const other = rival ? String(rival) : 'a stranger';
@@ -29,6 +29,8 @@ export function renderSlipPage({ id = '', name = null, rival = null, won = null,
   const image = `${PUBLIC_ORIGIN}${OG_IMAGE.path}`;
   const play = safeId ? `/?slip=${safeId}` : '/';
   const canonical = safeId ? `${PUBLIC_ORIGIN}/slip/${safeId}` : PUBLIC_ORIGIN;
+  const watchCode = typeof replay === 'string' && /^[a-z0-9]{8,16}$/i.test(replay) ? replay : '';
+  const watch = watchCode ? `${PUBLIC_ORIGIN}/?replay=${watchCode}` : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -61,6 +63,7 @@ export function renderSlipPage({ id = '', name = null, rival = null, won = null,
   <p>${escapeHtml(description)}</p>
   <p>18+. The filth stays inside, where it belongs.</p>
   <a href="${escapeHtml(play)}">Your move</a>
+  ${watch ? `<a href="${escapeHtml(watch)}">Watch it back</a>` : ''}
 </main>
 </body>
 </html>

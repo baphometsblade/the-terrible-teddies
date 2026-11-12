@@ -41,6 +41,7 @@ export const TILE_LINES = Object.freeze({
   leaderboard: 'Who’s on top. Ask their ex.',
   nightly: 'One sitting. No rematch.',
   wardrobe: 'What you wear when the cards come off',
+  pub: 'A live one. Bring a deck.',
 });
 
 // The streak line under the Battle button, by the running streak: one win, a

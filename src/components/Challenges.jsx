@@ -286,7 +286,7 @@ const Challenges = ({ onClose }) => {
     // Daily stats (auto-reset each day)
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
     // Weekly stats (auto-reset each Monday)
-    weekWins, weekCoinsEarned, weekBestStreak, weekNewCards,
+    weekWins, weekCoinsEarned, weekBestStreak, weekNewCards, weekPvpWins,
   } = useGameStore();
   const [activeTab, setActiveTab] = useState('daily');
   // What the last claim paid: the float over the spot it was claimed from,
@@ -317,7 +317,7 @@ const Challenges = ({ onClose }) => {
     questRerolls,
     claimedChallenges,
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
-    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
+    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned, weekPvpWins,
   });
   const DAILY_CHALLENGES = board.daily;
   const WEEKLY_CHALLENGES = board.weekly;
@@ -347,7 +347,7 @@ const Challenges = ({ onClose }) => {
   // reads the same helper, so the two can't disagree about what's finished.
   const challengeStats = {
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
-    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
+    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned, weekPvpWins,
   };
   const getChallengeProgress = (challenge) => challengeProgress(challenge, challengeStats);
 

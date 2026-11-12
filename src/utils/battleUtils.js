@@ -4,7 +4,7 @@
  * that HP pool — halved by the defender's `shield` unless the attacker has
  * `piercing` (which cuts through the shield).
  */
-import { applyCutoff, ordersBonus } from '@/lib/barService';
+import { applyCutoff, ordersBonus } from '../lib/barService.js';
 
 // Identity check for aura math: cards on a live field are copies stamped with
 // a stable `instanceId`, so two different objects can represent "the same

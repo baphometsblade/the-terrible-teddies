@@ -29,4 +29,13 @@ describe('fight slip page', () => {
     expect(html).toContain('Someone had a night out');
     expect(html).toContain('href="/"');
   });
+
+  it('links a public tape and ignores a code that is not one', () => {
+    const html = renderSlipPage({ id: '11111111-1111-4111-8111-111111111111', replay: 'abc123def456' });
+    expect(html).toContain('https://terribleteddies.vercel.app/?replay=abc123def456');
+    expect(html).toContain('Watch it back');
+    expect(html).not.toMatch(/<script/i);
+    const junk = renderSlipPage({ id: '11111111-1111-4111-8111-111111111111', replay: '../secret' });
+    expect(junk).not.toContain('Watch it back');
+  });
 });

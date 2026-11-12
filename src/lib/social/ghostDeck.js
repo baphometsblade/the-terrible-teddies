@@ -8,7 +8,7 @@
 // as 151–160, a gap no catalog id uses. A real catalog id always wins over
 // an alias.
 
-import { fromLadderId, toLadderId } from '@/data/cardRegistry';
+import { fromLadderId, toLadderId } from '../../data/cardRegistry.js';
 
 const EXPANSION = /^([a-z]{2})-([1-9]\d*)$/;
 

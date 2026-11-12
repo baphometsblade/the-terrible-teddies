@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Swords, Target, Trophy, Store, Package, Medal, Layers, LibraryBig,
+  Swords, Target, Trophy, Store, Package, Medal, Layers, LibraryBig, Beer,
   Gift, CircleHelp, Settings, Coins, Gem, Flame, ChevronRight, Moon, Palette,
 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
@@ -111,6 +111,7 @@ const MainMenu = ({
   onNightly,
   onWardrobe,
   onSeason,
+  onPub,
 }) => {
   const {
     playerName, level, xp, getXPForNextLevel,
@@ -118,7 +119,7 @@ const MainMenu = ({
     totalWins, currentWinStreak, lastLoginDate, animationsEnabled,
     claimedChallenges, questRerolls, equippedTitle,
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
-    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
+    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned, weekPvpWins,
     syncPeriods, ownedCards,
     seasonXP, claimedBattlePassRewards, hasBattlePassPremium, syncSeason,
     dailyKey, dailyResult, dailyStreak,
@@ -169,7 +170,7 @@ const MainMenu = ({
 
   const challengeStats = {
     todayWins, todayBattles, todayDamageDealt, todayCardsPlayed,
-    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned,
+    weekWins, weekBestStreak, weekNewCards, weekCoinsEarned, weekPvpWins,
   };
   const board = visibleChallenges({ questRerolls, ...challengeStats });
   const claimableChallenges =
@@ -237,6 +238,7 @@ const MainMenu = ({
     { id: 'collection', title: 'Collection', description: TILE_LINES.collection, icon: LibraryBig, action: onCollection },
     { id: 'leaderboard', title: 'Rankings', description: TILE_LINES.leaderboard, icon: Medal, action: onLeaderboard },
     { id: 'wardrobe', title: 'Wardrobe', description: TILE_LINES.wardrobe, icon: Palette, action: onWardrobe },
+    { id: 'pub', title: 'Pub Brawl', description: TILE_LINES.pub, icon: Beer, action: onPub },
     { id: 'nightly', title: 'Nightly', description: TILE_LINES.nightly, icon: Moon, action: onNightly,
       badge: dailyKey === dailyFightFor().key && dailyResult
         ? (dailyResult === 'win' ? `${dailyStreak} streak` : 'Sat')
@@ -460,7 +462,7 @@ const MainMenu = ({
               // its bottom 3px fall off it, so it dropped back under the
               // pointer and was hovered again, every frame: the tile shook.
               whileHover="lift"
-              // Nine tiles: the last row is short on a 2- and a 4-column grid,
+              // Ten tiles: the last row is short on a 2- and a 4-column grid,
               // and a tile does not stretch to fill it.
             >
               <motion.div
