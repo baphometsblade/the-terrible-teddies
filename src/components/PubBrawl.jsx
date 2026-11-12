@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { HOUSE_RULES } from '@/lib/houseRules';
 import { mvpLine } from '@/lib/matchNight';
-import { newActionId, POLL_MS, pvpPost, watchViews } from '@/lib/pvp/client';
+import { LIVE_POLL_MS, newActionId, POLL_MS, pvpPost, watchViews } from '@/lib/pvp/client';
 import { cardsFor, knownDeck } from '@/lib/pvp/decks';
 import { isCardAvailable, refreshPackSeasons } from '@/lib/seasons';
 import { toGhostId } from '@/lib/social/ghostDeck';
@@ -45,6 +45,8 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
   const booked = useRef(false);
   const viewRef = useRef(null);
   const queueRef = useRef(null);
+  const liveRef = useRef(false);
+  const seenAtRef = useRef(0);
   const [attackerId, setAttackerId] = useState(null);
   viewRef.current = view;
   queueRef.current = queue;
@@ -78,11 +80,16 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
 
   useEffect(() => {
     if (!userId) return undefined;
-    return watchViews(userId, (payload) => {
+    const stop = watchViews(userId, (payload) => {
       if (!payload?.matchId) return;
+      seenAtRef.current = Date.now();
       setView((prev) => (prev && prev.matchId !== payload.matchId ? prev : payload));
       setReveal(true);
-    });
+    }, (live) => { liveRef.current = live; });
+    return () => {
+      liveRef.current = false;
+      stop();
+    };
   }, [userId]);
 
   const revealedId = view?.matchId || '';
@@ -99,6 +106,8 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
       const current = viewRef.current;
       const waiting = queueRef.current;
       if (current?.matchId && current.phase !== 'over') {
+        if (liveRef.current && Date.now() - seenAtRef.current < LIVE_POLL_MS) return;
+        seenAtRef.current = Date.now();
         const sync = await pvpPost('pvp-action', { op: 'sync', matchId: current.matchId });
         if (stop) return;
         if (sync?.view) {

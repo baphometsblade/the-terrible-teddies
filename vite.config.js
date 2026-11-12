@@ -112,7 +112,11 @@ const realtimeSplit = () => {
     resolveId(id, importer) {
       if (id !== "@supabase/realtime-js") return null;
       const from = String(importer || "").replace(/\\/g, "/");
-      if (from.includes("/src/lib/social/presence.js") || from.includes("/src/lib/push/runtime.js")) return null;
+      if (
+        from.includes("/src/lib/social/presence.js")
+        || from.includes("/src/lib/push/runtime.js")
+        || from.includes("/src/lib/pvp/client.js")
+      ) return null;
       return stub;
     },
   };
@@ -151,7 +155,8 @@ export default defineConfig({
       // Realtime stays stubbed on the entry client. Friends presence is the
       // one module allowed to load the real package: the `realtime-split`
       // plugin above resolves `@supabase/realtime-js` to node_modules only
-      // when the importer is src/lib/social/presence.js.
+      // when the importer is src/lib/social/presence.js, the push runtime, or
+      // Pub Brawl's src/lib/pvp/client.js.
       {
         find: "@supabase/storage-js",
         replacement: fileURLToPath(new URL("./src/stubs/supabase-storage.js", import.meta.url)),
