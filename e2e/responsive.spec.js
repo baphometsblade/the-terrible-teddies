@@ -9,7 +9,7 @@
 // non-wrapping `flex` row of six buttons totalling 494px. Its parent wrapped,
 // but the row is a single flex item, so it pushed the whole document 52px
 // sideways and every screen below it scrolled horizontally.
-import { test, expect, bootToMainMenu, stubSupabase, passTheLanding, SLOW } from './helpers/session.js';
+import { test, expect, bootToMainMenu, stubSupabase, passTheLanding, SLOW, sickChips } from './helpers/session.js';
 // Pure, as door.js is: the rows the menu's clock is drawn from, so a line
 // dropped into any of them is measured here, not just the shipped ones.
 import { BAR_CLOCK } from '../src/lib/barClock.js';
@@ -249,7 +249,7 @@ for (const viewport of [
       await expect(endTurn).toBeVisible(SLOW);
       await page.getByRole('button', { name: /^Play / }).first().click();
       // Exact: the cards' screen-reader descriptions say "Warming Up" too.
-      await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2, SLOW); // a card on each side
+      await expect(sickChips(page)).toHaveCount(2, SLOW); // a card on each side
       await page.waitForTimeout(600); // entrance animations
 
       const spill = await page.evaluate(() => {

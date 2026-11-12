@@ -6,7 +6,7 @@
 // session/stubbing boot as e2e/smoke.spec.js (see e2e/helpers/session.js) so
 // this spec never touches a real backend.
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, bootToMainMenu, passTheLanding, SLOW } from './helpers/session.js';
+import { test, expect, bootToMainMenu, passTheLanding, SLOW, sickChips } from './helpers/session.js';
 import { getCurrentSeason } from '../src/utils/season.js';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
@@ -72,23 +72,37 @@ test('collection has no WCAG 2.1 A/AA violations', async ({ page }) => {
 });
 
 test('battle board has no WCAG 2.1 A/AA violations', async ({ page }) => {
+  // Chuck's opening quip fades in, stays 3.2 s, and fades out. axe composites
+  // colours, so a bubble caught mid-fade reports a blended colour. Waiting
+  // for it to be opaque was not enough: the 900 ms settle plus the scan
+  // could run into its fade-out under a loaded run, and nothing that waits
+  // in Node can hold a page timer (axe itself stalls on a paused page clock).
+  // So the bubble is copied, in the frame it is first fully opaque, into a
+  // still node at the same place in the felt, and the board is audited once
+  // the real one has gone: the copy keeps its colours under audit, and
+  // nothing on the page is mid-fade.
+  const copied = page.waitForFunction(() => {
+    const bubble = [...document.querySelectorAll('[data-speech="opponent"]')].find((el) => {
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) return false;
+      for (let n = el; n && n !== document.body; n = n.parentElement) {
+        if (Number(getComputedStyle(n).opacity) < 1) return false;
+      }
+      return true;
+    });
+    if (!bubble) return false;
+    const still = bubble.cloneNode(true);
+    still.removeAttribute('data-speech');
+    still.id = 'a11y-still-quip';
+    Object.assign(still.style, { opacity: '1', transform: 'none' });
+    bubble.parentElement.appendChild(still);
+    return true;
+  }, null, { timeout: 30_000, polling: 'raf' });
   await page.getByRole('button', { name: 'Battle', exact: true }).click();
+  await copied;
   await expect(page.getByRole('button', { name: 'End Turn' })).toBeVisible(SLOW);
-  // Chuck's opening quip fades in; axe composites colours, so a bubble caught
-  // mid-fade reports a blended colour (it did, under a loaded full run). Audit
-  // the settled page, as CLAUDE.md asks.
-  await expect
-    .poll(() =>
-      page.evaluate(() =>
-        [...document.querySelectorAll('.bg-plush-100')].every((el) => {
-          for (let n = el; n && n !== document.body; n = n.parentElement) {
-            if (Number(getComputedStyle(n).opacity) < 1) return false;
-          }
-          return true;
-        })
-      )
-    )
-    .toBe(true);
+  await expect(page.locator('[data-speech]')).toHaveCount(0, SLOW);
+  await expect(page.locator('#a11y-still-quip')).toBeVisible();
   await expectNoViolations(page, 'battle board');
 });
 
@@ -421,6 +435,13 @@ test('the board announcer keeps every entry of a batch, not just the last', asyn
 });
 
 test('cards only advertise themselves as buttons when they can actually be used', async ({ page }) => {
+  // Chuck's opener is dealt at random, and about 1 easy fight in 30 it is a
+  // rush card that swings on his first turn. He swings at creatures first, so
+  // it can kill the 1-health creature played here before turn 2 asks for it.
+  // Math.random pinned (as the last-call test does) fixes the deal. At 0.85 he
+  // opens with Loan-Shark Larry, who has to wait a turn. (0.5 would not do: it
+  // deals him Quickie Quinn, a rush card.)
+  await page.addInitScript(() => { Math.random = () => 0.85; });
   // Force a deck of cheap action cards (as e2e/smoke.spec.js does) so the
   // first play is affordable on 3 energy and lands a creature on the field —
   // the default deck shuffles in specials, which never reach the field at all.
@@ -457,7 +478,7 @@ test('cards only advertise themselves as buttons when they can actually be used'
   // which the hand went dead and every creature became selectable; merging
   // the phases removed both halves of that.)
   // Exact: the cards' screen-reader descriptions say "Warming Up" too.
-  await expect(page.getByText('Warming Up', { exact: true })).toHaveCount(2);
+  await expect(sickChips(page)).toHaveCount(2);
   await expect.poll(() => playable.count(), { timeout: 15_000 }).toBeGreaterThan(0);
   await expect(selectable).toHaveCount(0);
   await expect(attackable).toHaveCount(0);

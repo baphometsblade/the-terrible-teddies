@@ -675,6 +675,13 @@ test.describe('with a mouse and a keyboard', () => {
     test(`at ${viewport.width}x${viewport.height} picking an attacker clears the ability callout off the prompt`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await seed(page, { currentDeck: [4, 4, 4, 6, 6, 6] }); // Barry, and Sally (Taunt)
+      // Chuck's opener is dealt at random, and about 1 easy fight in 30 it is a
+      // rush card that swings on his first turn. He swings at creatures first, so
+      // it can kill the 1-health creature played here before turn 2 asks for it.
+      // Math.random pinned (as the last-call test does) fixes the deal. At 0.85 he
+      // opens with Loan-Shark Larry, who has to wait a turn. (0.5 would not do: it
+      // deals him Quickie Quinn, a rush card.)
+      await page.addInitScript(() => { Math.random = () => 0.85; });
       await page.reload();
       await toBattle(page);
       await page.getByRole('button', { name: 'Play Bar-Fight Barry' }).first().click();
