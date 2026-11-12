@@ -29,7 +29,8 @@ const buildPrompt = (card, art) => {
     return `Product photo${ADULT}, single object filling the frame — ${subject}. ${scene}`;
   }
   const fur = art.fur ? `${art.fur} ` : '';
-  return `RAW photo, ${fur}plush teddy bear, ${fur}fur${ADULT} — ${subject}. ${scene}`;
+  const medium = art.medium || 'RAW photo';
+  return `${medium}, ${fur}plush teddy bear, ${fur}fur${ADULT} — ${subject}. ${scene}`;
 };
 
 // Pure-JS stand-in for CLIP's BPE tokenizer. Calibrated against the real
@@ -93,7 +94,8 @@ describe('card art prompts fit inside CLIP’s 77-token window', () => {
     // If promptFor()'s shape changes, this mirror goes stale and the budget
     // check silently measures the wrong string.
     const src = readFileSync(resolve(process.cwd(), 'scripts/generate-card-art.mjs'), 'utf8');
-    expect(src).toContain('RAW photo, ${fur}plush teddy bear, ${fur}fur${ADULT} — ${subject}. ${scene}');
+    expect(src).toContain("const medium = card.medium || 'RAW photo';");
+    expect(src).toContain('${medium}, ${fur}plush teddy bear, ${fur}fur${ADULT} — ${subject}. ${scene}');
     expect(src).toContain('Product photo${ADULT}, single object filling the frame — ${subject}. ${scene}');
     expect(src).toContain("const ADULT = SFW ? '' : ', raunchy NSFW';");
   });
