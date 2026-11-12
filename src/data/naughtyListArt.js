@@ -1,56 +1,57 @@
 // Art prompts for The Naughty List. Same shape as the rest of CARD_ART.
 // Short on purpose: CLIP keeps 77 tokens, and the scene is the part it cuts.
 // Fur, pose and setting follow the per-bear bibles in art/bear-bibles.json.
+// Each bear has its own medium and palette (docs/ART_DIRECTION.md, third pass).
 
 export const NAUGHTY_LIST_ART = {
   'xm-desk': {
     fur: 'pitch-black',
-    visual: 'adult plush bear peeking from under a desk among tangled cables and fairy lights, a tiny doll stiletto on the carpet',
-    scene: 'Floor-level shot into a mahogany kneehole, monitor-blue spill and gold fairy lights, Uma peeking out.',
+    visual: 'adult plush bear caught on the office security camera in a desk kneehole, eyeshine eyes, lacy garter in paw, a kicked-off stiletto',
+    scene: 'Night-vision CCTV still from the cubicle wall, phosphor green and black, Uma busted under the desk.',
   },
   'xm-reply': {
     fur: 'printer-paper white',
-    visual: 'adult plush bear mid-panic, paws to her head, glowing laptop, a blizzard of blank envelopes in the air',
-    scene: 'Dutch tilt in a dark cubicle, cold laptop light, toner-smudged Rita in a flood of mail.',
+    visual: 'adult plush bear, paws to her cheeks in horror, laptop at her feet blasting a radial burst of blank envelopes',
+    scene: 'Swiss cut-paper collage poster, paper white and toner black, one red notification dot.',
   },
   'xm-ozzy': {
     fur: 'bourbon-amber',
-    visual: 'adult plush bear, barrel chest, loosened Christmas tie, both paws full of glasses, furious grin',
-    scene: 'Low mid-raid flash at a raided hotel open bar, bottles stacked like trophies, gold tinsel.',
+    visual: 'adult plush bear as a debauched Bacchus, grape-leaf and tinsel crown, a goblet raised in each paw, loosened tie',
+    scene: 'Caravaggio-style Baroque oil, one candle, burgundy and gold on black, a toppled banquet table.',
   },
   'xm-holly': {
     fur: 'holly-leaf green',
-    visual: 'adult plush bear, holly crown, clipboard write-up, berry sash and lanyard, stern wink',
-    scene: 'Doorway medium shot at a frosted Confidential cubicle, Holly barring the way with her form.',
+    visual: 'adult plush bear pointing straight at you, clipboard, wearing only an HR lanyard and a berry garland, stern wink',
+    scene: '1950s safety-poster gouache, mint teal and coral sunburst, flat colour, no lettering.',
   },
   'xm-nog': {
     fur: 'eggnog-cream',
-    visual: 'adult plush bear, nutmeg speckles, stained apron, ladle raised, gold coin over the nog',
-    scene: 'High over a steaming cut-glass punchbowl on a sticky banquet table, nutmeg in the air.',
+    visual: 'adult plush bear waist-deep in a giant punchbowl of eggnog, ladle raised, a gold coin flipping, nog moustache',
+    scene: 'Felt stop-motion still on a pastel miniature kitchen set, butter yellow and custard, tilt-shift.',
   },
   'xm-elf': {
     fur: 'cream-tan',
-    visual: 'grown adult plush bear in a rumpled green elf costume and slouched hat, raising a pint under a punch clock',
-    scene: 'Straight-on workplace shot at a wall punch clock, forest-green costume, beer amber highlight, no typography on the housing.',
+    visual: 'grown adult plush bear clocking out, punch card in his teeth, elf costume flung off, only striped stockings and a bell collar',
+    scene: '1980s synthwave airbrush, neon laser grid and striped sunset, hot magenta and cyan.',
   },
   'xm-secret': {
-    fur: 'kraft-paper brown',
-    visual: 'adult plush bear in a tiny trench coat and sunglasses, handing over a bottle-shaped wrapped parcel',
-    scene: 'Low noir angle in a wet brick alley, sodium lamp and steam, a clandestine Secret Santa handoff.',
+    fur: 'noir grey',
+    visual: 'adult plush bear in a trench coat, fedora and dark glasses, sliding a bottle-shaped gift across the desk, shh',
+    scene: '1940s film-noir silver print, venetian-blind shadows and smoke, the red ribbon the only colour.',
   },
   'xm-mistletoe': {
     fur: 'berry-red',
-    visual: 'adult plush bear dangling huge mistletoe, lipstick mark on a smaller teddy, grabbing his lapel',
-    scene: 'Medium two-shot in a mistletoe-jammed doorway, two bar stools mid-swap, only stuffed toys.',
+    visual: 'adult plush bear holding mistletoe high, smooching a startled smaller teddy, lipstick print on his cheek',
+    scene: '1960s pop-art romance comic panel, Ben-Day dots, primary red and lemon yellow, no speech bubbles.',
   },
   'xm-list': {
     fur: 'ink-black',
-    visual: 'adult plush bear, silver muzzle, tiny spectacles, gold coin mid-flip, scroll unrolling to the floor',
-    scene: 'Low lectern portrait, brass lamp, the naughty list cascading toward the lens.',
+    visual: 'adult plush bear, silver muzzle, gold spectacles, quill, a gold coin on one paw, an endless scroll of squiggles',
+    scene: 'Illuminated manuscript miniature, lapis blue and gold leaf, a holly-vine border, no readable letters.',
   },
   'xm-santa': {
     fur: 'sooty-white',
-    visual: 'adult plush bear, yellowed fur, open cheap Santa coat, cigar, bulging sack, beer-crate throne',
-    scene: 'Low Polaroid in the back alley behind the party, sodium light, sack at his feet.',
+    visual: 'adult plush bear reclining on a shag lounge bed, Santa coat wide open, gold medallion, cigar, bulging sack',
+    scene: '1970s black-velvet blacklight painting, electric orange and red glowing on black.',
   },
 };
