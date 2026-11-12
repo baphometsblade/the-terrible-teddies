@@ -475,14 +475,14 @@
     },
     "23": {
       "name": "Morning-After May",
-      "name_gag": "Morning-After May: last night's mascara smudged across the page in charcoal",
-      "medium": "smudged charcoal drawing",
-      "medium_detail": "soft charcoal and pastel on toned paper, finger smudges, smeared lines",
+      "name_gag": "Morning-After May: peeking from the curtains at dawn with last night's mascara smeared",
+      "medium": "French Impressionist oil painting",
+      "medium_detail": "broken dabs of colour, dawn light through gauzy curtains",
       "styles": [],
       "palette": [
-        "charcoal black",
-        "blush pink",
-        "dawn gold"
+        "Rose pink",
+        "dawn gold",
+        "pale lilac"
       ],
       "fur": "smudged rose-pink plush fur",
       "outfit": "a sequin dress slipping off one shoulder",
@@ -490,10 +490,9 @@
       "setting": "half-drawn gauzy curtains at dawn",
       "lighting": "pale dawn backlight",
       "camera": "close three-quarter portrait",
-      "pose": "peeking from behind the curtain with a sly regretful wink, mascara running down her cheeks",
-      "gag": "a curvy smudged rose-pink plush teddy bear peeking from behind a gauzy curtain with mascara running in inky streaks, a sly regretful wink, sequin dress slipping off one shoulder, an empty champagne coupe",
-      "painterly": true,
-      "negative_extra": "(blood, red drips, splatter:1.4)"
+      "pose": "peeking out from behind half-drawn gauzy curtains with smeared mascara and a sly regretful wink",
+      "gag": "a tall curvy smudged-rose-pink plush teddy bear peeking out from behind half-drawn gauzy curtains with smeared mascara and a sly regretful wink, last night's sequin dress slipping off one shoulder, a pair of heels and an empty champagne coupe on the sill",
+      "painterly": true
     },
     "24": {
       "name": "Smitten Sid",
