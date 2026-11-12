@@ -18,6 +18,7 @@
     "ci:local": "bash scripts/ci-local.sh",
     "deploy:supabase": "bash scripts/deploy-supabase.sh",
     "art:generate": "vite-node scripts/generate-card-art.mjs",
+    "art:fooocus": "node scripts/run-python.mjs scripts/generate-card-art-fooocus.py",
     "art:manifest": "vite-node scripts/build-fooocus-manifest.mjs",
     "art:monitor": "node scripts/art-monitor.mjs",
     "art:thumbs": "node scripts/make-card-thumbs.mjs",
