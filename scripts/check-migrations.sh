@@ -2737,6 +2737,184 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting Pub Brawl and replay tables: RLS on, no client reads, own pvp_views row only, anon RPCs"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_tables CONSTANT TEXT[] := ARRAY[
+    'pvp_matches', 'pvp_players', 'pvp_actions', 'pvp_views',
+    'pvp_queue', 'pvp_invites', 'pvp_slips', 'match_replays'
+  ];
+  v_a      UUID := pg_catalog.gen_random_uuid();
+  v_b      UUID := pg_catalog.gen_random_uuid();
+  v_m1     UUID;
+  v_m2     UUID;
+  v_t      TEXT;
+  v_role   TEXT;
+  v_bad    TEXT := '';
+  v_n      INTEGER;
+  v_mine   INTEGER;
+  v_other  INTEGER;
+  v_raised BOOLEAN;
+  v_anon   TEXT[];
+BEGIN
+  -- All eight tables exist and have row-level security on.
+  FOREACH v_t IN ARRAY v_tables LOOP
+    IF to_regclass('public.' || v_t) IS NULL THEN
+      v_bad := v_bad || format('  %s does not exist%s', v_t, chr(10));
+    ELSIF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = to_regclass('public.' || v_t)) THEN
+      v_bad := v_bad || format('  RLS is off on %s%s', v_t, chr(10));
+    END IF;
+  END LOOP;
+  -- A new pvp_ table must be added to the list above, not slip past it.
+  FOR v_t IN
+    SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')
+      AND (c.relname LIKE 'pvp\_%' OR c.relname LIKE 'match\_replays%')
+      AND c.relname <> ALL (v_tables)
+  LOOP
+    v_bad := v_bad || format('  %s is a new brawl table this check does not cover%s', v_t, chr(10));
+  END LOOP;
+
+  -- Clients hold no write grant on any of them, and no read grant except
+  -- SELECT on pvp_views for authenticated (filtered by its policy).
+  FOREACH v_t IN ARRAY v_tables LOOP
+    FOREACH v_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+      IF has_table_privilege(v_role, 'public.' || v_t, 'INSERT')
+         OR has_table_privilege(v_role, 'public.' || v_t, 'UPDATE')
+         OR has_table_privilege(v_role, 'public.' || v_t, 'DELETE')
+         OR has_table_privilege(v_role, 'public.' || v_t, 'TRUNCATE') THEN
+        v_bad := v_bad || format('  %s can write %s%s', v_role, v_t, chr(10));
+      END IF;
+      IF has_any_column_privilege(v_role, 'public.' || v_t, 'SELECT')
+         AND NOT (v_t = 'pvp_views' AND v_role = 'authenticated') THEN
+        v_bad := v_bad || format('  %s can read %s%s', v_role, v_t, chr(10));
+      END IF;
+    END LOOP;
+  END LOOP;
+
+  -- anon may execute exactly replay_open and replay_slip among the brawl
+  -- and replay functions. Everything else is authenticated or service only.
+  SELECT coalesce(array_agg(DISTINCT p.proname::text ORDER BY p.proname::text), ARRAY[]::text[])
+    INTO v_anon
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND (p.proname LIKE 'pvp\_%' OR p.proname LIKE 'replay\_%')
+    AND has_function_privilege('anon', p.oid, 'EXECUTE');
+  IF v_anon IS DISTINCT FROM ARRAY['replay_open', 'replay_slip'] THEN
+    v_bad := v_bad || format('  anon can EXECUTE %s, expected only {replay_open,replay_slip}%s', v_anon, chr(10));
+  END IF;
+  SELECT count(*) INTO v_n
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND (p.proname LIKE 'pvp\_%' OR p.proname LIKE 'replay\_%');
+  IF v_n < 20 THEN
+    v_bad := v_bad || format('  only % brawl/replay functions found; the name filter is wrong%s', v_n, chr(10));
+  END IF;
+
+  IF v_bad <> '' THEN
+    RAISE EXCEPTION 'brawl table security failed:%', chr(10) || v_bad;
+  END IF;
+
+  -- Behaviour, not just catalog flags: a client SELECT is refused.
+  FOREACH v_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    FOREACH v_t IN ARRAY ARRAY['pvp_matches', 'match_replays'] LOOP
+      v_raised := FALSE;
+      PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_a::text, 'role', v_role)::text, true);
+      BEGIN
+        EXECUTE format('SET LOCAL ROLE %I', v_role);
+        EXECUTE format('SELECT count(*) FROM public.%I', v_t) INTO v_n;
+      EXCEPTION WHEN insufficient_privilege THEN
+        v_raised := TRUE;
+      END;
+      RESET ROLE;
+      IF NOT v_raised THEN
+        RAISE EXCEPTION '% could SELECT from % (% rows)', v_role, v_t, v_n;
+      END IF;
+    END LOOP;
+  END LOOP;
+
+  -- pvp_views: two players, two matches, a projected row each per match.
+  INSERT INTO auth.users (id) VALUES (v_a), (v_b);
+  INSERT INTO public.pvp_matches (kind, status, seed, state, setup, rules, state_hash)
+  VALUES ('ladder', 'active', 7, '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, 'x')
+  RETURNING id INTO v_m1;
+  INSERT INTO public.pvp_matches (kind, status, seed, state, setup, rules, state_hash)
+  VALUES ('friend', 'active', 8, '{}'::jsonb, '{}'::jsonb, '{}'::jsonb, 'y')
+  RETURNING id INTO v_m2;
+  INSERT INTO public.pvp_views (match_id, user_id, version, payload) VALUES
+    (v_m1, v_a, 1, '{"seat":"a"}'::jsonb),
+    (v_m1, v_b, 1, '{"seat":"b","hand":"secret"}'::jsonb),
+    (v_m2, v_a, 1, '{"seat":"a"}'::jsonb),
+    (v_m2, v_b, 1, '{"seat":"b","hand":"secret"}'::jsonb);
+
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) FILTER (WHERE user_id = v_a), count(*) FILTER (WHERE user_id <> v_a)
+    INTO v_mine, v_other
+  FROM public.pvp_views WHERE match_id IN (v_m1, v_m2);
+  RESET ROLE;
+  IF v_mine <> 2 OR v_other <> 0 THEN
+    RAISE EXCEPTION 'player A saw % own and % other pvp_views rows (want 2 and 0)', v_mine, v_other;
+  END IF;
+
+  -- Asking for the opponent's row by key still returns nothing.
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO v_n FROM public.pvp_views WHERE match_id = v_m1 AND user_id = v_b;
+  RESET ROLE;
+  IF v_n <> 0 THEN
+    RAISE EXCEPTION 'player A read player B''s pvp_views row';
+  END IF;
+
+  -- No JWT subject: no rows.
+  PERFORM set_config('request.jwt.claims', json_build_object('role', 'authenticated')::text, true);
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  SELECT count(*) INTO v_n FROM public.pvp_views WHERE match_id IN (v_m1, v_m2);
+  RESET ROLE;
+  IF v_n <> 0 THEN
+    RAISE EXCEPTION 'an authenticated caller without a subject read % pvp_views rows', v_n;
+  END IF;
+
+  -- anon cannot read pvp_views at all.
+  v_raised := FALSE;
+  PERFORM set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE anon';
+    SELECT count(*) INTO v_n FROM public.pvp_views;
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_raised := TRUE;
+  END;
+  RESET ROLE;
+  IF NOT v_raised THEN
+    RAISE EXCEPTION 'anon could SELECT pvp_views';
+  END IF;
+
+  -- A player cannot rewrite their own view either.
+  v_raised := FALSE;
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', v_a::text, 'role', 'authenticated')::text, true);
+  BEGIN
+    EXECUTE 'SET LOCAL ROLE authenticated';
+    UPDATE public.pvp_views SET payload = '{}'::jsonb WHERE user_id = v_a;
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_raised := TRUE;
+  END;
+  RESET ROLE;
+  IF NOT v_raised THEN
+    RAISE EXCEPTION 'authenticated could UPDATE its pvp_views row';
+  END IF;
+
+  DELETE FROM public.pvp_matches WHERE id IN (v_m1, v_m2);
+  DELETE FROM auth.users WHERE id IN (v_a, v_b);
+  PERFORM set_config('request.jwt.claims', '', true);
+
+  RAISE NOTICE 'pub brawl table security assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"
 
 # Every card the client can roll has a catalog row. A future set that is
