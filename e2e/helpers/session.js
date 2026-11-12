@@ -195,7 +195,17 @@ export async function passTheLanding(page) {
 // chips that included the opener came up one short. Exact, so the cards'
 // screen-reader descriptions, which say the same words, are not counted.
 export const SICK_CHIP = new RegExp(`^(${arrivalChip({})}|${arrivalChip({ ability: 'rush' })})$`);
-export const sickChips = (scope) => scope.getByText(SICK_CHIP);
+// The chip, not the ability badge: a rush card's badge says "Quickie" too.
+export const sickChips = (scope) => scope.locator('[data-status-chip]').filter({ hasText: SICK_CHIP });
+
+// Chuck's opener is dealt at random, and sometimes (about 1 easy fight in 30
+// by a unit probe, and more often with the 1-health decks these specs seed)
+// it is a rush card that swings on his first turn. He swings at creatures
+// first, so it can kill the creature a spec played on turn 1 before turn 2
+// asks for it. Pinning Math.random, as the last-call specs do, fixes the
+// deal: at 0.85 he opens with Loan-Shark Larry, who has to wait a turn.
+// (0.5 will not do: it deals him Quickie Quinn.) Call before the reload.
+export const slowOpener = (page) => page.addInitScript(() => { Math.random = () => 0.85; });
 // A just-played creature of the player's: their own row, so Chuck's draw
 // cannot change the count.
 export const playerWarmingUp = (page) => page.locator('[data-field="player"]').getByText(arrivalChip({}), { exact: true });

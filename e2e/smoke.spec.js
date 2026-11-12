@@ -9,7 +9,7 @@
 // e2e/a11y.spec.js can reuse the identical hermetic boot.
 import { getDailyChallenges } from '../src/stores/challenges.js';
 import { QUIPS } from '../src/utils/teddyTalk.js';
-import { test, expect, bootToMainMenu, SLOW, sickChips, settledSpeech } from './helpers/session.js';
+import { test, expect, bootToMainMenu, SLOW, sickChips, settledSpeech, slowOpener } from './helpers/session.js';
 
 test.beforeEach(async ({ page }) => {
   // Main menu is the shared starting point for every test.
@@ -572,13 +572,7 @@ test('manifest app shortcuts (?action=) route to the right screen', async ({ pag
 });
 
 test('a played creature waits a turn to attack, then exhausts and recovers', async ({ page, pageErrors }) => {
-  // Chuck's opener is dealt at random, and about 1 easy fight in 30 it is a
-  // rush card that swings on his first turn. He swings at creatures first, so
-  // it can kill the 1-health creature played here before turn 2 asks for it.
-  // Math.random pinned (as the last-call test does) fixes the deal. At 0.85 he
-  // opens with Loan-Shark Larry, who has to wait a turn. (0.5 would not do: it
-  // deals him Quickie Quinn, a rush card.)
-  await page.addInitScript(() => { Math.random = () => 0.85; });
+  await slowOpener(page); // the creature played has to live through Chuck's first turn
   // Force a deck of pure cheap action cards so the first play is always an
   // attack-capable creature (the default deck shuffles in traps/specials).
   //

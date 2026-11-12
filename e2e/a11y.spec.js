@@ -6,7 +6,7 @@
 // session/stubbing boot as e2e/smoke.spec.js (see e2e/helpers/session.js) so
 // this spec never touches a real backend.
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, bootToMainMenu, passTheLanding, SLOW, sickChips } from './helpers/session.js';
+import { test, expect, bootToMainMenu, passTheLanding, SLOW, sickChips, slowOpener } from './helpers/session.js';
 import { getCurrentSeason } from '../src/utils/season.js';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
@@ -435,13 +435,7 @@ test('the board announcer keeps every entry of a batch, not just the last', asyn
 });
 
 test('cards only advertise themselves as buttons when they can actually be used', async ({ page }) => {
-  // Chuck's opener is dealt at random, and about 1 easy fight in 30 it is a
-  // rush card that swings on his first turn. He swings at creatures first, so
-  // it can kill the 1-health creature played here before turn 2 asks for it.
-  // Math.random pinned (as the last-call test does) fixes the deal. At 0.85 he
-  // opens with Loan-Shark Larry, who has to wait a turn. (0.5 would not do: it
-  // deals him Quickie Quinn, a rush card.)
-  await page.addInitScript(() => { Math.random = () => 0.85; });
+  await slowOpener(page); // the creature played has to live through Chuck's first turn
   // Force a deck of cheap action cards (as e2e/smoke.spec.js does) so the
   // first play is affordable on 3 energy and lands a creature on the field —
   // the default deck shuffles in specials, which never reach the field at all.
