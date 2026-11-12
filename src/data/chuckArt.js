@@ -6,20 +6,20 @@ export const CHUCK_ART = {
   'ck-chuck': {
     medium: 'Dutch tavern genre painting',
     fur: 'honey brown',
-    visual: 'adult honey-brown bartender bear in a stained apron, dirty bar towel on his shoulder',
+    visual: 'adult barrel-chested bartender bear, bow tie, teal shirt, gold tooth, bar towel on his shoulder',
     scene: 'Leaning on the bar with a gentle smile that is plainly a lie as a rowdy tavern of teddies spills ale.',
   },
   'ck-closing': {
     medium: 'public-works mural',
     fur: 'honey brown',
-    visual: 'adult honey-brown bartender bear, sleeves rolled, ringing a huge brass bell',
-    scene: 'Heaving the last-orders bell like a heroic worker over a sea of empty glasses, the clock at closing.',
+    visual: 'adult barrel-chested bartender bear, bow tie, teal shirt, gold tooth, ringing a huge brass bell',
+    scene: 'Heaving the last-orders bell like a heroic worker over a sea of empty glasses, a clock behind.',
   },
   'ck-offduty': {
     medium: '60s pool painting',
     fur: 'honey brown',
-    visual: 'adult honey-brown bartender bear, shirt half off, sunglasses, a confiscated bottle',
-    scene: 'Swigging in a deckchair beside a turquoise pool with a big white splash behind him.',
+    visual: 'adult barrel-chested bartender bear, shirt half off, bow tie, sunglasses up, gold tooth',
+    scene: 'Swigging a confiscated bottle in a deckchair beside a turquoise pool with a big white splash.',
   },
   'ck-rita': {
     medium: 'Impressionist pastel',

@@ -240,34 +240,34 @@
       "id": "ck-chuck",
       "name": "Chuck",
       "generator": "Grok Bot image generation (GenerateImage), 864x1152 jpg",
-      "prompt": "17th-century Dutch tavern genre painting, rowdy and detailed, warm interior, earthy realism. Chuck, a honey-brown plush teddy bear bartender in a stained apron with a dirty bar towel over one shoulder, leaning on his bar with a gentle smile that is plainly a lie, a rowdy tavern of plush teddy regulars behind him spilling ale, a dog-eared tab on a nail. Colour palette: Tavern umber, ale gold and apron white. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
-      "source_sha256": "3542b63e7bd756f9f532424190fcdcde00710f895062fb18e6c402f3a68449fe",
+      "prompt": "17th-century Dutch tavern genre painting, rowdy and detailed, warm interior, earthy realism, rich glazed oil. Chuck, a honey-brown adult plush bartender teddy bear with a barrel chest, greying muzzle, half-lidded glass eyes, a loosened black bow tie, a teal short-sleeve shirt unbuttoned at the collar and one gold tooth, a dirty bar towel over one shoulder, leaning on his bar with a gentle smile that is plainly a lie while a rowdy tavern of plush teddy bear regulars behind him spills ale. Colour palette: Tavern umber, ale gold and Chuck's teal. Every character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put Chuck's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "source_sha256": "64d94cfa68aac4703dc315d40405c957ba0d455aaf74fd9135f0797aeec7cf4e",
       "post": "centre crop to 3:4, lanczos3 to 768x1024, webp q74 effort 6 smartSubsample (q stepped down from 74 to stay near 140 KB), thumb via npm run art:thumbs",
-      "rerolled": null,
-      "full_sha256": "46ca1cdf5eb180a4fbfa1de4cbb0b793414b99d392d1dabeacf4afcc7e990c6c",
-      "thumb_sha256": "e22ca36cfb25da82a940eff790a56162a4017906871adfeb4f86ae33b79340f5"
+      "rerolled": "first plate redrew Chuck in an apron and rolled sleeves, which broke his recurring look (bow tie, teal shirt, gold tooth) that chuckCrew.test pins across his three cards; re-rolled in the same medium with his fixed look",
+      "full_sha256": "9075000c5742b864988f694810cc7a52b7313b9bd8f3ee895434bae32de93eae",
+      "thumb_sha256": "4c62ad31641192f3b99bcd58fa74bffa0b1dc809c0ebf302d4941d3770d8b6fd"
     },
     {
       "id": "ck-closing",
       "name": "Closing-Time Chuck",
       "generator": "Grok Bot image generation (GenerateImage), 864x1152 jpg",
-      "prompt": "1930s public-works mural painting, heroic social realism, sturdy forms, flat muralist colour. Closing-Time Chuck, a honey-brown plush teddy bear bartender ringing a huge brass last-orders bell with all his might like a heroic worker, sleeves rolled up, a sea of empty glasses on the bar, the clock on the wall at closing. Colour palette: Mural brick red, ochre and slate blue. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
-      "source_sha256": "2a3f357d4025dca38083a74bcd38a478e4f93a53b3c7c7c1d5ecfeffac845d0b",
+      "prompt": "1930s public-works heroic mural painting, bold simplified forms, flat muralist colour, strong diagonals. Closing Time, Chuck: a honey-brown adult plush bartender teddy bear with a barrel chest, greying muzzle, half-lidded glass eyes, a loosened black bow tie, a teal short-sleeve shirt unbuttoned and one gold tooth, heaving a huge brass last-orders bell like a heroic worker over a sea of empty glasses, a big round wall clock behind him with plain hands and no numbers. Colour palette: Mural brick red, brass and Chuck's teal. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "source_sha256": "65c51774d78ea464149d76dd5c8f6f883ef0df3252a96aba32b4b027a89edfbc",
       "post": "centre crop to 3:4, lanczos3 to 768x1024, webp q74 effort 6 smartSubsample (q stepped down from 74 to stay near 140 KB), thumb via npm run art:thumbs",
-      "rerolled": null,
-      "full_sha256": "d7c766bb18e3e57e3d4c2d52229c604141b3117484c40ac45d44e654e32e0d7b",
-      "thumb_sha256": "74612ce31c6f5c7ce23c3e6c2f063042326c2b0e1dd507f3c3fbccf3dc37c68a"
+      "rerolled": "first plate redrew Chuck in an apron and rolled sleeves, which broke his recurring look (bow tie, teal shirt, gold tooth) that chuckCrew.test pins across his three cards; re-rolled in the same medium with his fixed look",
+      "full_sha256": "f0b2e38e60c99b65607366a24bc5ec77a4154d485f6262736d81dd2995dc7868",
+      "thumb_sha256": "d05a9b02b55af78365672d88b417709ea77cf3dc4d68c6062ef250cfdc514215"
     },
     {
       "id": "ck-offduty",
       "name": "Off-Duty Chuck",
       "generator": "Grok Bot image generation (GenerateImage), 864x1152 jpg",
-      "prompt": "1960s Californian swimming-pool painting, flat acrylic, bright sun, splash patterns, modernist house. Off-Duty Chuck, a honey-brown plush teddy bear bartender with his shirt half off lounging in a deckchair beside a turquoise swimming pool, swigging from a bottle he confiscated, sunglasses on, a splash in the pool behind him. Colour palette: Pool turquoise, sunlit white and honey. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
-      "source_sha256": "2c1a56a0cd1f7f9b00a4803bfb5d920488d706c1edb9db580753ff9ed70dee71",
+      "prompt": "1960s Californian pool painting, flat bright acrylic colour, crisp modernist house, a big white splash in a turquoise pool. Off-Duty Chuck, a honey-brown adult plush bartender teddy bear with a barrel chest, greying muzzle, half-lidded glass eyes, a loosened black bow tie, his teal short-sleeve shirt unbuttoned and half off one shoulder, one gold tooth, wearing sunglasses pushed up, lounging in a deckchair beside the pool and swigging a bottle he confiscated from someone else. Colour palette: Pool turquoise, sun white and Chuck's teal. The only character is a grown-up adult plush teddy bear: a stuffed toy with a plush bear head, round plush ears, button eyes, a stitched muzzle, visible stitched seams and plush paws, clearly a stuffed toy, not a human and not a real animal. No people anywhere in the image. Cheeky, saucy adult humour, witty not explicit, nothing graphic. Absolutely no text, letters, numbers, logos, watermarks or signatures anywhere. Vertical 3:4 trading-card art: put the bear's face and the main gag in the centre of the frame, slightly above middle, filling most of the frame; keep the outer edges simple.",
+      "source_sha256": "77e4961dcd6829054f7b0c130514a9b0a3f92c688b63d506cbdc2ccf61d17429",
       "post": "centre crop to 3:4, lanczos3 to 768x1024, webp q74 effort 6 smartSubsample (q stepped down from 74 to stay near 140 KB), thumb via npm run art:thumbs",
-      "rerolled": null,
-      "full_sha256": "0bb1298adf8b801be487e7b595b67771d334499e325debb60c98da5f5734a67a",
-      "thumb_sha256": "3d4af5c6ebcad39a1c242ed974dcd2171ecb96f246111caae7503858a525c747"
+      "rerolled": "first plate redrew Chuck in an apron and rolled sleeves, which broke his recurring look (bow tie, teal shirt, gold tooth) that chuckCrew.test pins across his three cards; re-rolled in the same medium with his fixed look",
+      "full_sha256": "a5273c696799337e6a61b15fc3873b5287d97370eb984fe1531eee26272e6aed",
+      "thumb_sha256": "bcba13eef79a7552676611729c2e7621c1e94865e63a9c53456e7d762f23c729"
     },
     {
       "id": "ck-rita",
