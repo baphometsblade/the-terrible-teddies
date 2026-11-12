@@ -3,7 +3,7 @@
  * Art pipeline guards.
  *
  * Mark's call (Nov 2026): every image goes through Fooocus on his own GPU, and
- * nothing in the game depends on a hosted generator such as fal.ai. These tests
+ * nothing in the game depends on a hosted generator (the Fal service or similar). These tests
  * keep it that way: the shipped code, scripts, functions and package manifests
  * must not reference one, and the local Fooocus generator must pass its own
  * end-to-end self-test against a mock Fooocus-API.
