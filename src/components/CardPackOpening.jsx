@@ -846,7 +846,7 @@ const CardPackOpening = ({ onClose, onGetGems, onBattlePass, onDailyRewards }) =
           {/* Shop */}
           {!pulledCards && !isOpening && (
             <div className="mt-6">
-              <SectionHeading>Shop</SectionHeading>
+              <SectionHeading as="h2">Shop</SectionHeading>
               {/* Every item the Shop sells for packs or coins, through the
                   Shop's own tile. Eight cells for seven items: the BEST VALUE
                   tile is two wide, so the grid comes out in whole rows (of 2,

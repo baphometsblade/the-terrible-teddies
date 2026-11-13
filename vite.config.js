@@ -33,6 +33,36 @@ export const preloadDisplayFont = () => ({
   },
 });
 
+// Warm the connection to Supabase while the entry chunk downloads. The first
+// request (feature flags on the landing, the session and save on a returning
+// device) otherwise pays DNS + TCP + TLS only after React has mounted:
+// Lighthouse measured ~80 ms on the sign-in screen. supabase-js fetches
+// without credentials, so the hint is `crossorigin` (anonymous) to match the
+// pooled connection those CORS requests use. Only an https origin is hinted,
+// and nothing is added when the build has no Supabase URL.
+export const supabaseOrigin = (raw) => {
+  try {
+    const url = new URL(String(raw || ""));
+    return url.protocol === "https:" ? url.origin : null;
+  } catch {
+    return null;
+  }
+};
+
+export const preconnectSupabase = () => {
+  let origin = null;
+  return {
+    name: "preconnect-supabase",
+    configResolved(config) {
+      origin = supabaseOrigin(config.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL);
+    },
+    transformIndexHtml: () =>
+      origin
+        ? [{ tag: "link", injectTo: "head", attrs: { rel: "preconnect", href: origin, crossorigin: "" } }]
+        : [],
+  };
+};
+
 // The link preview's absolute URLs (og:url, og:image and its size and alt,
 // twitter:image), injected into index.html from the site's address. Shared
 // links got no picture from a relative og:image. With no address configured
@@ -128,7 +158,7 @@ export default defineConfig({
     host: "::",
     port: "8080",
   },
-  plugins: [react(), socialMeta(), preloadDisplayFont(), hideSourceMaps(), realtimeSplit()],
+  plugins: [react(), socialMeta(), preloadDisplayFont(), preconnectSupabase(), hideSourceMaps(), realtimeSplit()],
   resolve: {
     alias: [
       {
