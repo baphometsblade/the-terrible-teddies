@@ -10,9 +10,9 @@ export const QUICKIE_ART = {
   },
   97: {
     medium: 'Fauvist painting',
-    fur: 'taxi yellow',
-    visual: 'adult squat smug shirtless bear, paws behind his head, shirt on the headrest',
-    scene: 'Sprawled across a taxi back seat by a glowing meter, the city outside in wild colour.',
+    fur: 'emerald green',
+    visual: 'adult squat smug bear in the back seat of a turquoise 1950s sedan, a date beside him',
+    scene: 'Parked at a drive-in under a violet sky, the film ignored on the glowing screen.',
   },
   98: {
     medium: 'spaghetti-western close-up',

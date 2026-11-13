@@ -346,6 +346,46 @@
    }
   },
   {
+   "id": "62",
+   "name": "Chainsmoke Chad",
+   "medium": "steampunk brass-and-boiler illustration",
+   "seed": 7171,
+   "styles": [
+    "Artstyle Steampunk"
+   ],
+   "performance": "Quality",
+   "guidance_scale": 6,
+   "prompt": "(steampunk brass-and-boiler illustration, riveted brass, pressure gauges, clanking chains, billowing coal smoke, Victorian industrial grime:1.35), (a fuzzy slick tobacco-tan stuffed plush teddy bear toy with soft plush fur, stitched seams and round plush paws:1.4, chain-lighting a fresh cigarette off the stub of the last one, a lit cigarette dangling from his mouth:1.35, heavy iron chains wrapped around him like a locomotive's drive chain, sitting in a riveted brass boiler room, smoke blasting out of his ears like a steam whistle:1.25), chain-lighting a fresh cigarette off the last one, smoke blasting out of his ears like a steam whistle, wearing heavy iron chains wrapped round him like a steam engine's drive chain, signature prop: a lit cigarette dangling from his mouth and a spare tucked behind each ear, setting: a riveted boiler room full of pipes and pressure gauges, colour palette of polished brass, soot black, boiler red, lighting: red furnace glow through coal smoke, camera: low heroic close-up, the bear filling the frame. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: tobacco-tan slick plush fur with soot smudges. Cheeky adult humour, no text.",
+   "negative_prompt": "(human, man, woman, person, fingers, human hands, robot:1.7), (brass statue, metal bear, bronze figure, golden statue:1.6), (text, sign, lettering, numbers, clock face:1.5), (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh",
+   "gpu_peak_util": 100,
+   "elapsed_s": 17.09,
+   "raw_sha256": "ae58f50ac1383a74b9f26dcb7c4c46aba445747385108cc37e430b69a2466eda",
+   "candidates": [
+    "62__s1414",
+    "62__s2525",
+    "62__s3636",
+    "62__s7171",
+    "62__s8282",
+    "62__s9393"
+   ],
+   "picked": "62__s7171",
+   "nearest_before": {
+    "nearest": "51",
+    "score": 0.7355,
+    "text": 0.3548
+   },
+   "nearest_after": {
+    "file": "62__s7171.png",
+    "nearest": "7",
+    "score": 0.6176,
+    "text": 0.3281
+   },
+   "files": {
+    "public/cards/62.webp": "fe51060cbe6318dc08b64d3a2bf797dae89a87f320ab1c75d5029027e8f9e7b5",
+    "public/cards/thumbs/62.webp": "d429934bb3aaecf4646d7fc2d7cac484f9bd57f1fc9fcde7201ad0789fbfe985"
+   }
+  },
+  {
    "id": "65",
    "name": "The Debt Collector",
    "medium": "layered papercut shadow-box diorama",
@@ -380,6 +420,46 @@
    "files": {
     "public/cards/65.webp": "360664b38a7011ff9d199e2e4a3fff7bae2c7429de415ea8f626259edb7807e6",
     "public/cards/thumbs/65.webp": "0c807773ece9c73b6ec03549690d248bbc829adfc6018e1c3399a4c3bf6e8dce"
+   }
+  },
+  {
+   "id": "89",
+   "name": "Last-Call Lana",
+   "medium": "Grand Theft Auto loading-screen illustration",
+   "seed": 1101,
+   "styles": [
+    "Game Gta"
+   ],
+   "performance": "Quality",
+   "guidance_scale": 6,
+   "prompt": "(Grand Theft Auto loading-screen illustration, bold ink outlines, flat cel-shaded colour, punchy sunset-pop graphic style, no lettering, no logos:1.35), (a tall chunky amber stuffed plush teddy bear toy with stubby plush limbs in a silver sequin party dress:1.3, standing on a dive-bar table at last call as the harsh house lights slam on, downing two shots at once with a tray of the last ones balanced in her other paw, one high heel kicked off, a jukebox glowing behind her:1.25), standing on a table downing two shots at once, a tray of the last ones balanced in the other paw, wearing a silver sequin party dress and one high heel, signature prop: a tray of the last six shots, setting: a dive bar at last call with the harsh house lights just switched on, colour palette of hot magenta, last-orders amber, neon cyan, lighting: harsh house lights against neon, camera: low dramatic angle, the bear filling the frame. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: amber chunky plush fur, stubby limbs. Cheeky adult humour, no text.",
+   "negative_prompt": "(woman, girl, human, female face, lips, gun, weapon, police, logo:1.6), (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh",
+   "gpu_peak_util": 100,
+   "elapsed_s": 16.84,
+   "raw_sha256": "37e5a7f41b2be3d4a5cc1fee0812fe14b5002135564e601c3b4a990837614832",
+   "candidates": [
+    "89__s1101",
+    "89__s2202",
+    "89__s3303",
+    "89__s4404",
+    "89__s5505",
+    "89__s6606"
+   ],
+   "picked": "89__s1101",
+   "nearest_before": {
+    "nearest": "80",
+    "score": 0.7152,
+    "text": 0.3685
+   },
+   "nearest_after": {
+    "file": "89__s1101.png",
+    "nearest": "4",
+    "score": 0.6267,
+    "text": 0.4099
+   },
+   "files": {
+    "public/cards/89.webp": "ead2b2f1f102976a7f3374b1e3cda24cc2d29897fd591c370c6296a42fd411f0",
+    "public/cards/thumbs/89.webp": "81615aa687517556c98d5e24cb956fb74757b4332ea5d8b97ce49f7754bc1f38"
    }
   },
   {
@@ -452,6 +532,46 @@
    "files": {
     "public/cards/91.webp": "208dba96f936f2555f8e52d560a2bb03383acba9d288e72aba0e8efaf6b58458",
     "public/cards/thumbs/91.webp": "e3a7e608096e14573a3148867916a60212594e95616f44637600da274077e479"
+   }
+  },
+  {
+   "id": "97",
+   "name": "Backseat Benny",
+   "medium": "Fauvist painting",
+   "seed": 1101,
+   "styles": [
+    "Fauvism"
+   ],
+   "performance": "Quality",
+   "guidance_scale": 6,
+   "prompt": "(Fauvist painting, wild unnatural colours, thick expressive brushstrokes, flat bold shapes:1.35), (a turquoise 1950s sedan parked at a drive-in movie at night, its rear window completely steamed up:1.3, a smug squat emerald-green stuffed plush teddy bear toy in the back seat pressing his face and one paw against the fogged rear glass:1.3, a dropped popcorn box on the bumper, the giant glowing drive-in screen and a violet starry sky beyond:1.25), his smug face and one paw pressed against the steamed-up rear window from the back seat, wearing shirt hung on the headrest, signature prop: a steamed-up rear window with a paw print on it, setting: a turquoise 1950s sedan parked at a drive-in movie under a violet night sky, colour palette of Fauve red, emerald green, drive-in violet, lighting: drive-in screen glow and starlight, camera: wide exterior view of the parked car from behind, the giant drive-in screen glowing beyond. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: emerald-green squat smug plush fur. Cheeky adult humour, no text.",
+   "negative_prompt": "(taxi, cab, meter, human, man, woman, couple, yellow bear, winnie the pooh, text on screen:1.6), (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh, brown fur, tan fur, honey fur",
+   "gpu_peak_util": 100,
+   "elapsed_s": 26.31,
+   "raw_sha256": "8b4aef388fe3b063cc6140b661545259f7dd039b4065f08903aec63b0429aef0",
+   "candidates": [
+    "97__s1101",
+    "97__s2202",
+    "97__s3303",
+    "97__s4404",
+    "97__s5505",
+    "97__s6606"
+   ],
+   "picked": "97__s1101",
+   "nearest_before": {
+    "nearest": "ma-4",
+    "score": 0.6404,
+    "text": 0.3513
+   },
+   "nearest_after": {
+    "file": "97__s1101.png",
+    "nearest": "ma-4",
+    "score": 0.5242,
+    "text": 0.3831
+   },
+   "files": {
+    "public/cards/97.webp": "1f0a6b7c62703f653949315b807bf5a46a140c47f8e1704ceda50b778bc1576a",
+    "public/cards/thumbs/97.webp": "c4d2458b9c7327cebd44681634813c668430d5447a591fbc698ed3714cdec83d"
    }
   },
   {
