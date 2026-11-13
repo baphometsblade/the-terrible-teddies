@@ -607,27 +607,24 @@
     },
     "51": {
       "name": "Mange Marvin",
-      "name_gag": "Mange Marvin: half-bald and patchy in a pink bubble bath, scratching with a back-scratcher while fleas leap off him like fireworks",
-      "medium": "glossy 1980s pet-shampoo commercial photograph",
-      "medium_detail": "high-gloss studio flash, soap-opera soft focus edges, foam and bubbles, no lettering",
-      "styles": [
-        "Ads Advertising"
-      ],
+      "name_gag": "Mange Marvin: a scrawny pale-tan plush teddy bear with comically bald patches showing stitched fabric underneath, wearing a cone of shame",
+      "medium": "Antique veterinary anatomy plate",
+      "medium_detail": "engraved scientific illustration with hand-coloured washes, numbered-free callout lines, specimen layout on aged paper",
+      "styles": [],
       "palette": [
-        "salon pink",
-        "bubble-bath white",
-        "flea-spray mint"
+        "Aged parchment",
+        "faded madder pink",
+        "iodine brown"
       ],
-      "fur": "mangy pale-tan plush fur, half shaved with bald stitched patches",
-      "outfit": "a pink shower cap and nothing else",
-      "prop": "a long bamboo back-scratcher",
-      "setting": "a pink clawfoot bathtub overflowing with bubble-bath foam",
-      "lighting": "glossy studio flash",
-      "camera": "close commercial hero shot, the bear filling the frame",
-      "pose": "lounging in the foam scratching his bald patches with a back-scratcher and faking a glamorous smoulder",
-      "gag": "(a mangy pale-tan stuffed plush teddy bear toy with round plush teddy ears, button eyes and a stitched nose, half bald with bare stitched fabric patches:1.4), wearing a pink shower cap, lounging in a pink clawfoot bathtub overflowing with bubble-bath foam, scratching his bald patches with a long bamboo back-scratcher and faking a glamorous smoulder, tiny fleas leaping off him like fireworks",
-      "painterly": true,
-      "negative_extra": "(dog, puppy, cat, real animal, snout, muzzle of a dog:1.8), (human, hand, fingers:1.6), (label, logo, brand name, bottle, text:1.6), party hat, parchment, engraving"
+      "fur": "pale-tan scrawny fur with comically bald stitched patches",
+      "outfit": "no clothes, bare plush fur",
+      "prop": "cone of shame",
+      "setting": "aged specimen plate with callout lines",
+      "lighting": "hand-coloured engraving washes",
+      "camera": "scientific full-figure plate",
+      "pose": "scratching his comically bald patches showing stitched fabric underneath",
+      "gag": "a scrawny pale-tan plush teddy bear with comically bald patches showing stitched fabric underneath, wearing a cone of shame, standing in a specimen pose and scratching himself with a back leg, a bleach bottle and a tiny comb drawn beside him like specimens",
+      "painterly": true
     },
     "52": {
       "name": "Two-Beer Tina",
@@ -840,23 +837,26 @@
     "62": {
       "name": "Chainsmoke Chad",
       "name_gag": "Chainsmoke Chad: holding a fan of ten cigarettes in his mouth at once",
-      "medium": "1950s magazine advertising illustration",
-      "medium_detail": "wholesome cheerful gouache, smiling ad style, no lettering",
-      "styles": [],
-      "palette": [
-        "Cream",
-        "nicotine yellow",
-        "ad-red"
+      "medium": "steampunk brass-and-boiler illustration",
+      "medium_detail": "riveted brass, pressure gauges, clanking chains, billowing coal smoke, Victorian industrial grime",
+      "styles": [
+        "Artstyle Steampunk"
       ],
-      "fur": "tobacco-tan slick fur",
-      "outfit": "steel chain",
-      "prop": "letterman sweater",
-      "setting": "cream advert backdrop",
-      "lighting": "cheerful gouache light",
-      "camera": "ad-style front view",
-      "pose": "holding a fan of ten cigarettes in his mouth at once",
-      "gag": "a slick grinning tobacco-tan plush teddy bear in a letterman sweater wrapped in a heavy steel chain, holding a fan of ten cigarettes in his mouth at once, smoke billowing, beaming like an advert, a burning card deck at his feet",
-      "painterly": true
+      "palette": [
+        "polished brass",
+        "soot black",
+        "boiler red"
+      ],
+      "fur": "tobacco-tan slick plush fur with soot smudges",
+      "outfit": "heavy iron chains wrapped round him like a steam engine's drive chain",
+      "prop": "a lit cigarette dangling from his mouth and a spare tucked behind each ear",
+      "setting": "a riveted boiler room full of pipes and pressure gauges",
+      "lighting": "red furnace glow through coal smoke",
+      "camera": "low heroic close-up, the bear filling the frame",
+      "pose": "chain-lighting a fresh cigarette off the last one, smoke blasting out of his ears like a steam whistle",
+      "gag": "(a fuzzy slick tobacco-tan stuffed plush teddy bear toy with soft plush fur, stitched seams and round plush paws:1.4), (chain-lighting a fresh cigarette off the stub of the last one, a lit cigarette dangling from his mouth:1.35), heavy iron chains wrapped around him like a locomotive's drive chain, sitting in a riveted brass boiler room, smoke blasting out of his ears like a steam whistle",
+      "painterly": true,
+      "negative_extra": "(human, man, woman, person, fingers, human hands, robot:1.7), (brass statue, metal bear, bronze figure, golden statue:1.6), (text, sign, lettering, numbers, clock face:1.5)"
     },
     "63": {
       "name": "Bail-Money Bonnie",
@@ -1365,7 +1365,7 @@
     },
     "97": {
       "name": "Backseat Benny",
-      "name_gag": "Backseat Benny: the only car at the drive-in with a steamed-up back window, and his smug face pressed against it",
+      "name_gag": "Backseat Benny: the only car at the drive-in where nobody is watching the film, because he is in the back seat with a date",
       "medium": "Fauvist painting",
       "medium_detail": "wild unnatural colours, thick expressive brushstrokes, flat bold shapes",
       "styles": [
@@ -1378,12 +1378,12 @@
       ],
       "fur": "emerald-green squat smug plush fur",
       "outfit": "shirt hung on the headrest",
-      "prop": "a steamed-up rear window with a paw print on it",
+      "prop": "pink back-seat upholstery shared with a date",
       "setting": "a turquoise 1950s sedan parked at a drive-in movie under a violet night sky",
       "lighting": "drive-in screen glow and starlight",
       "camera": "wide exterior view of the parked car from behind, the giant drive-in screen glowing beyond",
-      "pose": "his smug face and one paw pressed against the steamed-up rear window from the back seat",
-      "gag": "(a turquoise 1950s sedan parked at a drive-in movie at night, its rear window completely steamed up:1.3), (a smug squat emerald-green stuffed plush teddy bear toy in the back seat pressing his face and one paw against the fogged rear glass:1.3), a dropped popcorn box on the bumper, the giant glowing drive-in screen and a violet starry sky beyond",
+      "pose": "tucked in the back seat with a date, neither of them watching the film",
+      "gag": "(a turquoise 1950s sedan parked at a drive-in movie at night:1.3), (a smug squat emerald-green stuffed plush teddy bear toy tucked in the pink back seat with a purple plush teddy date, neither watching the film:1.3), a dropped popcorn box on the bumper, the giant glowing drive-in screen and a violet starry sky beyond",
       "painterly": true,
       "negative_extra": "(taxi, cab, meter, human, man, woman, couple, yellow bear, winnie the pooh, text on screen:1.6)"
     },
