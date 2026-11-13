@@ -10,7 +10,8 @@ import { backoffMs, isRetryableError, withRetry } from './retry';
 import { eventsFromScreen, eventsFromStoreChange, productAnalyticsEnabled, sanitizeProps, trackProduct } from './productEvents';
 import { flagEnabled, loadFeatureFlags, parseFlagRows, resetFlagsForTests } from './featureFlags';
 import { accountActionMessage, clearLocalAccount, isExportPayload } from './accountData';
-import { readSentryDsn, scrubSentryEvent } from './sentry';
+import { readSentryDsn } from './sentry';
+import { scrubSentryEvent } from './sentryScrub';
 import { overBudget, WEB_VITALS_BUDGET } from './webVitals';
 import analytics from '@/utils/analytics';
 

@@ -16,6 +16,7 @@ import {
 import { eventAt } from "../../../src/lib/houseEvents.js";
 import { HOUSE_RULES } from "../../../src/lib/houseRules.js";
 import { safeName } from "../../../src/lib/social/ladder.js";
+import { captureEdgeError } from "./sentry.ts";
 
 const url = Deno.env.get("SUPABASE_URL") ?? "";
 const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -694,6 +695,7 @@ async function answer(req: Request, kind: "queue" | "action" | "invite" | "timeo
     return json(result, status, headers);
   } catch (err) {
     console.error("pvp", kind, err);
+    captureEdgeError(err, `pvp-${kind}`);
     return json({ ok: false, error: "server" }, 500, headers);
   }
 }

@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.104.1";
 import webpush from "npm:web-push@3.6.7";
 import { serviceRoleAuthorizedAny } from "./auth.js";
 import { deliverOutbox, outboxFromRequest } from "./deliver.js";
+import { withSentry } from "../_shared/sentry.ts";
 
 // Database webhooks call this with the service role key. config.toml keeps
 // verify_jwt = true, so the gateway rejects a missing or bad token. The
@@ -17,7 +18,7 @@ const json = (obj: unknown, status = 200) =>
     headers: { "Content-Type": "application/json" },
   });
 
-serve(async (req) => {
+serve(withSentry("send-push", async (req) => {
   if (req.method !== "POST") return json({ ok: false, reason: "method" }, 405);
   // The platform now injects the new sb_secret_ key as
   // SUPABASE_SERVICE_ROLE_KEY. That value is not a JWT, so it cannot pass
@@ -79,4 +80,4 @@ serve(async (req) => {
   });
 
   return json({ ok: true, ...result });
-});
+}));
