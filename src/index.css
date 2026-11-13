@@ -1715,3 +1715,18 @@ html[data-cb="safe"] [data-rarity-gem="legendary"] {
   background: radial-gradient(circle, rgba(251, 191, 36, 0.55), transparent 70%);
   animation: rarity-gleam 2.8s ease-in-out infinite;
 }
+
+/* The album's tiles come in once, staggered (TeddyCollection sets each
+   tile's animation-delay and marks the grid data-intro="done" when the
+   stagger is over). The same entrance Framer Motion gave each tile, as one
+   compositor-only CSS animation instead of ~140 JS-driven ones. */
+@keyframes collection-tile-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: none; }
+}
+.collection-tile { animation: collection-tile-in 0.35s cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+[data-intro="done"] > .collection-tile,
+[data-motion="off"] .collection-tile { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .collection-tile { animation: none; }
+}
