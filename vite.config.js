@@ -152,8 +152,22 @@ const realtimeSplit = () => {
   };
 };
 
+// Sentry's release and environment, from Vercel's build variables: the commit
+// being built, and production / preview. An explicit VITE_ value wins, and a
+// local build has neither (src/lib/sentry.js falls back to "production" and
+// no release).
+export const sentryBuildEnv = (env = process.env) => ({
+  "import.meta.env.VITE_SENTRY_RELEASE": JSON.stringify(
+    env.VITE_SENTRY_RELEASE || (env.VERCEL_GIT_COMMIT_SHA ? `terrible-teddies@${env.VERCEL_GIT_COMMIT_SHA}` : "")
+  ),
+  "import.meta.env.VITE_SENTRY_ENVIRONMENT": JSON.stringify(env.VITE_SENTRY_ENVIRONMENT || env.VERCEL_ENV || ""),
+  // The SDK's own debug logger, compiled out.
+  __SENTRY_DEBUG__: "false",
+});
+
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: sentryBuildEnv(),
   server: {
     host: "::",
     port: "8080",

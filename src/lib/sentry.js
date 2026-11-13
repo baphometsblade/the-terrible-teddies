@@ -1,5 +1,5 @@
-// Error monitoring. The SDK is fetched only when VITE_SENTRY_DSN is a real
-// DSN, and only after the age door has let the device in (DoorGate calls
+// Error monitoring. The SDK is fetched only in a production build whose
+// VITE_SENTRY_DSN is a real DSN, and only after the age door has let the device in (DoorGate calls
 // initializeSentry from the same place it starts analytics). A deploy with
 // no DSN never downloads it. Source maps are built hidden and moved out of
 // dist/ so the site does not serve them; see vite.config.js.
@@ -23,42 +23,39 @@ export function readSentryDsn(env = import.meta.env) {
   return DSN_RE.test(raw) ? raw : '';
 }
 
-const stripUrl = (url) => {
-  const text = String(url ?? '');
-  try {
-    const parsed = new URL(text, 'https://terribleteddies.vercel.app');
-    return `${parsed.origin}${parsed.pathname}`;
-  } catch {
-    return text.split('#')[0].split('?')[0];
-  }
-};
+// Release and environment are baked in by vite.config.js from Vercel's build
+// variables (the commit SHA, and production / preview).
+export const sentryRelease = (env = import.meta.env) => String(env?.VITE_SENTRY_RELEASE ?? '').trim() || undefined;
+export const sentryEnvironment = (env = import.meta.env) => String(env?.VITE_SENTRY_ENVIRONMENT ?? '').trim() || 'production';
 
-/** Drop anything that could identify a person before an event leaves the browser. */
-export function scrubSentryEvent(event) {
-  if (!event || typeof event !== 'object') return null;
-  const next = { ...event };
-  delete next.user;
-  if (next.request && typeof next.request === 'object') {
-    const request = { ...next.request };
-    delete request.cookies;
-    delete request.headers;
-    delete request.data;
-    if (request.url) request.url = stripUrl(request.url);
-    next.request = request;
-  }
-  if (Array.isArray(next.breadcrumbs)) {
-    next.breadcrumbs = next.breadcrumbs.map((crumb) => {
-      if (!crumb || typeof crumb !== 'object') return crumb;
-      const data = crumb.data && typeof crumb.data === 'object' ? { ...crumb.data } : crumb.data;
-      if (data && typeof data === 'object') {
-        if (data.url) data.url = stripUrl(data.url);
-        delete data.email;
-        delete data.username;
-      }
-      return { ...crumb, data };
+// Monitoring runs in production builds only: dev and the test suites never
+// report, whatever the env holds.
+export const sentryEnabled = (env = import.meta.env) => Boolean(env?.PROD) && Boolean(readSentryDsn(env));
+
+export const SENTRY_TEST_PARAM = 'tt-sentry-test';
+
+// A deliberate, invisible test error, so a deploy can be checked end to end:
+// load the site with ?tt-sentry-test=1. It is captured, never thrown (the
+// player sees nothing), once per page, and the parameter is taken out of the
+// address bar. A named function so the stack shows a readable frame.
+function sentryDeliberateTestError() {
+  return new Error('Deliberate Sentry test error (tt-sentry-test)');
+}
+
+function reportTestErrorOnce(Sentry) {
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get(SENTRY_TEST_PARAM) !== '1') return;
+    url.searchParams.delete(SENTRY_TEST_PARAM);
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    Sentry.withScope((scope) => {
+      scope.setTag('deliberate_test', 'true');
+      scope.setLevel('error');
+      Sentry.captureException(sentryDeliberateTestError());
     });
+  } catch {
+    // A test hook never breaks the page.
   }
-  return next;
 }
 
 const flush = () => {
@@ -70,22 +67,37 @@ const flush = () => {
 
 export function initializeSentry() {
   if (client || starting || typeof window === 'undefined') return;
+  if (!sentryEnabled()) return;
   const dsn = readSentryDsn();
-  if (!dsn) return;
   starting = true;
-  import('@sentry/react')
-    .then((mod) => {
-      const Sentry = mod.default && mod.default.init ? mod.default : mod;
+  import('./sentryClient.js')
+    .then((Sentry) => {
       Sentry.init({
         dsn,
-        environment: import.meta.env?.MODE || 'production',
+        release: sentryRelease(),
+        environment: sentryEnvironment(),
         sendDefaultPii: false,
-        autoSessionTracking: false,
-        tracesSampleRate: 0,
-        beforeSend: scrubSentryEvent,
+        // Performance: one page load in twenty. No trace headers go to any
+        // other origin (Supabase, PostHog), so no CORS preflight changes.
+        integrations: [Sentry.browserTracingIntegration()],
+        tracesSampleRate: 0.05,
+        tracePropagationTargets: [],
+        // Session Replay is not loaded at all (privacy and quota).
+        replaysSessionSampleRate: 0,
+        replaysOnErrorSampleRate: 0,
+        maxBreadcrumbs: 50,
+        beforeSend: Sentry.scrubSentryEvent,
+        beforeSendTransaction: Sentry.scrubSentryEvent,
+        beforeBreadcrumb: Sentry.scrubCrumb,
+        ignoreErrors: [
+          // Browser noise with no stack and nothing to fix.
+          'ResizeObserver loop limit exceeded',
+          'ResizeObserver loop completed with undelivered notifications',
+        ],
       });
       client = Sentry;
       flush();
+      reportTestErrorOnce(Sentry);
     })
     .catch((error) => {
       starting = false;
@@ -96,7 +108,7 @@ export function initializeSentry() {
 
 export function captureSentry(error, context) {
   try {
-    if (!readSentryDsn()) return;
+    if (!sentryEnabled()) return;
     if (client) {
       client.captureException(error, context ? { tags: { context } } : undefined);
       return;
