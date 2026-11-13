@@ -8,25 +8,36 @@ import { supabase, supabaseAnonKey, supabaseUrl } from '../../utils/supabaseClie
 import {
   LIVE_POLL_MS, POLL_MS, QUEUE_LIVE_POLL_MS, QUEUE_POLL_MS, pollDelay,
 } from './timing.js';
+import { functionUrl, pvpRegion, regionFailed } from './region.js';
 
 export {
   LIVE_POLL_MS, POLL_MS, QUEUE_LIVE_POLL_MS, QUEUE_POLL_MS, pollDelay,
 };
 
+const region = pvpRegion(supabaseUrl, import.meta.env.VITE_PVP_FUNCTION_REGION);
+
 export async function pvpPost(name, body) {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) return { ok: false, error: 'auth' };
+  const send = (pinned) => fetch(functionUrl(supabaseUrl, name, pinned), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      apikey: supabaseAnonKey,
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body || {}),
+  });
   try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        apikey: supabaseAnonKey,
-        authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body || {}),
-    });
+    let response;
+    try {
+      response = await send(region);
+    } catch (error) {
+      if (!region) throw error;
+      response = await send('');
+    }
+    if (region && regionFailed(response.status)) response = await send('');
     const payload = await response.json().catch(() => ({ ok: false, error: 'server' }));
     return payload && typeof payload === 'object' ? payload : { ok: false, error: 'server' };
   } catch {

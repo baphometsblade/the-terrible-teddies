@@ -25,6 +25,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cardsFor } from '../src/lib/pvp/decks.js';
 import { replay, stateHash } from '../src/lib/combat/engine.js';
 import * as timing from '../src/lib/pvp/timing.js';
+import { functionUrl, pvpRegion } from '../src/lib/pvp/region.js';
 
 const PRODUCTION_REF = 'wqdrbywcktxgytkyqcco';
 const DECK = [1, 2, 3, 4, 5, 6, 30, 40, 41, 42];
@@ -44,6 +45,9 @@ const idleRate = Number(arg('idle', '0.05'));
 // Think time before each real move, in ms. 0 is a bot hammering the bar; a
 // person takes a second or more. Realtime lag is only meaningful when paced.
 const thinkMs = Number(arg('think', '0'));
+// Pin edge calls the way the client does (the database region for a hosted
+// project). --region any lets the router pick the nearest edge, the old way.
+const region = pvpRegion(url, arg('region', undefined));
 const secret = process.env.PVP_CRON_SECRET || 'local-pvp-cron';
 const turnHint = Number(process.env.PVP_TURN_MS || 90000);
 // The client's schedules. A build without the queue constants is the old
@@ -108,13 +112,15 @@ function noteTiming(header) {
   }
 }
 
+const edgeRegions = {};
+
 async function post(token, name, body) {
   const key = `${name}:${body?.op || 'act'}`;
   calls[key] = (calls[key] || 0) + 1;
   const started = performance.now();
   let response;
   try {
-    response = await fetch(`${url}/functions/v1/${name}`, {
+    response = await fetch(functionUrl(url, name, region), {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -126,6 +132,8 @@ async function post(token, name, body) {
   } catch {
     return { ms: performance.now() - started, status: 0, payload: { ok: false, error: 'unreachable' } };
   }
+  const ran = response.headers.get('x-sb-edge-region') || 'unknown';
+  edgeRegions[ran] = (edgeRegions[ran] || 0) + 1;
   const payload = await response.json().catch(() => ({ ok: false, error: 'bad-json' }));
   if (body?.op === 'act' && body?.intent?.type !== 'heartbeat') noteTiming(response.headers.get('server-timing'));
   return { ms: performance.now() - started, status: response.status, payload };
@@ -462,6 +470,8 @@ const report = {
   players: seats,
   production: live,
   schedule: { queuePollMs, queueLivePollMs, syncPollMs, liveSyncMs },
+  region: region || 'nearest',
+  edgeRegions,
   thinkMs,
   elapsedMs: Date.now() - started,
   completed,
