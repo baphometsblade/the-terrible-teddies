@@ -31,20 +31,26 @@ const service = createClient(url, serviceKey, { auth: { persistSession: false } 
 // A trip is one PostgREST round trip through the API gateway; in production
 // that is 70-120 ms whatever the SQL costs, so the count matters as much as
 // the time.
-type Trace = { db: number; trips: number };
+// `db` is wall time with at least one trip in flight, so trips sent together
+// count once.
+type Trace = { db: number; trips: number; inflight: number; since: number };
 const traces = new AsyncLocalStorage<Trace>();
 const loadedAt = performance.now();
 let warm = false;
 
 async function trip<T>(run: () => PromiseLike<T>): Promise<T> {
-  const started = performance.now();
+  const trace = traces.getStore();
+  if (trace) {
+    if (trace.inflight === 0) trace.since = performance.now();
+    trace.inflight += 1;
+    trace.trips += 1;
+  }
   try {
     return await run();
   } finally {
-    const trace = traces.getStore();
     if (trace) {
-      trace.db += performance.now() - started;
-      trace.trips += 1;
+      trace.inflight -= 1;
+      if (trace.inflight === 0) trace.db += performance.now() - trace.since;
     }
   }
 }
@@ -111,13 +117,17 @@ async function fieldable(user: string, deckIds: number[]) {
   if (problem) return problem;
   const cards = cardsFor(deckIds);
   if (!cards) return "That deck has a card the bar does not serve.";
-  const save = await rpc("pvp_save_of", { p_uid: user });
+  // Three independent reads: the save, the pack ledger, and the season
+  // snapshot. Asked together, they cost one round trip of wall time.
+  const [save, packed, snap] = await Promise.all([
+    rpc("pvp_save_of", { p_uid: user }),
+    trip(() => service.from("pack_owned").select("card_id").eq("user_id", user)),
+    trip(() => service.rpc("open_card_pack")),
+  ]);
   const owned = Array.isArray(save?.ownedCards) ? save.ownedCards.map(String) : [];
-  const packed = await trip(() => service.from("pack_owned").select("card_id").eq("user_id", user));
   if (!packed.error) {
     for (const row of packed.data || []) owned.push(String(row.card_id));
   }
-  const snap = await trip(() => service.rpc("open_card_pack"));
   const seasons = Array.isArray(snap.data?.seasons) ? snap.data.seasons : [];
   const hasRecord = (save && Array.isArray(save.ownedCards)) || (!packed.error && (packed.data || []).length > 0);
   const collection = hasRecord ? owned : STARTERS;
@@ -621,7 +631,7 @@ export async function handleTimeout(now = Date.now()) {
 }
 
 export function servePvp(req: Request, kind: "queue" | "action" | "invite" | "timeout") {
-  const trace: Trace = { db: 0, trips: 0 };
+  const trace: Trace = { db: 0, trips: 0, inflight: 0, since: 0 };
   return traces.run(trace, async () => {
     const started = performance.now();
     // The isolate's first request carries its cold start: module load to now.
