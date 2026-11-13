@@ -1,0 +1,158 @@
+{
+  "set": "Mange Marvin (51) mange inpaint",
+  "date": "2026-11-14",
+  "why": "Text-to-image redraws (7 rounds, ~140 renders) never showed visible mange. The live vet-plate was kept and only masked fur patches were repainted as bald pink felt with scripts/inpaint-card-art-fooocus.py, in three chained passes.",
+  "generator": "fooocus-api (local, MatrixMonster GPU) /v2/generation/image-inpaint-outpaint",
+  "source_plate_sha256": "c26895562fa373d21a6f8c2c27f1ea90a65fd46721ed0699c31fcebdfb976058",
+  "passes": [
+    {
+      "pass_input_sha256": "c26895562fa373d21a6f8c2c27f1ea90a65fd46721ed0699c31fcebdfb976058",
+      "mask": {
+        "source": "maskB.png",
+        "ellipses": [],
+        "wobble": 0.0,
+        "mask_seed": 0,
+        "coverage": null,
+        "sha256": "4f0040927a1d37fbc7d515ce0cdd62f8f4814956a528a98a5a3b30c4ea8db109"
+      },
+      "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+      "endpoint": "/v2/generation/image-inpaint-outpaint",
+      "date": "2026-11-13T22:26:23+00:00",
+      "render": {
+        "id": "51D__s5405",
+        "prompt": "(mangy bald patch: bare hairless pale pinkish-cream felt fabric, smooth and shiny, no fur:1.6), (scraggly torn fur fringe around the bald patch:1.3), (a few wisps of white cotton stuffing:1.3), antique engraved illustration with hand-coloured washes",
+        "negative_prompt": "(fur, furry, hair, brown patch, sewn-on patch, patchwork, dark fabric:1.5), (human skin, flesh, wound, scab, blood, sore, rash, human, dog:1.6), (text, letters, words, label:1.4), photo, photorealistic, watermark, blurry",
+        "styles": [],
+        "performance": "Quality",
+        "seed": "5405",
+        "requested_seed": 5405,
+        "guidance_scale": 7.0,
+        "advanced_params": {
+          "inpaint_strength": 1.0,
+          "inpaint_respective_field": 0.35,
+          "inpaint_erode_or_dilate": 0,
+          "inpaint_engine": "v2.6",
+          "invert_mask_checkbox": false,
+          "inpaint_advanced_masking_checkbox": true
+        },
+        "elapsed_s": 24.84,
+        "gpu_peak_util": 100,
+        "gpu_peak_mem_mib": 14518,
+        "outputs": [
+          {
+            "path": "cand/51D__s5405.png",
+            "sha256": "4e3005affca956e33fe29110d3c326d1056f285cf9ef1d6ef630a13f1fb364c2"
+          }
+        ]
+      }
+    },
+    {
+      "pass_input_sha256": "4e3005affca956e33fe29110d3c326d1056f285cf9ef1d6ef630a13f1fb364c2",
+      "mask": {
+        "source": "maskF.png",
+        "ellipses": [],
+        "wobble": 0.0,
+        "mask_seed": 0,
+        "coverage": null,
+        "sha256": "a31763ed1c6ac3273385110851433e0aaddea04080980d85246f79a27b35af43"
+      },
+      "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+      "endpoint": "/v2/generation/image-inpaint-outpaint",
+      "date": "2026-11-13T22:35:50+00:00",
+      "render": {
+        "id": "51F__s5604",
+        "prompt": "(mangy bald patch: bare hairless pale pink felt fabric, smooth, no fur:1.8), (scraggly torn fur fringe around the bald patch:1.3), (a few wisps of white cotton stuffing:1.3), antique engraved illustration with hand-coloured washes",
+        "negative_prompt": "(fur, furry, hair, brown patch, sewn-on patch, patchwork, dark fabric:1.5), (navel, belly button, hole, orifice, nipple, genitals:1.7), (human skin, flesh, wound, scab, blood, sore, rash, human, dog:1.6), (text, letters, words, label:1.4), photo, photorealistic, watermark, blurry",
+        "styles": [],
+        "performance": "Quality",
+        "seed": "5604",
+        "requested_seed": 5604,
+        "guidance_scale": 8.0,
+        "advanced_params": {
+          "inpaint_strength": 1.0,
+          "inpaint_respective_field": 0.35,
+          "inpaint_erode_or_dilate": 0,
+          "inpaint_engine": "v2.6",
+          "inpaint_disable_initial_latent": true,
+          "invert_mask_checkbox": false,
+          "inpaint_advanced_masking_checkbox": true
+        },
+        "elapsed_s": 22.7,
+        "gpu_peak_util": 100,
+        "gpu_peak_mem_mib": 14598,
+        "outputs": [
+          {
+            "path": "cand/51F__s5604.png",
+            "sha256": "81b5b5ae95c0e6db0e73657b4c58fbd9ab8ca2074e4672760cc1af3d3b884df3"
+          }
+        ]
+      }
+    },
+    {
+      "pass_input_sha256": "81b5b5ae95c0e6db0e73657b4c58fbd9ab8ca2074e4672760cc1af3d3b884df3",
+      "mask": {
+        "source": "maskG.png",
+        "ellipses": [],
+        "wobble": 0.0,
+        "mask_seed": 0,
+        "coverage": null,
+        "sha256": "339b511058c3979e7dc5ce6350291f90f68ca235664df179b323a2f42efd08a9"
+      },
+      "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+      "endpoint": "/v2/generation/image-inpaint-outpaint",
+      "date": "2026-11-13T22:41:21+00:00",
+      "render": {
+        "id": "51G__s5701",
+        "prompt": "(mangy bald patch: bare hairless pale pink felt fabric, smooth, no fur:1.8), (scraggly torn fur fringe around the bald patch:1.3), (a few wisps of white cotton stuffing:1.3), antique engraved illustration with hand-coloured washes",
+        "negative_prompt": "(fur, furry, hair, brown patch, sewn-on patch, patchwork, dark fabric:1.5), (navel, belly button, hole, orifice, nipple, genitals:1.7), (human skin, flesh, wound, scab, blood, sore, rash, human, dog:1.6), (text, letters, words, label:1.4), photo, photorealistic, watermark, blurry",
+        "styles": [],
+        "performance": "Quality",
+        "seed": "5701",
+        "requested_seed": 5701,
+        "guidance_scale": 8.0,
+        "advanced_params": {
+          "inpaint_strength": 1.0,
+          "inpaint_respective_field": 0.35,
+          "inpaint_erode_or_dilate": 0,
+          "inpaint_engine": "v2.6",
+          "inpaint_disable_initial_latent": true,
+          "invert_mask_checkbox": false,
+          "inpaint_advanced_masking_checkbox": true
+        },
+        "elapsed_s": 21.98,
+        "gpu_peak_util": 100,
+        "gpu_peak_mem_mib": 12739,
+        "outputs": [
+          {
+            "path": "cand/51G__s5701.png",
+            "sha256": "244d7c8caf237fb96ee47671c9738023af84eb052a44e5a08741392a9a850d8c"
+          }
+        ]
+      }
+    }
+  ],
+  "final": {
+    "candidate": "51G__s5701",
+    "plate": {
+      "path": "public/cards/51.webp",
+      "sha256": "49ce8833c6af24fa1290e355a82da9361ffc7b3544975cc9e6064693fd06b9fd"
+    },
+    "thumb": {
+      "path": "public/cards/thumbs/51.webp",
+      "sha256": "33e857bad40fba121c43e7e12ca06c3dc5fcbab02181343d2cdf317540b4ed88"
+    }
+  },
+  "audit": {
+    "nearest_before": {
+      "id": "11",
+      "combined": 0.6714
+    },
+    "nearest_after": {
+      "id": "9",
+      "combined": 0.6633
+    },
+    "max_pair_before": 0.716,
+    "max_pair_after": 0.716,
+    "pairs_over_0_72": 0
+  }
+}
