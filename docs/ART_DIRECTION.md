@@ -148,6 +148,15 @@ Fooocus-API listens on `127.0.0.1:8888` on the art PC and is not exposed to the 
 - With a loopback endpoint the generator checks `nvidia-smi` first and refuses to run without an NVIDIA GPU. It also samples GPU load during each render and warns if the load never passes 30%, which is what a CPU fallback looks like. `--gpu-check require|off` overrides this.
 - `npm run art:fooocus -- --self-test` runs the whole path against a mock Fooocus-API, and the unit suite runs it too.
 
+### Repainting part of a plate (inpaint)
+
+`scripts/inpaint-card-art-fooocus.py` (`npm run art:inpaint -- ...`) repaints only the masked part of an existing plate through Fooocus-API's `POST /v2/generation/image-inpaint-outpaint`, on the same local GPU. Use it when text-to-image keeps losing a detail the plate already gets right, for example the bald patches on Mange Marvin. Marvin's current plate (Nov 2026) is three chained inpaint passes over his old vet plate: a bald pink-felt crown, then shoulder, arm, chest and knee patches with `--disable-initial-latent`. Seeds, masks and hashes are in `art/renders/marvin-inpaint.json`.
+
+- The mask is a PNG the size of the image, white = repaint. Pass `--mask <png>`, or build one with repeatable `--ellipse cx,cy,rx,ry[,degrees]` (fractions of the image when every value is at most 1, otherwise pixels). Add `--wobble 0.2` for a ragged edge and `--mask-seed` to make it repeatable. `--mask-out` saves the mask for review.
+- `--prompt`, `--negative`, `--styles`, `--seed` and `--count` work like the generator; each seed writes `<out-root>/cand/<id>__s<seed>.png`. `--strength`, `--respective-field`, `--erode-dilate` and `--disable-initial-latent` map to Fooocus's inpaint settings. The last one starts the masked area from fresh noise, which follows the prompt harder when the old pixels (fur, say) keep coming back.
+- After review, `--export-from <png> --export public/cards/<id>.webp` writes the chosen candidate through the same sharp pipeline as every card (768x1024 WebP plus the 192x256 thumb).
+- Like the generator it checks the GPU on a loopback endpoint, retries 5xx and connection errors with backoff (`--retries`, `--backoff`) but not 4xx, and writes `--provenance` (input and mask sha256, mask coverage, prompt, seed, timing, GPU peak, output sha256). `--self-test` and `scripts/tests/test_inpaint_card_art_fooocus.py` run in the unit suite with no GPU or network.
+
 ## Workflow
 
 1. Edit a signature in `art/bear-bibles.json`, then run `npm run art:unique` until it passes.
