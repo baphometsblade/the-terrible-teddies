@@ -5,9 +5,13 @@
 
 import { RealtimeClient } from '@supabase/realtime-js';
 import { supabase, supabaseAnonKey, supabaseUrl } from '../../utils/supabaseClient.js';
-import { LIVE_POLL_MS, POLL_MS } from './timing.js';
+import {
+  LIVE_POLL_MS, POLL_MS, QUEUE_LIVE_POLL_MS, QUEUE_POLL_MS, pollDelay,
+} from './timing.js';
 
-export { LIVE_POLL_MS, POLL_MS };
+export {
+  LIVE_POLL_MS, POLL_MS, QUEUE_LIVE_POLL_MS, QUEUE_POLL_MS, pollDelay,
+};
 
 export async function pvpPost(name, body) {
   const { data } = await supabase.auth.getSession();

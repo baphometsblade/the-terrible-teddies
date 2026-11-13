@@ -1,7 +1,9 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { HOUSE_RULES } from '@/lib/houseRules';
 import { mvpLine } from '@/lib/matchNight';
-import { LIVE_POLL_MS, newActionId, POLL_MS, pvpPost, watchViews } from '@/lib/pvp/client';
+import {
+  LIVE_POLL_MS, newActionId, pollDelay, pvpPost, watchViews,
+} from '@/lib/pvp/client';
 import { cardsFor, knownDeck } from '@/lib/pvp/decks';
 import { isCardAvailable, refreshPackSeasons } from '@/lib/seasons';
 import { toGhostId } from '@/lib/social/ghostDeck';
@@ -125,8 +127,48 @@ const PubBrawl = forwardRef(function PubBrawl({ initialCode = '', onGhost, onLea
         }
       }
     };
-    const timer = setInterval(tick, POLL_MS);
-    return () => { stop = true; clearInterval(timer); };
+    // One look at a time, on the schedule pollDelay sets: the old bare
+    // setInterval sent a queue call every 750 ms even while the last one was
+    // still out, and kept asking from a hidden tab.
+    let timer = null;
+    let busy = false;
+    const hidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden';
+    const delay = () => {
+      const current = viewRef.current;
+      return pollDelay({
+        inMatch: !!(current?.matchId && current.phase !== 'over'),
+        queued: !!queueRef.current && !current,
+        live: liveRef.current,
+        hidden: hidden(),
+      });
+    };
+    const schedule = (ms) => {
+      clearTimeout(timer);
+      timer = null;
+      if (!stop && ms != null) timer = setTimeout(run, ms);
+    };
+    const run = async () => {
+      if (stop || busy) return;
+      if (hidden()) return; // visibilitychange picks it up again
+      busy = true;
+      try {
+        await tick();
+      } finally {
+        busy = false;
+        schedule(delay());
+      }
+    };
+    const onVisibility = () => {
+      if (!hidden()) schedule(0);
+      else schedule(null);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    schedule(delay());
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
 
   useEffect(() => {
