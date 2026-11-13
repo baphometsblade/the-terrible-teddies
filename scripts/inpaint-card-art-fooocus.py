@@ -230,6 +230,7 @@ def request_body(args, image_png: bytes, mask_png: bytes, seed: int):
             "inpaint_respective_field": args.respective_field,
             "inpaint_erode_or_dilate": args.erode_dilate,
             "inpaint_engine": args.inpaint_engine,
+            "inpaint_disable_initial_latent": bool(args.disable_initial_latent),
             "invert_mask_checkbox": False,
             "inpaint_advanced_masking_checkbox": True,
         },
@@ -499,6 +500,8 @@ def parse_args(argv=None):
     parser.add_argument("--respective-field", type=float, default=0.618)
     parser.add_argument("--erode-dilate", type=int, default=0)
     parser.add_argument("--inpaint-engine", default="v2.6")
+    parser.add_argument("--disable-initial-latent", action="store_true",
+                        help="start the masked area from fresh noise instead of the old pixels (follows the prompt harder)")
     parser.add_argument("--base-model", default="")
     parser.add_argument("--seed", type=int, default=0, help="first seed")
     parser.add_argument("--count", type=int, default=1, help="renders, one per seed from --seed up")

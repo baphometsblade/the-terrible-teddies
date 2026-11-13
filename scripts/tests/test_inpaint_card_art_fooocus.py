@@ -169,6 +169,9 @@ class PayloadTests(unittest.TestCase):
         self.assertEqual(adv["inpaint_strength"], 0.9)
         self.assertEqual(adv["inpaint_erode_or_dilate"], 4)
         self.assertIs(adv["invert_mask_checkbox"], False)
+        self.assertIs(adv["inpaint_disable_initial_latent"], False)
+        fresh = inpaint.request_body(inpaint.parse_args(["--disable-initial-latent"]), b"", b"", 1)
+        self.assertIs(fresh["advanced_params"]["inpaint_disable_initial_latent"], True)
         self.assertIs(adv["inpaint_advanced_masking_checkbox"], True)
         self.assertNotIn("base_model_name", body)
 
