@@ -607,7 +607,7 @@
     },
     "51": {
       "name": "Mange Marvin",
-      "name_gag": "Mange Marvin: half-shaved and patchy in a pink grooming tub, cone of shame on, fleas leaping like fireworks",
+      "name_gag": "Mange Marvin: half-bald and patchy in a pink bubble bath, scratching with a back-scratcher while fleas leap off him like fireworks",
       "medium": "glossy 1980s pet-shampoo commercial photograph",
       "medium_detail": "high-gloss studio flash, soap-opera soft focus edges, foam and bubbles, no lettering",
       "styles": [
@@ -619,15 +619,15 @@
         "flea-spray mint"
       ],
       "fur": "mangy pale-tan plush fur, half shaved with bald stitched patches",
-      "outfit": "a cone of shame and a shower cap",
-      "prop": "a mint-green flea-spray bottle",
-      "setting": "a pink dog-grooming tub overflowing with foam",
+      "outfit": "a pink shower cap and nothing else",
+      "prop": "a long bamboo back-scratcher",
+      "setting": "a pink clawfoot bathtub overflowing with bubble-bath foam",
       "lighting": "glossy studio flash",
       "camera": "close commercial hero shot, the bear filling the frame",
-      "pose": "sitting in the foam scratching behind his ear with a back paw, faking a glamorous smoulder",
-      "gag": "(a mangy pale-tan stuffed plush teddy bear toy, half shaved with bald stitched patches:1.3), wearing a cone of shame and a shower cap, sitting in a pink dog-grooming tub overflowing with bubble-bath foam, scratching behind his ear with a back paw and faking a glamorous smoulder, tiny fleas leaping off him like fireworks, a mint-green flea-spray bottle on the rim",
+      "pose": "lounging in the foam scratching his bald patches with a back-scratcher and faking a glamorous smoulder",
+      "gag": "(a mangy pale-tan stuffed plush teddy bear toy with round plush teddy ears, button eyes and a stitched nose, half bald with bare stitched fabric patches:1.4), wearing a pink shower cap, lounging in a pink clawfoot bathtub overflowing with bubble-bath foam, scratching his bald patches with a long bamboo back-scratcher and faking a glamorous smoulder, tiny fleas leaping off him like fireworks",
       "painterly": true,
-      "negative_extra": "(dog, puppy, real animal, human, groomer, hands, parchment, engraving:1.5)"
+      "negative_extra": "(dog, puppy, cat, real animal, snout, muzzle of a dog:1.8), (human, hand, fingers:1.6), (label, logo, brand name, bottle, text:1.6), party hat, parchment, engraving"
     },
     "52": {
       "name": "Two-Beer Tina",
