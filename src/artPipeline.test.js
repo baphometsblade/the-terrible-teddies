@@ -65,4 +65,22 @@ describe('art pipeline', () => {
     expect(run.stdout).toContain('self-test ok');
     expect(run.status).toBe(0);
   }, 70_000);
+
+  it.skipIf(!python)('local Fooocus inpaint client passes its self-test and unit tests', () => {
+    const self = spawnSync(python, [join(ROOT, 'scripts/inpaint-card-art-fooocus.py'), '--self-test'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      timeout: 60_000,
+    });
+    expect(self.stderr).not.toMatch(/FAIL/);
+    expect(self.stdout).toContain('self-test ok');
+    expect(self.status).toBe(0);
+    const unit = spawnSync(python, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      timeout: 60_000,
+    });
+    expect(unit.stderr).toMatch(/\nOK\s*$/);
+    expect(unit.status).toBe(0);
+  }, 130_000);
 });
