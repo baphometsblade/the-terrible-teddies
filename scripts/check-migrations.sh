@@ -3031,6 +3031,53 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Policies hoist auth.uid() and every foreign key has a covering index"
+"${PSQL[@]}" <<'SQL'
+-- The two performance-advisor lints this schema once failed, asserted here
+-- so a new table or policy cannot quietly bring them back.
+--
+-- auth_rls_initplan: a bare auth.uid() in a policy is re-evaluated for every
+-- row; (SELECT auth.uid()) is an InitPlan, evaluated once per statement.
+-- Postgres deparses the wrapped form as "( SELECT auth.uid() AS uid)", so a
+-- policy is clean when it has as many wrapped calls as calls. The two money
+-- tables' read policies are left as they are on purpose (that pass did not
+-- touch payments); they are the only exceptions.
+--
+-- unindexed_foreign_keys: every FK's columns lead some index on its table,
+-- so a parent delete or a "my rows" lookup is an index scan.
+DO $$
+DECLARE
+  bad TEXT;
+BEGIN
+  SELECT string_agg(format('%I.%I', tablename, policyname), ', ' ORDER BY tablename, policyname) INTO bad
+  FROM pg_policies,
+       LATERAL (SELECT coalesce(qual, '') || ' ' || coalesce(with_check, '') AS expr) e
+  WHERE schemaname = 'public'
+    AND (tablename, policyname) NOT IN (('purchases', 'purchases_select_own'), ('user_gems', 'user_gems_select_own'))
+    AND (SELECT count(*) FROM regexp_matches(e.expr, 'auth\.(uid|jwt|role)\(\)', 'g'))
+        <> (SELECT count(*) FROM regexp_matches(e.expr, 'SELECT auth\.(uid|jwt|role)\(\)', 'g'));
+  IF bad IS NOT NULL THEN
+    RAISE EXCEPTION 'policies call auth.uid()/jwt()/role() per row; wrap them as (SELECT auth.uid()): %', bad;
+  END IF;
+
+  SELECT string_agg(format('%s (%s)', c.conrelid::regclass, c.conname), ', ' ORDER BY c.conname) INTO bad
+  FROM pg_constraint c
+  WHERE c.contype = 'f'
+    AND c.connamespace = 'public'::regnamespace
+    AND c.conname <> 'purchases_user_id_fkey'
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_index i
+      WHERE i.indrelid = c.conrelid
+        AND (i.indkey::int2[])[0:array_length(c.conkey, 1) - 1] @> c.conkey
+        AND (i.indkey::int2[])[0:array_length(c.conkey, 1) - 1] <@ c.conkey
+    );
+  IF bad IS NOT NULL THEN
+    RAISE EXCEPTION 'foreign keys without a covering index: %', bad;
+  END IF;
+  RAISE NOTICE 'initplan and foreign-key index assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"
 
 # Every card the client can roll has a catalog row. A future set that is
