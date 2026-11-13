@@ -2915,6 +2915,122 @@ BEGIN
 END $$;
 SQL
 
+echo "==> Asserting the Pub Brawl hot path: one trip opens a move, one peeks at the queue, service role only"
+"${PSQL[@]}" <<'SQL'
+DO $$
+DECLARE
+  v_a      UUID := pg_catalog.gen_random_uuid();
+  v_b      UUID := pg_catalog.gen_random_uuid();
+  v_c      UUID := pg_catalog.gen_random_uuid();
+  v_done   UUID := pg_catalog.gen_random_uuid();
+  v_m      UUID;
+  v_out    JSONB;
+  v_role   TEXT;
+  v_fn     TEXT;
+  v_raised BOOLEAN;
+  v_count  INTEGER;
+BEGIN
+  -- Catalog: the edge functions' service role may call both; no client may.
+  FOREACH v_fn IN ARRAY ARRAY['public.pvp_turn_open(uuid,uuid,uuid)', 'public.pvp_queue_peek(uuid)'] LOOP
+    IF NOT has_function_privilege('service_role', v_fn, 'EXECUTE') THEN
+      RAISE EXCEPTION 'service_role cannot EXECUTE %', v_fn;
+    END IF;
+    FOREACH v_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+      IF has_function_privilege(v_role, v_fn, 'EXECUTE') THEN
+        RAISE EXCEPTION '% can EXECUTE %', v_role, v_fn;
+      END IF;
+    END LOOP;
+  END LOOP;
+  IF (SELECT prosecdef FROM pg_proc WHERE oid = 'public.pvp_turn_open(uuid,uuid,uuid)'::regprocedure) IS NOT TRUE
+     OR (SELECT prosecdef FROM pg_proc WHERE oid = 'public.pvp_queue_peek(uuid)'::regprocedure) IS NOT TRUE THEN
+    RAISE EXCEPTION 'hot-path RPCs must be SECURITY DEFINER';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_proc WHERE oid = 'public.pvp_turn_open(uuid,uuid,uuid)'::regprocedure
+      AND proconfig @> ARRAY['search_path=""']
+  ) THEN
+    RAISE EXCEPTION 'pvp_turn_open must pin an empty search_path';
+  END IF;
+
+  -- Behaviour: a real call as a client is refused.
+  FOREACH v_role IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    v_raised := FALSE;
+    BEGIN
+      EXECUTE format('SET LOCAL ROLE %I', v_role);
+      PERFORM public.pvp_turn_open(v_a, v_a, NULL);
+    EXCEPTION WHEN insufficient_privilege THEN
+      v_raised := TRUE;
+    END;
+    RESET ROLE;
+    IF NOT v_raised THEN
+      RAISE EXCEPTION '% could call pvp_turn_open', v_role;
+    END IF;
+  END LOOP;
+
+  INSERT INTO auth.users (id) VALUES (v_a), (v_b), (v_c);
+  INSERT INTO public.pvp_matches (kind, status, version, seed, state, setup, rules, state_hash)
+  VALUES ('ladder', 'active', 3, 7, '{"turn":"a"}'::jsonb, '{}'::jsonb, '{}'::jsonb, 'x')
+  RETURNING id INTO v_m;
+  INSERT INTO public.pvp_players (match_id, user_id, seat, rating, display_name) VALUES
+    (v_m, v_a, 'a', 1000, 'A'), (v_m, v_b, 'b', 1000, 'B');
+  INSERT INTO public.pvp_actions (match_id, action_id, user_id, turn_number, version, intent)
+  VALUES (v_m, v_done, v_a, 1, 2, '{"type":"end"}'::jsonb);
+
+  -- The match as pvp_load returns it, plus whether the action id is applied.
+  v_out := public.pvp_turn_open(v_a, v_m, v_done);
+  IF (v_out->>'ok')::boolean IS NOT TRUE OR (v_out->>'id')::uuid <> v_m
+     OR (v_out->>'version')::integer <> 3 OR jsonb_array_length(v_out->'players') <> 2
+     OR v_out->'state'->>'turn' <> 'a' THEN
+    RAISE EXCEPTION 'pvp_turn_open did not return the loaded match: %', v_out;
+  END IF;
+  IF (v_out->>'applied')::boolean IS NOT TRUE THEN
+    RAISE EXCEPTION 'pvp_turn_open missed an applied action: %', v_out->'applied';
+  END IF;
+  IF (public.pvp_turn_open(v_a, v_m, pg_catalog.gen_random_uuid())->>'applied')::boolean IS NOT FALSE
+     OR (public.pvp_turn_open(v_a, v_m, NULL)->>'applied')::boolean IS NOT FALSE THEN
+    RAISE EXCEPTION 'pvp_turn_open called a new action applied';
+  END IF;
+  IF public.pvp_turn_open(v_a, pg_catalog.gen_random_uuid(), NULL)->>'error' IS DISTINCT FROM 'missing'
+     OR public.pvp_turn_open(NULL, v_m, NULL)->>'error' IS DISTINCT FROM 'missing' THEN
+    RAISE EXCEPTION 'pvp_turn_open did not refuse a missing match or caller';
+  END IF;
+
+  -- The rate budget is the same one pvp_rate kept: counted per call, and a
+  -- spent window answers slow without loading anything.
+  SELECT request_count INTO v_count FROM public.rate_limits WHERE user_id = v_a AND action_type = 'pvp_action';
+  IF v_count IS DISTINCT FROM 4 THEN
+    RAISE EXCEPTION 'pvp_turn_open counted % calls against the budget, want 4', v_count;
+  END IF;
+  UPDATE public.rate_limits SET request_count = 600, window_start = pg_catalog.now()
+  WHERE user_id = v_a AND action_type = 'pvp_action';
+  v_out := public.pvp_turn_open(v_a, v_m, NULL);
+  IF v_out IS DISTINCT FROM '{"ok": false, "error": "slow"}'::jsonb THEN
+    RAISE EXCEPTION 'a spent budget answered %', v_out;
+  END IF;
+
+  -- The queue peek: a seated player gets the match with the row, a waiting
+  -- one just the row, a stranger an empty row.
+  v_out := public.pvp_queue_peek(v_b);
+  IF v_out->>'status' <> 'active' OR (v_out->>'match_id')::uuid <> v_m
+     OR (v_out->'match'->>'ok')::boolean IS NOT TRUE OR (v_out->'match'->>'id')::uuid <> v_m THEN
+    RAISE EXCEPTION 'pvp_queue_peek for a seated player: %', v_out;
+  END IF;
+  INSERT INTO public.pvp_queue (user_id, deck, rating, display_name) VALUES (v_c, ARRAY[1,2,3], 1000, 'C');
+  v_out := public.pvp_queue_peek(v_c);
+  IF v_out->>'status' <> 'waiting' OR v_out ? 'match' THEN
+    RAISE EXCEPTION 'pvp_queue_peek for a waiting player: %', v_out;
+  END IF;
+  IF public.pvp_queue_peek(pg_catalog.gen_random_uuid())->>'status' <> 'empty' THEN
+    RAISE EXCEPTION 'pvp_queue_peek for a stranger was not empty';
+  END IF;
+
+  DELETE FROM public.pvp_matches WHERE id = v_m;
+  DELETE FROM public.rate_limits WHERE user_id IN (v_a, v_b, v_c);
+  DELETE FROM auth.users WHERE id IN (v_a, v_b, v_c);
+  RAISE NOTICE 'pub brawl hot path assertions passed';
+END $$;
+SQL
+
 echo "==> Migrations apply cleanly and the security properties hold"
 
 # Every card the client can roll has a catalog row. A future set that is
