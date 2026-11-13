@@ -607,24 +607,27 @@
     },
     "51": {
       "name": "Mange Marvin",
-      "name_gag": "Mange Marvin: a scrawny pale-tan plush teddy bear with comically bald patches showing stitched fabric underneath, wearing a cone of shame",
-      "medium": "Antique veterinary anatomy plate",
-      "medium_detail": "engraved scientific illustration with hand-coloured washes, numbered-free callout lines, specimen layout on aged paper",
-      "styles": [],
-      "palette": [
-        "Aged parchment",
-        "faded madder pink",
-        "iodine brown"
+      "name_gag": "Mange Marvin: half-shaved and patchy in a pink grooming tub, cone of shame on, fleas leaping like fireworks",
+      "medium": "glossy 1980s pet-shampoo commercial photograph",
+      "medium_detail": "high-gloss studio flash, soap-opera soft focus edges, foam and bubbles, no lettering",
+      "styles": [
+        "Ads Advertising"
       ],
-      "fur": "pale-tan scrawny fur with comically bald stitched patches",
-      "outfit": "no clothes, bare plush fur",
-      "prop": "cone of shame",
-      "setting": "aged specimen plate with callout lines",
-      "lighting": "hand-coloured engraving washes",
-      "camera": "scientific full-figure plate",
-      "pose": "scratching his comically bald patches showing stitched fabric underneath",
-      "gag": "a scrawny pale-tan plush teddy bear with comically bald patches showing stitched fabric underneath, wearing a cone of shame, standing in a specimen pose and scratching himself with a back leg, a bleach bottle and a tiny comb drawn beside him like specimens",
-      "painterly": true
+      "palette": [
+        "salon pink",
+        "bubble-bath white",
+        "flea-spray mint"
+      ],
+      "fur": "mangy pale-tan plush fur, half shaved with bald stitched patches",
+      "outfit": "a cone of shame and a shower cap",
+      "prop": "a mint-green flea-spray bottle",
+      "setting": "a pink dog-grooming tub overflowing with foam",
+      "lighting": "glossy studio flash",
+      "camera": "close commercial hero shot, the bear filling the frame",
+      "pose": "sitting in the foam scratching behind his ear with a back paw, faking a glamorous smoulder",
+      "gag": "(a mangy pale-tan stuffed plush teddy bear toy, half shaved with bald stitched patches:1.3), wearing a cone of shame and a shower cap, sitting in a pink dog-grooming tub overflowing with bubble-bath foam, scratching behind his ear with a back paw and faking a glamorous smoulder, tiny fleas leaping off him like fireworks, a mint-green flea-spray bottle on the rim",
+      "painterly": true,
+      "negative_extra": "(dog, puppy, real animal, human, groomer, hands, parchment, engraving:1.5)"
     },
     "52": {
       "name": "Two-Beer Tina",
@@ -1190,24 +1193,27 @@
     },
     "89": {
       "name": "Last-Call Lana",
-      "name_gag": "Last-Call Lana: a tall chunky amber plush teddy bear with stubby plush limbs and round toy proportions, in a little sequin party dress",
-      "medium": "Mid-century American realist painting of a lonely all-night diner",
-      "medium_detail": "flat planes of light, quiet melancholy, big window, cinematic",
-      "styles": [],
+      "name_gag": "Last-Call Lana: the house lights slam on at last call and she is on the table downing the last round",
+      "medium": "Grand Theft Auto loading-screen illustration",
+      "medium_detail": "bold ink outlines, flat cel-shaded colour, punchy sunset-pop graphic style, no lettering, no logos",
+      "styles": [
+        "Game Gta"
+      ],
       "palette": [
-        "Diner teal",
-        "fluorescent cream",
-        "night green"
+        "hot magenta",
+        "last-orders amber",
+        "neon cyan"
       ],
       "fur": "amber chunky plush fur, stubby limbs",
-      "outfit": "silver sequin party dress",
-      "prop": "a high heel on one foot",
-      "setting": "empty all-night diner, rainy street through the window",
-      "lighting": "flat fluorescent diner light",
-      "camera": "doorway full figure",
-      "pose": "waddling out of an empty late-night diner at closing",
-      "gag": "a tall chunky amber plush teddy bear with stubby plush limbs and round toy proportions, in a little sequin party dress, waddling out of an empty late-night diner at closing, carrying one high heel in her paw and wearing the other, a lone coffee cup on the counter, the cook's hatch dark, the street outside empty",
-      "painterly": true
+      "outfit": "a silver sequin party dress and one high heel",
+      "prop": "a tray of the last six shots",
+      "setting": "a dive bar at last call with the harsh house lights just switched on",
+      "lighting": "harsh house lights against neon",
+      "camera": "low dramatic angle, the bear filling the frame",
+      "pose": "standing on a table downing two shots at once, a tray of the last ones balanced in the other paw",
+      "gag": "(a tall chunky amber stuffed plush teddy bear toy with stubby plush limbs in a silver sequin party dress:1.3), standing on a dive-bar table at last call as the harsh house lights slam on, downing two shots at once with a tray of the last ones balanced in her other paw, one high heel kicked off, a jukebox glowing behind her",
+      "painterly": true,
+      "negative_extra": "(woman, girl, human, female face, lips, gun, weapon, police, logo:1.6)"
     },
     "90": {
       "name": "Cougar Carol",
@@ -1359,7 +1365,7 @@
     },
     "97": {
       "name": "Backseat Benny",
-      "name_gag": "Backseat Benny: sprawled shirtless across the back seat at the drive-in like he owns it",
+      "name_gag": "Backseat Benny: the only car at the drive-in with a steamed-up back window, and his smug face pressed against it",
       "medium": "Fauvist painting",
       "medium_detail": "wild unnatural colours, thick expressive brushstrokes, flat bold shapes",
       "styles": [
@@ -1372,14 +1378,14 @@
       ],
       "fur": "emerald-green squat smug plush fur",
       "outfit": "shirt hung on the headrest",
-      "prop": "a fogged-up window with a paw-drawn heart",
-      "setting": "the back seat of a cherry-red convertible at a drive-in movie under the stars",
-      "lighting": "wild unnatural colour",
-      "camera": "wide view from outside the open-top car, the giant drive-in screen behind",
-      "pose": "sprawled shirtless with his arms behind his head like he owns the back seat",
-      "gag": "(a squat smug emerald-green stuffed plush teddy bear toy lying sprawled on his back across the back seat of an open-top cherry-red convertible, bare plush belly, arms folded behind his head:1.4), parked at a drive-in movie under the stars, his shirt tossed over the headrest, a huge glowing movie screen showing a pink heart",
+      "prop": "a steamed-up rear window with a paw print on it",
+      "setting": "a turquoise 1950s sedan parked at a drive-in movie under a violet night sky",
+      "lighting": "drive-in screen glow and starlight",
+      "camera": "wide exterior view of the parked car from behind, the giant drive-in screen glowing beyond",
+      "pose": "his smug face and one paw pressed against the steamed-up rear window from the back seat",
+      "gag": "(a turquoise 1950s sedan parked at a drive-in movie at night, its rear window completely steamed up:1.3), (a smug squat emerald-green stuffed plush teddy bear toy in the back seat pressing his face and one paw against the fogged rear glass:1.3), a dropped popcorn box on the bumper, the giant glowing drive-in screen and a violet starry sky beyond",
       "painterly": true,
-      "negative_extra": "(taxi, cab, meter, human, man, yellow bear, winnie the pooh, t-shirt, shirt on body, clothes on body, sitting upright:1.6)"
+      "negative_extra": "(taxi, cab, meter, human, man, woman, couple, yellow bear, winnie the pooh, text on screen:1.6)"
     },
     "98": {
       "name": "Last-Round Rita",
