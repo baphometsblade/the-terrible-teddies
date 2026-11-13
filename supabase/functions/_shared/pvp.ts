@@ -250,10 +250,21 @@ function buildBody({ id, kind, token, seed, setup, state, night, gangId, invite,
   };
 }
 
+const DEAL_BATCH = 6;
+
 async function pairWaiting(night, now) {
   const pairs = await rpc("pvp_claim_pairs", { p_limit: 40 });
   if (!Array.isArray(pairs)) return 0;
-  for (const pair of pairs) await dealPair(pair, night, now);
+  // Each claimed pair carries its own token, so pairs open independently. A
+  // burst of joins can hand one caller dozens of pairs; dealing them a few at
+  // a time keeps that caller (and everyone it seated) from waiting on a queue
+  // of serial trips, without flooding the pooler.
+  for (let i = 0; i < pairs.length; i += DEAL_BATCH) {
+    const dealt = await Promise.allSettled(pairs.slice(i, i + DEAL_BATCH).map((pair) => dealPair(pair, night, now)));
+    // A failed deal leaves its claim to expire back into the queue, as before;
+    // it must not strand the other pairs in the batch.
+    for (const result of dealt) if (result.status === "rejected") console.error("pvp deal failed", result.reason);
+  }
   return pairs.length;
 }
 
@@ -341,9 +352,11 @@ export async function handleQueue(user: string, body: Record<string, unknown>) {
   }
 
   const deck = Array.isArray(body.deck) ? body.deck.map((id) => Number(id)) : [];
-  const problem = await fieldable(user, deck);
+  const [problem, rating] = await Promise.all([
+    fieldable(user, deck),
+    rpc("pvp_rating_of", { p_uid: user }),
+  ]);
   if (problem) return { ok: false, error: "deck", message: problem };
-  const rating = await rpc("pvp_rating_of", { p_uid: user });
   const name = safeName(body.name, "A rival");
   const queued = await rpc("pvp_enqueue", {
     p_uid: user, p_deck: deck, p_rating: rating || 1000, p_name: name,
@@ -544,9 +557,11 @@ export async function handleInvite(user: string, body: Record<string, unknown>) 
   const op = String(body.op || "preview");
   if (op === "preview") return rpc("pvp_invite_get", { p_code: String(body.code || "") });
   const deck = Array.isArray(body.deck) ? body.deck.map((id) => Number(id)) : [];
-  const problem = await fieldable(user, deck);
+  const [problem, rating] = await Promise.all([
+    fieldable(user, deck),
+    rpc("pvp_rating_of", { p_uid: user }),
+  ]);
   if (problem) return { ok: false, error: "deck", message: problem };
-  const rating = await rpc("pvp_rating_of", { p_uid: user });
   const name = safeName(body.name, "A rival");
   if (op === "create") {
     const kind = body.kind === "gang" ? "gang" : "friend";
