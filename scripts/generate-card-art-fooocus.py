@@ -66,12 +66,14 @@ ENDPOINT = "/v1/generation/text-to-image"
 FINISH = r"""
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { basename, dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const require = createRequire(process.argv[2]);
 const sharp = require('sharp');
 const jobs = JSON.parse(readFileSync(process.argv[3], 'utf8'));
 const src = process.argv[4];
+const variants = await import(pathToFileURL(join(dirname(process.argv[2]), 'scripts', 'lib', 'card-art-variants.mjs')).href);
 
 const icoWrap = (png, size) => {
   const head = Buffer.alloc(22);
@@ -88,6 +90,7 @@ const icoWrap = (png, size) => {
   return Buffer.concat([head, png]);
 };
 
+const masters = [];
 for (const job of jobs) {
   mkdirSync(dirname(job.path), { recursive: true });
   const inset = Number(job.inset || 1);
@@ -111,10 +114,24 @@ for (const job of jobs) {
     writeFileSync(job.path, icoWrap(png, width));
     continue;
   }
-  if (format === 'png') pipeline = pipeline.png();
-  else if (format === 'jpeg' || format === 'jpg') pipeline = pipeline.jpeg({ quality: job.quality || 82 });
+  if (format === 'png') {
+    // Within one level per channel of the render, losslessly packed: the
+    // photographic app icons were 400-620 KB as plain PNGs.
+    writeFileSync(job.path, await variants.nearLosslessPng(await pipeline.png().toBuffer()));
+    continue;
+  }
+  if (format === 'jpeg' || format === 'jpg') pipeline = pipeline.jpeg({ quality: job.quality || 82 });
   else pipeline = pipeline.webp({ quality: job.quality || 80 });
   await pipeline.toFile(job.path);
+  if (/[\\/]public[\\/]cards[\\/][A-Za-z0-9-]+\.webp$/.test(job.path)) masters.push(job.path);
+}
+
+// A card master (public/cards/<id>.webp) gets every size and format the app
+// serves, the same files npm run art:thumbs makes. After the other jobs, so
+// a thumb a manifest asked for is replaced by the house one.
+for (const master of masters) {
+  const rows = await variants.writeCardVariants(master, { force: true });
+  console.log(`variants ${basename(master)}: ${rows.map((r) => `${r.variant} ${Math.round(r.bytes / 1024)} KB`).join(', ')}`);
 }
 """
 

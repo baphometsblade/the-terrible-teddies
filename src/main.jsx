@@ -17,12 +17,16 @@ import PlatformRuntime from './components/PlatformRuntime'
 import { legalKind } from './lib/legalRoutes'
 import { isAdminPath } from './lib/publicPaths'
 import { installProductObservers } from './lib/productEvents'
+import { detectAvif } from './lib/preloadArt'
 import { SupabaseProvider } from './integrations/supabase/auth'
 
 const LegalPage = lazy(() => import('./components/LegalPage'))
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'))
 
 installProductObservers()
+// Answer "does this browser take AVIF?" before any card art is preloaded in
+// script, so those preloads ask for the file the page's <picture> will use.
+detectAvif()
 // The static landing is for browsers that do not run JavaScript. Once React
 // is up it would sit in the document as a second set of links, which a
 // turned-away device is not supposed to have.

@@ -22,16 +22,67 @@ load; the handful of spots that render art large — e.g. the collection
 detail modal — pass `variant="full"` to skip straight to the full-res
 file.
 
-**`thumbs/` must be regenerated whenever card art changes.** Run:
+## Sizes and formats (`thumbs/`, `mid/`)
+
+Every master `<cardId>.webp` (768×1024) is served alongside four files made
+from it by `scripts/lib/card-art-variants.mjs`:
+
+| File | Size | Used for |
+|---|---|---|
+| `thumbs/<id>.webp` | 192×256 | small art: collection grid, battle hand, pack faces |
+| `thumbs/<id>.avif` | 192×256 | the same, for browsers that decode AVIF |
+| `mid/<id>.webp` | 480×640 | art about 150 CSS px wide on a 2–3x screen (menu fan, zoomed grids, the battle's big card) |
+| `mid/<id>.avif` | 480×640 | the same, as AVIF |
+
+`ArtOrEmoji` offers the AVIF files through `<picture>`, with the WebP
+files in the `<img>` for everything else. `variant="responsive"` lists
+192w, 480w and (WebP only) 768w in `srcset`, so a 3x phone takes the 480px
+file instead of the 768px original. Script-made preloads
+(`src/lib/preloadArt.js`) ask for the format the page will pick, which is
+found once at startup by decoding a 1×1 AVIF, so no picture downloads twice.
+The master stays WebP only: as AVIF at the same fidelity it saved nothing
+(95 KB against 97 KB over a 21-card sample).
+
+**Regenerate whenever card art changes.** Every pipeline that writes a
+master already does it for that card (`art:generate`, `art:fooocus`,
+`art:inpaint`). By hand:
 
 ```bash
-npm run art:thumbs            # (re)generate missing/stale thumbs
-npm run art:thumbs -- --force # regenerate every thumb unconditionally
+npm run art:thumbs                       # missing/stale files
+npm run art:thumbs -- --force            # everything
+npm run art:thumbs -- --force --only 51  # one card
 ```
 
-A thumb is considered stale and skipped only when it's already newer than
-its source, so a plain `npm run art:thumbs` after touching a few cards is
-enough to pick up just the changed ones.
+`src/cardArtVariants.test.js` fails if a master lacks any of the four, or
+if one shows an older picture than its master.
+
+### Quality bar
+
+Qualities were chosen by measurement with SSIMULACRA2 (a perceptual
+metric: 90+ visually lossless at 1:1, 80 very high quality, 70 high
+quality), against a lossless resize of the master:
+
+- an AVIF thumb must be at least as faithful as the WebP thumb it stands in
+  for, or score 80+ where that WebP scored better than 80;
+- a mid file must score 80+, in both formats.
+
+Chroma is kept at full resolution (AVIF 4:4:4, WebP "smart" sharp-YUV
+subsampling for the mid size): with ordinary 4:2:0 the saturated neon and
+halftone cards could not reach the bar at any quality.
+
+Check with `npm run art:quality` (`pip install ssimulacra2 pillow numpy`).
+A picture under its bar is listed with the lowest higher quality that
+passes; `npm run art:quality -- --write` records those in
+`art/variant-qualities.json` (read by `scripts/lib/card-art-variants.mjs`)
+and re-encodes the files. Run it after adding or changing art.
+
+### App icons
+
+The PNG icons are written near-losslessly: every colour channel rounded to
+an even value (never more than one level off; ties to even, so no drift),
+alpha exact, then packed by zlib and oxipng. On the photographic 512px
+icons that is 624 KB → 295 KB and 410 KB → 202 KB at SSIMULACRA2 94.7 and
+95.4. A 256-colour palette was tried and rejected (74: visible banding).
 
 ## Generating the set (local Fooocus / Stable Diffusion)
 

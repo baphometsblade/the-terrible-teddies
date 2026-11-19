@@ -1,0 +1,5183 @@
+{
+ "bar": 80.0,
+ "summary": {
+  "thumb-webp": {
+   "files": 143,
+   "bytes": 1563376,
+   "mean": 60.0,
+   "min": 23.11,
+   "p10": 44.83
+  },
+  "thumb-avif": {
+   "files": 143,
+   "bytes": 1257958,
+   "mean": 68.25,
+   "min": 40.14,
+   "p10": 56.81
+  },
+  "mid-webp": {
+   "files": 143,
+   "bytes": 11899402,
+   "mean": 85.91,
+   "min": 80.27,
+   "p10": 84.03
+  },
+  "mid-avif": {
+   "files": 143,
+   "bytes": 8191813,
+   "mean": 83.52,
+   "min": 80.28,
+   "p10": 81.76
+  }
+ },
+ "rows": [
+  {
+   "id": "1",
+   "variant": "thumb-webp",
+   "bytes": 13982,
+   "quality": 78,
+   "score": 60.94,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "1",
+   "variant": "thumb-avif",
+   "bytes": 10613,
+   "quality": 60,
+   "score": 71.37,
+   "bar": 60.94,
+   "ok": true
+  },
+  {
+   "id": "1",
+   "variant": "mid-webp",
+   "bytes": 117364,
+   "quality": 90,
+   "score": 86.33,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "1",
+   "variant": "mid-avif",
+   "bytes": 74481,
+   "quality": 70,
+   "score": 81.73,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "10",
+   "variant": "thumb-webp",
+   "bytes": 17642,
+   "quality": 78,
+   "score": 40.37,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "10",
+   "variant": "thumb-avif",
+   "bytes": 12750,
+   "quality": 60,
+   "score": 59.74,
+   "bar": 40.37,
+   "ok": true
+  },
+  {
+   "id": "10",
+   "variant": "mid-webp",
+   "bytes": 145038,
+   "quality": 90,
+   "score": 86.73,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "10",
+   "variant": "mid-avif",
+   "bytes": 102561,
+   "quality": 70,
+   "score": 82.06,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "101",
+   "variant": "thumb-webp",
+   "bytes": 11054,
+   "quality": 78,
+   "score": 52.94,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "101",
+   "variant": "thumb-avif",
+   "bytes": 8608,
+   "quality": 60,
+   "score": 64.94,
+   "bar": 52.94,
+   "ok": true
+  },
+  {
+   "id": "101",
+   "variant": "mid-webp",
+   "bytes": 83468,
+   "quality": 90,
+   "score": 86.14,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "101",
+   "variant": "mid-avif",
+   "bytes": 53760,
+   "quality": 70,
+   "score": 83.98,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "102",
+   "variant": "thumb-webp",
+   "bytes": 10546,
+   "quality": 78,
+   "score": 64.67,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "102",
+   "variant": "thumb-avif",
+   "bytes": 8404,
+   "quality": 60,
+   "score": 70.39,
+   "bar": 64.67,
+   "ok": true
+  },
+  {
+   "id": "102",
+   "variant": "mid-webp",
+   "bytes": 70262,
+   "quality": 90,
+   "score": 85.75,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "102",
+   "variant": "mid-avif",
+   "bytes": 47563,
+   "quality": 70,
+   "score": 83.75,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "103",
+   "variant": "thumb-webp",
+   "bytes": 15660,
+   "quality": 78,
+   "score": 67.57,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "103",
+   "variant": "thumb-avif",
+   "bytes": 11111,
+   "quality": 60,
+   "score": 68.55,
+   "bar": 67.57,
+   "ok": true
+  },
+  {
+   "id": "103",
+   "variant": "mid-webp",
+   "bytes": 124906,
+   "quality": 90,
+   "score": 87.48,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "103",
+   "variant": "mid-avif",
+   "bytes": 83717,
+   "quality": 70,
+   "score": 83.08,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "104",
+   "variant": "thumb-webp",
+   "bytes": 9436,
+   "quality": 78,
+   "score": 64.08,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "104",
+   "variant": "thumb-avif",
+   "bytes": 8141,
+   "quality": 60,
+   "score": 71.94,
+   "bar": 64.08,
+   "ok": true
+  },
+  {
+   "id": "104",
+   "variant": "mid-webp",
+   "bytes": 84386,
+   "quality": 90,
+   "score": 84.95,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "104",
+   "variant": "mid-avif",
+   "bytes": 60372,
+   "quality": 70,
+   "score": 81.78,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "105",
+   "variant": "thumb-webp",
+   "bytes": 6968,
+   "quality": 78,
+   "score": 66.85,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "105",
+   "variant": "thumb-avif",
+   "bytes": 5628,
+   "quality": 60,
+   "score": 71.97,
+   "bar": 66.85,
+   "ok": true
+  },
+  {
+   "id": "105",
+   "variant": "mid-webp",
+   "bytes": 38574,
+   "quality": 90,
+   "score": 87.14,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "105",
+   "variant": "mid-avif",
+   "bytes": 22504,
+   "quality": 70,
+   "score": 85.81,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "106",
+   "variant": "thumb-webp",
+   "bytes": 5370,
+   "quality": 78,
+   "score": 61.09,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "106",
+   "variant": "thumb-avif",
+   "bytes": 5294,
+   "quality": 60,
+   "score": 68.63,
+   "bar": 61.09,
+   "ok": true
+  },
+  {
+   "id": "106",
+   "variant": "mid-webp",
+   "bytes": 32630,
+   "quality": 90,
+   "score": 83.95,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "106",
+   "variant": "mid-avif",
+   "bytes": 23506,
+   "quality": 70,
+   "score": 83.35,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "108",
+   "variant": "thumb-webp",
+   "bytes": 9458,
+   "quality": 78,
+   "score": 31.42,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "108",
+   "variant": "thumb-avif",
+   "bytes": 9793,
+   "quality": 60,
+   "score": 52.88,
+   "bar": 31.42,
+   "ok": true
+  },
+  {
+   "id": "108",
+   "variant": "mid-webp",
+   "bytes": 82726,
+   "quality": 90,
+   "score": 83.5,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "108",
+   "variant": "mid-avif",
+   "bytes": 61898,
+   "quality": 70,
+   "score": 82.12,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "109",
+   "variant": "thumb-webp",
+   "bytes": 7884,
+   "quality": 78,
+   "score": 54.8,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "109",
+   "variant": "thumb-avif",
+   "bytes": 8248,
+   "quality": 60,
+   "score": 64.19,
+   "bar": 54.8,
+   "ok": true
+  },
+  {
+   "id": "109",
+   "variant": "mid-webp",
+   "bytes": 82562,
+   "quality": 90,
+   "score": 83.17,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "109",
+   "variant": "mid-avif",
+   "bytes": 61171,
+   "quality": 70,
+   "score": 81.1,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "11",
+   "variant": "thumb-webp",
+   "bytes": 11478,
+   "quality": 78,
+   "score": 70.41,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "11",
+   "variant": "thumb-avif",
+   "bytes": 8894,
+   "quality": 60,
+   "score": 74.24,
+   "bar": 70.41,
+   "ok": true
+  },
+  {
+   "id": "11",
+   "variant": "mid-webp",
+   "bytes": 115664,
+   "quality": 90,
+   "score": 86.73,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "11",
+   "variant": "mid-avif",
+   "bytes": 80101,
+   "quality": 70,
+   "score": 82.61,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "12",
+   "variant": "thumb-webp",
+   "bytes": 9480,
+   "quality": 78,
+   "score": 72.49,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "12",
+   "variant": "thumb-avif",
+   "bytes": 8073,
+   "quality": 60,
+   "score": 76.24,
+   "bar": 72.49,
+   "ok": true
+  },
+  {
+   "id": "12",
+   "variant": "mid-webp",
+   "bytes": 83772,
+   "quality": 90,
+   "score": 85.69,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "12",
+   "variant": "mid-avif",
+   "bytes": 58999,
+   "quality": 70,
+   "score": 83.33,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "13",
+   "variant": "thumb-webp",
+   "bytes": 9264,
+   "quality": 78,
+   "score": 68.08,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "13",
+   "variant": "thumb-avif",
+   "bytes": 8351,
+   "quality": 60,
+   "score": 73.27,
+   "bar": 68.08,
+   "ok": true
+  },
+  {
+   "id": "13",
+   "variant": "mid-webp",
+   "bytes": 92992,
+   "quality": 90,
+   "score": 84.13,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "13",
+   "variant": "mid-avif",
+   "bytes": 69913,
+   "quality": 70,
+   "score": 80.67,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "14",
+   "variant": "thumb-webp",
+   "bytes": 10534,
+   "quality": 78,
+   "score": 66.53,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "14",
+   "variant": "thumb-avif",
+   "bytes": 7637,
+   "quality": 60,
+   "score": 72.91,
+   "bar": 66.53,
+   "ok": true
+  },
+  {
+   "id": "14",
+   "variant": "mid-webp",
+   "bytes": 71910,
+   "quality": 90,
+   "score": 87.03,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "14",
+   "variant": "mid-avif",
+   "bytes": 46421,
+   "quality": 70,
+   "score": 83.75,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "15",
+   "variant": "thumb-webp",
+   "bytes": 16366,
+   "quality": 78,
+   "score": 60.2,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "15",
+   "variant": "thumb-avif",
+   "bytes": 11120,
+   "quality": 60,
+   "score": 62.5,
+   "bar": 60.2,
+   "ok": true
+  },
+  {
+   "id": "15",
+   "variant": "mid-webp",
+   "bytes": 152072,
+   "quality": 90,
+   "score": 88.4,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "15",
+   "variant": "mid-avif",
+   "bytes": 101671,
+   "quality": 70,
+   "score": 82.26,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "16",
+   "variant": "thumb-webp",
+   "bytes": 11328,
+   "quality": 78,
+   "score": 62.52,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "16",
+   "variant": "thumb-avif",
+   "bytes": 9156,
+   "quality": 60,
+   "score": 70.3,
+   "bar": 62.52,
+   "ok": true
+  },
+  {
+   "id": "16",
+   "variant": "mid-webp",
+   "bytes": 114194,
+   "quality": 90,
+   "score": 86.27,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "16",
+   "variant": "mid-avif",
+   "bytes": 79382,
+   "quality": 70,
+   "score": 82.34,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "17",
+   "variant": "thumb-webp",
+   "bytes": 17032,
+   "quality": 78,
+   "score": 55.56,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "17",
+   "variant": "thumb-avif",
+   "bytes": 12451,
+   "quality": 60,
+   "score": 60.19,
+   "bar": 55.56,
+   "ok": true
+  },
+  {
+   "id": "17",
+   "variant": "mid-webp",
+   "bytes": 159498,
+   "quality": 90,
+   "score": 87.54,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "17",
+   "variant": "mid-avif",
+   "bytes": 105012,
+   "quality": 70,
+   "score": 80.9,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "18",
+   "variant": "thumb-webp",
+   "bytes": 10496,
+   "quality": 78,
+   "score": 68.21,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "18",
+   "variant": "thumb-avif",
+   "bytes": 8072,
+   "quality": 60,
+   "score": 71.04,
+   "bar": 68.21,
+   "ok": true
+  },
+  {
+   "id": "18",
+   "variant": "mid-webp",
+   "bytes": 74152,
+   "quality": 90,
+   "score": 86.21,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "18",
+   "variant": "mid-avif",
+   "bytes": 50121,
+   "quality": 70,
+   "score": 82.82,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "19",
+   "variant": "thumb-webp",
+   "bytes": 20124,
+   "quality": 78,
+   "score": 78.02,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "19",
+   "variant": "thumb-avif",
+   "bytes": 17344,
+   "quality": 65,
+   "score": 78.07,
+   "bar": 78.02,
+   "ok": true
+  },
+  {
+   "id": "19",
+   "variant": "mid-webp",
+   "bytes": 162266,
+   "quality": 90,
+   "score": 89.82,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "19",
+   "variant": "mid-avif",
+   "bytes": 120095,
+   "quality": 70,
+   "score": 85.28,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "2",
+   "variant": "thumb-webp",
+   "bytes": 10992,
+   "quality": 78,
+   "score": 73.52,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "2",
+   "variant": "thumb-avif",
+   "bytes": 9498,
+   "quality": 60,
+   "score": 73.95,
+   "bar": 73.52,
+   "ok": true
+  },
+  {
+   "id": "2",
+   "variant": "mid-webp",
+   "bytes": 92634,
+   "quality": 90,
+   "score": 85.75,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "2",
+   "variant": "mid-avif",
+   "bytes": 63139,
+   "quality": 70,
+   "score": 81.38,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "20",
+   "variant": "thumb-webp",
+   "bytes": 8324,
+   "quality": 78,
+   "score": 63.26,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "20",
+   "variant": "thumb-avif",
+   "bytes": 7058,
+   "quality": 60,
+   "score": 69.29,
+   "bar": 63.26,
+   "ok": true
+  },
+  {
+   "id": "20",
+   "variant": "mid-webp",
+   "bytes": 56328,
+   "quality": 90,
+   "score": 87.13,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "20",
+   "variant": "mid-avif",
+   "bytes": 36320,
+   "quality": 70,
+   "score": 84.34,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "21",
+   "variant": "thumb-webp",
+   "bytes": 6008,
+   "quality": 78,
+   "score": 69.07,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "21",
+   "variant": "thumb-avif",
+   "bytes": 5567,
+   "quality": 60,
+   "score": 75.9,
+   "bar": 69.07,
+   "ok": true
+  },
+  {
+   "id": "21",
+   "variant": "mid-webp",
+   "bytes": 34070,
+   "quality": 90,
+   "score": 85.1,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "21",
+   "variant": "mid-avif",
+   "bytes": 24731,
+   "quality": 70,
+   "score": 83.88,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "22",
+   "variant": "thumb-webp",
+   "bytes": 12670,
+   "quality": 78,
+   "score": 52.85,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "22",
+   "variant": "thumb-avif",
+   "bytes": 9712,
+   "quality": 60,
+   "score": 65.84,
+   "bar": 52.85,
+   "ok": true
+  },
+  {
+   "id": "22",
+   "variant": "mid-webp",
+   "bytes": 104174,
+   "quality": 90,
+   "score": 87.18,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "22",
+   "variant": "mid-avif",
+   "bytes": 68744,
+   "quality": 70,
+   "score": 84.17,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "23",
+   "variant": "thumb-webp",
+   "bytes": 8092,
+   "quality": 78,
+   "score": 58.65,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "23",
+   "variant": "thumb-avif",
+   "bytes": 6140,
+   "quality": 60,
+   "score": 67.46,
+   "bar": 58.65,
+   "ok": true
+  },
+  {
+   "id": "23",
+   "variant": "mid-webp",
+   "bytes": 51148,
+   "quality": 90,
+   "score": 86.8,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "23",
+   "variant": "mid-avif",
+   "bytes": 33070,
+   "quality": 70,
+   "score": 85.59,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "24",
+   "variant": "thumb-webp",
+   "bytes": 13846,
+   "quality": 78,
+   "score": 47.98,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "24",
+   "variant": "thumb-avif",
+   "bytes": 11655,
+   "quality": 60,
+   "score": 59.71,
+   "bar": 47.98,
+   "ok": true
+  },
+  {
+   "id": "24",
+   "variant": "mid-webp",
+   "bytes": 82804,
+   "quality": 90,
+   "score": 84.57,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "24",
+   "variant": "mid-avif",
+   "bytes": 62967,
+   "quality": 70,
+   "score": 84.6,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "25",
+   "variant": "thumb-webp",
+   "bytes": 12248,
+   "quality": 78,
+   "score": 84.13,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "25",
+   "variant": "thumb-avif",
+   "bytes": 9322,
+   "quality": 60,
+   "score": 84.03,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "25",
+   "variant": "mid-webp",
+   "bytes": 84860,
+   "quality": 90,
+   "score": 87.93,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "25",
+   "variant": "mid-avif",
+   "bytes": 55975,
+   "quality": 70,
+   "score": 84.36,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "26",
+   "variant": "thumb-webp",
+   "bytes": 13752,
+   "quality": 78,
+   "score": 28.04,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "26",
+   "variant": "thumb-avif",
+   "bytes": 12402,
+   "quality": 60,
+   "score": 47.51,
+   "bar": 28.04,
+   "ok": true
+  },
+  {
+   "id": "26",
+   "variant": "mid-webp",
+   "bytes": 95916,
+   "quality": 90,
+   "score": 85.35,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "26",
+   "variant": "mid-avif",
+   "bytes": 72141,
+   "quality": 70,
+   "score": 83.85,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "27",
+   "variant": "thumb-webp",
+   "bytes": 6466,
+   "quality": 78,
+   "score": 57.49,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "27",
+   "variant": "thumb-avif",
+   "bytes": 6234,
+   "quality": 60,
+   "score": 67.16,
+   "bar": 57.49,
+   "ok": true
+  },
+  {
+   "id": "27",
+   "variant": "mid-webp",
+   "bytes": 68632,
+   "quality": 90,
+   "score": 83.83,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "27",
+   "variant": "mid-avif",
+   "bytes": 50328,
+   "quality": 70,
+   "score": 81.38,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "3",
+   "variant": "thumb-webp",
+   "bytes": 14478,
+   "quality": 78,
+   "score": 51.14,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "3",
+   "variant": "thumb-avif",
+   "bytes": 12061,
+   "quality": 60,
+   "score": 62.55,
+   "bar": 51.14,
+   "ok": true
+  },
+  {
+   "id": "3",
+   "variant": "mid-webp",
+   "bytes": 110634,
+   "quality": 90,
+   "score": 87.41,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "3",
+   "variant": "mid-avif",
+   "bytes": 80281,
+   "quality": 70,
+   "score": 85.68,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "30",
+   "variant": "thumb-webp",
+   "bytes": 5992,
+   "quality": 78,
+   "score": 69.84,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "30",
+   "variant": "thumb-avif",
+   "bytes": 4797,
+   "quality": 60,
+   "score": 75.5,
+   "bar": 69.84,
+   "ok": true
+  },
+  {
+   "id": "30",
+   "variant": "mid-webp",
+   "bytes": 33212,
+   "quality": 90,
+   "score": 84.78,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "30",
+   "variant": "mid-avif",
+   "bytes": 22497,
+   "quality": 70,
+   "score": 83.76,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "31",
+   "variant": "thumb-webp",
+   "bytes": 8668,
+   "quality": 78,
+   "score": 70.74,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "31",
+   "variant": "thumb-avif",
+   "bytes": 6784,
+   "quality": 60,
+   "score": 77.77,
+   "bar": 70.74,
+   "ok": true
+  },
+  {
+   "id": "31",
+   "variant": "mid-webp",
+   "bytes": 47046,
+   "quality": 90,
+   "score": 85.53,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "31",
+   "variant": "mid-avif",
+   "bytes": 31946,
+   "quality": 70,
+   "score": 85.14,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "32",
+   "variant": "thumb-webp",
+   "bytes": 5668,
+   "quality": 78,
+   "score": 61.85,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "32",
+   "variant": "thumb-avif",
+   "bytes": 4948,
+   "quality": 60,
+   "score": 76.12,
+   "bar": 61.85,
+   "ok": true
+  },
+  {
+   "id": "32",
+   "variant": "mid-webp",
+   "bytes": 30972,
+   "quality": 90,
+   "score": 85.52,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "32",
+   "variant": "mid-avif",
+   "bytes": 20679,
+   "quality": 70,
+   "score": 84.9,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "33",
+   "variant": "thumb-webp",
+   "bytes": 5108,
+   "quality": 78,
+   "score": 57.38,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "33",
+   "variant": "thumb-avif",
+   "bytes": 4595,
+   "quality": 60,
+   "score": 75.78,
+   "bar": 57.38,
+   "ok": true
+  },
+  {
+   "id": "33",
+   "variant": "mid-webp",
+   "bytes": 26092,
+   "quality": 90,
+   "score": 84.01,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "33",
+   "variant": "mid-avif",
+   "bytes": 17649,
+   "quality": 70,
+   "score": 84.8,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "34",
+   "variant": "thumb-webp",
+   "bytes": 5584,
+   "quality": 78,
+   "score": 58.38,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "34",
+   "variant": "thumb-avif",
+   "bytes": 4916,
+   "quality": 60,
+   "score": 74.31,
+   "bar": 58.38,
+   "ok": true
+  },
+  {
+   "id": "34",
+   "variant": "mid-webp",
+   "bytes": 31712,
+   "quality": 90,
+   "score": 84.71,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "34",
+   "variant": "mid-avif",
+   "bytes": 22559,
+   "quality": 70,
+   "score": 84.54,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "4",
+   "variant": "thumb-webp",
+   "bytes": 10494,
+   "quality": 78,
+   "score": 51.7,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "4",
+   "variant": "thumb-avif",
+   "bytes": 8561,
+   "quality": 60,
+   "score": 61.29,
+   "bar": 51.7,
+   "ok": true
+  },
+  {
+   "id": "4",
+   "variant": "mid-webp",
+   "bytes": 60788,
+   "quality": 90,
+   "score": 84.11,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "4",
+   "variant": "mid-avif",
+   "bytes": 41471,
+   "quality": 70,
+   "score": 85.36,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "40",
+   "variant": "thumb-webp",
+   "bytes": 6004,
+   "quality": 78,
+   "score": 65.56,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "40",
+   "variant": "thumb-avif",
+   "bytes": 4885,
+   "quality": 60,
+   "score": 70.62,
+   "bar": 65.56,
+   "ok": true
+  },
+  {
+   "id": "40",
+   "variant": "mid-webp",
+   "bytes": 30342,
+   "quality": 90,
+   "score": 85.24,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "40",
+   "variant": "mid-avif",
+   "bytes": 20754,
+   "quality": 70,
+   "score": 85.06,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "41",
+   "variant": "thumb-webp",
+   "bytes": 7340,
+   "quality": 78,
+   "score": 60.56,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "41",
+   "variant": "thumb-avif",
+   "bytes": 6644,
+   "quality": 60,
+   "score": 70.2,
+   "bar": 60.56,
+   "ok": true
+  },
+  {
+   "id": "41",
+   "variant": "mid-webp",
+   "bytes": 44728,
+   "quality": 90,
+   "score": 83.5,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "41",
+   "variant": "mid-avif",
+   "bytes": 29644,
+   "quality": 70,
+   "score": 83.62,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "42",
+   "variant": "thumb-webp",
+   "bytes": 5428,
+   "quality": 78,
+   "score": 68.92,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "42",
+   "variant": "thumb-avif",
+   "bytes": 4807,
+   "quality": 60,
+   "score": 77.5,
+   "bar": 68.92,
+   "ok": true
+  },
+  {
+   "id": "42",
+   "variant": "mid-webp",
+   "bytes": 28950,
+   "quality": 90,
+   "score": 84.03,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "42",
+   "variant": "mid-avif",
+   "bytes": 20343,
+   "quality": 70,
+   "score": 84.28,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "43",
+   "variant": "thumb-webp",
+   "bytes": 7282,
+   "quality": 78,
+   "score": 50.96,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "43",
+   "variant": "thumb-avif",
+   "bytes": 6642,
+   "quality": 60,
+   "score": 67.78,
+   "bar": 50.96,
+   "ok": true
+  },
+  {
+   "id": "43",
+   "variant": "mid-webp",
+   "bytes": 39168,
+   "quality": 90,
+   "score": 85.14,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "43",
+   "variant": "mid-avif",
+   "bytes": 27740,
+   "quality": 70,
+   "score": 84.93,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "44",
+   "variant": "thumb-webp",
+   "bytes": 7828,
+   "quality": 78,
+   "score": 63.47,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "44",
+   "variant": "thumb-avif",
+   "bytes": 6344,
+   "quality": 60,
+   "score": 66.67,
+   "bar": 63.47,
+   "ok": true
+  },
+  {
+   "id": "44",
+   "variant": "mid-webp",
+   "bytes": 41798,
+   "quality": 90,
+   "score": 85.21,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "44",
+   "variant": "mid-avif",
+   "bytes": 27782,
+   "quality": 70,
+   "score": 84.5,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "45",
+   "variant": "thumb-webp",
+   "bytes": 7342,
+   "quality": 78,
+   "score": 65.7,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "45",
+   "variant": "thumb-avif",
+   "bytes": 5814,
+   "quality": 60,
+   "score": 73.07,
+   "bar": 65.7,
+   "ok": true
+  },
+  {
+   "id": "45",
+   "variant": "mid-webp",
+   "bytes": 38248,
+   "quality": 90,
+   "score": 85.05,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "45",
+   "variant": "mid-avif",
+   "bytes": 24964,
+   "quality": 70,
+   "score": 84.0,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "46",
+   "variant": "thumb-webp",
+   "bytes": 7480,
+   "quality": 78,
+   "score": 67.75,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "46",
+   "variant": "thumb-avif",
+   "bytes": 5565,
+   "quality": 60,
+   "score": 73.41,
+   "bar": 67.75,
+   "ok": true
+  },
+  {
+   "id": "46",
+   "variant": "mid-webp",
+   "bytes": 36840,
+   "quality": 90,
+   "score": 86.3,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "46",
+   "variant": "mid-avif",
+   "bytes": 24353,
+   "quality": 70,
+   "score": 85.6,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "47",
+   "variant": "thumb-webp",
+   "bytes": 7154,
+   "quality": 78,
+   "score": 67.01,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "47",
+   "variant": "thumb-avif",
+   "bytes": 5473,
+   "quality": 60,
+   "score": 72.92,
+   "bar": 67.01,
+   "ok": true
+  },
+  {
+   "id": "47",
+   "variant": "mid-webp",
+   "bytes": 38508,
+   "quality": 90,
+   "score": 85.65,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "47",
+   "variant": "mid-avif",
+   "bytes": 24239,
+   "quality": 70,
+   "score": 84.1,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "5",
+   "variant": "thumb-webp",
+   "bytes": 6020,
+   "quality": 78,
+   "score": 70.21,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "5",
+   "variant": "thumb-avif",
+   "bytes": 6032,
+   "quality": 60,
+   "score": 75.51,
+   "bar": 70.21,
+   "ok": true
+  },
+  {
+   "id": "5",
+   "variant": "mid-webp",
+   "bytes": 61306,
+   "quality": 90,
+   "score": 83.76,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "5",
+   "variant": "mid-avif",
+   "bytes": 43040,
+   "quality": 70,
+   "score": 80.37,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "50",
+   "variant": "thumb-webp",
+   "bytes": 13238,
+   "quality": 78,
+   "score": 63.41,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "50",
+   "variant": "thumb-avif",
+   "bytes": 10032,
+   "quality": 60,
+   "score": 67.79,
+   "bar": 63.41,
+   "ok": true
+  },
+  {
+   "id": "50",
+   "variant": "mid-webp",
+   "bytes": 106950,
+   "quality": 90,
+   "score": 86.96,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "50",
+   "variant": "mid-avif",
+   "bytes": 70618,
+   "quality": 70,
+   "score": 82.79,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "51",
+   "variant": "thumb-webp",
+   "bytes": 9636,
+   "quality": 78,
+   "score": 76.36,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "51",
+   "variant": "thumb-avif",
+   "bytes": 6688,
+   "quality": 60,
+   "score": 78.3,
+   "bar": 76.36,
+   "ok": true
+  },
+  {
+   "id": "51",
+   "variant": "mid-webp",
+   "bytes": 88110,
+   "quality": 90,
+   "score": 86.31,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "51",
+   "variant": "mid-avif",
+   "bytes": 59590,
+   "quality": 70,
+   "score": 81.95,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "52",
+   "variant": "thumb-webp",
+   "bytes": 14742,
+   "quality": 78,
+   "score": 65.63,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "52",
+   "variant": "thumb-avif",
+   "bytes": 10706,
+   "quality": 60,
+   "score": 70.27,
+   "bar": 65.63,
+   "ok": true
+  },
+  {
+   "id": "52",
+   "variant": "mid-webp",
+   "bytes": 114212,
+   "quality": 90,
+   "score": 87.48,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "52",
+   "variant": "mid-avif",
+   "bytes": 72920,
+   "quality": 70,
+   "score": 84.1,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "53",
+   "variant": "thumb-webp",
+   "bytes": 12930,
+   "quality": 78,
+   "score": 56.8,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "53",
+   "variant": "thumb-avif",
+   "bytes": 10216,
+   "quality": 60,
+   "score": 64.17,
+   "bar": 56.8,
+   "ok": true
+  },
+  {
+   "id": "53",
+   "variant": "mid-webp",
+   "bytes": 113688,
+   "quality": 90,
+   "score": 86.14,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "53",
+   "variant": "mid-avif",
+   "bytes": 80363,
+   "quality": 70,
+   "score": 82.52,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "54",
+   "variant": "thumb-webp",
+   "bytes": 13260,
+   "quality": 78,
+   "score": 49.52,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "54",
+   "variant": "thumb-avif",
+   "bytes": 11240,
+   "quality": 60,
+   "score": 68.67,
+   "bar": 49.52,
+   "ok": true
+  },
+  {
+   "id": "54",
+   "variant": "mid-webp",
+   "bytes": 103186,
+   "quality": 90,
+   "score": 86.47,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "54",
+   "variant": "mid-avif",
+   "bytes": 72696,
+   "quality": 70,
+   "score": 84.12,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "55",
+   "variant": "thumb-webp",
+   "bytes": 11352,
+   "quality": 78,
+   "score": 71.55,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "55",
+   "variant": "thumb-avif",
+   "bytes": 9225,
+   "quality": 60,
+   "score": 74.24,
+   "bar": 71.55,
+   "ok": true
+  },
+  {
+   "id": "55",
+   "variant": "mid-webp",
+   "bytes": 89580,
+   "quality": 90,
+   "score": 86.78,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "55",
+   "variant": "mid-avif",
+   "bytes": 58389,
+   "quality": 70,
+   "score": 82.22,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "56",
+   "variant": "thumb-webp",
+   "bytes": 6312,
+   "quality": 78,
+   "score": 83.28,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "56",
+   "variant": "thumb-avif",
+   "bytes": 5394,
+   "quality": 60,
+   "score": 84.61,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "56",
+   "variant": "mid-webp",
+   "bytes": 70990,
+   "quality": 90,
+   "score": 85.64,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "56",
+   "variant": "mid-avif",
+   "bytes": 50784,
+   "quality": 70,
+   "score": 82.88,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "57",
+   "variant": "thumb-webp",
+   "bytes": 10208,
+   "quality": 78,
+   "score": 56.2,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "57",
+   "variant": "thumb-avif",
+   "bytes": 8217,
+   "quality": 60,
+   "score": 69.71,
+   "bar": 56.2,
+   "ok": true
+  },
+  {
+   "id": "57",
+   "variant": "mid-webp",
+   "bytes": 73996,
+   "quality": 90,
+   "score": 86.45,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "57",
+   "variant": "mid-avif",
+   "bytes": 49488,
+   "quality": 70,
+   "score": 84.45,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "58",
+   "variant": "thumb-webp",
+   "bytes": 14990,
+   "quality": 78,
+   "score": 49.7,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "58",
+   "variant": "thumb-avif",
+   "bytes": 11146,
+   "quality": 60,
+   "score": 62.1,
+   "bar": 49.7,
+   "ok": true
+  },
+  {
+   "id": "58",
+   "variant": "mid-webp",
+   "bytes": 130750,
+   "quality": 90,
+   "score": 87.04,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "58",
+   "variant": "mid-avif",
+   "bytes": 89973,
+   "quality": 70,
+   "score": 81.89,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "59",
+   "variant": "thumb-webp",
+   "bytes": 20080,
+   "quality": 78,
+   "score": 35.8,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "59",
+   "variant": "thumb-avif",
+   "bytes": 15649,
+   "quality": 60,
+   "score": 40.14,
+   "bar": 35.8,
+   "ok": true
+  },
+  {
+   "id": "59",
+   "variant": "mid-webp",
+   "bytes": 160912,
+   "quality": 90,
+   "score": 87.67,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "59",
+   "variant": "mid-avif",
+   "bytes": 109664,
+   "quality": 70,
+   "score": 83.66,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "6",
+   "variant": "thumb-webp",
+   "bytes": 14660,
+   "quality": 78,
+   "score": 53.01,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "6",
+   "variant": "thumb-avif",
+   "bytes": 12064,
+   "quality": 60,
+   "score": 57.86,
+   "bar": 53.01,
+   "ok": true
+  },
+  {
+   "id": "6",
+   "variant": "mid-webp",
+   "bytes": 142748,
+   "quality": 90,
+   "score": 85.65,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "6",
+   "variant": "mid-avif",
+   "bytes": 108897,
+   "quality": 70,
+   "score": 83.02,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "60",
+   "variant": "thumb-webp",
+   "bytes": 15600,
+   "quality": 78,
+   "score": 41.59,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "60",
+   "variant": "thumb-avif",
+   "bytes": 11796,
+   "quality": 60,
+   "score": 51.04,
+   "bar": 41.59,
+   "ok": true
+  },
+  {
+   "id": "60",
+   "variant": "mid-webp",
+   "bytes": 117570,
+   "quality": 90,
+   "score": 84.94,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "60",
+   "variant": "mid-avif",
+   "bytes": 80532,
+   "quality": 70,
+   "score": 82.13,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "61",
+   "variant": "thumb-webp",
+   "bytes": 13468,
+   "quality": 78,
+   "score": 67.92,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "61",
+   "variant": "thumb-avif",
+   "bytes": 10031,
+   "quality": 60,
+   "score": 73.11,
+   "bar": 67.92,
+   "ok": true
+  },
+  {
+   "id": "61",
+   "variant": "mid-webp",
+   "bytes": 97202,
+   "quality": 90,
+   "score": 87.27,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "61",
+   "variant": "mid-avif",
+   "bytes": 65199,
+   "quality": 70,
+   "score": 83.73,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "62",
+   "variant": "thumb-webp",
+   "bytes": 9524,
+   "quality": 78,
+   "score": 70.94,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "62",
+   "variant": "thumb-avif",
+   "bytes": 7165,
+   "quality": 60,
+   "score": 74.29,
+   "bar": 70.94,
+   "ok": true
+  },
+  {
+   "id": "62",
+   "variant": "mid-webp",
+   "bytes": 57310,
+   "quality": 90,
+   "score": 86.64,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "62",
+   "variant": "mid-avif",
+   "bytes": 37640,
+   "quality": 70,
+   "score": 85.14,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "63",
+   "variant": "thumb-webp",
+   "bytes": 10412,
+   "quality": 78,
+   "score": 77.3,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "63",
+   "variant": "thumb-avif",
+   "bytes": 8467,
+   "quality": 60,
+   "score": 78.25,
+   "bar": 77.3,
+   "ok": true
+  },
+  {
+   "id": "63",
+   "variant": "mid-webp",
+   "bytes": 88682,
+   "quality": 90,
+   "score": 86.2,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "63",
+   "variant": "mid-avif",
+   "bytes": 61630,
+   "quality": 70,
+   "score": 82.31,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "64",
+   "variant": "thumb-webp",
+   "bytes": 9124,
+   "quality": 78,
+   "score": 64.01,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "64",
+   "variant": "thumb-avif",
+   "bytes": 8204,
+   "quality": 60,
+   "score": 72.67,
+   "bar": 64.01,
+   "ok": true
+  },
+  {
+   "id": "64",
+   "variant": "mid-webp",
+   "bytes": 97066,
+   "quality": 90,
+   "score": 83.21,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "64",
+   "variant": "mid-avif",
+   "bytes": 71871,
+   "quality": 70,
+   "score": 81.09,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "65",
+   "variant": "thumb-webp",
+   "bytes": 4704,
+   "quality": 78,
+   "score": 67.08,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "65",
+   "variant": "thumb-avif",
+   "bytes": 3947,
+   "quality": 60,
+   "score": 74.95,
+   "bar": 67.08,
+   "ok": true
+  },
+  {
+   "id": "65",
+   "variant": "mid-webp",
+   "bytes": 24552,
+   "quality": 90,
+   "score": 84.68,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "65",
+   "variant": "mid-avif",
+   "bytes": 17002,
+   "quality": 70,
+   "score": 85.11,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "66",
+   "variant": "thumb-webp",
+   "bytes": 9228,
+   "quality": 78,
+   "score": 69.24,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "66",
+   "variant": "thumb-avif",
+   "bytes": 7106,
+   "quality": 60,
+   "score": 73.4,
+   "bar": 69.24,
+   "ok": true
+  },
+  {
+   "id": "66",
+   "variant": "mid-webp",
+   "bytes": 63812,
+   "quality": 90,
+   "score": 86.98,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "66",
+   "variant": "mid-avif",
+   "bytes": 42561,
+   "quality": 70,
+   "score": 85.08,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "67",
+   "variant": "thumb-webp",
+   "bytes": 17584,
+   "quality": 78,
+   "score": 48.18,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "67",
+   "variant": "thumb-avif",
+   "bytes": 13682,
+   "quality": 60,
+   "score": 56.92,
+   "bar": 48.18,
+   "ok": true
+  },
+  {
+   "id": "67",
+   "variant": "mid-webp",
+   "bytes": 143402,
+   "quality": 90,
+   "score": 86.57,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "67",
+   "variant": "mid-avif",
+   "bytes": 103769,
+   "quality": 70,
+   "score": 83.54,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "68",
+   "variant": "thumb-webp",
+   "bytes": 18144,
+   "quality": 78,
+   "score": 49.46,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "68",
+   "variant": "thumb-avif",
+   "bytes": 13596,
+   "quality": 60,
+   "score": 56.69,
+   "bar": 49.46,
+   "ok": true
+  },
+  {
+   "id": "68",
+   "variant": "mid-webp",
+   "bytes": 136828,
+   "quality": 90,
+   "score": 86.78,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "68",
+   "variant": "mid-avif",
+   "bytes": 99719,
+   "quality": 70,
+   "score": 83.93,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "69",
+   "variant": "thumb-webp",
+   "bytes": 10660,
+   "quality": 78,
+   "score": 58.76,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "69",
+   "variant": "thumb-avif",
+   "bytes": 8980,
+   "quality": 60,
+   "score": 69.14,
+   "bar": 58.76,
+   "ok": true
+  },
+  {
+   "id": "69",
+   "variant": "mid-webp",
+   "bytes": 98592,
+   "quality": 90,
+   "score": 85.74,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "69",
+   "variant": "mid-avif",
+   "bytes": 68113,
+   "quality": 70,
+   "score": 82.68,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "7",
+   "variant": "thumb-webp",
+   "bytes": 8838,
+   "quality": 78,
+   "score": 68.02,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "7",
+   "variant": "thumb-avif",
+   "bytes": 7180,
+   "quality": 60,
+   "score": 72.8,
+   "bar": 68.02,
+   "ok": true
+  },
+  {
+   "id": "7",
+   "variant": "mid-webp",
+   "bytes": 68070,
+   "quality": 90,
+   "score": 85.99,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "7",
+   "variant": "mid-avif",
+   "bytes": 44531,
+   "quality": 70,
+   "score": 82.91,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "70",
+   "variant": "thumb-webp",
+   "bytes": 6888,
+   "quality": 78,
+   "score": 61.14,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "70",
+   "variant": "thumb-avif",
+   "bytes": 5474,
+   "quality": 60,
+   "score": 72.61,
+   "bar": 61.14,
+   "ok": true
+  },
+  {
+   "id": "70",
+   "variant": "mid-webp",
+   "bytes": 36434,
+   "quality": 90,
+   "score": 86.37,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "70",
+   "variant": "mid-avif",
+   "bytes": 24271,
+   "quality": 70,
+   "score": 84.92,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "71",
+   "variant": "thumb-webp",
+   "bytes": 10668,
+   "quality": 78,
+   "score": 51.02,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "71",
+   "variant": "thumb-avif",
+   "bytes": 8534,
+   "quality": 60,
+   "score": 65.77,
+   "bar": 51.02,
+   "ok": true
+  },
+  {
+   "id": "71",
+   "variant": "mid-webp",
+   "bytes": 65458,
+   "quality": 90,
+   "score": 85.2,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "71",
+   "variant": "mid-avif",
+   "bytes": 43643,
+   "quality": 70,
+   "score": 83.61,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "72",
+   "variant": "thumb-webp",
+   "bytes": 10202,
+   "quality": 78,
+   "score": 44.83,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "72",
+   "variant": "thumb-avif",
+   "bytes": 8193,
+   "quality": 60,
+   "score": 61.6,
+   "bar": 44.83,
+   "ok": true
+  },
+  {
+   "id": "72",
+   "variant": "mid-webp",
+   "bytes": 60462,
+   "quality": 90,
+   "score": 84.59,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "72",
+   "variant": "mid-avif",
+   "bytes": 40071,
+   "quality": 70,
+   "score": 83.06,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "73",
+   "variant": "thumb-webp",
+   "bytes": 7968,
+   "quality": 78,
+   "score": 58.71,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "73",
+   "variant": "thumb-avif",
+   "bytes": 6942,
+   "quality": 60,
+   "score": 68.65,
+   "bar": 58.71,
+   "ok": true
+  },
+  {
+   "id": "73",
+   "variant": "mid-webp",
+   "bytes": 44950,
+   "quality": 90,
+   "score": 86.43,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "73",
+   "variant": "mid-avif",
+   "bytes": 30206,
+   "quality": 70,
+   "score": 84.9,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "74",
+   "variant": "thumb-webp",
+   "bytes": 5696,
+   "quality": 78,
+   "score": 60.9,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "74",
+   "variant": "thumb-avif",
+   "bytes": 5069,
+   "quality": 60,
+   "score": 73.43,
+   "bar": 60.9,
+   "ok": true
+  },
+  {
+   "id": "74",
+   "variant": "mid-webp",
+   "bytes": 30962,
+   "quality": 90,
+   "score": 84.45,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "74",
+   "variant": "mid-avif",
+   "bytes": 21310,
+   "quality": 70,
+   "score": 84.84,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "75",
+   "variant": "thumb-webp",
+   "bytes": 6516,
+   "quality": 78,
+   "score": 71.85,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "75",
+   "variant": "thumb-avif",
+   "bytes": 5043,
+   "quality": 60,
+   "score": 76.88,
+   "bar": 71.85,
+   "ok": true
+  },
+  {
+   "id": "75",
+   "variant": "mid-webp",
+   "bytes": 37772,
+   "quality": 90,
+   "score": 85.84,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "75",
+   "variant": "mid-avif",
+   "bytes": 24879,
+   "quality": 70,
+   "score": 84.88,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "76",
+   "variant": "thumb-webp",
+   "bytes": 9772,
+   "quality": 78,
+   "score": 48.25,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "76",
+   "variant": "thumb-avif",
+   "bytes": 7610,
+   "quality": 60,
+   "score": 65.77,
+   "bar": 48.25,
+   "ok": true
+  },
+  {
+   "id": "76",
+   "variant": "mid-webp",
+   "bytes": 52722,
+   "quality": 90,
+   "score": 86.46,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "76",
+   "variant": "mid-avif",
+   "bytes": 34761,
+   "quality": 70,
+   "score": 85.38,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "77",
+   "variant": "thumb-webp",
+   "bytes": 6516,
+   "quality": 78,
+   "score": 60.23,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "77",
+   "variant": "thumb-avif",
+   "bytes": 5339,
+   "quality": 60,
+   "score": 71.95,
+   "bar": 60.23,
+   "ok": true
+  },
+  {
+   "id": "77",
+   "variant": "mid-webp",
+   "bytes": 34076,
+   "quality": 90,
+   "score": 86.0,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "77",
+   "variant": "mid-avif",
+   "bytes": 23045,
+   "quality": 70,
+   "score": 85.36,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "78",
+   "variant": "thumb-webp",
+   "bytes": 8900,
+   "quality": 78,
+   "score": 69.79,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "78",
+   "variant": "thumb-avif",
+   "bytes": 6709,
+   "quality": 60,
+   "score": 74.17,
+   "bar": 69.79,
+   "ok": true
+  },
+  {
+   "id": "78",
+   "variant": "mid-webp",
+   "bytes": 47154,
+   "quality": 90,
+   "score": 86.0,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "78",
+   "variant": "mid-avif",
+   "bytes": 31155,
+   "quality": 70,
+   "score": 85.23,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "79",
+   "variant": "thumb-webp",
+   "bytes": 6970,
+   "quality": 78,
+   "score": 65.43,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "79",
+   "variant": "thumb-avif",
+   "bytes": 5922,
+   "quality": 60,
+   "score": 73.71,
+   "bar": 65.43,
+   "ok": true
+  },
+  {
+   "id": "79",
+   "variant": "mid-webp",
+   "bytes": 39506,
+   "quality": 90,
+   "score": 85.19,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "79",
+   "variant": "mid-avif",
+   "bytes": 26864,
+   "quality": 70,
+   "score": 84.3,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "8",
+   "variant": "thumb-webp",
+   "bytes": 17392,
+   "quality": 78,
+   "score": 44.47,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "8",
+   "variant": "thumb-avif",
+   "bytes": 13516,
+   "quality": 60,
+   "score": 54.5,
+   "bar": 44.47,
+   "ok": true
+  },
+  {
+   "id": "8",
+   "variant": "mid-webp",
+   "bytes": 160090,
+   "quality": 90,
+   "score": 85.75,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "8",
+   "variant": "mid-avif",
+   "bytes": 119470,
+   "quality": 70,
+   "score": 82.35,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "80",
+   "variant": "thumb-webp",
+   "bytes": 6130,
+   "quality": 78,
+   "score": 62.83,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "80",
+   "variant": "thumb-avif",
+   "bytes": 6177,
+   "quality": 60,
+   "score": 74.31,
+   "bar": 62.83,
+   "ok": true
+  },
+  {
+   "id": "80",
+   "variant": "mid-webp",
+   "bytes": 67582,
+   "quality": 90,
+   "score": 84.4,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "80",
+   "variant": "mid-avif",
+   "bytes": 48924,
+   "quality": 70,
+   "score": 81.28,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "81",
+   "variant": "thumb-webp",
+   "bytes": 9466,
+   "quality": 78,
+   "score": 66.71,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "81",
+   "variant": "thumb-avif",
+   "bytes": 7866,
+   "quality": 60,
+   "score": 72.66,
+   "bar": 66.71,
+   "ok": true
+  },
+  {
+   "id": "81",
+   "variant": "mid-webp",
+   "bytes": 78670,
+   "quality": 90,
+   "score": 84.67,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "81",
+   "variant": "mid-avif",
+   "bytes": 55450,
+   "quality": 70,
+   "score": 82.87,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "82",
+   "variant": "thumb-webp",
+   "bytes": 15438,
+   "quality": 78,
+   "score": 56.95,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "82",
+   "variant": "thumb-avif",
+   "bytes": 10661,
+   "quality": 60,
+   "score": 65.76,
+   "bar": 56.95,
+   "ok": true
+  },
+  {
+   "id": "82",
+   "variant": "mid-webp",
+   "bytes": 124576,
+   "quality": 90,
+   "score": 86.13,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "82",
+   "variant": "mid-avif",
+   "bytes": 89025,
+   "quality": 70,
+   "score": 83.44,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "83",
+   "variant": "thumb-webp",
+   "bytes": 10630,
+   "quality": 78,
+   "score": 74.94,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "83",
+   "variant": "thumb-avif",
+   "bytes": 8246,
+   "quality": 60,
+   "score": 77.85,
+   "bar": 74.94,
+   "ok": true
+  },
+  {
+   "id": "83",
+   "variant": "mid-webp",
+   "bytes": 94768,
+   "quality": 90,
+   "score": 86.37,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "83",
+   "variant": "mid-avif",
+   "bytes": 62983,
+   "quality": 70,
+   "score": 82.95,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "84",
+   "variant": "thumb-webp",
+   "bytes": 19062,
+   "quality": 78,
+   "score": 55.42,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "84",
+   "variant": "thumb-avif",
+   "bytes": 13301,
+   "quality": 60,
+   "score": 61.12,
+   "bar": 55.42,
+   "ok": true
+  },
+  {
+   "id": "84",
+   "variant": "mid-webp",
+   "bytes": 150822,
+   "quality": 90,
+   "score": 87.63,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "84",
+   "variant": "mid-avif",
+   "bytes": 103392,
+   "quality": 70,
+   "score": 83.1,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "85",
+   "variant": "thumb-webp",
+   "bytes": 8208,
+   "quality": 78,
+   "score": 39.25,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "85",
+   "variant": "thumb-avif",
+   "bytes": 7251,
+   "quality": 60,
+   "score": 55.44,
+   "bar": 39.25,
+   "ok": true
+  },
+  {
+   "id": "85",
+   "variant": "mid-webp",
+   "bytes": 83180,
+   "quality": 90,
+   "score": 81.47,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "85",
+   "variant": "mid-avif",
+   "bytes": 61977,
+   "quality": 70,
+   "score": 80.56,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "86",
+   "variant": "thumb-webp",
+   "bytes": 5178,
+   "quality": 78,
+   "score": 69.73,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "86",
+   "variant": "thumb-avif",
+   "bytes": 5613,
+   "quality": 60,
+   "score": 81.74,
+   "bar": 69.73,
+   "ok": true
+  },
+  {
+   "id": "86",
+   "variant": "mid-webp",
+   "bytes": 47570,
+   "quality": 90,
+   "score": 85.1,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "86",
+   "variant": "mid-avif",
+   "bytes": 35611,
+   "quality": 70,
+   "score": 83.54,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "87",
+   "variant": "thumb-webp",
+   "bytes": 14356,
+   "quality": 78,
+   "score": 52.75,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "87",
+   "variant": "thumb-avif",
+   "bytes": 11215,
+   "quality": 60,
+   "score": 58.25,
+   "bar": 52.75,
+   "ok": true
+  },
+  {
+   "id": "87",
+   "variant": "mid-webp",
+   "bytes": 88684,
+   "quality": 90,
+   "score": 87.31,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "87",
+   "variant": "mid-avif",
+   "bytes": 62787,
+   "quality": 70,
+   "score": 84.72,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "88",
+   "variant": "thumb-webp",
+   "bytes": 11202,
+   "quality": 78,
+   "score": 46.64,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "88",
+   "variant": "thumb-avif",
+   "bytes": 8689,
+   "quality": 60,
+   "score": 64.02,
+   "bar": 46.64,
+   "ok": true
+  },
+  {
+   "id": "88",
+   "variant": "mid-webp",
+   "bytes": 77878,
+   "quality": 90,
+   "score": 85.59,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "88",
+   "variant": "mid-avif",
+   "bytes": 51969,
+   "quality": 70,
+   "score": 83.9,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "89",
+   "variant": "thumb-webp",
+   "bytes": 10930,
+   "quality": 78,
+   "score": 56.16,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "89",
+   "variant": "thumb-avif",
+   "bytes": 8494,
+   "quality": 60,
+   "score": 70.81,
+   "bar": 56.16,
+   "ok": true
+  },
+  {
+   "id": "89",
+   "variant": "mid-webp",
+   "bytes": 62832,
+   "quality": 90,
+   "score": 87.35,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "89",
+   "variant": "mid-avif",
+   "bytes": 40807,
+   "quality": 70,
+   "score": 84.53,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "9",
+   "variant": "thumb-webp",
+   "bytes": 16928,
+   "quality": 78,
+   "score": 44.78,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "9",
+   "variant": "thumb-avif",
+   "bytes": 12297,
+   "quality": 60,
+   "score": 57.58,
+   "bar": 44.78,
+   "ok": true
+  },
+  {
+   "id": "9",
+   "variant": "mid-webp",
+   "bytes": 144046,
+   "quality": 90,
+   "score": 87.76,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "9",
+   "variant": "mid-avif",
+   "bytes": 98860,
+   "quality": 70,
+   "score": 82.29,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "90",
+   "variant": "thumb-webp",
+   "bytes": 11606,
+   "quality": 78,
+   "score": 57.8,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "90",
+   "variant": "thumb-avif",
+   "bytes": 9420,
+   "quality": 60,
+   "score": 64.01,
+   "bar": 57.8,
+   "ok": true
+  },
+  {
+   "id": "90",
+   "variant": "mid-webp",
+   "bytes": 79920,
+   "quality": 90,
+   "score": 86.43,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "90",
+   "variant": "mid-avif",
+   "bytes": 52429,
+   "quality": 70,
+   "score": 83.45,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "91",
+   "variant": "thumb-webp",
+   "bytes": 8598,
+   "quality": 78,
+   "score": 57.0,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "91",
+   "variant": "thumb-avif",
+   "bytes": 7327,
+   "quality": 60,
+   "score": 66.09,
+   "bar": 57.0,
+   "ok": true
+  },
+  {
+   "id": "91",
+   "variant": "mid-webp",
+   "bytes": 53006,
+   "quality": 90,
+   "score": 86.86,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "91",
+   "variant": "mid-avif",
+   "bytes": 36315,
+   "quality": 70,
+   "score": 84.99,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "92",
+   "variant": "thumb-webp",
+   "bytes": 18610,
+   "quality": 78,
+   "score": 70.3,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "92",
+   "variant": "thumb-avif",
+   "bytes": 19182,
+   "quality": 70,
+   "score": 71.47,
+   "bar": 70.3,
+   "ok": true
+  },
+  {
+   "id": "92",
+   "variant": "mid-webp",
+   "bytes": 149506,
+   "quality": 90,
+   "score": 87.28,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "92",
+   "variant": "mid-avif",
+   "bytes": 104907,
+   "quality": 70,
+   "score": 82.44,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "93",
+   "variant": "thumb-webp",
+   "bytes": 6862,
+   "quality": 78,
+   "score": 74.1,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "93",
+   "variant": "thumb-avif",
+   "bytes": 5816,
+   "quality": 60,
+   "score": 78.33,
+   "bar": 74.1,
+   "ok": true
+  },
+  {
+   "id": "93",
+   "variant": "mid-webp",
+   "bytes": 64342,
+   "quality": 90,
+   "score": 84.93,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "93",
+   "variant": "mid-avif",
+   "bytes": 45031,
+   "quality": 70,
+   "score": 82.5,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "94",
+   "variant": "thumb-webp",
+   "bytes": 8868,
+   "quality": 78,
+   "score": 52.37,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "94",
+   "variant": "thumb-avif",
+   "bytes": 7091,
+   "quality": 60,
+   "score": 55.81,
+   "bar": 52.37,
+   "ok": true
+  },
+  {
+   "id": "94",
+   "variant": "mid-webp",
+   "bytes": 60052,
+   "quality": 90,
+   "score": 86.08,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "94",
+   "variant": "mid-avif",
+   "bytes": 40131,
+   "quality": 70,
+   "score": 83.92,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "95",
+   "variant": "thumb-webp",
+   "bytes": 9594,
+   "quality": 78,
+   "score": 72.21,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "95",
+   "variant": "thumb-avif",
+   "bytes": 7502,
+   "quality": 60,
+   "score": 75.67,
+   "bar": 72.21,
+   "ok": true
+  },
+  {
+   "id": "95",
+   "variant": "mid-webp",
+   "bytes": 65234,
+   "quality": 90,
+   "score": 87.23,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "95",
+   "variant": "mid-avif",
+   "bytes": 42375,
+   "quality": 70,
+   "score": 84.9,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "96",
+   "variant": "thumb-webp",
+   "bytes": 17514,
+   "quality": 78,
+   "score": 55.27,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "96",
+   "variant": "thumb-avif",
+   "bytes": 12773,
+   "quality": 60,
+   "score": 56.81,
+   "bar": 55.27,
+   "ok": true
+  },
+  {
+   "id": "96",
+   "variant": "mid-webp",
+   "bytes": 138944,
+   "quality": 90,
+   "score": 85.9,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "96",
+   "variant": "mid-avif",
+   "bytes": 97109,
+   "quality": 70,
+   "score": 83.29,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "97",
+   "variant": "thumb-webp",
+   "bytes": 6186,
+   "quality": 78,
+   "score": 59.55,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "97",
+   "variant": "thumb-avif",
+   "bytes": 5527,
+   "quality": 60,
+   "score": 62.38,
+   "bar": 59.55,
+   "ok": true
+  },
+  {
+   "id": "97",
+   "variant": "mid-webp",
+   "bytes": 36106,
+   "quality": 90,
+   "score": 83.73,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "97",
+   "variant": "mid-avif",
+   "bytes": 24733,
+   "quality": 70,
+   "score": 83.95,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "98",
+   "variant": "thumb-webp",
+   "bytes": 11102,
+   "quality": 78,
+   "score": 72.04,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "98",
+   "variant": "thumb-avif",
+   "bytes": 9187,
+   "quality": 60,
+   "score": 77.95,
+   "bar": 72.04,
+   "ok": true
+  },
+  {
+   "id": "98",
+   "variant": "mid-webp",
+   "bytes": 101826,
+   "quality": 90,
+   "score": 86.52,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "98",
+   "variant": "mid-avif",
+   "bytes": 67601,
+   "quality": 70,
+   "score": 83.01,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "99",
+   "variant": "thumb-webp",
+   "bytes": 7722,
+   "quality": 78,
+   "score": 65.8,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "99",
+   "variant": "thumb-avif",
+   "bytes": 5800,
+   "quality": 60,
+   "score": 72.04,
+   "bar": 65.8,
+   "ok": true
+  },
+  {
+   "id": "99",
+   "variant": "mid-webp",
+   "bytes": 53728,
+   "quality": 90,
+   "score": 85.17,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "99",
+   "variant": "mid-avif",
+   "bytes": 37769,
+   "quality": 70,
+   "score": 83.22,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ck-chuck",
+   "variant": "thumb-webp",
+   "bytes": 11128,
+   "quality": 78,
+   "score": 67.5,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ck-chuck",
+   "variant": "thumb-avif",
+   "bytes": 9155,
+   "quality": 60,
+   "score": 74.56,
+   "bar": 67.5,
+   "ok": true
+  },
+  {
+   "id": "ck-chuck",
+   "variant": "mid-webp",
+   "bytes": 100522,
+   "quality": 90,
+   "score": 85.47,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ck-chuck",
+   "variant": "mid-avif",
+   "bytes": 71049,
+   "quality": 70,
+   "score": 82.97,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ck-closing",
+   "variant": "thumb-webp",
+   "bytes": 10240,
+   "quality": 78,
+   "score": 66.67,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ck-closing",
+   "variant": "thumb-avif",
+   "bytes": 8372,
+   "quality": 60,
+   "score": 71.35,
+   "bar": 66.67,
+   "ok": true
+  },
+  {
+   "id": "ck-closing",
+   "variant": "mid-webp",
+   "bytes": 92252,
+   "quality": 90,
+   "score": 84.68,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ck-closing",
+   "variant": "mid-avif",
+   "bytes": 64024,
+   "quality": 70,
+   "score": 82.16,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ck-offduty",
+   "variant": "thumb-webp",
+   "bytes": 11414,
+   "quality": 78,
+   "score": 51.1,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ck-offduty",
+   "variant": "thumb-avif",
+   "bytes": 8681,
+   "quality": 60,
+   "score": 57.0,
+   "bar": 51.1,
+   "ok": true
+  },
+  {
+   "id": "ck-offduty",
+   "variant": "mid-webp",
+   "bytes": 77944,
+   "quality": 90,
+   "score": 84.95,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ck-offduty",
+   "variant": "mid-avif",
+   "bytes": 52957,
+   "quality": 70,
+   "score": 82.83,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ck-rita",
+   "variant": "thumb-webp",
+   "bytes": 11360,
+   "quality": 78,
+   "score": 64.46,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ck-rita",
+   "variant": "thumb-avif",
+   "bytes": 8265,
+   "quality": 60,
+   "score": 67.23,
+   "bar": 64.46,
+   "ok": true
+  },
+  {
+   "id": "ck-rita",
+   "variant": "mid-webp",
+   "bytes": 91386,
+   "quality": 90,
+   "score": 86.3,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ck-rita",
+   "variant": "mid-avif",
+   "bytes": 58492,
+   "quality": 70,
+   "score": 81.76,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ck-tabitha",
+   "variant": "thumb-webp",
+   "bytes": 11456,
+   "quality": 78,
+   "score": 72.16,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ck-tabitha",
+   "variant": "thumb-avif",
+   "bytes": 9394,
+   "quality": 60,
+   "score": 74.03,
+   "bar": 72.16,
+   "ok": true
+  },
+  {
+   "id": "ck-tabitha",
+   "variant": "mid-webp",
+   "bytes": 74808,
+   "quality": 90,
+   "score": 87.03,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ck-tabitha",
+   "variant": "mid-avif",
+   "bytes": 48233,
+   "quality": 70,
+   "score": 83.95,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-bree",
+   "variant": "thumb-webp",
+   "bytes": 12790,
+   "quality": 78,
+   "score": 61.08,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "hd-bree",
+   "variant": "thumb-avif",
+   "bytes": 9991,
+   "quality": 60,
+   "score": 66.72,
+   "bar": 61.08,
+   "ok": true
+  },
+  {
+   "id": "hd-bree",
+   "variant": "mid-webp",
+   "bytes": 102890,
+   "quality": 90,
+   "score": 86.48,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-bree",
+   "variant": "mid-avif",
+   "bytes": 65124,
+   "quality": 70,
+   "score": 82.18,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-bride",
+   "variant": "thumb-webp",
+   "bytes": 12626,
+   "quality": 78,
+   "score": 65.22,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "hd-bride",
+   "variant": "thumb-avif",
+   "bytes": 10422,
+   "quality": 60,
+   "score": 69.98,
+   "bar": 65.22,
+   "ok": true
+  },
+  {
+   "id": "hd-bride",
+   "variant": "mid-webp",
+   "bytes": 102572,
+   "quality": 90,
+   "score": 87.11,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-bride",
+   "variant": "mid-avif",
+   "bytes": 68764,
+   "quality": 70,
+   "score": 82.87,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-chorus",
+   "variant": "thumb-webp",
+   "bytes": 13918,
+   "quality": 78,
+   "score": 68.51,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "hd-chorus",
+   "variant": "thumb-avif",
+   "bytes": 9867,
+   "quality": 60,
+   "score": 72.27,
+   "bar": 68.51,
+   "ok": true
+  },
+  {
+   "id": "hd-chorus",
+   "variant": "mid-webp",
+   "bytes": 116556,
+   "quality": 90,
+   "score": 87.09,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-chorus",
+   "variant": "mid-avif",
+   "bytes": 80719,
+   "quality": 70,
+   "score": 83.89,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-honour",
+   "variant": "thumb-webp",
+   "bytes": 22896,
+   "quality": 78,
+   "score": 26.92,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "hd-honour",
+   "variant": "thumb-avif",
+   "bytes": 17145,
+   "quality": 60,
+   "score": 57.86,
+   "bar": 26.92,
+   "ok": true
+  },
+  {
+   "id": "hd-honour",
+   "variant": "mid-webp",
+   "bytes": 175364,
+   "quality": 90,
+   "score": 88.22,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-honour",
+   "variant": "mid-avif",
+   "bytes": 127984,
+   "quality": 70,
+   "score": 84.14,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-lap",
+   "variant": "thumb-webp",
+   "bytes": 11380,
+   "quality": 78,
+   "score": 61.97,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "hd-lap",
+   "variant": "thumb-avif",
+   "bytes": 8880,
+   "quality": 60,
+   "score": 67.41,
+   "bar": 61.97,
+   "ok": true
+  },
+  {
+   "id": "hd-lap",
+   "variant": "mid-webp",
+   "bytes": 63774,
+   "quality": 90,
+   "score": 86.92,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-lap",
+   "variant": "mid-avif",
+   "bytes": 42986,
+   "quality": 70,
+   "score": 85.37,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-luxe",
+   "variant": "thumb-webp",
+   "bytes": 11312,
+   "quality": 78,
+   "score": 55.23,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "hd-luxe",
+   "variant": "thumb-avif",
+   "bytes": 8931,
+   "quality": 60,
+   "score": 63.64,
+   "bar": 55.23,
+   "ok": true
+  },
+  {
+   "id": "hd-luxe",
+   "variant": "mid-webp",
+   "bytes": 78786,
+   "quality": 90,
+   "score": 86.94,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-luxe",
+   "variant": "mid-avif",
+   "bytes": 51784,
+   "quality": 70,
+   "score": 83.63,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-petra",
+   "variant": "thumb-webp",
+   "bytes": 17170,
+   "quality": 78,
+   "score": 59.21,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "hd-petra",
+   "variant": "thumb-avif",
+   "bytes": 12361,
+   "quality": 60,
+   "score": 66.33,
+   "bar": 59.21,
+   "ok": true
+  },
+  {
+   "id": "hd-petra",
+   "variant": "mid-webp",
+   "bytes": 150616,
+   "quality": 90,
+   "score": 86.93,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-petra",
+   "variant": "mid-avif",
+   "bytes": 107887,
+   "quality": 70,
+   "score": 82.8,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-sash",
+   "variant": "thumb-webp",
+   "bytes": 9998,
+   "quality": 78,
+   "score": 69.12,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "hd-sash",
+   "variant": "thumb-avif",
+   "bytes": 8192,
+   "quality": 60,
+   "score": 72.51,
+   "bar": 69.12,
+   "ok": true
+  },
+  {
+   "id": "hd-sash",
+   "variant": "mid-webp",
+   "bytes": 67720,
+   "quality": 90,
+   "score": 86.87,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-sash",
+   "variant": "mid-avif",
+   "bytes": 45509,
+   "quality": 70,
+   "score": 84.58,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-shot",
+   "variant": "thumb-webp",
+   "bytes": 11806,
+   "quality": 78,
+   "score": 61.76,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "hd-shot",
+   "variant": "thumb-avif",
+   "bytes": 9956,
+   "quality": 60,
+   "score": 70.88,
+   "bar": 61.76,
+   "ok": true
+  },
+  {
+   "id": "hd-shot",
+   "variant": "mid-webp",
+   "bytes": 96124,
+   "quality": 90,
+   "score": 86.57,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-shot",
+   "variant": "mid-avif",
+   "bytes": 66773,
+   "quality": 70,
+   "score": 83.04,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-veil",
+   "variant": "thumb-webp",
+   "bytes": 14066,
+   "quality": 78,
+   "score": 55.67,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "hd-veil",
+   "variant": "thumb-avif",
+   "bytes": 10540,
+   "quality": 60,
+   "score": 59.19,
+   "bar": 55.67,
+   "ok": true
+  },
+  {
+   "id": "hd-veil",
+   "variant": "mid-webp",
+   "bytes": 119444,
+   "quality": 90,
+   "score": 87.12,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "hd-veil",
+   "variant": "mid-avif",
+   "bytes": 80646,
+   "quality": 70,
+   "score": 83.21,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-cut-the-line",
+   "variant": "thumb-webp",
+   "bytes": 9130,
+   "quality": 78,
+   "score": 69.94,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "lo-cut-the-line",
+   "variant": "thumb-avif",
+   "bytes": 7883,
+   "quality": 60,
+   "score": 74.81,
+   "bar": 69.94,
+   "ok": true
+  },
+  {
+   "id": "lo-cut-the-line",
+   "variant": "mid-webp",
+   "bytes": 78884,
+   "quality": 90,
+   "score": 85.11,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-cut-the-line",
+   "variant": "mid-avif",
+   "bytes": 54099,
+   "quality": 70,
+   "score": 82.69,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-firm-hand",
+   "variant": "thumb-webp",
+   "bytes": 7846,
+   "quality": 78,
+   "score": 67.85,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "lo-firm-hand",
+   "variant": "thumb-avif",
+   "bytes": 6654,
+   "quality": 60,
+   "score": 73.45,
+   "bar": 67.85,
+   "ok": true
+  },
+  {
+   "id": "lo-firm-hand",
+   "variant": "mid-webp",
+   "bytes": 56238,
+   "quality": 90,
+   "score": 85.72,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-firm-hand",
+   "variant": "mid-avif",
+   "bytes": 37691,
+   "quality": 70,
+   "score": 83.43,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-last-pour",
+   "variant": "thumb-webp",
+   "bytes": 9242,
+   "quality": 78,
+   "score": 57.2,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "lo-last-pour",
+   "variant": "thumb-avif",
+   "bytes": 8662,
+   "quality": 65,
+   "score": 58.26,
+   "bar": 57.2,
+   "ok": true
+  },
+  {
+   "id": "lo-last-pour",
+   "variant": "mid-webp",
+   "bytes": 65506,
+   "quality": 90,
+   "score": 85.13,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-last-pour",
+   "variant": "mid-avif",
+   "bytes": 43998,
+   "quality": 70,
+   "score": 83.44,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-lights-down",
+   "variant": "thumb-webp",
+   "bytes": 10890,
+   "quality": 78,
+   "score": 53.18,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "lo-lights-down",
+   "variant": "thumb-avif",
+   "bytes": 9119,
+   "quality": 60,
+   "score": 65.96,
+   "bar": 53.18,
+   "ok": true
+  },
+  {
+   "id": "lo-lights-down",
+   "variant": "mid-webp",
+   "bytes": 87286,
+   "quality": 90,
+   "score": 85.82,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-lights-down",
+   "variant": "mid-avif",
+   "bytes": 61620,
+   "quality": 70,
+   "score": 83.13,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-on-the-house",
+   "variant": "thumb-webp",
+   "bytes": 11486,
+   "quality": 78,
+   "score": 49.68,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "lo-on-the-house",
+   "variant": "thumb-avif",
+   "bytes": 9956,
+   "quality": 60,
+   "score": 59.72,
+   "bar": 49.68,
+   "ok": true
+  },
+  {
+   "id": "lo-on-the-house",
+   "variant": "mid-webp",
+   "bytes": 78940,
+   "quality": 90,
+   "score": 86.47,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-on-the-house",
+   "variant": "mid-avif",
+   "bytes": 57070,
+   "quality": 70,
+   "score": 84.25,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-owners-round",
+   "variant": "thumb-webp",
+   "bytes": 6588,
+   "quality": 78,
+   "score": 65.4,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "lo-owners-round",
+   "variant": "thumb-avif",
+   "bytes": 5126,
+   "quality": 60,
+   "score": 74.05,
+   "bar": 65.4,
+   "ok": true
+  },
+  {
+   "id": "lo-owners-round",
+   "variant": "mid-webp",
+   "bytes": 36756,
+   "quality": 90,
+   "score": 88.47,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-owners-round",
+   "variant": "mid-avif",
+   "bytes": 23348,
+   "quality": 70,
+   "score": 86.05,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-sorry-mate",
+   "variant": "thumb-webp",
+   "bytes": 6240,
+   "quality": 78,
+   "score": 75.58,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "lo-sorry-mate",
+   "variant": "thumb-avif",
+   "bytes": 5548,
+   "quality": 60,
+   "score": 79.78,
+   "bar": 75.58,
+   "ok": true
+  },
+  {
+   "id": "lo-sorry-mate",
+   "variant": "mid-webp",
+   "bytes": 69650,
+   "quality": 90,
+   "score": 85.1,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-sorry-mate",
+   "variant": "mid-avif",
+   "bytes": 47650,
+   "quality": 70,
+   "score": 81.87,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-still-standing",
+   "variant": "thumb-webp",
+   "bytes": 17954,
+   "quality": 78,
+   "score": 47.46,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "lo-still-standing",
+   "variant": "thumb-avif",
+   "bytes": 13434,
+   "quality": 60,
+   "score": 54.34,
+   "bar": 47.46,
+   "ok": true
+  },
+  {
+   "id": "lo-still-standing",
+   "variant": "mid-webp",
+   "bytes": 145742,
+   "quality": 90,
+   "score": 86.16,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-still-standing",
+   "variant": "mid-avif",
+   "bytes": 111604,
+   "quality": 70,
+   "score": 83.37,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-two-for-one",
+   "variant": "thumb-webp",
+   "bytes": 17498,
+   "quality": 78,
+   "score": 46.99,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "lo-two-for-one",
+   "variant": "thumb-avif",
+   "bytes": 12648,
+   "quality": 60,
+   "score": 49.18,
+   "bar": 46.99,
+   "ok": true
+  },
+  {
+   "id": "lo-two-for-one",
+   "variant": "mid-webp",
+   "bytes": 168920,
+   "quality": 90,
+   "score": 82.45,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-two-for-one",
+   "variant": "mid-avif",
+   "bytes": 123747,
+   "quality": 75,
+   "score": 82.82,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-velvet-rope",
+   "variant": "thumb-webp",
+   "bytes": 7082,
+   "quality": 78,
+   "score": 64.52,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "lo-velvet-rope",
+   "variant": "thumb-avif",
+   "bytes": 5930,
+   "quality": 60,
+   "score": 75.83,
+   "bar": 64.52,
+   "ok": true
+  },
+  {
+   "id": "lo-velvet-rope",
+   "variant": "mid-webp",
+   "bytes": 57106,
+   "quality": 90,
+   "score": 84.58,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "lo-velvet-rope",
+   "variant": "mid-avif",
+   "bytes": 37513,
+   "quality": 70,
+   "score": 82.84,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-1",
+   "variant": "thumb-webp",
+   "bytes": 11586,
+   "quality": 78,
+   "score": 58.4,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ma-1",
+   "variant": "thumb-avif",
+   "bytes": 9054,
+   "quality": 60,
+   "score": 65.17,
+   "bar": 58.4,
+   "ok": true
+  },
+  {
+   "id": "ma-1",
+   "variant": "mid-webp",
+   "bytes": 131312,
+   "quality": 90,
+   "score": 86.81,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-1",
+   "variant": "mid-avif",
+   "bytes": 88478,
+   "quality": 70,
+   "score": 82.49,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-10",
+   "variant": "thumb-webp",
+   "bytes": 7796,
+   "quality": 78,
+   "score": 74.99,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ma-10",
+   "variant": "thumb-avif",
+   "bytes": 6665,
+   "quality": 60,
+   "score": 78.18,
+   "bar": 74.99,
+   "ok": true
+  },
+  {
+   "id": "ma-10",
+   "variant": "mid-webp",
+   "bytes": 46602,
+   "quality": 90,
+   "score": 85.04,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-10",
+   "variant": "mid-avif",
+   "bytes": 32533,
+   "quality": 70,
+   "score": 84.47,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-2",
+   "variant": "thumb-webp",
+   "bytes": 4284,
+   "quality": 78,
+   "score": 52.37,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ma-2",
+   "variant": "thumb-avif",
+   "bytes": 4338,
+   "quality": 60,
+   "score": 63.69,
+   "bar": 52.37,
+   "ok": true
+  },
+  {
+   "id": "ma-2",
+   "variant": "mid-webp",
+   "bytes": 44020,
+   "quality": 90,
+   "score": 82.66,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-2",
+   "variant": "mid-avif",
+   "bytes": 29391,
+   "quality": 70,
+   "score": 80.78,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-3",
+   "variant": "thumb-webp",
+   "bytes": 10244,
+   "quality": 78,
+   "score": 68.04,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ma-3",
+   "variant": "thumb-avif",
+   "bytes": 8283,
+   "quality": 60,
+   "score": 72.34,
+   "bar": 68.04,
+   "ok": true
+  },
+  {
+   "id": "ma-3",
+   "variant": "mid-webp",
+   "bytes": 78568,
+   "quality": 90,
+   "score": 87.87,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-3",
+   "variant": "mid-avif",
+   "bytes": 53828,
+   "quality": 70,
+   "score": 85.59,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-4",
+   "variant": "thumb-webp",
+   "bytes": 7166,
+   "quality": 78,
+   "score": 62.59,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ma-4",
+   "variant": "thumb-avif",
+   "bytes": 6714,
+   "quality": 60,
+   "score": 71.29,
+   "bar": 62.59,
+   "ok": true
+  },
+  {
+   "id": "ma-4",
+   "variant": "mid-webp",
+   "bytes": 63696,
+   "quality": 90,
+   "score": 84.64,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-4",
+   "variant": "mid-avif",
+   "bytes": 43851,
+   "quality": 70,
+   "score": 82.63,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-5",
+   "variant": "thumb-webp",
+   "bytes": 12834,
+   "quality": 78,
+   "score": 65.6,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ma-5",
+   "variant": "thumb-avif",
+   "bytes": 9136,
+   "quality": 60,
+   "score": 75.57,
+   "bar": 65.6,
+   "ok": true
+  },
+  {
+   "id": "ma-5",
+   "variant": "mid-webp",
+   "bytes": 105112,
+   "quality": 90,
+   "score": 86.01,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-5",
+   "variant": "mid-avif",
+   "bytes": 69068,
+   "quality": 70,
+   "score": 82.63,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-6",
+   "variant": "thumb-webp",
+   "bytes": 13464,
+   "quality": 78,
+   "score": 53.86,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ma-6",
+   "variant": "thumb-avif",
+   "bytes": 10403,
+   "quality": 60,
+   "score": 65.12,
+   "bar": 53.86,
+   "ok": true
+  },
+  {
+   "id": "ma-6",
+   "variant": "mid-webp",
+   "bytes": 91820,
+   "quality": 90,
+   "score": 88.1,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-6",
+   "variant": "mid-avif",
+   "bytes": 58830,
+   "quality": 70,
+   "score": 85.14,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-7",
+   "variant": "thumb-webp",
+   "bytes": 7982,
+   "quality": 78,
+   "score": 66.99,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ma-7",
+   "variant": "thumb-avif",
+   "bytes": 6681,
+   "quality": 60,
+   "score": 75.85,
+   "bar": 66.99,
+   "ok": true
+  },
+  {
+   "id": "ma-7",
+   "variant": "mid-webp",
+   "bytes": 70660,
+   "quality": 90,
+   "score": 85.02,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-7",
+   "variant": "mid-avif",
+   "bytes": 48891,
+   "quality": 70,
+   "score": 81.57,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-8",
+   "variant": "thumb-webp",
+   "bytes": 8360,
+   "quality": 78,
+   "score": 70.8,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ma-8",
+   "variant": "thumb-avif",
+   "bytes": 6906,
+   "quality": 60,
+   "score": 79.68,
+   "bar": 70.8,
+   "ok": true
+  },
+  {
+   "id": "ma-8",
+   "variant": "mid-webp",
+   "bytes": 46028,
+   "quality": 90,
+   "score": 85.35,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-8",
+   "variant": "mid-avif",
+   "bytes": 30885,
+   "quality": 70,
+   "score": 83.95,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-9",
+   "variant": "thumb-webp",
+   "bytes": 8550,
+   "quality": 78,
+   "score": 67.76,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "ma-9",
+   "variant": "thumb-avif",
+   "bytes": 6842,
+   "quality": 60,
+   "score": 69.18,
+   "bar": 67.76,
+   "ok": true
+  },
+  {
+   "id": "ma-9",
+   "variant": "mid-webp",
+   "bytes": 48292,
+   "quality": 90,
+   "score": 86.05,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "ma-9",
+   "variant": "mid-avif",
+   "bytes": 32414,
+   "quality": 70,
+   "score": 84.98,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-desk",
+   "variant": "thumb-webp",
+   "bytes": 10288,
+   "quality": 78,
+   "score": 50.93,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "xm-desk",
+   "variant": "thumb-avif",
+   "bytes": 8093,
+   "quality": 60,
+   "score": 66.58,
+   "bar": 50.93,
+   "ok": true
+  },
+  {
+   "id": "xm-desk",
+   "variant": "mid-webp",
+   "bytes": 108128,
+   "quality": 90,
+   "score": 85.91,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-desk",
+   "variant": "mid-avif",
+   "bytes": 71508,
+   "quality": 70,
+   "score": 81.06,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-elf",
+   "variant": "thumb-webp",
+   "bytes": 10712,
+   "quality": 78,
+   "score": 39.07,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "xm-elf",
+   "variant": "thumb-avif",
+   "bytes": 8793,
+   "quality": 60,
+   "score": 53.72,
+   "bar": 39.07,
+   "ok": true
+  },
+  {
+   "id": "xm-elf",
+   "variant": "mid-webp",
+   "bytes": 70470,
+   "quality": 90,
+   "score": 84.69,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-elf",
+   "variant": "mid-avif",
+   "bytes": 47146,
+   "quality": 70,
+   "score": 82.69,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-holly",
+   "variant": "thumb-webp",
+   "bytes": 13616,
+   "quality": 78,
+   "score": 30.17,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "xm-holly",
+   "variant": "thumb-avif",
+   "bytes": 10690,
+   "quality": 60,
+   "score": 55.62,
+   "bar": 30.17,
+   "ok": true
+  },
+  {
+   "id": "xm-holly",
+   "variant": "mid-webp",
+   "bytes": 82866,
+   "quality": 90,
+   "score": 85.36,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-holly",
+   "variant": "mid-avif",
+   "bytes": 53724,
+   "quality": 70,
+   "score": 83.55,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-list",
+   "variant": "thumb-webp",
+   "bytes": 21044,
+   "quality": 78,
+   "score": 23.11,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "xm-list",
+   "variant": "thumb-avif",
+   "bytes": 16730,
+   "quality": 60,
+   "score": 46.36,
+   "bar": 23.11,
+   "ok": true
+  },
+  {
+   "id": "xm-list",
+   "variant": "mid-webp",
+   "bytes": 156858,
+   "quality": 90,
+   "score": 87.83,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-list",
+   "variant": "mid-avif",
+   "bytes": 108794,
+   "quality": 70,
+   "score": 84.05,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-mistletoe",
+   "variant": "thumb-webp",
+   "bytes": 20564,
+   "quality": 78,
+   "score": 26.06,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "xm-mistletoe",
+   "variant": "thumb-avif",
+   "bytes": 16235,
+   "quality": 60,
+   "score": 53.4,
+   "bar": 26.06,
+   "ok": true
+  },
+  {
+   "id": "xm-mistletoe",
+   "variant": "mid-webp",
+   "bytes": 154364,
+   "quality": 90,
+   "score": 80.27,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-mistletoe",
+   "variant": "mid-avif",
+   "bytes": 98212,
+   "quality": 70,
+   "score": 80.28,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-nog",
+   "variant": "thumb-webp",
+   "bytes": 9212,
+   "quality": 78,
+   "score": 65.25,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "xm-nog",
+   "variant": "thumb-avif",
+   "bytes": 7729,
+   "quality": 60,
+   "score": 69.91,
+   "bar": 65.25,
+   "ok": true
+  },
+  {
+   "id": "xm-nog",
+   "variant": "mid-webp",
+   "bytes": 57588,
+   "quality": 90,
+   "score": 87.18,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-nog",
+   "variant": "mid-avif",
+   "bytes": 39498,
+   "quality": 70,
+   "score": 85.81,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-ozzy",
+   "variant": "thumb-webp",
+   "bytes": 15906,
+   "quality": 78,
+   "score": 37.77,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "xm-ozzy",
+   "variant": "thumb-avif",
+   "bytes": 13016,
+   "quality": 60,
+   "score": 58.1,
+   "bar": 37.77,
+   "ok": true
+  },
+  {
+   "id": "xm-ozzy",
+   "variant": "mid-webp",
+   "bytes": 95614,
+   "quality": 90,
+   "score": 83.43,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-ozzy",
+   "variant": "mid-avif",
+   "bytes": 69665,
+   "quality": 70,
+   "score": 85.02,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-reply",
+   "variant": "thumb-webp",
+   "bytes": 14304,
+   "quality": 78,
+   "score": 88.57,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "xm-reply",
+   "variant": "thumb-avif",
+   "bytes": 11549,
+   "quality": 65,
+   "score": 84.01,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-reply",
+   "variant": "mid-webp",
+   "bytes": 63490,
+   "quality": 90,
+   "score": 91.06,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-reply",
+   "variant": "mid-avif",
+   "bytes": 36927,
+   "quality": 70,
+   "score": 88.94,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-santa",
+   "variant": "thumb-webp",
+   "bytes": 13464,
+   "quality": 78,
+   "score": 48.19,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "xm-santa",
+   "variant": "thumb-avif",
+   "bytes": 10899,
+   "quality": 60,
+   "score": 61.37,
+   "bar": 48.19,
+   "ok": true
+  },
+  {
+   "id": "xm-santa",
+   "variant": "mid-webp",
+   "bytes": 97538,
+   "quality": 90,
+   "score": 85.41,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-santa",
+   "variant": "mid-avif",
+   "bytes": 69199,
+   "quality": 70,
+   "score": 82.02,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-secret",
+   "variant": "thumb-webp",
+   "bytes": 9742,
+   "quality": 78,
+   "score": 79.72,
+   "bar": null,
+   "ok": true
+  },
+  {
+   "id": "xm-secret",
+   "variant": "thumb-avif",
+   "bytes": 9429,
+   "quality": 70,
+   "score": 82.38,
+   "bar": 79.72,
+   "ok": true
+  },
+  {
+   "id": "xm-secret",
+   "variant": "mid-webp",
+   "bytes": 50178,
+   "quality": 90,
+   "score": 88.56,
+   "bar": 80.0,
+   "ok": true
+  },
+  {
+   "id": "xm-secret",
+   "variant": "mid-avif",
+   "bytes": 31287,
+   "quality": 70,
+   "score": 86.58,
+   "bar": 80.0,
+   "ok": true
+  }
+ ]
+}

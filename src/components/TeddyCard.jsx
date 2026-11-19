@@ -12,6 +12,7 @@ import { COSMETIC_FRAMES } from '@/lib/cosmetics';
 import { cardBackId } from '@/lib/wardrobe';
 import { gleamFor, ringId, wearsHolo } from '@/lib/cardFinish';
 import { hasLastOrdersArt, LastOrdersFigure } from './LastOrdersArt';
+import { ART_WIDTHS, cardArtSources } from '@/lib/preloadArt';
 
 // Dark-face fallbacks for cards without a rarity (typed opponent cards).
 const TYPE_STYLES = {
@@ -98,11 +99,22 @@ const getTeddyEmoji = (teddy) => {
 // spots that render art large enough to need it (e.g. the collection
 // detail modal).
 //
-// 'responsive' offers both through srcset and lets the browser choose by
-// pixel density, for art drawn bigger than hand size but far smaller than
+// 'responsive' offers the sizes through srcset and lets the browser choose
+// by pixel density, for art drawn bigger than hand size but far smaller than
 // the original — the menu's enlarged hero cards, where a thumbnail on a
 // retina phone was upscaled about 2x and looked soft next to the frame.
-// A standard-density screen still downloads only the thumbnail.
+// A standard-density screen still downloads only the thumbnail; a 2-3x
+// phone takes the 480px mid size (public/cards/mid/), not the 768px
+// original it used to, which was 3x the bytes for no pixel it could show.
+//
+// Formats: the thumb and mid sizes also ship as AVIF, offered through
+// <picture> so a browser that decodes it takes it and the rest keep the
+// WebP in the <img>. The full plate is WebP only. A set that brings its own
+// art (teddy.art / teddy.artThumb) is drawn from those files alone. The
+// <picture> is display: contents, so the <img> lays out exactly as it did
+// on its own, and it is always there (with or without a <source>), so
+// switching a card from thumb to full keeps the same <img>, which goes on
+// painting the old picture until the new one has decoded.
 //
 // Fallback is two-stage: a failed thumb retries the full-res image before
 // leaving the night-felt back, so a missing/stale thumbs/ entry never
@@ -164,8 +176,9 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   // the fallback chain. When the full plate fails too, the night-felt back
   // stays and the <img> is gone. art / artThumb override the id path for a
   // set that does not live at /cards/<id>.webp.
-  const thumb = teddy.artThumb || `/cards/thumbs/${teddy.id}.webp`;
-  const full = teddy.art || `/cards/${teddy.id}.webp`;
+  const own = !teddy.art && !teddy.artThumb ? cardArtSources(teddy.id) : null;
+  const thumb = teddy.artThumb || own?.thumb.webp || `/cards/thumbs/${teddy.id}.webp`;
+  const full = teddy.art || own?.full.webp || `/cards/${teddy.id}.webp`;
   const box = variant === 'full' ? ART_INTRINSIC.full : ART_INTRINSIC.thumb;
   const priority = loading === 'eager' ? 'high' : undefined;
   const frame = photoReady ? null : (
@@ -175,24 +188,38 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   const hidden = photoReady ? '' : 'opacity-0';
 
   if (!fullFailed && variant === 'responsive' && !responsiveFailed && !thumbFailed) {
+    const webpSet = own
+      ? `${own.thumb.webp} ${ART_WIDTHS.thumb}w, ${own.mid.webp} ${ART_WIDTHS.mid}w, ${full} ${ART_WIDTHS.full}w`
+      : `${thumb} ${ART_WIDTHS.thumb}w, ${full} ${ART_WIDTHS.full}w`;
     return (
       <>
         {frame}
-        <img
-          src={thumb}
-          srcSet={`${thumb} 192w, ${full} 768w`}
-          sizes={sizes}
-          alt=""
-          width={box.width}
-          height={box.height}
-          loading={loading}
-          fetchPriority={priority}
-          decoding="async"
-          draggable={false}
-          className={`pointer-events-none ${hidden} ${imgClassName}`}
-          onLoad={markReady}
-          onError={() => setFailed({ id: teddy.id, stage: 'responsive' })}
-        />
+        <picture className="contents">
+          {own && (
+            <source
+              key="avif"
+              type="image/avif"
+              srcSet={`${own.thumb.avif} ${ART_WIDTHS.thumb}w, ${own.mid.avif} ${ART_WIDTHS.mid}w`}
+              sizes={sizes}
+            />
+          )}
+          <img
+            key="art"
+            src={thumb}
+            srcSet={webpSet}
+            sizes={sizes}
+            alt=""
+            width={box.width}
+            height={box.height}
+            loading={loading}
+            fetchPriority={priority}
+            decoding="async"
+            draggable={false}
+            className={`pointer-events-none ${hidden} ${imgClassName}`}
+            onLoad={markReady}
+            onError={() => setFailed({ id: teddy.id, stage: 'responsive' })}
+          />
+        </picture>
       </>
     );
   }
@@ -204,19 +231,23 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
     <>
       {frame}
       {!fullFailed && (
-        <img
-          src={src}
-          alt=""
-          width={shown.width}
-          height={shown.height}
-          loading={loading}
-          fetchPriority={priority}
-          decoding="async"
-          draggable={false}
-          className={`pointer-events-none ${hidden} ${imgClassName}`}
-          onLoad={markReady}
-          onError={() => setFailed({ id: teddy.id, stage: useFull ? 'full' : 'thumb' })}
-        />
+        <picture className="contents">
+          {own && !useFull && <source key="avif" type="image/avif" srcSet={own.thumb.avif} />}
+          <img
+            key="art"
+            src={src}
+            alt=""
+            width={shown.width}
+            height={shown.height}
+            loading={loading}
+            fetchPriority={priority}
+            decoding="async"
+            draggable={false}
+            className={`pointer-events-none ${hidden} ${imgClassName}`}
+            onLoad={markReady}
+            onError={() => setFailed({ id: teddy.id, stage: useFull ? 'full' : 'thumb' })}
+          />
+        </picture>
       )}
     </>
   );

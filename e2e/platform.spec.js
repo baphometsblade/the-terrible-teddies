@@ -24,7 +24,7 @@ test.describe('the public landing', () => {
     expect(box.height).toBeGreaterThanOrEqual(44);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(overflow).toBe(false);
-    expect(requests.some((u) => /\/cards\/.*\.webp/.test(u))).toBe(false);
+    expect(requests.some((u) => /\/cards\/.*\.(?:webp|avif)/.test(u))).toBe(false);
     const axe = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
     expect(axe.violations, axe.violations.map((v) => v.id).join(', ')).toEqual([]);
     await enter.click();

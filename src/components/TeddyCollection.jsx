@@ -13,6 +13,7 @@ import { RARITY, RARITY_METAL, RARITY_ORDER as RARITY_ORDER_ASC } from '@/lib/ra
 import { useDialog } from '@/hooks/useDialog';
 import { buildVisibleOrder, staggerDelay } from '@/lib/collectionOrder';
 import { CARD_ZOOM_QUERY, gridArtVariant } from '@/lib/cardZoom';
+import { thumbUrl } from '@/lib/preloadArt';
 import { abilityRules } from '@/lib/abilities';
 import { effectLabel, effectRules } from '@/lib/effects';
 import { BUNDLED_SEASON_IDS } from '@/data/seasonsCatalog';
@@ -114,9 +115,10 @@ const usePreloadThumbs = (cards) => {
   const key = cards.map((c) => c.id).join(',');
   useEffect(() => {
     if (typeof Image === 'undefined') return;
-    held.current = key.split(',').filter(Boolean).map((id) => {
+    held.current = key.split(',').filter((id) => thumbUrl(id)).map((id) => {
       const img = new Image();
-      img.src = `/cards/thumbs/${id}.webp`;
+      // The format the grid's <picture> chose, so this is the same request.
+      img.src = thumbUrl(id);
       return img;
     });
   }, [key]);

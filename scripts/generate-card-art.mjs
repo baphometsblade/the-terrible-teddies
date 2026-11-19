@@ -40,6 +40,7 @@ import path from 'node:path';
 import http from 'node:http';
 import sharp from 'sharp';
 import { startMonitor, statusWriter, openInBrowser } from './art-monitor.mjs';
+import { writeCardVariants } from './lib/card-art-variants.mjs';
 
 // The game store touches localStorage at import time (zustand persist);
 // stub it before pulling in ALL_CARDS.
@@ -372,6 +373,9 @@ async function main() {
       const raw = await call(base, auth, promptFor(card), seedFor(card.id), negativeFor(card));
       const webp = await toCardWebp(raw);
       fs.writeFileSync(dest, webp);
+      // Thumb and mid sizes, WebP and AVIF, beside the new master, so the
+      // card is served like every other (scripts/lib/card-art-variants.mjs).
+      await writeCardVariants(dest, { force: true });
       done++;
       status.done(card.id, +(webp.length / 1024).toFixed(1), Date.now() - t0);
       console.log(`✓ #${card.id} ${card.name} (${(webp.length / 1024).toFixed(1)} KB)`);
