@@ -17,6 +17,11 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const BIBLES = JSON.parse(readFileSync(join(ROOT, 'art/bear-bibles.json'), 'utf8'));
 export const BEAR_GUARD = BIBLES.shared;
+// Pure battle cards (plush: false) get this instead of the plush guard, and
+// their negative pushes away every bear, plush and body part.
+export const OBJECT_GUARD = BIBLES.shared_object;
+export const OBJECT_NEGATIVE = BIBLES.negative_object;
+export const isPlushCard = (id) => (BIBLES.bears[String(id)] || {}).plush !== false;
 
 // Morning After plates also carry an explicit refusal line its tests pin.
 const TAIL = {
@@ -41,18 +46,20 @@ export const composePrompt = (id) => {
   if (!b) return null;
   const tail = TAIL[String(id).split('-')[0]] || '';
   const medium = [b.medium, b.medium_detail].filter(Boolean).map(clean).join(', ');
+  const plush = b.plush !== false;
   const parts = [
     `(${medium}:${MEDIUM_WEIGHT})`,
     `(${clean(b.gag)}:${GAG_WEIGHT})`,
     // The pose leads the gag in most bibles; it is only repeated when new.
     ...(clean(b.gag).includes(clean(b.pose)) ? [] : [clean(b.pose)]),
-    `wearing ${clean(b.outfit)}`,
+    ...(plush ? [`wearing ${clean(b.outfit)}`] : []),
     `signature prop: ${clean(b.prop)}`,
     `setting: ${clean(b.setting)}`,
     `colour palette of ${b.palette.map(clean).join(', ')}`,
     `lighting: ${clean(b.lighting)}`,
     `camera: ${clean(b.camera)}`,
   ];
+  if (!plush) return `${parts.join(', ')}. ${OBJECT_GUARD}. Cheeky adult humour, no text.${tail}`;
   return `${parts.join(', ')}. ${BEAR_GUARD}, fur: ${clean(b.fur)}. Cheeky adult humour, no text.${tail}`;
 };
 
@@ -72,9 +79,10 @@ export const composeNegative = (id) => {
   // A bear's own negative goes first and carries its own weight: what that
   // medium or scene tends to turn into (a pin-up for a jazz sleeve, a cat for
   // origami, a car for a lowrider mural).
-  const parts = [...(b.negative_extra ? [b.negative_extra] : []), NO_TEXT, NO_PEOPLE, BIBLES.negative];
+  const plush = b.plush !== false;
+  const parts = [...(b.negative_extra ? [b.negative_extra] : []), ...(plush ? [] : [OBJECT_NEGATIVE]), NO_TEXT, NO_PEOPLE, BIBLES.negative];
   parts.push(b.painterly ? PAINTERLY_NEG : BIBLES.negative_photo_extra);
-  if (!BROWNISH.test(b.fur)) parts.push('brown fur, tan fur, honey fur');
+  if (plush && !BROWNISH.test(b.fur)) parts.push('brown fur, tan fur, honey fur');
   return parts.join(', ');
 };
 

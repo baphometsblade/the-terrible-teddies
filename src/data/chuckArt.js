@@ -33,24 +33,34 @@ export const CHUCK_ART = {
     visual: 'adult sly bear made of coiled receipt-paper quills, burgundy curls',
     scene: 'Sitting among spirals of quilled bar-tab paper on a pale backdrop.',
   },
+  // Three specials are Chuck in the act, each in its own medium. The full
+  // signatures live in art/bear-bibles.json (character: chuck, or plush: false
+  // for the two battle cards).
   'ck-last-orders': {
-    visual: 'a last-call bell, a full shot glass, and a lipstick-marked napkin',
-    scene: 'Tight still life on the bar, magenta neon, the glass sweating.',
+    medium: '1940s all-night diner realism painting',
+    visual: 'Chuck the honey-brown bartender bear pouring one nightcap for the last slumped lady teddy',
+    scene: 'Seen through a plate-glass window under harsh house lights, chairs upturned, a mop bucket waiting.',
   },
+  // Top-Up and The Quiet Word are pure battle cards (Mark, 19 Nov 2026):
+  // object still lifes, no Chuck, no plush, no people.
   'ck-top-up': {
-    visual: 'a bottle mid-pour into a short glass, amber liquid, no label',
-    scene: 'Macro of the pour on dark wood, neon bokeh behind the glass.',
+    medium: 'hard-daylight pool-deck still-life photo',
+    visual: 'a magnum frozen mid-pour into a crystal coupe tower overflowing down every tier',
+    scene: 'White marble rooftop infinity pool, cyan water, hard noon sun, discarded sunglasses.',
   },
   'ck-cut-off': {
-    visual: 'a handless bottle pulled back, an empty glass, a bar towel',
-    scene: 'The bottle leaving the frame, magenta rim light, the glass stays.',
+    medium: 'Sistine Chapel ceiling fresco',
+    visual: 'Chuck on a cloud holding a whisky bottle an inch past a pleading paw',
+    scene: 'A Creation-of-Adam ceiling painted as a heavenly pub, his raised brow plainly not a no.',
   },
   'ck-on-the-tab': {
-    visual: 'a bar tab, a pen, two playing cards, a kiss of lipstick',
-    scene: 'Overhead of the tab on the bar, warm lamp, cards half tucked under.',
+    medium: 'mid-century magazine gag cartoon',
+    visual: 'Chuck holding up a bar tab so long it snakes off the counter, two cards in his bow tie',
+    scene: 'Loose ink and grey wash, a red lipstick kiss at the bottom, a sheepish teddy behind his glass.',
   },
   'ck-quiet-word': {
-    visual: 'a folded note, a matchbook, a single earring on the bar',
-    scene: 'Close on the note under magenta neon, the earring catching light.',
+    medium: 'neon-haze lounge macro still-life photo',
+    visual: 'a vintage gold microphone and a black rotary phone left off the hook',
+    scene: 'Violet velvet tabletop, lipstick-kiss napkin, blue and violet neon haze.',
   },
 };

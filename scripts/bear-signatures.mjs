@@ -29,6 +29,15 @@ export const SIGNATURE_FIELDS = [
   'setting', 'lighting', 'camera', 'pose', 'gag',
 ];
 
+// Pure battle cards (Mark, 19 Nov 2026: Top-Up and The Quiet Word) are object
+// still lifes with no bear, plush, Chuck or person in them. Their signature is
+// the same minus the plush identity: no fur, no outfit, no fixed character.
+// `pose` is how the objects are caught (the pour, the phone off the hook).
+export const PLUSH_ONLY_FIELDS = ['fur', 'outfit'];
+export const isPlush = (bear) => bear.plush !== false;
+export const fieldsFor = (bear) => (isPlush(bear)
+  ? SIGNATURE_FIELDS : SIGNATURE_FIELDS.filter((field) => !PLUSH_ONLY_FIELDS.includes(field)));
+
 // Above this TF-IDF cosine two prompts read as variations of one picture.
 // The set sits well under it (see the CLI report); a rewrite that drifts
 // toward another bear trips it long before the pictures could be confused.
@@ -79,7 +88,7 @@ const tokens = (text) => norm(text).split(' ').filter((word) => word.length > 2 
 
 /** The words a bear's prompt is compared on: its signature, minus any fixed character look. */
 export const signatureText = (bear) => {
-  let text = SIGNATURE_FIELDS.filter((field) => field !== 'name' && field !== 'name_gag')
+  let text = fieldsFor(bear).filter((field) => field !== 'name' && field !== 'name_gag')
     .map((field) => (Array.isArray(bear[field]) ? bear[field].join(' ') : bear[field]))
     .join(' ');
   const look = bear.character && FIXED_LOOKS[bear.character];
@@ -128,10 +137,17 @@ export const checkSignatures = (bears, { limit = PROMPT_SIMILARITY_LIMIT } = {})
   const ids = Object.keys(bears);
   for (const id of ids) {
     const bear = bears[id];
-    for (const field of SIGNATURE_FIELDS) {
+    for (const field of fieldsFor(bear)) {
       const value = bear[field];
       const empty = Array.isArray(value) ? value.length === 0 : !String(value || '').trim();
       if (empty) errors.push(`${id}: missing signature field "${field}"`);
+    }
+    if (!isPlush(bear)) {
+      // A battle card carries no plush identity at all.
+      for (const field of [...PLUSH_ONLY_FIELDS, 'character']) {
+        if (bear[field] !== undefined) errors.push(`${id}: battle card (plush: false) must not set "${field}"`);
+      }
+      if (bear.kind !== 'battle') errors.push(`${id}: plush: false is only for kind "battle"`);
     }
     if (!Array.isArray(bear.palette) || bear.palette.length < 2 || bear.palette.length > 3) {
       errors.push(`${id}: palette needs 2-3 named colours`);
@@ -158,7 +174,7 @@ export const checkSignatures = (bears, { limit = PROMPT_SIMILARITY_LIMIT } = {})
   seen('setting + prop', (bear) => `${norm(bear.setting)}#${norm(bear.prop)}`);
   seen('signature prop', (bear) => norm(bear.prop));
   seen('setting', (bear) => norm(bear.setting));
-  seen('signature tuple', (bear) => SIGNATURE_FIELDS.filter((field) => field !== 'name' && field !== 'name_gag')
+  seen('signature tuple', (bear) => fieldsFor(bear).filter((field) => field !== 'name' && field !== 'name_gag')
     .map((field) => norm(Array.isArray(bear[field]) ? bear[field].join(' ') : bear[field])).join('#'));
   // Palettes: two bears of the same kind of picture may share a hue, but
   // never the whole palette, and one's palette may not sit inside the other's.

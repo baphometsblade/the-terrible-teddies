@@ -30,10 +30,22 @@ test('the collection has no broken card images', async ({ page }) => {
   await expect(page.getByRole('button', { name: /^View / }).first()).toBeVisible(SLOW);
   await settled(page);
 
+  // Every card ships its art now, so nothing falls back to the felt back.
   await page.getByRole('button', { name: /^Missing\b/ }).click();
   await settled(page);
-  const frames = await page.locator('[data-art] [data-art-frame]:visible').count();
-  expect(frames).toBeGreaterThan(0);
+  expect(await page.locator('[data-art] img:visible').count()).toBeGreaterThan(0);
+  expect(await page.locator('[data-art] [data-art-frame]:visible').count()).toBe(0);
+});
+
+test('a card whose plate is gone keeps the felt back, not a dead image', async ({ page }) => {
+  // Take Chuck's Crew art away: those cards must show the back, never a broken icon.
+  await page.route(/\/cards\/(?:(?:thumbs|mid)\/)?ck-[a-z-]+\.(?:webp|avif)$/, (route) => route.fulfill({ status: 404, body: '' }));
+  await bootToMainMenu(page);
+  await page.getByRole('button', { name: 'Collection', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^View / }).first()).toBeVisible(SLOW);
+  await page.getByRole('button', { name: /^Missing\b/ }).click();
+  await settled(page);
+  expect(await page.locator('[data-art] [data-art-frame]:visible').count()).toBeGreaterThan(0);
 });
 
 // Chromium decodes AVIF, so it should take the AVIF thumbs the <picture>
