@@ -18,8 +18,8 @@
  *     or scores SSIMULACRA2 >= 80 ("very high quality") where that WebP was
  *     better than that;
  *   - a mid file scores SSIMULACRA2 >= 80, in both formats.
- * QUALITY_OVERRIDES holds the pictures that needed more than the default to
- * pass. The gate prints any new ones.
+ * art/variant-qualities.json holds the pictures that needed more than the
+ * default to pass; the gate writes it (npm run art:quality -- --write).
  *
  * Every pipeline that writes a master calls writeCardVariants for it
  * (npm run art:thumbs, scripts/generate-card-art.mjs, and the Fooocus
@@ -28,24 +28,36 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 export const MASTER = { width: 768, height: 1024 };
 
+// Chroma is kept at full resolution (AVIF 4:4:4, WebP's sharp-YUV
+// "smart" subsampling): the art is saturated neon, halftone and red-on-
+// yellow, where 4:2:0 smeared edges badly enough that no quality could save
+// some cards (xm-mistletoe's mid file topped out at 63 even at q100).
 export const VARIANTS = [
   { name: 'thumb-webp', dir: 'thumbs', ext: 'webp', width: 192, height: 256, format: 'webp', quality: 78 },
   { name: 'thumb-avif', dir: 'thumbs', ext: 'avif', width: 192, height: 256, format: 'avif', quality: 60 },
-  { name: 'mid-webp', dir: 'mid', ext: 'webp', width: 480, height: 640, format: 'webp', quality: 90 },
+  { name: 'mid-webp', dir: 'mid', ext: 'webp', width: 480, height: 640, format: 'webp', quality: 90, smartSubsample: true },
   { name: 'mid-avif', dir: 'mid', ext: 'avif', width: 480, height: 640, format: 'avif', quality: 70 },
 ];
 
-// Per-picture qualities the gate asked for, by variant then card id.
-export const QUALITY_OVERRIDES = {
-  'thumb-avif': {},
-  'thumb-webp': {},
-  'mid-webp': {},
-  'mid-avif': {},
+// Per-picture qualities the gate (npm run art:quality -- --write) found a
+// picture needs to meet its bar, by variant then card id.
+const QUALITIES_FILE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'art', 'variant-qualities.json');
+const loadOverrides = () => {
+  try {
+    const raw = JSON.parse(fs.readFileSync(QUALITIES_FILE, 'utf8'));
+    return Object.fromEntries(VARIANTS.map((v) => [v.name, { ...(raw[v.name] || {}) }]));
+  } catch (err) {
+    if (err.code === 'ENOENT') return Object.fromEntries(VARIANTS.map((v) => [v.name, {}]));
+    throw err;
+  }
 };
+export const QUALITY_OVERRIDES = loadOverrides();
+export const QUALITIES_PATH = QUALITIES_FILE;
 
 export const qualityFor = (variant, stem) => QUALITY_OVERRIDES[variant.name]?.[stem] ?? variant.quality;
 
@@ -55,13 +67,12 @@ export const isMasterName = (name) => /^[A-Za-z0-9-]+\.webp$/.test(name);
 export const variantPath = (cardsDir, stem, variant) => path.join(cardsDir, variant.dir, `${stem}.${variant.ext}`);
 
 /** Encodes one variant of a master (a Buffer or a path) into a Buffer. */
-export const encodeVariant = async (master, variant, stem = '') => {
-  const quality = qualityFor(variant, stem);
+export const encodeVariant = async (master, variant, stem = '', quality = qualityFor(variant, stem)) => {
   // Same 3:4 shape as the master, so "attention" never crops; it is kept so
   // a master of another shape still fills the slot the way the thumbs did.
   const resized = sharp(master).resize(variant.width, variant.height, { fit: 'cover', position: 'attention', kernel: 'lanczos3' });
-  if (variant.format === 'avif') return resized.avif({ quality, effort: 6, chromaSubsampling: '4:2:0' }).toBuffer();
-  return resized.webp({ quality, effort: variant.name === 'thumb-webp' ? 4 : 6 }).toBuffer();
+  if (variant.format === 'avif') return resized.avif({ quality, effort: 6, chromaSubsampling: '4:4:4' }).toBuffer();
+  return resized.webp({ quality, effort: variant.name === 'thumb-webp' ? 4 : 6, smartSubsample: Boolean(variant.smartSubsample) }).toBuffer();
 };
 
 /**

@@ -69,7 +69,7 @@ describe('card art variants', () => {
 
   it('keeps the AVIF thumbs smaller than the WebP ones they stand in for', () => {
     const size = (v) => masters.reduce((sum, id) => sum + fs.statSync(variantPath(CARDS, id, VARIANTS.find((x) => x.name === v))).size, 0);
-    expect(size('thumb-avif')).toBeLessThan(size('thumb-webp') * 0.85);
+    expect(size('thumb-avif')).toBeLessThan(size('thumb-webp') * 0.9);
     expect(size('mid-avif')).toBeLessThan(size('mid-webp'));
   });
 

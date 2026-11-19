@@ -9,12 +9,14 @@ at 1:1; 80: very high quality; 70: high quality). The bars:
   mid-webp    >= 80
   mid-avif    >= 80
 
-A picture that misses its bar is listed with the quality to put in
-QUALITY_OVERRIDES, found by re-encoding it up the ladder until it passes.
+A picture that misses its bar is listed with the lowest higher quality that
+passes, found by re-encoding it exactly as the pipeline does; --write records
+those in art/variant-qualities.json and re-encodes the files.
 
     pip install ssimulacra2 pillow numpy
     npm run art:quality                     # every card
     npm run art:quality -- --only 51,ma-3   # some
+    npm run art:quality -- --write          # record and apply what fails
     npm run art:quality -- --report art/variant-quality.json
 """
 
@@ -29,19 +31,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BAR = 80.0
-LADDER = (65, 70, 75, 80, 85, 90, 95)
+LADDER = (65, 70, 75, 80, 85, 90, 95, 100)
 
-RE_ENCODE = r"""
-import { createRequire } from 'node:module';
-const require = createRequire(process.argv[2]);
-const sharp = require('sharp');
-const [, , , ref, format, quality, out] = process.argv;
-const q = Number(quality);
-const img = sharp(ref);
-const buf = format === 'avif' ? await img.avif({ quality: q, effort: 6, chromaSubsampling: '4:2:0' }).toBuffer() : await img.webp({ quality: q, effort: 6 }).toBuffer();
-await sharp(buf).png().toFile(out);
-process.stdout.write(String(buf.length));
-"""
+
 
 
 def score(pair):
@@ -62,18 +54,34 @@ def bar_for(row, by_key):
 
 
 def suggest(row, tmp):
-    script = Path(tmp) / "re-encode.mjs"
-    script.write_text(RE_ENCODE, encoding="utf-8")
-    fmt = row["variant"].split("-")[1]
-    for q in LADDER:
+    """The lowest quality above the current one that meets the bar, encoded as the pipeline would."""
+    for q in [q for q in LADDER if q > row["quality"]]:
         out = Path(tmp) / f"{row['id']}-{row['variant']}-q{q}.png"
         size = subprocess.run(
-            ["node", str(script), str(ROOT / "package.json"), row["ref"], fmt, str(q), str(out)],
+            ["node", str(ROOT / "scripts" / "lib" / "dump-art-variants.mjs"), "--encode", row["id"], row["variant"], str(q), str(out)],
             cwd=ROOT, check=True, capture_output=True, text=True,
         ).stdout
-        if score((row["ref"], str(out))) >= row["bar"]:
+        if float(score((row["ref"], str(out)))) >= row["bar"]:
             return q, int(size)
     return None, None
+
+
+def write_overrides(overrides, below):
+    """Merges the qualities found into art/variant-qualities.json and re-encodes those files."""
+    path = ROOT / "art" / "variant-qualities.json"
+    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    for variant, by_id in overrides.items():
+        data.setdefault(variant, {}).update(by_id)
+    if below:
+        data["_below_bar"] = {**data.get("_below_bar", {}), **below}
+    ordered = {k: dict(sorted(v.items())) for k, v in sorted(data.items())}
+    path.write_text(json.dumps(ordered, indent=2) + "\n", encoding="utf-8")
+    print(f"wrote {path.relative_to(ROOT)}")
+    for variant, by_id in overrides.items():
+        subprocess.run(
+            ["node", str(ROOT / "scripts" / "make-card-thumbs.mjs"), "--force", "--variant", variant, "--only", ",".join(sorted(by_id))],
+            cwd=ROOT, check=True,
+        )
 
 
 def main(argv=None):
@@ -81,6 +89,8 @@ def main(argv=None):
     parser.add_argument("--only", default="", help="comma-separated card ids")
     parser.add_argument("--report", help="write the scores here as JSON")
     parser.add_argument("--jobs", type=int, default=os.cpu_count() or 2)
+    parser.add_argument("--write", action="store_true",
+                        help="record the passing qualities in art/variant-qualities.json and re-encode those files")
     args = parser.parse_args(argv)
     try:
         import ssimulacra2  # noqa: F401
@@ -95,7 +105,7 @@ def main(argv=None):
         present = [r for r in rows if r["file"]]
         with ProcessPoolExecutor(max(1, args.jobs)) as pool:
             for row, value in zip(present, pool.map(score, [(r["ref"], r["file"]) for r in present])):
-                row["score"] = round(value, 2)
+                row["score"] = round(float(value), 2)
         by_key = {(r["id"], r["variant"]): r for r in rows}
         failures = []
         for row in rows:
@@ -104,20 +114,23 @@ def main(argv=None):
                 failures.append(row)
                 continue
             row["bar"] = bar_for(row, by_key)
-            row["ok"] = row["bar"] is None or row["score"] >= row["bar"]
+            row["ok"] = bool(row["bar"] is None or row["score"] >= row["bar"])
             if not row["ok"]:
                 failures.append(row)
         overrides = {}
+        below = {}
         for row in failures:
             if not row["file"]:
                 print(f"MISSING {row['variant']} for {row['id']} (run npm run art:thumbs)")
                 continue
             q, size = suggest(row, tmp)
             row["suggested_quality"] = q
-            print(f"FAIL {row['id']} {row['variant']}: {row['score']} < {row['bar']:.2f}"
-                  + (f"; quality {q} passes ({size} bytes)" if q else "; no quality on the ladder passes"))
+            print(f"FAIL {row['id']} {row['variant']}: {row['score']} < {row['bar']:.2f} at q{row['quality']}"
+                  + (f"; quality {q} passes ({size} bytes)" if q else "; no quality on the ladder passes"), flush=True)
             if q:
                 overrides.setdefault(row["variant"], {})[row["id"]] = q
+            else:
+                below.setdefault(row["variant"], {})[row["id"]] = row["score"]
 
     summary = {}
     for row in rows:
@@ -135,8 +148,13 @@ def main(argv=None):
     if args.report:
         clean = [{k: v for k, v in r.items() if k not in ("ref", "file")} for r in rows]
         Path(args.report).write_text(json.dumps({"bar": BAR, "summary": summary, "rows": clean}, indent=1) + "\n", encoding="utf-8")
-    if overrides:
-        print("QUALITY_OVERRIDES to add:", json.dumps(overrides))
+    if overrides and args.write:
+        write_overrides(overrides, below)
+        print(f"{sum(len(v) for v in overrides.values())} files re-encoded; run again to confirm")
+    elif overrides:
+        print("qualities to record (or pass --write):", json.dumps(overrides))
+    if below:
+        print("no quality passes for:", json.dumps(below))
     print("ok" if not failures else f"{len(failures)} below the bar")
     return 0 if not failures else 1
 
