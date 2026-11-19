@@ -16,6 +16,8 @@ import { commitBarSpecial } from '@/lib/barService';
 
 const BANNED = /\b(child|children|kid|kids|cubs?|minor|minors|school|teen|teens|underage|loli|shota|toddler|infant|preteen|jailbait|ageplay|incest|daddy|mommy|non-?consent|bestiality)\b/i;
 const CHUCK_LOOK = 'honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth';
+// Pure battle cards: no Chuck, no plush, no people (Mark, 19 Nov 2026).
+const BATTLE_ONLY = ['ck-top-up', 'ck-quiet-word'];
 const byId = (id) => CHUCK_CARDS.find((card) => card.id === id);
 
 describe("Chuck's Crew", () => {
@@ -47,17 +49,28 @@ describe("Chuck's Crew", () => {
       expect(entry.prompt).toMatch(/adult/i);
       // Every Chuck card follows its own signature (art/bear-bibles.json):
       // the plush guard is shared, the bar and neon are not. The specials are
-      // Chuck in the act, so they carry the guard too.
-      expect(entry.prompt).toMatch(/stuffed plush teddy bear toy/i);
-      expect(entry.prompt).toMatch(/not a human/i);
+      // Chuck in the act, so they carry the guard too, except the two pure
+      // battle cards (Mark, 19 Nov 2026), which are object still lifes with
+      // no bear, plush, Chuck or person in them.
+      if (BATTLE_ONLY.includes(card.id)) {
+        expect(entry.prompt).not.toMatch(/plush|teddy|chuck|\bbears?\b/i);
+        expect(entry.negative_prompt).toMatch(/teddy bear, plush toy, stuffed animal/);
+      } else {
+        expect(entry.prompt).toMatch(/stuffed plush teddy bear toy/i);
+        expect(entry.prompt).toMatch(/not a human/i);
+      }
       expect(entry.prompt).not.toMatch(BANNED);
       expect(card.art).toBe(`/cards/${card.id}.webp`);
       expect(thumbUrl(card.id)).toBe(card.artThumb);
       expect(CARD_ART[card.id]?.visual?.length).toBeGreaterThan(0);
       expect(CARD_ART[card.id]?.scene?.length).toBeGreaterThan(0);
     }
-    for (const id of ['ck-chuck', 'ck-closing', 'ck-offduty', 'ck-last-orders', 'ck-top-up', 'ck-cut-off', 'ck-on-the-tab', 'ck-quiet-word']) {
+    for (const id of ['ck-chuck', 'ck-closing', 'ck-offduty', 'ck-last-orders', 'ck-cut-off', 'ck-on-the-tab']) {
       expect(manifest.find((row) => row.id === id).prompt).toContain(CHUCK_LOOK);
+    }
+    for (const id of BATTLE_ONLY) {
+      expect(manifest.find((row) => row.id === id).prompt).not.toContain(CHUCK_LOOK);
+      expect(`${CARD_ART[id].visual} ${CARD_ART[id].scene}`).not.toMatch(/plush|teddy|chuck|\bbears?\b|\bhe\b|\bhis\b/i);
     }
   });
 

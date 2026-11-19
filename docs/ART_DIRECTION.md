@@ -143,6 +143,8 @@ Mark's call (Nov 2026): every image goes through Fooocus-API on his own PC, on i
 
 **Exception: Gemini, only when Mark asks for it.** Mark may ask for named cards to be made in Gemini (his Google AI Plus plan, by hand at gemini.google.com, with a Chuck reference image attached for Chuck's cards). Nov 2026: the five Chuck's Crew specials (ck-last-orders, ck-top-up, ck-cut-off, ck-on-the-tab, ck-quiet-word). The PNGs are brought into the repo through the same export as every plate (`--export-from`, then `npm run art:thumbs`). Nothing in the repo calls Gemini, and its exact prompts and source hashes are recorded in `art/renders/`. Every other card still comes from Fooocus. Fal and every other hosted generator stay banned.
 
+**Pure battle cards (no plush identity).** 19 Nov 2026, Mark: Top-Up (`ck-top-up`) and The Quiet Word (`ck-quiet-word`) are pure battle cards, object/effect still-life photos with no teddy, plush, Chuck or person in them, and no reference image. Their bibles carry `kind: "battle"` and `plush: false` and leave out `fur`, `outfit` and `character`; `scripts/bear-signatures.mjs` requires every other field and still runs every uniqueness rule on them. `scripts/bear-bibles.mjs` composes them with the object guard (`shared_object`) instead of the plush guard, and adds `negative_object` (bears, plush, hands) to the negative. Only `kind: "battle"` may set `plush: false`.
+
 Fooocus-API listens on `127.0.0.1:8888` on the art PC and is not exposed to the internet. Run the generator on that PC:
 
 - `npm run art:fooocus -- --only <ids> --force` renders into the repo.

@@ -11,10 +11,12 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
-  checkSignatures, colourKey, mediumFamily, promptSimilarity, signatureText,
-  PROMPT_SIMILARITY_LIMIT, SIGNATURE_FIELDS,
+  checkSignatures, colourKey, fieldsFor, isPlush, mediumFamily, promptSimilarity, signatureText,
+  PROMPT_SIMILARITY_LIMIT, PLUSH_ONLY_FIELDS, SIGNATURE_FIELDS,
 } from '../scripts/bear-signatures.mjs';
-import { composePrompt, composeNegative, stylesFor, BEAR_GUARD, MEDIUM_WEIGHT, GAG_WEIGHT } from '../scripts/bear-bibles.mjs';
+import {
+  composePrompt, composeNegative, stylesFor, BEAR_GUARD, OBJECT_GUARD, MEDIUM_WEIGHT, GAG_WEIGHT,
+} from '../scripts/bear-bibles.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BIBLES = JSON.parse(readFileSync(join(ROOT, 'art/bear-bibles.json'), 'utf8'));
@@ -25,7 +27,8 @@ describe('bear signatures', () => {
   it('give every bear a full signature', () => {
     expect(Object.keys(BEARS).length).toBeGreaterThanOrEqual(117);
     for (const [id, bear] of Object.entries(BEARS)) {
-      for (const field of SIGNATURE_FIELDS) expect(bear[field], `${id}.${field}`).toBeTruthy();
+      // Pure battle cards (plush: false) have no fur/outfit; every other field is required.
+      for (const field of fieldsFor(bear)) expect(bear[field], `${id}.${field}`).toBeTruthy();
       expect(bear.palette.length, id).toBeGreaterThanOrEqual(2);
       expect(bear.palette.length, id).toBeLessThanOrEqual(3);
       expect(bear.name_gag.toLowerCase(), id).toContain(bear.name.toLowerCase());
@@ -88,6 +91,27 @@ describe('bear signatures', () => {
     expect(checkSignatures(bears).errors).toContain('1: name_gag must say the name "Shitstarter Ted"');
   });
 
+  it('let a pure battle card go without a plush identity, and only a battle card', () => {
+    const battle = Object.entries(BEARS).filter(([, bear]) => !isPlush(bear)).map(([id]) => id).sort();
+    expect(battle).toEqual(['ck-quiet-word', 'ck-top-up']);
+    for (const id of battle) {
+      expect(BEARS[id].kind, id).toBe('battle');
+      for (const field of [...PLUSH_ONLY_FIELDS, 'character']) expect(BEARS[id][field], `${id}.${field}`).toBeUndefined();
+      expect(signatureText(BEARS[id]), id).not.toMatch(/plush|teddy|chuck|bear/i);
+    }
+    const bears = clone();
+    bears['ck-top-up'].fur = 'honey-brown';
+    bears['1'].plush = false;
+    delete bears['1'].fur;
+    delete bears['1'].outfit;
+    const { errors } = checkSignatures(bears);
+    expect(errors).toContain('ck-top-up: battle card (plush: false) must not set "fur"');
+    expect(errors).toContain('1: plush: false is only for kind "battle"');
+    const missing = clone();
+    delete missing['1'].fur;
+    expect(checkSignatures(missing).errors).toContain('1: missing signature field "fur"');
+  });
+
   it("leave Chuck's fixed look out of the comparison", () => {
     const text = signatureText(BEARS['ck-chuck']);
     expect(text).not.toContain('one gold tooth');
@@ -97,7 +121,9 @@ describe('bear signatures', () => {
 
 describe('composed bear prompts', () => {
   it('lead with the weighted medium and gag, with the plush guard after', () => {
-    for (const id of Object.keys(BEARS)) {
+    // Every plush card carries the guard. Pure battle cards (plush: false) are
+    // checked in the next test: they must carry no plush at all.
+    for (const id of Object.keys(BEARS).filter((key) => isPlush(BEARS[key]))) {
       const prompt = composePrompt(id);
       expect(prompt.startsWith(`(${BEARS[id].medium}`), id).toBe(true);
       expect(prompt, id).toContain(`:${MEDIUM_WEIGHT})`);
@@ -108,6 +134,22 @@ describe('composed bear prompts', () => {
       expect(composeNegative(id), id).toMatch(/minor/);
       expect(composeNegative(id), id).toMatch(/lettering/);
       expect(Array.isArray(stylesFor(id)), id).toBe(true);
+    }
+  });
+
+  it('compose pure battle cards as object still lifes with no bear in them', () => {
+    for (const id of Object.keys(BEARS).filter((key) => !isPlush(BEARS[key]))) {
+      const prompt = composePrompt(id);
+      expect(prompt.startsWith(`(${BEARS[id].medium}`), id).toBe(true);
+      expect(prompt, id).toContain(`:${GAG_WEIGHT})`);
+      expect(prompt, id).toContain(OBJECT_GUARD);
+      expect(prompt, id).not.toContain(BEAR_GUARD);
+      expect(prompt, id).not.toMatch(/plush|teddy|chuck|\bbears?\b|wearing|fur:/i);
+      const negative = composeNegative(id);
+      expect(negative, id).toMatch(/teddy bear, plush toy, stuffed animal/);
+      expect(negative, id).toMatch(/minor/);
+      expect(negative, id).toMatch(/lettering/);
+      expect(negative, id).not.toMatch(/brown fur, tan fur, honey fur/);
     }
   });
 

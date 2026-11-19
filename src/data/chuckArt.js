@@ -33,17 +33,20 @@ export const CHUCK_ART = {
     visual: 'adult sly bear made of coiled receipt-paper quills, burgundy curls',
     scene: 'Sitting among spirals of quilled bar-tab paper on a pale backdrop.',
   },
-  // The five specials are Chuck in the act, each in its own medium. The full
-  // signatures live in art/bear-bibles.json (character: chuck).
+  // Three specials are Chuck in the act, each in its own medium. The full
+  // signatures live in art/bear-bibles.json (character: chuck, or plush: false
+  // for the two battle cards).
   'ck-last-orders': {
     medium: '1940s all-night diner realism painting',
     visual: 'Chuck the honey-brown bartender bear pouring one nightcap for the last slumped lady teddy',
     scene: 'Seen through a plate-glass window under harsh house lights, chairs upturned, a mop bucket waiting.',
   },
+  // Top-Up and The Quiet Word are pure battle cards (Mark, 19 Nov 2026):
+  // object still lifes, no Chuck, no plush, no people.
   'ck-top-up': {
-    medium: 'Caravaggesque chiaroscuro oil',
-    visual: 'Chuck pouring champagne from shoulder height until a coupe tower overflows',
-    scene: 'One raking candle in a black cellar, the cascade landing in a giggling patron teddy lap.',
+    medium: 'hard-daylight pool-deck still-life photo',
+    visual: 'a magnum frozen mid-pour into a crystal coupe tower overflowing down every tier',
+    scene: 'White marble rooftop infinity pool, cyan water, hard noon sun, discarded sunglasses.',
   },
   'ck-cut-off': {
     medium: 'Sistine Chapel ceiling fresco',
@@ -56,8 +59,8 @@ export const CHUCK_ART = {
     scene: 'Loose ink and grey wash, a red lipstick kiss at the bottom, a sheepish teddy behind his glass.',
   },
   'ck-quiet-word': {
-    medium: '1970s soft-focus romance cover painting',
-    visual: 'Chuck murmuring behind his paw into a lady teddy ear, her ear fluff standing straight up',
-    scene: 'A dim velvet booth, candle in a red jar, hazy pink halo, her cocktail tipping over.',
+    medium: 'neon-haze lounge macro still-life photo',
+    visual: 'a vintage gold microphone and a black rotary phone left off the hook',
+    scene: 'Violet velvet tabletop, lipstick-kiss napkin, blue and violet neon haze.',
   },
 };
