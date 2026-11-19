@@ -17,6 +17,7 @@ import {
 import { cardsFromIds, toGhostId } from '@/lib/social/ghostDeck';
 import { deckProblem } from '@/lib/social/ladder';
 
+const SIGNED = new Set(Object.keys(JSON.parse(readFileSync(resolve(process.cwd(), 'art/bear-bibles.json'), 'utf8')).bears));
 const manifest = JSON.parse(
   readFileSync(resolve(process.cwd(), 'art/fooocus-manifest.d/morning-after.json'), 'utf8'),
 );
@@ -60,8 +61,9 @@ describe('Morning After cards', () => {
       expect(card.art).toBe(`/${entry.target.replace(/^public\//, '')}`);
       expect(thumbUrl(entry.id)).toBe(`/cards/thumbs/${entry.id}.webp`);
       expect(entry.prompt).toMatch(style);
-      if (card.type === 'action') {
-        // Per-bear art direction (docs/ART_DIRECTION.md): only the plush guard is shared.
+      if (card.type === 'action' || SIGNED.has(entry.id)) {
+        // Per-card art direction (docs/ART_DIRECTION.md): only the plush guard is shared.
+        // Specials and traps with their own signature (the effect gags) are plush scenes too.
         expect(entry.prompt).toMatch(/stuffed plush teddy bear toy/i);
         expect(entry.prompt).toMatch(/not a human/i);
       } else {

@@ -12,16 +12,31 @@ art against its signature text with CLIP.
 
 overrides.json maps a bear id to a candidate image path, for scoring a redo
 before it ships.
+
+    --all-cards     score every catalog card with a plate (traps and specials too),
+                    not only the cards in art/bear-bibles.json
+    --gate 0.72     exit 1 if any pair scores above the gate
+    --focus a,b,c   with --gate: only pairs that involve one of these ids count
 """
 import json, sys, itertools, os
 from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-REPO = Path(sys.argv[1]); OUT = Path(sys.argv[2]); OUT.mkdir(parents=True, exist_ok=True)
+argv = sys.argv[1:]
+def flag(name, takes_value=False):
+    if name not in argv: return None
+    k = argv.index(name)
+    if takes_value:
+        value = argv[k + 1]; del argv[k:k + 2]; return value
+    del argv[k]; return True
+ALL_CARDS = bool(flag('--all-cards'))
+GATE = flag('--gate', True)
+FOCUS = set((flag('--focus', True) or '').split(',')) - {''}
+REPO = Path(argv[0]); OUT = Path(argv[1]); OUT.mkdir(parents=True, exist_ok=True)
 override = {}  # id -> path of candidate art (for "after" runs)
-if len(sys.argv) > 3:
-    override = json.loads(Path(sys.argv[3]).read_text())
+if len(argv) > 2:
+    override = json.loads(Path(argv[2]).read_text())
 bib = json.loads((REPO/'art/bear-bibles.json').read_text())['bears']
 names = {}
 for f in [REPO/'art/fooocus-manifest.json', *sorted((REPO/'art/fooocus-manifest.d').glob('*.json'))]:
@@ -31,6 +46,14 @@ for f in [REPO/'art/fooocus-manifest.json', *sorted((REPO/'art/fooocus-manifest.
 for k, b in bib.items():
     if k not in names: names[k] = b['gag'].split(',')[0].strip()
 ids = list(bib.keys())
+if ALL_CARDS:
+    # Every card in the combat catalog that has a plate, so traps and specials are scored too.
+    src = (REPO/'src/lib/combat/catalog.js').read_text()
+    catalog = json.loads(src[src.index('['):src.rindex(']') + 1])
+    for c in catalog:
+        cid = str(c['id'])
+        if cid not in bib and ((REPO/f'public/cards/{cid}.webp').exists() or cid in override):
+            ids.append(cid); names.setdefault(cid, c['name'])
 
 def full(i):
     return Image.open(override.get(i) or REPO/f'public/cards/{i}.webp').convert('RGB')
@@ -121,7 +144,10 @@ for r in pairs:
 # name readability: CLIP text-image score of "a picture of <gag>" vs the bear's own art rank
 tok = open_clip.get_tokenizer('ViT-B-32')
 with torch.no_grad():
-    tx = model.encode_text(tok([f"{(bib[i].get('medium') or bib[i]['render'].split(',')[0])}, {bib[i]['gag'][:200]}" for i in ids]))
+    def text_for(i):
+        if i not in bib: return names[i]
+        return f"{(bib[i].get('medium') or bib[i]['render'].split(',')[0])}, {bib[i]['gag'][:200]}"
+    tx = model.encode_text(tok([text_for(i) for i in ids]))
     tx = tx/tx.norm(dim=-1, keepdim=True)
 ti = (emb@tx.T).numpy()  # image x text
 rank = {ids[k]: int((ti[:, k] > ti[k, k]).sum())+1 for k in range(n)}  # rank of own image among all for own text
@@ -133,3 +159,9 @@ np.save(OUT/'clip.npy', emb.numpy())
 for r in pairs[:25]:
     print(f"{r['combined']:.3f} clip {r['clip']:.3f} col {r['colour']:.3f} ph {r['phash']:.2f}  {r['a']} {r['an']}  <>  {r['b']} {r['bn']}")
 print('worst text ranks', sorted(rank.items(), key=lambda kv: -kv[1])[:20])
+if GATE:
+    gate = float(GATE)
+    over = [r for r in pairs if r['combined'] > gate and (not FOCUS or r['a'] in FOCUS or r['b'] in FOCUS)]
+    for r in over: print(f"GATE FAIL {r['combined']:.3f} {r['a']} <> {r['b']}")
+    print(f"gate {gate}: {len(over)} pair(s) over" + (f" involving {sorted(FOCUS)}" if FOCUS else ''), f"({len(ids)} cards scored)")
+    sys.exit(1 if over else 0)

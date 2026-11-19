@@ -809,9 +809,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, amber honey jar rigged with a hidden spring-loaded bear trap tucked under a lace garter. Extreme macro shot on a motel nightstand, honey jar lit by a pulsing red exit-sign glow.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(motel-nightstand macro photograph, glossy honey, satin sheen, shallow depth of field:1.35), (paw snapped in an oversized mousetrap baited with a garter-wrapped honey jar, honey splattering, eyes crossed, a cocktail glass toppling:1.25), lunging paw-first for the honey, wearing open silk dressing gown, signature prop: a garter-wrapped honey jar on an oversized mousetrap, setting: motel nightstand beside rumpled satin sheets, colour palette of Honey gold, garter red, plum, lighting: red lampshade glow, camera: 50mm extreme close-up. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: plum purple. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/30.webp",
@@ -825,7 +825,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "31",
@@ -836,9 +838,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, one-armed teddy bear stuffed with a switchblade, a fuzzy pink handcuff dangling from its paw. Extreme macro on a strip-club dressing table, bear lit by flickering hot pink neon glow. Stuffed plush toy teddy: soft plush fabric, visible stitched seams, black glossy button eyes, embroidered nose; a toy, not a real animal.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(dressing-room mirror-bulb photograph, glamour bulbs, powder haze:1.35), (frozen mid-hug with two cactus spines in his snout, her pink feather boa a cactus garland, a fuzzy handcuff clicked to the vanity chair:1.25), frozen mid-hug with cactus spines in his snout, wearing no clothes, a fuzzy pink handcuff on one wrist, signature prop: a cactus garland disguised as a pink feather boa, setting: strip-club dressing table framed by mirror bulbs, colour palette of Hot pink, peach, navy, lighting: hot pink neon and mirror bulbs, camera: 50mm. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: navy. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/31.webp",
@@ -852,7 +854,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "32",
@@ -863,9 +867,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, half-spent dynamite stick taped beside a deflated whoopee cushion on a torn teddy's belly. Low-angle shot of the dynamite in a police evidence bag, lit by a bare swinging bulb overhead. Stuffed plush toy teddy: soft plush fabric, visible stitched seams, black glossy button eyes, embroidered nose; a toy, not a real animal.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(bare-bulb back-room blast photograph, soot and confetti frozen mid-air, hard bulb shadows:1.35), (caught by a novelty bomb cake that goes off far too soon, confetti, cream and soot blasting into his face, crowbar flying, a whoopee cushion deflating beside it:1.25), creeping on tiptoe with a crowbar raised, wearing nothing but fresh soot, signature prop: a novelty bomb-shaped party cake, setting: grimy back room with a folding table, colour palette of Soot black, cream, confetti blue, lighting: one bare swinging bulb, camera: 35mm at eye level. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: tan. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic",
       "outputs": [
         {
           "path": "public/cards/32.webp",
@@ -879,7 +883,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "33",
@@ -890,9 +896,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, cracked button eye rewired into a sparking novelty peep-show viewer, wires frayed and smoking. Dutch-tilt shot on a pawn-shop counter under sickly green fluorescent tubes, sparks arcing off the wires.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(pawn-shop Dutch-tilt shock photograph, arcing electricity, smoke curls:1.35), (fried by a coin-operated love tester, blue-white arcs up both arms, fur frizzed, button eyes spinning, smoke from his ears:1.25), gripping both handles, fur frizzed, wearing no clothes, fur blasted into a frizz, signature prop: a coin-op love tester with chrome handles, setting: pawn shop with guitars on the wall and a watch case, colour palette of Chrome, electric blue-white, dusty red, lighting: crackling blue-white electric arcs, camera: 35mm at eye level. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: cream. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/33.webp",
@@ -906,7 +912,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "34",
@@ -917,9 +925,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, stained honeymoon-suite armchair with a garrote wire hidden inside its frayed tassel fringe. Shot through a cracked motel mirror, the armchair glowing under a flickering red exit-sign light.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(cracked-mirror honeymoon-suite photograph, seen through a mirror crack, stuffing frozen mid-air:1.35), (crushed in the padded arms of a honeymoon armchair that hugs back, seams bursting, stuffing and buttons popping, eyes bulging:1.25), crushed in the armchair's arms, buttons popping, wearing no clothes, seams bursting, signature prop: a heart-backed honeymoon armchair that hugs back, setting: honeymoon suite reflected in a cracked mirror, colour palette of Crushed red velvet, steel grey, cotton white, lighting: red lamp light, camera: 35mm through the mirror crack. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: steel grey. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/34.webp",
@@ -933,7 +941,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "40",
@@ -944,9 +954,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, cracked-open first-aid kit crammed with cotton batting, threaded needle, and a foil condom packet. Overhead flash on a chipped hospital tray, kit contents lit by flickering sickly green fluorescent light.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(back-room clinic overhead flash photograph, flat flash, chipped steel, tiled walls:1.35), (a winking plush nurse in pink scrubs pumping cotton stuffing back into his deflated arm with a stuffing gun, cash tucked under the pillow:1.25), lying on a gurney as a deflated arm plumps back up, wearing no clothes, one arm deflated, signature prop: a caulking-gun stuffing gun, setting: cramped mint-tiled back-room clinic, colour palette of Mint tile, scrub pink, cocoa, lighting: overhead flash, camera: 35mm overhead. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: cocoa brown. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic",
       "outputs": [
         {
           "path": "public/cards/40.webp",
@@ -960,7 +970,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "41",
@@ -971,9 +983,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, rocks glass of honey whiskey with a lipstick-stained rim and one glinting ice cube. Extreme macro on green casino felt, whiskey glass glowing under hot pink neon reflections.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(casino-felt close-up photograph, deep focus falloff, neon reflections on glass:1.35), (a plush croupier sliding a lipstick-rimmed honey whiskey across the felt with exactly two cards tucked under it, winking:1.25), sliding the glass across with a knowing wink, wearing red waistcoat sleeve, signature prop: a lipstick-rimmed honey whiskey with two cards tucked under it, setting: emerald casino felt table, colour palette of Emerald felt, honey gold, hot pink, lighting: hot pink neon reflections, camera: 85mm close. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: black and white. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/41.webp",
@@ -987,7 +999,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "42",
@@ -998,9 +1012,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, cracked glass button eye, veined red and bloodshot, resting in a chipped ashtray. Extreme macro on a filthy bar-bathroom sink edge, eye lit by one flickering bare bulb.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(4 a.m. fridge-light kitchen photograph, cold fridge glow, deep shadows:1.35), (sliding exactly one playing card off the top of the deck with one enormous bloodshot button eye, coffee cups towering, a wedding ring in a saucer:1.25), peeling exactly one card off the deck, wearing no clothes, one giant cracked button eye, signature prop: one huge cracked bloodshot button eye, setting: dark kitchen table at 4 a.m., colour palette of Fridge blue, bloodshot red, ash grey, lighting: cold open-fridge light, camera: 50mm. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: ash grey. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/42.webp",
@@ -1014,7 +1028,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "43",
@@ -1025,9 +1041,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, rusty toolbox spilling open on a bar stool, needle, thread, and cotton stuffing. Dutch-tilt shot in the grimy alley behind the bar, toolbox lit by a dim red exit-sign glow.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(back-alley crime-scene night photograph, rotating red light, wet cobbles, puddle reflections:1.35), (being stapled shut on a table of beer crates by a shady plush surgeon in a welding mask and rubber gloves, the ripped-open brawler already giving a woozy thumbs-up:1.25), lying on the crates giving a woozy thumbs-up, wearing bare plush with a ripped belly seam, signature prop: a staple gun and a funnel of cotton stuffing, setting: operating table of stacked beer crates in a wet back alley, colour palette of Alley red, steel blue, charcoal, lighting: rotating red emergency light and a cold blue streetlight, camera: 35mm at crate height. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: charcoal. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/43.webp",
@@ -1041,7 +1057,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "44",
@@ -1052,9 +1070,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, battered bar PA microphone with a flashing red CENSORED bleep-light zip-tied to the stand. Low angle on a smoke-hazed dive-bar stage, microphone lit by pulsing hot pink neon signage.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(locker-room flicker photograph, flickering tubes, spit flecks, concrete grit:1.35), (screaming a bleeped pep talk through a megaphone while four brawlers on the bench puff up one size, one wiping a proud tear:1.25), screaming a spit-flying pep talk at the bench, wearing whistle round his neck, signature prop: a battered megaphone, setting: grimy concrete locker room, colour palette of Concrete grey, locker green, bleep red, lighting: flickering white tubes and a rotating red bleep light, camera: 28mm. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: brick red. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/44.webp",
@@ -1068,7 +1086,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "45",
@@ -1079,9 +1099,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, pile of empty mini liquor bottles scattered across a spread of dog-eared playing cards. Overhead flash on a cluttered motel nightstand, bottles and cards lit by sickly green fluorescent glow.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(venetian-blind sunrise overhead photograph, striped light, party debris:1.35), (three days into a bender, waving three dog-eared cards in one paw with three empty miniatures balanced on his belly:1.25), sprawled grinning, waving three cards, wearing necktie round his head, party streamers, signature prop: three empty miniatures balanced on his belly, setting: trashed motel bed with pizza boxes and confetti, colour palette of Teal bedspread, cherry, sunrise gold, lighting: striped early sunlight through venetian blinds, camera: overhead 35mm. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: cherry red. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/45.webp",
@@ -1095,7 +1115,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "46",
@@ -1106,9 +1128,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, surgical sewing kit beside a stack of fresh cotton stuffing and a torn fabric patch. Extreme macro on a stainless hospital tray, stuffing and thread lit by one bare swinging bulb.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(luxury aesthetic-clinic photograph, bright soft daylight, orchids, glossy leather:1.35), (re-inflated from a completely flat skin by two plush clinicians with a hose of cotton stuffing, ballooning back to full with cucumber slices on his eyes and a champagne flute:1.25), ballooning back to full from the feet up, wearing towel turban, cucumber slices on his eyes, signature prop: a canvas hose blasting cotton stuffing, setting: white luxury clinic with blush-pink leather and orchids, colour palette of Clinic white, blush leather, caramel, lighting: bright soft clinical daylight, camera: 35mm. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: caramel. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic",
       "outputs": [
         {
           "path": "public/cards/46.webp",
@@ -1122,7 +1144,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "47",
@@ -1133,9 +1157,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, dusty bottle of top-shelf whiskey pouring into a row of gleaming lipstick-rimmed shot glasses. Dutch-tilt shot atop a church collection plate, glasses lit by a single harsh camera flash.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(stained-glass chapel photograph, jewel-coloured light shafts, solemn symmetry:1.35), (blessing a row of kneeling brawlers from a silver sprinkler of top-shelf spirits, each swelling to double muscle under a halo, even the two passed out under the pool table:1.25), flicking whiskey over kneeling brawlers, wearing white vestments, signature prop: a silver holy-water sprinkler full of top-shelf spirits, setting: small chapel altar rail with a pool table wheeled into the aisle, colour palette of Ruby, sapphire, halo white, lighting: ruby and sapphire stained-glass light, camera: 28mm down the aisle. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: dove grey. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/47.webp",
@@ -1149,7 +1173,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "50",
@@ -1744,9 +1770,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, glass bowl of gummy bears spiked with a jagged shard beside a torn condom wrapper. Extreme macro on a filthy bar-bathroom sink ledge, hard camera flash bouncing off the glass shard.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(bathroom-ledge hard-flash candy photograph, hard flash, glossy gummies, glass glint:1.35), (crunching into the one glass gummy bear in a greedy pawful, frozen mid-chew with watering crossed eyes:1.25), frozen mid-chew, eyes watering, wearing no clothes, cheeks bulging, signature prop: a cracked crystal-clear glass gummy bear, setting: white-tiled bathroom sink ledge, colour palette of Candy red, lemon, flash white, lighting: hard camera flash, camera: 50mm extreme close-up. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: orange. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/70.webp",
@@ -1760,7 +1786,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "71",
@@ -1771,9 +1799,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, spilled beer and glitter puddle on sticky tile floor, wet-floor sign knocked flat nearby. Low angle near stacked back-alley crates, puddle lit by one bare swinging bulb overhead.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(floor-level slapstick corridor photograph, glitter spray frozen, wide angle:1.35), (slipping on a glitter-beer puddle mid-punch and going fully horizontal, the wet-floor sign lying face-down under the crates:1.25), horizontal in mid-air, feet above his head, wearing no clothes, signature prop: a face-down yellow wet-floor sign, setting: sticky black-and-white tiled back corridor, colour palette of Glitter silver, tile black, teal, lighting: one bare bulb over stacked crates, camera: 24mm floor level. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: teal. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/71.webp",
@@ -1787,7 +1815,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "72",
@@ -1798,9 +1828,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, arcade claw machine loaded with grenades and a snagged bachelorette sash instead of plush toys. Dutch-tilt shot on a casino floor, claw machine bathed in buzzing hot pink neon light.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(casino-floor claw-machine photograph, glass reflections, casino light bokeh:1.35), (hoisted by the scruff by the claw machine's chrome claw he tried to rob, dangling over tiaras, feather boas and heart sunglasses:1.25), dangling by the scruff, legs kicking, wearing no clothes, legs kicking, signature prop: a chrome arcade claw, setting: inside the glass case of a claw machine heaped with bachelorette prizes, colour palette of Hot pink, chrome, violet, lighting: hot pink and violet neon, camera: 35mm through the glass. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: ginger. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic",
       "outputs": [
         {
           "path": "public/cards/72.webp",
@@ -1814,7 +1844,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "73",
@@ -1825,9 +1857,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, row of lipstick-stained shot glasses tipping and shattering off a packed bar rail. Low-angle shot along the bar top, glasses caught mid-shatter in a blinding camera flash.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(dance-floor strobe photograph, motion-blurred plush legs, strobe freeze:1.35), (flattened face-down by a stampede of sequinned party plushes racing for two-for-one tequila, tiny footprints across his back, a lime wedge stuck to his head:1.25), flattened face-down with footprints on his back, wearing no clothes, a lime wedge on his head, signature prop: a waiter's tray of two-for-one tequila shots, setting: nightclub dance floor under a mirror ball, colour palette of Magenta, electric violet, mirror-ball silver, lighting: magenta and electric-blue strobes, camera: 24mm from the floor. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: burgundy. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/73.webp",
@@ -1841,7 +1873,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "74",
@@ -1852,9 +1886,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, rusted mop bucket brimming with honey, bent nails, and a lost bachelor-party necktie. Dutch-tilt shot beside a back-alley dumpster, bucket contents lit by sickly green fluorescent spill light.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(security-light alley prank photograph, dripping honey, feathers frozen mid-air:1.35), (drenched in honey and a burst pillow of feathers from a bucket rigged over the stage door, the empty bucket jammed over his head, a lost necktie stuck to his chest:1.25), drenched with the bucket jammed on his head, fists up, wearing a lost necktie stuck to his chest, signature prop: a rusted mop bucket rigged over the stage door, setting: back-alley dumpster by a steel stage door, colour palette of Honey gold, feather white, teal-blue, lighting: cold teal-blue security light, camera: 35mm. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: snow white. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/74.webp",
@@ -1868,7 +1902,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "75",
@@ -1879,9 +1915,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, shaggy tuft of bear fur floating in a tall glass of flat morning-after beer. Extreme macro on a motel nightstand, flat beer glass lit by one bare swinging bulb.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(net-curtain morning bedroom photograph, cool diffused light, tangled sheets:1.35), (drinking flat beer with a tuft of his own fur floating in it while the bald patch on his head sprouts fresh fluff:1.25), sitting up in tangled sheets drinking, wearing no clothes, a bald patch on his head, signature prop: flat beer with his own fur tuft floating in it, setting: motel bed behind net curtains, colour palette of Morning blue-grey, beer gold, sheet white, lighting: cool morning light through net curtains, camera: 50mm. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: honey blond. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic",
       "outputs": [
         {
           "path": "public/cards/75.webp",
@@ -1895,7 +1931,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "76",
@@ -1906,9 +1944,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, tiny hotel minibar fridge hanging open, rows of miniature liquor bottles drained and toppled. Low angle inside a motel room, minibar glowing faintly under a red exit-sign light.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(3 a.m. motel-carpet flash photograph, low on-camera flash, harsh shadows, drained miniatures everywhere:1.35), (dripping a miniature bottle into his arm like a tiny IV in front of the open motel minibar, one small patch on his knee and one droopy ear just starting to lift:1.25), slumped against the bed sipping a miniature, little finger raised, wearing bare plush with one sticking plaster, signature prop: a miniature bottle taped up as a tiny IV drip, setting: motel room floor in front of an open minibar fridge, colour palette of Minibar white, motel red, sky blue, lighting: cold minibar fridge light and a red emergency glow, camera: low 28mm from the carpet. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: sky blue. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/76.webp",
@@ -1922,7 +1960,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "77",
@@ -1933,9 +1973,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, cracked phone face-up on wet bar wood, screen lit with a wall of damning texts. Overhead flash on a police desk, phone bagged as evidence, screen glaring under harsh camera flash.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(police-desk hard-flash evidence photograph, cold flash, droplets frozen mid-air, evidence bag:1.35), (trying to plug a cracked phone that gushes like a burst water main, exactly four playing cards shooting up in the spray with blank speech-bubble foam:1.25), both paws clamped over the phone trying to plug it, wearing soaked bare plush, signature prop: a cracked phone gushing like a burst water main, setting: steel police-station desk with an empty evidence bag, colour palette of Cobalt blue, spray white, mustard yellow, lighting: cold white camera flash, camera: 35mm slightly above the desk. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: mustard yellow. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/77.webp",
@@ -1949,7 +1989,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "78",
@@ -1960,9 +2002,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, teddy bear dunked headfirst into an overflowing pitcher of foaming beer, arms flailing. Shot through a cracked bar mirror, the dunked bear lit by hot pink neon signage. Stuffed plush toy teddy: soft plush fabric, visible stitched seams, black glossy button eyes, embroidered nose; a toy, not a real animal.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(stainless-steel bar baptism photograph, foam cascading, glossy fur, neon reflections on steel:1.35), (dunked into an overflowing beer-pitcher font by a solemn plush preacher in a clerical collar, the battered bear rising born again with bandages floating away and his fur suddenly plump and glossy:1.25), rising out of the foam with a foam halo, wearing old bandages and sticking plasters peeling away, signature prop: an overflowing glass beer pitcher used as a font, setting: gleaming stainless-steel bar top against a dark tiled wall, colour palette of Hot pink, stainless silver, lime green, lighting: hot pink and white neon tubes, camera: 50mm at bar height. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: lime green. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/78.webp",
@@ -1976,7 +2018,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "79",
@@ -1987,9 +2031,9 @@
       "width": 768,
       "height": 1024,
       "aspect_ratio": "896*1152",
-      "performance": "Speed",
-      "prompt": "RAW photo, photoreal object, cinematic shallow depth of field, on a sticky dive-bar table, warm amber practical light, magenta neon, rich saturated colour, raunchy NSFW, plate of lumpy green-tinged pot brownies with one bite missing and a rolled receipt. Extreme macro on a pawn-shop counter, brownies glowing sickly under flickering green fluorescent light.",
-      "negative_prompt": "real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, cartoon, illustration, drawing, anime, 3d render, cgi, plastic, human, person, human skin, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border",
+      "performance": "Quality",
+      "prompt": "(violet-haze pawn-counter photograph, purple haze, drifting sparkles:1.35), (biting a brownie that slides out exactly two playing cards like a fortune cookie, eyes crossed, sparkles drifting round his head:1.25), giggling glassy-eyed mid-bite, wearing no clothes, eyes slightly crossed, signature prop: a brownie with two playing cards sliding out, setting: glass pawn-shop counter in a violet haze, colour palette of Violet haze, brownie brown, pistachio, lighting: soft violet-purple haze, camera: 50mm. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: pistachio green. Cheeky adult humour, no text.",
+      "negative_prompt": "wooden bar, bottle shelves, amber light, human face, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, anime, 3d render, cgi, plastic, brown fur, tan fur, honey fur",
       "outputs": [
         {
           "path": "public/cards/79.webp",
@@ -2003,7 +2047,9 @@
           "height": 256,
           "format": "webp"
         }
-      ]
+      ],
+      "styles": [],
+      "guidance_scale": 6
     },
     {
       "id": "80",
