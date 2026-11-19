@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
   checkSignatures, colourKey, fieldsFor, isPlush, mediumFamily, promptSimilarity, signatureText,
-  PROMPT_SIMILARITY_LIMIT, PLUSH_ONLY_FIELDS, SIGNATURE_FIELDS,
+  PROMPT_SIMILARITY_LIMIT, PLUSH_ONLY_FIELDS,
 } from '../scripts/bear-signatures.mjs';
 import {
   composePrompt, composeNegative, stylesFor, BEAR_GUARD, OBJECT_GUARD, MEDIUM_WEIGHT, GAG_WEIGHT,
