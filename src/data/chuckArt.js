@@ -33,34 +33,35 @@ export const CHUCK_ART = {
     visual: 'adult sly bear made of coiled receipt-paper quills, burgundy curls',
     scene: 'Sitting among spirals of quilled bar-tab paper on a pale backdrop.',
   },
-  // Three specials are Chuck in the act, each in its own medium. The full
+  // Each special shows its in-game effect as a photo gag (Mark, 19 Nov 2026).
+  // Three specials are Chuck in the act, each in its own setting. The full
   // signatures live in art/bear-bibles.json (character: chuck, or plush: false
   // for the two battle cards).
   'ck-last-orders': {
-    medium: '1940s all-night diner realism painting',
-    visual: 'Chuck the honey-brown bartender bear pouring one nightcap for the last slumped lady teddy',
-    scene: 'Seen through a plate-glass window under harsh house lights, chairs upturned, a mop bucket waiting.',
+    medium: 'ringside boxing-corner spotlight photo',
+    visual: 'battered Chuck springing off the corner stool flexing as a cornerwoman tips a pint into him',
+    scene: 'Last call on the ropes: red ropes, blue canvas, one spotlight, his gloved cornerwoman fired up behind him.',
   },
   // Top-Up and The Quiet Word are pure battle cards (Mark, 19 Nov 2026):
   // object still lifes, no Chuck, no plush, no people.
   'ck-top-up': {
     medium: 'hard-daylight pool-deck still-life photo',
-    visual: 'a magnum frozen mid-pour into a crystal coupe tower overflowing down every tier',
-    scene: 'White marble rooftop infinity pool, cyan water, hard noon sun, discarded sunglasses.',
+    visual: 'a magnum pouring over plaster-patched coupes that it tops up on the way down',
+    scene: 'White marble rooftop infinity pool, cyan water, a sagging pink pool ring filling with foam.',
   },
   'ck-cut-off': {
-    medium: 'Sistine Chapel ceiling fresco',
-    visual: 'Chuck on a cloud holding a whisky bottle an inch past a pleading paw',
-    scene: 'A Creation-of-Adam ceiling painted as a heavenly pub, his raised brow plainly not a no.',
+    medium: 'fluorescent convenience-store night photo',
+    visual: 'Chuck snipping the energy-drink fridge cable with gold scissors, the bolt neons going dark',
+    scene: '3 a.m. white tiles, sparks at the cut, an outraged tiara-wearing patron reaching for a dead can.',
   },
   'ck-on-the-tab': {
-    medium: 'mid-century magazine gag cartoon',
-    visual: 'Chuck holding up a bar tab so long it snakes off the counter, two cards in his bow tie',
-    scene: 'Loose ink and grey wash, a red lipstick kiss at the bottom, a sheepish teddy behind his glass.',
+    medium: 'sunlit bottomless-brunch lifestyle photo',
+    visual: 'Chuck toasting with a mimosa in each paw, two cards in his bow tie, the receipt chained to his ankle',
+    scene: 'Pink-and-white cafe, an ice pack and a fizzing hangover tablet waiting on the table for tomorrow.',
   },
   'ck-quiet-word': {
     medium: 'neon-haze lounge macro still-life photo',
-    visual: 'a vintage gold microphone and a black rotary phone left off the hook',
-    scene: 'Violet velvet tabletop, lipstick-kiss napkin, blue and violet neon haze.',
+    visual: 'a lipstick-kissed gold microphone baiting a steel jaw trap snapped shut on a brass knuckleduster',
+    scene: 'Violet velvet, blue and violet neon haze, one finger ring flying off in sparks.',
   },
 };

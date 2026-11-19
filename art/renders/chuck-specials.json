@@ -1,22 +1,26 @@
 {
  "set": "chuck",
  "date": "2026-11-19",
- "why": "Five Chuck's Crew specials/trap shipped with no plate, so the app asked for art that 404'd. Mark asked for these five to be made in Gemini as strict photorealism. On 19 Nov 2026 Mark made ck-top-up and ck-quiet-word pure battle cards: object still lifes with no teddy, plush, Chuck or people.",
+ "why": "Five Chuck's Crew specials/trap shipped with no plate, so the app asked for art that 404'd. Mark asked for these five to be made in Gemini as strict photorealism. On 19 Nov 2026 (8:15 PM) Mark asked for every image to convey the card's actual in-game effect as a tongue-in-cheek gag, so all five were remade in Gemini from effect-led prompts (first attempt each); two got a documented local retouch. On 19 Nov 2026 Mark made ck-top-up and ck-quiet-word pure battle cards: object still lifes with no teddy, plush, Chuck or people.",
  "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com; exact prompt and reference image (or none) per plate below. The Chuck plates had a Chuck reference image attached; the battle cards had no reference image. Not called from the repo. Fal and other hosted generators remain banned.",
  "pipeline": "scripts/inpaint-card-art-fooocus.py --export-from (sharp cover crop to 768x1024 WebP + 192x256 thumb), then npm run art:thumbs --force (thumb/mid WebP+AVIF)",
  "design_record": "art/bear-bibles.json keeps each card's signature (character: chuck for the Chuck plates; kind: battle, plush: false for the battle cards); the Fooocus manifest rows are composed from it.",
- "superseded": "A Fooocus pass (seeds 9202/3303/7202/9404/8505) was replaced before merge at Mark's request.",
+ "superseded": "Earlier versions (a Fooocus pass, then Gemini photoreal and battle-card still lifes, merged at 8742e3f) were replaced because they did not show the in-game effect; backups at /workspace/missingart/backup-8742e3f and in git history.",
  "plates": [
   {
    "id": "ck-last-orders",
    "name": "Last Orders",
+   "kind": "chuck",
+   "plush": true,
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": "chuck-ref.png (Mark's Gemini Chuck design) attached in the Gemini chat",
    "source_png": "ck-last-orders.png",
    "source_size": [
     1792,
     2400
    ],
-   "source_sha256": "b84765ddb49ad49c72d0cc7193f96e75705d3d9eb66e804ed125571aa96560ec",
-   "prompt": "Keep this exact character design (same plush teddy bartender), but render him as a real physical plush toy in a real photograph. Last Orders. Night street photograph, 35mm lens, shot from a wet pavement through the plate-glass window of a real 1950s chrome-and-teal diner at closing time. Chuck stands behind the empty counter tipping a whisky bottle mid-pour into one last nightcap tumbler; beside it a second glass with a red lipstick print on the rim. Chairs upturned on tables, a mop bucket, harsh fluorescent light spilling onto the rainy street, reflections on the glass. Cool green-teal and ochre tones. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Shot on a full-frame DSLR, real lens optics, natural depth of field, true-to-life lighting, physically accurate shadows and reflections, visible real fabric fibres and stitching on the plush toys, fine film grain, editorial product-photography realism. Chuck is a real, physical adult plush teddy bear toy (stuffed animal, not a living bear, not a human): honey-brown mohair plush, barrel chest, greying muzzle fur, half-lidded glass eyes, a loosened black satin bow tie, a teal short-sleeve shirt unbuttoned at the collar, one small gold tooth. All characters are adult plush teddy bear toys photographed in a real location. Cheeky adult bar humour by innuendo only. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, signage or watermark anywhere. No humans, no children.",
+   "source_sha256": "289a6d803e5f860f0258705aa932b2ab1d4329210c9d56062e9c7a4f3fca25cd",
+   "prompt": "Keep this exact character design (same plush teddy bartender), but render him as a real physical plush toy in a real photograph. Ringside sports photograph, 35mm, low angle from the canvas. In the corner of a real boxing ring under a single hard white overhead spotlight, Chuck sits on the corner stool, visibly battered: a sticking plaster on his brow, an ice pack sliding off his head, a few tufts of stuffing poking from a split seam on one shoulder. One adult lady plush teddy cornerwoman in a short pink satin robe tips a frosty pint of lager straight into his open mouth like a cornerman's water bottle, foam splashing down his teal shirt, and he is already springing up off the stool mid-gulp, flexing one plush bicep, eyes wide and roaring back to life. A second adult lady plush teddy in a matching robe and red boxing gloves bumps her gloves together behind him, grinning, fired up and ready to hit harder, giving his flex a cheeky appreciative once-over. Red ring ropes, royal-blue canvas, white towels, a spit bucket, sweat droplets and lager spray frozen in the spotlight, dark crowd falling to black. Palette: royal blue, scarlet, white and pink. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Visible real fabric fibres and stitching on every plush toy. Chuck is a real, physical adult plush teddy bear toy (stuffed animal, not a living bear, not a human): honey-brown mohair plush, barrel chest, greying muzzle fur, half-lidded glass eyes, a loosened black satin bow tie, a teal short-sleeve shirt unbuttoned at the collar, one small gold tooth. All characters are adult plush teddy bear toys photographed in a real location; cheeky adult humour by innuendo only. Absolutely no wooden bar counter, no wood panelling, no bottle shelves, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage or watermark anywhere. No humans, no children.",
    "files": [
     "public/cards/ck-last-orders.webp",
     "public/cards/thumbs/ck-last-orders.webp",
@@ -24,11 +28,15 @@
     "public/cards/mid/ck-last-orders.webp",
     "public/cards/mid/ck-last-orders.avif"
    ],
-   "follow_up": "Make it look like an unedited real photograph: real camera, real light, real plush fabric; no illustration, no painting, no text.",
-   "kind": "chuck",
-   "plush": true,
-   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
-   "reference_image": "Chuck reference image (Mark's Gemini Chuck design) attached in the Gemini chat"
+   "effect": "Special, cost 4, rare. At 5 HP or less: heal 6 and every creature you control gets +1 attack. Otherwise heal 3. A Pour on your side adds +2 to the heal. (barService.playBarSpecial 'lastOrders', LAST_ORDERS_HP = 5)",
+   "gag": "Boxing-ring corner comeback: a battered, nearly-out Chuck on the corner stool gets a pint poured into him like a cornerman's water bottle and springs back flexing (low-HP big heal), while his two adult lady-teddy cornerwomen raise their gloves, fired up (+1 attack to the table).",
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_76k45u76k45u76k4.jpeg",
+    "sha256": "f28f5330d23996afaf1e75add5bca8138a9f57f5512f10e956667c20db39d8d5"
+   },
+   "retouch": "Local OpenCV retouch on the box (/workspace/missingart/retouch.py, no generator): the dim crowd strips either side of the cornerwomen burned down to dark shapes so no human face is readable.",
+   "original_png_sha256": "90687d206b4cbb1d540f47e08cb7d80eb820d02518be8c20649e3a0fda94051a"
   },
   {
    "id": "ck-top-up",
@@ -42,8 +50,8 @@
     1792,
     2400
    ],
-   "source_sha256": "78412b3b370b0500c6e397089b136433ece48af3880223911db902f3daf95741",
-   "prompt": "Top-Up. A dramatic champagne battle-card photograph: a tall tower of crystal coupe glasses on the edge of a white Carrara-marble rooftop infinity pool, a magnum of champagne frozen mid-pour from above the frame, foam overflowing and cascading down every tier in glittering sheets and splashing onto the wet marble, bubbles and droplets frozen mid-air. Hard bright midday sun, crisp specular highlights, vivid cyan pool water and a clean pale-blue sky behind, white sun lounger and a single pair of discarded oversized sunglasses beside the tower. Crisp cool palette of white, silver, cyan and pale blue; absolutely no wood, no bar, no bottle shelves, no warm amber or brown light. 50mm lens, low angle, shallow depth of field. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Shot on a full-frame DSLR, real lens optics, shallow depth of field, true-to-life lighting, physically accurate reflections and refractions, natural material texture, fine film grain, premium editorial still-life photography. Object still life only: no people, no hands, no body parts, no animals, no teddy bears, no plush toys, no stuffed animals, no characters of any kind. Cheeky adult tongue-in-cheek innuendo implied only by the objects. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels or watermark anywhere.",
+   "source_sha256": "c67c56017cb9fb776180cd5e9fc831868d01bafc2cd23a30b3a3149fe0cbc684",
+   "prompt": "Bright midday still-life photograph, 50mm, low angle, on the white Carrara-marble edge of a rooftop infinity pool. A magnum of champagne enters from the top of the frame mid-pour into a single pristine crystal coupe with a red lipstick print on its rim, and the overflow cascades down a small pyramid of five battered coupes below it: each lower glass is chipped and cracked and patched with a beige fabric sticking plaster, and exactly where the golden champagne runs over them the cracks are visibly sealing and the glass gleams whole again, the plasters peeling off and dropping away mid-air. At the foot of the stack, foam pours into the valve of a half-deflated pink inflatable pool ring lying on the marble, which is visibly puffing back up to full. Hard sun, crisp specular highlights, droplets and bubbles frozen mid-air, vivid cyan water and pale-blue sky behind. Palette: white, silver, champagne gold, cyan, bubblegum pink. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Object still life only: no people, no hands, no body parts, no animals, no teddy bears, no plush toys, no stuffed animals, no characters of any kind; the cheeky adult innuendo is carried by the objects alone. Absolutely no wooden bar counter, no wood panelling, no bottle shelves, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage or watermark anywhere. No humans, no children.",
    "files": [
     "public/cards/ck-top-up.webp",
     "public/cards/thumbs/ck-top-up.webp",
@@ -51,22 +59,28 @@
     "public/cards/mid/ck-top-up.webp",
     "public/cards/mid/ck-top-up.avif"
    ],
+   "effect": "Special, cost 3, uncommon. Heal 2 to you and to each of your wounded creatures, up to full; a Pour adds +2 to your heal. The game's own log calls the creatures 'the glasses': '+N for you, N across the glasses'. (barService 'topUp')",
+   "gag": "The pour literally heals the table: champagne cascading from the top coupe repairs the cracked, sticking-plastered glasses below where it touches, and the overflow re-inflates a sagging pool ring. Everyone gets topped up, wounds and all.",
+   "attempt": 1,
    "gemini_download": {
-    "file": "Gemini_Generated_Image_h2t9q2h2t9q2h2t9.jpeg",
-    "sha256": "faa9f432a56126ab7b6f3840a38f5e5d9014f4017f9b864bb051cfb6a43ca758",
-    "note": "Gemini 'Create image' JPEG, one attempt in a new chat with no attachment and no follow-up; converted losslessly to the source PNG"
+    "name": "Gemini_Generated_Image_nivkxnivkxnivkxn.jpeg",
+    "sha256": "d20aced3d54f8b5f7a0166cb15a71434c7dfb82f51f26e68c8f3720aa25e0cd0"
    }
   },
   {
    "id": "ck-cut-off",
    "name": "You're Cut Off",
+   "kind": "chuck",
+   "plush": true,
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": "chuck-ref.png (Mark's Gemini Chuck design) attached in the Gemini chat",
    "source_png": "ck-cut-off.png",
    "source_size": [
     1792,
     2400
    ],
-   "source_sha256": "a2333a0b99c251adaa04fde7be7a420e356186814c3f44c437da81cb02d03e4f",
-   "prompt": "Keep this exact character design (same plush teddy bartender), but render him as a real physical plush toy in a real photograph. You're Cut Off. Wide-angle photograph looking up inside a real ornate Italian chapel with a painted fresco ceiling, real daylight from high windows. Chuck reclines on a soft white cotton cloud prop suspended near the ceiling, holding a whisky bottle just out of reach of a tipsy plush teddy patron stretching up from a lower cloud, their paws almost touching like the Creation of Adam; the patron gives him a pleading, flirtatious look. Dust motes in light beams, real stone and plaster texture. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Shot on a full-frame DSLR, real lens optics, natural depth of field, true-to-life lighting, physically accurate shadows and reflections, visible real fabric fibres and stitching on the plush toys, fine film grain, editorial product-photography realism. Chuck is a real, physical adult plush teddy bear toy (stuffed animal, not a living bear, not a human): honey-brown mohair plush, barrel chest, greying muzzle fur, half-lidded glass eyes, a loosened black satin bow tie, a teal short-sleeve shirt unbuttoned at the collar, one small gold tooth. All characters are adult plush teddy bear toys photographed in a real location. Cheeky adult bar humour by innuendo only. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, signage or watermark anywhere. No humans, no children.",
+   "source_sha256": "1312534e593912b4850eb76700caf0ab7f81d3dae4af55ebd9325a668341bfa9",
+   "prompt": "Keep this exact character design (same plush teddy bartender), but render him as a real physical plush toy in a real photograph. Night photograph, 28mm, inside a real white-tiled 24-hour convenience store at 3 a.m. under cold fluorescent light. Chuck stands in front of a glass-door drinks fridge full of glowing electric-green energy-drink cans, a smug half-lidded wink on his face, snipping its thick black power cable with an oversized pair of gold scissors, a small burst of white sparks at the cut. Above the fridge two big yellow lightning-bolt-shaped neon tubes are flickering out, one already dark grey, and the cans nearest the front have gone dark and dead while the rest still glow. An adult lady plush teddy patron in a sequinned party top and a crooked tiara reaches for the fridge handle with one paw, the other clutching an empty crushed can, frozen with her mouth open in outrage, ears drooping. Chuck holds the scissors up beside his face like a prize. Palette: cold white, electric lime green, lightning yellow, black. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Visible real fabric fibres and stitching on every plush toy. Chuck is a real, physical adult plush teddy bear toy (stuffed animal, not a living bear, not a human): honey-brown mohair plush, barrel chest, greying muzzle fur, half-lidded glass eyes, a loosened black satin bow tie, a teal short-sleeve shirt unbuttoned at the collar, one small gold tooth. All characters are adult plush teddy bear toys photographed in a real location; cheeky adult humour by innuendo only. Absolutely no wooden bar counter, no wood panelling, no bottle shelves, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage or watermark anywhere. No humans, no children.",
    "files": [
     "public/cards/ck-cut-off.webp",
     "public/cards/thumbs/ck-cut-off.webp",
@@ -74,21 +88,28 @@
     "public/cards/mid/ck-cut-off.webp",
     "public/cards/mid/ck-cut-off.avif"
    ],
-   "kind": "chuck",
-   "plush": true,
-   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
-   "reference_image": "Chuck reference image (Mark's Gemini Chuck design) attached in the Gemini chat"
+   "effect": "Special, cost 3, uncommon. Your opponent's next turn has 2 less energy. Energy is drawn in game as yellow lightning-bolt (Zap) icons. (barService 'cutOff', energyAfterCut)",
+   "gag": "Chuck cheerfully snips the power cord with giant gold scissors: the glowing lightning-bolt neon and the energy-drink fridge go dark exactly as the pleading patron reaches for a can. Literally cutting their power, with a wink that says it's not a no.",
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_6nwg7l6nwg7l6nwg.jpeg",
+    "sha256": "951f95f360f7561d5304e9fc299c0e0f9749e9624b395b51d4cbcb388cd80dd5"
+   }
   },
   {
    "id": "ck-on-the-tab",
    "name": "On the Tab",
+   "kind": "chuck",
+   "plush": true,
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": "chuck-ref.png (Mark's Gemini Chuck design) attached in the Gemini chat",
    "source_png": "ck-on-the-tab.png",
    "source_size": [
     1792,
     2400
    ],
-   "source_sha256": "4241b28f2cbe9bc0abef337afcbcc06eff04209c582ce42daf9dab0b5988415c",
-   "prompt": "Keep this exact character design (same plush teddy bartender), but render him as a real physical plush toy in a real photograph. On the Tab. Documentary-style photograph, 28mm, of a real old wooden pub bar in warm tungsten light. Chuck, with two playing cards tucked into his bow tie and a pencil behind his ear, grins as he holds up an absurdly long paper bar receipt that unrolls over the counter and coils across the floorboards, with a real red lipstick kiss on its end; the receipt shows only blurred unreadable lines. A sheepish plush teddy patron slumps on a bar stool hiding behind an empty pint glass. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Shot on a full-frame DSLR, real lens optics, natural depth of field, true-to-life lighting, physically accurate shadows and reflections, visible real fabric fibres and stitching on the plush toys, fine film grain, editorial product-photography realism. Chuck is a real, physical adult plush teddy bear toy (stuffed animal, not a living bear, not a human): honey-brown mohair plush, barrel chest, greying muzzle fur, half-lidded glass eyes, a loosened black satin bow tie, a teal short-sleeve shirt unbuttoned at the collar, one small gold tooth. All characters are adult plush teddy bear toys photographed in a real location. Cheeky adult bar humour by innuendo only. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, signage or watermark anywhere. No humans, no children.",
+   "source_sha256": "64ddd8419377871fc5d8c1eae00974939ce1e0ab4f5bf725e39313a9e80429fd",
+   "prompt": "Keep this exact character design (same plush teddy bartender), but render him as a real physical plush toy in a real photograph. Bright morning lifestyle photograph, 35mm, in a sunlit white-and-pastel-pink brunch café with big windows, white marble tabletop, palm-leaf shadows. Chuck leans back blissfully in a pink velvet chair, snatching two tall frosty mimosas at once, one in each paw, mid-toast, and two playing cards fanned out tucked into his bow tie. From a little card machine on the table an absurdly long white paper receipt spools out, coils around his ankle and ends in a big balled-up wad of receipt paper on the floor like a convict's ball and chain. On the table beside him, waiting for later, sit a blue gel ice pack, a pair of dark sunglasses and a glass of water with a hangover tablet fizzing in it. An adult lady plush teddy brunch companion in a sun hat peeks over her menu at the receipt with one raised eyebrow and a knowing smirk. Palette: blush pink, white, mint, citrus orange. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Visible real fabric fibres and stitching on every plush toy. Chuck is a real, physical adult plush teddy bear toy (stuffed animal, not a living bear, not a human): honey-brown mohair plush, barrel chest, greying muzzle fur, half-lidded glass eyes, a loosened black satin bow tie, a teal short-sleeve shirt unbuttoned at the collar, one small gold tooth. All characters are adult plush teddy bear toys photographed in a real location; cheeky adult humour by innuendo only. Absolutely no wooden bar counter, no wood panelling, no bottle shelves, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage or watermark anywhere. No humans, no children.",
    "files": [
     "public/cards/ck-on-the-tab.webp",
     "public/cards/thumbs/ck-on-the-tab.webp",
@@ -96,10 +117,15 @@
     "public/cards/mid/ck-on-the-tab.webp",
     "public/cards/mid/ck-on-the-tab.avif"
    ],
-   "kind": "chuck",
-   "plush": true,
-   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
-   "reference_image": "Chuck reference image (Mark's Gemini Chuck design) attached in the Gemini chat"
+   "effect": "Special, cost 1, common. Draw 2 cards now; at the start of your next turn you lose 2 HP. (barService 'onTab' -> payTab next round)",
+   "gag": "Bottomless brunch on the tab: Chuck happily grabs two cocktails now while the receipt coils round his ankle into a ball and chain, and tomorrow's damage (ice pack and a fizzing hangover tablet) waits beside him in reserve. Two now, the bill later.",
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_ggnxx9ggnxx9ggnx.jpeg",
+    "sha256": "0dd2d34bc4b48f81cd72272c874fa2063cec59e21346fe4437ba34cf97762c82"
+   },
+   "retouch": "Local OpenCV retouch on the box (/workspace/missingart/retouch.py, no generator): menu lettering inpainted out (no-text rule) and three out-of-focus human diners in the background inpainted and re-blurred into bokeh (no-humans rule).",
+   "original_png_sha256": "0b5e1abbef616a82e5422b7c877d17211f2fdec80ca4ac37abbd85052955373c"
   },
   {
    "id": "ck-quiet-word",
@@ -113,8 +139,8 @@
     1792,
     2400
    ],
-   "source_sha256": "e8ded989efc50fe34368e88a71921e9c30f67dc936b713debe605b66678b445f",
-   "prompt": "The Quiet Word. An intimate 'word in your ear' battle-card still life photograph in a dim blue and violet neon lounge: a vintage gold ribbon microphone on a short stand and an old black rotary phone with its receiver left off the hook, curled cord trailing across a deep violet velvet tabletop; beside them a crumpled white cocktail napkin with a vivid red lipstick kiss print and a half-finished coupe glass with a cherry. Cool neon haze and smoke drifting, electric blue and violet rim light, glossy reflections on the gold and black bakelite, soft blue bokeh behind. Palette strictly cool blue, violet and gold; absolutely no wood, no bar counter, no bottle shelves, no warm amber or brown light. 85mm f/1.8 close-up, shallow depth of field. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Shot on a full-frame DSLR, real lens optics, shallow depth of field, true-to-life lighting, physically accurate reflections and refractions, natural material texture, fine film grain, premium editorial still-life photography. Object still life only: no people, no hands, no body parts, no animals, no teddy bears, no plush toys, no stuffed animals, no characters of any kind. Cheeky adult tongue-in-cheek innuendo implied only by the objects. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels or watermark anywhere.",
+   "source_sha256": "c23298703176158f86eca8cc12f8917187d4e6da41bca7cf00047368f7caef7f",
+   "prompt": "Moody macro still-life photograph, 85mm f/1.8, in a dim blue and violet neon lounge. On a deep violet velvet tabletop sits an open chrome spring-loaded steel jaw trap whose serrated jaws are lined with violet velvet; standing upright in its centre is a vintage gold ribbon microphone with a vivid red lipstick kiss print on its grille, the bait. The trap has just snapped shut on a heavy brass knuckleduster that lunged in from the side: the jaws clamp it mid-swing, four deep dents crushed into its brass, and one of its four finger rings has snapped clean off and is flying away through the air with a tiny spray of sparks and brass chips. Haze and smoke drifting, electric-blue and violet neon rim light, glossy reflections on chrome and gold, soft blue bokeh behind. Palette: electric blue, violet, chrome, gold, one red kiss. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Object still life only: no people, no hands, no body parts, no animals, no teddy bears, no plush toys, no stuffed animals, no characters of any kind; the cheeky adult innuendo is carried by the objects alone. Absolutely no wooden bar counter, no wood panelling, no bottle shelves, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage or watermark anywhere. No humans, no children.",
    "files": [
     "public/cards/ck-quiet-word.webp",
     "public/cards/thumbs/ck-quiet-word.webp",
@@ -122,10 +148,12 @@
     "public/cards/mid/ck-quiet-word.webp",
     "public/cards/mid/ck-quiet-word.avif"
    ],
+   "effect": "Trap, cost 3, uncommon. Springs on the next attack aimed straight at you: the attack is stopped, the attacker's side takes 4 damage, and the attacker loses 1 attack (interest 1); then it's spent. (effects.js effectRules trap, GameBoard trap branch, applyInterest)",
+   "gag": "The 'quiet word' is a trap: a lipstick-kissed gold microphone sits in a velvet-lined steel jaw trap that has just snapped shut on a lunging brass knuckleduster, stopping the punch dead, crunching four dents into it and popping one finger-ring clean off (4 damage, -1 attack).",
+   "attempt": 1,
    "gemini_download": {
-    "file": "Gemini_Generated_Image_euwbgveuwbgveuwb.jpeg",
-    "sha256": "dd98c7fec1b510411d39dcf7e5f2b8c86bfe23310086cb01f65f3ede480e0535",
-    "note": "Gemini 'Create image' JPEG, one attempt in a new chat with no attachment and no follow-up; converted losslessly to the source PNG"
+    "name": "Gemini_Generated_Image_phtby4phtby4phtb.jpeg",
+    "sha256": "bb858638c2b7af1a4945490c2a9e7555f4370b375c7027d08d7c6aadc41326b3"
    }
   }
  ]
