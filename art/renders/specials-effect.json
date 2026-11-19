@@ -367,6 +367,157 @@
     "public/cards/mid/40.avif"
    ],
    "ingested": "2026-11-19"
+  },
+  {
+   "id": "ma-9",
+   "name": "Hair of the Dog",
+   "type": "special",
+   "effect": "Special: restores 4 of your HP (max 30; a Chuck Pour on your side adds 2).",
+   "gag": "Another pour of the thing that ruined you: a shaggy plush poodle bartender hands a sunglassed wreck a lipstick-rimmed pint and his droopy ears spring back up.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 2,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_o2br5lo2br5lo2br.jpeg",
+    "sha256": "34f9c5abea8d1378aec90bcdab6b7913d2b6d60a990498cdd1375414b93e513e"
+   },
+   "original_png_sha256": "a55ba2b6a5acc990ff63a922b8761d388424a099b0c45acc6ee38a46e611ed94",
+   "source_png": "ma-9.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "a55ba2b6a5acc990ff63a922b8761d388424a099b0c45acc6ee38a46e611ed94",
+   "prompt": "Photograph, 50mm, at a chrome-and-pastel-blue diner counter at sunrise, no shelves, big windows. A wrecked adult plush teddy with oatmeal fur, dark sunglasses and messy bedhead slumps over the counter; an adult plush poodle bartender with apricot curls slides him a frosty pint with a lipstick print on the rim and one ice cube. Mid-sip, the bear's droopy ears are springing back up and his slumped shoulders lift, the colour coming back into him. Soft pink sunrise through the window. Palette: diner chrome, powder blue, sunrise pink, apricot. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/ma-9.webp",
+    "public/cards/thumbs/ma-9.webp",
+    "public/cards/thumbs/ma-9.avif",
+    "public/cards/mid/ma-9.webp",
+    "public/cards/mid/ma-9.avif"
+   ],
+   "ingested": "2026-11-19"
+  },
+  {
+   "id": "75",
+   "name": "Hair of the Bear",
+   "type": "special",
+   "effect": "Special: restores 3 of your HP (max 30; a Chuck Pour on your side adds 2).",
+   "gag": "Cures what the bar did: a balding, hungover plush drinks the beer with his own fur tuft floating in it and the bald patch visibly grows back.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_hkik99hkik99hkik.jpeg",
+    "sha256": "46d581afbc4601387d2b007f74502176a93dfc691881f2bba2a66a5883467650"
+   },
+   "original_png_sha256": "7c83bf04206c3905fffb339b0da504a37292f5621d04c0d359250bf92dec9cbb",
+   "source_png": "75.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "c0a271306bb09a936b703470ec89b62c44a19f15bc9c18a496f5ca06f4b55ffc",
+   "prompt": "Photograph, 50mm, in a motel bed in cool morning light through net curtains. A hungover adult plush teddy with honey-blond fur sits up in tangled sheets with a sad bald patch worn on top of his head; he drinks from a tall glass of flat beer with a tuft of his own fur floating in it, and the bald patch is visibly sprouting fresh fluffy fur as he drinks, his eyes half closed in relief. Paracetamol blister pack and a sock on the lampshade. Palette: morning blue-grey, beer gold, white sheets. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/75.webp",
+    "public/cards/thumbs/75.webp",
+    "public/cards/thumbs/75.avif",
+    "public/cards/mid/75.webp",
+    "public/cards/mid/75.avif"
+   ],
+   "ingested": "2026-11-19",
+   "retouch": "OpenCV: Gaussian blur (sigma 9, light grain, feathered 5 px) over the painkiller blister-pack lettering (x388-565, y1962-2092 and x438-492, y2122-2178 of 1792x2400); nothing else touched."
+  },
+  {
+   "id": "33",
+   "name": "Full Metal Buttons",
+   "type": "trap",
+   "effect": "Trap: springs on the next attack aimed straight at you; the attack is stopped and the attacking player takes 3 damage; then it's spent.",
+   "gag": "A quarter buys a shock, not the kind you came for: the attacker grabs the chrome handles of a coin-op love tester and gets fried, fur blasted into a frizz.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_3t9pc23t9pc23t9p.jpeg",
+    "sha256": "6266ab84d27ea9a549b3fe533d4475d278a5bf7c10c142cb146e216299d36bcb"
+   },
+   "original_png_sha256": "21b87af8bbd3b8156e84494ab815a25ba6afa5c5b91928e0ed5c3b0edc0d874d",
+   "source_png": "33.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "21b87af8bbd3b8156e84494ab815a25ba6afa5c5b91928e0ed5c3b0edc0d874d",
+   "prompt": "Dutch-tilt photograph, 35mm, in a dim pawn shop. A vintage coin-operated love-tester machine with two chrome grab handles, a dial of painted hearts and big chrome buttons (no lettering anywhere) is zapping an adult plush teddy with cream fur who grabbed both handles: blue-white electric arcs crackle up his arms, his fur blasted into a frizz, button eyes spinning, smoke curling from his ears, a coin still spinning on the floor. Dusty guitars and a glass case of watches behind. Palette: chrome, electric blue-white, dusty red velvet, cream. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/33.webp",
+    "public/cards/thumbs/33.webp",
+    "public/cards/thumbs/33.avif",
+    "public/cards/mid/33.webp",
+    "public/cards/mid/33.avif"
+   ],
+   "ingested": "2026-11-19"
+  },
+  {
+   "id": "71",
+   "name": "Wet Floor, No Sign",
+   "type": "trap",
+   "effect": "Trap: springs on the next attack aimed straight at you; the attack is stopped and the attacking player takes 2 damage; then it's spent.",
+   "gag": "Beer, glitter and a third liquid: the charging attacker hits the glitter puddle and goes horizontal mid-punch, the wet-floor sign lying face-down where nobody could see it.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_cq7hi2cq7hi2cq7h.jpeg",
+    "sha256": "0d246967d82a5af5444f250a5570af61696a3c16bb7fc51c221549fc2ac3272c"
+   },
+   "original_png_sha256": "06a6a1a72ef28111843548edc34da7c891551cb0ea08657bb1823252653526b0",
+   "source_png": "71.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "06a6a1a72ef28111843548edc34da7c891551cb0ea08657bb1823252653526b0",
+   "prompt": "Low-angle photograph from floor level, 24mm, in a back corridor with sticky black-and-white tiles, stacked crates and one bare swinging bulb. An adult plush teddy with teal fur charging in mid-punch has hit a puddle of spilled beer and silver glitter: he is completely horizontal in mid-air, feet flying above his head, punch swinging at nothing, glitter spraying. A yellow wet-floor sign lies face-down under the crates with nothing visible on it, and a mop leans against the wall abandoned. Palette: glitter silver, tile black and white, teal, sign yellow. A small slapstick spill. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/71.webp",
+    "public/cards/thumbs/71.webp",
+    "public/cards/thumbs/71.avif",
+    "public/cards/mid/71.webp",
+    "public/cards/mid/71.avif"
+   ],
+   "ingested": "2026-11-19"
+  },
+  {
+   "id": "44",
+   "name": "Profanity Pep Talk",
+   "type": "special",
+   "effect": "Special: every creature you have on the table gains +1 attack for the rest of the battle.",
+   "gag": "Every third word bleeped: a red-faced plush coach screams through a megaphone and every brawler on the bench puffs up one notch, while a red bleep light flashes nonstop.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_uvmtcduvmtcduvmt.jpeg",
+    "sha256": "e84bcd401d2f9d4e6dae212f1a89a52f4bb1346e841f7334eadaf05acead623f"
+   },
+   "original_png_sha256": "8f13dd30e03252da1f03a3a117884a2aaf80112f67ea114ca79f050140efa118",
+   "source_png": "44.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "8f13dd30e03252da1f03a3a117884a2aaf80112f67ea114ca79f050140efa118",
+   "prompt": "Photograph, 28mm, in a grimy concrete locker room under flickering white tubes. A red-faced adult plush coach teddy with brick-red fur and a whistle round his neck screams into a battered megaphone, spit flying, veins of stitching standing out; on the bench a row of four adult plush brawlers in tank tops are visibly puffing up one size, chests out, fists clenched, one wiping a proud tear. A red rotating bleep light above the door flashes. Palette: concrete grey, locker steel blue, bleep red. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/44.webp",
+    "public/cards/thumbs/44.webp",
+    "public/cards/thumbs/44.avif",
+    "public/cards/mid/44.webp",
+    "public/cards/mid/44.avif"
+   ],
+   "ingested": "2026-11-19"
   }
  ]
 }

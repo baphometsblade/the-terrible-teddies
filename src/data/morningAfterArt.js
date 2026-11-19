@@ -50,8 +50,8 @@ export const MORNING_AFTER_ART = {
     scene: 'Hard morning light on a motel nightstand, blinds shadows, lipstick on the cracked glass.',
   },
   'ma-9': {
-    visual: 'a pint of hair-of-the-dog, lipstick on the rim, one ice cube',
-    scene: 'Close product shot on a sticky bar at opening time.',
+    visual: 'an apricot plush poodle sliding a lipstick-rimmed pint to a sunglassed oatmeal plush whose ears spring up',
+    scene: 'Chrome-and-powder-blue diner counter at sunrise, pink light through big windows.',
   },
   'ma-10': {
     visual: 'four crumpled drafts of a filthy text, one circled in lipstick',

@@ -2884,6 +2884,121 @@
       "gag": "a winking plush nurse in pink scrubs pumping cotton stuffing back into his deflated arm with a stuffing gun, cash tucked under the pillow",
       "painterly": false,
       "negative_extra": "wooden bar, bottle shelves, amber light, human face"
+    },
+    "ma-9": {
+      "name": "Hair of the Dog",
+      "name_gag": "Hair of the Dog: another pour of what ruined him, served by a poodle, and his ears spring back up",
+      "kind": "special",
+      "medium": "sunrise diner-counter photograph",
+      "medium_detail": "chrome sheen, frosty glass, soft window light",
+      "styles": [],
+      "palette": [
+        "Diner chrome",
+        "powder blue",
+        "apricot"
+      ],
+      "fur": "oatmeal",
+      "outfit": "dark sunglasses and bedhead",
+      "prop": "a lipstick-rimmed pint slid across by a plush poodle",
+      "setting": "chrome-and-pastel diner counter at sunrise",
+      "lighting": "soft pink sunrise through big windows",
+      "camera": "50mm at counter height",
+      "pose": "slumped mid-sip, ears springing back up",
+      "gag": "slid a lipstick-rimmed pint by an apricot plush poodle bartender, his droopy ears springing back up mid-sip",
+      "painterly": false,
+      "negative_extra": "wooden bar, bottle shelves, amber light, human face"
+    },
+    "75": {
+      "name": "Hair of the Bear",
+      "name_gag": "Hair of the Bear: his own fur in the beer, and the bald patch grows back as he drinks",
+      "kind": "special",
+      "medium": "net-curtain morning bedroom photograph",
+      "medium_detail": "cool diffused light, tangled sheets",
+      "styles": [],
+      "palette": [
+        "Morning blue-grey",
+        "beer gold",
+        "sheet white"
+      ],
+      "fur": "honey blond",
+      "outfit": "no clothes, a bald patch on his head",
+      "prop": "flat beer with his own fur tuft floating in it",
+      "setting": "motel bed behind net curtains",
+      "lighting": "cool morning light through net curtains",
+      "camera": "50mm",
+      "pose": "sitting up in tangled sheets drinking",
+      "gag": "drinking flat beer with a tuft of his own fur floating in it while the bald patch on his head sprouts fresh fluff",
+      "painterly": false,
+      "negative_extra": "wooden bar, bottle shelves, amber light, human face"
+    },
+    "33": {
+      "name": "Full Metal Buttons",
+      "name_gag": "Full Metal Buttons: a quarter buys a shock from the love tester, not the kind he came for",
+      "kind": "trap",
+      "medium": "pawn-shop Dutch-tilt shock photograph",
+      "medium_detail": "arcing electricity, smoke curls",
+      "styles": [],
+      "palette": [
+        "Chrome",
+        "electric blue-white",
+        "dusty red"
+      ],
+      "fur": "cream",
+      "outfit": "no clothes, fur blasted into a frizz",
+      "prop": "a coin-op love tester with chrome handles",
+      "setting": "pawn shop with guitars on the wall and a watch case",
+      "lighting": "crackling blue-white electric arcs",
+      "camera": "35mm at eye level",
+      "pose": "gripping both handles, fur frizzed",
+      "gag": "fried by a coin-operated love tester, blue-white arcs up both arms, fur frizzed, button eyes spinning, smoke from his ears",
+      "painterly": false,
+      "negative_extra": "wooden bar, bottle shelves, amber light, human face"
+    },
+    "71": {
+      "name": "Wet Floor, No Sign",
+      "name_gag": "Wet Floor, No Sign: beer, glitter and a third liquid send him horizontal",
+      "kind": "trap",
+      "medium": "floor-level slapstick corridor photograph",
+      "medium_detail": "glitter spray frozen, wide angle",
+      "styles": [],
+      "palette": [
+        "Glitter silver",
+        "tile black",
+        "teal"
+      ],
+      "fur": "teal",
+      "outfit": "no clothes",
+      "prop": "a face-down yellow wet-floor sign",
+      "setting": "sticky black-and-white tiled back corridor",
+      "lighting": "one bare bulb over stacked crates",
+      "camera": "24mm floor level",
+      "pose": "horizontal in mid-air, feet above his head",
+      "gag": "slipping on a glitter-beer puddle mid-punch and going fully horizontal, the wet-floor sign lying face-down under the crates",
+      "painterly": false,
+      "negative_extra": "wooden bar, bottle shelves, amber light, human face"
+    },
+    "44": {
+      "name": "Profanity Pep Talk",
+      "name_gag": "Profanity Pep Talk: every third word bleeped, and the whole bench puffs up a size",
+      "kind": "special",
+      "medium": "locker-room flicker photograph",
+      "medium_detail": "flickering tubes, spit flecks, concrete grit",
+      "styles": [],
+      "palette": [
+        "Concrete grey",
+        "locker green",
+        "bleep red"
+      ],
+      "fur": "brick red",
+      "outfit": "whistle round his neck",
+      "prop": "a battered megaphone",
+      "setting": "grimy concrete locker room",
+      "lighting": "flickering white tubes and a rotating red bleep light",
+      "camera": "28mm",
+      "pose": "screaming a spit-flying pep talk at the bench",
+      "gag": "screaming a bleeped pep talk through a megaphone while four brawlers on the bench puff up one size, one wiping a proud tear",
+      "painterly": false,
+      "negative_extra": "wooden bar, bottle shelves, amber light, human face"
     }
   }
 }
