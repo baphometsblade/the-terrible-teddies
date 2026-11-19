@@ -32,12 +32,12 @@ describe('challenge preview page', () => {
     expect(escapeHtml(`"'&<>`)).toBe('&quot;&#39;&amp;&lt;&gt;');
   });
 
-  it('is rewritten ahead of the SPA catch-all', () => {
+  it('is rewritten ahead of every rewrite to the SPA', () => {
     const vercel = JSON.parse(readFileSync(resolve(process.cwd(), 'vercel.json'), 'utf8'));
     const duel = vercel.rewrites.findIndex((rule) => rule.source === '/duel/:code');
-    const spa = vercel.rewrites.findIndex((rule) => rule.source === '/(.*)');
+    const spa = vercel.rewrites.findIndex((rule) => rule.destination === '/index.html');
     expect(duel).toBeGreaterThanOrEqual(0);
-    expect(duel).toBeLessThan(spa);
+    expect(spa).toBeGreaterThan(duel);
     expect(vercel.rewrites[duel].destination).toBe('/api/duel?code=:code');
   });
 });
