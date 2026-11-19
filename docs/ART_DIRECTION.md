@@ -141,6 +141,8 @@ Results are in `art/audit/distinctness-after-3.json`.
 
 Mark's call (Nov 2026): every image goes through Fooocus-API on his own PC, on its NVIDIA GPU. No hosted generator (fal.ai or similar) is used, and nothing in the game, its Supabase functions or its Vercel project calls one at runtime. Card art is static files under `public/cards/`, so the live site never needs the art PC. `src/artPipeline.test.js` fails the suite if a hosted generator turns up in `src/`, `scripts/`, `supabase/` or the package files. `docs/` and `art/renders/` are exempt, because they hold the provenance of plates made before the switch.
 
+**Exception: Gemini, only when Mark asks for it.** Mark may ask for named cards to be made in Gemini (his Google AI Plus plan, by hand at gemini.google.com, with a Chuck reference image attached for Chuck's cards). Nov 2026: the five Chuck's Crew specials (ck-last-orders, ck-top-up, ck-cut-off, ck-on-the-tab, ck-quiet-word). The PNGs are brought into the repo through the same export as every plate (`--export-from`, then `npm run art:thumbs`). Nothing in the repo calls Gemini, and its exact prompts and source hashes are recorded in `art/renders/`. Every other card still comes from Fooocus. Fal and every other hosted generator stay banned.
+
 Fooocus-API listens on `127.0.0.1:8888` on the art PC and is not exposed to the internet. Run the generator on that PC:
 
 - `npm run art:fooocus -- --only <ids> --force` renders into the repo.
