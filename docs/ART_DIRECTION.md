@@ -87,6 +87,28 @@ text, ranked against all 117 plates. It writes an in-app-size contact sheet (a
 PIL replica of TeddyCard at 2×, with frame and scrims) and a thumbnail grid.
 Results: `art/audit/distinctness-before.json` and `art/audit/distinctness-after.json`.
 
+`--all-cards` scores every catalog card with a plate (specials and traps too,
+not just the bears with a signature); `--gate 0.72` exits 1 when a pair scores
+above 0.72, and `--focus 30,32` limits the gate to pairs that involve those ids,
+so a batch of new plates can be gated without failing on older pairs:
+
+    python3 scripts/art-distinctness-audit.py . /tmp/audit --all-cards --gate 0.72 --focus 30,32
+
+**No-text check.** `scripts/art-text-check.py` runs EasyOCR over plates and
+exits 1 when it reads real lettering (3+ letters at confidence 0.55, or 2 at
+0.85). It is a dev tool (`pip install easyocr`), not part of CI, and it misses
+small or stylised lettering, so it backs up a visual check rather than
+replacing it.
+
+**Specials and traps (effect gags).** Since November 2026 each special and
+trap plate shows its in-game effect as a gag (a trap springs on the attacker,
+a heal visibly patches someone up, a draw spills out cards, a buff pumps up the
+whole crew). They were made by hand in Gemini, one image per chat. The exact
+prompts, source hashes and any local retouch are in
+`art/renders/specials-effect.json`. Each has a signature in
+`art/bear-bibles.json` (`kind` `trap` or `special`), so `npm run art:unique`
+covers them too.
+
 The lookalikes came from one cluster: warm, dark old-master oil and varnish
 in oxblood, umber and gold, with a centred honey-brown bear. Sixteen bears were
 flagged, by eye and by score.

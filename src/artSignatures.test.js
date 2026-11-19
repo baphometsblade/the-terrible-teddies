@@ -17,6 +17,7 @@ import {
 import {
   composePrompt, composeNegative, stylesFor, BEAR_GUARD, OBJECT_GUARD, MEDIUM_WEIGHT, GAG_WEIGHT,
 } from '../scripts/bear-bibles.mjs';
+import { COMBAT_CATALOG } from './lib/combat/catalog.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BIBLES = JSON.parse(readFileSync(join(ROOT, 'art/bear-bibles.json'), 'utf8'));
@@ -89,6 +90,19 @@ describe('bear signatures', () => {
     const bears = clone();
     bears['1'].name_gag = 'a bear with a match';
     expect(checkSignatures(bears).errors).toContain('1: name_gag must say the name "Shitstarter Ted"');
+  });
+
+  it('tie every trap and special signature to a catalog card of that type, with its effect plate on record', () => {
+    const byId = new Map(COMBAT_CATALOG.map((card) => [String(card.id), card]));
+    const PROV = JSON.parse(readFileSync(join(ROOT, 'art/renders/specials-effect.json'), 'utf8'));
+    const recorded = new Set(PROV.plates.map((plate) => plate.id));
+    const effectCards = Object.entries(BEARS).filter(([, bear]) => bear.kind === 'trap' || bear.kind === 'special');
+    expect(effectCards.length).toBeGreaterThan(0);
+    for (const [id, bear] of effectCards) {
+      expect(byId.get(id)?.type, id).toBe(bear.kind);
+      expect(recorded.has(id), `${id} has no row in art/renders/specials-effect.json`).toBe(true);
+    }
+    for (const plate of PROV.plates) expect(BEARS[plate.id]?.kind, plate.id).toMatch(/^(trap|special)$/);
   });
 
   it('let a pure battle card go without a plush identity, and only a battle card', () => {

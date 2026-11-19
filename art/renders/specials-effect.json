@@ -1,0 +1,372 @@
+{
+ "set": "specials-effect",
+ "why": "Mark (19 Nov 2026): every special and trap image must convey the card's actual in-game effect as a tongue-in-cheek gag. Remade in Gemini from effect-led prompts, in batches.",
+ "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com, one new chat per image, no reference image. Not called from the repo. Fal and other hosted generators remain banned.",
+ "pipeline": "scripts/inpaint-card-art-fooocus.py --export-from (768x1024 WebP plate), then npm run art:thumbs --force (thumb/mid WebP+AVIF)",
+ "design_record": "art/bear-bibles.json holds each card's signature (kind trap/special); CARD_ART holds the short visual/scene.",
+ "plates": [
+  {
+   "id": "76",
+   "name": "Minibar Raid",
+   "type": "special",
+   "effect": "Special: restores 2 of your HP (max 30; a Chuck Pour on your side adds 2).",
+   "gag": "Tiny bottles, tiny recovery: a wrecked plush raids the motel minibar and drips a miniature bottle into his arm like a tiny IV; one small patch, one small perk-up.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_x09irxx09irxx09i.jpeg",
+    "sha256": "a54acb97ca3427856470fb216c2dce9a4e13fd419af2be48c283ad5b519c3b7e"
+   },
+   "original_png_sha256": "43786c55b81338271d1953e11d88a6c2c96c6b89541f0de1b3f7996a9963c3d3",
+   "source_png": "76.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "43786c55b81338271d1953e11d88a6c2c96c6b89541f0de1b3f7996a9963c3d3",
+   "prompt": "Low-angle photograph, 28mm, from the carpet of a dim motel room at 3 a.m. A rumpled adult plush teddy with sky-blue fur sprawls against the bed in front of a tiny hotel minibar fridge hanging open, its cold white interior light the main light, rows of miniature bottles drained and toppled around him. One miniature bottle is taped upside-down to the bedside lamp like a tiny IV drip, a thin clear tube running into a small sticking plaster on his arm; he holds a second miniature to his lips, little finger raised, one droopy ear just starting to lift. A single small fresh patch on his knee, everything else still crumpled. A faint red glow from an emergency light by the door. Palette: minibar white, motel red, sky blue. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/76.webp",
+    "public/cards/thumbs/76.webp",
+    "public/cards/thumbs/76.avif",
+    "public/cards/mid/76.webp",
+    "public/cards/mid/76.avif"
+   ],
+   "ingested": "2026-11-19"
+  },
+  {
+   "id": "43",
+   "name": "Back-Alley Surgery",
+   "type": "special",
+   "effect": "Special: restores 8 of your HP (max 30; a Chuck Pour on your side adds 2).",
+   "gag": "No licence, no anaesthesia: a ripped-open brawler is stapled and stitched back together on beer crates in the alley and is already giving a woozy thumbs-up.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_z4hbobz4hbobz4hb.jpeg",
+    "sha256": "cc1dac6591d793a1a855ab9f94567b9133dcdb912aeb705ad5b55e53db6bf648"
+   },
+   "original_png_sha256": "9b3b41722ced756039a1335ef253c9baed52aa3a64d7a44dfcb8476a941871ef",
+   "source_png": "43.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "9b3b41722ced756039a1335ef253c9baed52aa3a64d7a44dfcb8476a941871ef",
+   "prompt": "Gritty night photograph, 35mm, in a wet back alley behind a club. A big adult plush teddy brawler with charcoal fur lies on an operating table improvised from stacked plastic beer crates, his belly seam ripped wide open and cotton stuffing heaped beside him. A shady adult plush 'surgeon' teddy in a welding mask pushed up on his head and rubber kitchen gloves stuffs the cotton back in with a funnel and seals the seam with a staple gun, a rusty toolbox spilling needles, thread and duct tape on the cobbles. The patient is mostly sewn up and gives a woozy thumbs-up, a stack of cash tucked under the crate. A rotating red emergency light and a cold blue streetlight, puddles reflecting both. Palette: alley red, steel blue, charcoal. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/43.webp",
+    "public/cards/thumbs/43.webp",
+    "public/cards/thumbs/43.avif",
+    "public/cards/mid/43.webp",
+    "public/cards/mid/43.avif"
+   ],
+   "ingested": "2026-11-19"
+  },
+  {
+   "id": "77",
+   "name": "The Group Chat Leaks",
+   "type": "special",
+   "effect": "Special: draw 4 cards from your deck.",
+   "gag": "The group chat springs a leak: a cracked phone gushes like a burst water main and four playing cards shoot out in the spray while a mortified plush tries to plug it.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_ujvigiujvigiujvi.jpeg",
+    "sha256": "79606177484fb5493aef74c9a2d778c7b37c444da98f1e2d2b9a03bac860075f"
+   },
+   "original_png_sha256": "69a2e120fd5d4e580d2f626ae8717f2e915a650fecf7da95f573e2a3c693a0bf",
+   "source_png": "77.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "69a2e120fd5d4e580d2f626ae8717f2e915a650fecf7da95f573e2a3c693a0bf",
+   "prompt": "Hard-flash photograph, 35mm, on a steel police-station desk. A cracked smartphone lies face-up, and from its shattered screen a geyser of water erupts like a burst water main, carrying exactly four playing cards spinning up into the air, along with a spray of blank speech-bubble-shaped foam shapes. A horrified adult plush teddy with mustard-yellow fur has both paws clamped over the screen trying to plug the leak, cheeks puffed, fur soaked, droplets everywhere. An evidence bag and a desk lamp nearby. Cold white camera flash, blue-grey office tones. Palette: cobalt blue, white spray, mustard yellow. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/77.webp",
+    "public/cards/thumbs/77.webp",
+    "public/cards/thumbs/77.avif",
+    "public/cards/mid/77.webp",
+    "public/cards/mid/77.avif"
+   ],
+   "ingested": "2026-11-19"
+  },
+  {
+   "id": "78",
+   "name": "Bar-Top Baptism",
+   "type": "special",
+   "effect": "Special: restores 10 of your HP (max 30; a Chuck Pour on your side adds 2).",
+   "gag": "Born again, smells worse: a solemn plush 'preacher' dunks a bandaged brawler into an overflowing beer font and he rises gleaming and fully fluffed, bandages floating away.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_vzdw5zvzdw5zvzdw.jpeg",
+    "sha256": "14b0170993bb43e803c7b01653f779a68a85d6003446d4faf6af64cb8ddaa0b6"
+   },
+   "original_png_sha256": "c05ae76141fe8d01d3e68c8a703e36e816cb3c940d0c03d40d1a6026d8cdfca3",
+   "source_png": "78.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "c05ae76141fe8d01d3e68c8a703e36e816cb3c940d0c03d40d1a6026d8cdfca3",
+   "prompt": "Photograph, 50mm, at a gleaming stainless-steel bar top lit by hot pink and white neon tubes, no shelves behind, just a dark tiled wall. A solemn adult plush teddy in a white clerical collar holds a battered adult plush teddy with lime-green fur by the back of the head and dunks him into a huge overflowing glass beer pitcher used as a font, foam cascading over the steel. The dunked bear is rising out of the foam born again: his old bandages and sticking plasters peeling off and floating away in the beer, his fur suddenly plump, glossy and fluffed, eyes wide, a ring of foam on his head like a halo. Palette: hot pink, stainless silver, foam white, lime. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/78.webp",
+    "public/cards/thumbs/78.webp",
+    "public/cards/thumbs/78.avif",
+    "public/cards/mid/78.webp",
+    "public/cards/mid/78.avif"
+   ],
+   "ingested": "2026-11-19"
+  },
+  {
+   "id": "32",
+   "name": "Premature Detonation",
+   "type": "trap",
+   "effect": "Trap: springs on the next attack aimed straight at you; the attack is stopped and the attacking player takes 4 damage; then it's spent.",
+   "gag": "It happens to lots of traps: the novelty bomb-cake goes off way too early, right in the face of the sneaking attacker, who is left frizzed, sooty and embarrassed.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 2,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_aiaj4zaiaj4zaiaj.jpeg",
+    "sha256": "ba11412eea30fc949f9b58657b19057fe79ed1270e4d5b1fcb29c403c1d6af80"
+   },
+   "original_png_sha256": "9a7e3a59f715a93316534d480743b366d525a4018220dacd62a52d7ef68414e1",
+   "source_png": "32.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "9a7e3a59f715a93316534d480743b366d525a4018220dacd62a52d7ef68414e1",
+   "prompt": "Photograph, 35mm, in a grimy back room under one bare swinging bulb. A round black novelty bomb-shaped party cake with a short fuse sits on a folding table, and it has just gone off far too soon: a burst of confetti, cream and soot is exploding outward straight into the face of an adult plush teddy with tan fur who was creeping up on tiptoe with a crowbar raised; his fur is blasted into a sooty frizz, crowbar flying, button eyes wide in shock and embarrassment. A deflated whoopee cushion lies limp beside the cake, and a police evidence bag sits empty on the floor. Hard bulb light, soot and confetti frozen mid-air. Palette: soot black, cream, confetti red and blue. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/32.webp",
+    "public/cards/thumbs/32.webp",
+    "public/cards/thumbs/32.avif",
+    "public/cards/mid/32.webp",
+    "public/cards/mid/32.avif"
+   ],
+   "ingested": "2026-11-19"
+  },
+  {
+   "id": "72",
+   "name": "Loaded Claw Machine",
+   "type": "trap",
+   "effect": "Trap: springs on the next attack aimed straight at you; the attack is stopped and the attacking player takes 4 damage; then it's spent.",
+   "gag": "Everybody pays to get grabbed: the attacker reached into the claw machine and the claw has him by the scruff, dangling over the bachelorette prizes.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_65y5do65y5do65y5.jpeg",
+    "sha256": "aa8fd12ae1842b7d53f12bc08f1ef5537c084ebf580e09b1791b5de1ec5c27f7"
+   },
+   "original_png_sha256": "c18dead7f1d29cb135d00ebee53b4e3fe2e03e10881014a17516c98010e4e5bb",
+   "source_png": "72.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "9a42f9619cff1a97ff2cc94b997c4908761be44f6227e67987df5e4121267798",
+   "prompt": "Photograph, 35mm, Dutch tilt, on a casino floor at night. Inside the glass case of a hot-pink-lit arcade claw machine, the chrome claw has seized an adult plush teddy with ginger fur by the scruff of his neck and hoisted him into the air; he dangles helplessly, legs kicking, one paw still stretched toward the prize chute he tried to rob. Beneath him a heap of bachelorette-party prizes: tiaras, feather boas, a pink sash with no lettering, novelty heart sunglasses. Hot pink and violet neon, glass reflections, casino lights bokeh behind. Palette: hot pink, chrome, violet, ginger. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/72.webp",
+    "public/cards/thumbs/72.webp",
+    "public/cards/thumbs/72.avif",
+    "public/cards/mid/72.webp",
+    "public/cards/mid/72.avif"
+   ],
+   "ingested": "2026-11-19",
+   "retouch": "OpenCV: soft Gaussian blur (sigma 14, feathered 18 px) over the far-left slot-machine screen (x30-160, y800-1150 of 1792x2400) to remove a blurred human figure on the screen; nothing else touched."
+  },
+  {
+   "id": "30",
+   "name": "Honey Trap",
+   "type": "trap",
+   "effect": "Trap: springs on the next attack aimed straight at you; the attack is stopped and the attacking player takes 3 damage; then it's spent.",
+   "gag": "He only came up for a nightcap: a garter-wrapped honey jar baits an oversized mousetrap on the motel nightstand, and it snaps on the lunging paw.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_sfai65sfai65sfai.jpeg",
+    "sha256": "547aeca490207a5c6ee39cb6aef1c357f8ba7061add0c595ed1afb96663f261f"
+   },
+   "original_png_sha256": "e1e280bbbe68cb05eb099f2e062bb73988d14955241392f327a4d855ab20af23",
+   "source_png": "30.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "e1e280bbbe68cb05eb099f2e062bb73988d14955241392f327a4d855ab20af23",
+   "prompt": "Extreme close-up photograph, 50mm, on a motel nightstand at night. A glossy jar of golden honey with a red lace garter around it sits on an oversized spring-loaded mousetrap as bait. An adult plush teddy with plum-purple fur in an open silk dressing gown lunged paw-first for the honey and the trap has just snapped shut on his paw: honey splattering, his eyes crossed, mouth in a silent yelp, a little cocktail glass toppling. A pulsing red glow from a lamp with a red shade, rumpled satin sheets behind. Palette: honey gold, garter red, plum. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/30.webp",
+    "public/cards/thumbs/30.webp",
+    "public/cards/thumbs/30.avif",
+    "public/cards/mid/30.webp",
+    "public/cards/mid/30.avif"
+   ],
+   "ingested": "2026-11-19"
+  },
+  {
+   "id": "34",
+   "name": "Cuddle Homicide",
+   "type": "trap",
+   "effect": "Trap: springs on the next attack aimed straight at you; the attack is stopped and the attacking player takes 6 damage; then it's spent.",
+   "gag": "Death by affection: the overstuffed honeymoon armchair hugs back, folding its padded arms round the attacker and squeezing until his seams burst.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 2,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_8oglss8oglss8ogl.jpeg",
+    "sha256": "d86bfaca5bab229999a7dce287adaba91f37517a714efc8b134bd97d839b787a"
+   },
+   "original_png_sha256": "06978d8f749175f6665cb48e993f1133018f01fd09b2327916eaa847719bf6b6",
+   "source_png": "34.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "06978d8f749175f6665cb48e993f1133018f01fd09b2327916eaa847719bf6b6",
+   "prompt": "Photograph shot through a cracked motel mirror, 35mm. A huge overstuffed heart-backed honeymoon-suite armchair in crushed red velvet has come alive: its two padded arms have folded shut around an adult plush teddy with steel-grey fur who tried to jump into it, squeezing him in a crushing hug; his seams are bursting, tufts of cotton stuffing and two buttons popping off into the air, his eyes bulging, tongue out. The chair's tassel fringe sways. Red light from a lamp, the mirror's crack splitting the frame. Palette: crushed red velvet, steel grey, cotton white. This is the biggest, most brutal hug of the set. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/34.webp",
+    "public/cards/thumbs/34.webp",
+    "public/cards/thumbs/34.avif",
+    "public/cards/mid/34.webp",
+    "public/cards/mid/34.avif"
+   ],
+   "ingested": "2026-11-19"
+  },
+  {
+   "id": "73",
+   "name": "Last Call Stampede",
+   "type": "trap",
+   "effect": "Trap: springs on the next attack aimed straight at you; the attack is stopped and the attacking player takes 4 damage; then it's spent.",
+   "gag": "Two-for-one tequila night: the attacker is flattened by a stampede of party plushes racing for the shots tray, footprints across his back.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_8a48728a48728a48.jpeg",
+    "sha256": "169be7ef0504497e9e2f9af772a408b9d6fb69eadf72f6a21d653f4d2b33339c"
+   },
+   "original_png_sha256": "a6844daaf32edc676d9d54dab677a395b38ce4d13fec2182eee0612a5112d1ba",
+   "source_png": "73.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "687ef44fb2524ea0eeb44f4764adc80cc341e0a0c787b6485dd8fc40575c1b5f",
+   "prompt": "Low-angle photograph from the floor, 24mm, on a nightclub dance floor under a mirror ball and magenta and electric-blue strobes. A stampede of adult plush party teddies in sequins and feather boas thunders past toward a waiter's tray of tequila shots with lime wedges, a blur of plush legs; flattened face-down in the foreground is an adult plush teddy with burgundy fur who was charging the other way, a trail of tiny footprints across his back, his raised fist crumpled, a lime wedge stuck to his head and shot glasses flying. Palette: magenta, electric blue, mirror-ball silver, lime green. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/73.webp",
+    "public/cards/thumbs/73.webp",
+    "public/cards/thumbs/73.avif",
+    "public/cards/mid/73.webp",
+    "public/cards/mid/73.avif"
+   ],
+   "ingested": "2026-11-19",
+   "retouch": "OpenCV: Telea inpaint + soft blur (feathered 6 px) over x1535-1792, y815-905 of 1792x2400 to remove a human hand holding the shot tray at the right edge; nothing else touched."
+  },
+  {
+   "id": "31",
+   "name": "Hug With Consequences",
+   "type": "trap",
+   "effect": "Trap: springs on the next attack aimed straight at you; the attack is stopped and the attacking player takes 2 damage; then it's spent.",
+   "gag": "It felt nice for one second: the attacker goes in for a hug from a glamorous plush and her pink feather boa turns out to be a cactus garland, with a fluffy handcuff clicked on for good measure.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_5cli9d5cli9d5cli.jpeg",
+    "sha256": "a7cea477e13536464df9d1cc230b63c4525fee8ef3bddae36404a64575dc4e67"
+   },
+   "original_png_sha256": "eb9c2060ff72dc3592a6b64539219e3ce775d686e3699226dd234524bf60d53c",
+   "source_png": "31.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "eb9c2060ff72dc3592a6b64539219e3ce775d686e3699226dd234524bf60d53c",
+   "prompt": "Photograph, 50mm, at a strip-club dressing table framed by round mirror bulbs under hot pink neon. A glamorous adult plush lady teddy with peach fur and false eyelashes opens her arms; an adult plush brawler with navy fur has rushed in for the hug, and her pink feather boa is actually a garland of tiny cacti: he is frozen mid-squeeze, two cactus spines sticking out of his snout, eyes watering, while she smirks and clicks a fuzzy pink handcuff round his wrist to the vanity chair. Powder puffs, lipsticks and a hairspray can on the table. Palette: hot pink, peach, navy, cactus green. A small, comic sting, not a disaster. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/31.webp",
+    "public/cards/thumbs/31.webp",
+    "public/cards/thumbs/31.avif",
+    "public/cards/mid/31.webp",
+    "public/cards/mid/31.avif"
+   ],
+   "ingested": "2026-11-19"
+  },
+  {
+   "id": "ma-8",
+   "name": "Read Receipt",
+   "type": "trap",
+   "effect": "Trap: springs on the next attack aimed straight at you; the attack is stopped and the attacking player takes 3 damage; then it's spent.",
+   "gag": "They opened it, they didn't answer, it still lands: a spring-loaded joke boxing glove bursts out of the phone and socks the snooping plush on the jaw.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 2,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_nj531jnj531jnj53.jpeg",
+    "sha256": "3134949a9084644cc3881a925e1796391ce08535b837ca99dfd430724be9e33b"
+   },
+   "original_png_sha256": "3d316d4857a5704df00a1948fc6313442db0c6a0ce435532c3c04fe249b6cad8",
+   "source_png": "ma-8.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "ffaffac109aa112e76968c31bf1e3f2b38e86d9b9120b005aa8f716d7de0fca1",
+   "prompt": "Hard morning-light photograph, 50mm, on a motel nightstand. A smartphone in a novelty case lies face-up; its cracked screen shows only a white chat bubble with two blue check-mark ticks and no letters. A red joke boxing glove on a zig-zag spring has burst out of the phone case and caught an adult plush teddy with lilac fur square on the jaw as he leaned in to read it; his head snaps back, button eyes rolling, a smear of lipstick on the glass. Bright cold morning light through blinds, rumpled sheets. Palette: lilac, glove red, morning white, tick blue. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/ma-8.webp",
+    "public/cards/thumbs/ma-8.webp",
+    "public/cards/thumbs/ma-8.avif",
+    "public/cards/mid/ma-8.webp",
+    "public/cards/mid/ma-8.avif"
+   ],
+   "ingested": "2026-11-19",
+   "retouch": "OpenCV: soft Gaussian blur (sigma 6, feathered 10 px) over the phone's message-input bar (x930-1150, y1745-1845 of 1792x2400) to remove faint pseudo-lettering; the two blue ticks are kept."
+  },
+  {
+   "id": "40",
+   "name": "Emergency Fluff Job",
+   "type": "special",
+   "effect": "Special: restores 5 of your HP (max 30; a Chuck Pour on your side adds 2).",
+   "gag": "Quick, discreet, cash only: a winking plush nurse pumps stuffing back into a deflated arm with a cotton gun in a back-room clinic.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_rdabeerdabeerdab.jpeg",
+    "sha256": "a56089ee24a2d10755aaa7de2abe7a423f8a57f889b3b4f28837cfb28f58b1d4"
+   },
+   "original_png_sha256": "4df8232b5643e3163f6b6188d77763d8e7a5669369dc26ae2f1aa73a23a7163d",
+   "source_png": "40.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "4df8232b5643e3163f6b6188d77763d8e7a5669369dc26ae2f1aa73a23a7163d",
+   "prompt": "Overhead flash photograph, 35mm, in a cramped back-room clinic with mint-green tiles. An adult plush teddy with cocoa-brown fur lies on a gurney, one arm flat and empty like a deflated balloon; an adult plush nurse teddy in pink scrubs and a cap gives a sly wink as she pumps fresh white cotton stuffing into the arm with a big caulking-gun-style stuffing gun, the arm visibly plumping back up. A cracked-open first-aid kit crammed with cotton batting and a threaded needle on a chipped steel tray, a folded wad of cash tucked under the pillow. Palette: mint tile, scrub pink, cocoa, cotton white. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/40.webp",
+    "public/cards/thumbs/40.webp",
+    "public/cards/thumbs/40.avif",
+    "public/cards/mid/40.webp",
+    "public/cards/mid/40.avif"
+   ],
+   "ingested": "2026-11-19"
+  }
+ ]
+}

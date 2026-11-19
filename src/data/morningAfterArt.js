@@ -46,8 +46,8 @@ export const MORNING_AFTER_ART = {
     scene: 'Steam curling off the warm bedding in a quiet ultramarine room.',
   },
   'ma-8': {
-    visual: 'a cracked phone, two blue ticks, lipstick on the glass',
-    scene: 'Macro on a motel nightstand in hard morning light.',
+    visual: 'a joke boxing glove springing out of a phone showing two blue ticks to sock a lilac plush',
+    scene: 'Hard morning light on a motel nightstand, blinds shadows, lipstick on the cracked glass.',
   },
   'ma-9': {
     visual: 'a pint of hair-of-the-dog, lipstick on the rim, one ice cube',
