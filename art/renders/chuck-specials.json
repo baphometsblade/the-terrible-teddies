@@ -1,0 +1,69 @@
+{
+ "set": "chuck",
+ "date": "2026-11-19",
+ "why": "Five Chuck's Crew specials/trap (ck-last-orders, ck-top-up, ck-cut-off, ck-on-the-tab, ck-quiet-word) shipped with no plate or variants, so the app requested art that 404'd. Each now has a name-first signature in art/bear-bibles.json (character: chuck, his fixed look) and a plate.",
+ "generator": "Fooocus-API on MatrixMonster, 127.0.0.1:8888 (local GPU only, no hosted generator), juggernautXL_v8Rundiffusion, Quality preset, guidance_scale 6, no Fooocus style presets",
+ "selection": "122 candidates over four rounds (6-8 seeds per card per round); picks chosen by eye for the name gag and Chuck's family look, then checked with scripts/art-distinctness-audit.py (new cards' nearest neighbour <= 0.661; roster max pair unchanged at 0.716; each card ranks its own signature first). Each shipped prompt is byte-identical to its manifest row.",
+ "plates": [
+  {
+   "id": "ck-last-orders",
+   "name": "Last Orders",
+   "medium": "1940s American all-night diner realism painting",
+   "seed": 9202,
+   "styles": [],
+   "performance": "Quality",
+   "guidance_scale": 6,
+   "aspect_ratio": "896*1152",
+   "prompt": "(1940s American all-night diner realism painting, flat oil, hard window light, empty counter, quiet melancholy:1.35), (tipping a whisky bottle mid-pour into one last nightcap glass on a deserted diner counter, the half-lidded honey-brown plush bartender bear behind the counter at closing time, a lipstick-marked glass waiting for the prettiest regular, chairs upturned on the tables:1.25), pouring one last nightcap at the deserted counter, wearing loosened black bow tie, teal shirt, sleeves rolled, signature prop: one final brimming nightcap, setting: all-night corner bar seen through a big plate-glass window, stools empty, colour palette of Diner-window green, stale-coffee ochre, Chuck's teal, lighting: harsh fluorescent house lights spilling onto a dark street, camera: from the street outside, looking through the window. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth. Cheeky adult humour, no text.",
+   "negative_prompt": "(human, man, woman, human bartender, person, human face, human hands:1.6), top hat, suspenders, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh"
+  },
+  {
+   "id": "ck-top-up",
+   "name": "Top-Up",
+   "medium": "Caravaggesque chiaroscuro Baroque oil painting",
+   "seed": 3303,
+   "styles": [],
+   "performance": "Quality",
+   "guidance_scale": 6,
+   "aspect_ratio": "896*1152",
+   "prompt": "(Caravaggesque chiaroscuro Baroque oil painting, deep black shadows, single raking candle light, glossy varnish:1.35), (a honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth, pouring a champagne bottle from shoulder height into the top coupe of a glass tower until it overflows in a golden cascade into the lap of a giggling plush teddy patron, Chuck smirking like that was the plan:1.25), pouring a bottle high from his shoulder with a half-lidded smirk, wearing loosened black bow tie, teal shirt, silver sleeve garters, signature prop: champagne bottle poured from shoulder height, setting: candlelit cellar banquet table crowded with coupes, colour palette of Candle amber, chiaroscuro black, Chuck's teal, lighting: one raking candle from the left, everything else falling into black, camera: tight three-quarter close-up across the table. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth. Cheeky adult humour, no text.",
+   "negative_prompt": "(text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh"
+  },
+  {
+   "id": "ck-cut-off",
+   "name": "You're Cut Off",
+   "medium": "Sistine Chapel ceiling fresco",
+   "seed": 7202,
+   "styles": [],
+   "performance": "Quality",
+   "guidance_scale": 6,
+   "aspect_ratio": "896*1152",
+   "prompt": "(Sistine Chapel ceiling fresco, cracked plaster, chalky pigments, heroic reclining figures, gilded borders:1.35), (a tipsy plush teddy patron reclining on a cloud stretching one paw toward a whisky bottle held an inch out of reach by the half-lidded honey-brown plush bartender bear floating opposite, paws almost touching like the Creation of Adam, his raised brow plainly not a no:1.25), reclining on a cloud, holding a bottle just beyond a reaching paw, wearing loosened black bow tie, teal shirt billowing like a robe, signature prop: confiscated whisky bottle held aloft, setting: vaulted fresco ceiling painted as a heavenly pub, cherub-cloud bar stools, colour palette of Fresco terracotta, plaster sky blue, Chuck's teal, lighting: soft even fresco daylight, pale heavenly glow behind Chuck, camera: looking straight up at the ceiling. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth. Cheeky adult humour, no text.",
+   "negative_prompt": "(human, man, woman, human bartender, person, human face, human hands:1.6), top hat, suspenders, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh"
+  },
+  {
+   "id": "ck-on-the-tab",
+   "name": "On the Tab",
+   "medium": "Mid-century magazine gag cartoon",
+   "seed": 9404,
+   "styles": [],
+   "performance": "Quality",
+   "guidance_scale": 6,
+   "aspect_ratio": "896*1152",
+   "prompt": "(Mid-century magazine gag cartoon, loose black ink line, grey watercolour wash, plenty of white space:1.35), (the smug half-lidded honey-brown plush bartender bear in a black bow tie holding up an absurdly long white paper bar receipt that unrolls off the counter and coils across the floor, a red lipstick kiss printed at its end:1.25), holding up a never-ending bar tab with a slow knowing grin, wearing loosened black bow tie with two playing cards tucked in it, teal shirt, pencil behind his ear, signature prop: a receipt-roll bar tab metres long, setting: sparse sketched bar counter and floorboards, colour palette of Ledger cream, red-ink, Chuck's teal, lighting: flat cartoon wash, no shadows, camera: side-on wide cartoon view. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth. Cheeky adult humour, no text.",
+   "negative_prompt": "(human, man, woman, human bartender, person, human face, human hands:1.6), top hat, suspenders, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh"
+  },
+  {
+   "id": "ck-quiet-word",
+   "name": "The Quiet Word",
+   "medium": "1970s soft-focus paperback romance cover painting",
+   "seed": 8505,
+   "styles": [],
+   "performance": "Quality",
+   "guidance_scale": 6,
+   "aspect_ratio": "896*1152",
+   "prompt": "(1970s soft-focus paperback romance cover painting, dreamy airbrushed haze, glowing rim light, swooning poses:1.35), (the half-lidded honey-brown plush bartender bear leaning in to whisper into the ear of a blushing pink plush lady teddy in a velvet booth, paw cupped by his mouth, her ear fluff standing on end, her cocktail tipping over:1.25), leaning in close to murmur behind one paw, wearing loosened black bow tie, teal shirt open one more button than usual, signature prop: a book of matches and a single dangling earring, setting: dim velvet booth at the end of the bar, a candle in a red jar, colour palette of Boudoir rose, hazy lilac, Chuck's teal, lighting: soft candle glow with a hazy pink halo, camera: intimate close two-shot. (stuffed plush teddy bear toy:1.2), adult plush teddy bear with a plush bear head, round plush ears, button eyes, stitched seams and plush paws, not a human, fur: honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth. Cheeky adult humour, no text.",
+   "negative_prompt": "(human, man, woman, human bartender, person, human face, human hands:1.6), top hat, suspenders, (text, lettering, letters, words, typography, title, caption:1.3), (human, man, woman, person, human face, human hands:1.3), human, woman, man, human face, human body, human skin, human hands, real person, real bear, wild animal, grizzly bear, brown bear, wildlife, realistic animal, animal claws, sharp teeth, child, children, kid, kids, baby, toddler, teen, minor, underage, cub, loli, shota, watermark, text, letters, logo, signature, extra limbs, deformed, blurry, lowres, frame, border, costume, mascot suit, person in a bear costume, onesie, kigurumi, human wearing ears, raccoon, cat, dog, fox, skeleton, skull, bones, photo, photograph, photorealistic, depth of field, bokeh"
+  }
+ ]
+}

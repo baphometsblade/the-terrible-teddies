@@ -36,7 +36,7 @@ export const CHUCK_ART = {
   // The five specials are Chuck in the act, each in its own medium. The full
   // signatures live in art/bear-bibles.json (character: chuck).
   'ck-last-orders': {
-    medium: 'late-night diner realism painting',
+    medium: '1940s all-night diner realism painting',
     visual: 'Chuck the honey-brown bartender bear pouring one nightcap for the last slumped lady teddy',
     scene: 'Seen through a plate-glass window under harsh house lights, chairs upturned, a mop bucket waiting.',
   },
@@ -46,7 +46,7 @@ export const CHUCK_ART = {
     scene: 'One raking candle in a black cellar, the cascade landing in a giggling patron teddy lap.',
   },
   'ck-cut-off': {
-    medium: 'Renaissance chapel-ceiling fresco',
+    medium: 'Sistine Chapel ceiling fresco',
     visual: 'Chuck on a cloud holding a whisky bottle an inch past a pleading paw',
     scene: 'A Creation-of-Adam ceiling painted as a heavenly pub, his raised brow plainly not a no.',
   },

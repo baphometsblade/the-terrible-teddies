@@ -113,7 +113,7 @@ describe('the Fooocus manifest covers the raster set', () => {
   });
 });
 
-describe('shipped card files are real webp, including in the build output', () => {
+describe('every card ships real art, including in the build output', () => {
   const dist = resolve(root, 'dist/cards');
   const built = existsSync(dist);
 
@@ -122,9 +122,13 @@ describe('shipped card files are real webp, including in the build output', () =
       const id = String(card.id);
       const full = resolve(root, 'public/cards', `${id}.webp`);
       const thumb = resolve(root, 'public/cards/thumbs', `${id}.webp`);
-      if (!existsSync(full)) {
-        expect(byId.has(id), `${id} is missing and not in the Fooocus manifest`).toBe(true);
-        continue;
+      // Every card in the catalog ships its plate and every served size. A
+      // manifest row alone is not art: five Chuck specials once 404'd that way.
+      expect(byId.has(id), `${id} is not in the Fooocus manifest`).toBe(true);
+      expect(existsSync(full), `${id} has no plate: render it (npm run art:fooocus -- --only ${id})`).toBe(true);
+      for (const variant of ['thumbs/%.avif', 'mid/%.webp', 'mid/%.avif']) {
+        const file = resolve(root, 'public/cards', variant.replace('%', id));
+        expect(existsSync(file), `${id} ${variant} (npm run art:thumbs)`).toBe(true);
       }
       expect(isWebp(full), id).toBe(true);
       expect(existsSync(thumb), `${id} thumb`).toBe(true);
