@@ -45,21 +45,18 @@ describe("Chuck's Crew", () => {
         aspect: '896*1152',
       });
       expect(entry.prompt).toMatch(/adult/i);
-      // Bears follow the per-bear art direction (docs/ART_DIRECTION.md): the
-      // plush guard is shared, the bar and neon are not. Object plates keep the bar.
-      if (card.type === 'action') {
-        expect(entry.prompt).toMatch(/stuffed plush teddy bear toy/i);
-        expect(entry.prompt).toMatch(/not a human/i);
-      } else {
-        expect(entry.prompt).toMatch(/neon/i);
-      }
+      // Every Chuck card follows its own signature (art/bear-bibles.json):
+      // the plush guard is shared, the bar and neon are not. The specials are
+      // Chuck in the act, so they carry the guard too.
+      expect(entry.prompt).toMatch(/stuffed plush teddy bear toy/i);
+      expect(entry.prompt).toMatch(/not a human/i);
       expect(entry.prompt).not.toMatch(BANNED);
       expect(card.art).toBe(`/cards/${card.id}.webp`);
       expect(thumbUrl(card.id)).toBe(card.artThumb);
       expect(CARD_ART[card.id]?.visual?.length).toBeGreaterThan(0);
       expect(CARD_ART[card.id]?.scene?.length).toBeGreaterThan(0);
     }
-    for (const id of ['ck-chuck', 'ck-closing', 'ck-offduty']) {
+    for (const id of ['ck-chuck', 'ck-closing', 'ck-offduty', 'ck-last-orders', 'ck-top-up', 'ck-cut-off', 'ck-on-the-tab', 'ck-quiet-word']) {
       expect(manifest.find((row) => row.id === id).prompt).toContain(CHUCK_LOOK);
     }
   });

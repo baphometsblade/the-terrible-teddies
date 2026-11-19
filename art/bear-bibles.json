@@ -2493,6 +2493,116 @@
       "pose": "reclining on a round shag-carpet lounge bed",
       "gag": "a portly sooty-white stuffed teddy bear toy reclining on a round shag-carpet lounge bed, Santa coat wide open over chest fluff and a chunky gold medallion, hat tilted, half-lidded bedroom eyes, a cigar in one plush paw, a bulging sack at his side, not a mall Santa",
       "painterly": true
+    },
+    "ck-last-orders": {
+      "name": "Last Orders",
+      "name_gag": "Last Orders: the house lights slam up and Chuck pours the only regular left one more nightcap, telling her she is pretty",
+      "medium": "Lonely late-night American diner realism painting",
+      "medium_detail": "flat oil, hard window light, empty counter, quiet melancholy",
+      "styles": [],
+      "palette": [
+        "Diner-window green",
+        "stale-coffee ochre",
+        "Chuck's teal"
+      ],
+      "fur": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth",
+      "outfit": "loosened black bow tie, teal shirt, sleeves rolled",
+      "prop": "one final brimming nightcap",
+      "setting": "all-night corner bar seen through a big plate-glass window, stools empty",
+      "lighting": "harsh fluorescent house lights spilling onto a dark street",
+      "camera": "from the street outside, looking through the window",
+      "pose": "behind the long counter pouring a single nightcap for a slumped lady teddy",
+      "gag": "a honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth, behind a long deserted counter pouring a single brimming nightcap for the only regular left, a slumped curvy plush lady teddy in a sequin dress, leaning close to tell her she is pretty, chairs upturned on every other table, a mop bucket waiting",
+      "painterly": true,
+      "character": "chuck"
+    },
+    "ck-top-up": {
+      "name": "Top-Up",
+      "name_gag": "Top-Up: Chuck tops up a coupe until it overflows down a champagne tower and into a giggling patron's lap",
+      "medium": "Caravaggesque chiaroscuro Baroque oil painting",
+      "medium_detail": "deep black shadows, single raking candle light, glossy varnish",
+      "styles": [],
+      "palette": [
+        "Candle amber",
+        "chiaroscuro black",
+        "Chuck's teal"
+      ],
+      "fur": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth",
+      "outfit": "loosened black bow tie, teal shirt, silver sleeve garters",
+      "prop": "champagne bottle poured from shoulder height",
+      "setting": "candlelit cellar banquet table crowded with coupes",
+      "lighting": "one raking candle from the left, everything else falling into black",
+      "camera": "tight three-quarter close-up across the table",
+      "pose": "pouring a bottle high from his shoulder with a half-lidded smirk",
+      "gag": "a honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth, pouring a champagne bottle from shoulder height into the top coupe of a glass tower until it overflows in a golden cascade into the lap of a giggling plush teddy patron, Chuck smirking like that was the plan",
+      "painterly": true,
+      "character": "chuck"
+    },
+    "ck-cut-off": {
+      "name": "You're Cut Off",
+      "name_gag": "You're Cut Off: a pleading patron reaches for the bottle like Adam reaching for God, and Chuck holds it just out of paw's reach with a look that is not a no",
+      "medium": "Italian Renaissance chapel-ceiling fresco",
+      "medium_detail": "cracked plaster, chalky pigments, heroic reclining figures, gilded borders",
+      "styles": [],
+      "palette": [
+        "Fresco terracotta",
+        "plaster sky blue",
+        "Chuck's teal"
+      ],
+      "fur": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth",
+      "outfit": "loosened black bow tie, teal shirt billowing like a robe",
+      "prop": "confiscated whisky bottle held aloft",
+      "setting": "vaulted fresco ceiling painted as a heavenly pub, cherub-cloud bar stools",
+      "lighting": "soft even fresco daylight, pale heavenly glow behind Chuck",
+      "camera": "looking straight up at the ceiling",
+      "pose": "reclining on a cloud, holding a bottle just beyond a reaching paw",
+      "gag": "a honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth, reclining on a cloud in a Creation-of-Adam pose, holding a whisky bottle one inch beyond the outstretched paw of a pleading tipsy plush teddy patron, giving him a smouldering raised-brow look that is plainly not a no",
+      "painterly": true,
+      "character": "chuck"
+    },
+    "ck-on-the-tab": {
+      "name": "On the Tab",
+      "name_gag": "On the Tab: Chuck unrolls a bar tab so long it spills off the counter across the floor, two playing cards tucked in his bow tie and a lipstick kiss at the bottom",
+      "medium": "Mid-century magazine gag cartoon",
+      "medium_detail": "loose black ink line, grey watercolour wash, plenty of white space",
+      "styles": [],
+      "palette": [
+        "Ledger cream",
+        "red-ink",
+        "Chuck's teal"
+      ],
+      "fur": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth",
+      "outfit": "loosened black bow tie with two playing cards tucked in it, teal shirt, pencil behind his ear",
+      "prop": "a receipt-roll bar tab metres long",
+      "setting": "sparse sketched bar counter and floorboards",
+      "lighting": "flat cartoon wash, no shadows",
+      "camera": "side-on wide cartoon view",
+      "pose": "holding up a never-ending bar tab with a slow knowing grin",
+      "gag": "a honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth, holding up a bar tab so long it unrolls off the counter and snakes across the floor out of frame, a big red lipstick kiss at the bottom, while a sheepish plush teddy patron hides behind his empty glass",
+      "painterly": true,
+      "character": "chuck"
+    },
+    "ck-quiet-word": {
+      "name": "The Quiet Word",
+      "name_gag": "The Quiet Word: Chuck leans in and murmurs one filthy thing in a lady teddy's ear, and her ear fluff stands straight up",
+      "medium": "1970s soft-focus paperback romance cover painting",
+      "medium_detail": "dreamy airbrushed haze, glowing rim light, swooning poses",
+      "styles": [],
+      "palette": [
+        "Boudoir rose",
+        "hazy lilac",
+        "Chuck's teal"
+      ],
+      "fur": "honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth",
+      "outfit": "loosened black bow tie, teal shirt open one more button than usual",
+      "prop": "a book of matches and a single dangling earring",
+      "setting": "dim velvet booth at the end of the bar, a candle in a red jar",
+      "lighting": "soft candle glow with a hazy pink halo",
+      "camera": "intimate close two-shot",
+      "pose": "leaning in close to murmur behind one paw",
+      "gag": "a honey-brown adult plush bartender teddy with a barrel chest, greying muzzle, half-lidded glass eyes, loosened black bow tie, teal short-sleeve shirt unbuttoned, and one gold tooth, leaning in close to murmur one filthy line behind his paw into the ear of a curvy plush lady teddy in a velvet booth, her round ear fluff standing straight up and her cheeks blushing hot pink, her cocktail tipping over",
+      "painterly": true,
+      "character": "chuck"
     }
   }
 }
