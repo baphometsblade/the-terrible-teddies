@@ -168,6 +168,12 @@ describe('card art sizes and formats', () => {
     expect(img.getAttribute('src')).toBe(`/cards/thumbs/${id}.webp`);
   });
 
+  it('gives a set that spells out the house paths the AVIF and mid sizes too', () => {
+    const teddy = { ...sally(), id: 'ck-chuck', art: '/cards/ck-chuck.webp', artThumb: '/cards/thumbs/ck-chuck.webp' };
+    expect(art({ teddy }).source.getAttribute('srcset')).toBe('/cards/thumbs/ck-chuck.avif');
+    expect(art({ teddy, variant: 'responsive' }).img.getAttribute('srcset')).toContain('/cards/mid/ck-chuck.webp 480w');
+  });
+
   it('draws a set that brings its own art from those files alone', () => {
     const teddy = { ...sally(), art: '/seasons/x/full.webp', artThumb: '/seasons/x/thumb.webp' };
     const thumb = art({ teddy });

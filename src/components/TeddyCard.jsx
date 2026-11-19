@@ -176,7 +176,13 @@ export const ArtOrEmoji = ({ teddy, emojiClassName = 'text-3xl', imgClassName = 
   // the fallback chain. When the full plate fails too, the night-felt back
   // stays and the <img> is gone. art / artThumb override the id path for a
   // set that does not live at /cards/<id>.webp.
-  const own = !teddy.art && !teddy.artThumb ? cardArtSources(teddy.id) : null;
+  // The house files for this id, unless the card names other ones. The
+  // expansion sets spell out the house paths (art: '/cards/ck-chuck.webp'),
+  // which still counts as the house files and gets the AVIF and mid sizes.
+  const house = cardArtSources(teddy.id);
+  const own = house && (!teddy.art || teddy.art === house.full.webp) && (!teddy.artThumb || teddy.artThumb === house.thumb.webp)
+    ? house
+    : null;
   const thumb = teddy.artThumb || own?.thumb.webp || `/cards/thumbs/${teddy.id}.webp`;
   const full = teddy.art || own?.full.webp || `/cards/${teddy.id}.webp`;
   const box = variant === 'full' ? ART_INTRINSIC.full : ART_INTRINSIC.thumb;
