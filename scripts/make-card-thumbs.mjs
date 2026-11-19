@@ -17,11 +17,18 @@
  * these up via its `variant` prop ('thumb' by default, 'full' for the
  * handful of places art is shown large, like the collection detail modal).
  *
- * Usage:
- *   npm run art:thumbs            # generate missing/stale thumbs
- *   npm run art:thumbs -- --force  # regenerate every thumb
+ * It now writes every served size and format, not just the WebP thumb:
+ * thumbs/<id>.{webp,avif} at 192x256 and mid/<id>.{webp,avif} at 480x640.
+ * What each is for, and how their qualities were chosen, is in
+ * scripts/lib/card-art-variants.mjs.
  *
- * A thumb is skipped (left alone) when it already exists and its mtime is
+ * Usage:
+ *   npm run art:thumbs                     # generate missing/stale files
+ *   npm run art:thumbs -- --force          # regenerate every file
+ *   npm run art:thumbs -- --only 51,ma-3   # just these cards (with --force to redo)
+ *   npm run art:thumbs -- --variant thumb-avif,mid-avif
+ *
+ * A file is skipped (left alone) when it already exists and its mtime is
  * newer than its source's — i.e. it's already up to date. --force ignores
  * that check and regenerates everything.
  *
@@ -32,17 +39,27 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import sharp from 'sharp';
+import os from 'node:os';
+import { VARIANTS, isMasterName, writeCardVariants } from './lib/card-art-variants.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CARDS_DIR = path.join(__dirname, '..', 'public', 'cards');
-const THUMBS_DIR = path.join(CARDS_DIR, 'thumbs');
 
-const THUMB_WIDTH = 192;
-const THUMB_HEIGHT = 256;
-const THUMB_QUALITY = 78;
-
-const force = process.argv.includes('--force');
+const argv = process.argv.slice(2);
+const force = argv.includes('--force');
+const listArg = (flag) => {
+  const i = argv.indexOf(flag);
+  return i >= 0 && argv[i + 1] ? argv[i + 1].split(',').map((s) => s.trim()).filter(Boolean) : null;
+};
+const onlyIds = listArg('--only');
+const onlyVariants = listArg('--variant');
+if (onlyVariants) {
+  const unknown = onlyVariants.filter((v) => !VARIANTS.some((x) => x.name === v));
+  if (unknown.length) {
+    console.error(`unknown --variant ${unknown.join(', ')} (have ${VARIANTS.map((v) => v.name).join(', ')})`);
+    process.exit(2);
+  }
+}
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -51,52 +68,43 @@ function formatBytes(bytes) {
 }
 
 async function main() {
-  fs.mkdirSync(THUMBS_DIR, { recursive: true });
-
-  const sourceFiles = fs
+  const masters = fs
     .readdirSync(CARDS_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.webp'))
+    .filter((entry) => entry.isFile() && isMasterName(entry.name))
     .map((entry) => entry.name)
+    .filter((name) => !onlyIds || onlyIds.includes(path.basename(name, '.webp')))
     .sort();
-
-  let written = 0;
-  let skipped = 0;
-  let sourceBytes = 0;
-  let thumbBytes = 0;
-
-  for (const fileName of sourceFiles) {
-    const srcPath = path.join(CARDS_DIR, fileName);
-    const thumbPath = path.join(THUMBS_DIR, fileName);
-
-    const srcStat = fs.statSync(srcPath);
-    sourceBytes += srcStat.size;
-
-    if (!force && fs.existsSync(thumbPath)) {
-      const thumbStat = fs.statSync(thumbPath);
-      if (thumbStat.mtimeMs >= srcStat.mtimeMs) {
-        skipped += 1;
-        thumbBytes += thumbStat.size;
-        continue;
-      }
+  if (onlyIds) {
+    const missing = onlyIds.filter((id) => !masters.includes(`${id}.webp`));
+    if (missing.length) {
+      console.error(`no master public/cards/<id>.webp for: ${missing.join(', ')}`);
+      process.exit(1);
     }
-
-    const buf = fs.readFileSync(srcPath);
-    const out = await sharp(buf)
-      .resize(THUMB_WIDTH, THUMB_HEIGHT, { fit: 'cover', position: 'attention' })
-      .webp({ quality: THUMB_QUALITY })
-      .toBuffer();
-
-    fs.writeFileSync(thumbPath, out);
-    written += 1;
-    thumbBytes += out.length;
   }
 
-  console.log(`Card thumbnails: ${written} written, ${skipped} skipped (up to date).`);
-  console.log(`Source total:  ${formatBytes(sourceBytes)} (${sourceFiles.length} files)`);
-  console.log(`Thumb total:   ${formatBytes(thumbBytes)} (${written + skipped} files)`);
-  if (sourceBytes > 0) {
-    const pct = ((thumbBytes / sourceBytes) * 100).toFixed(1);
-    console.log(`Thumbs are ${pct}% of source size.`);
+  const totals = Object.fromEntries(VARIANTS.map((v) => [v.name, { written: 0, skipped: 0, bytes: 0 }]));
+  let sourceBytes = 0;
+  // AVIF at effort 6 is slow (seconds per 480px file); spread it over the cores.
+  const queue = [...masters];
+  const worker = async () => {
+    while (queue.length) {
+      const name = queue.shift();
+      const src = path.join(CARDS_DIR, name);
+      sourceBytes += fs.statSync(src).size;
+      for (const row of await writeCardVariants(src, { force, only: onlyVariants })) {
+        const t = totals[row.variant];
+        t.bytes += row.bytes;
+        if (row.written) t.written += 1;
+        else t.skipped += 1;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(4, os.cpus().length)) }, worker));
+
+  console.log(`Card art variants for ${masters.length} masters (${formatBytes(sourceBytes)}):`);
+  for (const [name, t] of Object.entries(totals)) {
+    if (onlyVariants && !onlyVariants.includes(name)) continue;
+    console.log(`  ${name.padEnd(11)} ${String(t.written).padStart(3)} written, ${String(t.skipped).padStart(3)} up to date, ${formatBytes(t.bytes)}`);
   }
 }
 

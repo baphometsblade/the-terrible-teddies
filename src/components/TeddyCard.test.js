@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import TeddyCard from './TeddyCard';
+import TeddyCard, { ArtOrEmoji } from './TeddyCard';
 import { abilityLabel } from '@/lib/abilities';
 import { ALL_CARDS } from '@/stores/gameStore';
 
@@ -129,5 +129,52 @@ describe('TeddyCard legibility', () => {
         expect(img.getAttribute('class'), `${variant}/${artVariant}`).toMatch(/(^|\s)pointer-events-none(\s|$)/);
       }
     }
+  });
+});
+
+describe('card art sizes and formats', () => {
+  const sally = () => byName('Shit-Talk Sally');
+  const art = (props) => {
+    const host = document.createElement('div');
+    host.innerHTML = renderToStaticMarkup(createElement(ArtOrEmoji, props));
+    return { picture: host.querySelector('picture'), source: host.querySelector('picture > source'), img: host.querySelector('picture > img') };
+  };
+
+  it('offers the AVIF thumb through <picture>, with the WebP thumb in the <img>', () => {
+    const { picture, source, img } = art({ teddy: sally() });
+    const id = sally().id;
+    expect(picture.getAttribute('class')).toBe('contents');
+    expect(source.getAttribute('type')).toBe('image/avif');
+    expect(source.getAttribute('srcset')).toBe(`/cards/thumbs/${id}.avif`);
+    expect(img.getAttribute('src')).toBe(`/cards/thumbs/${id}.webp`);
+    expect(img.getAttribute('srcset')).toBeNull();
+    expect([img.getAttribute('width'), img.getAttribute('height')]).toEqual(['192', '256']);
+  });
+
+  it('serves the full plate as WebP alone', () => {
+    const { source, img } = art({ teddy: sally(), variant: 'full' });
+    expect(source).toBeNull();
+    expect(img.getAttribute('src')).toBe(`/cards/${sally().id}.webp`);
+    expect([img.getAttribute('width'), img.getAttribute('height')]).toEqual(['768', '1024']);
+  });
+
+  it('lets a 2-3x screen take the 480px mid size instead of the 768px original', () => {
+    const id = sally().id;
+    const { source, img } = art({ teddy: sally(), variant: 'responsive', sizes: '155px' });
+    expect(source.getAttribute('srcset')).toBe(`/cards/thumbs/${id}.avif 192w, /cards/mid/${id}.avif 480w`);
+    expect(source.getAttribute('sizes')).toBe('155px');
+    expect(img.getAttribute('srcset')).toBe(`/cards/thumbs/${id}.webp 192w, /cards/mid/${id}.webp 480w, /cards/${id}.webp 768w`);
+    expect(img.getAttribute('sizes')).toBe('155px');
+    expect(img.getAttribute('src')).toBe(`/cards/thumbs/${id}.webp`);
+  });
+
+  it('draws a set that brings its own art from those files alone', () => {
+    const teddy = { ...sally(), art: '/seasons/x/full.webp', artThumb: '/seasons/x/thumb.webp' };
+    const thumb = art({ teddy });
+    expect(thumb.source).toBeNull();
+    expect(thumb.img.getAttribute('src')).toBe('/seasons/x/thumb.webp');
+    const wide = art({ teddy, variant: 'responsive' });
+    expect(wide.source).toBeNull();
+    expect(wide.img.getAttribute('srcset')).toBe('/seasons/x/thumb.webp 192w, /seasons/x/full.webp 768w');
   });
 });

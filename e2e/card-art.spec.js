@@ -35,3 +35,39 @@ test('the collection has no broken card images', async ({ page }) => {
   const frames = await page.locator('[data-art] [data-art-frame]:visible').count();
   expect(frames).toBeGreaterThan(0);
 });
+
+// Chromium decodes AVIF, so it should take the AVIF thumbs the <picture>
+// offers, and the script-made preloads should ask for those same files:
+// no card picture downloaded in both formats.
+const cardArt = (url) => {
+  const m = new URL(url).pathname.match(/^\/cards\/(?:(thumbs|mid)\/)?([A-Za-z0-9-]+)\.(webp|avif)$/);
+  return m ? { size: { thumbs: 'thumb', mid: 'mid' }[m[1]] || 'full', id: m[2], format: m[3] } : null;
+};
+
+test('the collection takes AVIF thumbs and fetches each picture once', async ({ page }) => {
+  const asked = [];
+  page.on('request', (r) => { const art = cardArt(r.url()); if (art) asked.push(art); });
+  await bootToMainMenu(page);
+  await page.getByRole('button', { name: 'Collection', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^View / }).first()).toBeVisible(SLOW);
+  await settled(page);
+  const thumbs = asked.filter((a) => a.size === 'thumb');
+  expect(thumbs.length).toBeGreaterThan(0);
+  expect(thumbs.filter((a) => a.format !== 'avif')).toEqual([]);
+  const twice = thumbs.map((a) => a.id).filter((id, i, all) => all.indexOf(id) !== i);
+  expect(twice).toEqual([]);
+});
+
+test.describe('on a 3x phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+
+  test('the menu fan draws the 480px mid art, not the 768px originals', async ({ page }) => {
+    const asked = [];
+    page.on('request', (r) => { const art = cardArt(r.url()); if (art) asked.push(art); });
+    await bootToMainMenu(page);
+    await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('[data-art] img')]
+      .filter((img) => img.currentSrc.includes('/cards/mid/') && img.complete && img.naturalWidth > 0).length), SLOW).toBeGreaterThan(0);
+    expect(asked.filter((a) => a.size === 'full')).toEqual([]);
+    expect(asked.filter((a) => a.size === 'mid').every((a) => a.format === 'avif')).toBe(true);
+  });
+});

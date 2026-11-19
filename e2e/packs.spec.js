@@ -427,7 +427,7 @@ test.describe('with reduced motion', () => {
 test("the pull's art is fetched before the first card turns, and faces load eagerly", async ({ page }) => {
   const requested = new Set();
   page.on('request', (r) => {
-    const m = r.url().match(/\/cards\/thumbs\/([A-Za-z0-9-]+)\.webp/);
+    const m = r.url().match(/\/cards\/thumbs\/([A-Za-z0-9-]+)\.(?:webp|avif)/);
     if (m) requested.add(m[1]);
   });
   await seed(page, { cardPacks: 0, premiumPacks: 0, legendaryPacks: 1 });

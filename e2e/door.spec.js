@@ -79,7 +79,7 @@ test.describe('a new device', () => {
     // No adult card art before the date is accepted.
     await expect(page.locator('.peep-slot img')).toHaveCount(0);
     await expect(page.locator('.peep-slot [data-lenses]')).toBeVisible();
-    expect(requests.some((u) => /\/cards\/.*\.webp/.test(u))).toBe(false);
+    expect(requests.some((u) => /\/cards\/.*\.(?:webp|avif)/.test(u))).toBe(false);
 
     // None of the game: not its sign-in screen, not its menu, not its dialogs.
     await expect(theGame(page)).toHaveCount(0);
