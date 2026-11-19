@@ -54,7 +54,7 @@ export const MORNING_AFTER_ART = {
     scene: 'Chrome-and-powder-blue diner counter at sunrise, pink light through big windows.',
   },
   'ma-10': {
-    visual: 'four crumpled drafts of a filthy text, one circled in lipstick',
-    scene: 'Flat lay on a rumpled pillow in pink morning light.',
+    visual: 'a rose-pink plush in bed fanning four cards among four crashed unsent paper planes',
+    scene: 'Overhead flat lay on a rumpled white duvet in pink dawn light, one plane kissed in lipstick.',
   },
 };

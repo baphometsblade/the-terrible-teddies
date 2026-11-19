@@ -518,6 +518,277 @@
     "public/cards/mid/44.avif"
    ],
    "ingested": "2026-11-19"
+  },
+  {
+   "id": "74",
+   "name": "The Ol' Honey Bucket",
+   "type": "trap",
+   "effect": "Trap: springs on the next attack aimed straight at you; the attack is stopped and the attacking player takes 6 damage; then it's spent.",
+   "gag": "Honey, a necktie and nobody asks whose: a bucket rigged over the alley door dumps honey and a burst feather pillow on the attacker, who ends up with the bucket on his head.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_oabrw6oabrw6oabr.jpeg",
+    "sha256": "3531f7ffba2dad2aa3989b44de580a43a189cce12f2ca64c62a3e0855345e624"
+   },
+   "original_png_sha256": "a8012d004f2b82420b6da41e1c9a88894dbf2c72a11fb40c33c679a74baadfc5",
+   "source_png": "74.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "a8012d004f2b82420b6da41e1c9a88894dbf2c72a11fb40c33c679a74baadfc5",
+   "prompt": "Photograph, 35mm, beside a back-alley dumpster under a cold teal-blue security light. A rusted mop bucket rigged above a steel stage door has just tipped: an adult plush teddy with snow-white fur who kicked the door open is drenched head to toe in thick dripping honey and coated in a burst pillow's worth of white feathers, the empty bucket jammed over his head down to his snout, a lost bachelor-party necktie stuck to his chest, his fists still raised. The heaviest hit of the set. Palette: honey gold, feather white, teal-blue, rust. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/74.webp",
+    "public/cards/thumbs/74.webp",
+    "public/cards/thumbs/74.avif",
+    "public/cards/mid/74.webp",
+    "public/cards/mid/74.avif"
+   ],
+   "ingested": "2026-11-20"
+  },
+  {
+   "id": "70",
+   "name": "Glass in the Gummy Bears",
+   "type": "trap",
+   "effect": "Trap: springs on the next attack aimed straight at you; the attack is stopped and the attacking player takes 4 damage; then it's spent.",
+   "gag": "Chewy, then a clinic: the attacker grabs a greedy pawful of gummy bears and crunches straight into the one made of glass, frozen mid-bite with watering eyes.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_6chqp46chqp46chq.jpeg",
+    "sha256": "0ecca6a1abf8e0d24b576bde51db49ad2e59be704c9379cecf80a2469fb52449"
+   },
+   "original_png_sha256": "fb11618eab47cbfff0fe56e7e98b8a1d1e89c1b8fc75a07943a909ac2ce081f4",
+   "source_png": "70.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "fb11618eab47cbfff0fe56e7e98b8a1d1e89c1b8fc75a07943a909ac2ce081f4",
+   "prompt": "Extreme close-up photograph with hard camera flash, 50mm, on a white-tiled bathroom sink ledge. An adult plush teddy with orange fur, cheeks bulging, is frozen mid-chew with a pawful of bright gummy bears, and clamped between his front teeth is one crystal-clear glass gummy bear with a jagged crack, his eyes watering and crossed, a tiny chip of glass flying. The bowl of candy-coloured gummies sits on the ledge in front of him. Palette: candy red, lemon, lime, flash white, orange. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/70.webp",
+    "public/cards/thumbs/70.webp",
+    "public/cards/thumbs/70.avif",
+    "public/cards/mid/70.webp",
+    "public/cards/mid/70.avif"
+   ],
+   "ingested": "2026-11-20"
+  },
+  {
+   "id": "46",
+   "name": "The Full Refluff",
+   "type": "special",
+   "effect": "Special: restores 15 of your HP (max 30; a Chuck Pour on your side adds 2).",
+   "gag": "Head-to-toe restuffing: two plush clinicians re-inflate a completely flat plush with a fire hose of cotton and he balloons back to full, cucumber slices on his eyes.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_3kgbxy3kgbxy3kgb.jpeg",
+    "sha256": "8a6459b191b3ee6c469290e8ebf864ba135d3cd6a60998415e931ef368bcd09e"
+   },
+   "original_png_sha256": "c763fe4fcedc72fe2bbbb378909ef8bebe7085236035f9359d65e7596e37ecc4",
+   "source_png": "46.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "c763fe4fcedc72fe2bbbb378909ef8bebe7085236035f9359d65e7596e37ecc4",
+   "prompt": "Bright clinical photograph, 35mm, in a luxury aesthetic clinic with white walls, blush-pink leather and a vase of white orchids. A completely flat, deflated adult plush teddy with caramel fur lies on a treatment bed like an empty skin, while two adult plush clinicians in white coats and surgical caps blast fresh white cotton stuffing into him through a wide canvas hose; his body is ballooning back to full, plump and glossy from the feet up, towel turban on his head, cucumber slices on his eyes, a champagne flute in his paw. The biggest heal of the set. Palette: clinic white, blush pink, caramel, cotton white. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/46.webp",
+    "public/cards/thumbs/46.webp",
+    "public/cards/thumbs/46.avif",
+    "public/cards/mid/46.webp",
+    "public/cards/mid/46.avif"
+   ],
+   "ingested": "2026-11-20"
+  },
+  {
+   "id": "79",
+   "name": "Suspicious Brownies",
+   "type": "special",
+   "effect": "Special: draw 2 cards from your deck.",
+   "gag": "Don't ask what's in them: a glassy-eyed plush bites a brownie and two playing cards slide out of it like a fortune cookie, while the room starts to wobble.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_ibnxcwibnxcwibnx.jpeg",
+    "sha256": "8f2eb16028589e0646b1b6bc25f46baaad77f2e6c2f80497648abc99a82376a2"
+   },
+   "original_png_sha256": "5b3fd07fbe88032fb6e77e4aa194f5f40257353bd4732fd123dbd6468da31d69",
+   "source_png": "79.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "5b3fd07fbe88032fb6e77e4aa194f5f40257353bd4732fd123dbd6468da31d69",
+   "prompt": "Photograph, 50mm, on a glass pawn-shop counter under a soft violet-purple haze. A giggling, glassy-eyed adult plush teddy with pistachio-green fur bites into a lumpy brownie and exactly two playing cards slide out of it like a fortune cookie; his eyes are slightly crossed and tiny floating sparkles drift around his head, the rest of the plate of brownies and a rolled receipt beside him. Palette: violet haze, brownie brown, pistachio, sparkle white. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/79.webp",
+    "public/cards/thumbs/79.webp",
+    "public/cards/thumbs/79.avif",
+    "public/cards/mid/79.webp",
+    "public/cards/mid/79.avif"
+   ],
+   "ingested": "2026-11-20"
+  },
+  {
+   "id": "45",
+   "name": "Fluffing Bender",
+   "type": "special",
+   "effect": "Special: draw 3 cards from your deck.",
+   "gag": "Three cards deep and still going: a party plush on day three of a bender fans exactly three cards in one paw while three mini bottles balance on his belly.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_t0o9jxt0o9jxt0o9.jpeg",
+    "sha256": "64ca215272f4a5d89a4a29c49ed9fdc783c9552d5d6cac417168cb65633daebb"
+   },
+   "original_png_sha256": "b762d773505eca7760a4761d3b15b29c18d2066ab5c7b36ea1d2c3ac5e6915c4",
+   "source_png": "45.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "b762d773505eca7760a4761d3b15b29c18d2066ab5c7b36ea1d2c3ac5e6915c4",
+   "prompt": "Overhead photograph, 35mm, of a trashed motel bed at dawn, striped light through venetian blinds across a teal bedspread. An adult plush teddy with cherry-red fur, a necktie round his head and party streamers stuck to him, lies sprawled and grinning, fanning exactly three dog-eared playing cards in one paw, three empty miniature bottles balanced in a row on his round belly, confetti and pizza boxes around him. Palette: teal bedspread, cherry red, dawn stripes. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/45.webp",
+    "public/cards/thumbs/45.webp",
+    "public/cards/thumbs/45.avif",
+    "public/cards/mid/45.webp",
+    "public/cards/mid/45.avif"
+   ],
+   "ingested": "2026-11-20"
+  },
+  {
+   "id": "41",
+   "name": "Honey on the Rocks",
+   "type": "special",
+   "effect": "Special: draw 2 cards from your deck.",
+   "gag": "The bartender knows the order: a plush croupier slides a lipstick-rimmed honey whiskey across the casino felt with exactly two cards tucked underneath, and a wink.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 1,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_cy238ncy238ncy23.jpeg",
+    "sha256": "cabe0dc984cb4068006d2fb95f9546031c820f0492d3ba44e083a3e6942a91bf"
+   },
+   "original_png_sha256": "919f49c71200c6a8ba5ed2d78b937e13c6edc25d0e1e97e5ee042b18158dca43",
+   "source_png": "41.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "919f49c71200c6a8ba5ed2d78b937e13c6edc25d0e1e97e5ee042b18158dca43",
+   "prompt": "Close photograph, 85mm, on deep emerald casino felt under hot pink neon reflections. A rocks glass of honey whiskey with a lipstick-stained rim and one glinting ice cube is slid across the felt by the paw of an adult plush croupier teddy with black-and-white fur in a red waistcoat sleeve, and tucked under the glass are exactly two playing cards, corners just showing; behind the glass, out of focus, the croupier gives a knowing wink. Palette: emerald felt, honey gold, hot pink. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/41.webp",
+    "public/cards/thumbs/41.webp",
+    "public/cards/thumbs/41.avif",
+    "public/cards/mid/41.webp",
+    "public/cards/mid/41.avif"
+   ],
+   "ingested": "2026-11-20"
+  },
+  {
+   "id": "42",
+   "name": "Bloodshot Button Eyes",
+   "type": "special",
+   "effect": "Special: draw 1 card from your deck.",
+   "gag": "Haven't slept since the divorce, see everything: a 4 a.m. insomniac with one huge bloodshot button eye peels exactly one card off the deck.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 2,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_i23oa8i23oa8i23o.jpeg",
+    "sha256": "982e35fb9c88e1687e6d9b9ba095813ba423d6cf3ea32ab5731df8b3ff0ccac0"
+   },
+   "original_png_sha256": "6c3ce587a6834caaef4784ca8e0bb6cbae4a1b43a70936b747af93e31e00133b",
+   "source_png": "42.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "6734cb900bcfd0037c97cf8f179014c19058a207961828beea4077be01e63b0e",
+   "prompt": "Photograph, 50mm, in a dark kitchen at 4 a.m. lit only by the cold blue light of an open fridge. An exhausted adult plush teddy with ash-grey fur, one button eye enormous, cracked and veined with red, hunches over the kitchen table and slides exactly one playing card off the top of a deck, peering at it suspiciously. A tower of empty coffee cups, an overflowing ashtray, a wedding ring in a saucer. Palette: fridge blue, bloodshot red, ash grey. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/42.webp",
+    "public/cards/thumbs/42.webp",
+    "public/cards/thumbs/42.avif",
+    "public/cards/mid/42.webp",
+    "public/cards/mid/42.avif"
+   ],
+   "ingested": "2026-11-20",
+   "retouch": "Colour grade only (PIL): red and blue channels swapped, then green x0.88 and blue x0.70, brightness +5%, whole frame, to turn the cold blue fridge light amber. Needed because the cold original scored 0.745 against 5 Stitches the Snitch and 0.724 against 75 Hair of the Bear in the image-distinctness audit (gate 0.72); no content changed."
+  },
+  {
+   "id": "47",
+   "name": "Last Call Blessing",
+   "type": "special",
+   "effect": "Special: every creature you have on the table gains +2 attack for the rest of the battle.",
+   "gag": "One more round for everybody: a plush 'priest' blesses the whole crew with whiskey from a holy-water sprinkler and every one of them swells with doubled muscles and a halo, even the two under the pool table.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 2,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_59250p59250p5925.jpeg",
+    "sha256": "2128c881c36d7015214bb5d47fd91235e8ce07798c0c7124f6ac32243e39ffae"
+   },
+   "original_png_sha256": "b82872b2fedfc0ed54890a6c5eedccf6accdb8f95d1ca9af82a3c2801152424f",
+   "source_png": "47.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "b82872b2fedfc0ed54890a6c5eedccf6accdb8f95d1ca9af82a3c2801152424f",
+   "prompt": "Photograph, 28mm, in a small chapel with cool ruby and sapphire stained-glass light. A solemn adult plush teddy in white vestments flicks whiskey from a silver holy-water sprinkler over a line of four adult plush brawler teddies kneeling at the altar rail; as the drops land each brawler's arms and chest visibly swell to double size, seams straining, a soft white halo ring above each head. Under a green-felt pool table wheeled into the aisle, two more plush teddies who passed out are getting splashed and are flexing too. A row of lipstick-marked shot glasses on the collection plate. Palette: ruby, sapphire, silver, halo white. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/47.webp",
+    "public/cards/thumbs/47.webp",
+    "public/cards/thumbs/47.avif",
+    "public/cards/mid/47.webp",
+    "public/cards/mid/47.avif"
+   ],
+   "ingested": "2026-11-20"
+  },
+  {
+   "id": "ma-10",
+   "name": "The Unsent Thread",
+   "type": "special",
+   "effect": "Special: draw 4 cards from your deck.",
+   "gag": "Four drafts, only the filthy one was honest: in bed at dawn she holds four playing cards fanned like a hand while four unsent paper planes lie crashed around her, one kissed in lipstick.",
+   "generator": "Gemini (Mark's Google AI Plus plan), by hand at gemini.google.com",
+   "reference_image": null,
+   "attempt": 2,
+   "gemini_download": {
+    "name": "Gemini_Generated_Image_5eh61f5eh61f5eh6.jpeg",
+    "sha256": "5920a00a1b594b32fda6c9f66af307322b226c732a0369176b0a7ef08df3b5ca"
+   },
+   "original_png_sha256": "e491ec356ca8d10f21a25fb58a55c2c1ad50f0084e912c1df043a0ef251ed2a6",
+   "source_png": "ma-10.png",
+   "source_size": [
+    1792,
+    2400
+   ],
+   "source_sha256": "e491ec356ca8d10f21a25fb58a55c2c1ad50f0084e912c1df043a0ef251ed2a6",
+   "prompt": "Flat-lay photograph from above, 35mm, on a rumpled white duvet in soft pink dawn light. An adult plush lady teddy with rose-pink fur, sleep mask pushed up, lies back against the pillows holding exactly four playing cards fanned out in her paw like a winning hand, a sly smile. Around her on the sheets lie four crumpled, blank paper aeroplanes that never flew, one marked with a vivid red lipstick kiss; her phone lies face-down beside her. Palette: blush pink, duvet white, lipstick red. Hyper-realistic real-world photograph, not an illustration, not a painting, not a cartoon, not 3D render, not CGI. Full-frame DSLR, real lens optics, true-to-life lighting, physically accurate shadows and reflections, natural material texture, fine film grain. Every character is an adult plush teddy bear toy (a real stuffed toy with visible fabric fibres and stitching, not a living animal, not a human), photographed in a real location; cheeky adult humour by innuendo only. No wooden bar counter, no wood panelling, no shelves of liquor bottles, no warm amber, orange or brown light. Portrait 3:4, subject centred with headroom for a card frame. No text, letters, numbers, logos, labels, signage, screens with words or watermark anywhere. No humans, no human faces, no human hands, no children.",
+   "files": [
+    "public/cards/ma-10.webp",
+    "public/cards/thumbs/ma-10.webp",
+    "public/cards/thumbs/ma-10.avif",
+    "public/cards/mid/ma-10.webp",
+    "public/cards/mid/ma-10.avif"
+   ],
+   "ingested": "2026-11-20"
   }
  ]
 }
