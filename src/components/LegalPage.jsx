@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { SCREEN_PAD } from '@/lib/safeArea';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { legalCanonical, pointCanonicalAt } from '@/lib/legalRoutes';
 
 // Plain pages. The funny lives in the bar, never in the rules a player is
 // asked to read before they are let in. Adults only, said as a fact.
@@ -85,6 +86,12 @@ const LegalPage = ({ kind }) => {
     document.documentElement.dataset.content = 'sfw';
     document.getElementById('initial-loader')?.classList.add('to-app');
   }, [page.title]);
+
+  // Each legal page is its own page to a search engine, not a copy of /.
+  useEffect(() => {
+    const current = document.querySelector('link[rel="canonical"]')?.getAttribute('href');
+    return pointCanonicalAt(legalCanonical(COPY[kind] ? kind : 'terms', current));
+  }, [kind]);
 
   return (
     <div className={`relative min-h-screen supports-[height:100dvh]:min-h-dvh bar-backdrop text-plush-100 ${SCREEN_PAD}`}>
