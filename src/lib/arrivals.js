@@ -1,6 +1,6 @@
 // What a creature does the moment it sits down. Pure: the board, Chuck's
-// turn, and the headless sim all call this, so a coin flip or a seat swap
-// cannot exist on one side of the table only.
+// turn, the headless sim and the Pub Brawl engine all call this, so a coin
+// flip or a seat swap cannot exist on one side of the table only.
 
 const clone = (field) => (field || []).map((card) => ({ ...card }));
 

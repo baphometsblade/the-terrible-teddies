@@ -13,6 +13,7 @@ const pick = (card) => ({
   effect: card.effect || null,
   amount: card.amount || 0,
   tribe: card.tribe || null,
+  interest: card.interest || 0,
 });
 
 describe('combat catalog', () => {
