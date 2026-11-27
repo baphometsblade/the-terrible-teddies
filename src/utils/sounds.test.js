@@ -128,6 +128,23 @@ describe('sound effects', () => {
     playSound('attack', true);
     expect(howlCtor).toHaveBeenCalledTimes(2);
   });
+  it('gives every event its own clip, including the four that used to share', async () => {
+    const { readFileSync } = await import('fs');
+    const { resolve } = await import('path');
+    const { SOUND_SPECS } = await freshModule();
+    const seen = [];
+    for (const [name, spec] of Object.entries(SOUND_SPECS)) {
+      const body = readFileSync(resolve(process.cwd(), 'public', spec.src.replace(/^\//, '')));
+      const twin = seen.find((row) => row.src === spec.src || row.body.equals(body));
+      expect(twin, `${name} repeats ${twin?.name}`).toBeUndefined();
+      seen.push({ name, src: spec.src, body });
+    }
+    expect(SOUND_SPECS.cardPlay.src).toBe('/sounds/card-play.mp3');
+    expect(SOUND_SPECS.heal.src).toBe('/sounds/heal.mp3');
+    expect(SOUND_SPECS.victory.src).toBe('/sounds/victory.mp3');
+    expect(SOUND_SPECS.trap.src).toBe('/sounds/trap.mp3');
+  });
+
   it('every clip it references actually exists on disk', async () => {
     // The bug this closes for good: four of the eight sounds were silently
     // dead in production because their hotlinked URLs had started returning

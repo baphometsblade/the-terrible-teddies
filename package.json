@@ -28,6 +28,7 @@
     "art:unique": "node scripts/bear-signatures.mjs --top 10",
     "art:og": "node scripts/make-og-image.mjs",
     "art:icons": "node scripts/make-icons.mjs",
+    "sounds:battle": "python3 scripts/make-battle-sounds.py",
     "preview": "vite preview"
   },
   "dependencies": {
