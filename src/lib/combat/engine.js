@@ -17,7 +17,8 @@ import {
 } from '../../utils/battleUtils.js';
 import { PLAYER_MAX_HEALTH, TRAP_DEFAULT_DAMAGE } from '../effects.js';
 import { fatigueForEmptyDraw } from '../fatigue.js';
-import { energyAfterCut, commitBarSpecial, payTab } from '../barService.js';
+import { applyInterest, energyAfterCut, commitBarSpecial, payTab, pourExtra, tabTip } from '../barService.js';
+import { resolveArrival } from '../arrivals.js';
 import { applyMulligan } from '../mulligan.js';
 import { pickMvp } from '../matchNight.js';
 import { hashString, nextRandom } from './rng.js';
@@ -26,6 +27,7 @@ const OTHER = { a: 'b', b: 'a' };
 
 /** The fields a fight actually reads. Flavor, art and rarity never enter. */
 export function combatCard(card, instanceId) {
+  const interest = Math.floor(Number(card.interest) || 0);
   return {
     instanceId,
     id: card.id,
@@ -39,8 +41,15 @@ export function combatCard(card, instanceId) {
     effect: card.effect || null,
     amount: card.amount || 0,
     tribe: card.tribe || null,
+    // Only a trap that collects interest carries the field. A zero on every
+    // other card would change the hash of every fight already on tape.
+    ...(interest > 0 ? { interest } : {}),
   };
 }
+
+// Sits down and does something the printed stats do not. Strip, shield and
+// the rest resolve on the hit, through battleUtils. These five resolve now.
+const ARRIVALS = new Set(['eggnog', 'regift', 'mistletoe', 'naughty', 'sack']);
 
 function shuffle(cards, rng) {
   const next = cards.slice();
@@ -277,7 +286,12 @@ function hitFace(state, seat, attacker) {
   if (valid.length > 0) return { ok: false, error: 'blocked' };
   if (!canSwingFace(attacker)) return { ok: false, error: 'rush' };
   const trap = them.field.find((card) => card.type === 'trap');
-  me.field = spendAttacker(me.field, attacker.instanceId);
+  const taxed = trap ? applyInterest(attacker, trap) : attacker;
+  me.field = me.field.map((card) => (
+    card.instanceId === attacker.instanceId
+      ? stampSwing(taxed.attack === attacker.attack ? card : { ...card, attack: taxed.attack })
+      : card
+  ));
   me.momentum = Math.min(MOMENTUM_MAX, me.momentum + 3);
   if (trap) {
     const amount = trap.amount || TRAP_DEFAULT_DAMAGE;
@@ -286,6 +300,9 @@ function hitFace(state, seat, attacker) {
     me.health -= dealt;
     them.stats.damage += dealt;
     pushLog(state, `${trap.name} springs. ${dealt} into ${me.name}.`);
+    if (taxed.attack !== attacker.attack) {
+      pushLog(state, `${trap.name} takes ${trap.interest} off ${attacker.name}. The tab collects.`);
+    }
     killCheck(state, foe);
     return { ok: true };
   }
@@ -323,6 +340,29 @@ function playCard(state, seat, instanceId) {
   side.field = [...side.field, played];
   const tag = card.ability && card.ability !== 'none' ? ` (${card.ability})` : '';
   pushLog(state, `${side.name} plays ${card.name}${tag}.`);
+  if (played.type === 'action' && ARRIVALS.has(played.ability)) {
+    const foe = state.seats[OTHER[seat]];
+    const arrival = resolveArrival({
+      card: played,
+      ownField: side.field,
+      enemyField: foe.field,
+      ownHp: side.health,
+      enemyHp: foe.health,
+      maxHp: side.maxHealth,
+      random: () => roll(state),
+    });
+    side.field = arrival.ownField;
+    foe.field = arrival.enemyField;
+    side.health = arrival.ownHp;
+    foe.health = arrival.enemyHp;
+    if (arrival.healing) side.stats.healing += arrival.healing;
+    if (arrival.damageToEnemy) {
+      side.stats.damage += arrival.damageToEnemy;
+      noteMvp(state, played, arrival.damageToEnemy);
+    }
+    for (let i = 0; i < arrival.logs.length; i += 1) pushLog(state, arrival.logs[i]);
+    killCheck(state, seat);
+  }
   return { ok: true };
 }
 
@@ -352,7 +392,7 @@ function applySpecial(state, seat, card) {
   }
   if (card.effect === 'heal') {
     const room = Math.max(0, side.maxHealth - side.health);
-    const healed = Math.min(room, card.amount || 0);
+    const healed = Math.min(room, (card.amount || 0) + pourExtra(side.field));
     side.health += healed;
     side.stats.healing += healed;
     pushLog(state, healed
@@ -386,6 +426,13 @@ function applySpecial(state, seat, card) {
 
 function endTurn(state, seat) {
   const side = state.seats[seat];
+  const tip = tabTip(side.field);
+  if (tip && side.health < side.maxHealth) {
+    const gained = Math.min(tip, side.maxHealth - side.health);
+    side.health += gained;
+    side.stats.healing += gained;
+    pushLog(state, `The tab tops ${side.name} up. +${gained} HP.`);
+  }
   side.field = readyCreatures(side.field);
   if (state.phase === 'over') return;
   beginTurn(state, OTHER[seat]);
