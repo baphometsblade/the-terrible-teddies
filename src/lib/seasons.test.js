@@ -7,8 +7,8 @@ import { NAUGHTY_LIST_CARDS, NAUGHTY_LIST_SEASON } from '@/data/naughtyList';
 import { BUNDLED_SEASON_IDS } from '@/data/seasonsCatalog';
 import { fromLadderId, toLadderId } from '@/data/cardRegistry';
 import {
-  applySeasonSnapshot, countdownMs, formatCountdown, normalizeServerSnapshot,
-  resetSeasonSnapshot, seasonsForPacks, setSeasonPreview, showInAlbum, vaultOf,
+  applySeasonSnapshot, countdownMs, formatCountdown, normalizeServerSnapshot, opensInMs,
+  resetSeasonSnapshot, seasonComingUp, seasonOnTheFloor, seasonsForPacks, setSeasonPreview, showInAlbum, vaultOf,
   VAULT_BADGE, VAULT_LINE, visibleSeasons,
 } from '@/lib/seasons';
 import { rollPack, weightedPick, weightedRows } from '@/lib/packRoll';
@@ -86,6 +86,50 @@ describe('season clock', () => {
     );
     expect(formatCountdown(90_000)).toBe('1m 30s');
     expect(countdownMs(row, 'not-a-date', 0)).toBeNull();
+  });
+
+  it('counts the door from the server clock, and a finished count does not open the season', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-12-25T00:00:00.000Z'));
+    const row = season('upcoming');
+    const start = Date.parse(NAUGHTY_LIST_SEASON.starts_at);
+    const serverNow = '2026-11-27T00:00:00.000Z';
+    expect(opensInMs(row, serverNow, 0)).toBe(start - Date.parse(serverNow));
+    expect(opensInMs(row, serverNow, 60_000)).toBe(start - Date.parse(serverNow) - 60_000);
+    expect(opensInMs(row, 'not-a-date', 0)).toBeNull();
+    expect(formatCountdown(opensInMs(row, serverNow, 0))).toBe('3d 14h');
+
+    const due = applySeasonSnapshot(normalizeServerSnapshot({
+      server_now: NAUGHTY_LIST_SEASON.starts_at,
+      seasons: [{ ...NAUGHTY_LIST_SEASON, status: 'upcoming' }],
+    }));
+    expect(opensInMs(due.seasons[0], due.serverNow, 5_000)).toBe(0);
+    expect(seasonComingUp(due).status).toBe('upcoming');
+    expect(seasonOnTheFloor(due)).toBeNull();
+    expect(seasonsForPacks(due)).toEqual([]);
+  });
+
+  it('shows the soonest upcoming row, and hides it once anything is on the floor', () => {
+    const sooner = { ...NAUGHTY_LIST_SEASON, id: 'sooner', starts_at: '2026-12-01T00:00:00.000Z', status: 'upcoming' };
+    const later = { ...NAUGHTY_LIST_SEASON, id: 'later', starts_at: '2027-06-01T00:00:00.000Z', status: 'upcoming' };
+    const snap = {
+      serverNow: '2026-11-27T00:00:00.000Z',
+      seasons: [later, sooner],
+      loaded: true,
+      previewId: '',
+    };
+    expect(seasonComingUp(snap).id).toBe('sooner');
+    expect(seasonComingUp({
+      ...snap,
+      seasons: [{ ...sooner, starts_at: 'nope' }],
+    })).toBeNull();
+    expect(seasonComingUp({
+      ...snap,
+      seasons: [sooner, { ...NAUGHTY_LIST_SEASON, status: 'active' }],
+    })).toBeNull();
+    const preview = { ...snap, previewId: 'sooner' };
+    expect(seasonOnTheFloor(preview).status).toBe('preview');
+    expect(seasonComingUp(preview)).toBeNull();
   });
 
   it('lets a preview dress the floor without opening packs, unless the caller allows it', () => {

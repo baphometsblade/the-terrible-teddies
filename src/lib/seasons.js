@@ -174,6 +174,21 @@ export const seasonOnTheFloor = (snap = snapshot) => (
   visibleSeasons(snap).find((season) => season.status === 'active' || season.status === 'preview') || null
 );
 
+/**
+ * The next season the server marked `upcoming`, when nothing is on the floor.
+ * A staff preview counts as on the floor and hides this. The row is a sign
+ * on the door: packs, grants and decks still require `status === 'active'`.
+ * A starts_at the clock cannot read is dropped, never repaired from the laptop.
+ */
+export const seasonComingUp = (snap = snapshot) => {
+  if (seasonOnTheFloor(snap)) return null;
+  const rows = (snap?.seasons || []).filter((season) => (
+    season?.status === 'upcoming' && Number.isFinite(Date.parse(season.starts_at))
+  ));
+  rows.sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at));
+  return rows[0] || null;
+};
+
 /** The nightly crew while the party is up, otherwise null so the usual rotation stands. */
 export const seasonCrew = (snap = snapshot) => (seasonOnTheFloor(snap) ? NAUGHTY_CREW : null);
 
@@ -201,6 +216,18 @@ export const countdownMs = (season, serverNow, elapsedMs = 0) => {
   const server = Date.parse(serverNow || '');
   if (!Number.isFinite(end) || !Number.isFinite(server)) return null;
   return Math.max(0, end - server - Math.max(0, elapsedMs));
+};
+
+/**
+ * Milliseconds until the server's starts_at, from the server's now plus
+ * monotonic time since that answer. Zero means the door is due, not that
+ * the season has opened: only a later answer with `status: 'active'` does that.
+ */
+export const opensInMs = (season, serverNow, elapsedMs = 0) => {
+  const start = Date.parse(season?.starts_at || '');
+  const server = Date.parse(serverNow || '');
+  if (!Number.isFinite(start) || !Number.isFinite(server)) return null;
+  return Math.max(0, start - server - Math.max(0, elapsedMs));
 };
 
 export const formatCountdown = (ms) => {

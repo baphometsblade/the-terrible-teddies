@@ -124,9 +124,9 @@ the eight sounds with no error anyone could see: a `Howl` that fails to load
 does not throw, it just never makes a noise. `sounds.test.js` now fails if a
 spec points at an external URL or at a file that does not exist on disk.
 
-Only four clips survived that CDN, so four events currently share a sibling's
-clip (marked interim in the source). Replacing them is a content task: drop
-files in `public/sounds/` and repoint `SOUND_SPECS`.
+The four events that used to share a sibling (`cardPlay`, `heal`, `victory`,
+`trap`) have their own clips, made by `scripts/make-battle-sounds.py`
+(`npm run sounds:battle`) in the same short, dry pocket as the four originals.
 
 The `Howl` objects are built on first play, never at module scope — Howler
 preloads on construction, so an eager table fetched every clip as soon as the

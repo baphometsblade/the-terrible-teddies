@@ -1,28 +1,44 @@
-import { useEffect, useRef, useState } from 'react';
-import { countdownMs, formatCountdown, refreshPackSeasons, seasonOnTheFloor } from '@/lib/seasons';
+import { useEffect, useId, useState } from 'react';
+import { countdownMs, formatCountdown, opensInMs, refreshPackSeasons, seasonComingUp, seasonOnTheFloor } from '@/lib/seasons';
 import { useSeasonSnapshot } from '@/hooks/useSeasonSnapshot';
 import { FOCUS_OUTLINE } from '@/lib/focus';
+import { DOOR_BUTTON, DOOR_DUE, DOOR_KICKER, DOOR_ODDS, DOOR_UNKNOWN, DOOR_WAIT, doorClock } from '@/lib/seasonDoorCopy';
 
 const BANNER = '/seasons/naughty-list-banner.webp';
 
 /**
- * The party on the menu. Hidden until a season is active or a preview is
- * set, so the Battle button's place above the fold does not move on an
- * ordinary night. The countdown is anchored to the server's clock.
+ * The party on the menu.
+ *
+ * An active season, or a staff preview, says it is on the floor. An upcoming
+ * row counts down to the server's starts_at, from the server's clock plus
+ * the time since that answer. The laptop's date is not read, and nothing
+ * here grants, deals or boosts: a countdown that runs out only asks the
+ * server again. Hidden when the server has no row to show, so an ordinary
+ * night does not move the Battle button. The banner sits under that button.
  */
 const SeasonBanner = ({ onOpen }) => {
   const snap = useSeasonSnapshot();
-  const season = seasonOnTheFloor(snap);
+  const floor = seasonOnTheFloor(snap);
+  const coming = seasonComingUp(snap);
+  const season = floor || coming;
+  const upcoming = Boolean(coming);
+  const headingId = useId();
   const [elapsed, setElapsed] = useState(0);
   const [art, setArt] = useState(true);
-  const asked = useRef(false);
   const seasonId = season?.id || '';
+  const mode = season?.status || '';
   const serverNow = snap.serverNow;
 
   useEffect(() => {
     if (import.meta.env.MODE === 'test') return undefined;
     refreshPackSeasons();
-    return undefined;
+    // A tab that slept past the door re-asks. The answer, not the wake-up
+    // clock, is what can open the season.
+    const onVis = () => {
+      if (document.visibilityState === 'visible') refreshPackSeasons();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
 
   useEffect(() => {
@@ -31,26 +47,37 @@ const SeasonBanner = ({ onOpen }) => {
     setElapsed(0);
     const id = setInterval(() => setElapsed(performance.now() - started), 1000);
     return () => clearInterval(id);
-  }, [seasonId, serverNow]);
+  }, [seasonId, serverNow, mode]);
 
-  const left = season ? countdownMs(season, serverNow, elapsed) : null;
+  const left = !season ? null : upcoming
+    ? opensInMs(season, serverNow, elapsed)
+    : countdownMs(season, serverNow, elapsed);
+
+  const due = left === 0;
   useEffect(() => {
-    asked.current = false;
-  }, [seasonId, serverNow]);
-  useEffect(() => {
-    if (left !== 0 || !season || season.preview || asked.current) return undefined;
-    asked.current = true;
+    // Hitting zero is a reason to ask again, never a reason to open locally.
+    // A preview is a costume. While the server is still saying upcoming, ask
+    // on a slow tick instead of once per answer: each answer carries a new
+    // server_now, and treating that as a new question would poll in a loop.
+    if (!due || !seasonId || mode === 'preview') return undefined;
+    if (import.meta.env.MODE === 'test') return undefined;
     refreshPackSeasons();
-    return undefined;
-  }, [left, season]);
+    const id = setInterval(() => refreshPackSeasons(), 30_000);
+    return () => clearInterval(id);
+  }, [due, seasonId, mode]);
 
   if (!season) return null;
-  const clock = formatCountdown(left);
+
+  const preview = mode === 'preview';
+  const openClock = formatCountdown(left);
+  const upcomingClock = left == null ? null : left <= 0 ? '' : formatCountdown(left);
+  const state = upcoming ? 'upcoming' : preview ? 'preview' : 'active';
 
   return (
     <section
       className="relative z-10 mx-auto mt-4 w-full max-w-6xl overflow-hidden rounded-2xl panel-glass"
-      aria-label={season.name}
+      aria-labelledby={headingId}
+      data-season-state={state}
       style={{
         backgroundImage: art ? undefined : 'linear-gradient(90deg, rgba(127,29,29,0.35), rgba(6,78,59,0.28))',
       }}
@@ -59,31 +86,48 @@ const SeasonBanner = ({ onOpen }) => {
         <img
           src={BANNER}
           alt=""
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40"
+          className={`pointer-events-none absolute inset-0 h-full w-full object-cover ${upcoming ? 'opacity-25' : 'opacity-40'}`}
           onError={() => setArt(false)}
         />
       )}
-      <div className="relative flex flex-wrap items-center gap-3 px-4 py-3">
+      <div className="relative flex flex-col gap-3 bg-night-950/80 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="min-w-0 flex-1">
-          <p className="label-caps text-red-200">Limited</p>
-          <h2 className="font-display text-xl font-extrabold leading-tight text-white">{season.name}</h2>
-          <p className="text-sm text-plush-200">
-            {season.preview
-              ? 'Preview. Packs still wait for the server.'
-              : clock
-                ? `On the floor for ${clock}.`
-                : 'On the floor.'}
-            {' '}
-            Same odds in every pack.
+          <p className={`label-caps ${upcoming ? 'text-brass-200' : 'text-red-200'}`}>
+            {upcoming ? DOOR_KICKER : 'Limited'}
           </p>
+          <h2 id={headingId} className="font-display text-xl font-extrabold leading-tight text-white">{season.name}</h2>
+          {upcoming ? (
+            <>
+              {upcomingClock ? (
+                <p className="font-display text-lg font-extrabold tabular-nums leading-tight text-brass-200" data-season-clock>
+                  {doorClock(upcomingClock)}
+                </p>
+              ) : (
+                <p className="text-sm leading-snug text-plush-200">{upcomingClock === '' ? DOOR_DUE : DOOR_UNKNOWN}</p>
+              )}
+              {upcomingClock ? (
+                <p className="text-sm leading-snug text-plush-200">{DOOR_WAIT} {DOOR_ODDS}</p>
+              ) : null}
+            </>
+          ) : (
+            <p className="text-sm leading-snug text-plush-200">
+              {preview
+                ? 'Preview. Packs still wait for the server.'
+                : openClock
+                  ? `On the floor for ${openClock}.`
+                  : 'On the floor.'}
+              {' '}
+              Same odds in every pack.
+            </p>
+          )}
         </div>
         {onOpen && (
           <button
             type="button"
             onClick={onOpen}
-            className={`btn-brass h-11 shrink-0 rounded-xl px-4 font-display text-sm font-bold ${FOCUS_OUTLINE}`}
+            className={`${upcoming ? 'btn-glass' : 'btn-brass'} h-11 w-full shrink-0 rounded-xl px-4 font-display text-sm font-bold sm:w-auto ${FOCUS_OUTLINE}`}
           >
-            The Naughty List
+            {upcoming ? DOOR_BUTTON : 'The Naughty List'}
           </button>
         )}
       </div>

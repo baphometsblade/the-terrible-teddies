@@ -4,6 +4,9 @@ import { createRoot } from 'react-dom/client';
 import { MotionGlobalConfig } from 'framer-motion';
 import Shop from './Shop';
 import { useGameStore } from '@/stores/gameStore';
+import { NAUGHTY_LIST_SEASON } from '@/data/naughtyList';
+import { applySeasonSnapshot, resetSeasonSnapshot, seasonsForPacks, setSeasonPreview } from '@/lib/seasons';
+import { peekLine } from '@/lib/seasonDoorCopy';
 
 // A route to gems (the Battle Pass confirm when the balance is short, the
 // empty Card Packs table) opens the Shop on its gems tab, not on Card Packs.
@@ -96,6 +99,41 @@ describe('Shop gem bundles', () => {
     for (const line of lines) expect(line).toMatch(/^\+?\d{1,3}(?:,\d{3})* (?:BONUS|total)$/);
     // The largest bundle does pass a thousand, so the separator is seen.
     expect(lines.some((line) => line.includes(','))).toBe(true);
+  });
+});
+
+describe('the Naughty List peek', () => {
+  afterEach(() => {
+    resetSeasonSnapshot();
+    setSeasonPreview('');
+  });
+
+  const load = (status) => applySeasonSnapshot({
+    serverNow: '2026-11-27T00:00:00.000Z',
+    seasons: [{ ...NAUGHTY_LIST_SEASON, status }],
+    loaded: true,
+    previewId: '',
+  });
+
+  it('lists who is coming and does not put them in packs', () => {
+    load('upcoming');
+    render({ initialTab: 'season' });
+    expect(pressed()).toContain('Naughty List');
+    const panel = host.querySelector('[data-season-state="upcoming"]');
+    expect(panel).not.toBeNull();
+    expect(panel.textContent).toContain(peekLine(10));
+    expect(panel.textContent).toContain('Sleazy Santa');
+    expect(panel.textContent).not.toContain('In every pack while the party is on');
+    expect(panel.querySelector('button')).toBeNull();
+    expect(seasonsForPacks()).toEqual([]);
+  });
+
+  it('says the party is in every pack only once the server has opened it', () => {
+    load('active');
+    render({ initialTab: 'season' });
+    const panel = host.querySelector('[data-season-state="active"]');
+    expect(panel.textContent).toContain('In every pack while the party is on');
+    expect(panel.textContent).not.toContain(peekLine(10));
   });
 });
 

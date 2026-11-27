@@ -4,7 +4,8 @@ import { Store, Package, Gem, Star, Coins, Timer, Sparkles, ShieldCheck, Percent
 import { useToast } from "@/components/ui/use-toast";
 import { playerFacingError } from '@/lib/network';
 import { useGameStore, SHOP_ITEMS, ALL_CARDS } from '../stores/gameStore';
-import { useSeasonOnTheFloor } from '@/hooks/useSeasonSnapshot';
+import { useSeasonComingUp, useSeasonOnTheFloor } from '@/hooks/useSeasonSnapshot';
+import { DOOR_KICKER, peekLine } from '@/lib/seasonDoorCopy';
 import { abilityLabel } from '@/lib/abilities';
 import analytics from '../utils/analytics';
 import { redirectToCheckout, fetchOnePerAccountHoldings } from '../utils/stripe';
@@ -192,7 +193,11 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
   // was on has just been replaced by the claimed note.
   const starterClaimedRef = useRef(null);
   const focusStarterClaimed = useRef(false);
-  const season = useSeasonOnTheFloor();
+  const floor = useSeasonOnTheFloor();
+  const coming = useSeasonComingUp();
+  // The peek is the upcoming row. It lists names. It does not open packs.
+  const season = floor || coming;
+  const comingSoon = Boolean(coming);
   const tabs = season
     ? [...TABS, { id: 'season', label: 'Naughty List', icon: Sparkles }]
     : TABS;
@@ -501,14 +506,16 @@ const Shop = ({ onClose, initialTab = 'packs' }) => {
             )}
 
             {activeTab === 'season' && season && (
-              <motion.div key="season" {...TAB_MOTION}>
+              <motion.div key="season" {...TAB_MOTION} data-season-state={comingSoon ? 'upcoming' : floor?.status === 'preview' ? 'preview' : 'active'}>
                 <div className="panel-glass rounded-2xl p-5">
-                  <p className="label-caps text-red-200">Limited</p>
+                  <p className={`label-caps ${comingSoon ? 'text-brass-200' : 'text-red-200'}`}>{comingSoon ? DOOR_KICKER : 'Limited'}</p>
                   <h3 className="mt-1 font-display text-2xl font-extrabold text-white">{season.name}</h3>
                   <p className="mt-2 text-sm text-plush-200">
-                    In every pack while the party is on. A pack you buy and a pack you earn use the same odds.
+                    {comingSoon
+                      ? peekLine(season.card_ids.length)
+                      : 'In every pack while the party is on. A pack you buy and a pack you earn use the same odds.'}
                   </p>
-                  {season.preview && (
+                  {floor?.status === 'preview' && (
                     <p className="mt-2 text-sm text-plush-300">Preview. The server has not put them in packs yet.</p>
                   )}
                   <ul className="mt-4 space-y-2">
